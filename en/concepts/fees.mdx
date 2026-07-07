@@ -1,41 +1,48 @@
 ---
 title: "Fees"
-description: "How fees are computed and where to check your effective pricing"
+description: "How each service is charged and where to check your terms"
 ---
 
-Fees are configured by CBPay per **service, country and asset**.
-When nothing is configured for a combination, the fee is **0**.
+Fees are configured by CBPay per **service, country and asset**. When
+nothing is configured for a combination, the fee is **0**.
 
-## Formula
+## How payouts are charged
 
-Every fee has two components that are **added together** (either can be 0):
+Payout pricing lives in **your exchange rate**: the rate you see in
+`GET /v1/rates` is your rate, and it is exactly the one used at execution.
+If you disperse the equivalent of 100 USDT, you are debited **100 USDT plus
+the fixed fee** (when configured for your account) — no separate
+percentages:
 
 ```
-fee = ceil(amount × percent / 100) + fixed_amount
+usdt_amount = local_amount / your_rate
+total_debit = usdt_amount + fixed_amount
 ```
 
-- `percent`: percentage over the USDT amount of the operation (rounded up
-  to the micro-USDT).
-- `fixed_amount`: fixed amount in USDT.
+What the beneficiary receives in local currency depends on your account's
+rate for that country. Quoted = charged, always.
 
-## Billable services
+## Services with fixed or percent fees
 
-| Service | Applied over | When it is charged |
+| Service | How it is charged | When |
 |---|---|---|
-| `payout` | The payout's USDT amount | At payout creation (included in `total_debit`) |
-| `payin` | The gross USDT received | On credit (you receive `usdt_gross − fee`) |
-| `funding` | The gross crypto deposit | When the on-chain deposit is credited |
-| `withdrawal` | The withdrawal amount | At creation (included in `total_debit`) |
-| `wallet_creation` | — (fixed per-wallet charge) | On every wallet creation (persons: 1 per network; companies: unlimited). Fetching existing wallets is always free |
-| `compliance_person` | — (fixed per-call charge) | When submitting a person's KYC |
-| `compliance_company` | — | When submitting a company's KYB |
-| `compliance_rescreen` | — | When re-running a screening |
-| `compliance_monitoring` | — | When enabling continuous monitoring (disabling is free) |
+| `payout` | Fixed per operation (FX pricing is already in your rate) | At payout creation (included in `total_debit`) |
+| `payin` | `%` over the gross USDT + fixed | On credit (you receive `usdt_gross − fee`) |
+| `funding` | `%` over the deposit + fixed | When the on-chain deposit is credited |
+| `withdrawal` | `%` over the withdrawal + fixed | At creation (included in `total_debit`) |
+| `wallet_creation` | Fixed per wallet | On every wallet creation (persons: 1 per network; companies: unlimited). Fetching existing wallets is always free |
+| `compliance_person` | Fixed per call | When submitting a person's KYC |
+| `compliance_company` | Fixed per call | When submitting a company's KYB |
+| `compliance_rescreen` | Fixed per call | When re-running a screening |
+| `compliance_monitoring` | Fixed per activation | When enabling continuous monitoring (disabling is free) |
+
+For `%`-based services the formula is
+`fee = ceil(amount × percent / 100) + fixed_amount` (rounded up to the
+micro-USDT).
 
 <Note>
-Compliance services and wallet creation have no transactional amount, so
-only the fixed component applies. If the upstream operation fails after the
-charge, it is refunded automatically (`compliance_refund` /
+Standalone fixed charges (compliance and wallet creation) are refunded
+automatically if the upstream operation fails (`compliance_refund` /
 `wallet_creation_refund`).
 </Note>
 
@@ -47,13 +54,13 @@ company↔company. The money moves inside the ecosystem.
 
 ## Your exchange rate
 
-`GET /v1/rates` returns **the exchange rate that applies to your account**
-for each country — the same rate used when your operations execute, no
-surprises: `local_amount / rate = USDT`.
+`GET /v1/rates` returns **your account's own exchange rate** for each
+country — the same rate your operations execute at, no surprises:
+`local_amount / rate = USDT`.
 
-## Check your effective fees
+## Check your terms
 
-`GET /v1/rates` returns, along with FX rates, the fee configuration
+`GET /v1/rates` returns, along with your rates, the fee configuration
 currently applied to your account:
 
 ```json
@@ -65,22 +72,25 @@ currently applied to your account:
       "service": "payout",
       "country": "CL",
       "asset": "USDT",
-      "percent": "1.5",
+      "percent": "0",
       "fixed_amount": "0.30"
     }
   ]
 }
 ```
 
-That lets you compute the total cost before operating. The charged fee is
-always explicit in each operation's response (`fee` field) and in the
-ledger.
+The charged fee is always explicit in each operation's response (`fee`
+field) and in the ledger.
 
 ## Full example
 
-A payout worth 100 USDT with `percent: "1.5"` and `fixed_amount: "0.30"`:
+A payout equivalent to 100 USDT with `fixed_amount: "0.30"`:
 
 ```
-fee         = ceil(100 × 1.5%) + 0.30 = 1.50 + 0.30 = 1.80 USDT
-total_debit = 100 + 1.80 = 101.80 USDT
+usdt_amount = 100 USDT           (local_amount / your_rate)
+fee         = 0.30 USDT          (fixed)
+total_debit = 100.30 USDT
 ```
+
+The beneficiary receives the full local amount you specified; you are
+debited the equivalent at your rate plus the fixed fee.

@@ -622,7 +622,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"base\": \"USD\",\n  \"rates\": {\n    \"chile\": {\n      \"currency\": \"CLP\",\n      \"rate\": \"950.25\"\n    },\n    \"mexico\": {\n      \"currency\": \"MXN\",\n      \"rate\": \"17.50\"\n    },\n    \"peru\": {\n      \"currency\": \"PEN\",\n      \"rate\": \"3.72\"\n    }\n  },\n  \"updated_at\": \"2026-07-07T12:00:00Z\",\n  \"fees\": [\n    {\n      \"id\": \"3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c\",\n      \"org_id\": \"1c9e7a2b-5f6d-4e3a-8c1b-2a9d8e7f6a5b\",\n      \"account_id\": \"\",\n      \"service\": \"payout\",\n      \"country\": \"CL\",\n      \"asset\": \"USDT\",\n      \"percent\": \"1.5\",\n      \"fixed_amount\": \"0.30\",\n      \"status\": \"active\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
+              "body": "{\n  \"base\": \"USD\",\n  \"rates\": {\n    \"chile\": {\n      \"currency\": \"CLP\",\n      \"rate\": \"950.25\"\n    },\n    \"mexico\": {\n      \"currency\": \"MXN\",\n      \"rate\": \"17.50\"\n    },\n    \"peru\": {\n      \"currency\": \"PEN\",\n      \"rate\": \"3.72\"\n    }\n  },\n  \"updated_at\": \"2026-07-07T12:00:00Z\",\n  \"fees\": [\n    {\n      \"id\": \"3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c\",\n      \"org_id\": \"1c9e7a2b-5f6d-4e3a-8c1b-2a9d8e7f6a5b\",\n      \"account_id\": \"\",\n      \"service\": \"payout\",\n      \"country\": \"CL\",\n      \"asset\": \"USDT\",\n      \"percent\": \"0\",\n      \"fixed_amount\": \"0.30\",\n      \"status\": \"active\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
             }
           ]
         }
@@ -709,7 +709,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"payouts\": [\n    {\n      \"payout_id\": \"7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f\",\n      \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n      \"idempotency_key\": \"invoice-8841\",\n      \"country\": \"MX\",\n      \"currency\": \"MXN\",\n      \"method\": \"bank_transfer\",\n      \"local_amount\": \"1500.00\",\n      \"fx_rate\": \"17.50\",\n      \"usdt_amount\": \"85.714286\",\n      \"fee\": \"1.585715\",\n      \"total_debit\": \"87.300001\",\n      \"beneficiary\": {\n        \"name\": \"Maria Lopez\",\n        \"account_type\": \"clabe\",\n        \"account_number\": \"012180001234567895\"\n      },\n      \"description\": \"Invoice 8841\",\n      \"status\": \"processing\",\n      \"status_code\": \"\",\n      \"status_message\": \"\",\n      \"created_at\": \"2026-07-07T12:00:00Z\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"payouts\": [\n    {\n      \"payout_id\": \"7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f\",\n      \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n      \"idempotency_key\": \"invoice-8841\",\n      \"country\": \"MX\",\n      \"currency\": \"MXN\",\n      \"method\": \"bank_transfer\",\n      \"local_amount\": \"1500.00\",\n      \"fx_rate\": \"17.50\",\n      \"usdt_amount\": \"85.714286\",\n      \"fee\": \"0.300000\",\n      \"total_debit\": \"87.300001\",\n      \"beneficiary\": {\n        \"name\": \"Maria Lopez\",\n        \"account_type\": \"clabe\",\n        \"account_number\": \"012180001234567895\"\n      },\n      \"description\": \"Invoice 8841\",\n      \"status\": \"processing\",\n      \"status_code\": \"\",\n      \"status_message\": \"\",\n      \"created_at\": \"2026-07-07T12:00:00Z\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
             }
           ]
         },
@@ -738,7 +738,7 @@
                 "payouts"
               ]
             },
-            "description": "Disperses fiat to a local bank account. The local amount is converted\nto USDT at the current rate; `usdt_amount + fee` is debited and held\nuntil the dispersal completes. If it fails, the full debit is refunded.\n\nRequires an idempotency key (body field or `Idempotency-Key` header).\nRetrying with the same key returns the original payout (`200` with\n`idempotency_hit: true`).",
+            "description": "Disperses fiat to a local bank account. The local amount converts to USDT at **your account's rate** (the same one returned by `GET /v1/rates`); `usdt_amount` plus the fixed fee (when configured) is debited and held until the dispersal completes. If it fails, the full debit is refunded.\n\nRequires an idempotency key (body field or `Idempotency-Key` header). Retrying with the same key returns the original payout (`200` with `idempotency_hit: true`).",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"country\": \"MX\",\n  \"currency\": \"MXN\",\n  \"method\": \"bank_transfer\",\n  \"amount\": \"1500.00\",\n  \"beneficiary\": {\n    \"name\": \"Maria Lopez\",\n    \"account_type\": \"clabe\",\n    \"account_number\": \"012180001234567895\"\n  },\n  \"description\": \"Invoice 8841\",\n  \"idempotency_key\": \"invoice-8841\"\n}",
@@ -774,7 +774,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"payout_id\": \"7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"idempotency_key\": \"invoice-8841\",\n  \"country\": \"MX\",\n  \"currency\": \"MXN\",\n  \"method\": \"bank_transfer\",\n  \"local_amount\": \"1500.00\",\n  \"fx_rate\": \"17.50\",\n  \"usdt_amount\": \"85.714286\",\n  \"fee\": \"1.585715\",\n  \"total_debit\": \"87.300001\",\n  \"beneficiary\": {\n    \"name\": \"Maria Lopez\",\n    \"account_type\": \"clabe\",\n    \"account_number\": \"012180001234567895\"\n  },\n  \"description\": \"Invoice 8841\",\n  \"status\": \"processing\",\n  \"status_code\": \"\",\n  \"status_message\": \"\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:00Z\",\n  \"idempotency_hit\": true\n}"
+              "body": "{\n  \"payout_id\": \"7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"idempotency_key\": \"invoice-8841\",\n  \"country\": \"MX\",\n  \"currency\": \"MXN\",\n  \"method\": \"bank_transfer\",\n  \"local_amount\": \"1500.00\",\n  \"fx_rate\": \"17.50\",\n  \"usdt_amount\": \"85.714286\",\n  \"fee\": \"0.300000\",\n  \"total_debit\": \"87.300001\",\n  \"beneficiary\": {\n    \"name\": \"Maria Lopez\",\n    \"account_type\": \"clabe\",\n    \"account_number\": \"012180001234567895\"\n  },\n  \"description\": \"Invoice 8841\",\n  \"status\": \"processing\",\n  \"status_code\": \"\",\n  \"status_message\": \"\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:00Z\",\n  \"idempotency_hit\": true\n}"
             }
           ]
         },
@@ -834,7 +834,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"payout_id\": \"7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"idempotency_key\": \"invoice-8841\",\n  \"country\": \"MX\",\n  \"currency\": \"MXN\",\n  \"method\": \"bank_transfer\",\n  \"local_amount\": \"1500.00\",\n  \"fx_rate\": \"17.50\",\n  \"usdt_amount\": \"85.714286\",\n  \"fee\": \"1.585715\",\n  \"total_debit\": \"87.300001\",\n  \"beneficiary\": {\n    \"name\": \"Maria Lopez\",\n    \"account_type\": \"clabe\",\n    \"account_number\": \"012180001234567895\"\n  },\n  \"description\": \"Invoice 8841\",\n  \"status\": \"completed\",\n  \"status_code\": \"\",\n  \"status_message\": \"\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:00Z\"\n}"
+              "body": "{\n  \"payout_id\": \"7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"idempotency_key\": \"invoice-8841\",\n  \"country\": \"MX\",\n  \"currency\": \"MXN\",\n  \"method\": \"bank_transfer\",\n  \"local_amount\": \"1500.00\",\n  \"fx_rate\": \"17.50\",\n  \"usdt_amount\": \"85.714286\",\n  \"fee\": \"0.300000\",\n  \"total_debit\": \"87.300001\",\n  \"beneficiary\": {\n    \"name\": \"Maria Lopez\",\n    \"account_type\": \"clabe\",\n    \"account_number\": \"012180001234567895\"\n  },\n  \"description\": \"Invoice 8841\",\n  \"status\": \"completed\",\n  \"status_code\": \"\",\n  \"status_message\": \"\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:00Z\"\n}"
             }
           ]
         },

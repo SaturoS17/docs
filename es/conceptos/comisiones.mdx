@@ -1,41 +1,47 @@
 ---
 title: "Comisiones"
-description: "Cómo se calculan y dónde ver tus comisiones efectivas"
+description: "Cómo se cobra cada servicio y dónde ver tus condiciones"
 ---
 
 Las comisiones las configura CBPay por **servicio, país y activo**.
 Si no hay nada configurado para una combinación, la comisión es **0**.
 
-## Fórmula
+## Cómo se cobran los payouts
 
-Cada comisión tiene dos componentes que se **suman** (cualquiera puede ser 0):
+El pricing de un payout está en **tu tipo de cambio**: la tasa que ves en
+`GET /v1/rates` es tu tasa, y es exactamente la que se usa al ejecutar. Si
+dispersas el equivalente a 100 USDT, se debitan **100 USDT + el fijo** (si
+tu cuenta lo tiene configurado) — sin porcentajes aparte:
 
 ```
-comisión = ceil(monto × percent / 100) + fixed_amount
+usdt_amount = monto_local / tu_rate
+total_debit = usdt_amount + fixed_amount
 ```
 
-- `percent`: porcentaje sobre el monto en USDT de la operación (redondeo
-  hacia arriba al micro-USDT).
-- `fixed_amount`: monto fijo en USDT.
+Lo que recibe el beneficiario en moneda local depende de la tasa de tu
+cuenta para ese país. Cotizado = cobrado, siempre.
 
-## Servicios con comisión
+## Servicios con comisión fija u porcentual
 
-| Servicio | Se aplica sobre | Cuándo se cobra |
+| Servicio | Cómo se cobra | Cuándo |
 |---|---|---|
-| `payout` | Monto USDT del payout | Al crear el payout (incluido en `total_debit`) |
-| `payin` | USDT bruto recibido | Al acreditar (recibes `usdt_gross − fee`) |
-| `funding` | Depósito crypto bruto | Al acreditar el depósito on-chain |
-| `withdrawal` | Monto del retiro | Al crear el retiro (incluido en `total_debit`) |
-| `wallet_creation` | — (cargo fijo por wallet) | Al crear cada wallet (personas: 1 por red; empresas: ilimitadas). Consultar wallets existentes es siempre gratis |
-| `compliance_person` | — (cargo fijo por llamada) | Al enviar el KYC de una persona |
-| `compliance_company` | — | Al enviar el KYB de una empresa |
-| `compliance_rescreen` | — | Al re-ejecutar un screening |
-| `compliance_monitoring` | — | Al activar monitoreo continuo (desactivar es gratis) |
+| `payout` | Fijo por operación (el pricing FX ya está en tu tasa) | Al crear el payout (incluido en `total_debit`) |
+| `payin` | `%` sobre el USDT bruto + fijo | Al acreditar (recibes `usdt_gross − fee`) |
+| `funding` | `%` sobre el depósito + fijo | Al acreditar el depósito on-chain |
+| `withdrawal` | `%` sobre el retiro + fijo | Al crear el retiro (incluido en `total_debit`) |
+| `wallet_creation` | Fijo por wallet | Al crear cada wallet (personas: 1 por red; empresas: ilimitadas). Consultar wallets existentes es siempre gratis |
+| `compliance_person` | Fijo por llamada | Al enviar el KYC de una persona |
+| `compliance_company` | Fijo por llamada | Al enviar el KYB de una empresa |
+| `compliance_rescreen` | Fijo por llamada | Al re-ejecutar un screening |
+| `compliance_monitoring` | Fijo por activación | Al activar monitoreo continuo (desactivar es gratis) |
+
+Para los servicios con `%`, la fórmula es
+`fee = ceil(monto × percent / 100) + fixed_amount` (redondeo hacia arriba al
+micro-USDT).
 
 <Note>
-Los servicios de compliance y la creación de wallets no tienen monto
-transaccional, por lo que solo aplica el componente fijo. Si la operación
-falla aguas arriba después de cobrar, el cargo se reembolsa automáticamente
+Los cargos fijos standalone (compliance y creación de wallets) se
+reembolsan automáticamente si la operación falla aguas arriba
 (`compliance_refund` / `wallet_creation_refund`).
 </Note>
 
@@ -47,14 +53,14 @@ empresa↔empresa. El dinero se mueve dentro del ecosistema.
 
 ## Tu tipo de cambio
 
-`GET /v1/rates` devuelve **el tipo de cambio que aplica a tu cuenta** en
-cada país — es la misma tasa que se usa al ejecutar tus operaciones, sin
-sorpresas: `monto_local / rate = USDT`.
+`GET /v1/rates` devuelve **el tipo de cambio propio de tu cuenta** en cada
+país — la misma tasa con la que se ejecutan tus operaciones, sin sorpresas:
+`monto_local / rate = USDT`.
 
-## Consulta tus comisiones efectivas
+## Consulta tus condiciones
 
-`GET /v1/rates` devuelve, junto a las tasas FX, la configuración de
-comisiones vigente para tu cuenta:
+`GET /v1/rates` devuelve, junto a tus tasas, la configuración de comisiones
+vigente para tu cuenta:
 
 ```json
 {
@@ -65,23 +71,25 @@ comisiones vigente para tu cuenta:
       "service": "payout",
       "country": "CL",
       "asset": "USDT",
-      "percent": "1.5",
+      "percent": "0",
       "fixed_amount": "0.30"
     }
   ]
 }
 ```
 
-Con eso puedes calcular el costo total antes de operar. La comisión cobrada
-queda siempre explícita en la respuesta de cada operación (campo `fee`) y en
-el ledger.
+La comisión cobrada queda siempre explícita en la respuesta de cada
+operación (campo `fee`) y en el ledger.
 
 ## Ejemplo completo
 
-Payout de 100 USDT equivalentes con `percent: "1.5"` y
-`fixed_amount: "0.30"`:
+Payout equivalente a 100 USDT con `fixed_amount: "0.30"`:
 
 ```
-fee         = ceil(100 × 1.5%) + 0.30 = 1.50 + 0.30 = 1.80 USDT
-total_debit = 100 + 1.80 = 101.80 USDT
+usdt_amount = 100 USDT           (monto_local / tu_rate)
+fee         = 0.30 USDT          (fijo)
+total_debit = 100.30 USDT
 ```
+
+El beneficiario recibe el monto local completo que indicaste; a ti se te
+debita el equivalente a tu tasa más el fijo.

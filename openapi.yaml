@@ -558,7 +558,7 @@ paths:
                   service: payout
                   country: CL
                   asset: USDT
-                  percent: '1.5'
+                  percent: '0'
                   fixed_amount: '0.30'
                   status: active
                   updated_at: '2026-07-07T12:00:00Z'
@@ -581,20 +581,14 @@ paths:
       - Payouts
       operationId: createPayout
       summary: Create a payout
-      description: 'Disperses fiat to a local bank account. The local amount is converted
+      description: 'Disperses fiat to a local bank account. The local amount converts to USDT at **your
+        account''s rate** (the same one returned by `GET /v1/rates`); `usdt_amount` plus the fixed fee
+        (when configured) is debited and held until the dispersal completes. If it fails, the full debit
+        is refunded.
 
-        to USDT at the current rate; `usdt_amount + fee` is debited and held
 
-        until the dispersal completes. If it fails, the full debit is refunded.
-
-
-        Requires an idempotency key (body field or `Idempotency-Key` header).
-
-        Retrying with the same key returns the original payout (`200` with
-
-        `idempotency_hit: true`).
-
-        '
+        Requires an idempotency key (body field or `Idempotency-Key` header). Retrying with the same key
+        returns the original payout (`200` with `idempotency_hit: true`).'
       parameters:
       - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:
@@ -665,7 +659,7 @@ paths:
                 local_amount: '1500.00'
                 fx_rate: '17.50'
                 usdt_amount: '85.714286'
-                fee: '1.585715'
+                fee: '0.300000'
                 total_debit: '87.300001'
                 beneficiary: &id004
                   name: Maria Lopez
@@ -693,7 +687,7 @@ paths:
                 local_amount: '1500.00'
                 fx_rate: '17.50'
                 usdt_amount: '85.714286'
-                fee: '1.585715'
+                fee: '0.300000'
                 total_debit: '87.300001'
                 beneficiary: *id004
                 description: Invoice 8841
@@ -740,7 +734,7 @@ paths:
                 local_amount: '1500.00'
                 fx_rate: '17.50'
                 usdt_amount: '85.714286'
-                fee: '1.585715'
+                fee: '0.300000'
                 total_debit: '87.300001'
                 beneficiary: *id004
                 description: Invoice 8841
@@ -824,7 +818,7 @@ paths:
                 local_amount: '1500.00'
                 fx_rate: '17.50'
                 usdt_amount: '85.714286'
-                fee: '1.585715'
+                fee: '0.300000'
                 total_debit: '87.300001'
                 beneficiary: *id004
                 description: Invoice 8841
@@ -2194,7 +2188,7 @@ components:
           type: string
         fx_rate:
           type: string
-          description: Local units per 1 USD at execution time.
+          description: Your account's rate at execution time (local units per 1 USDT).
         usdt_amount:
           type: string
         fee:

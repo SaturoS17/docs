@@ -1,4 +1,4 @@
----
+﻿---
 title: "Payouts"
 description: "Send fiat to local bank accounts, debited from your USDT balance"
 ---
@@ -59,8 +59,8 @@ Response `202 Accepted`:
 
 ```json
 {
-  "payout_id": "0d4f…",
-  "account_id": "…",
+  "payout_id": "0d4fâ€¦",
+  "account_id": "â€¦",
   "idempotency_key": "invoice-8841",
   "country": "MX",
   "currency": "MXN",
@@ -68,8 +68,8 @@ Response `202 Accepted`:
   "local_amount": "1500.00",
   "fx_rate": "17.50",
   "usdt_amount": "85.714286",
-  "fee": "1.585715",
-  "total_debit": "87.300001",
+  "fee": "0.300000",
+  "total_debit": "86.014286",
   "status": "processing",
   "created_at": "2026-07-06T20:00:00Z"
 }
@@ -84,13 +84,13 @@ Subscribe to the `payout_status_changed` event ([webhooks](/en/webhooks)):
 
 ```json
 {
-  "payout_id": "0d4f…",
-  "account_id": "…",
+  "payout_id": "0d4fâ€¦",
+  "account_id": "â€¦",
   "country": "MX",
   "currency": "MXN",
   "local_amount": "1500.00",
   "usdt_amount": "85.714286",
-  "total_debit": "87.300001",
+  "total_debit": "86.014286",
   "status": "completed",
   "status_code": ""
 }
@@ -103,7 +103,7 @@ Subscribe to the `payout_status_changed` event ([webhooks](/en/webhooks)):
 You can also query at any time:
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/payouts/0d4f… \
+curl https://exchange.qbank.cl/platform/v1/payouts/0d4fâ€¦ \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -116,7 +116,7 @@ curl https://exchange.qbank.cl/platform/v1/payouts/0d4f… \
 | 402 | `insufficient_funds` | Fund the account; the payout was not created |
 | 403 | `account_blocked` | The account is not active; contact the CBPay team |
 | 422 | `currency_not_supported` | No FX rate for that currency |
-| 422 | (payout with `status: failed`) | The corridor rejected the data; the debit was already refunded — fix `beneficiary` and retry with a new key |
+| 422 | (payout with `status: failed`) | The corridor rejected the data; the debit was already refunded â€” fix `beneficiary` and retry with a new key |
 
 ## Immediate rejection vs later failure
 
