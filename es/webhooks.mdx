@@ -6,6 +6,22 @@ description: "Recibe eventos firmados en tiempo real"
 Los webhooks te notifican los eventos de tu cuenta en un callback HTTPS
 propio, firmados criptográficamente.
 
+```mermaid
+sequenceDiagram
+    autonumber
+    participant CB as CBPay
+    participant App as Tu endpoint HTTPS
+    CB->>App: POST firmado (X-Webhook-Signature, X-Webhook-Event-ID)
+    alt Respondes 2xx a tiempo
+        App-->>CB: 200 OK
+        Note over CB: Entrega completa
+    else Timeout o error
+        App-->>CB: 5xx / timeout
+        CB->>App: Reintento con backoff (hasta 5 intentos)
+        Note over App: El mismo evento puede llegar 2 veces —<br/>deduplica por X-Webhook-Event-ID
+    end
+```
+
 ## Crear una suscripción
 
 ```bash

@@ -7,6 +7,20 @@ Un payin es un cobro fiat: tu cliente paga en moneda local y tu cuenta
 recibe el abono en USDT automáticamente (convertido a la tasa del momento,
 menos la comisión de payin).
 
+Sea cual sea la modalidad, todos los caminos terminan igual — abono
+automático + webhook:
+
+```mermaid
+flowchart LR
+    qr["QR de cobro<br/>(BO, BR·PIX)"] --> pago["Tu cliente paga<br/>en moneda local"]
+    anunciada["Transferencia anunciada<br/>(CL, PE, MX, BR)"] --> pago
+    pull["Cobro activo pull<br/>(VE: c2p, débito)"] --> pago
+    clabe["Cuenta CLABE dedicada<br/>(MX)"] --> pago
+    pago --> conv["Conversión FX a la tasa<br/>del momento − fee payin"]
+    conv --> credito(("Abono USDT<br/>a tu saldo"))
+    credito --> wh["Webhook payin_credited"]
+```
+
 ## 1. Descubre los corredores disponibles
 
 Los países, monedas y modalidades disponibles los define CBPay.

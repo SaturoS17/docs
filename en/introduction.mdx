@@ -25,13 +25,47 @@ holds a virtual **USDT** balance and operates against it:
     Fund with USDT over TRON or Ethereum and withdraw on-chain to any
     address.
   </Card>
+  <Card title="Banking" icon="building-columns" href="/en/guides/banking">
+    Real bank accounts in your name: receive, hold and send money over
+    international rails (SEPA, SWIFT, ACH).
+  </Card>
+  <Card title="KYC/KYB" icon="user-check" href="/en/guides/kyc">
+    Person and company verification with AML screening, rescreening and
+    continuous monitoring.
+  </Card>
 </CardGroup>
 
-It also ships with integrated **KYC/KYB** verification (persons and companies)
-([guide](/en/guides/kyc)) and **signed webhooks** for every event
-([guide](/en/webhooks)).
+Every event reaches your **signed webhooks** ([guide](/en/webhooks)).
 
 ## How it works
+
+Everything revolves around a single USDT balance per account — money comes
+in on one side, converts, and goes out the other:
+
+```mermaid
+flowchart LR
+    subgraph moneyIn [Money in]
+        payin["Fiat payin<br/>(QR, transfer, pull)"]
+        deposit["On-chain USDT<br/>deposit"]
+        transfIn["Internal transfer<br/>received"]
+    end
+    subgraph balance [Your CBPay account]
+        usdt(("USDT balance<br/>available + held"))
+    end
+    subgraph moneyOut [Money out]
+        payout["Fiat payout<br/>(bank, Yape, PIX, QR...)"]
+        withdrawal["On-chain USDT<br/>withdrawal"]
+        transfOut["Internal transfer<br/>sent"]
+    end
+    payin -->|"FX at your rate − fee"| usdt
+    deposit -->|"− funding fee"| usdt
+    transfIn -->|"free"| usdt
+    usdt -->|"FX at your rate + fee"| payout
+    usdt -->|"+ withdrawal fee"| withdrawal
+    usdt -->|"free"| transfOut
+    banking["Banking: real bank accounts<br/>(own balance, separate from USDT)"]
+    usdt -.->|"fixed fees only"| banking
+```
 
 1. CBPay gives you access: email/password
    registration or a direct API key.

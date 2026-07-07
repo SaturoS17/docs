@@ -9,6 +9,16 @@ account's identity and receive the analysis result. The account's
 verification state
 (`kyc_status`) is resolved by CBPay after reviewing the result.
 
+```mermaid
+flowchart LR
+    none["kyc_status: none"] -->|"POST /v1/kyc<br/>(fee charged, AML screening)"| pending["kyc_status: pending"]
+    pending -->|"CBPay reviews<br/>the result"| decision{"Decision"}
+    decision -->|"approves"| approved["kyc_status: approved"]
+    decision -->|"rejects"| rejected["kyc_status: rejected"]
+    approved -.->|"POST /v1/kyc/rescreen<br/>(data change, policy)"| pending
+    approved -.->|"PATCH monitoring<br/>(continuous watch)"| approved
+```
+
 <Note>
 If CBPay configured a compliance fee, it is debited **before** the
 call (you'll see `compliance_fee` in the response) and **refunded

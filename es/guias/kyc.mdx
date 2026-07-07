@@ -9,6 +9,16 @@ identidad de la cuenta y recibes el resultado del análisis. El estado de
 verificación de la cuenta
 (`kyc_status`) lo resuelve CBPay tras revisar el resultado.
 
+```mermaid
+flowchart LR
+    none["kyc_status: none"] -->|"POST /v1/kyc<br/>(cobra fee, screening AML)"| pending["kyc_status: pending"]
+    pending -->|"CBPay revisa<br/>el resultado"| decision{"Decisión"}
+    decision -->|"aprueba"| approved["kyc_status: approved"]
+    decision -->|"rechaza"| rejected["kyc_status: rejected"]
+    approved -.->|"POST /v1/kyc/rescreen<br/>(cambio de datos, política)"| pending
+    approved -.->|"PATCH monitoring<br/>(vigilancia continua)"| approved
+```
+
 <Note>
 Si CBPay configuró una comisión de compliance, se debita **antes** de
 la llamada (verás `compliance_fee` en la respuesta) y se **reembolsa

@@ -6,6 +6,24 @@ description: "Create on-chain wallets, deposit, transfer and check movements"
 Your USDT balance is connected to the blockchain. Supported networks:
 **TRON** (`tron`) and **Ethereum** (`eth`), asset **USDT**.
 
+```mermaid
+flowchart LR
+    subgraph depositFlow [Deposit]
+        wallet["Your CBPay wallet<br/>(stable address)"] --> confirmed["On-chain<br/>confirmation"]
+        confirmed --> credit["Automatic credit<br/>− funding fee"]
+    end
+    credit --> balance(("Account USDT<br/>balance"))
+    subgraph withdrawFlow [Withdraw]
+        balance --> withdrawal["POST /v1/crypto/withdrawals<br/>debits amount + fee"]
+        withdrawal --> onchain{"On-chain<br/>result"}
+        onchain -->|"completed"| txid["tx_id = your receipt"]
+        onchain -->|"failed"| refund["Full automatic<br/>refund"]
+    end
+```
+
+Wallets are **entry doors**: you can hold several (companies), but the
+account balance is a single one.
+
 | Account type | Wallets per network |
 |---|---|
 | Person | **1** |

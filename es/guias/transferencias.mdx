@@ -7,6 +7,17 @@ Las transferencias internas mueven saldo entre dos cuentas **CBPay**, de
 forma atómica en el ledger y **siempre sin comisión** — el dinero nunca sale
 del ecosistema.
 
+```mermaid
+sequenceDiagram
+    participant A as Cuenta origen
+    participant CB as CBPay (ledger)
+    participant B as Cuenta destino
+    A->>CB: POST /v1/transfers (idempotency_key)
+    CB->>CB: Movimiento atómico:<br/>transfer_out (A) + transfer_in (B)
+    CB-->>A: 201 completed (síncrono)
+    CB-->>B: Webhook transfer_received
+```
+
 Funcionan entre **cualquier combinación de cuentas**:
 
 | Origen | Destino | Comisión |

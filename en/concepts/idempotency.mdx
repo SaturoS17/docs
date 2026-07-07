@@ -48,6 +48,22 @@ key:
 }
 ```
 
+## Which key do I retry with?
+
+The full decision rule, so you never have to guess:
+
+```mermaid
+flowchart LR
+    call["You call the API"] --> result{"What did you get?"}
+    result -->|"2xx"| ok["Done — store the ID"]
+    result -->|"Timeout / network error / 5xx"| same["Retry with the<br/>SAME key"]
+    same --> replay["200 idempotency_hit: true<br/>if it was already created"]
+    result -->|"Validation 4xx"| fix["Fix the request"]
+    fix --> newKey["Use a NEW key<br/>(it is a new operation)"]
+    result -->|"422 with status failed"| decide{"Do you want<br/>to try again?"}
+    decide -->|"Yes"| newKey
+```
+
 ## Recommendations
 
 - Use an identifier from **your** system (order ID, payroll ID, etc.), not a

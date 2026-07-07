@@ -24,6 +24,19 @@ de cada respuesta te muestra lo cobrado.
 
 ## El flujo completo
 
+```mermaid
+flowchart LR
+    perfil["1. Crear perfil<br/>POST customer"] --> docs["2. Documentos<br/>+ submit"]
+    docs --> revision{"Verificación"}
+    revision -->|"approved"| cuentas["3. Abrir cuentas<br/>por moneda"]
+    revision -->|"rejected"| corrige["Corregir datos<br/>y reenviar"]
+    corrige --> docs
+    cuentas --> recibir["Recibir fondos<br/>(IBAN / cuenta)"]
+    cuentas --> benef["4. Registrar<br/>beneficiarios"]
+    benef --> pagos["5. Enviar pagos<br/>prepare → operations"]
+    pagos --> whOp["Webhook<br/>operation_status_changed"]
+```
+
 1. **Crea tu perfil bancario** (`POST /v1/banking/customer`) — una sola vez.
 2. **Sube documentos** de verificación y **envíalo a revisión**.
 3. Cuando quede `approved`, **abre cuentas** por moneda.

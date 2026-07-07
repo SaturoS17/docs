@@ -8,6 +8,29 @@ destino. El monto se convierte de moneda local a USDT con **la tasa de tu
 cuenta** (la de `GET /v1/rates`) y se debita `usdt_amount + fee` (el fijo,
 si está configurado) de tu saldo.
 
+Así se ve el ciclo completo, incluido qué pasa con tu saldo en cada paso:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant App as Tu app
+    participant CB as CBPay
+    participant Rail as Rail bancario local
+    App->>CB: POST /v1/payouts (idempotency_key)
+    CB->>CB: Convierte a tu tasa y debita<br/>usdt_amount + fee (available → held)
+    CB-->>App: 202 processing (fx_rate, total_debit)
+    CB->>Rail: Dispersa en moneda local
+    alt El dinero llega
+        Rail-->>CB: Confirmado
+        CB->>CB: Consume el hold — final
+        CB-->>App: Webhook payout_status_changed (completed)
+    else El rail rechaza
+        Rail-->>CB: Rechazado
+        CB->>CB: Reembolsa el débito completo a available
+        CB-->>App: Webhook payout_status_changed (failed + status_code)
+    end
+```
+
 ## 1. Descubre los corredores disponibles
 
 Los países, monedas y métodos disponibles los define CBPay.
@@ -527,6 +550,17 @@ En Bolivia (QR interoperable local) y Brasil (QR PIX) también puedes
 es **gratis**; solo se cobra al confirmar, igual que un payout normal (tu
 tasa + fijo). Si no envías `country`/`currency`, se asume Bolivia (BOB);
 para Brasil envía `country: "BR"` y `currency: "BRL"`.
+
+```mermaid
+flowchart LR
+    scan["1. POST qr/scan<br/>(gratis)"] --> datos["Datos del destinatario<br/>+ provider_reference"]
+    datos --> confirmaUsuario{"¿El usuario<br/>confirma?"}
+    confirmaUsuario -->|"Sí"| confirm["2. POST qr/confirm<br/>(se cobra: tu tasa + fijo)"]
+    confirmaUsuario -->|"No"| fin["Nada se cobró"]
+    confirm --> resultado{"Resultado<br/>síncrono"}
+    resultado -->|"completed"| pagado["Pagado — débito consumido"]
+    resultado -->|"failed"| refund["Reembolso automático<br/>completo"]
+```
 
 ### 1. Escanea el QR (gratis)
 

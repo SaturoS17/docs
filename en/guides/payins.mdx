@@ -7,6 +7,20 @@ A payin is a fiat collection: your customer pays in local currency and your
 account gets credited in USDT automatically (converted at the current rate,
 minus the payin fee).
 
+Whatever the mode, every path ends the same way — automatic credit +
+webhook:
+
+```mermaid
+flowchart LR
+    qr["Collection QR<br/>(BO, BR·PIX)"] --> pay["Your customer pays<br/>in local currency"]
+    announced["Announced transfer<br/>(CL, PE, MX, BR)"] --> pay
+    pull["Active pull collection<br/>(VE: c2p, debit)"] --> pay
+    clabe["Dedicated CLABE account<br/>(MX)"] --> pay
+    pay --> conv["FX conversion at the current<br/>rate − payin fee"]
+    conv --> credit(("USDT credit<br/>to your balance"))
+    credit --> wh["Webhook payin_credited"]
+```
+
 ## 1. Discover the available corridors
 
 The available countries, currencies and collection modes are defined by

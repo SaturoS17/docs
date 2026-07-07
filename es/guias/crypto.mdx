@@ -6,6 +6,24 @@ description: "Crea wallets on-chain, deposita, transfiere y consulta movimientos
 Tu saldo USDT vive conectado a la blockchain. Redes soportadas: **TRON**
 (`tron`) y **Ethereum** (`eth`), activo **USDT**.
 
+```mermaid
+flowchart LR
+    subgraph entrada [Depositar]
+        wallet["Tu wallet CBPay<br/>(dirección estable)"] --> confirmado["Confirmación<br/>on-chain"]
+        confirmado --> abono["Abono automático<br/>− fee funding"]
+    end
+    abono --> saldo(("Saldo USDT<br/>de la cuenta"))
+    subgraph salida [Retirar]
+        saldo --> retiro["POST /v1/crypto/withdrawals<br/>debita amount + fee"]
+        retiro --> onchain{"Resultado<br/>on-chain"}
+        onchain -->|"completed"| txid["tx_id = tu comprobante"]
+        onchain -->|"failed"| refund["Reembolso automático<br/>completo"]
+    end
+```
+
+Las wallets son **puertas de entrada**: puedes tener varias (empresas), pero
+el saldo de la cuenta es uno solo.
+
 | Tipo de cuenta | Wallets por red |
 |---|---|
 | Persona | **1** |

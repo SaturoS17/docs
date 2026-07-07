@@ -24,6 +24,19 @@ response shows what was charged.
 
 ## The full flow
 
+```mermaid
+flowchart LR
+    profile["1. Create profile<br/>POST customer"] --> docs["2. Documents<br/>+ submit"]
+    docs --> review{"Verification"}
+    review -->|"approved"| accounts["3. Open accounts<br/>per currency"]
+    review -->|"rejected"| fix["Fix the data<br/>and resubmit"]
+    fix --> docs
+    accounts --> receive["Receive funds<br/>(IBAN / account)"]
+    accounts --> benef["4. Register<br/>beneficiaries"]
+    benef --> payments["5. Send payments<br/>prepare → operations"]
+    payments --> whOp["Webhook<br/>operation_status_changed"]
+```
+
 1. **Create your banking profile** (`POST /v1/banking/customer`) — once.
 2. **Upload verification documents** and **submit for review**.
 3. Once `approved`, **open accounts** per currency.

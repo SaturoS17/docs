@@ -56,11 +56,40 @@ mantiene un saldo virtual en **USDT** y opera sobre él:
 - **Payins fiat** — Cobra en moneda local (QR y transferencias) y recibe el abono automáticamente en USDT.
 - **Transferencias internas** — Mueve saldo a cualquier otra cuenta CBPay, al instante y sin comisión.
 - **Crypto on-chain** — Fondea con USDT por TRON o Ethereum y retira on-chain a cualquier dirección.
-Además incluye verificación **KYC/KYB** (personas y empresas) integrada
-([guía](#kyckyb-y-compliance)) y **webhooks firmados** para todos los eventos
+- **Banking** — Cuentas bancarias reales a tu nombre: recibe, mantén y envía dinero por rieles internacionales (SEPA, SWIFT, ACH).
+- **KYC/KYB** — Verificación de personas y empresas con screening AML, rescreening y monitoreo continuo.
+Todos los eventos llegan a tus **webhooks firmados**
 ([guía](#webhooks)).
 
 ### Cómo funciona
+
+Todo gira alrededor de un único saldo USDT por cuenta — el dinero entra
+por un lado, se convierte, y sale por el otro:
+
+```mermaid
+flowchart LR
+    subgraph entra [Entra dinero]
+        payin["Payin fiat<br/>(QR, transferencia, pull)"]
+        deposito["Depósito USDT<br/>on-chain"]
+        transfIn["Transferencia interna<br/>recibida"]
+    end
+    subgraph saldo [Tu cuenta CBPay]
+        usdt(("Saldo USDT<br/>available + held"))
+    end
+    subgraph sale [Sale dinero]
+        payout["Payout fiat<br/>(banco, Yape, PIX, QR...)"]
+        retiro["Retiro USDT<br/>on-chain"]
+        transfOut["Transferencia interna<br/>enviada"]
+    end
+    payin -->|"FX a tu tasa − fee"| usdt
+    deposito -->|"− fee funding"| usdt
+    transfIn -->|"gratis"| usdt
+    usdt -->|"FX a tu tasa + fee"| payout
+    usdt -->|"+ fee retiro"| retiro
+    usdt -->|"gratis"| transfOut
+    banking["Banking: cuentas bancarias reales<br/>(saldo propio, separado del USDT)"]
+    usdt -.->|"solo fees fijos"| banking
+```
 
 1. CBPay te da acceso: registro con email/contraseña
    o una API key directa.
@@ -577,6 +606,22 @@ clave:
 }
 ```
 
+### ¿Con qué clave reintento?
+
+La regla de decisión completa, para no dudar nunca:
+
+```mermaid
+flowchart LR
+    llamada["Llamas a la API"] --> resultado{"¿Qué recibiste?"}
+    resultado -->|"2xx"| ok["Listo — guarda el ID"]
+    resultado -->|"Timeout / error de red / 5xx"| misma["Reintenta con la<br/>MISMA clave"]
+    misma --> replay["200 idempotency_hit: true<br/>si ya se había creado"]
+    resultado -->|"4xx de validación"| corrige["Corrige el request"]
+    corrige --> nueva["Usa una clave NUEVA<br/>(es una operación nueva)"]
+    resultado -->|"422 con status failed"| decide{"¿Quieres volver<br/>a intentarlo?"}
+    decide -->|"Sí"| nueva
+```
+
 ### Recomendaciones
 
 - Usa un identificador de **tu** sistema (ID de orden, de nómina, etc.), no
@@ -598,6 +643,29 @@ Un payout envía dinero en moneda local a una cuenta bancaria del país
 destino. El monto se convierte de moneda local a USDT con **la tasa de tu
 cuenta** (la de `GET /v1/rates`) y se debita `usdt_amount + fee` (el fijo,
 si está configurado) de tu saldo.
+
+Así se ve el ciclo completo, incluido qué pasa con tu saldo en cada paso:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant App as Tu app
+    participant CB as CBPay
+    participant Rail as Rail bancario local
+    App->>CB: POST /v1/payouts (idempotency_key)
+    CB->>CB: Convierte a tu tasa y debita<br/>usdt_amount + fee (available → held)
+    CB-->>App: 202 processing (fx_rate, total_debit)
+    CB->>Rail: Dispersa en moneda local
+    alt El dinero llega
+        Rail-->>CB: Confirmado
+        CB->>CB: Consume el hold — final
+        CB-->>App: Webhook payout_status_changed (completed)
+    else El rail rechaza
+        Rail-->>CB: Rechazado
+        CB->>CB: Reembolsa el débito completo a available
+        CB-->>App: Webhook payout_status_changed (failed + status_code)
+    end
+```
 
 ### 1. Descubre los corredores disponibles
 
@@ -1095,6 +1163,17 @@ es **gratis**; solo se cobra al confirmar, igual que un payout normal (tu
 tasa + fijo). Si no envías `country`/`currency`, se asume Bolivia (BOB);
 para Brasil envía `country: "BR"` y `currency: "BRL"`.
 
+```mermaid
+flowchart LR
+    scan["1. POST qr/scan<br/>(gratis)"] --> datos["Datos del destinatario<br/>+ provider_reference"]
+    datos --> confirmaUsuario{"¿El usuario<br/>confirma?"}
+    confirmaUsuario -->|"Sí"| confirm["2. POST qr/confirm<br/>(se cobra: tu tasa + fijo)"]
+    confirmaUsuario -->|"No"| fin["Nada se cobró"]
+    confirm --> resultado{"Resultado<br/>síncrono"}
+    resultado -->|"completed"| pagado["Pagado — débito consumido"]
+    resultado -->|"failed"| refund["Reembolso automático<br/>completo"]
+```
+
 #### 1. Escanea el QR (gratis)
 
 ```bash
@@ -1173,6 +1252,20 @@ webhook con `status: failed` y el reembolso automático en ese momento.
 Un payin es un cobro fiat: tu cliente paga en moneda local y tu cuenta
 recibe el abono en USDT automáticamente (convertido a la tasa del momento,
 menos la comisión de payin).
+
+Sea cual sea la modalidad, todos los caminos terminan igual — abono
+automático + webhook:
+
+```mermaid
+flowchart LR
+    qr["QR de cobro<br/>(BO, BR·PIX)"] --> pago["Tu cliente paga<br/>en moneda local"]
+    anunciada["Transferencia anunciada<br/>(CL, PE, MX, BR)"] --> pago
+    pull["Cobro activo pull<br/>(VE: c2p, débito)"] --> pago
+    clabe["Cuenta CLABE dedicada<br/>(MX)"] --> pago
+    pago --> conv["Conversión FX a la tasa<br/>del momento − fee payin"]
+    conv --> credito(("Abono USDT<br/>a tu saldo"))
+    credito --> wh["Webhook payin_credited"]
+```
 
 ### 1. Descubre los corredores disponibles
 
@@ -1512,6 +1605,17 @@ Las transferencias internas mueven saldo entre dos cuentas **CBPay**, de
 forma atómica en el ledger y **siempre sin comisión** — el dinero nunca sale
 del ecosistema.
 
+```mermaid
+sequenceDiagram
+    participant A as Cuenta origen
+    participant CB as CBPay (ledger)
+    participant B as Cuenta destino
+    A->>CB: POST /v1/transfers (idempotency_key)
+    CB->>CB: Movimiento atómico:<br/>transfer_out (A) + transfer_in (B)
+    CB-->>A: 201 completed (síncrono)
+    CB-->>B: Webhook transfer_received
+```
+
 Funcionan entre **cualquier combinación de cuentas**:
 
 | Origen | Destino | Comisión |
@@ -1620,6 +1724,24 @@ el movimiento en su historial (`transfer_out` / `transfer_in`).
 
 Tu saldo USDT vive conectado a la blockchain. Redes soportadas: **TRON**
 (`tron`) y **Ethereum** (`eth`), activo **USDT**.
+
+```mermaid
+flowchart LR
+    subgraph entrada [Depositar]
+        wallet["Tu wallet CBPay<br/>(dirección estable)"] --> confirmado["Confirmación<br/>on-chain"]
+        confirmado --> abono["Abono automático<br/>− fee funding"]
+    end
+    abono --> saldo(("Saldo USDT<br/>de la cuenta"))
+    subgraph salida [Retirar]
+        saldo --> retiro["POST /v1/crypto/withdrawals<br/>debita amount + fee"]
+        retiro --> onchain{"Resultado<br/>on-chain"}
+        onchain -->|"completed"| txid["tx_id = tu comprobante"]
+        onchain -->|"failed"| refund["Reembolso automático<br/>completo"]
+    end
+```
+
+Las wallets son **puertas de entrada**: puedes tener varias (empresas), pero
+el saldo de la cuenta es uno solo.
 
 | Tipo de cuenta | Wallets por red |
 |---|---|
@@ -1831,6 +1953,19 @@ cada operación y se **reembolsan automáticamente** si la operación falla.
 Con comisión 0 (el default) el servicio es gratis. El campo `banking_fee`
 de cada respuesta te muestra lo cobrado.
 ### El flujo completo
+
+```mermaid
+flowchart LR
+    perfil["1. Crear perfil<br/>POST customer"] --> docs["2. Documentos<br/>+ submit"]
+    docs --> revision{"Verificación"}
+    revision -->|"approved"| cuentas["3. Abrir cuentas<br/>por moneda"]
+    revision -->|"rejected"| corrige["Corregir datos<br/>y reenviar"]
+    corrige --> docs
+    cuentas --> recibir["Recibir fondos<br/>(IBAN / cuenta)"]
+    cuentas --> benef["4. Registrar<br/>beneficiarios"]
+    benef --> pagos["5. Enviar pagos<br/>prepare → operations"]
+    pagos --> whOp["Webhook<br/>operation_status_changed"]
+```
 
 1. **Crea tu perfil bancario** (`POST /v1/banking/customer`) — una sola vez.
 2. **Sube documentos** de verificación y **envíalo a revisión**.
@@ -2091,6 +2226,16 @@ identidad de la cuenta y recibes el resultado del análisis. El estado de
 verificación de la cuenta
 (`kyc_status`) lo resuelve CBPay tras revisar el resultado.
 
+```mermaid
+flowchart LR
+    none["kyc_status: none"] -->|"POST /v1/kyc<br/>(cobra fee, screening AML)"| pending["kyc_status: pending"]
+    pending -->|"CBPay revisa<br/>el resultado"| decision{"Decisión"}
+    decision -->|"aprueba"| approved["kyc_status: approved"]
+    decision -->|"rechaza"| rejected["kyc_status: rejected"]
+    approved -.->|"POST /v1/kyc/rescreen<br/>(cambio de datos, política)"| pending
+    approved -.->|"PATCH monitoring<br/>(vigilancia continua)"| approved
+```
+
 > **Nota**
 Si CBPay configuró una comisión de compliance, se debita **antes** de
 la llamada (verás `compliance_fee` en la respuesta) y se **reembolsa
@@ -2254,6 +2399,22 @@ siempre gratis.
 
 Los webhooks te notifican los eventos de tu cuenta en un callback HTTPS
 propio, firmados criptográficamente.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant CB as CBPay
+    participant App as Tu endpoint HTTPS
+    CB->>App: POST firmado (X-Webhook-Signature, X-Webhook-Event-ID)
+    alt Respondes 2xx a tiempo
+        App-->>CB: 200 OK
+        Note over CB: Entrega completa
+    else Timeout o error
+        App-->>CB: 5xx / timeout
+        CB->>App: Reintento con backoff (hasta 5 intentos)
+        Note over App: El mismo evento puede llegar 2 veces —<br/>deduplica por X-Webhook-Event-ID
+    end
+```
 
 ### Crear una suscripción
 
@@ -2694,6 +2855,18 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.15 — 7 de julio de 2026
+
+**Mejorado**
+
+- **Diagramas de flujo visuales en toda la documentación**: mapa del
+  dinero en la introducción (todo lo que entra y sale del saldo USDT),
+  ciclo de vida del payout con débito/hold/reembolso, flujo QR en dos
+  pasos, las 4 modalidades de payin convergiendo al abono, depósito y
+  retiro crypto, ciclo completo de banking, estados del KYC, entrega y
+  reintentos de webhooks, y la regla de decisión de idempotencia
+  ("¿con qué clave reintento?").
 
 ### v1.14 — 7 de julio de 2026
 

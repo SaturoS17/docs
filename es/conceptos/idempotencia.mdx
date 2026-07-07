@@ -48,6 +48,22 @@ clave:
 }
 ```
 
+## ¿Con qué clave reintento?
+
+La regla de decisión completa, para no dudar nunca:
+
+```mermaid
+flowchart LR
+    llamada["Llamas a la API"] --> resultado{"¿Qué recibiste?"}
+    resultado -->|"2xx"| ok["Listo — guarda el ID"]
+    resultado -->|"Timeout / error de red / 5xx"| misma["Reintenta con la<br/>MISMA clave"]
+    misma --> replay["200 idempotency_hit: true<br/>si ya se había creado"]
+    resultado -->|"4xx de validación"| corrige["Corrige el request"]
+    corrige --> nueva["Usa una clave NUEVA<br/>(es una operación nueva)"]
+    resultado -->|"422 con status failed"| decide{"¿Quieres volver<br/>a intentarlo?"}
+    decide -->|"Sí"| nueva
+```
+
 ## Recomendaciones
 
 - Usa un identificador de **tu** sistema (ID de orden, de nómina, etc.), no

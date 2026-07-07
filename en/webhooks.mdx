@@ -6,6 +6,22 @@ description: "Receive signed events in real time"
 Webhooks notify your own HTTPS callback about your account's events,
 cryptographically signed.
 
+```mermaid
+sequenceDiagram
+    autonumber
+    participant CB as CBPay
+    participant App as Your HTTPS endpoint
+    CB->>App: Signed POST (X-Webhook-Signature, X-Webhook-Event-ID)
+    alt You answer 2xx in time
+        App-->>CB: 200 OK
+        Note over CB: Delivery complete
+    else Timeout or error
+        App-->>CB: 5xx / timeout
+        CB->>App: Retry with backoff (up to 5 attempts)
+        Note over App: The same event can arrive twice —<br/>deduplicate by X-Webhook-Event-ID
+    end
+```
+
 ## Create a subscription
 
 ```bash
