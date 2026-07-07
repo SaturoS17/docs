@@ -32,7 +32,7 @@ tags:
 - name: Payins
   description: Fiat top-ups credited to the USDT balance.
 - name: Transfers
-  description: Free internal transfers between CBPay accounts.
+  description: Free internal transfers between CBPay accounts (person or company, any combination).
 - name: Crypto
   description: On-chain USDT funding and withdrawals (TRON and Ethereum).
 - name: KYC / KYB
@@ -1153,15 +1153,10 @@ paths:
       - Transfers
       operationId: createTransfer
       summary: Create an internal transfer
-      description: 'Moves USDT between two CBPay accounts, atomically
-
-        and free of charge. The destination is resolved by `to_account_id` or
-
-        `to_email`. The recipient''s webhook subscribers receive
-
-        `transfer_received`.
-
-        '
+      description: 'Moves USDT between two CBPay accounts, atomically and always free of charge — any
+        combination works: person to person, person to company, company to person or company to company.
+        The destination is resolved by `to_account_id` or `to_email`. The recipient''s webhook subscribers
+        receive `transfer_received`.'
       parameters:
       - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:

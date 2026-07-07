@@ -39,10 +39,11 @@ charge, it is refunded automatically (`compliance_refund` /
 `wallet_creation_refund`).
 </Note>
 
-## Internal transfers: free
+## Internal transfers: always free
 
-Transfers between CBPay accounts (`POST /v1/transfers`)
-carry **no fee**.
+Transfers between CBPay accounts (`POST /v1/transfers`) carry **no fee**,
+regardless of the combination: person↔person, person↔company or
+company↔company. The money moves inside the ecosystem.
 
 ## Check your effective fees
 
