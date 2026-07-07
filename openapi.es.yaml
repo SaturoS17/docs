@@ -42,6 +42,8 @@ tags:
   description: Suscripciones para recibir notificaciones de eventos firmadas.
 - name: Estado
   description: Disponibilidad del servicio.
+- name: Banking
+  description: 'Cuentas bancarias reales: recibe, mantén y envía dinero por rieles bancarios internacionales.'
 paths:
   /v1/auth/register:
     post:
@@ -507,9 +509,9 @@ paths:
       - Saldos
       operationId: getRates
       summary: Obtener mis tasas de cambio y comisiones
-      description: Devuelve la tasa de cambio que aplica a la cuenta que llama para cada país — la
-        misma tasa usada cuando las operaciones se ejecutan (`local_amount / rate = USDT`) — más la
-        configuración de comisiones de la cuenta, para que los clientes puedan calcular precios netos.
+      description: Devuelve la tasa de cambio que aplica a la cuenta que llama para cada país — la misma
+        tasa usada cuando las operaciones se ejecutan (`local_amount / rate = USDT`) — más la configuración
+        de comisiones de la cuenta, para que los clientes puedan calcular precios netos.
       responses:
         '200':
           description: Tasas y comisiones.
@@ -1045,10 +1047,10 @@ paths:
       summary: Crear un payin (cobro de recarga)
       description: 'Crea una recarga fiat. Con `method: "qr"` (por defecto) se genera un cobro QR activo
         a través del procesador — en Bolivia el QR interoperable local, en Brasil un QR PIX dinámico cuyo
-        `charge` trae la imagen del QR y el payload "copia e cola". Con `method: "bank_transfer"` el
-        depósito queda anunciado y la respuesta trae la referencia que el remitente debe incluir para que
-        la transferencia entrante se concilie y acredite automáticamente. Cobrar es gratis; la comisión
-        de payin aplica cuando el depósito se acredita.'
+        `charge` trae la imagen del QR y el payload "copia e cola". Con `method: "bank_transfer"` el depósito
+        queda anunciado y la respuesta trae la referencia que el remitente debe incluir para que la transferencia
+        entrante se concilie y acredite automáticamente. Cobrar es gratis; la comisión de payin aplica
+        cuando el depósito se acredita.'
       requestBody:
         required: true
         content:
@@ -1083,9 +1085,9 @@ paths:
                   - qr
                   - bank_transfer
                   default: qr
-                  description: Modo de cobro. `qr` crea un cobro QR activo a través del procesador;
-                    `bank_transfer` anuncia un depósito entrante y devuelve la referencia a incluir
-                    en la descripción de la transferencia. Usa /v1/payins/collect para cobros pull.
+                  description: Modo de cobro. `qr` crea un cobro QR activo a través del procesador; `bank_transfer`
+                    anuncia un depósito entrante y devuelve la referencia a incluir en la descripción
+                    de la transferencia. Usa /v1/payins/collect para cobros pull.
             examples:
               bo_qr:
                 summary: Bolivia — cobro QR (BOB)
@@ -1654,8 +1656,8 @@ paths:
       summary: Enviar verificación KYC/KYB
       description: Verifica la identidad de la cuenta que llama — KYC para personas, KYB para empresas
         (detectado desde el payload) — contra el servicio de compliance. Si hay una comisión de compliance
-        configurada, se debita antes de la llamada y se reembolsa si el screening falla. La respuesta incluye
-        el resultado del screening más `kyc_status`, `compliance_service` y `compliance_fee`.
+        configurada, se debita antes de la llamada y se reembolsa si el screening falla. La respuesta
+        incluye el resultado del screening más `kyc_status`, `compliance_service` y `compliance_fee`.
       requestBody:
         required: true
         content:
@@ -1768,8 +1770,8 @@ paths:
       - KYC / KYB
       operationId: rescreenKyc
       summary: Reejecutar verificación KYC/KYB
-      description: Reejecuta la verificación de la cuenta. Requiere un envío previo de KYC/KYB. Cobra la
-        comisión `compliance_rescreen` si está configurada; se reembolsa ante una falla upstream.
+      description: Reejecuta la verificación de la cuenta. Requiere un envío previo de KYC/KYB. Cobra
+        la comisión `compliance_rescreen` si está configurada; se reembolsa ante una falla upstream.
       responses:
         '200':
           description: Resultado del re-screening más los campos de cobro.
@@ -1977,8 +1979,8 @@ paths:
         red (usa `label` para distinguirlas).
 
 
-        Cada creación cobra la comisión `wallet_creation` cuando CBPay la tiene configurada (fija por wallet;
-        0 = gratis, el valor por defecto; configurable por cuenta). El cargo se reembolsa automáticamente
+        Cada creación cobra la comisión `wallet_creation` cuando CBPay la tiene configurada (fija por
+        wallet; 0 = gratis, el valor por defecto; configurable por cuenta). El cargo se reembolsa automáticamente
         si la creación falla.'
       requestBody:
         required: true
@@ -2100,8 +2102,8 @@ paths:
       summary: Escanear un QR de payout (Bolivia, Brasil)
       description: 'Paso 1 del payout por QR — Bolivia (QR interoperable local) y Brasil (QR PIX, incluyendo
         el código "copia e cola"): lee un QR de cobro y devuelve los datos del destinatario más el `provider_reference`
-        necesario para confirmar. **Sin costo** — no se debita nada hasta el paso de confirmación. Por defecto
-        es Bolivia; para Brasil envía `country: "BR"` y `currency: "BRL"`.'
+        necesario para confirmar. **Sin costo** — no se debita nada hasta el paso de confirmación. Por
+        defecto es Bolivia; para Brasil envía `country: "BR"` y `currency: "BRL"`.'
       requestBody:
         required: true
         content:
@@ -2126,7 +2128,8 @@ paths:
                   default: BOB
                 qr_payload:
                   type: string
-                  description: Contenido crudo del QR escaneado (en Brasil, también el código PIX "copia e cola").
+                  description: Contenido crudo del QR escaneado (en Brasil, también el código PIX "copia
+                    e cola").
             example:
               qr_payload: <QR content>
               currency: BOB
@@ -2190,11 +2193,11 @@ paths:
       - Payouts
       operationId: payoutQrConfirm
       summary: Confirmar un payout por QR (Bolivia, Brasil)
-      description: 'Paso 2 del payout por QR (Bolivia y Brasil/PIX), cobrado exactamente igual que un payout
-        normal: el monto local se convierte a **la tasa de tu cuenta** y se debita `usdt_amount + comisión
-        fija`. El resultado es **síncrono** — la respuesta trae el estado final (`completed`, o `failed`
-        con reembolso automático). Un QR escaneado solo puede pagarse una vez; requiere una llave de idempotencia
-        como toda operación que mueve dinero.'
+      description: 'Paso 2 del payout por QR (Bolivia y Brasil/PIX), cobrado exactamente igual que un
+        payout normal: el monto local se convierte a **la tasa de tu cuenta** y se debita `usdt_amount
+        + comisión fija`. El resultado es **síncrono** — la respuesta trae el estado final (`completed`,
+        o `failed` con reembolso automático). Un QR escaneado solo puede pagarse una vez; requiere una
+        llave de idempotencia como toda operación que mueve dinero.'
       parameters:
       - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:
@@ -2341,8 +2344,8 @@ paths:
       operationId: payinCollect
       summary: Cobro activo (pull)
       description: 'Cobra al pagador directamente en los corredores que soportan cobros pull (ej. Venezuela
-        `c2p` / `debito_inmediato`). Síncrono: si el cobro se aprueba, el depósito se convierte a la
-        tasa vigente y se acredita en la misma llamada, neto de la comisión de payin. Si el pagador rechaza,
+        `c2p` / `debito_inmediato`). Síncrono: si el cobro se aprueba, el depósito se convierte a la tasa
+        vigente y se acredita en la misma llamada, neto de la comisión de payin. Si el pagador rechaza,
         `paid` es false, el payin queda marcado como failed y no se cobra nada.'
       requestBody:
         required: true
@@ -2485,8 +2488,8 @@ paths:
       - Payins
       operationId: payinCollectOtp
       summary: Solicitar un OTP de cobro
-      description: Solicita la contraseña de un solo uso que algunos métodos pull necesitan antes del cobro
-        (ej. débito inmediato). Sin costo.
+      description: Solicita la contraseña de un solo uso que algunos métodos pull necesitan antes del
+        cobro (ej. débito inmediato). Sin costo.
       requestBody:
         required: true
         content:
@@ -2646,6 +2649,895 @@ paths:
                 - *id012
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/banking/customer:
+    post:
+      tags:
+      - Banking
+      operationId: createBankingCustomer
+      summary: Crear mi perfil bancario
+      description: Abre el perfil bancario de la cuenta (una vez por cuenta). Si omites `type`/`name`/`email`,
+        se completan desde tu cuenta CBPay. Se cobra la comisión fija `banking_customer` del saldo USDT;
+        se reembolsa si el corredor rechaza.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currency:
+                  type: string
+                  example: USD
+                type:
+                  type: string
+                  enum:
+                  - INDIVIDUAL
+                  - COMPANY
+                name:
+                  type: string
+                email:
+                  type: string
+                address:
+                  type: object
+                  additionalProperties: true
+            example:
+              currency: USD
+              address:
+                countryIso: CL
+                city: Santiago
+      responses:
+        '201':
+          description: Perfil bancario creado (estado draft).
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                customer_id: 9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+                provider_id: BNK-88f13a
+                status: draft
+                data:
+                  item:
+                    type: INDIVIDUAL
+                    name: Ana Perez Rojas
+                created_at: '2026-07-07T12:00:00Z'
+                banking_fee: '5.000000'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '402':
+          $ref: '#/components/responses/InsufficientFunds'
+        '409':
+          description: Esta cuenta ya tiene perfil bancario (banking_customer_exists).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: banking_customer_exists
+                message: this account already has a banking customer
+        '502':
+          description: Error del corredor bancario; la comisión (si hubo) se reembolsó (banking_request_failed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: banking_request_failed
+                  message: request rejected
+    get:
+      tags:
+      - Banking
+      operationId: getBankingCustomer
+      summary: Consultar mi perfil bancario
+      description: Devuelve el perfil bancario de la cuenta con su estado de verificación en vivo.
+      responses:
+        '200':
+          description: Perfil bancario con estado normalizado (draft, submitted, under_review, approved,
+            rejected).
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                customer_id: 9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+                provider_id: BNK-88f13a
+                status: approved
+                data:
+                  item:
+                    type: INDIVIDUAL
+                    name: Ana Perez Rojas
+                created_at: '2026-07-07T12:00:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Aún no hay perfil bancario (no_banking_customer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no_banking_customer
+                message: create your banking customer first (POST /v1/banking/customer)
+  /v1/banking/customer/documents:
+    post:
+      tags:
+      - Banking
+      operationId: uploadBankingDocument
+      summary: Subir un documento de verificación
+      description: Sube un documento KYC (base64) al perfil bancario. Gratis.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - attach
+              properties:
+                attach:
+                  type: string
+                  description: Base64 file content.
+                filename:
+                  type: string
+                type:
+                  type: string
+                  example: PASSPORT
+                info:
+                  type: string
+            example:
+              type: PASSPORT
+              filename: passport.pdf
+              attach: JVBERi0xLjQK...
+      responses:
+        '201':
+          description: Documento adjuntado.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                customer_id: 9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+                status: draft
+                data:
+                  documentId: DOC-1129
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Aún no hay perfil bancario (no_banking_customer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no_banking_customer
+                message: create your banking customer first (POST /v1/banking/customer)
+        '502':
+          description: Error del corredor bancario; la comisión (si hubo) se reembolsó (banking_request_failed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: banking_request_failed
+                  message: request rejected
+  /v1/banking/customer/submit:
+    post:
+      tags:
+      - Banking
+      operationId: submitBankingCustomer
+      summary: Enviar mi perfil a revisión
+      description: Envía el perfil bancario a verificación. Gratis. Sigue el avance con GET /v1/banking/customer
+        o el webhook banking_customer_status_changed.
+      responses:
+        '202':
+          description: Perfil enviado (estado submitted).
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                customer_id: 9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+                status: submitted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Aún no hay perfil bancario (no_banking_customer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no_banking_customer
+                message: create your banking customer first (POST /v1/banking/customer)
+        '502':
+          description: Error del corredor bancario; la comisión (si hubo) se reembolsó (banking_request_failed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: banking_request_failed
+                  message: request rejected
+  /v1/banking/accounts:
+    post:
+      tags:
+      - Banking
+      operationId: createBankingAccount
+      summary: Abrir una cuenta bancaria
+      description: Abre una cuenta bancaria para el perfil aprobado (una por moneda habilitada). Se cobra
+        la comisión fija `banking_account`; se reembolsa si el corredor rechaza. `data` trae los datos
+        para recibir (número de cuenta/IBAN, routing, banco).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - currency
+              properties:
+                currency:
+                  type: string
+                  example: USD
+                name:
+                  type: string
+            example:
+              currency: USD
+              name: Operating USD
+      responses:
+        '201':
+          description: Cuenta bancaria creada.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                account_id: c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5
+                provider_id: BNK-ACC-4471
+                status: active
+                data:
+                  currency: USD
+                  name: Operating USD
+                  accountNumber: '0532013000'
+                  routingNumber: 011000138
+                banking_fee: '1.000000'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '402':
+          $ref: '#/components/responses/InsufficientFunds'
+        '409':
+          description: Aún no hay perfil bancario (no_banking_customer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no_banking_customer
+                message: create your banking customer first (POST /v1/banking/customer)
+        '502':
+          description: Error del corredor bancario; la comisión (si hubo) se reembolsó (banking_request_failed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: banking_request_failed
+                  message: request rejected
+    get:
+      tags:
+      - Banking
+      operationId: listBankingAccounts
+      summary: Listar mis cuentas bancarias
+      responses:
+        '200':
+          description: Cuentas bancarias de la cuenta que llama.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                items:
+                - id: c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5
+                  provider_id: BNK-ACC-4471
+                  status: active
+                  payload:
+                    currency: USD
+                meta:
+                  page: 1
+                  page_size: 50
+                  retrieved: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Aún no hay perfil bancario (no_banking_customer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no_banking_customer
+                message: create your banking customer first (POST /v1/banking/customer)
+  /v1/banking/accounts/{bankAccountID}/balance:
+    get:
+      tags:
+      - Banking
+      operationId: getBankingAccountBalance
+      summary: Consultar el saldo de una cuenta bancaria
+      parameters:
+      - name: bankAccountID
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Saldo en vivo en el banco.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                account_id: c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5
+                provider_id: BNK-ACC-4471
+                balance:
+                  currency: USD
+                  available: '1250.00'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: La cuenta bancaria no pertenece a este perfil.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: not_found
+                message: resource not found
+  /v1/banking/counterparties:
+    post:
+      tags:
+      - Banking
+      operationId: createBankingCounterparty
+      summary: Registrar un beneficiario
+      description: Registra un beneficiario tercero con sus datos bancarios. Gratis; la cuenta del beneficiario
+        pasa por moderación antes de poder recibir pagos WITHDRAW.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                profile:
+                  type: object
+                  additionalProperties: true
+                accounts:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: true
+            example:
+              description: ACME supplier
+              profile:
+                name: ACME LLC
+                additionalInfo:
+                  type: CORPORATION
+              accounts:
+              - currencyCode: USD
+                bank:
+                  name: Test Bank
+                  number: 011000138
+                fiat:
+                  number: '0532013000'
+                  routingNumber: 011000138
+                  additionalInformation:
+                    type: TYPE_FIAT_US
+                    accountType: CHECKING
+                    supportedRails:
+                    - ACH
+      responses:
+        '201':
+          description: Beneficiario registrado (cuentas pendientes de moderación).
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                counterparty_id: b2c3d4e5-f6a7-b8c9-d0e1-f2a3b4c5d6e7
+                provider_id: BNK-CP-7301
+                status: active
+                data: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Aún no hay perfil bancario (no_banking_customer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no_banking_customer
+                message: create your banking customer first (POST /v1/banking/customer)
+        '502':
+          description: Error del corredor bancario; la comisión (si hubo) se reembolsó (banking_request_failed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: banking_request_failed
+                  message: request rejected
+    get:
+      tags:
+      - Banking
+      operationId: listBankingCounterparties
+      summary: Listar mis beneficiarios
+      responses:
+        '200':
+          description: Beneficiarios registrados.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                items:
+                - id: b2c3d4e5-f6a7-b8c9-d0e1-f2a3b4c5d6e7
+                  status: active
+                meta:
+                  page: 1
+                  page_size: 50
+                  retrieved: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Aún no hay perfil bancario (no_banking_customer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no_banking_customer
+                message: create your banking customer first (POST /v1/banking/customer)
+  /v1/banking/counterparties/{counterpartyID}/accounts:
+    post:
+      tags:
+      - Banking
+      operationId: addBankingCounterpartyAccount
+      summary: Agregar una cuenta a un beneficiario
+      parameters:
+      - name: counterpartyID
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+            example:
+              currencyCode: USD
+              fiat:
+                number: '0532013001'
+                routingNumber: 011000138
+                additionalInformation:
+                  type: TYPE_FIAT_US
+                  accountType: SAVINGS
+                  supportedRails:
+                  - ACH
+      responses:
+        '201':
+          description: Cuenta agregada (pendiente de moderación).
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                counterparty_id: b2c3d4e5-f6a7-b8c9-d0e1-f2a3b4c5d6e7
+                data:
+                  status: MODERATION
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: El beneficiario no pertenece a este perfil.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: not_found
+                message: resource not found
+        '502':
+          description: Error del corredor bancario; la comisión (si hubo) se reembolsó (banking_request_failed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: banking_request_failed
+                  message: request rejected
+  /v1/banking/operations/prepare:
+    post:
+      tags:
+      - Banking
+      operationId: prepareBankingOperation
+      summary: Cotizar un pago bancario
+      description: Valida y cotiza una operación (comisiones, saldos) sin mover dinero. Gratis.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - currency
+              - type
+              - sourceRequisit
+              - destinationRequisit
+              - amount
+              properties:
+                currency:
+                  type: string
+                  example: USD
+                type:
+                  type: string
+                  enum:
+                  - TRANSFER
+                  - WITHDRAW
+                paymentType:
+                  type: string
+                  description: EMPTY for TRANSFER; rail code (e.g. SEPA_CT) for WITHDRAW.
+                sourceRequisit:
+                  type: object
+                  properties:
+                    account:
+                      type: string
+                destinationRequisit:
+                  type: object
+                  properties:
+                    account:
+                      type: string
+                      description: Destination account (TRANSFER).
+                    beneficiar:
+                      type: string
+                      description: Beneficiary account (WITHDRAW).
+                amount:
+                  type: object
+                  properties:
+                    currencyCode:
+                      type: string
+                    units:
+                      type: string
+                    nanos:
+                      type: integer
+                comment:
+                  type: string
+                idempotency_key:
+                  type: string
+            example:
+              currency: USD
+              type: WITHDRAW
+              paymentType: SEPA_CT
+              sourceRequisit:
+                account: c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5
+              destinationRequisit:
+                beneficiar: BNK-CPACC-11
+              amount:
+                currencyCode: USD
+                units: '250'
+                nanos: 0
+      responses:
+        '200':
+          description: Vista previa de la cotización.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                preview:
+                  fee:
+                    units: '1'
+                    nanos: 500000000
+                  valid: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Aún no hay perfil bancario (no_banking_customer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no_banking_customer
+                message: create your banking customer first (POST /v1/banking/customer)
+        '502':
+          description: Error del corredor bancario; la comisión (si hubo) se reembolsó (banking_request_failed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: banking_request_failed
+                  message: request rejected
+  /v1/banking/operations:
+    post:
+      tags:
+      - Banking
+      operationId: createBankingOperation
+      summary: Enviar un pago bancario
+      description: Ejecuta un TRANSFER (entre tus propias cuentas bancarias) o WITHDRAW (a un beneficiario
+        registrado). Requiere clave de idempotencia; reintentos con la misma clave devuelven la operación
+        original sin volver a cobrar. Se cobra la comisión fija `banking_operation`; se reembolsa si el
+        corredor rechaza. El estado final llega por el webhook banking_operation_status_changed.
+      parameters:
+      - $ref: '#/components/parameters/idempotencyKeyHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - currency
+              - type
+              - sourceRequisit
+              - destinationRequisit
+              - amount
+              properties:
+                currency:
+                  type: string
+                  example: USD
+                type:
+                  type: string
+                  enum:
+                  - TRANSFER
+                  - WITHDRAW
+                paymentType:
+                  type: string
+                  description: EMPTY for TRANSFER; rail code (e.g. SEPA_CT) for WITHDRAW.
+                sourceRequisit:
+                  type: object
+                  properties:
+                    account:
+                      type: string
+                destinationRequisit:
+                  type: object
+                  properties:
+                    account:
+                      type: string
+                      description: Destination account (TRANSFER).
+                    beneficiar:
+                      type: string
+                      description: Beneficiary account (WITHDRAW).
+                amount:
+                  type: object
+                  properties:
+                    currencyCode:
+                      type: string
+                    units:
+                      type: string
+                    nanos:
+                      type: integer
+                comment:
+                  type: string
+                idempotency_key:
+                  type: string
+            examples:
+              withdraw:
+                summary: WITHDRAW a un beneficiario (SEPA)
+                value:
+                  currency: USD
+                  type: WITHDRAW
+                  paymentType: SEPA_CT
+                  sourceRequisit:
+                    account: c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5
+                  destinationRequisit:
+                    beneficiar: BNK-CPACC-11
+                  amount:
+                    currencyCode: USD
+                    units: '250'
+                    nanos: 0
+                  comment: Invoice 8841
+                  idempotency_key: acme-payment-0071
+              transfer:
+                summary: TRANSFER entre cuentas propias
+                value:
+                  currency: USD
+                  type: TRANSFER
+                  paymentType: EMPTY
+                  sourceRequisit:
+                    account: c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5
+                  destinationRequisit:
+                    account: d5e2f3a4-b5c6-d7e8-f9a0-b1c2d3e4f5a6
+                  amount:
+                    currencyCode: USD
+                    units: '100'
+                    nanos: 0
+                  idempotency_key: internal-move-0012
+      responses:
+        '202':
+          description: Operación aceptada (estado final por webhook).
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                operation_id: 7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c
+                provider_id: BNK-OP-90213
+                status: pending
+                idempotency_key: platform:9b1deb4d:acme-payment-0071
+                data:
+                  type: WITHDRAW
+                  paymentType: SEPA_CT
+                banking_fee: '2.000000'
+        '200':
+          description: Replay idempotente de una operación existente (sin cobro nuevo).
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                operation_id: 7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c
+                provider_id: BNK-OP-90213
+                status: pending
+                idempotency_key: platform:9b1deb4d:acme-payment-0071
+                data:
+                  type: WITHDRAW
+                  paymentType: SEPA_CT
+                idempotency_hit: true
+        '400':
+          description: idempotency_key_required / payload inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: idempotency_key_required
+                message: provide idempotency_key (body or Idempotency-Key header)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '402':
+          $ref: '#/components/responses/InsufficientFunds'
+        '409':
+          description: Aún no hay perfil bancario (no_banking_customer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no_banking_customer
+                message: create your banking customer first (POST /v1/banking/customer)
+        '502':
+          description: Error del corredor bancario; la comisión (si hubo) se reembolsó (banking_request_failed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: banking_request_failed
+                  message: request rejected
+    get:
+      tags:
+      - Banking
+      operationId: listBankingOperations
+      summary: Listar mis pagos bancarios
+      parameters:
+      - name: type
+        in: query
+        schema:
+          type: string
+      - name: status
+        in: query
+        schema:
+          type: string
+      - name: from
+        in: query
+        schema:
+          type: string
+      - name: to
+        in: query
+        schema:
+          type: string
+      - name: page
+        in: query
+        schema:
+          type: integer
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Historial de operaciones.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                items:
+                - id: 7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c
+                  status: completed
+                  type: withdraw
+                meta:
+                  page: 1
+                  page_size: 50
+                  retrieved: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Aún no hay perfil bancario (no_banking_customer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no_banking_customer
+                message: create your banking customer first (POST /v1/banking/customer)
+  /v1/banking/operations/{operationID}:
+    get:
+      tags:
+      - Banking
+      operationId: getBankingOperation
+      summary: Consultar un pago bancario
+      parameters:
+      - name: operationID
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Operación con estado en vivo.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                operation_id: 7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c
+                provider_id: BNK-OP-90213
+                status: completed
+                idempotency_key: platform:9b1deb4d:acme-payment-0071
+                data:
+                  type: WITHDRAW
+                  paymentType: SEPA_CT
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: La operación no pertenece a esta cuenta.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: not_found
+                message: resource not found
 components:
   securitySchemes:
     bearerAuth:
@@ -3323,3 +4215,34 @@ webhooks:
       responses:
         '200':
           description: Devuelve cualquier 2xx para confirmar la entrega.
+  banking_customer_status_changed:
+    post:
+      summary: Cambió la verificación del perfil bancario
+      description: Se emite cuando cambia el estado de verificación del perfil bancario (submitted, under_review,
+        approved, rejected).
+      requestBody:
+        content:
+          application/json:
+            example:
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              customer_id: 9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+              kyc_status: approved
+      responses:
+        '200':
+          description: Responde cualquier 2xx para confirmar la recepción.
+  banking_operation_status_changed:
+    post:
+      summary: Cambió el estado de un pago bancario
+      description: Se emite cuando un pago bancario alcanza un nuevo estado (processing, completed, failed).
+      requestBody:
+        content:
+          application/json:
+            example:
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              customer_id: 9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+              operation_id: 7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c
+              type: withdraw
+              status: completed
+      responses:
+        '200':
+          description: Responde cualquier 2xx para confirmar la recepción.

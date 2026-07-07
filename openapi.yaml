@@ -42,6 +42,8 @@ tags:
   description: Subscriptions to receive signed event notifications.
 - name: Status
   description: Service availability.
+- name: Banking
+  description: 'Real bank accounts: receive, hold and send money over international banking rails.'
 paths:
   /v1/auth/register:
     post:
@@ -2646,6 +2648,895 @@ paths:
                 - *id012
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/banking/customer:
+    post:
+      tags:
+      - Banking
+      operationId: createBankingCustomer
+      summary: Create my banking profile
+      description: Opens the account's banking profile (once per account). Omitted `type`/`name`/`email`
+        autofill from the CBPay account. Billed as the fixed `banking_customer` fee from the USDT balance;
+        refunded if the corridor rejects.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currency:
+                  type: string
+                  example: USD
+                type:
+                  type: string
+                  enum:
+                  - INDIVIDUAL
+                  - COMPANY
+                name:
+                  type: string
+                email:
+                  type: string
+                address:
+                  type: object
+                  additionalProperties: true
+            example:
+              currency: USD
+              address:
+                countryIso: CL
+                city: Santiago
+      responses:
+        '201':
+          description: Banking profile created (status draft).
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                customer_id: 9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+                provider_id: BNK-88f13a
+                status: draft
+                data:
+                  item:
+                    type: INDIVIDUAL
+                    name: Ana Perez Rojas
+                created_at: '2026-07-07T12:00:00Z'
+                banking_fee: '5.000000'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '402':
+          $ref: '#/components/responses/InsufficientFunds'
+        '409':
+          description: This account already has a banking profile (banking_customer_exists).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: banking_customer_exists
+                message: this account already has a banking customer
+        '502':
+          description: Banking corridor error; any fee was refunded (banking_request_failed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: banking_request_failed
+                  message: request rejected
+    get:
+      tags:
+      - Banking
+      operationId: getBankingCustomer
+      summary: Get my banking profile
+      description: Returns the account's banking profile with its live verification status.
+      responses:
+        '200':
+          description: Banking profile with normalized status (draft, submitted, under_review, approved,
+            rejected).
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                customer_id: 9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+                provider_id: BNK-88f13a
+                status: approved
+                data:
+                  item:
+                    type: INDIVIDUAL
+                    name: Ana Perez Rojas
+                created_at: '2026-07-07T12:00:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: No banking profile yet (no_banking_customer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no_banking_customer
+                message: create your banking customer first (POST /v1/banking/customer)
+  /v1/banking/customer/documents:
+    post:
+      tags:
+      - Banking
+      operationId: uploadBankingDocument
+      summary: Upload a verification document
+      description: Uploads one KYC document (base64) to the banking profile. Free of charge.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - attach
+              properties:
+                attach:
+                  type: string
+                  description: Base64 file content.
+                filename:
+                  type: string
+                type:
+                  type: string
+                  example: PASSPORT
+                info:
+                  type: string
+            example:
+              type: PASSPORT
+              filename: passport.pdf
+              attach: JVBERi0xLjQK...
+      responses:
+        '201':
+          description: Document attached.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                customer_id: 9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+                status: draft
+                data:
+                  documentId: DOC-1129
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: No banking profile yet (no_banking_customer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no_banking_customer
+                message: create your banking customer first (POST /v1/banking/customer)
+        '502':
+          description: Banking corridor error; any fee was refunded (banking_request_failed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: banking_request_failed
+                  message: request rejected
+  /v1/banking/customer/submit:
+    post:
+      tags:
+      - Banking
+      operationId: submitBankingCustomer
+      summary: Submit my profile for review
+      description: Sends the banking profile to verification. Free. Track progress via GET /v1/banking/customer
+        or the banking_customer_status_changed webhook.
+      responses:
+        '202':
+          description: Profile submitted (status submitted).
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                customer_id: 9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+                status: submitted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: No banking profile yet (no_banking_customer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no_banking_customer
+                message: create your banking customer first (POST /v1/banking/customer)
+        '502':
+          description: Banking corridor error; any fee was refunded (banking_request_failed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: banking_request_failed
+                  message: request rejected
+  /v1/banking/accounts:
+    post:
+      tags:
+      - Banking
+      operationId: createBankingAccount
+      summary: Open a bank account
+      description: Opens a bank account for the approved profile (one per currency as enabled). Billed
+        as the fixed `banking_account` fee; refunded if the corridor rejects. `data` carries the receiving
+        details (account number/IBAN, routing, bank).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - currency
+              properties:
+                currency:
+                  type: string
+                  example: USD
+                name:
+                  type: string
+            example:
+              currency: USD
+              name: Operating USD
+      responses:
+        '201':
+          description: Bank account created.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                account_id: c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5
+                provider_id: BNK-ACC-4471
+                status: active
+                data:
+                  currency: USD
+                  name: Operating USD
+                  accountNumber: '0532013000'
+                  routingNumber: 011000138
+                banking_fee: '1.000000'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '402':
+          $ref: '#/components/responses/InsufficientFunds'
+        '409':
+          description: No banking profile yet (no_banking_customer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no_banking_customer
+                message: create your banking customer first (POST /v1/banking/customer)
+        '502':
+          description: Banking corridor error; any fee was refunded (banking_request_failed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: banking_request_failed
+                  message: request rejected
+    get:
+      tags:
+      - Banking
+      operationId: listBankingAccounts
+      summary: List my bank accounts
+      responses:
+        '200':
+          description: Bank accounts of the calling account.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                items:
+                - id: c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5
+                  provider_id: BNK-ACC-4471
+                  status: active
+                  payload:
+                    currency: USD
+                meta:
+                  page: 1
+                  page_size: 50
+                  retrieved: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: No banking profile yet (no_banking_customer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no_banking_customer
+                message: create your banking customer first (POST /v1/banking/customer)
+  /v1/banking/accounts/{bankAccountID}/balance:
+    get:
+      tags:
+      - Banking
+      operationId: getBankingAccountBalance
+      summary: Get a bank account balance
+      parameters:
+      - name: bankAccountID
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Live balance at the bank.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                account_id: c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5
+                provider_id: BNK-ACC-4471
+                balance:
+                  currency: USD
+                  available: '1250.00'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: The bank account does not belong to this profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: not_found
+                message: resource not found
+  /v1/banking/counterparties:
+    post:
+      tags:
+      - Banking
+      operationId: createBankingCounterparty
+      summary: Register a beneficiary
+      description: Registers a third-party beneficiary with its banking details. Free; the beneficiary
+        account goes through moderation before it can receive WITHDRAW payments.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                profile:
+                  type: object
+                  additionalProperties: true
+                accounts:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: true
+            example:
+              description: ACME supplier
+              profile:
+                name: ACME LLC
+                additionalInfo:
+                  type: CORPORATION
+              accounts:
+              - currencyCode: USD
+                bank:
+                  name: Test Bank
+                  number: 011000138
+                fiat:
+                  number: '0532013000'
+                  routingNumber: 011000138
+                  additionalInformation:
+                    type: TYPE_FIAT_US
+                    accountType: CHECKING
+                    supportedRails:
+                    - ACH
+      responses:
+        '201':
+          description: Beneficiary registered (accounts pending moderation).
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                counterparty_id: b2c3d4e5-f6a7-b8c9-d0e1-f2a3b4c5d6e7
+                provider_id: BNK-CP-7301
+                status: active
+                data: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: No banking profile yet (no_banking_customer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no_banking_customer
+                message: create your banking customer first (POST /v1/banking/customer)
+        '502':
+          description: Banking corridor error; any fee was refunded (banking_request_failed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: banking_request_failed
+                  message: request rejected
+    get:
+      tags:
+      - Banking
+      operationId: listBankingCounterparties
+      summary: List my beneficiaries
+      responses:
+        '200':
+          description: Registered beneficiaries.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                items:
+                - id: b2c3d4e5-f6a7-b8c9-d0e1-f2a3b4c5d6e7
+                  status: active
+                meta:
+                  page: 1
+                  page_size: 50
+                  retrieved: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: No banking profile yet (no_banking_customer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no_banking_customer
+                message: create your banking customer first (POST /v1/banking/customer)
+  /v1/banking/counterparties/{counterpartyID}/accounts:
+    post:
+      tags:
+      - Banking
+      operationId: addBankingCounterpartyAccount
+      summary: Add an account to a beneficiary
+      parameters:
+      - name: counterpartyID
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+            example:
+              currencyCode: USD
+              fiat:
+                number: '0532013001'
+                routingNumber: 011000138
+                additionalInformation:
+                  type: TYPE_FIAT_US
+                  accountType: SAVINGS
+                  supportedRails:
+                  - ACH
+      responses:
+        '201':
+          description: Account attached (pending moderation).
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                counterparty_id: b2c3d4e5-f6a7-b8c9-d0e1-f2a3b4c5d6e7
+                data:
+                  status: MODERATION
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: The beneficiary does not belong to this profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: not_found
+                message: resource not found
+        '502':
+          description: Banking corridor error; any fee was refunded (banking_request_failed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: banking_request_failed
+                  message: request rejected
+  /v1/banking/operations/prepare:
+    post:
+      tags:
+      - Banking
+      operationId: prepareBankingOperation
+      summary: Quote a bank payment
+      description: Validates and quotes an operation (fees, balances) without moving money. Free.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - currency
+              - type
+              - sourceRequisit
+              - destinationRequisit
+              - amount
+              properties:
+                currency:
+                  type: string
+                  example: USD
+                type:
+                  type: string
+                  enum:
+                  - TRANSFER
+                  - WITHDRAW
+                paymentType:
+                  type: string
+                  description: EMPTY for TRANSFER; rail code (e.g. SEPA_CT) for WITHDRAW.
+                sourceRequisit:
+                  type: object
+                  properties:
+                    account:
+                      type: string
+                destinationRequisit:
+                  type: object
+                  properties:
+                    account:
+                      type: string
+                      description: Destination account (TRANSFER).
+                    beneficiar:
+                      type: string
+                      description: Beneficiary account (WITHDRAW).
+                amount:
+                  type: object
+                  properties:
+                    currencyCode:
+                      type: string
+                    units:
+                      type: string
+                    nanos:
+                      type: integer
+                comment:
+                  type: string
+                idempotency_key:
+                  type: string
+            example:
+              currency: USD
+              type: WITHDRAW
+              paymentType: SEPA_CT
+              sourceRequisit:
+                account: c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5
+              destinationRequisit:
+                beneficiar: BNK-CPACC-11
+              amount:
+                currencyCode: USD
+                units: '250'
+                nanos: 0
+      responses:
+        '200':
+          description: Quote preview.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                preview:
+                  fee:
+                    units: '1'
+                    nanos: 500000000
+                  valid: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: No banking profile yet (no_banking_customer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no_banking_customer
+                message: create your banking customer first (POST /v1/banking/customer)
+        '502':
+          description: Banking corridor error; any fee was refunded (banking_request_failed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: banking_request_failed
+                  message: request rejected
+  /v1/banking/operations:
+    post:
+      tags:
+      - Banking
+      operationId: createBankingOperation
+      summary: Send a bank payment
+      description: Executes a TRANSFER (between your own bank accounts) or WITHDRAW (to a registered beneficiary).
+        Requires an idempotency key; retries with the same key return the original operation without re-charging.
+        Billed as the fixed `banking_operation` fee; refunded if the corridor rejects. The final state
+        arrives via the banking_operation_status_changed webhook.
+      parameters:
+      - $ref: '#/components/parameters/idempotencyKeyHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - currency
+              - type
+              - sourceRequisit
+              - destinationRequisit
+              - amount
+              properties:
+                currency:
+                  type: string
+                  example: USD
+                type:
+                  type: string
+                  enum:
+                  - TRANSFER
+                  - WITHDRAW
+                paymentType:
+                  type: string
+                  description: EMPTY for TRANSFER; rail code (e.g. SEPA_CT) for WITHDRAW.
+                sourceRequisit:
+                  type: object
+                  properties:
+                    account:
+                      type: string
+                destinationRequisit:
+                  type: object
+                  properties:
+                    account:
+                      type: string
+                      description: Destination account (TRANSFER).
+                    beneficiar:
+                      type: string
+                      description: Beneficiary account (WITHDRAW).
+                amount:
+                  type: object
+                  properties:
+                    currencyCode:
+                      type: string
+                    units:
+                      type: string
+                    nanos:
+                      type: integer
+                comment:
+                  type: string
+                idempotency_key:
+                  type: string
+            examples:
+              withdraw:
+                summary: WITHDRAW to a beneficiary (SEPA)
+                value:
+                  currency: USD
+                  type: WITHDRAW
+                  paymentType: SEPA_CT
+                  sourceRequisit:
+                    account: c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5
+                  destinationRequisit:
+                    beneficiar: BNK-CPACC-11
+                  amount:
+                    currencyCode: USD
+                    units: '250'
+                    nanos: 0
+                  comment: Invoice 8841
+                  idempotency_key: acme-payment-0071
+              transfer:
+                summary: TRANSFER between own accounts
+                value:
+                  currency: USD
+                  type: TRANSFER
+                  paymentType: EMPTY
+                  sourceRequisit:
+                    account: c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5
+                  destinationRequisit:
+                    account: d5e2f3a4-b5c6-d7e8-f9a0-b1c2d3e4f5a6
+                  amount:
+                    currencyCode: USD
+                    units: '100'
+                    nanos: 0
+                  idempotency_key: internal-move-0012
+      responses:
+        '202':
+          description: Operation accepted (final state via webhook).
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                operation_id: 7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c
+                provider_id: BNK-OP-90213
+                status: pending
+                idempotency_key: platform:9b1deb4d:acme-payment-0071
+                data:
+                  type: WITHDRAW
+                  paymentType: SEPA_CT
+                banking_fee: '2.000000'
+        '200':
+          description: Idempotency replay of an existing operation (no new charge).
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                operation_id: 7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c
+                provider_id: BNK-OP-90213
+                status: pending
+                idempotency_key: platform:9b1deb4d:acme-payment-0071
+                data:
+                  type: WITHDRAW
+                  paymentType: SEPA_CT
+                idempotency_hit: true
+        '400':
+          description: idempotency_key_required / invalid payload.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: idempotency_key_required
+                message: provide idempotency_key (body or Idempotency-Key header)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '402':
+          $ref: '#/components/responses/InsufficientFunds'
+        '409':
+          description: No banking profile yet (no_banking_customer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no_banking_customer
+                message: create your banking customer first (POST /v1/banking/customer)
+        '502':
+          description: Banking corridor error; any fee was refunded (banking_request_failed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: banking_request_failed
+                  message: request rejected
+    get:
+      tags:
+      - Banking
+      operationId: listBankingOperations
+      summary: List my bank payments
+      parameters:
+      - name: type
+        in: query
+        schema:
+          type: string
+      - name: status
+        in: query
+        schema:
+          type: string
+      - name: from
+        in: query
+        schema:
+          type: string
+      - name: to
+        in: query
+        schema:
+          type: string
+      - name: page
+        in: query
+        schema:
+          type: integer
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Operation history.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                items:
+                - id: 7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c
+                  status: completed
+                  type: withdraw
+                meta:
+                  page: 1
+                  page_size: 50
+                  retrieved: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: No banking profile yet (no_banking_customer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no_banking_customer
+                message: create your banking customer first (POST /v1/banking/customer)
+  /v1/banking/operations/{operationID}:
+    get:
+      tags:
+      - Banking
+      operationId: getBankingOperation
+      summary: Get a bank payment
+      parameters:
+      - name: operationID
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Operation with live status.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                operation_id: 7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c
+                provider_id: BNK-OP-90213
+                status: completed
+                idempotency_key: platform:9b1deb4d:acme-payment-0071
+                data:
+                  type: WITHDRAW
+                  paymentType: SEPA_CT
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: The operation does not belong to this account.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: not_found
+                message: resource not found
 components:
   securitySchemes:
     bearerAuth:
@@ -3323,3 +4214,34 @@ webhooks:
       responses:
         '200':
           description: Return any 2xx to acknowledge the delivery.
+  banking_customer_status_changed:
+    post:
+      summary: Banking profile verification changed
+      description: Fires when the banking profile verification state changes (submitted, under_review,
+        approved, rejected).
+      requestBody:
+        content:
+          application/json:
+            example:
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              customer_id: 9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+              kyc_status: approved
+      responses:
+        '200':
+          description: Return any 2xx to acknowledge.
+  banking_operation_status_changed:
+    post:
+      summary: Bank payment status changed
+      description: Fires when a bank payment reaches a new state (processing, completed, failed).
+      requestBody:
+        content:
+          application/json:
+            example:
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              customer_id: 9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+              operation_id: 7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c
+              type: withdraw
+              status: completed
+      responses:
+        '200':
+          description: Return any 2xx to acknowledge.

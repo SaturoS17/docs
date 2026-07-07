@@ -7,6 +7,29 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="7 de julio de 2026" description="v1.13">
+
+**Agregado**
+
+- **Banking**: cuentas bancarias reales para tu cuenta — recibe, mantén y
+  envía dinero por rieles bancarios internacionales (SEPA, SWIFT, ACH
+  según la moneda). 14 endpoints nuevos bajo `/v1/banking/*`:
+  - Perfil bancario: crear, consultar, subir documentos y enviar a
+    verificación.
+  - Cuentas: abrir por moneda, listar y consultar saldo en vivo.
+  - Beneficiarios: registrar, listar y agregar cuentas destino.
+  - Pagos: cotizar (`prepare`, gratis) y ejecutar `TRANSFER`/`WITHDRAW`
+    con idempotencia.
+- Webhooks nuevos: `banking_customer_status_changed` y
+  `banking_operation_status_changed`.
+- Comisiones nuevas (fijas, configurables, reembolsables si la operación
+  falla): `banking_customer`, `banking_account`, `banking_operation` — el
+  campo `banking_fee` de cada respuesta muestra lo cobrado.
+- Guía completa de [Banking](/es/guias/banking) con el flujo end-to-end y
+  ejemplos de cada operación.
+
+</Update>
+
 <Update label="7 de julio de 2026" description="v1.12">
 
 **Mejorado**

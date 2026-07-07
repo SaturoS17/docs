@@ -35,15 +35,18 @@ rate for that country. Quoted = charged, always.
 | `compliance_company` | Fixed per call | When submitting a company's KYB |
 | `compliance_rescreen` | Fixed per call | When re-running a screening |
 | `compliance_monitoring` | Fixed per activation | When enabling continuous monitoring (disabling is free) |
+| `banking_customer` | Fixed per profile | When creating your banking profile ([banking](/en/guides/banking)) |
+| `banking_account` | Fixed per account | When opening each bank account |
+| `banking_operation` | Fixed per payment | When sending each bank payment (quoting with `prepare` is free) |
 
 For `%`-based services the formula is
 `fee = ceil(amount × percent / 100) + fixed_amount` (rounded up to the
 micro-USDT).
 
 <Note>
-Standalone fixed charges (compliance and wallet creation) are refunded
-automatically if the upstream operation fails (`compliance_refund` /
-`wallet_creation_refund`).
+Standalone fixed charges (compliance, wallet creation and banking) are
+refunded automatically if the upstream operation fails
+(`compliance_refund` / `wallet_creation_refund` / `banking_fee_refund`).
 </Note>
 
 ## Internal transfers: always free

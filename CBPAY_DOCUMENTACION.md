@@ -31,6 +31,7 @@ USDT on-chain y verificación KYC/KYB — una sola API, un solo saldo.
   - [Payins](#payins)
   - [Transferencias internas](#transferencias-internas)
   - [Crypto: wallets, depósitos y retiros](#crypto-wallets-depositos-y-retiros)
+  - [Banking](#banking)
   - [KYC/KYB y compliance](#kyckyb-y-compliance)
 - **Integración**
   - [Webhooks](#webhooks)
@@ -469,15 +470,18 @@ cuenta para ese país. Cotizado = cobrado, siempre.
 | `compliance_company` | Fijo por llamada | Al enviar el KYB de una empresa |
 | `compliance_rescreen` | Fijo por llamada | Al re-ejecutar un screening |
 | `compliance_monitoring` | Fijo por activación | Al activar monitoreo continuo (desactivar es gratis) |
+| `banking_customer` | Fijo por perfil | Al crear tu perfil bancario ([banking](#banking)) |
+| `banking_account` | Fijo por cuenta | Al abrir cada cuenta bancaria |
+| `banking_operation` | Fijo por pago | Al enviar cada pago bancario (cotizar con `prepare` es gratis) |
 
 Para los servicios con `%`, la fórmula es
 `fee = ceil(monto × percent / 100) + fixed_amount` (redondeo hacia arriba al
 micro-USDT).
 
 > **Nota**
-Los cargos fijos standalone (compliance y creación de wallets) se
+Los cargos fijos standalone (compliance, creación de wallets y banking) se
 reembolsan automáticamente si la operación falla aguas arriba
-(`compliance_refund` / `wallet_creation_refund`).
+(`compliance_refund` / `wallet_creation_refund` / `banking_fee_refund`).
 ### Transferencias internas: siempre gratis
 
 Las transferencias entre cuentas CBPay (`POST /v1/transfers`) **no tienen
@@ -1805,6 +1809,278 @@ puertas de entrada; el saldo es uno solo).
 | 503 | `withdrawals_unavailable` | Retiros no habilitados aún para este corredor |
 
 
+## Banking
+
+*Cuentas bancarias reales para tu cuenta: recibe, mantén y envía dinero por rieles bancarios internacionales*
+
+Banking te da **cuentas bancarias reales** a nombre de tu perfil verificado:
+recibes fondos por rieles internacionales (SEPA, SWIFT, ACH según la
+moneda), mantienes saldo en moneda fiat y envías pagos a terceros. Es un
+producto distinto de tu saldo USDT: **el dinero de banking vive en tus
+cuentas bancarias**, no en el saldo CBPay.
+
+| Concepto | Dónde vive | Se consulta con |
+|---|---|---|
+| Saldo USDT CBPay | Ledger CBPay | `GET /v1/balances` |
+| Saldos bancarios | Tus cuentas bancarias | `GET /v1/banking/accounts/{id}/balance` |
+
+> **Nota**
+Las comisiones de banking (`banking_customer`, `banking_account`,
+`banking_operation`) son fijas, se debitan de tu **saldo USDT** al ejecutar
+cada operación y se **reembolsan automáticamente** si la operación falla.
+Con comisión 0 (el default) el servicio es gratis. El campo `banking_fee`
+de cada respuesta te muestra lo cobrado.
+### El flujo completo
+
+1. **Crea tu perfil bancario** (`POST /v1/banking/customer`) — una sola vez.
+2. **Sube documentos** de verificación y **envíalo a revisión**.
+3. Cuando quede `approved`, **abre cuentas** por moneda.
+4. **Registra beneficiarios** (counterparties) para pagos a terceros.
+5. **Envía pagos**: cotiza con `prepare` y ejecuta con `operations`.
+
+Los cambios de estado te llegan por los webhooks
+`banking_customer_status_changed` y `banking_operation_status_changed`
+([webhooks](#webhooks)).
+
+### 1. Crea tu perfil bancario
+
+Una vez por cuenta. Si no envías `type`, `name` o `email`, se completan con
+los datos de tu cuenta CBPay:
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/banking/customer \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "currency": "USD",
+    "address": { "countryIso": "CL", "city": "Santiago" }
+  }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "customer_id": "9f2b…",
+  "provider_id": "…",
+  "status": "draft",
+  "data": { "item": { "…": "…" } },
+  "created_at": "2026-07-07T12:00:00Z",
+  "banking_fee": "5.000000"
+}
+```
+
+Si tu cuenta ya tiene perfil bancario — `409 banking_customer_exists`.
+Consulta el estado en cualquier momento:
+
+```bash
+curl https://exchange.qbank.cl/platform/v1/banking/customer \
+  -H "Authorization: Bearer <token>"
+```
+
+### 2. Documentos y verificación
+
+Sube cada documento en base64 (gratis):
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/banking/customer/documents \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "PASSPORT",
+    "filename": "pasaporte.pdf",
+    "attach": "<contenido en base64>"
+  }'
+```
+
+Y envía el perfil a revisión (gratis):
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/banking/customer/submit \
+  -H "Authorization: Bearer <token>"
+```
+
+Estados del perfil: `draft` → `submitted` → `under_review` →
+**`approved`** o `rejected`. El webhook
+`banking_customer_status_changed` te avisa cada cambio:
+
+```json
+{
+  "account_id": "…",
+  "customer_id": "9f2b…",
+  "kyc_status": "approved"
+}
+```
+
+### 3. Abre cuentas bancarias
+
+Con el perfil `approved`, crea una cuenta por moneda:
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/banking/accounts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "currency": "USD", "name": "Operativa USD" }'
+```
+
+Respuesta `201` — `data` incluye los datos para **recibir** (número de
+cuenta/IBAN, routing, banco):
+
+```json
+{
+  "account_id": "c4d1…",
+  "provider_id": "…",
+  "status": "active",
+  "data": { "…": "…" },
+  "banking_fee": "1.000000"
+}
+```
+
+Lista tus cuentas y consulta saldo:
+
+```bash
+curl https://exchange.qbank.cl/platform/v1/banking/accounts \
+  -H "Authorization: Bearer <token>"
+
+curl https://exchange.qbank.cl/platform/v1/banking/accounts/c4d1…/balance \
+  -H "Authorization: Bearer <token>"
+```
+
+### 4. Registra beneficiarios
+
+Para pagar a terceros, primero registra al beneficiario con sus datos
+bancarios (gratis; pasa por moderación antes de poder usarse):
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/banking/counterparties \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "Proveedor ACME",
+    "profile": {
+      "name": "ACME LLC",
+      "address": { "addressLine1": "1 Main St", "city": "New York", "stateIso": "NY", "countryIso": "US", "postalCode": "10001" },
+      "additionalInfo": { "type": "CORPORATION" }
+    },
+    "accounts": [
+      {
+        "currencyCode": "USD",
+        "bank": { "name": "Test Bank", "number": "011000138" },
+        "fiat": {
+          "number": "0532013000",
+          "routingNumber": "011000138",
+          "additionalInformation": { "type": "TYPE_FIAT_US", "accountType": "CHECKING", "supportedRails": ["ACH"] }
+        }
+      }
+    ]
+  }'
+```
+
+Lista los tuyos con `GET /v1/banking/counterparties` y agrega más cuentas a
+un beneficiario existente con
+`POST /v1/banking/counterparties/{id}/accounts`.
+
+### 5. Envía pagos
+
+Dos tipos de operación:
+
+| `type` | Qué hace | `paymentType` |
+|---|---|---|
+| `TRANSFER` | Entre tus propias cuentas bancarias | `EMPTY` |
+| `WITHDRAW` | A un beneficiario registrado | Según el rail (ej. `SEPA_CT`) |
+
+Cotiza primero (gratis, no mueve dinero):
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/banking/operations/prepare \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "currency": "USD",
+    "type": "WITHDRAW",
+    "paymentType": "SEPA_CT",
+    "sourceRequisit": { "account": "c4d1…" },
+    "destinationRequisit": { "beneficiar": "<cuenta del beneficiario>" },
+    "amount": { "currencyCode": "USD", "units": "250", "nanos": 0 }
+  }'
+```
+
+Ejecuta con clave de idempotencia (se cobra `banking_operation` aquí):
+
+```bash WITHDRAW (a un beneficiario)
+curl -X POST https://exchange.qbank.cl/platform/v1/banking/operations \
+  -H "Authorization: Bearer <token>" \
+  -H "Idempotency-Key: pago-acme-0071" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "currency": "USD",
+    "type": "WITHDRAW",
+    "paymentType": "SEPA_CT",
+    "sourceRequisit": { "account": "c4d1…" },
+    "destinationRequisit": { "beneficiar": "<cuenta del beneficiario>" },
+    "amount": { "currencyCode": "USD", "units": "250", "nanos": 0 },
+    "comment": "Factura 8841"
+  }'
+```
+
+```bash TRANSFER (entre tus cuentas)
+curl -X POST https://exchange.qbank.cl/platform/v1/banking/operations \
+  -H "Authorization: Bearer <token>" \
+  -H "Idempotency-Key: mov-interno-0012" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "currency": "USD",
+    "type": "TRANSFER",
+    "paymentType": "EMPTY",
+    "sourceRequisit": { "account": "c4d1…" },
+    "destinationRequisit": { "account": "<otra cuenta tuya>" },
+    "amount": { "currencyCode": "USD", "units": "100", "nanos": 0 }
+  }'
+```
+
+Respuesta `202`:
+
+```json
+{
+  "operation_id": "7e8a…",
+  "provider_id": "…",
+  "status": "pending",
+  "idempotency_key": "platform:…:pago-acme-0071",
+  "data": { "…": "…" },
+  "banking_fee": "2.000000"
+}
+```
+
+- El estado final llega por el webhook `banking_operation_status_changed`
+  (`completed` / `failed`); también puedes consultar
+  `GET /v1/banking/operations/{id}`.
+- Reintentos con la misma `Idempotency-Key` devuelven la operación original
+  (`idempotency_hit: true`) **sin volver a cobrar** la comisión.
+- El historial completo está en `GET /v1/banking/operations`
+  (filtros: `type`, `status`, `from`, `to`, paginación).
+
+### Estados de operación
+
+| Estado | Significado |
+|---|---|
+| `pending` | Aceptada, esperando procesamiento |
+| `processing` | En ejecución en el rail bancario |
+| `completed` | El dinero llegó — final |
+| `failed` | Falló; si hubo comisión de la operación, se reembolsó |
+| `cancelled` | Cancelada antes de ejecutarse |
+
+### Errores
+
+| HTTP | `error` | Qué hacer |
+|---|---|---|
+| 400 | `idempotency_key_required` | Envía la clave en body o header |
+| 402 | `insufficient_funds` | Saldo USDT insuficiente para la comisión de banking |
+| 403 | `account_blocked` | La cuenta no está activa; contacta al equipo de CBPay |
+| 409 | `banking_customer_exists` | Tu cuenta ya tiene perfil bancario (`GET /v1/banking/customer`) |
+| 409 | `no_banking_customer` | Crea primero tu perfil (`POST /v1/banking/customer`) |
+| 502 | `banking_request_failed` | Error del corredor bancario; la comisión se reembolsó — reintenta |
+
+
 ## KYC/KYB y compliance
 
 *Verificación de personas (KYC) y empresas (KYB), rescreening y monitoreo continuo*
@@ -2009,6 +2285,8 @@ La suscripción recibe los eventos de **tu cuenta**.
 | `transfer_received` | La cuenta recibió una transferencia interna |
 | `crypto_deposit_credited` | Un depósito on-chain fue confirmado y abonado |
 | `crypto_withdrawal_status_changed` | Un retiro on-chain cambió de estado |
+| `banking_customer_status_changed` | Cambió la verificación de tu perfil bancario |
+| `banking_operation_status_changed` | Un pago bancario cambió de estado |
 
 #### Payload de cada evento
 
@@ -2071,6 +2349,24 @@ La suscripción recibe los eventos de **tu cuenta**.
   "tx_id": "7d3f01aa…",
   "status": "completed",
   "amount": "100.000000"
+}
+```
+
+```json banking_customer_status_changed
+{
+  "account_id": "ae8c…",
+  "customer_id": "9f2b…",
+  "kyc_status": "approved"
+}
+```
+
+```json banking_operation_status_changed
+{
+  "account_id": "ae8c…",
+  "customer_id": "9f2b…",
+  "operation_id": "7e8a…",
+  "type": "withdraw",
+  "status": "completed"
 }
 ```
 
@@ -2327,6 +2623,12 @@ No. El depósito queda en estado `unassigned` y el equipo de CBPay lo
 asigna manualmente a tu cuenta (se acredita con tus comisiones normales).
 Para evitarlo, usa la **cuenta CLABE dedicada** en México o insiste en que
 la referencia viaje en la descripción de la transferencia.
+#### ¿El saldo de banking y mi saldo USDT son lo mismo?
+No. El dinero de [banking](#banking) vive en **tus cuentas
+bancarias reales** (USD u otras monedas habilitadas) y se consulta con
+`GET /v1/banking/accounts/{id}/balance`. Tu saldo CBPay es USDT y solo se
+toca para cobrar las comisiones fijas de banking (que se reembolsan si la
+operación falla).
 #### ¿Un depósito crypto y un payin son lo mismo?
 No: un **payin** es un cobro fiat (moneda local → USDT); un **depósito
 crypto** es USDT on-chain que llega a tu wallet (`funding`). Ambos terminan
@@ -2392,6 +2694,27 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.13 — 7 de julio de 2026
+
+**Agregado**
+
+- **Banking**: cuentas bancarias reales para tu cuenta — recibe, mantén y
+  envía dinero por rieles bancarios internacionales (SEPA, SWIFT, ACH
+  según la moneda). 14 endpoints nuevos bajo `/v1/banking/*`:
+  - Perfil bancario: crear, consultar, subir documentos y enviar a
+    verificación.
+  - Cuentas: abrir por moneda, listar y consultar saldo en vivo.
+  - Beneficiarios: registrar, listar y agregar cuentas destino.
+  - Pagos: cotizar (`prepare`, gratis) y ejecutar `TRANSFER`/`WITHDRAW`
+    con idempotencia.
+- Webhooks nuevos: `banking_customer_status_changed` y
+  `banking_operation_status_changed`.
+- Comisiones nuevas (fijas, configurables, reembolsables si la operación
+  falla): `banking_customer`, `banking_account`, `banking_operation` — el
+  campo `banking_fee` de cada respuesta muestra lo cobrado.
+- Guía completa de [Banking](#banking) con el flujo end-to-end y
+  ejemplos de cada operación.
 
 ### v1.12 — 7 de julio de 2026
 

@@ -1,0 +1,276 @@
+---
+title: "Banking"
+description: "Real bank accounts for your account: receive, hold and send money over international banking rails"
+---
+
+Banking gives you **real bank accounts** in the name of your verified
+profile: you receive funds over international rails (SEPA, SWIFT, ACH
+depending on the currency), hold fiat balances and send payments to third
+parties. It is a separate product from your USDT balance: **banking money
+lives in your bank accounts**, not in the CBPay balance.
+
+| Concept | Where it lives | Queried with |
+|---|---|---|
+| CBPay USDT balance | CBPay ledger | `GET /v1/balances` |
+| Bank balances | Your bank accounts | `GET /v1/banking/accounts/{id}/balance` |
+
+<Note>
+Banking fees (`banking_customer`, `banking_account`, `banking_operation`)
+are fixed, debited from your **USDT balance** when each operation executes,
+and **refunded automatically** if the operation fails. With a fee of 0
+(the default) the service is free. The `banking_fee` field on each
+response shows what was charged.
+</Note>
+
+## The full flow
+
+1. **Create your banking profile** (`POST /v1/banking/customer`) — once.
+2. **Upload verification documents** and **submit for review**.
+3. Once `approved`, **open accounts** per currency.
+4. **Register beneficiaries** (counterparties) for third-party payments.
+5. **Send payments**: quote with `prepare`, execute with `operations`.
+
+State changes arrive through the `banking_customer_status_changed` and
+`banking_operation_status_changed` webhooks ([webhooks](/en/webhooks)).
+
+## 1. Create your banking profile
+
+Once per account. If you omit `type`, `name` or `email`, they are filled
+from your CBPay account:
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/banking/customer \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "currency": "USD",
+    "address": { "countryIso": "CL", "city": "Santiago" }
+  }'
+```
+
+Response `201`:
+
+```json
+{
+  "customer_id": "9f2b…",
+  "provider_id": "…",
+  "status": "draft",
+  "data": { "item": { "…": "…" } },
+  "created_at": "2026-07-07T12:00:00Z",
+  "banking_fee": "5.000000"
+}
+```
+
+If your account already has a banking profile —
+`409 banking_customer_exists`. Check the state at any time:
+
+```bash
+curl https://exchange.qbank.cl/platform/v1/banking/customer \
+  -H "Authorization: Bearer <token>"
+```
+
+## 2. Documents and verification
+
+Upload each document as base64 (free):
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/banking/customer/documents \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "PASSPORT",
+    "filename": "passport.pdf",
+    "attach": "<base64 content>"
+  }'
+```
+
+Then submit the profile for review (free):
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/banking/customer/submit \
+  -H "Authorization: Bearer <token>"
+```
+
+Profile states: `draft` → `submitted` → `under_review` → **`approved`** or
+`rejected`. The `banking_customer_status_changed` webhook notifies each
+change:
+
+```json
+{
+  "account_id": "…",
+  "customer_id": "9f2b…",
+  "kyc_status": "approved"
+}
+```
+
+## 3. Open bank accounts
+
+With the profile `approved`, create one account per currency:
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/banking/accounts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "currency": "USD", "name": "Operating USD" }'
+```
+
+Response `201` — `data` carries the details to **receive** funds (account
+number/IBAN, routing, bank):
+
+```json
+{
+  "account_id": "c4d1…",
+  "provider_id": "…",
+  "status": "active",
+  "data": { "…": "…" },
+  "banking_fee": "1.000000"
+}
+```
+
+List your accounts and check balances:
+
+```bash
+curl https://exchange.qbank.cl/platform/v1/banking/accounts \
+  -H "Authorization: Bearer <token>"
+
+curl https://exchange.qbank.cl/platform/v1/banking/accounts/c4d1…/balance \
+  -H "Authorization: Bearer <token>"
+```
+
+## 4. Register beneficiaries
+
+To pay third parties, first register the beneficiary with their banking
+details (free; it goes through moderation before it can be used):
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/banking/counterparties \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "ACME supplier",
+    "profile": {
+      "name": "ACME LLC",
+      "address": { "addressLine1": "1 Main St", "city": "New York", "stateIso": "NY", "countryIso": "US", "postalCode": "10001" },
+      "additionalInfo": { "type": "CORPORATION" }
+    },
+    "accounts": [
+      {
+        "currencyCode": "USD",
+        "bank": { "name": "Test Bank", "number": "011000138" },
+        "fiat": {
+          "number": "0532013000",
+          "routingNumber": "011000138",
+          "additionalInformation": { "type": "TYPE_FIAT_US", "accountType": "CHECKING", "supportedRails": ["ACH"] }
+        }
+      }
+    ]
+  }'
+```
+
+List yours with `GET /v1/banking/counterparties` and attach more accounts
+to an existing beneficiary with
+`POST /v1/banking/counterparties/{id}/accounts`.
+
+## 5. Send payments
+
+Two operation types:
+
+| `type` | What it does | `paymentType` |
+|---|---|---|
+| `TRANSFER` | Between your own bank accounts | `EMPTY` |
+| `WITHDRAW` | To a registered beneficiary | Per rail (e.g. `SEPA_CT`) |
+
+Quote first (free, moves no money):
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/banking/operations/prepare \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "currency": "USD",
+    "type": "WITHDRAW",
+    "paymentType": "SEPA_CT",
+    "sourceRequisit": { "account": "c4d1…" },
+    "destinationRequisit": { "beneficiar": "<beneficiary account>" },
+    "amount": { "currencyCode": "USD", "units": "250", "nanos": 0 }
+  }'
+```
+
+Execute with an idempotency key (`banking_operation` is charged here):
+
+<CodeGroup>
+
+```bash WITHDRAW (to a beneficiary)
+curl -X POST https://exchange.qbank.cl/platform/v1/banking/operations \
+  -H "Authorization: Bearer <token>" \
+  -H "Idempotency-Key: acme-payment-0071" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "currency": "USD",
+    "type": "WITHDRAW",
+    "paymentType": "SEPA_CT",
+    "sourceRequisit": { "account": "c4d1…" },
+    "destinationRequisit": { "beneficiar": "<beneficiary account>" },
+    "amount": { "currencyCode": "USD", "units": "250", "nanos": 0 },
+    "comment": "Invoice 8841"
+  }'
+```
+
+```bash TRANSFER (between your accounts)
+curl -X POST https://exchange.qbank.cl/platform/v1/banking/operations \
+  -H "Authorization: Bearer <token>" \
+  -H "Idempotency-Key: internal-move-0012" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "currency": "USD",
+    "type": "TRANSFER",
+    "paymentType": "EMPTY",
+    "sourceRequisit": { "account": "c4d1…" },
+    "destinationRequisit": { "account": "<another account of yours>" },
+    "amount": { "currencyCode": "USD", "units": "100", "nanos": 0 }
+  }'
+```
+
+</CodeGroup>
+
+Response `202`:
+
+```json
+{
+  "operation_id": "7e8a…",
+  "provider_id": "…",
+  "status": "pending",
+  "idempotency_key": "platform:…:acme-payment-0071",
+  "data": { "…": "…" },
+  "banking_fee": "2.000000"
+}
+```
+
+- The final state arrives through the `banking_operation_status_changed`
+  webhook (`completed` / `failed`); you can also poll
+  `GET /v1/banking/operations/{id}`.
+- Retries with the same `Idempotency-Key` return the original operation
+  (`idempotency_hit: true`) **without charging the fee again**.
+- The full history is at `GET /v1/banking/operations`
+  (filters: `type`, `status`, `from`, `to`, pagination).
+
+## Operation statuses
+
+| Status | Meaning |
+|---|---|
+| `pending` | Accepted, awaiting processing |
+| `processing` | Executing on the banking rail |
+| `completed` | The money arrived — final |
+| `failed` | Failed; the operation fee (if any) was refunded |
+| `cancelled` | Cancelled before execution |
+
+## Errors
+
+| HTTP | `error` | What to do |
+|---|---|---|
+| 400 | `idempotency_key_required` | Send the key in body or header |
+| 402 | `insufficient_funds` | Not enough USDT balance for the banking fee |
+| 403 | `account_blocked` | The account is not active; contact the CBPay team |
+| 409 | `banking_customer_exists` | Your account already has a banking profile (`GET /v1/banking/customer`) |
+| 409 | `no_banking_customer` | Create your profile first (`POST /v1/banking/customer`) |
+| 502 | `banking_request_failed` | Banking corridor error; the fee was refunded — retry |

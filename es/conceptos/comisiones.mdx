@@ -34,15 +34,18 @@ cuenta para ese país. Cotizado = cobrado, siempre.
 | `compliance_company` | Fijo por llamada | Al enviar el KYB de una empresa |
 | `compliance_rescreen` | Fijo por llamada | Al re-ejecutar un screening |
 | `compliance_monitoring` | Fijo por activación | Al activar monitoreo continuo (desactivar es gratis) |
+| `banking_customer` | Fijo por perfil | Al crear tu perfil bancario ([banking](/es/guias/banking)) |
+| `banking_account` | Fijo por cuenta | Al abrir cada cuenta bancaria |
+| `banking_operation` | Fijo por pago | Al enviar cada pago bancario (cotizar con `prepare` es gratis) |
 
 Para los servicios con `%`, la fórmula es
 `fee = ceil(monto × percent / 100) + fixed_amount` (redondeo hacia arriba al
 micro-USDT).
 
 <Note>
-Los cargos fijos standalone (compliance y creación de wallets) se
+Los cargos fijos standalone (compliance, creación de wallets y banking) se
 reembolsan automáticamente si la operación falla aguas arriba
-(`compliance_refund` / `wallet_creation_refund`).
+(`compliance_refund` / `wallet_creation_refund` / `banking_fee_refund`).
 </Note>
 
 ## Transferencias internas: siempre gratis

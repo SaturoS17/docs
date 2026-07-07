@@ -36,6 +36,8 @@ La suscripción recibe los eventos de **tu cuenta**.
 | `transfer_received` | La cuenta recibió una transferencia interna |
 | `crypto_deposit_credited` | Un depósito on-chain fue confirmado y abonado |
 | `crypto_withdrawal_status_changed` | Un retiro on-chain cambió de estado |
+| `banking_customer_status_changed` | Cambió la verificación de tu perfil bancario |
+| `banking_operation_status_changed` | Un pago bancario cambió de estado |
 
 ### Payload de cada evento
 
@@ -100,6 +102,24 @@ La suscripción recibe los eventos de **tu cuenta**.
   "tx_id": "7d3f01aa…",
   "status": "completed",
   "amount": "100.000000"
+}
+```
+
+```json banking_customer_status_changed
+{
+  "account_id": "ae8c…",
+  "customer_id": "9f2b…",
+  "kyc_status": "approved"
+}
+```
+
+```json banking_operation_status_changed
+{
+  "account_id": "ae8c…",
+  "customer_id": "9f2b…",
+  "operation_id": "7e8a…",
+  "type": "withdraw",
+  "status": "completed"
 }
 ```
 

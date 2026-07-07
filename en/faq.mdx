@@ -145,6 +145,14 @@ account manually (credited with your normal fees). To avoid it, use the
 in the transfer description.
 </Accordion>
 
+<Accordion title="Are the banking balance and my USDT balance the same thing?">
+No. [Banking](/en/guides/banking) money lives in **your real bank
+accounts** (USD or other enabled currencies) and is queried with
+`GET /v1/banking/accounts/{id}/balance`. Your CBPay balance is USDT and is
+only touched to charge the fixed banking fees (refunded if the operation
+fails).
+</Accordion>
+
 <Accordion title="Are a crypto deposit and a payin the same thing?">
 No: a **payin** is a fiat collection (local currency → USDT); a **crypto
 deposit** is on-chain USDT arriving at your wallet (`funding`). Both end

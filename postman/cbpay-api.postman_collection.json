@@ -3334,6 +3334,981 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Banking",
+      "item": [
+        {
+          "name": "Get my banking profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/customer",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "customer"
+              ]
+            },
+            "description": "Returns the account's banking profile with its live verification status."
+          },
+          "response": [
+            {
+              "name": "200 Banking profile with normalized status (draft, submitted, un",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/customer",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "customer"
+                  ]
+                }
+              },
+              "status": "Banking profile with normalized status (draft, submitted, un",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"customer_id\": \"9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d\",\n  \"provider_id\": \"BNK-88f13a\",\n  \"status\": \"approved\",\n  \"data\": {\n    \"item\": {\n      \"type\": \"INDIVIDUAL\",\n      \"name\": \"Ana Perez Rojas\"\n    }\n  },\n  \"created_at\": \"2026-07-07T12:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create my banking profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/customer",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "customer"
+              ]
+            },
+            "description": "Opens the account's banking profile (once per account). Omitted `type`/`name`/`email` autofill from the CBPay account. Billed as the fixed `banking_customer` fee from the USDT balance; refunded if the corridor rejects.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currency\": \"USD\",\n  \"address\": {\n    \"countryIso\": \"CL\",\n    \"city\": \"Santiago\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Banking profile created (status draft).",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/customer",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "customer"
+                  ]
+                }
+              },
+              "status": "Banking profile created (status draft).",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"customer_id\": \"9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d\",\n  \"provider_id\": \"BNK-88f13a\",\n  \"status\": \"draft\",\n  \"data\": {\n    \"item\": {\n      \"type\": \"INDIVIDUAL\",\n      \"name\": \"Ana Perez Rojas\"\n    }\n  },\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"banking_fee\": \"5.000000\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Upload a verification document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/customer/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "customer",
+                "documents"
+              ]
+            },
+            "description": "Uploads one KYC document (base64) to the banking profile. Free of charge.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"PASSPORT\",\n  \"filename\": \"passport.pdf\",\n  \"attach\": \"JVBERi0xLjQK...\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Document attached.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/customer/documents",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "customer",
+                    "documents"
+                  ]
+                }
+              },
+              "status": "Document attached.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"customer_id\": \"9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d\",\n  \"status\": \"draft\",\n  \"data\": {\n    \"documentId\": \"DOC-1129\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Submit my profile for review",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/customer/submit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "customer",
+                "submit"
+              ]
+            },
+            "description": "Sends the banking profile to verification. Free. Track progress via GET /v1/banking/customer or the banking_customer_status_changed webhook."
+          },
+          "response": [
+            {
+              "name": "202 Profile submitted (status submitted).",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/customer/submit",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "customer",
+                    "submit"
+                  ]
+                }
+              },
+              "status": "Profile submitted (status submitted).",
+              "code": 202,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"customer_id\": \"9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d\",\n  \"status\": \"submitted\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List my bank accounts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/accounts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "accounts"
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 Bank accounts of the calling account.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/accounts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "accounts"
+                  ]
+                }
+              },
+              "status": "Bank accounts of the calling account.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"items\": [\n    {\n      \"id\": \"c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5\",\n      \"provider_id\": \"BNK-ACC-4471\",\n      \"status\": \"active\",\n      \"payload\": {\n        \"currency\": \"USD\"\n      }\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"page_size\": 50,\n    \"retrieved\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Open a bank account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/accounts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "accounts"
+              ]
+            },
+            "description": "Opens a bank account for the approved profile (one per currency as enabled). Billed as the fixed `banking_account` fee; refunded if the corridor rejects. `data` carries the receiving details (account number/IBAN, routing, bank).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currency\": \"USD\",\n  \"name\": \"Operating USD\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Bank account created.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/accounts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "accounts"
+                  ]
+                }
+              },
+              "status": "Bank account created.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"account_id\": \"c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5\",\n  \"provider_id\": \"BNK-ACC-4471\",\n  \"status\": \"active\",\n  \"data\": {\n    \"currency\": \"USD\",\n    \"name\": \"Operating USD\",\n    \"accountNumber\": \"0532013000\",\n    \"routingNumber\": \"011000138\"\n  },\n  \"banking_fee\": \"1.000000\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get a bank account balance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/accounts/:bankAccountID/balance",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "accounts",
+                ":bankAccountID",
+                "balance"
+              ],
+              "variable": [
+                {
+                  "key": "bankAccountID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 Live balance at the bank.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/accounts/:bankAccountID/balance",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "accounts",
+                    ":bankAccountID",
+                    "balance"
+                  ],
+                  "variable": [
+                    {
+                      "key": "bankAccountID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Live balance at the bank.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"account_id\": \"c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5\",\n  \"provider_id\": \"BNK-ACC-4471\",\n  \"balance\": {\n    \"currency\": \"USD\",\n    \"available\": \"1250.00\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "List my beneficiaries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/counterparties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "counterparties"
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 Registered beneficiaries.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/counterparties",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "counterparties"
+                  ]
+                }
+              },
+              "status": "Registered beneficiaries.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"items\": [\n    {\n      \"id\": \"b2c3d4e5-f6a7-b8c9-d0e1-f2a3b4c5d6e7\",\n      \"status\": \"active\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"page_size\": 50,\n    \"retrieved\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Register a beneficiary",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/counterparties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "counterparties"
+              ]
+            },
+            "description": "Registers a third-party beneficiary with its banking details. Free; the beneficiary account goes through moderation before it can receive WITHDRAW payments.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"ACME supplier\",\n  \"profile\": {\n    \"name\": \"ACME LLC\",\n    \"additionalInfo\": {\n      \"type\": \"CORPORATION\"\n    }\n  },\n  \"accounts\": [\n    {\n      \"currencyCode\": \"USD\",\n      \"bank\": {\n        \"name\": \"Test Bank\",\n        \"number\": \"011000138\"\n      },\n      \"fiat\": {\n        \"number\": \"0532013000\",\n        \"routingNumber\": \"011000138\",\n        \"additionalInformation\": {\n          \"type\": \"TYPE_FIAT_US\",\n          \"accountType\": \"CHECKING\",\n          \"supportedRails\": [\n            \"ACH\"\n          ]\n        }\n      }\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Beneficiary registered (accounts pending moderation).",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/counterparties",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "counterparties"
+                  ]
+                }
+              },
+              "status": "Beneficiary registered (accounts pending moderation).",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"counterparty_id\": \"b2c3d4e5-f6a7-b8c9-d0e1-f2a3b4c5d6e7\",\n  \"provider_id\": \"BNK-CP-7301\",\n  \"status\": \"active\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "Add an account to a beneficiary",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/counterparties/:counterpartyID/accounts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "counterparties",
+                ":counterpartyID",
+                "accounts"
+              ],
+              "variable": [
+                {
+                  "key": "counterpartyID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currencyCode\": \"USD\",\n  \"fiat\": {\n    \"number\": \"0532013001\",\n    \"routingNumber\": \"011000138\",\n    \"additionalInformation\": {\n      \"type\": \"TYPE_FIAT_US\",\n      \"accountType\": \"SAVINGS\",\n      \"supportedRails\": [\n        \"ACH\"\n      ]\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Account attached (pending moderation).",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/counterparties/:counterpartyID/accounts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "counterparties",
+                    ":counterpartyID",
+                    "accounts"
+                  ],
+                  "variable": [
+                    {
+                      "key": "counterpartyID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Account attached (pending moderation).",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"counterparty_id\": \"b2c3d4e5-f6a7-b8c9-d0e1-f2a3b4c5d6e7\",\n  \"data\": {\n    \"status\": \"MODERATION\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Quote a bank payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/operations/prepare",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "operations",
+                "prepare"
+              ]
+            },
+            "description": "Validates and quotes an operation (fees, balances) without moving money. Free.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currency\": \"USD\",\n  \"type\": \"WITHDRAW\",\n  \"paymentType\": \"SEPA_CT\",\n  \"sourceRequisit\": {\n    \"account\": \"c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5\"\n  },\n  \"destinationRequisit\": {\n    \"beneficiar\": \"BNK-CPACC-11\"\n  },\n  \"amount\": {\n    \"currencyCode\": \"USD\",\n    \"units\": \"250\",\n    \"nanos\": 0\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Quote preview.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/operations/prepare",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "operations",
+                    "prepare"
+                  ]
+                }
+              },
+              "status": "Quote preview.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"preview\": {\n    \"fee\": {\n      \"units\": \"1\",\n      \"nanos\": 500000000\n    },\n    \"valid\": true\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "List my bank payments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/operations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "operations"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 Operation history.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/operations",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "operations"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Operation history.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"items\": [\n    {\n      \"id\": \"7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c\",\n      \"status\": \"completed\",\n      \"type\": \"withdraw\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"page_size\": 50,\n    \"retrieved\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Send a bank payment — WITHDRAW to a beneficiary (SEPA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/operations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "operations"
+              ]
+            },
+            "description": "Executes a TRANSFER (between your own bank accounts) or WITHDRAW (to a registered beneficiary). Requires an idempotency key; retries with the same key return the original operation without re-charging. Billed as the fixed `banking_operation` fee; refunded if the corridor rejects. The final state arrives via the banking_operation_status_changed webhook.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currency\": \"USD\",\n  \"type\": \"WITHDRAW\",\n  \"paymentType\": \"SEPA_CT\",\n  \"sourceRequisit\": {\n    \"account\": \"c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5\"\n  },\n  \"destinationRequisit\": {\n    \"beneficiar\": \"BNK-CPACC-11\"\n  },\n  \"amount\": {\n    \"currencyCode\": \"USD\",\n    \"units\": \"250\",\n    \"nanos\": 0\n  },\n  \"comment\": \"Invoice 8841\",\n  \"idempotency_key\": \"acme-payment-0071\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Idempotency replay of an existing operation (no new charge).",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/operations",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "operations"
+                  ]
+                }
+              },
+              "status": "Idempotency replay of an existing operation (no new charge).",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"operation_id\": \"7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c\",\n  \"provider_id\": \"BNK-OP-90213\",\n  \"status\": \"pending\",\n  \"idempotency_key\": \"platform:9b1deb4d:acme-payment-0071\",\n  \"data\": {\n    \"type\": \"WITHDRAW\",\n    \"paymentType\": \"SEPA_CT\"\n  },\n  \"idempotency_hit\": true\n}"
+            }
+          ]
+        },
+        {
+          "name": "Send a bank payment — TRANSFER between own accounts",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/operations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "operations"
+              ]
+            },
+            "description": "Executes a TRANSFER (between your own bank accounts) or WITHDRAW (to a registered beneficiary). Requires an idempotency key; retries with the same key return the original operation without re-charging. Billed as the fixed `banking_operation` fee; refunded if the corridor rejects. The final state arrives via the banking_operation_status_changed webhook.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currency\": \"USD\",\n  \"type\": \"TRANSFER\",\n  \"paymentType\": \"EMPTY\",\n  \"sourceRequisit\": {\n    \"account\": \"c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5\"\n  },\n  \"destinationRequisit\": {\n    \"account\": \"d5e2f3a4-b5c6-d7e8-f9a0-b1c2d3e4f5a6\"\n  },\n  \"amount\": {\n    \"currencyCode\": \"USD\",\n    \"units\": \"100\",\n    \"nanos\": 0\n  },\n  \"idempotency_key\": \"internal-move-0012\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Idempotency replay of an existing operation (no new charge).",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/operations",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "operations"
+                  ]
+                }
+              },
+              "status": "Idempotency replay of an existing operation (no new charge).",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"operation_id\": \"7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c\",\n  \"provider_id\": \"BNK-OP-90213\",\n  \"status\": \"pending\",\n  \"idempotency_key\": \"platform:9b1deb4d:acme-payment-0071\",\n  \"data\": {\n    \"type\": \"WITHDRAW\",\n    \"paymentType\": \"SEPA_CT\"\n  },\n  \"idempotency_hit\": true\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get a bank payment",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/operations/:operationID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "operations",
+                ":operationID"
+              ],
+              "variable": [
+                {
+                  "key": "operationID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 Operation with live status.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/operations/:operationID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "operations",
+                    ":operationID"
+                  ],
+                  "variable": [
+                    {
+                      "key": "operationID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Operation with live status.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"operation_id\": \"7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c\",\n  \"provider_id\": \"BNK-OP-90213\",\n  \"status\": \"completed\",\n  \"idempotency_key\": \"platform:9b1deb4d:acme-payment-0071\",\n  \"data\": {\n    \"type\": \"WITHDRAW\",\n    \"paymentType\": \"SEPA_CT\"\n  }\n}"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

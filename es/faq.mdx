@@ -146,6 +146,14 @@ Para evitarlo, usa la **cuenta CLABE dedicada** en México o insiste en que
 la referencia viaje en la descripción de la transferencia.
 </Accordion>
 
+<Accordion title="¿El saldo de banking y mi saldo USDT son lo mismo?">
+No. El dinero de [banking](/es/guias/banking) vive en **tus cuentas
+bancarias reales** (USD u otras monedas habilitadas) y se consulta con
+`GET /v1/banking/accounts/{id}/balance`. Tu saldo CBPay es USDT y solo se
+toca para cobrar las comisiones fijas de banking (que se reembolsan si la
+operación falla).
+</Accordion>
+
 <Accordion title="¿Un depósito crypto y un payin son lo mismo?">
 No: un **payin** es un cobro fiat (moneda local → USDT); un **depósito
 crypto** es USDT on-chain que llega a tu wallet (`funding`). Ambos terminan
