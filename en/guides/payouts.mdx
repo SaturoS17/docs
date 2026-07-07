@@ -108,6 +108,61 @@ curl https://exchange.qbank.cl/platform/v1/payouts/0d4f… \
   -H "Authorization: Bearer <token>"
 ```
 
+## QR payout (Bolivia)
+
+In Bolivia you can also **pay a collection QR** (the local interoperable
+standard) in two steps: scan and confirm. Scanning is **free**; you are only
+charged on confirm, exactly like a regular payout (your rate + fixed fee).
+
+### 1. Scan the QR (free)
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payouts/qr/scan \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "qr_payload": "<QR content>",
+    "currency": "BOB"
+  }'
+```
+
+Returns the recipient's data so the user can confirm who they are paying:
+
+```json
+{
+  "scan_id": "…",
+  "provider_reference": "…",
+  "beneficiary_name": "Juan Quispe",
+  "destination_account": "…",
+  "amount": "700.00",
+  "currency": "BOB",
+  "glosa": "",
+  "status": "…"
+}
+```
+
+### 2. Confirm the payment (charged here)
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payouts/qr/confirm \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider_reference": "<from the scan>",
+    "amount": "700.00",
+    "currency": "BOB",
+    "description": "QR lunch payment",
+    "idempotency_key": "qr-2026-07-07-a"
+  }'
+```
+
+- `usdt_amount + fixed fee` is debited at **your rate**, just like a
+  `bank_transfer`.
+- The result is **synchronous**: the response already carries the final
+  state (`completed`, or `failed` with an automatic refund) — no waiting.
+- A scanned QR can only be paid once; retries with the same
+  `idempotency_key` return the original payout.
+
 ## Common errors
 
 | HTTP | `error` | What to do |

@@ -6,6 +6,19 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 7, 2026" description="v1.8">
+
+**Added**
+
+- **Bolivia QR payout**: pay any Bolivian collection QR in two steps —
+  `POST /v1/payouts/qr/scan` (free, returns the recipient's data) and
+  `POST /v1/payouts/qr/confirm` (charged like a regular payout: your rate +
+  fixed fee, with a synchronous final result and automatic refund on
+  failure).
+- Bolivia (BOB) joined the `GET /v1/rates` quotes.
+
+</Update>
+
 <Update label="July 7, 2026" description="v1.7">
 
 **Added**

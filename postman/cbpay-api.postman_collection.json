@@ -949,6 +949,139 @@
               "body": "{\n  \"items\": [\n    {\n      \"code\": \"0001\",\n      \"name\": \"Banco de Chile\"\n    },\n    {\n      \"code\": \"0012\",\n      \"name\": \"BancoEstado\"\n    },\n    {\n      \"code\": \"0037\",\n      \"name\": \"Santander\"\n    },\n    {\n      \"code\": \"0051\",\n      \"name\": \"Banco Falabella\"\n    }\n  ]\n}"
             }
           ]
+        },
+        {
+          "name": "Scan a payout QR (Bolivia)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payouts/qr/scan",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payouts",
+                "qr",
+                "scan"
+              ]
+            },
+            "description": "Step 1 of the Bolivia QR payout: reads a collection QR and returns the recipient's data plus the `provider_reference` needed to confirm. **Free of charge** — nothing is debited until the confirm step.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"qr_payload\": \"<QR content>\",\n  \"currency\": \"BOB\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Recipient data for user confirmation.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payouts/qr/scan",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payouts",
+                    "qr",
+                    "scan"
+                  ]
+                }
+              },
+              "status": "Recipient data for user confirmation.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"scan_id\": \"5c1d2e3f-4a5b-6c7d-8e9f-0a1b2c3d4e5f\",\n  \"provider_reference\": \"QR-REF-889923\",\n  \"beneficiary_name\": \"Juan Quispe\",\n  \"destination_account\": \"****4521\",\n  \"amount\": \"700.00\",\n  \"currency\": \"BOB\",\n  \"glosa\": \"\",\n  \"status\": \"scanned\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Confirm a QR payout (Bolivia)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payouts/qr/confirm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payouts",
+                "qr",
+                "confirm"
+              ]
+            },
+            "description": "Step 2 of the Bolivia QR payout, charged exactly like a regular payout: the local amount converts at **your account's rate** and `usdt_amount + fixed fee` is debited. The result is **synchronous** — the response carries the final state (`completed`, or `failed` with an automatic refund). A scanned QR can only be paid once; requires an idempotency key like every money-moving operation.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"provider_reference\": \"QR-REF-889923\",\n  \"amount\": \"700.00\",\n  \"currency\": \"BOB\",\n  \"description\": \"QR lunch payment\",\n  \"idempotency_key\": \"qr-2026-07-07-a\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Idempotency replay of an existing QR payout.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payouts/qr/confirm",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payouts",
+                    "qr",
+                    "confirm"
+                  ]
+                }
+              },
+              "status": "Idempotency replay of an existing QR payout.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"payout_id\": \"8e2a1b0c-9d8e-7f60-5a4b-3c2d1e0f9a8b\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"idempotency_key\": \"qr-2026-07-07-a\",\n  \"country\": \"BO\",\n  \"currency\": \"BOB\",\n  \"method\": \"qr\",\n  \"local_amount\": \"700.00\",\n  \"fx_rate\": \"6.91\",\n  \"usdt_amount\": \"101.302460\",\n  \"fee\": \"0.300000\",\n  \"total_debit\": \"101.602460\",\n  \"beneficiary\": {\n    \"qr_reference\": \"QR-REF-889923\"\n  },\n  \"description\": \"QR lunch payment\",\n  \"status\": \"completed\",\n  \"status_code\": \"\",\n  \"status_message\": \"\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:01Z\",\n  \"idempotency_hit\": true\n}"
+            }
+          ]
         }
       ]
     },

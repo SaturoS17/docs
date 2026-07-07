@@ -108,6 +108,63 @@ curl https://exchange.qbank.cl/platform/v1/payouts/0d4f… \
   -H "Authorization: Bearer <token>"
 ```
 
+## Payout QR (Bolivia)
+
+En Bolivia también puedes **pagar a un QR de cobro** (el estándar
+interoperable local) en dos pasos: escanear y confirmar. El escaneo es
+**gratis**; solo se cobra al confirmar, igual que un payout normal (tu tasa
++ fijo).
+
+### 1. Escanea el QR (gratis)
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payouts/qr/scan \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "qr_payload": "<contenido del QR>",
+    "currency": "BOB"
+  }'
+```
+
+Devuelve los datos del destinatario para que el usuario confirme a quién le
+paga:
+
+```json
+{
+  "scan_id": "…",
+  "provider_reference": "…",
+  "beneficiary_name": "Juan Quispe",
+  "destination_account": "…",
+  "amount": "700.00",
+  "currency": "BOB",
+  "glosa": "",
+  "status": "…"
+}
+```
+
+### 2. Confirma el pago (se cobra aquí)
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payouts/qr/confirm \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider_reference": "<del scan>",
+    "amount": "700.00",
+    "currency": "BOB",
+    "description": "Pago QR almuerzo",
+    "idempotency_key": "qr-2026-07-07-a"
+  }'
+```
+
+- Se debita `usdt_amount + fijo` a **tu tasa**, igual que un
+  `bank_transfer`.
+- El resultado es **síncrono**: la respuesta ya trae el estado final
+  (`completed` o `failed` con reembolso automático) — sin esperas.
+- Un mismo QR escaneado solo puede pagarse una vez; reintentos con la misma
+  `idempotency_key` devuelven el payout original.
+
 ## Errores frecuentes
 
 | HTTP | `error` | Qué hacer |
