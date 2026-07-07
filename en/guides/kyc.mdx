@@ -1,10 +1,12 @@
 ---
-title: "KYC and compliance"
-description: "Person and company screening, rescreening and continuous monitoring"
+title: "KYC/KYB and compliance"
+description: "Person verification (KYC) and company verification (KYB), rescreening and continuous monitoring"
 ---
 
-CBPay integrates KYC/AML screening as a service: you submit the account's
-identity and receive the analysis result. The account's KYC state
+CBPay integrates identity verification as a service — **KYC** for persons
+and **KYB** for companies — with AML screening included: you submit the
+account's identity and receive the analysis result. The account's
+verification state
 (`kyc_status`) is resolved by CBPay after reviewing the result.
 
 <Note>
@@ -78,7 +80,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/kyc/rescreen \
   -H "Authorization: Bearer <token>"
 ```
 
-Requires a prior KYC submission; otherwise `409 no_kyc`.
+Requires a prior KYC/KYB submission; otherwise `409 no_kyc`.
 
 ## Continuous monitoring
 
@@ -100,5 +102,5 @@ Enabling bills the `compliance_monitoring` fee (when configured);
 | HTTP | `error` | Cause |
 |---|---|---|
 | 402 | `insufficient_funds` | Not enough balance for the compliance fee |
-| 409 | `no_kyc` | Rescreen/monitoring without a prior KYC |
+| 409 | `no_kyc` | Rescreen/monitoring without a prior KYC/KYB |
 | 502 | `compliance_unavailable` | Service temporarily unavailable (the fee was refunded) |

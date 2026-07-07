@@ -1,4 +1,4 @@
-﻿openapi: 3.1.0
+openapi: 3.1.0
 info:
   title: CBPay API
   version: '1.0'
@@ -35,8 +35,9 @@ tags:
   description: Free internal transfers between CBPay accounts.
 - name: Crypto
   description: On-chain USDT funding and withdrawals (TRON and Ethereum).
-- name: KYC
-  description: Compliance screening of persons and companies.
+- name: KYC / KYB
+  description: 'Identity verification: KYC for persons, KYB for companies, with AML screening, rescreening
+    and continuous monitoring.'
 - name: Webhooks
   description: Subscriptions to receive signed event notifications.
 - name: Status
@@ -1554,20 +1555,13 @@ paths:
   /v1/kyc:
     post:
       tags:
-      - KYC
+      - KYC / KYB
       operationId: submitKyc
-      summary: Submit KYC screening
-      description: 'Screens the calling account (person or company, detected from the
-
-        payload) against the compliance service. If a compliance fee is
-
-        configured, it is debited before the call and refunded if the
-
-        screening fails. The response includes the screening result plus
-
-        `kyc_status`, `compliance_service` and `compliance_fee`.
-
-        '
+      summary: Submit KYC/KYB verification
+      description: Verifies the calling account's identity — KYC for persons, KYB for companies (detected
+        from the payload) — against the compliance service. If a compliance fee is configured, it is debited
+        before the call and refunded if the screening fails. The response includes the screening result
+        plus `kyc_status`, `compliance_service` and `compliance_fee`.
       requestBody:
         required: true
         content:
@@ -1656,16 +1650,11 @@ paths:
   /v1/kyc/rescreen:
     post:
       tags:
-      - KYC
+      - KYC / KYB
       operationId: rescreenKyc
-      summary: Re-run KYC screening
-      description: 'Re-runs the account''s screening. Requires a prior KYC submission.
-
-        Bills the `compliance_rescreen` fee if configured; refunded on
-
-        upstream failure.
-
-        '
+      summary: Re-run KYC/KYB verification
+      description: Re-runs the account's verification. Requires a prior KYC/KYB submission. Bills the
+        `compliance_rescreen` fee if configured; refunded on upstream failure.
       responses:
         '200':
           description: Rescreen result plus billing fields.
@@ -1701,16 +1690,12 @@ paths:
   /v1/kyc/monitoring:
     patch:
       tags:
-      - KYC
+      - KYC / KYB
       operationId: setKycMonitoring
       summary: Enable or disable monitoring
-      description: 'Toggles continuous compliance monitoring for the account''s screened
-
-        identity. Enabling bills the `compliance_monitoring` fee if
-
-        configured; disabling is free. Requires a prior KYC submission.
-
-        '
+      description: Toggles continuous compliance monitoring for the account's verified identity. Enabling
+        bills the `compliance_monitoring` fee if configured; disabling is free. Requires a prior KYC/KYB
+        submission.
       requestBody:
         required: true
         content:

@@ -47,7 +47,7 @@ All errors share the same shape:
 | `recipient_required` / `self_transfer` | Invalid transfer destination |
 | `invalid_chain` / `invalid_asset` | Unsupported network or asset |
 | `to_address_required` | Missing withdrawal destination address |
-| `invalid_payload` | Missing `enabled` (KYC monitoring) |
+| `invalid_payload` | Missing `enabled` (KYC/KYB monitoring) |
 | `invalid_event_type` / `weak_secret` / `invalid_callback_url` | Invalid webhook subscription |
 | `invalid_status` / `invalid_kyc_status` / `invalid_direction` / `reason_required` / `account_id_required` / `invalid_service` / `invalid_fee` | Administration validations |
 
@@ -59,7 +59,7 @@ All errors share the same shape:
 | 404 | `not_found` | Resource does not exist (or belongs to another account) |
 | 404 | `recipient_not_found` | Transfer destination does not exist |
 | 409 | `duplicate` | The resource already exists |
-| 409 | `no_kyc` | Rescreen/monitoring without a prior KYC |
+| 409 | `no_kyc` | Rescreen/monitoring without a prior KYC/KYB |
 | 422 | `currency_not_supported` | No FX rate for that currency |
 | 422 | `core_rejected` | The processor rejected the operation |
 | 422 | `recipient_unavailable` | The destination account cannot receive |
