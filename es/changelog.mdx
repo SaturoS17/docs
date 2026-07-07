@@ -7,6 +7,21 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="7 de julio de 2026" description="v1.17">
+
+**Agregado**
+
+- **Chile: página de pago hosted (`method: "fintoc"`)** en
+  `POST /v1/payins`. La respuesta trae una `payment_url` que el pagador
+  abre para transferir desde **cualquier banco o billetera chilena** (Banco
+  Estado, Santander, Mach, Tenpo, Mercado Pago, entre otros); el
+  depósito se detecta, valida y acredita automáticamente en USDT con el
+  webhook `payin_credited` de siempre. Soporta `idempotency_key` opcional:
+  un reintento devuelve el mismo payin y la misma URL sin abrir otra sesión
+  de pago. Ver la [guía de payins](/es/guias/payins).
+
+</Update>
+
 <Update label="7 de julio de 2026" description="v1.16">
 
 **Agregado**

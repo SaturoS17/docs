@@ -1073,8 +1073,10 @@ paths:
         through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose
         `charge` carries the QR image and the "copia e cola" payload. With `method: "bank_transfer"` the
         deposit is announced and the response carries the reference the sender must include so the arriving
-        transfer is matched and credited automatically. Charging is free; the payin fee applies when the
-        deposit is credited.'
+        transfer is matched and credited automatically. With `method: "fintoc"` (Chile) the response
+        carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet;
+        the deposit is detected, validated and credited automatically. Charging is free; the payin fee
+        applies when the deposit is credited.'
       requestBody:
         required: true
         content:
@@ -1108,10 +1110,18 @@ paths:
                   enum:
                   - qr
                   - bank_transfer
+                  - fintoc
                   default: qr
                   description: Collection mode. `qr` creates an active QR charge through the processor;
                     `bank_transfer` announces an incoming deposit and returns the reference to include
-                    in the transfer description. Use /v1/payins/collect for pull collections.
+                    in the transfer description; `fintoc` (Chile only) returns a hosted `payment_url`
+                    where the payer transfers from any Chilean bank or wallet and the deposit is
+                    detected automatically. Use /v1/payins/collect for pull collections.
+                idempotency_key:
+                  type: string
+                  description: Optional idempotency key (`fintoc` method; also accepted as the
+                    `Idempotency-Key` header). A retry with the same key returns the original payin
+                    and its `payment_url` instead of opening a second payment session.
             examples:
               bo_qr:
                 summary: Bolivia — QR charge (BOB)
@@ -1138,6 +1148,15 @@ paths:
                   currency: CLP
                   method: bank_transfer
                   amount: '500000'
+              cl_fintoc:
+                summary: Chile — hosted payment page, any bank (CLP)
+                value:
+                  country: CL
+                  currency: CLP
+                  method: fintoc
+                  amount: '150000'
+                  description: 'Top-up order 8841'
+                  idempotency_key: topup-8841
       responses:
         '201':
           description: Charge created.
@@ -1173,6 +1192,16 @@ paths:
                     reference: 4f81c1d0-aaaa-bbbb-cccc-ddddeeeeffff
                     note: include the reference in the transfer description so the deposit is credited
                       automatically
+                fintoc:
+                  summary: 'Hosted payment page (method: fintoc, Chile)'
+                  value:
+                    payin_id: 7a2b3c4d-1111-2222-3333-444455556666
+                    status: pending
+                    reference: 7a2b3c4d-1111-2222-3333-444455556666
+                    payment_url: https://pay.fintoc.com/cs_li5531onlFDi235
+                    expires_at: '2026-07-08T18:48:25Z'
+                    note: share the payment_url with the payer; the deposit is credited automatically
+                      once the transfer is detected
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':

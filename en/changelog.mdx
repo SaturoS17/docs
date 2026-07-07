@@ -6,6 +6,21 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 7, 2026" description="v1.17">
+
+**Added**
+
+- **Chile: hosted payment page (`method: "fintoc"`)** on
+  `POST /v1/payins`. The response carries a `payment_url` the payer opens
+  to transfer from **any Chilean bank or wallet** (Banco Estado, Santander,
+  Mach, Tenpo, Mercado Pago, among others); the deposit is detected,
+  validated and credited automatically in USDT with the usual
+  `payin_credited` webhook. Supports an optional `idempotency_key`: a retry
+  returns the same payin and the same URL without opening a second payment
+  session. See the [payins guide](/en/guides/payins).
+
+</Update>
+
 <Update label="July 7, 2026" description="v1.16">
 
 **Added**

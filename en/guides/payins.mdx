@@ -13,6 +13,7 @@ webhook:
 ```mermaid
 flowchart LR
     qr["Collection QR<br/>(BO, BR·PIX)"] --> pay["Your customer pays<br/>in local currency"]
+    hosted["Hosted payment page<br/>(CL: fintoc)"] --> pay
     announced["Announced transfer<br/>(CL, PE, MX, BR)"] --> pay
     pull["Active pull collection<br/>(VE: c2p, debit)"] --> pay
     clabe["Dedicated CLABE account<br/>(MX)"] --> pay
@@ -50,7 +51,7 @@ Collection corridors and modes:
 
 | Country | Currency | Modes |
 |---|---|---|
-| Chile | CLP | Announced bank transfer |
+| Chile | CLP | Hosted payment page (`fintoc`), announced bank transfer |
 | Peru | PEN | Announced bank transfer |
 | Mexico | MXN | Dedicated CLABE account, announced bank transfer |
 | Venezuela | VES | Active collection `c2p` and `debito_inmediato` (pull) |
@@ -66,8 +67,47 @@ USDT at the current rate and credited net of the payin fee.
 <Tabs>
 <Tab title="Chile">
 
-**Announced bank transfer**: announce the incoming deposit and share the
-reference with the sender.
+**Hosted payment page (`fintoc`)** — recommended: you get a `payment_url`;
+the payer opens it and transfers from **any Chilean bank or wallet** (Banco
+Estado, Santander, Mach, Tenpo, Mercado Pago…). The payment is
+detected and validated automatically — no manual references.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "CL",
+    "currency": "CLP",
+    "method": "fintoc",
+    "amount": "150000",
+    "description": "Top-up order 8841",
+    "idempotency_key": "topup-8841"
+  }'
+```
+
+Response `201`:
+
+```json
+{
+  "payin_id": "7a2b…",
+  "status": "pending",
+  "reference": "7a2b…",
+  "payment_url": "https://pay.fintoc.com/cs_li5531onlFDi235",
+  "expires_at": "2026-07-08T18:48:25Z",
+  "note": "share the payment_url with the payer; the deposit is credited automatically once the transfer is detected"
+}
+```
+
+Share the `payment_url` with the payer (link, redirect or WebView). Once
+the payment is confirmed your account is credited in USDT and you receive
+the `payin_credited` webhook. The CLP amount must be an integer (the
+Chilean peso has no decimals) and the payment session expires after 24
+hours by default. A retry with the same `idempotency_key` returns the same
+payin and the same URL — it never opens a second payment session.
+
+**Announced bank transfer** (manual alternative): announce the incoming
+deposit and share the reference with the sender.
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/payins \

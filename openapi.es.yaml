@@ -1073,8 +1073,10 @@ paths:
         a través del procesador — en Bolivia el QR interoperable local, en Brasil un QR PIX dinámico cuyo
         `charge` trae la imagen del QR y el payload "copia e cola". Con `method: "bank_transfer"` el depósito
         queda anunciado y la respuesta trae la referencia que el remitente debe incluir para que la transferencia
-        entrante se concilie y acredite automáticamente. Cobrar es gratis; la comisión de payin aplica
-        cuando el depósito se acredita.'
+        entrante se concilie y acredite automáticamente. Con `method: "fintoc"` (Chile) la respuesta trae
+        una `payment_url` hosted: el pagador la abre y transfiere desde cualquier banco o billetera chilena;
+        el depósito se detecta, valida y acredita automáticamente. Cobrar es gratis; la comisión de payin
+        aplica cuando el depósito se acredita.'
       requestBody:
         required: true
         content:
@@ -1108,10 +1110,18 @@ paths:
                   enum:
                   - qr
                   - bank_transfer
+                  - fintoc
                   default: qr
                   description: Modo de cobro. `qr` crea un cobro QR activo a través del procesador; `bank_transfer`
                     anuncia un depósito entrante y devuelve la referencia a incluir en la descripción
-                    de la transferencia. Usa /v1/payins/collect para cobros pull.
+                    de la transferencia; `fintoc` (solo Chile) devuelve una `payment_url` hosted donde
+                    el pagador transfiere desde cualquier banco o billetera chilena y el depósito se
+                    detecta automáticamente. Usa /v1/payins/collect para cobros pull.
+                idempotency_key:
+                  type: string
+                  description: Clave de idempotencia opcional (método `fintoc`; también se acepta como
+                    header `Idempotency-Key`). Un retry con la misma clave devuelve el payin original
+                    y su `payment_url` en vez de abrir una segunda sesión de pago.
             examples:
               bo_qr:
                 summary: Bolivia — cobro QR (BOB)
@@ -1138,6 +1148,15 @@ paths:
                   currency: CLP
                   method: bank_transfer
                   amount: '500000'
+              cl_fintoc:
+                summary: Chile — página de pago hosted, cualquier banco (CLP)
+                value:
+                  country: CL
+                  currency: CLP
+                  method: fintoc
+                  amount: '150000'
+                  description: 'Top-up order 8841'
+                  idempotency_key: topup-8841
       responses:
         '201':
           description: Cobro creado.
@@ -1173,6 +1192,16 @@ paths:
                     reference: 4f81c1d0-aaaa-bbbb-cccc-ddddeeeeffff
                     note: include the reference in the transfer description so the deposit is credited
                       automatically
+                fintoc:
+                  summary: 'Página de pago hosted (method: fintoc, Chile)'
+                  value:
+                    payin_id: 7a2b3c4d-1111-2222-3333-444455556666
+                    status: pending
+                    reference: 7a2b3c4d-1111-2222-3333-444455556666
+                    payment_url: https://pay.fintoc.com/cs_li5531onlFDi235
+                    expires_at: '2026-07-08T18:48:25Z'
+                    note: share the payment_url with the payer; the deposit is credited automatically
+                      once the transfer is detected
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':

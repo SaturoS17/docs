@@ -1265,6 +1265,7 @@ automático + webhook:
 ```mermaid
 flowchart LR
     qr["QR de cobro<br/>(BO, BR·PIX)"] --> pago["Tu cliente paga<br/>en moneda local"]
+    hosted["Página de pago hosted<br/>(CL: fintoc)"] --> pago
     anunciada["Transferencia anunciada<br/>(CL, PE, MX, BR)"] --> pago
     pull["Cobro activo pull<br/>(VE: c2p, débito)"] --> pago
     clabe["Cuenta CLABE dedicada<br/>(MX)"] --> pago
@@ -1302,7 +1303,7 @@ Corredores y modalidades de cobro:
 
 | País | Moneda | Modalidades |
 |---|---|---|
-| Chile | CLP | Transferencia anunciada |
+| Chile | CLP | Página de pago hosted (`fintoc`), transferencia anunciada |
 | Perú | PEN | Transferencia anunciada |
 | México | MXN | Cuenta CLABE dedicada, transferencia anunciada |
 | Venezuela | VES | Cobro activo `c2p` y `debito_inmediato` (pull) |
@@ -1318,8 +1319,48 @@ de payin.
 
 #### Chile
 
-**Transferencia anunciada**: anuncias el depósito entrante y compartes la
-referencia con quien transfiere.
+**Página de pago hosted (`fintoc`)** — recomendado: recibes una
+`payment_url`; el pagador la abre y transfiere desde **cualquier banco o
+billetera chilena** (Banco Estado, Santander, Mach, Tenpo, Mercado
+Pago…). El pago se detecta y valida automáticamente — sin referencias
+manuales.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "CL",
+    "currency": "CLP",
+    "method": "fintoc",
+    "amount": "150000",
+    "description": "Recarga pedido 8841",
+    "idempotency_key": "topup-8841"
+  }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "payin_id": "7a2b…",
+  "status": "pending",
+  "reference": "7a2b…",
+  "payment_url": "https://pay.fintoc.com/cs_li5531onlFDi235",
+  "expires_at": "2026-07-08T18:48:25Z",
+  "note": "share the payment_url with the payer; the deposit is credited automatically once the transfer is detected"
+}
+```
+
+Comparte la `payment_url` con el pagador (link, redirección o WebView).
+Cuando el pago se confirma, tu cuenta se acredita en USDT y recibes el
+webhook `payin_credited`. El monto CLP debe ser entero (el peso chileno no
+usa decimales) y la sesión de pago vence en 24 horas por defecto. Un retry
+con la misma `idempotency_key` devuelve el mismo payin y la misma URL —
+nunca abre una segunda sesión de pago.
+
+**Transferencia anunciada** (alternativa manual): anuncias el depósito
+entrante y compartes la referencia con quien transfiere.
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/payins \
@@ -3022,6 +3063,19 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.17 — 7 de julio de 2026
+
+**Agregado**
+
+- **Chile: página de pago hosted (`method: "fintoc"`)** en
+  `POST /v1/payins`. La respuesta trae una `payment_url` que el pagador
+  abre para transferir desde **cualquier banco o billetera chilena** (Banco
+  Estado, Santander, Mach, Tenpo, Mercado Pago, entre otros); el
+  depósito se detecta, valida y acredita automáticamente en USDT con el
+  webhook `payin_credited` de siempre. Soporta `idempotency_key` opcional:
+  un reintento devuelve el mismo payin y la misma URL sin abrir otra sesión
+  de pago. Ver la [guía de payins](#payins).
 
 ### v1.16 — 7 de julio de 2026
 
