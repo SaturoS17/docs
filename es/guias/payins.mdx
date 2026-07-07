@@ -196,7 +196,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payins/collect \
     "payer_document": "V12345678",
     "payer_phone": "04141234567",
     "payer_bank": "0102",
-    "otp": "12345678"
+    "otp": "12345678",
+    "idempotency_key": "cobro-5512"
   }'
 ```
 
@@ -213,9 +214,17 @@ curl -X POST https://api.qbank.cl/platform/v1/payins/collect \
     "payer_bank": "0102",
     "payer_account_type": "CNTA",
     "otp": "87654321",
-    "otp_reference": "OTP-5521"
+    "otp_reference": "OTP-5521",
+    "idempotency_key": "cobro-5512"
   }'
 ```
+
+<Note>
+El cobro activo ejecuta un débito real contra el pagador, así que
+`idempotency_key` es **obligatoria** (body o header `Idempotency-Key`): un
+reintento con la misma clave devuelve el resultado original con
+`idempotency_hit` y nunca vuelve a cobrar.
+</Note>
 
 </CodeGroup>
 

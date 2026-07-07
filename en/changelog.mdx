@@ -15,6 +15,16 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   `from`/`to` (YYYY-MM-DD, UTC, inclusive), on top of the usual pagination
   (`page`, `page_size` up to 200). Invalid dates return
   `400 invalid_range`.
+- **Query transfers**: `GET /v1/transfers` (list with pagination and date
+  filters) and `GET /v1/transfers/{id}` — previously they could only be
+  created.
+- **List webhook subscriptions**: `GET /v1/webhooks/subscriptions`.
+- **Idempotency on active collections**: `POST /v1/payins/collect` now
+  requires `idempotency_key` (it executes a real charge; a retry never
+  re-charges the payer). Same hardening for wallet creation (no double fee
+  on retries) and admin adjustments.
+- Uniform pagination added to `members`, `crypto/wallets`,
+  `deposit-accounts` and (admin) `orgs`.
 
 - **Account statement** (`GET /v1/reports/statement`): consolidates every
   movement of the period — payouts, payins, crypto, transfers and fees —

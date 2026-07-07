@@ -1449,6 +1449,60 @@ paths:
                 message: destination account cannot receive transfers
         '401':
           $ref: '#/components/responses/Unauthorized'
+    get:
+      tags:
+      - Transfers
+      operationId: listTransfers
+      summary: List transfers
+      description: Lists the account's transfers (sent and received), newest first.
+      parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+      - name: from
+        in: query
+        schema:
+          type: string
+          format: date
+        description: Filter from this date (YYYY-MM-DD, UTC, inclusive).
+      - name: to
+        in: query
+        schema:
+          type: string
+          format: date
+        description: Filter up to this date (YYYY-MM-DD, UTC, inclusive).
+      responses:
+        '200':
+          description: Transfers.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                page: 1
+                page_size: 50
+                transfers:
+                - &id013
+                  transfer_id: 77b1c2d3-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+                  from_account_id: 389d34a3-6c61-4782-b822-95ac173068dc
+                  to_account_id: ae8cf540-22a9-414d-82cc-8ac04732be4f
+                  asset: USDT
+                  amount: '25.000000'
+                  description: Split de gastos
+                  status: completed
+                  direction: sent
+                  created_at: '2026-07-06T20:10:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/crypto/withdrawals:
     post:
       tags:
@@ -1987,6 +2041,43 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '401':
           $ref: '#/components/responses/Unauthorized'
+    get:
+      tags:
+      - Webhooks
+      operationId: listWebhookSubscriptions
+      summary: List webhook subscriptions
+      description: Lists the account's webhook subscriptions (the secret is never returned).
+      parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+      responses:
+        '200':
+          description: Subscriptions.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                page: 1
+                page_size: 50
+                subscriptions:
+                - id: 475b48fc-2858-4ad3-81e2-ec68742d8245
+                  event_type: payout_status_changed
+                  callback_url: https://api.example.com/webhooks/cbpay
+                  status: active
+                  created_at: '2026-07-07T12:00:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /healthz:
     get:
       tags:
@@ -2011,7 +2102,7 @@ paths:
           description: Database not reachable (`store_unavailable`).
           content:
             application/json:
-              schema: &id013
+              schema: &id014
                 $ref: '#/components/schemas/Error'
               example:
                 error: store_unavailable
@@ -2403,6 +2494,7 @@ paths:
               required:
               - method
               - amount
+              - idempotency_key
               properties:
                 country:
                   type: string
@@ -2436,6 +2528,10 @@ paths:
                   type: string
                 otp_reference:
                   type: string
+                idempotency_key:
+                  type: string
+                  description: Required — a collect executes a real charge; retries with the same key
+                    never re-charge.
             example:
               method: c2p
               amount: '1200.00'
@@ -2444,6 +2540,7 @@ paths:
               payer_phone: '04141234567'
               payer_bank: '0102'
               otp: '12345678'
+              idempotency_key: collect-2026-07-07-a
       responses:
         '200':
           description: 'Collection result. `paid: true` means the deposit was credited.'
@@ -2529,6 +2626,8 @@ paths:
               example:
                 error: core_unavailable
                 message: could not execute the collection
+      parameters:
+      - $ref: '#/components/parameters/idempotencyKeyHeader'
   /v1/payins/collect/otp:
     post:
       tags:
@@ -3727,6 +3826,39 @@ paths:
                 message: from and to are required (YYYY-MM-DD)
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/transfers/{transferID}:
+    get:
+      tags:
+      - Transfers
+      operationId: getTransfer
+      summary: Get a transfer
+      description: Returns one transfer; visible only to its two parties.
+      parameters:
+      - name: transferID
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The transfer.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example: *id013
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Not found or not a party.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: not_found
+                message: resource not found
 components:
   securitySchemes:
     bearerAuth:
@@ -3809,7 +3941,7 @@ components:
       description: Missing or invalid credential (`unauthorized`).
       content:
         application/json:
-          schema: *id013
+          schema: *id014
           example:
             error: unauthorized
             message: invalid or missing credentials
@@ -4249,15 +4381,15 @@ webhooks:
             schema:
               type: object
               properties:
-                payin_id: &id014
+                payin_id: &id015
                   type: string
-                account_id: *id014
-                country: *id014
-                currency: *id014
-                local_amount: *id014
-                fx_rate: *id014
-                usdt_credited: *id014
-                fee: *id014
+                account_id: *id015
+                country: *id015
+                currency: *id015
+                local_amount: *id015
+                fx_rate: *id015
+                usdt_credited: *id015
+                fee: *id015
             example:
               payin_id: 4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -4285,15 +4417,15 @@ webhooks:
             schema:
               type: object
               properties:
-                payout_id: *id014
-                account_id: *id014
-                country: *id014
-                currency: *id014
-                local_amount: *id014
-                usdt_amount: *id014
-                total_debit: *id014
-                status: *id014
-                status_code: *id014
+                payout_id: *id015
+                account_id: *id015
+                country: *id015
+                currency: *id015
+                local_amount: *id015
+                usdt_amount: *id015
+                total_debit: *id015
+                status: *id015
+                status_code: *id015
             example:
               payout_id: 7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -4322,13 +4454,13 @@ webhooks:
             schema:
               type: object
               properties:
-                transfer_id: *id014
-                from_account_id: *id014
-                to_account_id: *id014
-                asset: *id014
-                amount: *id014
-                description: *id014
-                created_at: *id014
+                transfer_id: *id015
+                from_account_id: *id015
+                to_account_id: *id015
+                asset: *id015
+                amount: *id015
+                description: *id015
+                created_at: *id015
             example:
               transfer_id: 2a7b9c1d-4e5f-6a70-8b9c-0d1e2f3a4b5c
               from_account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -4355,12 +4487,12 @@ webhooks:
             schema:
               type: object
               properties:
-                account_id: *id014
-                chain: *id014
-                asset: *id014
-                tx_id: *id014
-                amount: *id014
-                fee: *id014
+                account_id: *id015
+                chain: *id015
+                asset: *id015
+                tx_id: *id015
+                amount: *id015
+                fee: *id015
             example:
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
               chain: tron
@@ -4386,13 +4518,13 @@ webhooks:
             schema:
               type: object
               properties:
-                withdrawal_id: *id014
-                account_id: *id014
-                chain: *id014
-                asset: *id014
-                tx_id: *id014
-                status: *id014
-                amount: *id014
+                withdrawal_id: *id015
+                account_id: *id015
+                chain: *id015
+                asset: *id015
+                tx_id: *id015
+                status: *id015
+                amount: *id015
             example:
               withdrawal_id: 6c5d4e3f-2a1b-0c9d-8e7f-6a5b4c3d2e1f
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d

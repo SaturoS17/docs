@@ -1442,7 +1442,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payins/collect \
     "payer_document": "V12345678",
     "payer_phone": "04141234567",
     "payer_bank": "0102",
-    "otp": "12345678"
+    "otp": "12345678",
+    "idempotency_key": "cobro-5512"
   }'
 ```
 
@@ -1459,10 +1460,16 @@ curl -X POST https://api.qbank.cl/platform/v1/payins/collect \
     "payer_bank": "0102",
     "payer_account_type": "CNTA",
     "otp": "87654321",
-    "otp_reference": "OTP-5521"
+    "otp_reference": "OTP-5521",
+    "idempotency_key": "cobro-5512"
   }'
 ```
 
+> **Nota**
+El cobro activo ejecuta un débito real contra el pagador, así que
+`idempotency_key` es **obligatoria** (body o header `Idempotency-Key`): un
+reintento con la misma clave devuelve el resultado original con
+`idempotency_hit` y nunca vuelve a cobrar.
 Respuesta `200` (cobro aprobado y acreditado):
 
 ```json
@@ -1703,6 +1710,25 @@ original:
 
 El receptor puede enterarse por el webhook `transfer_received` y ambos ven
 el movimiento en su historial (`transfer_out` / `transfer_in`).
+
+### Consultar transferencias
+
+Lista las transferencias de tu cuenta (enviadas y recibidas), con
+paginación y filtros de fecha:
+
+```bash
+curl "https://api.qbank.cl/platform/v1/transfers?from=2026-07-01&to=2026-07-07&page_size=50" \
+  -H "Authorization: Bearer <token>"
+```
+
+O una en particular por su ID (solo visible para las dos partes):
+
+```bash
+curl https://api.qbank.cl/platform/v1/transfers/77b1… \
+  -H "Authorization: Bearer <token>"
+```
+
+Cada fila trae `direction` (`sent` o `received`) desde tu perspectiva.
 
 ### Reglas
 
@@ -3006,6 +3032,16 @@ con anticipación y quedan marcados como **Breaking**.
   `from`/`to` (YYYY-MM-DD, UTC, inclusive), además de la paginación de
   siempre (`page`, `page_size` hasta 200). Fechas inválidas devuelven
   `400 invalid_range`.
+- **Consulta de transferencias**: `GET /v1/transfers` (lista con
+  paginación y fechas) y `GET /v1/transfers/{id}` — antes solo se podían
+  crear.
+- **Listar suscripciones de webhook**: `GET /v1/webhooks/subscriptions`.
+- **Idempotencia en cobros activos**: `POST /v1/payins/collect` ahora exige
+  `idempotency_key` (ejecuta un cargo real; un reintento nunca vuelve a
+  cobrar al pagador). Igual refuerzo en creación de wallet (no dobla el fee
+  en reintentos) y en ajustes de administración.
+- Paginación uniforme agregada a `members`, `crypto/wallets`,
+  `deposit-accounts` y (admin) `orgs`.
 
 - **Cartola / estado de cuenta** (`GET /v1/reports/statement`): consolida
   todos los movimientos del período — payouts, payins, crypto,

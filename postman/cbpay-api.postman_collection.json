@@ -2223,6 +2223,11 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "",
+                "disabled": true
               }
             ],
             "url": {
@@ -2239,7 +2244,7 @@
             "description": "Charges the payer directly in corridors that support pull collections (e.g. Venezuela `c2p` / `debito_inmediato`). Synchronous: if the charge is approved the deposit converts at the current rate and is credited in the same call, net of the payin fee. If the payer declines, `paid` is false, the payin is marked failed and nothing is charged.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"method\": \"c2p\",\n  \"amount\": \"1200.00\",\n  \"description\": \"Order 5512\",\n  \"payer_document\": \"V12345678\",\n  \"payer_phone\": \"04141234567\",\n  \"payer_bank\": \"0102\",\n  \"otp\": \"12345678\"\n}",
+              "raw": "{\n  \"method\": \"c2p\",\n  \"amount\": \"1200.00\",\n  \"description\": \"Order 5512\",\n  \"payer_document\": \"V12345678\",\n  \"payer_phone\": \"04141234567\",\n  \"payer_bank\": \"0102\",\n  \"otp\": \"12345678\",\n  \"idempotency_key\": \"collect-2026-07-07-a\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2457,6 +2462,104 @@
       "name": "Transfers",
       "item": [
         {
+          "name": "List transfers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/transfers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "transfers"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                }
+              ]
+            },
+            "description": "Lists the account's transfers (sent and received), newest first."
+          },
+          "response": [
+            {
+              "name": "200 Transfers.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/transfers",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "transfers"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                    }
+                  ]
+                }
+              },
+              "status": "Transfers.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"transfers\": [\n    {\n      \"transfer_id\": \"77b1c2d3-4e5f-6a7b-8c9d-0e1f2a3b4c5d\",\n      \"from_account_id\": \"389d34a3-6c61-4782-b822-95ac173068dc\",\n      \"to_account_id\": \"ae8cf540-22a9-414d-82cc-8ac04732be4f\",\n      \"asset\": \"USDT\",\n      \"amount\": \"25.000000\",\n      \"description\": \"Split de gastos\",\n      \"status\": \"completed\",\n      \"direction\": \"sent\",\n      \"created_at\": \"2026-07-06T20:10:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
           "name": "Create an internal transfer — Person → person, by email",
           "request": {
             "method": "POST",
@@ -2648,6 +2751,66 @@
                 }
               ],
               "body": "{\n  \"transfer_id\": \"2a7b9c1d-4e5f-6a70-8b9c-0d1e2f3a4b5c\",\n  \"from_account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"to_account_id\": \"5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b\",\n  \"asset\": \"USDT\",\n  \"amount\": \"25.000000\",\n  \"description\": \"Expense split\",\n  \"status\": \"completed\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"idempotency_hit\": true\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get a transfer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/transfers/:transferID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "transfers",
+                ":transferID"
+              ],
+              "variable": [
+                {
+                  "key": "transferID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Returns one transfer; visible only to its two parties."
+          },
+          "response": [
+            {
+              "name": "200 The transfer.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/transfers/:transferID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "transfers",
+                    ":transferID"
+                  ],
+                  "variable": [
+                    {
+                      "key": "transferID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "The transfer.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"transfer_id\": \"77b1c2d3-4e5f-6a7b-8c9d-0e1f2a3b4c5d\",\n  \"from_account_id\": \"389d34a3-6c61-4782-b822-95ac173068dc\",\n  \"to_account_id\": \"ae8cf540-22a9-414d-82cc-8ac04732be4f\",\n  \"asset\": \"USDT\",\n  \"amount\": \"25.000000\",\n  \"description\": \"Split de gastos\",\n  \"status\": \"completed\",\n  \"direction\": \"sent\",\n  \"created_at\": \"2026-07-06T20:10:00Z\"\n}"
             }
           ]
         }
@@ -3415,6 +3578,82 @@
     {
       "name": "Webhooks",
       "item": [
+        {
+          "name": "List webhook subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhooks/subscriptions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhooks",
+                "subscriptions"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Lists the account's webhook subscriptions (the secret is never returned)."
+          },
+          "response": [
+            {
+              "name": "200 Subscriptions.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/webhooks/subscriptions",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "webhooks",
+                    "subscriptions"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Subscriptions.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"subscriptions\": [\n    {\n      \"id\": \"475b48fc-2858-4ad3-81e2-ec68742d8245\",\n      \"event_type\": \"payout_status_changed\",\n      \"callback_url\": \"https://api.example.com/webhooks/cbpay\",\n      \"status\": \"active\",\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
         {
           "name": "Create a webhook subscription",
           "request": {

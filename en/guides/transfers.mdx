@@ -103,6 +103,25 @@ Replay with the same `idempotency_key` — `200` with the original transfer:
 The recipient can be notified via the `transfer_received` webhook, and both
 sides see the movement in their history (`transfer_out` / `transfer_in`).
 
+## Querying transfers
+
+List your account's transfers (sent and received), with pagination and date
+filters:
+
+```bash
+curl "https://api.qbank.cl/platform/v1/transfers?from=2026-07-01&to=2026-07-07&page_size=50" \
+  -H "Authorization: Bearer <token>"
+```
+
+Or fetch one by ID (visible only to the two parties):
+
+```bash
+curl https://api.qbank.cl/platform/v1/transfers/77b1… \
+  -H "Authorization: Bearer <token>"
+```
+
+Each row carries `direction` (`sent` or `received`) from your perspective.
+
 ## Rules
 
 - Only between **active** CBPay accounts; internal system accounts cannot

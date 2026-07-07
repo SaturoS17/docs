@@ -104,6 +104,25 @@ original:
 El receptor puede enterarse por el webhook `transfer_received` y ambos ven
 el movimiento en su historial (`transfer_out` / `transfer_in`).
 
+## Consultar transferencias
+
+Lista las transferencias de tu cuenta (enviadas y recibidas), con
+paginación y filtros de fecha:
+
+```bash
+curl "https://api.qbank.cl/platform/v1/transfers?from=2026-07-01&to=2026-07-07&page_size=50" \
+  -H "Authorization: Bearer <token>"
+```
+
+O una en particular por su ID (solo visible para las dos partes):
+
+```bash
+curl https://api.qbank.cl/platform/v1/transfers/77b1… \
+  -H "Authorization: Bearer <token>"
+```
+
+Cada fila trae `direction` (`sent` o `received`) desde tu perspectiva.
+
 ## Reglas
 
 - Solo entre cuentas CBPay **activas**; las cuentas internas del sistema no

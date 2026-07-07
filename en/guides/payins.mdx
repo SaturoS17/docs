@@ -196,7 +196,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payins/collect \
     "payer_document": "V12345678",
     "payer_phone": "04141234567",
     "payer_bank": "0102",
-    "otp": "12345678"
+    "otp": "12345678",
+    "idempotency_key": "order-5512"
   }'
 ```
 
@@ -213,9 +214,17 @@ curl -X POST https://api.qbank.cl/platform/v1/payins/collect \
     "payer_bank": "0102",
     "payer_account_type": "CNTA",
     "otp": "87654321",
-    "otp_reference": "OTP-5521"
+    "otp_reference": "OTP-5521",
+    "idempotency_key": "order-5512"
   }'
 ```
+
+<Note>
+An active collection executes a real charge against the payer, so
+`idempotency_key` is **required** (body or `Idempotency-Key` header): a
+retry with the same key returns the original result with `idempotency_hit`
+and never re-charges.
+</Note>
 
 </CodeGroup>
 
