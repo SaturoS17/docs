@@ -18,6 +18,18 @@ curl https://exchange.qbank.cl/platform/v1/payouts/methods \
   -H "Authorization: Bearer <token>"
 ```
 
+```json
+{
+  "items": [
+    { "country": "CL", "currency": "CLP", "method": "bank_transfer" },
+    { "country": "PE", "currency": "PEN", "method": "bank_transfer" },
+    { "country": "PE", "currency": "PEN", "method": "yape" },
+    { "country": "BO", "currency": "BOB", "method": "qr" }
+  ],
+  "meta": { "retrieved": 4 }
+}
+```
+
 Corredores y métodos disponibles:
 
 | País | Moneda | Métodos |
@@ -34,11 +46,23 @@ La disponibilidad puede variar; el catálogo (`GET /v1/payouts/methods`) es
 siempre la fuente de verdad. Si un país tiene un solo método, `method` es
 opcional. Todos los métodos se cobran igual: tu tasa + fijo.
 
-Para transferencias bancarias necesitas además el catálogo de bancos:
+Para transferencias bancarias necesitas además el catálogo de bancos (de
+ahí sale el `bank_code` del beneficiario):
 
 ```bash
 curl "https://exchange.qbank.cl/platform/v1/payouts/banks?country=CL" \
   -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "items": [
+    { "code": "001", "name": "Banco de Chile" },
+    { "code": "012", "name": "Banco del Estado de Chile" },
+    { "code": "016", "name": "Banco de Crédito e Inversiones" }
+  ],
+  "meta": { "retrieved": 3 }
+}
 ```
 
 ## 2. Crea el payout
@@ -120,6 +144,14 @@ También puedes consultar en cualquier momento:
 curl https://exchange.qbank.cl/platform/v1/payouts/0d4f… \
   -H "Authorization: Bearer <token>"
 ```
+
+### Estados del payout
+
+| Estado | Significado | ¿Tu saldo? |
+|---|---|---|
+| `processing` | Aceptado y en ejecución en el rail local | Débito retenido en `held` |
+| `completed` | El dinero llegó al beneficiario | Hold consumido — final |
+| `failed` | El corredor lo rechazó o falló | **Reembolso automático completo** (monto + comisión) |
 
 ## Ejemplos por país
 

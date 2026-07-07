@@ -3,9 +3,20 @@ title: "Quickstart"
 description: "From zero to your first payout in five steps"
 ---
 
+Before you start, the data you will need everywhere:
+
+| Item | Value |
+|---|---|
+| **Base URL** | `https://exchange.qbank.cl/platform` |
+| **Authentication** | `Authorization: Bearer <token>` header (or `X-API-Key`) |
+| **Organization slug** | `cbpay` (for register and login) |
+| **Balance currency** | USDT, 6 decimals, always as a string (`"52.618258"`) |
+| **Environment** | Direct production — no sandbox; test with small amounts |
+
 <Info>
-The CBPay organization slug is **`cbpay`**. If CBPay already created your
-account and handed you a `pk_...` API key, skip to step 3.
+If CBPay already created your account and handed you a `pk_...` API key,
+skip to step 3. Common questions are answered upfront in the
+[FAQ](/en/faq).
 </Info>
 
 <Steps>
@@ -101,6 +112,25 @@ Before a payout, check the current FX rate and your effective fees:
 curl https://exchange.qbank.cl/platform/v1/rates \
   -H "Authorization: Bearer <token>"
 ```
+
+```json
+{
+  "base": "USD",
+  "rates": {
+    "chile": { "currency": "CLP", "rate": "950.25" },
+    "mexico": { "currency": "MXN", "rate": "17.50" },
+    "bolivia": { "currency": "BOB", "rate": "6.91" }
+  },
+  "fees": [
+    { "service": "payout", "country": "CL", "percent": "0", "fixed": "0.50" }
+  ],
+  "updated_at": "2026-07-07T12:00:00Z"
+}
+```
+
+The rates already include your FX margin, so you can estimate the cost
+before creating: `usdt_amount ≈ local_amount / rate` (rounded up) and
+`total_debit = usdt_amount + fixed`.
 
 </Step>
 

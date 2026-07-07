@@ -17,6 +17,21 @@ curl https://exchange.qbank.cl/platform/v1/payins/methods \
   -H "Authorization: Bearer <token>"
 ```
 
+```json
+{
+  "items": [
+    { "country": "BO", "currency": "BOB", "method": "qr", "delivery": "push" },
+    { "country": "VE", "currency": "VES", "method": "c2p", "delivery": "push+polling" },
+    { "country": "MX", "currency": "MXN", "method": "bank_transfer", "delivery": "push" }
+  ],
+  "meta": { "retrieved": 3 }
+}
+```
+
+`delivery` indica cómo se confirma el pago del lado de CBPay (notificación
+del banco, sondeo o ambos) — no cambia nada en tu integración: tú siempre
+recibes el webhook `payin_credited`.
+
 Corredores y modalidades de cobro:
 
 | País | Moneda | Modalidades |

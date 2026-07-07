@@ -1,0 +1,180 @@
+---
+title: "Preguntas frecuentes"
+description: "Las dudas típicas al integrar, respondidas de una"
+---
+
+## Empezando
+
+<AccordionGroup>
+
+<Accordion title="¿Cuál es la URL base de la API?">
+`https://exchange.qbank.cl/platform` — todos los endpoints de esta
+documentación cuelgan de ahí (por ejemplo
+`https://exchange.qbank.cl/platform/v1/balances`).
+</Accordion>
+
+<Accordion title="¿Hay un ambiente sandbox de pruebas?">
+No. La API opera directo en producción. Para probar tu integración usa
+**montos pequeños reales**: deposita unos pocos USDT, haz un payout mínimo
+y verifica el ciclo completo (débito → webhook → estado final). Si algo
+falla, el débito se reembolsa automáticamente — no puedes "perder" saldo
+por un error de datos.
+</Accordion>
+
+<Accordion title="¿Cómo pongo saldo en mi cuenta para empezar?">
+Dos caminos: (1) **deposita USDT on-chain** — crea una wallet con
+`POST /v1/crypto/wallets` y envía USDT a esa dirección (TRON o Ethereum);
+(2) **cobra fiat** con un [payin](/es/guias/payins) (QR, transferencia
+anunciada, etc.). En ambos casos el saldo se acredita solo y te llega un
+webhook.
+</Accordion>
+
+<Accordion title="¿Necesito pasar KYC/KYB antes de operar?">
+La API funciona con tu cuenta **activa**; la política de verificación la
+define el equipo de CBPay según tu caso (montos, país, tipo de cuenta). Si
+tu cuenta requiere verificación, envíala con `POST /v1/kyc` — y si alguna
+operación te responde `403 account_blocked`, contacta al equipo de CBPay.
+</Accordion>
+
+<Accordion title="¿Qué credencial uso: sesión JWT o API key?">
+Para procesos servidor-a-servidor usa siempre una **API key** (`pk_…`, no
+expira). Las sesiones JWT (24 h) son para front-ends con usuarios que
+inician sesión. Ambas van en `Authorization: Bearer <token>` (o
+`X-API-Key`).
+</Accordion>
+
+</AccordionGroup>
+
+## Dinero y tasas
+
+<AccordionGroup>
+
+<Accordion title="¿En qué moneda está mi saldo?">
+Solo **USDT con 6 decimales**. Todas las operaciones fiat (payouts en CLP,
+cobros en BOB…) se convierten a/desde USDT con la tasa de tu cuenta al
+momento de ejecutar. Ver [modelo de dinero](/es/conceptos/modelo-de-dinero).
+</Accordion>
+
+<Accordion title="¿Cómo sé cuánto me va a costar un payout antes de crearlo?">
+Consulta `GET /v1/rates` (devuelve **tu** tasa por país) y calcula:
+
+```
+usdt_amount ≈ monto_local / tasa       (redondeo hacia arriba, 6 decimales)
+total_debit = usdt_amount + fee fijo   (tus fees vienen en la misma respuesta)
+```
+
+El objeto payout devuelve los valores exactos (`fx_rate`, `usdt_amount`,
+`fee`, `total_debit`) calculados por el servidor.
+</Accordion>
+
+<Accordion title="¿La tasa que veo en /v1/rates está garantizada?">
+No es una cotización congelada: el payout usa la tasa vigente **al momento
+de crearlo**, que puede variar levemente respecto a la que consultaste. La
+tasa aplicada queda registrada en el campo `fx_rate` del payout para
+auditoría.
+</Accordion>
+
+<Accordion title="¿Hay montos mínimos o máximos?">
+La API no impone mínimos técnicos; con montos muy chicos la comisión fija
+puede superar el monto (recibirás `invalid_amount` o un débito
+antieconómico). Los máximos dependen de tu configuración con CBPay.
+</Accordion>
+
+<Accordion title="¿Qué comisiones me aplican y dónde las veo?">
+Las define CBPay para tu cuenta: por servicio (payout, payin, funding,
+retiro, KYC, creación de wallet), por país y con componente % y/o fijo.
+`GET /v1/rates` devuelve tu lista efectiva en el campo `fees` (y los
+porcentajes de FX ya vienen dentro de la tasa cotizada). Detalle en
+[comisiones](/es/conceptos/comisiones).
+</Accordion>
+
+</AccordionGroup>
+
+## Payouts
+
+<AccordionGroup>
+
+<Accordion title="¿Cuánto tarda un payout en llegar?">
+Depende del corredor: varios son **síncronos o casi inmediatos** (Yape,
+Pago Móvil, QR Bolivia) y otros procesan en minutos vía el rail bancario
+local (SPEI, transferencias). Diseña tu integración alrededor del webhook
+`payout_status_changed`: no asumas tiempos fijos ni hagas polling.
+</Accordion>
+
+<Accordion title="¿Qué pasa exactamente si un payout falla?">
+Se reembolsa **el débito completo** (monto + comisión) a tu saldo
+`available`, automáticamente, y te llega el webhook con `status: failed` y
+un `status_code` explicando la causa. Corrige los datos y reintenta con
+una `idempotency_key` **nueva**.
+</Accordion>
+
+<Accordion title="¿Puedo reintentar sin riesgo de pagar dos veces?">
+Sí — ese es el propósito de la `idempotency_key`: si repites la misma
+clave, recibes el payout original (`idempotency_hit: true`) sin crear ni
+debitar nada nuevo. Usa una clave distinta solo cuando realmente quieras
+crear otro pago. Ver [idempotencia](/es/conceptos/idempotencia).
+</Accordion>
+
+<Accordion title="¿Cómo sé qué campos lleva el beneficiary de cada país?">
+En la guía de [payouts](/es/guias/payouts#ejemplos-por-pais) hay un ejemplo
+completo por país y método, y `GET /v1/payouts/banks?country=XX` te da los
+códigos de banco vigentes cuando aplican.
+</Accordion>
+
+<Accordion title="¿Un QR escaneado se puede pagar dos veces?">
+No: cada `provider_reference` del scan admite un solo confirm. Reintentos
+con la misma `idempotency_key` devuelven el payout original.
+</Accordion>
+
+</AccordionGroup>
+
+## Payins y depósitos
+
+<AccordionGroup>
+
+<Accordion title="¿Cuándo se acredita mi saldo tras un cobro?">
+Cuando el proveedor confirma el pago: los QR y cobros activos suelen
+acreditar en segundos; las transferencias bancarias cuando el depósito
+llega y se matchea. Siempre recibes el webhook `payin_credited` con el
+monto neto acreditado.
+</Accordion>
+
+<Accordion title="Mi cliente transfirió sin la referencia, ¿se perdió el dinero?">
+No. El depósito queda en estado `unassigned` y el equipo de CBPay lo
+asigna manualmente a tu cuenta (se acredita con tus comisiones normales).
+Para evitarlo, usa la **cuenta CLABE dedicada** en México o insiste en que
+la referencia viaje en la descripción de la transferencia.
+</Accordion>
+
+<Accordion title="¿Un depósito crypto y un payin son lo mismo?">
+No: un **payin** es un cobro fiat (moneda local → USDT); un **depósito
+crypto** es USDT on-chain que llega a tu wallet (`funding`). Ambos terminan
+en el mismo saldo USDT, con webhooks distintos (`payin_credited` vs
+`crypto_deposit_credited`).
+</Accordion>
+
+</AccordionGroup>
+
+## Webhooks y errores
+
+<AccordionGroup>
+
+<Accordion title="¿Los webhooks son obligatorios?">
+No, pero sí muy recomendados: los estados finales llegan por webhook sin
+que hagas polling. De todas formas puedes consultar cualquier objeto por
+API (`GET /v1/payouts/{id}`, `GET /v1/payins/{id}`…) en cualquier momento.
+</Accordion>
+
+<Accordion title="¿Por qué recibí el mismo webhook dos veces?">
+Las entregas son **at-least-once**: ante timeouts se reintenta (hasta 5
+veces). Deduplica con el header `X-Webhook-Event-ID`, que es único por
+evento.
+</Accordion>
+
+<Accordion title="¿Qué hago con un error 5xx o core_unavailable?">
+Es transitorio: reintenta con backoff usando la **misma**
+`idempotency_key` (así nunca duplicas). Si el problema persiste, contacta
+al equipo de CBPay con el `payout_id`/`payin_id` y la hora.
+</Accordion>
+
+</AccordionGroup>
