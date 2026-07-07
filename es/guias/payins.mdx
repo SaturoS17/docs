@@ -3,11 +3,26 @@ title: "Payins"
 description: "Cobra en moneda local y recibe el abono en USDT"
 ---
 
-Un payin es un cobro fiat: generas un cargo (por ejemplo un QR), tu cliente
-paga en moneda local, y tu cuenta recibe el abono en USDT automáticamente
-(convertido a la tasa del momento, menos la comisión de payin).
+Un payin es un cobro fiat: tu cliente paga en moneda local y tu cuenta
+recibe el abono en USDT automáticamente (convertido a la tasa del momento,
+menos la comisión de payin).
 
-## Crear un cargo
+Hay cuatro formas de cobrar, según el país:
+
+| Modalidad | Cómo funciona | Endpoint |
+|---|---|---|
+| **QR** | Generas un QR de cobro y tu cliente lo escanea | `POST /v1/payins` con `method: "qr"` |
+| **Transferencia bancaria** | Anuncias un depósito entrante con una referencia | `POST /v1/payins` con `method: "bank_transfer"` |
+| **Cobro activo (pull)** | Cobras directo al pagador (con su autorización/OTP) | `POST /v1/payins/collect` |
+| **Cuenta de depósito dedicada** | Creas una cuenta destino fija para tu cuenta (ej. CLABE) | `POST /v1/payins/deposit-accounts` |
+
+<Note>
+Consulta los corredores de cobro disponibles con `GET /v1/payins/methods`.
+Cada país expone sus modalidades; por ejemplo QR en Bolivia, cobro activo
+en Venezuela y cuentas de depósito dedicadas en México.
+</Note>
+
+## Cobro con QR
 
 ```bash
 curl -X POST https://exchange.qbank.cl/platform/v1/payins \
@@ -16,6 +31,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/payins \
   -d '{
     "country": "BO",
     "currency": "BOB",
+    "method": "qr",
     "amount": "700.00",
     "description": "Recarga app",
     "expires_in": 3600
@@ -40,15 +56,132 @@ El objeto `charge` contiene los datos del cobro para mostrar a tu cliente
 (imagen/datos del QR, referencias). Su forma exacta depende del método del
 país.
 
-<Note>
-Consulta los corredores de cobro disponibles con
-`GET /v1/payins/methods`.
-</Note>
+## Transferencia bancaria (depósito anunciado)
+
+Anuncia el depósito entrante y comparte la referencia con quien transfiere:
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "CL",
+    "currency": "CLP",
+    "method": "bank_transfer",
+    "amount": "500000"
+  }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "payin_id": "4f81…",
+  "status": "pending",
+  "reference": "4f81…",
+  "note": "include the reference in the transfer description so the deposit is credited automatically"
+}
+```
+
+Cuando la transferencia llega, se matchea por la referencia en la glosa (o
+por monto+moneda como respaldo) y tu cuenta se acredita automáticamente.
+
+## Cobro activo (pull)
+
+En los corredores que lo soportan (por ejemplo Venezuela con `c2p` o
+`debito_inmediato`), cobras directamente al pagador. El resultado es
+**síncrono**: si el cobro se aprueba, el abono se acredita en la misma
+llamada.
+
+Si el método requiere OTP, primero solicítalo (gratis):
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payins/collect/otp \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method": "debito_inmediato",
+    "amount": "1200.00",
+    "payer_document": "V12345678",
+    "payer_phone": "04141234567",
+    "payer_bank": "0102",
+    "payer_account": "01020123456789012345"
+  }'
+```
+
+Luego ejecuta el cobro:
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payins/collect \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method": "c2p",
+    "amount": "1200.00",
+    "description": "Cobro pedido 5512",
+    "payer_document": "V12345678",
+    "payer_phone": "04141234567",
+    "payer_bank": "0102",
+    "otp": "12345678"
+  }'
+```
+
+Respuesta `200` (cobro aprobado y acreditado):
+
+```json
+{
+  "payin_id": "7b3c…",
+  "kind": "collect",
+  "method": "c2p",
+  "status": "credited",
+  "local_amount": "1200.00",
+  "fx_rate": "36.50",
+  "usdt_gross": "32.876713",
+  "fee": "0.328768",
+  "usdt_credited": "32.547945",
+  "paid": true,
+  "provider_reference": "…"
+}
+```
+
+Si el pagador rechaza o falla la autorización, `paid` es `false`, el payin
+queda `failed` y no se cobra nada.
+
+## Cuenta de depósito dedicada
+
+En los corredores que lo soportan (por ejemplo México), crea una cuenta de
+depósito fija para tu cuenta — todo lo que llegue a ella se acredita
+automáticamente, sin referencias:
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payins/deposit-accounts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "country": "MX", "currency": "MXN" }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "instrument_id": "a1d4…",
+  "account_id": "…",
+  "country": "MX",
+  "currency": "MXN",
+  "method": "bank_transfer",
+  "instrument": "734180000151000006",
+  "status": "active"
+}
+```
+
+`instrument` es el destino que compartes con tus pagadores (en México, la
+CLABE). La creación es gratis; cada depósito que llega paga la comisión de
+payin normal. Lista tus cuentas con `GET /v1/payins/deposit-accounts`.
 
 ## Recibir el abono
 
-Cuando el pago llega, tu cuenta se acredita automáticamente y se emite el
-webhook `payin_credited`:
+Cuando el pago llega (por cualquiera de las modalidades), tu cuenta se
+acredita automáticamente y se emite el webhook `payin_credited`:
 
 ```json
 {
@@ -95,6 +228,6 @@ curl https://exchange.qbank.cl/platform/v1/payins/9c2a… \
 
 <Info>
 Los depósitos que llegan por transferencia directa sin referencia clara
-quedan `unassigned` hasta que el equipo de CBPay los asigna a una cuenta. Al asignarse, se acreditan con las comisiones de la cuenta
-destino.
+quedan `unassigned` hasta que el equipo de CBPay los asigna a una cuenta.
+Al asignarse, se acreditan con las comisiones de la cuenta destino.
 </Info>

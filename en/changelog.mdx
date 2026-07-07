@@ -6,6 +6,29 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 7, 2026" description="v1.9">
+
+**Added**
+
+- **Every collection (payin) method now available through the API**:
+  - `POST /v1/payins` now accepts `method`: `qr` (QR charge, as before) or
+    `bank_transfer` (announce an incoming deposit and get the reference the
+    transfer must include to be credited automatically).
+  - `POST /v1/payins/collect` — active pull collection in corridors that
+    support it (e.g. Venezuela `c2p` / `debito_inmediato`), with
+    synchronous crediting; `POST /v1/payins/collect/otp` for the prior OTP
+    when the method requires it.
+  - `POST /v1/payins/deposit-accounts` — fixed dedicated deposit account
+    (e.g. a Mexican CLABE) bound to your account: everything arriving to it
+    is credited automatically. `GET /v1/payins/deposit-accounts` to list
+    them.
+- Full corridor and method matrix for payouts in the guide (Chile, Peru
+  with `yape`, Mexico SPEI, Venezuela with `pago_movil`, Bolivia with `qr`,
+  Paraguay).
+- Venezuela (VES) joined the `GET /v1/rates` quotes.
+
+</Update>
+
 <Update label="July 7, 2026" description="v1.8">
 
 **Added**

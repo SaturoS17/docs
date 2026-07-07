@@ -1190,45 +1190,17 @@
                 "payins"
               ]
             },
-            "description": "Creates an active fiat charge (e.g. a QR) through the processing core.\nWhen the payment arrives, the account is credited automatically in\nUSDT (gross at FX rate, minus the payin fee) and the\n`payin_credited` webhook fires.",
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor; with `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically. Charging is free; the payin fee applies when the deposit is credited.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"country\": \"BO\",\n  \"currency\": \"BOB\",\n  \"amount\": \"700.00\",\n  \"description\": \"App top-up\",\n  \"expires_in\": 3600\n}",
+              "raw": "{\n  \"country\": \"BO\",\n  \"currency\": \"BOB\",\n  \"amount\": \"700.00\",\n  \"description\": \"App top-up\",\n  \"expires_in\": 3600,\n  \"method\": \"qr\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             }
-          },
-          "response": [
-            {
-              "name": "201 Charge created.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/payins",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "payins"
-                  ]
-                }
-              },
-              "status": "Charge created.",
-              "code": 201,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\"\n  }\n}"
-            }
-          ]
+          }
         },
         {
           "name": "Get a payin",
@@ -1335,6 +1307,242 @@
                 }
               ],
               "body": "{\n  \"items\": [\n    {\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"method\": \"qr\",\n      \"delivery\": \"push\"\n    },\n    {\n      \"country\": \"CL\",\n      \"currency\": \"CLP\",\n      \"method\": \"bank_transfer\",\n      \"delivery\": \"push\"\n    },\n    {\n      \"country\": \"MX\",\n      \"currency\": \"MXN\",\n      \"method\": \"bank_transfer\",\n      \"delivery\": \"push\"\n    },\n    {\n      \"country\": \"PE\",\n      \"currency\": \"PEN\",\n      \"method\": \"bank_transfer\",\n      \"delivery\": \"polling\"\n    },\n    {\n      \"country\": \"VE\",\n      \"currency\": \"VES\",\n      \"method\": \"c2p\",\n      \"delivery\": \"push+polling\"\n    }\n  ],\n  \"meta\": {\n    \"retrieved\": 5\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Active collection (pull)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payins/collect",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payins",
+                "collect"
+              ]
+            },
+            "description": "Charges the payer directly in corridors that support pull collections (e.g. Venezuela `c2p` / `debito_inmediato`). Synchronous: if the charge is approved the deposit converts at the current rate and is credited in the same call, net of the payin fee. If the payer declines, `paid` is false, the payin is marked failed and nothing is charged.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"method\": \"c2p\",\n  \"amount\": \"1200.00\",\n  \"description\": \"Order 5512\",\n  \"payer_document\": \"V12345678\",\n  \"payer_phone\": \"04141234567\",\n  \"payer_bank\": \"0102\",\n  \"otp\": \"12345678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Collection result. `paid: true` means the deposit was credit",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payins/collect",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payins",
+                    "collect"
+                  ]
+                }
+              },
+              "status": "Collection result. `paid: true` means the deposit was credit",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"payin_id\": \"7b3c9e2f-1a2b-3c4d-5e6f-7a8b9c0d1e2f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"kind\": \"collect\",\n  \"country\": \"VE\",\n  \"currency\": \"VES\",\n  \"method\": \"c2p\",\n  \"local_amount\": \"1200.00\",\n  \"status\": \"credited\",\n  \"reference\": \"REF-102030\",\n  \"fx_rate\": \"36.50\",\n  \"usdt_gross\": \"32.876713\",\n  \"fee\": \"0.328768\",\n  \"usdt_credited\": \"32.547945\",\n  \"paid\": true,\n  \"provider_reference\": \"PRV-889911\",\n  \"status_code\": \"00\",\n  \"status_message\": \"approved\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:02Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Request a collection OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payins/collect/otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payins",
+                "collect",
+                "otp"
+              ]
+            },
+            "description": "Requests the one-time password some pull methods need before the charge (e.g. immediate debit). Free of charge.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"method\": \"debito_inmediato\",\n  \"amount\": \"1200.00\",\n  \"payer_document\": \"V12345678\",\n  \"payer_phone\": \"04141234567\",\n  \"payer_bank\": \"0102\",\n  \"payer_account\": \"01020123456789012345\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OTP dispatched to the payer.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payins/collect/otp",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payins",
+                    "collect",
+                    "otp"
+                  ]
+                }
+              },
+              "status": "OTP dispatched to the payer.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"method\": \"debito_inmediato\",\n  \"result\": {\n    \"status\": \"sent\",\n    \"otp_reference\": \"OTP-5521\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "List my deposit accounts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payins/deposit-accounts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payins",
+                "deposit-accounts"
+              ]
+            },
+            "description": "Lists the dedicated deposit destinations bound to the calling account."
+          },
+          "response": [
+            {
+              "name": "200 Deposit accounts of the calling account.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payins/deposit-accounts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payins",
+                    "deposit-accounts"
+                  ]
+                }
+              },
+              "status": "Deposit accounts of the calling account.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"deposit_accounts\": [\n    {\n      \"instrument_id\": \"a1d4b7c0-1234-5678-9abc-def012345678\",\n      \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n      \"country\": \"MX\",\n      \"currency\": \"MXN\",\n      \"method\": \"bank_transfer\",\n      \"instrument\": \"734180000151000006\",\n      \"details\": {\n        \"clabe\": \"734180000151000006\",\n        \"status\": \"active\"\n      },\n      \"status\": \"active\",\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a dedicated deposit account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payins/deposit-accounts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payins",
+                "deposit-accounts"
+              ]
+            },
+            "description": "Provisions a fixed deposit destination bound to your account in corridors that support it (e.g. a Mexican CLABE). Every transfer arriving to it is credited automatically, net of the payin fee. Creation is free.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country\": \"MX\",\n  \"currency\": \"MXN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Deposit account created and bound to the calling account.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payins/deposit-accounts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payins",
+                    "deposit-accounts"
+                  ]
+                }
+              },
+              "status": "Deposit account created and bound to the calling account.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"instrument_id\": \"a1d4b7c0-1234-5678-9abc-def012345678\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"country\": \"MX\",\n  \"currency\": \"MXN\",\n  \"method\": \"bank_transfer\",\n  \"instrument\": \"734180000151000006\",\n  \"details\": {\n    \"clabe\": \"734180000151000006\",\n    \"status\": \"active\"\n  },\n  \"status\": \"active\",\n  \"created_at\": \"2026-07-07T12:00:00Z\"\n}"
             }
           ]
         }

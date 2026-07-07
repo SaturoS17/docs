@@ -18,9 +18,20 @@ curl https://exchange.qbank.cl/platform/v1/payouts/methods \
   -H "Authorization: Bearer <token>"
 ```
 
-Corredores típicos: Chile (CLP), Perú (PEN), México (MXN), Venezuela (VES),
-Bolivia (BOB/USD) y Paraguay (PYG), con métodos como `bank_transfer` y
-variantes locales según el país.
+Corredores y métodos disponibles:
+
+| País | Moneda | Métodos |
+|---|---|---|
+| Chile | CLP | `bank_transfer` |
+| Perú | PEN | `bank_transfer`, `yape` |
+| México | MXN | `bank_transfer` (SPEI: CLABE o tarjeta de débito) |
+| Venezuela | VES | `bank_transfer`, `pago_movil` |
+| Bolivia | BOB / USD | `bank_transfer`, `qr` (ver [Payout QR](#payout-qr-bolivia)) |
+| Paraguay | PYG | `bank_transfer` |
+
+La disponibilidad puede variar; el catálogo (`GET /v1/payouts/methods`) es
+siempre la fuente de verdad. Si un país tiene un solo método, `method` es
+opcional. Todos los métodos se cobran igual: tu tasa + fijo.
 
 Para transferencias bancarias necesitas además el catálogo de bancos:
 

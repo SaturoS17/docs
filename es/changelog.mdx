@@ -7,6 +7,29 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="7 de julio de 2026" description="v1.9">
+
+**Agregado**
+
+- **Todos los métodos de cobro (payins) disponibles por API**:
+  - `POST /v1/payins` ahora acepta `method`: `qr` (cargo QR, como antes) o
+    `bank_transfer` (anuncias un depósito entrante y recibes la referencia
+    que debe incluir la transferencia para acreditarse sola).
+  - `POST /v1/payins/collect` — cobro activo (pull) al pagador en los
+    corredores que lo soportan (ej. Venezuela `c2p` / `debito_inmediato`),
+    con acreditación síncrona; `POST /v1/payins/collect/otp` para el OTP
+    previo cuando el método lo requiere.
+  - `POST /v1/payins/deposit-accounts` — cuenta de depósito dedicada fija
+    (ej. CLABE en México) vinculada a tu cuenta: todo lo que llega se
+    acredita automáticamente. `GET /v1/payins/deposit-accounts` para
+    listarlas.
+- Matriz completa de corredores y métodos de payout en la guía (Chile,
+  Perú con `yape`, México SPEI, Venezuela con `pago_movil`, Bolivia con
+  `qr`, Paraguay).
+- Venezuela (VES) se sumó a las tasas de `GET /v1/rates`.
+
+</Update>
+
 <Update label="7 de julio de 2026" description="v1.8">
 
 **Agregado**

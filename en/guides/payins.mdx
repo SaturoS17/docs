@@ -3,11 +3,26 @@ title: "Payins"
 description: "Collect in local currency and get credited in USDT"
 ---
 
-A payin is a fiat collection: you generate a charge (for example a QR), your
-customer pays in local currency, and your account gets credited in USDT
-automatically (converted at the current rate, minus the payin fee).
+A payin is a fiat collection: your customer pays in local currency and your
+account gets credited in USDT automatically (converted at the current rate,
+minus the payin fee).
 
-## Create a charge
+There are four ways to collect, depending on the country:
+
+| Mode | How it works | Endpoint |
+|---|---|---|
+| **QR** | You generate a collection QR and your customer scans it | `POST /v1/payins` with `method: "qr"` |
+| **Bank transfer** | You announce an incoming deposit with a reference | `POST /v1/payins` with `method: "bank_transfer"` |
+| **Active collection (pull)** | You charge the payer directly (with their authorization/OTP) | `POST /v1/payins/collect` |
+| **Dedicated deposit account** | You create a fixed destination account (e.g. CLABE) | `POST /v1/payins/deposit-accounts` |
+
+<Note>
+Check the available collection corridors with `GET /v1/payins/methods`.
+Each country exposes its modes; for example QR in Bolivia, active
+collection in Venezuela, and dedicated deposit accounts in Mexico.
+</Note>
+
+## QR collection
 
 ```bash
 curl -X POST https://exchange.qbank.cl/platform/v1/payins \
@@ -16,6 +31,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/payins \
   -d '{
     "country": "BO",
     "currency": "BOB",
+    "method": "qr",
     "amount": "700.00",
     "description": "App top-up",
     "expires_in": 3600
@@ -36,18 +52,137 @@ Response `201`:
 }
 ```
 
-The `charge` object contains the payment data to show your customer
+The `charge` object carries the collection data to display to your customer
 (QR image/data, references). Its exact shape depends on the country's
 method.
 
-<Note>
-Check the available collection corridors with `GET /v1/payins/methods`.
-</Note>
+## Bank transfer (announced deposit)
 
-## Receive the credit
+Announce the incoming deposit and share the reference with the sender:
 
-When the payment lands, your account is credited automatically and the
-`payin_credited` webhook fires:
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "CL",
+    "currency": "CLP",
+    "method": "bank_transfer",
+    "amount": "500000"
+  }'
+```
+
+Response `201`:
+
+```json
+{
+  "payin_id": "4f81…",
+  "status": "pending",
+  "reference": "4f81…",
+  "note": "include the reference in the transfer description so the deposit is credited automatically"
+}
+```
+
+When the transfer arrives it is matched by the reference in the transfer
+description (or by amount+currency as a fallback) and your account is
+credited automatically.
+
+## Active collection (pull)
+
+In corridors that support it (for example Venezuela with `c2p` or
+`debito_inmediato`), you charge the payer directly. The result is
+**synchronous**: if the charge is approved, the credit lands in the same
+call.
+
+If the method requires an OTP, request it first (free):
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payins/collect/otp \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method": "debito_inmediato",
+    "amount": "1200.00",
+    "payer_document": "V12345678",
+    "payer_phone": "04141234567",
+    "payer_bank": "0102",
+    "payer_account": "01020123456789012345"
+  }'
+```
+
+Then execute the collection:
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payins/collect \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method": "c2p",
+    "amount": "1200.00",
+    "description": "Order 5512",
+    "payer_document": "V12345678",
+    "payer_phone": "04141234567",
+    "payer_bank": "0102",
+    "otp": "12345678"
+  }'
+```
+
+Response `200` (charge approved and credited):
+
+```json
+{
+  "payin_id": "7b3c…",
+  "kind": "collect",
+  "method": "c2p",
+  "status": "credited",
+  "local_amount": "1200.00",
+  "fx_rate": "36.50",
+  "usdt_gross": "32.876713",
+  "fee": "0.328768",
+  "usdt_credited": "32.547945",
+  "paid": true,
+  "provider_reference": "…"
+}
+```
+
+If the payer declines or the authorization fails, `paid` is `false`, the
+payin is marked `failed`, and nothing is charged.
+
+## Dedicated deposit account
+
+In corridors that support it (for example Mexico), create a fixed deposit
+account bound to your account — everything that arrives to it is credited
+automatically, no references needed:
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payins/deposit-accounts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "country": "MX", "currency": "MXN" }'
+```
+
+Response `201`:
+
+```json
+{
+  "instrument_id": "a1d4…",
+  "account_id": "…",
+  "country": "MX",
+  "currency": "MXN",
+  "method": "bank_transfer",
+  "instrument": "734180000151000006",
+  "status": "active"
+}
+```
+
+`instrument` is the destination you share with your payers (in Mexico, the
+CLABE). Creation is free; each arriving deposit pays the regular payin fee.
+List your accounts with `GET /v1/payins/deposit-accounts`.
+
+## Receiving the credit
+
+When the payment arrives (through any of the modes), your account is
+credited automatically and the `payin_credited` webhook fires:
 
 ```json
 {
@@ -62,7 +197,7 @@ When the payment lands, your account is credited automatically and the
 }
 ```
 
-The payin object holds the full detail:
+The payin object keeps the full detail:
 
 ```bash
 curl https://exchange.qbank.cl/platform/v1/payins/9c2a… \
@@ -82,18 +217,18 @@ curl https://exchange.qbank.cl/platform/v1/payins/9c2a… \
 }
 ```
 
-## States
+## Statuses
 
-| State | Meaning |
+| Status | Meaning |
 |---|---|
 | `pending` | Charge created, waiting for the payment |
 | `credited` | Payment received and credited in USDT |
-| `unassigned` | Deposit received without an automatic match (assigned by the admin) |
+| `unassigned` | Deposit received without an automatic match (routed by the administrator) |
 | `expired` | The charge expired unpaid |
 | `failed` | The collection failed |
 
 <Info>
 Deposits arriving by direct transfer without a clear reference stay
-`unassigned` until the CBPay team assigns them to an account. On assignment
+`unassigned` until the CBPay team routes them to an account. Once assigned,
 they are credited with the destination account's fees.
 </Info>

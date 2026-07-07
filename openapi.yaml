@@ -924,15 +924,10 @@ paths:
       - Payins
       operationId: createPayin
       summary: Create a payin (top-up charge)
-      description: 'Creates an active fiat charge (e.g. a QR) through the processing core.
-
-        When the payment arrives, the account is credited automatically in
-
-        USDT (gross at FX rate, minus the payin fee) and the
-
-        `payin_credited` webhook fires.
-
-        '
+      description: 'Creates a fiat top-up. With `method: "qr"` (default) an active QR charge is generated
+        through the processor; with `method: "bank_transfer"` the deposit is announced and the response
+        carries the reference the sender must include so the arriving transfer is matched and credited
+        automatically. Charging is free; the payin fee applies when the deposit is credited.'
       requestBody:
         required: true
         content:
@@ -961,12 +956,22 @@ paths:
                 expires_in:
                   type: integer
                   description: Charge expiration in seconds.
+                method:
+                  type: string
+                  enum:
+                  - qr
+                  - bank_transfer
+                  default: qr
+                  description: Collection mode. `qr` creates an active QR charge through the processor;
+                    `bank_transfer` announces an incoming deposit and returns the reference to include
+                    in the transfer description. Use /v1/payins/collect for pull collections.
             example:
               country: BO
               currency: BOB
               amount: '700.00'
               description: App top-up
               expires_in: 3600
+              method: qr
       responses:
         '201':
           description: Charge created.
@@ -984,13 +989,24 @@ paths:
                   charge:
                     type: object
                     description: Charge details (QR data, references) from the core.
-              example:
-                payin_id: 4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b
-                status: pending
-                charge:
-                  charge_id: c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4
-                  our_reference: QR-778812
-                  qr_image: data:image/png;base64,iVBORw0KGgo…
+              examples:
+                qr:
+                  summary: 'QR charge (method: qr)'
+                  value:
+                    payin_id: 4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b
+                    status: pending
+                    charge:
+                      charge_id: c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4
+                      our_reference: QR-778812
+                      qr_image: data:image/png;base64,iVBORw0KGgo…
+                bank_transfer:
+                  summary: 'Announced deposit (method: bank_transfer)'
+                  value:
+                    payin_id: 4f81c1d0-aaaa-bbbb-cccc-ddddeeeeffff
+                    status: pending
+                    reference: 4f81c1d0-aaaa-bbbb-cccc-ddddeeeeffff
+                    note: include the reference in the transfer description so the deposit is credited
+                      automatically
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':
@@ -1767,7 +1783,7 @@ paths:
           description: Database not reachable (`store_unavailable`).
           content:
             application/json:
-              schema: &id011
+              schema: &id013
                 $ref: '#/components/schemas/Error'
               example:
                 error: store_unavailable
@@ -2119,6 +2135,318 @@ paths:
                 status_message: QR already paid
                 created_at: '2026-07-07T12:00:00Z'
                 updated_at: '2026-07-07T12:00:01Z'
+  /v1/payins/collect:
+    post:
+      tags:
+      - Payins
+      operationId: payinCollect
+      summary: Active collection (pull)
+      description: 'Charges the payer directly in corridors that support pull collections (e.g. Venezuela
+        `c2p` / `debito_inmediato`). Synchronous: if the charge is approved the deposit converts at the
+        current rate and is credited in the same call, net of the payin fee. If the payer declines, `paid`
+        is false, the payin is marked failed and nothing is charged.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - method
+              - amount
+              properties:
+                country:
+                  type: string
+                  default: VE
+                currency:
+                  type: string
+                  default: VES
+                method:
+                  type: string
+                  description: Collection method (e.g. c2p, debito_inmediato).
+                amount:
+                  type: string
+                  description: Local amount as a positive decimal string.
+                description:
+                  type: string
+                our_reference:
+                  type: string
+                payer_document:
+                  type: string
+                payer_phone:
+                  type: string
+                payer_bank:
+                  type: string
+                payer_account:
+                  type: string
+                payer_name:
+                  type: string
+                payer_account_type:
+                  type: string
+                otp:
+                  type: string
+                otp_reference:
+                  type: string
+            example:
+              method: c2p
+              amount: '1200.00'
+              description: Order 5512
+              payer_document: V12345678
+              payer_phone: '04141234567'
+              payer_bank: '0102'
+              otp: '12345678'
+      responses:
+        '200':
+          description: 'Collection result. `paid: true` means the deposit was credited.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payin_id:
+                    type: string
+                  kind:
+                    type: string
+                  country:
+                    type: string
+                  currency:
+                    type: string
+                  method:
+                    type: string
+                  local_amount:
+                    type: string
+                  status:
+                    type: string
+                  fx_rate:
+                    type: string
+                  usdt_gross:
+                    type: string
+                  fee:
+                    type: string
+                  usdt_credited:
+                    type: string
+                  paid:
+                    type: boolean
+                  provider_reference:
+                    type: string
+                  status_code:
+                    type: string
+                  status_message:
+                    type: string
+              example:
+                payin_id: 7b3c9e2f-1a2b-3c4d-5e6f-7a8b9c0d1e2f
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                kind: collect
+                country: VE
+                currency: VES
+                method: c2p
+                local_amount: '1200.00'
+                status: credited
+                reference: REF-102030
+                fx_rate: '36.50'
+                usdt_gross: '32.876713'
+                fee: '0.328768'
+                usdt_credited: '32.547945'
+                paid: true
+                provider_reference: PRV-889911
+                status_code: '00'
+                status_message: approved
+                created_at: '2026-07-07T12:00:00Z'
+                updated_at: '2026-07-07T12:00:02Z'
+        '400':
+          description: invalid_request / invalid_amount
+          content:
+            application/json:
+              schema: &id011
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_request
+                message: method is required (e.g. c2p, debito_inmediato)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Account not active (account_blocked).
+          content:
+            application/json:
+              schema: *id011
+              example:
+                error: account_blocked
+                message: account is not active
+        '502':
+          description: Core unavailable (core_unavailable).
+          content:
+            application/json:
+              schema: *id011
+              example:
+                error: core_unavailable
+                message: could not execute the collection
+  /v1/payins/collect/otp:
+    post:
+      tags:
+      - Payins
+      operationId: payinCollectOtp
+      summary: Request a collection OTP
+      description: Requests the one-time password some pull methods need before the charge (e.g. immediate
+        debit). Free of charge.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - method
+              - amount
+              properties:
+                country:
+                  type: string
+                  default: VE
+                currency:
+                  type: string
+                  default: VES
+                method:
+                  type: string
+                amount:
+                  type: string
+                payer_document:
+                  type: string
+                payer_phone:
+                  type: string
+                payer_bank:
+                  type: string
+                payer_account:
+                  type: string
+            example:
+              method: debito_inmediato
+              amount: '1200.00'
+              payer_document: V12345678
+              payer_phone: '04141234567'
+              payer_bank: '0102'
+              payer_account: 01020123456789012345
+      responses:
+        '200':
+          description: OTP dispatched to the payer.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  method:
+                    type: string
+                  result:
+                    type: object
+                    additionalProperties: true
+              example:
+                method: debito_inmediato
+                result:
+                  status: sent
+                  otp_reference: OTP-5521
+        '400':
+          description: invalid_request
+          content:
+            application/json:
+              schema: *id011
+              example:
+                error: invalid_request
+                message: method is required
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '502':
+          description: Core unavailable (core_unavailable).
+          content:
+            application/json:
+              schema: *id011
+              example:
+                error: core_unavailable
+                message: could not request the OTP
+  /v1/payins/deposit-accounts:
+    post:
+      tags:
+      - Payins
+      operationId: createDepositAccount
+      summary: Create a dedicated deposit account
+      description: Provisions a fixed deposit destination bound to your account in corridors that support
+        it (e.g. a Mexican CLABE). Every transfer arriving to it is credited automatically, net of the
+        payin fee. Creation is free.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                country:
+                  type: string
+                  default: MX
+                currency:
+                  type: string
+                  default: MXN
+                method:
+                  type: string
+                  default: bank_transfer
+            example:
+              country: MX
+              currency: MXN
+      responses:
+        '201':
+          description: Deposit account created and bound to the calling account.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositInstrument'
+              example: &id012
+                instrument_id: a1d4b7c0-1234-5678-9abc-def012345678
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                country: MX
+                currency: MXN
+                method: bank_transfer
+                instrument: '734180000151000006'
+                details:
+                  clabe: '734180000151000006'
+                  status: active
+                status: active
+                created_at: '2026-07-07T12:00:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Account not active (account_blocked).
+          content:
+            application/json:
+              schema: *id011
+              example:
+                error: account_blocked
+                message: account is not active
+        '502':
+          description: Core unavailable (core_unavailable).
+          content:
+            application/json:
+              schema: *id011
+              example:
+                error: core_unavailable
+                message: could not create the deposit account
+    get:
+      tags:
+      - Payins
+      operationId: listDepositAccounts
+      summary: List my deposit accounts
+      description: Lists the dedicated deposit destinations bound to the calling account.
+      responses:
+        '200':
+          description: Deposit accounts of the calling account.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deposit_accounts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DepositInstrument'
+              example:
+                deposit_accounts:
+                - *id012
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 components:
   securitySchemes:
     bearerAuth:
@@ -2201,7 +2529,7 @@ components:
       description: Missing or invalid credential (`unauthorized`).
       content:
         application/json:
-          schema: *id011
+          schema: *id013
           example:
             error: unauthorized
             message: invalid or missing credentials
@@ -2596,6 +2924,35 @@ components:
         created_at:
           type: string
           format: date-time
+    DepositInstrument:
+      type: object
+      properties:
+        instrument_id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        country:
+          type: string
+        currency:
+          type: string
+        method:
+          type: string
+        instrument:
+          type: string
+          description: The deposit destination to share with payers (e.g. the CLABE).
+        details:
+          type: object
+          additionalProperties: true
+        status:
+          type: string
+          enum:
+          - active
+          - disabled
+        created_at:
+          type: string
+          format: date-time
 webhooks:
   payin_credited:
     post:
@@ -2612,15 +2969,15 @@ webhooks:
             schema:
               type: object
               properties:
-                payin_id: &id012
+                payin_id: &id014
                   type: string
-                account_id: *id012
-                country: *id012
-                currency: *id012
-                local_amount: *id012
-                fx_rate: *id012
-                usdt_credited: *id012
-                fee: *id012
+                account_id: *id014
+                country: *id014
+                currency: *id014
+                local_amount: *id014
+                fx_rate: *id014
+                usdt_credited: *id014
+                fee: *id014
             example:
               payin_id: 4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -2648,15 +3005,15 @@ webhooks:
             schema:
               type: object
               properties:
-                payout_id: *id012
-                account_id: *id012
-                country: *id012
-                currency: *id012
-                local_amount: *id012
-                usdt_amount: *id012
-                total_debit: *id012
-                status: *id012
-                status_code: *id012
+                payout_id: *id014
+                account_id: *id014
+                country: *id014
+                currency: *id014
+                local_amount: *id014
+                usdt_amount: *id014
+                total_debit: *id014
+                status: *id014
+                status_code: *id014
             example:
               payout_id: 7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -2685,13 +3042,13 @@ webhooks:
             schema:
               type: object
               properties:
-                transfer_id: *id012
-                from_account_id: *id012
-                to_account_id: *id012
-                asset: *id012
-                amount: *id012
-                description: *id012
-                created_at: *id012
+                transfer_id: *id014
+                from_account_id: *id014
+                to_account_id: *id014
+                asset: *id014
+                amount: *id014
+                description: *id014
+                created_at: *id014
             example:
               transfer_id: 2a7b9c1d-4e5f-6a70-8b9c-0d1e2f3a4b5c
               from_account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -2718,12 +3075,12 @@ webhooks:
             schema:
               type: object
               properties:
-                account_id: *id012
-                chain: *id012
-                asset: *id012
-                tx_id: *id012
-                amount: *id012
-                fee: *id012
+                account_id: *id014
+                chain: *id014
+                asset: *id014
+                tx_id: *id014
+                amount: *id014
+                fee: *id014
             example:
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
               chain: tron
@@ -2749,13 +3106,13 @@ webhooks:
             schema:
               type: object
               properties:
-                withdrawal_id: *id012
-                account_id: *id012
-                chain: *id012
-                asset: *id012
-                tx_id: *id012
-                status: *id012
-                amount: *id012
+                withdrawal_id: *id014
+                account_id: *id014
+                chain: *id014
+                asset: *id014
+                tx_id: *id014
+                status: *id014
+                amount: *id014
             example:
               withdrawal_id: 6c5d4e3f-2a1b-0c9d-8e7f-6a5b4c3d2e1f
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d

@@ -18,9 +18,20 @@ curl https://exchange.qbank.cl/platform/v1/payouts/methods \
   -H "Authorization: Bearer <token>"
 ```
 
-Typical corridors: Chile (CLP), Peru (PEN), Mexico (MXN), Venezuela (VES),
-Bolivia (BOB/USD) and Paraguay (PYG), with methods such as `bank_transfer`
-and local variants per country.
+Available corridors and methods:
+
+| Country | Currency | Methods |
+|---|---|---|
+| Chile | CLP | `bank_transfer` |
+| Peru | PEN | `bank_transfer`, `yape` |
+| Mexico | MXN | `bank_transfer` (SPEI: CLABE or debit card) |
+| Venezuela | VES | `bank_transfer`, `pago_movil` |
+| Bolivia | BOB / USD | `bank_transfer`, `qr` (see [QR payout](#qr-payout-bolivia)) |
+| Paraguay | PYG | `bank_transfer` |
+
+Availability may vary; the catalog (`GET /v1/payouts/methods`) is always
+the source of truth. If a country has a single method, `method` is
+optional. Every method is charged the same way: your rate + fixed fee.
 
 For bank transfers you also need the banks catalog:
 
