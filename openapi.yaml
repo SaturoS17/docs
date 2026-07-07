@@ -3537,6 +3537,148 @@ paths:
               example:
                 error: not_found
                 message: resource not found
+  /v1/reports/statement:
+    get:
+      tags:
+      - Balances
+      operationId: getAccountStatement
+      summary: Account statement (JSON, PDF or Excel)
+      description: 'Consolidates every movement of the period — payouts, payins, crypto deposits and withdrawals,
+        internal transfers and service charges — into one auditable statement with an exact reconciliation:
+        opening_balance + total_in − total_out = closing_balance, verified against the ledger (`balanced`).
+        Request `format=pdf` or `format=xlsx` to download the CBPay-branded file (Content-Disposition:
+        attachment).'
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: Start date (YYYY-MM-DD, UTC, inclusive).
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: 'End date (YYYY-MM-DD, UTC, inclusive). Max range: 400 days.'
+      - name: format
+        in: query
+        schema:
+          type: string
+          enum:
+          - json
+          - pdf
+          - xlsx
+          default: json
+        description: json for the web view; pdf/xlsx download the branded file.
+      - name: lang
+        in: query
+        schema:
+          type: string
+          enum:
+          - es
+          - en
+          default: es
+        description: Language of the PDF/Excel output.
+      responses:
+        '200':
+          description: The statement (JSON) or the file bytes (pdf/xlsx).
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                account:
+                  account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                  display_name: Example Company SpA
+                  email: ops@example.com
+                  type: company
+                period:
+                  from: '2026-01-01'
+                  to: '2026-07-07'
+                  timezone: UTC
+                generated_at: '2026-07-07T15:00:00Z'
+                summary:
+                  opening_balance: '0.000000'
+                  total_in: '985633.540000'
+                  total_out: '38099.870000'
+                  net_change: '947533.670000'
+                  closing_balance: '947533.670000'
+                  balanced: true
+                  counts:
+                    payouts: 51
+                    payins: 12
+                    crypto_deposits: 18
+                    crypto_withdrawals: 3
+                    transfers: 4
+                    service_charges: 2
+                    movements: 771
+                  fees_by_service:
+                    payout: '15.300000'
+                    funding: '897.550000'
+                  total_fees: '912.850000'
+                breakdown:
+                  by_product:
+                  - product: payouts
+                    count: 51
+                    usdt_in: '0.000000'
+                    usdt_out: '38099.870000'
+                    fees: '15.300000'
+                  by_country:
+                  - flow: payouts
+                    country: BO
+                    currency: BOB
+                    count: 14
+                    local_amount: '28748.58'
+                    usdt_amount: '2902.210000'
+                  by_currency:
+                  - currency: BOB
+                    payout_local: '28748.58'
+                    payin_local: '700.00'
+                  by_month:
+                  - month: 2026-01
+                    usdt_in: '985633.540000'
+                    usdt_out: '35100.000000'
+                payouts:
+                - created_at: '2026-03-19T22:57:00Z'
+                  payout_id: 0d4f2a10-1b2c-3d4e-5f60-718293a4b5c6
+                  idempotency_key: bo-90
+                  country: BO
+                  currency: BOB
+                  method: bank_transfer
+                  beneficiary: Juan Quispe
+                  detail: '1234567890'
+                  local_amount: '90.00'
+                  fx_rate: '6.91'
+                  usdt_amount: '13.024600'
+                  fee: '0.300000'
+                  total_debit: '13.324600'
+                  status: completed
+                payins: []
+                crypto_deposits: []
+                crypto_withdrawals: []
+                transfers: []
+                service_charges: []
+                movements:
+                - created_at: '2026-03-19T22:57:00Z'
+                  type: payout_debit
+                  reference: payout 0d4f2a10-1b2c-3d4e-5f60-718293a4b5c6
+                  amount: '-13.324600'
+                  balance_after: '139.600000'
+        '400':
+          description: invalid_range / invalid_format.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_range
+                message: from and to are required (YYYY-MM-DD)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 components:
   securitySchemes:
     bearerAuth:

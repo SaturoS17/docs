@@ -7,6 +7,23 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="7 de julio de 2026" description="v1.16">
+
+**Agregado**
+
+- **Cartola / estado de cuenta** (`GET /v1/reports/statement`): consolida
+  todos los movimientos del período — payouts, payins, crypto,
+  transferencias y comisiones — en un solo documento auditable con
+  cuadratura contable exacta (`saldo inicial + entradas − salidas = saldo
+  final`, verificada contra el ledger). Tres formatos con el mismo
+  endpoint: **JSON** para tu web, **PDF** con branding CBPay y **Excel**
+  multi-hoja con celdas numéricas, filtros y hoja de movimientos para
+  auditores (`format=json|pdf|xlsx`, `lang=es|en`). El org admin puede
+  generar la cartola de cualquiera de sus cuentas. Ver la
+  [guía](/es/guias/cartola).
+
+</Update>
+
 <Update label="7 de julio de 2026" description="v1.15">
 
 **Mejorado**

@@ -33,6 +33,7 @@ USDT on-chain y verificación KYC/KYB — una sola API, un solo saldo.
   - [Crypto: wallets, depósitos y retiros](#crypto-wallets-depositos-y-retiros)
   - [Banking](#banking)
   - [KYC/KYB y compliance](#kyckyb-y-compliance)
+  - [Cartola (estado de cuenta)](#cartola-estado-de-cuenta)
 - **Integración**
   - [Webhooks](#webhooks)
   - [Errores](#errores)
@@ -2390,6 +2391,135 @@ siempre gratis.
 | 502 | `compliance_unavailable` | Servicio temporalmente no disponible (la comisión se reembolsó) |
 
 
+## Cartola (estado de cuenta)
+
+*El estado de cuenta consolidado: JSON para tu web, PDF y Excel descargables, listos para tu contador*
+
+La cartola consolida **todos** los movimientos de una cuenta en un período —
+payouts, payins, depósitos y retiros crypto, transferencias internas y
+cargos por servicio — en un solo documento auditable. Un mismo endpoint la
+entrega en tres formatos:
+
+| Formato | Para qué | Cómo pedirlo |
+|---|---|---|
+| `json` (default) | Mostrar la cartola en tu web/app | `format=json` |
+| `pdf` | Documento formal con branding CBPay | `format=pdf` |
+| `xlsx` | Excel con hojas por sección, filtros y celdas numéricas | `format=xlsx` |
+
+```mermaid
+flowchart LR
+    ledger["Ledger inmutable<br/>(cada movimiento con balance_after)"] --> build["Armado de la cartola<br/>resumen + desgloses + detalle"]
+    build --> json["JSON<br/>(vista web)"]
+    build --> pdf["PDF con branding<br/>(descarga)"]
+    build --> xlsx["Excel multi-hoja<br/>(descarga)"]
+    build --> check{"Cuadratura:<br/>inicial + entradas − salidas<br/>= final"}
+```
+
+### Pedir la cartola
+
+```bash
+# JSON para tu front
+curl "https://api.qbank.cl/platform/v1/reports/statement?from=2026-01-01&to=2026-07-07" \
+  -H "Authorization: Bearer <token>"
+
+# PDF descargable (branding CBPay)
+curl -OJ "https://api.qbank.cl/platform/v1/reports/statement?from=2026-01-01&to=2026-07-07&format=pdf" \
+  -H "Authorization: Bearer <token>"
+
+# Excel descargable
+curl -OJ "https://api.qbank.cl/platform/v1/reports/statement?from=2026-01-01&to=2026-07-07&format=xlsx" \
+  -H "Authorization: Bearer <token>"
+```
+
+- `from` / `to`: fechas `YYYY-MM-DD` inclusive, en UTC. Rango máximo:
+  400 días.
+- `lang=es|en`: idioma del PDF/Excel (default `es`).
+- Los archivos llegan con `Content-Disposition: attachment` y nombre
+  `cartola_cbpay_<cuenta>_<from>_<to>.pdf/.xlsx`.
+
+### Qué contiene
+
+```json
+{
+  "account": { "account_id": "…", "display_name": "Empresa Ejemplo SpA", "type": "company" },
+  "period": { "from": "2026-01-01", "to": "2026-07-07", "timezone": "UTC" },
+  "generated_at": "2026-07-07T15:00:00Z",
+  "summary": {
+    "opening_balance": "0.000000",
+    "total_in": "985633.540000",
+    "total_out": "38099.870000",
+    "net_change": "947533.670000",
+    "closing_balance": "947533.670000",
+    "balanced": true,
+    "counts": { "payouts": 51, "payins": 12, "crypto_deposits": 18, "transfers": 4, "movements": 771 },
+    "fees_by_service": { "payout": "15.300000", "funding": "897.550000" },
+    "total_fees": "912.850000"
+  },
+  "breakdown": {
+    "by_product": [ { "product": "payouts", "count": 51, "usdt_in": "0.000000", "usdt_out": "38099.870000", "fees": "15.300000" } ],
+    "by_country": [ { "flow": "payouts", "country": "BO", "currency": "BOB", "count": 14, "local_amount": "28748.58", "usdt_amount": "2902.210000" } ],
+    "by_currency": [ { "currency": "BOB", "payout_local": "28748.58", "payin_local": "700.00" } ],
+    "by_month": [ { "month": "2026-01", "usdt_in": "985633.540000", "usdt_out": "35100.000000" } ]
+  },
+  "payouts": [ { "created_at": "…", "payout_id": "…", "country": "BO", "beneficiary": "Juan Quispe", "local_amount": "90.00", "fx_rate": "6.91", "usdt_amount": "13.024600", "fee": "0.300000", "total_debit": "13.324600", "status": "completed" } ],
+  "payins": [ { "…": "…" } ],
+  "crypto_deposits": [ { "chain": "tron", "tx_id": "…", "usdt_gross": "100.000000", "fee": "1.000000", "usdt_credited": "99.000000", "balance_after": "99.000000" } ],
+  "crypto_withdrawals": [ { "…": "…" } ],
+  "transfers": [ { "direction": "sent", "counterparty": "Ana Pérez", "amount": "25.000000" } ],
+  "service_charges": [ { "type": "banking_fee", "service": "banking_customer", "amount": "-0.500000", "balance_after": "98.500000" } ],
+  "movements": [ { "type": "funding", "amount": "99.000000", "balance_after": "99.000000", "created_at": "…" } ]
+}
+```
+
+Secciones:
+
+1. **`summary`** — saldo inicial, entradas, salidas, saldo final, comisiones
+   por servicio y el flag `balanced`.
+2. **`breakdown`** — por producto, por país (payouts y payins con monto
+   local y USDT), por moneda fiat y por mes.
+3. **Detalle por producto** — payouts (con beneficiario, tasa y débito),
+   payins (por modalidad), crypto (con `tx_id`), transferencias (con
+   contraparte) y cargos por servicio (con reembolsos).
+4. **`movements`** — el ledger crudo: cada movimiento con su
+   `balance_after`. Es la sección con la que un auditor cuadra todo.
+
+### Cómo cuadrar la cartola (para tu contador)
+
+La cartola cumple una identidad contable exacta, sin redondeos:
+
+```
+saldo_inicial + total_entradas − total_salidas = saldo_final
+```
+
+- `balanced: true` confirma que la identidad se cumple contra el ledger.
+- Cada fila de `movements` trae el saldo resultante (`balance_after`):
+  puedes seguir el saldo línea a línea desde el inicial hasta el final.
+- El saldo final de la cartola de un período empalma con el inicial del
+  período siguiente.
+- Las comisiones nunca están escondidas en los montos: cada operación
+  muestra bruto, comisión y neto por separado, y `fees_by_service` las
+  totaliza.
+- En el Excel, la hoja **Movimientos** tiene celdas numéricas reales:
+  puedes sumar/pivotar sin limpiar nada.
+
+### Para el administrador (org admin)
+
+El equipo de CBPay puede generar la cartola de cualquiera de sus cuentas:
+
+```bash
+curl "https://api.qbank.cl/platform/v1/accounts/{accountID}/reports/statement?from=2026-01-01&to=2026-07-07&format=pdf" \
+  -H "X-API-Key: <pk_org_admin>"
+```
+
+### Errores
+
+| HTTP | `error` | Causa |
+|---|---|---|
+| 400 | `invalid_range` | Fechas faltantes/invalidas, `to` anterior a `from`, o rango mayor a 400 días |
+| 400 | `invalid_format` | `format` distinto de `json`, `pdf`, `xlsx` |
+| 404 | `not_found` | La cuenta no existe (solo org admin) |
+
+
 # Integración
 
 
@@ -2784,6 +2914,12 @@ No. El depósito queda en estado `unassigned` y el equipo de CBPay lo
 asigna manualmente a tu cuenta (se acredita con tus comisiones normales).
 Para evitarlo, usa la **cuenta CLABE dedicada** en México o insiste en que
 la referencia viaje en la descripción de la transferencia.
+#### ¿Cómo saco un estado de cuenta para mi contador?
+Con la [cartola](#cartola-estado-de-cuenta): un endpoint que consolida todos los
+movimientos del período (payouts, payins, crypto, transferencias y
+comisiones) con cuadratura contable exacta. Pide `format=pdf` o
+`format=xlsx` para descargar el documento con branding CBPay, o `json`
+para mostrarla en tu web.
 #### ¿El saldo de banking y mi saldo USDT son lo mismo?
 No. El dinero de [banking](#banking) vive en **tus cuentas
 bancarias reales** (USD u otras monedas habilitadas) y se consulta con
@@ -2855,6 +2991,21 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.16 — 7 de julio de 2026
+
+**Agregado**
+
+- **Cartola / estado de cuenta** (`GET /v1/reports/statement`): consolida
+  todos los movimientos del período — payouts, payins, crypto,
+  transferencias y comisiones — en un solo documento auditable con
+  cuadratura contable exacta (`saldo inicial + entradas − salidas = saldo
+  final`, verificada contra el ledger). Tres formatos con el mismo
+  endpoint: **JSON** para tu web, **PDF** con branding CBPay y **Excel**
+  multi-hoja con celdas numéricas, filtros y hoja de movimientos para
+  auditores (`format=json|pdf|xlsx`, `lang=es|en`). El org admin puede
+  generar la cartola de cualquiera de sus cuentas. Ver la
+  [guía](#cartola-estado-de-cuenta).
 
 ### v1.15 — 7 de julio de 2026
 

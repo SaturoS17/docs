@@ -6,6 +6,22 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 7, 2026" description="v1.16">
+
+**Added**
+
+- **Account statement** (`GET /v1/reports/statement`): consolidates every
+  movement of the period — payouts, payins, crypto, transfers and fees —
+  into one auditable document with an exact accounting reconciliation
+  (`opening + inflows − outflows = closing`, verified against the
+  ledger). Three formats from the same endpoint: **JSON** for your web,
+  **PDF** with CBPay branding and a multi-sheet **Excel** with numeric
+  cells, filters and a movements sheet for auditors
+  (`format=json|pdf|xlsx`, `lang=es|en`). The org admin can generate any
+  of its accounts' statements. See the [guide](/en/guides/statement).
+
+</Update>
+
 <Update label="July 7, 2026" description="v1.15">
 
 **Improved**

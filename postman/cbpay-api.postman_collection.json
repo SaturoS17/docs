@@ -625,6 +625,106 @@
               "body": "{\n  \"base\": \"USD\",\n  \"rates\": {\n    \"chile\": {\n      \"currency\": \"CLP\",\n      \"rate\": \"950.25\"\n    },\n    \"mexico\": {\n      \"currency\": \"MXN\",\n      \"rate\": \"17.50\"\n    },\n    \"peru\": {\n      \"currency\": \"PEN\",\n      \"rate\": \"3.72\"\n    }\n  },\n  \"updated_at\": \"2026-07-07T12:00:00Z\",\n  \"fees\": [\n    {\n      \"id\": \"3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c\",\n      \"org_id\": \"1c9e7a2b-5f6d-4e3a-8c1b-2a9d8e7f6a5b\",\n      \"account_id\": \"\",\n      \"service\": \"payout\",\n      \"country\": \"CL\",\n      \"asset\": \"USDT\",\n      \"percent\": \"0\",\n      \"fixed_amount\": \"0.30\",\n      \"status\": \"active\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
             }
           ]
+        },
+        {
+          "name": "Account statement (JSON, PDF or Excel)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/reports/statement",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "reports",
+                "statement"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": false,
+                  "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": false,
+                  "description": "End date (YYYY-MM-DD, UTC, inclusive). Max range: 400 days."
+                },
+                {
+                  "key": "format",
+                  "value": "",
+                  "disabled": true,
+                  "description": "json for the web view; pdf/xlsx download the branded file."
+                },
+                {
+                  "key": "lang",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Language of the PDF/Excel output."
+                }
+              ]
+            },
+            "description": "Consolidates every movement of the period — payouts, payins, crypto deposits and withdrawals, internal transfers and service charges — into one auditable statement with an exact reconciliation: opening_balance + total_in − total_out = closing_balance, verified against the ledger (`balanced`). Request `format=pdf` or `format=xlsx` to download the CBPay-branded file (Content-Disposition: attachment)."
+          },
+          "response": [
+            {
+              "name": "200 The statement (JSON) or the file bytes (pdf/xlsx).",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/reports/statement",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "reports",
+                    "statement"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": false,
+                      "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": false,
+                      "description": "End date (YYYY-MM-DD, UTC, inclusive). Max range: 400 days."
+                    },
+                    {
+                      "key": "format",
+                      "value": "",
+                      "disabled": true,
+                      "description": "json for the web view; pdf/xlsx download the branded file."
+                    },
+                    {
+                      "key": "lang",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Language of the PDF/Excel output."
+                    }
+                  ]
+                }
+              },
+              "status": "The statement (JSON) or the file bytes (pdf/xlsx).",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"account\": {\n    \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n    \"display_name\": \"Example Company SpA\",\n    \"email\": \"ops@example.com\",\n    \"type\": \"company\"\n  },\n  \"period\": {\n    \"from\": \"2026-01-01\",\n    \"to\": \"2026-07-07\",\n    \"timezone\": \"UTC\"\n  },\n  \"generated_at\": \"2026-07-07T15:00:00Z\",\n  \"summary\": {\n    \"opening_balance\": \"0.000000\",\n    \"total_in\": \"985633.540000\",\n    \"total_out\": \"38099.870000\",\n    \"net_change\": \"947533.670000\",\n    \"closing_balance\": \"947533.670000\",\n    \"balanced\": true,\n    \"counts\": {\n      \"payouts\": 51,\n      \"payins\": 12,\n      \"crypto_deposits\": 18,\n      \"crypto_withdrawals\": 3,\n      \"transfers\": 4,\n      \"service_charges\": 2,\n      \"movements\": 771\n    },\n    \"fees_by_service\": {\n      \"payout\": \"15.300000\",\n      \"funding\": \"897.550000\"\n    },\n    \"total_fees\": \"912.850000\"\n  },\n  \"breakdown\": {\n    \"by_product\": [\n      {\n        \"product\": \"payouts\",\n        \"count\": 51,\n        \"usdt_in\": \"0.000000\",\n        \"usdt_out\": \"38099.870000\",\n        \"fees\": \"15.300000\"\n      }\n    ],\n    \"by_country\": [\n      {\n        \"flow\": \"payouts\",\n        \"country\": \"BO\",\n        \"currency\": \"BOB\",\n        \"count\": 14,\n        \"local_amount\": \"28748.58\",\n        \"usdt_amount\": \"2902.210000\"\n      }\n    ],\n    \"by_currency\": [\n      {\n        \"currency\": \"BOB\",\n        \"payout_local\": \"28748.58\",\n        \"payin_local\": \"700.00\"\n      }\n    ],\n    \"by_month\": [\n      {\n        \"month\": \"2026-01\",\n        \"usdt_in\": \"985633.540000\",\n        \"usdt_out\": \"35100.000000\"\n      }\n    ]\n  },\n  \"payouts\": [\n    {\n      \"created_at\": \"2026-03-19T22:57:00Z\",\n      \"payout_id\": \"0d4f2a10-1b2c-3d4e-5f60-718293a4b5c6\",\n      \"idempotency_key\": \"bo-90\",\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"method\": \"bank_transfer\",\n      \"beneficiary\": \"Juan Quispe\",\n      \"detail\": \"1234567890\",\n      \"local_amount\": \"90.00\",\n      \"fx_rate\": \"6.91\",\n      \"usdt_amount\": \"13.024600\",\n      \"fee\": \"0.300000\",\n      \"total_debit\": \"13.324600\",\n      \"status\": \"completed\"\n    }\n  ],\n  \"payins\": [],\n  \"crypto_deposits\": [],\n  \"crypto_withdrawals\": [],\n  \"transfers\": [],\n  \"service_charges\": [],\n  \"movements\": [\n    {\n      \"created_at\": \"2026-03-19T22:57:00Z\",\n      \"type\": \"payout_debit\",\n      \"reference\": \"payout 0d4f2a10-1b2c-3d4e-5f60-718293a4b5c6\",\n      \"amount\": \"-13.324600\",\n      \"balance_after\": \"139.600000\"\n    }\n  ]\n}"
+            }
+          ]
         }
       ]
     },
