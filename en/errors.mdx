@@ -27,7 +27,7 @@ All errors share the same shape:
 | 403 | `org_admin_required` | Endpoint requires an admin credential |
 | 403 | `forbidden` | Credential level not allowed |
 | 403 | `account_blocked` | The account is not active |
-| 403 | `org_suspended` | The organization is not active |
+| 403 | `org_suspended` | Service suspended; contact the CBPay team |
 | 403 | `company_only` | Feature only for company accounts |
 
 ### Validation (400)
@@ -39,7 +39,7 @@ All errors share the same shape:
 | `invalid_email` / `invalid_display_name` | Invalid required field |
 | `weak_password` | Password shorter than 8 characters |
 | `invalid_role` | Invalid member role |
-| `unknown_org` | Organization slug does not exist |
+| `unknown_org` | Wrong organization slug (use `cbpay`) |
 | `invalid_request` | Missing `country`/`currency` |
 | `idempotency_key_required` | Missing idempotency key |
 | `beneficiary_required` | Missing payout beneficiary |
@@ -72,7 +72,7 @@ All errors share the same shape:
 | 502 | `rates_unavailable` | FX rates temporarily unavailable |
 | 502 | `core_unavailable` | Processor temporarily unavailable |
 | 502 | `compliance_unavailable` | Screening temporarily unavailable |
-| 503 | `org_credential_missing` | Organization not configured; contact your operator |
+| 503 | `org_credential_missing` | Service being configured; contact CBPay support |
 | 503 | `withdrawals_unavailable` | On-chain withdrawals not enabled for the corridor |
 
 ## How to handle them

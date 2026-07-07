@@ -5,10 +5,10 @@ description: "Screening de personas y empresas, rescreening y monitoreo continuo
 
 CBPay integra el screening KYC/AML como servicio: envías la identidad de la
 cuenta y recibes el resultado del análisis. El estado KYC de la cuenta
-(`kyc_status`) lo resuelve tu operador tras revisar el resultado.
+(`kyc_status`) lo resuelve CBPay tras revisar el resultado.
 
 <Note>
-Si tu operador configuró una comisión de compliance, se debita **antes** de
+Si CBPay configuró una comisión de compliance, se debita **antes** de
 la llamada (verás `compliance_fee` en la respuesta) y se **reembolsa
 automáticamente** si el screening falla. Con comisión 0 el servicio es
 gratuito para ti.
@@ -65,7 +65,7 @@ Respuesta `201` (resultado del screening + campos de facturación):
 }
 ```
 
-Tu cuenta queda con `kyc_status: pending` hasta que el administrador la
+Tu cuenta queda con `kyc_status: pending` hasta que CBPay lo
 apruebe o rechace.
 
 ## Rescreening

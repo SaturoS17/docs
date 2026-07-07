@@ -19,7 +19,7 @@ curl "https://exchange.qbank.cl/platform/v1/crypto/deposit-address?chain=tron" \
 ```
 
 - **Primera llamada en la red** → crea la wallet y devuelve `201` con la
-  dirección. Si tu operador configuró la comisión `wallet_creation`, se
+  dirección. Si CBPay configuró la comisión `wallet_creation`, se
   cobra aquí (fijo por wallet; la respuesta lo informa en `creation_fee` y
   se reembolsa automáticamente si la creación falla).
 - **Llamadas siguientes** → devuelven `200` con la misma dirección, siempre
@@ -50,7 +50,7 @@ dirección es tuya y estable: puedes reutilizarla para todos tus depósitos.
 ### 2. Recibe el abono automático
 
 Cuando el depósito se confirma on-chain, tu saldo se acredita
-automáticamente (neto de la comisión de `funding` si tu operador la
+automáticamente (neto de la comisión de `funding` si CBPay la
 configuró) y se emite el webhook `crypto_deposit_credited`:
 
 ```json

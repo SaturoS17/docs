@@ -3,8 +3,8 @@ title: "Webhooks"
 description: "Receive signed events in real time"
 ---
 
-Webhooks notify your own HTTPS callback about your account's events (or the
-whole organization's, when using an admin credential).
+Webhooks notify your own HTTPS callback about your account's events,
+cryptographically signed.
 
 ## Create a subscription
 
@@ -25,9 +25,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/webhooks/subscriptions \
 - `secret`: at least 16 characters; used to sign every delivery. Stored
   encrypted and cannot be retrieved.
 
-With an account credential the subscription receives **your account's**
-events; with an admin API key, the events of **every account** in the
-organization.
+The subscription receives **your account's** events.
 
 ## Events
 

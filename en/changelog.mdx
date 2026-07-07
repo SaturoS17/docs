@@ -22,6 +22,9 @@ Breaking changes are announced in advance and flagged as **Breaking**.
 - `GET /healthz` endpoint documented (service status).
 - The Crypto guide adds **"Wallet balance and activity"**: how to check your
   balance, on-chain activity with `tx_id`, and the accounting history.
+- Brand-voice copy: the whole documentation now speaks as **CBPay** (it
+  previously used generic wording like "your operator" or "the
+  organization").
 
 </Update>
 
@@ -30,7 +33,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
 **Added**
 
 - New `wallet_creation` fee service: the first creation of a deposit address
-  on each chain may carry a fixed charge configured by your operator
+  on each chain may carry a fixed charge configured by CBPay
   (0 = free, the default). The `GET /v1/crypto/deposit-address` response now
   includes `creation_fee`, and the movements history adds the
   `wallet_creation_fee` and `wallet_creation_refund` entry types. Fetching
@@ -62,8 +65,8 @@ Breaking changes are announced in advance and flagged as **Breaking**.
 **Changed**
 
 - Official CBPay brand identity applied across the documentation.
-- Organization administration documentation moved to a separate operator
-  portal; this site now covers the account API only.
+- Administration documentation moved to CBPay's internal portal; this site
+  now covers the account API only.
 
 </Update>
 

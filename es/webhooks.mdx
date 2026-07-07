@@ -3,8 +3,8 @@ title: "Webhooks"
 description: "Recibe eventos firmados en tiempo real"
 ---
 
-Los webhooks te notifican los eventos de tu cuenta (o de toda tu
-organización, si usas una credencial admin) en un callback HTTPS propio.
+Los webhooks te notifican los eventos de tu cuenta en un callback HTTPS
+propio, firmados criptográficamente.
 
 ## Crear una suscripción
 
@@ -25,9 +25,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/webhooks/subscriptions \
 - `secret`: mínimo 16 caracteres; se usa para firmar cada entrega. Se
   almacena cifrado y no puede recuperarse.
 
-Con credencial de cuenta la suscripción recibe los eventos de **tu cuenta**;
-con API key de administrador, los de **todas las cuentas** de la
-organización.
+La suscripción recibe los eventos de **tu cuenta**.
 
 ## Eventos
 

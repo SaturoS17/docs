@@ -9,7 +9,7 @@ se debita `usdt_amount + fee` de tu saldo.
 
 ## 1. Descubre los corredores disponibles
 
-Los países, monedas y métodos disponibles dependen de tu organización.
+Los países, monedas y métodos disponibles los define CBPay.
 Consúltalos siempre por catálogo:
 
 ```bash
@@ -114,7 +114,7 @@ curl https://exchange.qbank.cl/platform/v1/payouts/0d4f… \
 | 400 | `idempotency_key_required` | Envía la clave en body o header |
 | 400 | `beneficiary_required` | Incluye el objeto `beneficiary` |
 | 402 | `insufficient_funds` | Fondea la cuenta; el payout no se creó |
-| 403 | `account_blocked` | La cuenta no está activa; contacta a tu operador |
+| 403 | `account_blocked` | La cuenta no está activa; contacta al equipo de CBPay |
 | 422 | `currency_not_supported` | No hay tasa FX para esa moneda |
 | 422 | (payout con `status: failed`) | El corredor rechazó los datos; el débito ya fue reembolsado — corrige `beneficiary` y reintenta con clave nueva |
 

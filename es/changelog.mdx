@@ -23,6 +23,8 @@ con anticipación y quedan marcados como **Breaking**.
 - Endpoint `GET /healthz` documentado (estado del servicio).
 - La guía de Crypto agrega **"Saldo y actividad de tu wallet"**: cómo ver el
   saldo, la actividad on-chain con `tx_id` y el historial contable.
+- Redacción en voz de marca: toda la documentación habla como **CBPay**
+  (antes usaba términos genéricos como "tu operador" o "la organización").
 
 </Update>
 
@@ -32,7 +34,7 @@ con anticipación y quedan marcados como **Breaking**.
 
 - Nuevo servicio de comisión `wallet_creation`: la primera creación de una
   dirección de depósito en cada red puede tener un cargo fijo configurado
-  por tu operador (0 = gratis, valor por defecto). La respuesta de
+  por CBPay (0 = gratis, valor por defecto). La respuesta de
   `GET /v1/crypto/deposit-address` ahora incluye `creation_fee`, y el
   historial de movimientos incorpora los tipos `wallet_creation_fee` y
   `wallet_creation_refund`. Consultar una dirección existente sigue siendo
@@ -64,8 +66,8 @@ con anticipación y quedan marcados como **Breaking**.
 **Cambiado**
 
 - Identidad visual oficial de CBPay aplicada a toda la documentación.
-- La documentación de administración de organizaciones se movió a un portal
-  separado para operadores; este sitio contiene solo la API de cuentas.
+- La documentación de administración se movió a un portal interno de CBPay;
+  este sitio contiene solo la API de cuentas.
 
 </Update>
 

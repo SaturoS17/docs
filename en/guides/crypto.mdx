@@ -19,7 +19,7 @@ curl "https://exchange.qbank.cl/platform/v1/crypto/deposit-address?chain=tron" \
 ```
 
 - **First call on the network** → creates the wallet and returns `201` with
-  the address. If your operator configured the `wallet_creation` fee, it is
+  the address. If CBPay configured the `wallet_creation` fee, it is
   charged here (fixed per wallet; reported in `creation_fee` and refunded
   automatically if creation fails).
 - **Subsequent calls** → return `200` with the same address, always free.
@@ -49,7 +49,7 @@ address is yours and stable: you can reuse it for every deposit.
 ### 2. Get credited automatically
 
 When the deposit confirms on-chain, your balance is credited automatically
-(net of the `funding` fee if your operator configured one) and the
+(net of the `funding` fee if CBPay configured one) and the
 `crypto_deposit_credited` webhook fires:
 
 ```json

@@ -1,10 +1,10 @@
 ---
 title: "Internal transfers"
-description: "Move USDT between accounts of your organization, free and instant"
+description: "Move USDT between CBPay accounts, free and instant"
 ---
 
-Internal transfers move balance between two accounts of the **same
-organization**, atomically in the ledger and **free of charge**.
+Internal transfers move balance between two **CBPay accounts**, atomically
+in the ledger and **free of charge**.
 
 ## Create a transfer
 
@@ -42,8 +42,8 @@ sides see the movement in their history (`transfer_out` / `transfer_in`).
 
 ## Rules
 
-- Only between **active** accounts of the same organization; internal system
-  accounts cannot receive.
+- Only between **active** CBPay accounts; internal system accounts cannot
+  receive.
 - You cannot transfer to yourself (`400 self_transfer`).
 - Requires `idempotency_key` (body or `Idempotency-Key` header); replays
   return `200` with `idempotency_hit: true`.
@@ -56,5 +56,5 @@ sides see the movement in their history (`transfer_out` / `transfer_in`).
 | 400 | `recipient_required` | Missing `to_account_id` and `to_email` |
 | 400 | `self_transfer` | Source and destination are the same account |
 | 402 | `insufficient_funds` | Not enough available balance |
-| 404 | `recipient_not_found` | The email/ID does not match an account of your organization |
+| 404 | `recipient_not_found` | The email/ID does not match a CBPay account |
 | 422 | `recipient_unavailable` | The destination account is blocked/closed |

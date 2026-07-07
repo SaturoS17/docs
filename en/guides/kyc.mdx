@@ -5,10 +5,10 @@ description: "Person and company screening, rescreening and continuous monitorin
 
 CBPay integrates KYC/AML screening as a service: you submit the account's
 identity and receive the analysis result. The account's KYC state
-(`kyc_status`) is resolved by your operator after reviewing the result.
+(`kyc_status`) is resolved by CBPay after reviewing the result.
 
 <Note>
-If your operator configured a compliance fee, it is debited **before** the
+If CBPay configured a compliance fee, it is debited **before** the
 call (you'll see `compliance_fee` in the response) and **refunded
 automatically** if the screening fails. With a fee of 0 the service is free
 for you.
@@ -65,8 +65,8 @@ Response `201` (screening result + billing fields):
 }
 ```
 
-Your account stays at `kyc_status: pending` until the administrator approves
-or rejects it.
+Your account stays at `kyc_status: pending` until CBPay approves or rejects
+it.
 
 ## Rescreening
 

@@ -1,10 +1,10 @@
 ---
 title: "Transferencias internas"
-description: "Mueve USDT entre cuentas de tu organización, gratis y al instante"
+description: "Mueve USDT entre cuentas CBPay, gratis y al instante"
 ---
 
-Las transferencias internas mueven saldo entre dos cuentas de la **misma
-organización**, de forma atómica en el ledger y **sin comisión**.
+Las transferencias internas mueven saldo entre dos cuentas **CBPay**, de
+forma atómica en el ledger y **sin comisión**.
 
 ## Crear una transferencia
 
@@ -42,8 +42,8 @@ el movimiento en su historial (`transfer_out` / `transfer_in`).
 
 ## Reglas
 
-- Solo entre cuentas **activas** de la misma organización; las cuentas
-  internas del sistema no pueden recibir.
+- Solo entre cuentas CBPay **activas**; las cuentas internas del sistema no
+  pueden recibir.
 - No puedes transferirte a ti mismo (`400 self_transfer`).
 - Requiere `idempotency_key` (body o header `Idempotency-Key`); el replay
   devuelve `200` con `idempotency_hit: true`.
@@ -56,5 +56,5 @@ el movimiento en su historial (`transfer_out` / `transfer_in`).
 | 400 | `recipient_required` | Falta `to_account_id` y `to_email` |
 | 400 | `self_transfer` | Origen y destino son la misma cuenta |
 | 402 | `insufficient_funds` | Saldo disponible insuficiente |
-| 404 | `recipient_not_found` | El email/ID no corresponde a una cuenta de tu organización |
+| 404 | `recipient_not_found` | El email/ID no corresponde a una cuenta CBPay |
 | 422 | `recipient_unavailable` | La cuenta destino está bloqueada/cerrada |
