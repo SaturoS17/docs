@@ -121,6 +121,373 @@ curl https://exchange.qbank.cl/platform/v1/payouts/0d4f… \
   -H "Authorization: Bearer <token>"
 ```
 
+## Ejemplos por país
+
+Cada corredor con su `beneficiary` real y la respuesta que recibes. Las
+tasas (`fx_rate`) son ilustrativas — siempre aplican las de tu cuenta en
+`GET /v1/rates`. En todos los casos el débito es
+`usdt_amount + fee` (fijo, si está configurado; aquí `0.30`).
+
+<Tabs>
+<Tab title="Chile">
+
+Transferencia bancaria en CLP. Requiere RUT, banco y cuenta:
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "CL",
+    "currency": "CLP",
+    "method": "bank_transfer",
+    "amount": "100000",
+    "beneficiary": {
+      "name": "Pedro Soto Fuentes",
+      "tax_id": "12.345.678-5",
+      "bank_code": "012",
+      "account_type": "checking",
+      "account_number": "123456789"
+    },
+    "description": "Pago proveedor",
+    "idempotency_key": "cl-prov-0091"
+  }'
+```
+
+```json
+{
+  "payout_id": "b3e1…",
+  "country": "CL",
+  "currency": "CLP",
+  "method": "bank_transfer",
+  "local_amount": "100000",
+  "fx_rate": "925.69",
+  "usdt_amount": "108.027528",
+  "fee": "0.300000",
+  "total_debit": "108.327528",
+  "status": "processing"
+}
+```
+
+El catálogo de bancos (`GET /v1/payouts/banks?country=CL`) da los
+`bank_code` vigentes.
+
+</Tab>
+<Tab title="Perú">
+
+Dos métodos: transferencia bancaria (CCI interbancario) y **Yape** (al
+número de teléfono).
+
+<CodeGroup>
+
+```bash bank_transfer (CCI)
+curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "PE",
+    "currency": "PEN",
+    "method": "bank_transfer",
+    "amount": "1000.00",
+    "beneficiary": {
+      "name": "Rosa Álvarez Díaz",
+      "account_number": "00219300123456789012"
+    },
+    "idempotency_key": "pe-cci-3310"
+  }'
+```
+
+```bash yape (teléfono)
+curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "PE",
+    "currency": "PEN",
+    "method": "yape",
+    "amount": "150.00",
+    "beneficiary": {
+      "name": "Luis Ramos Vega",
+      "phone": "51987654321"
+    },
+    "idempotency_key": "pe-yape-8874"
+  }'
+```
+
+</CodeGroup>
+
+```json
+{
+  "payout_id": "c7a2…",
+  "country": "PE",
+  "currency": "PEN",
+  "method": "yape",
+  "local_amount": "150.00",
+  "fx_rate": "3.40",
+  "usdt_amount": "44.117648",
+  "fee": "0.300000",
+  "total_debit": "44.417648",
+  "status": "completed"
+}
+```
+
+En `yape` el teléfono va en formato `51XXXXXXXXX` (11 dígitos con código de
+país). El resultado suele ser síncrono.
+
+</Tab>
+<Tab title="México">
+
+SPEI en MXN, a CLABE (18 dígitos) o a tarjeta de débito:
+
+<CodeGroup>
+
+```bash CLABE
+curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "MX",
+    "currency": "MXN",
+    "method": "bank_transfer",
+    "amount": "1500.00",
+    "beneficiary": {
+      "name": "María López",
+      "account_type": "clabe",
+      "account_number": "012180001234567895"
+    },
+    "idempotency_key": "mx-clabe-8841"
+  }'
+```
+
+```bash Tarjeta de débito
+curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "MX",
+    "currency": "MXN",
+    "method": "bank_transfer",
+    "amount": "800.00",
+    "beneficiary": {
+      "name": "Jorge Herrera",
+      "account_type": "debit_card",
+      "account_number": "4152313412341234",
+      "bank_code": "40012"
+    },
+    "idempotency_key": "mx-card-1102"
+  }'
+```
+
+</CodeGroup>
+
+```json
+{
+  "payout_id": "0d4f…",
+  "country": "MX",
+  "currency": "MXN",
+  "method": "bank_transfer",
+  "local_amount": "1500.00",
+  "fx_rate": "17.50",
+  "usdt_amount": "85.714286",
+  "fee": "0.300000",
+  "total_debit": "86.014286",
+  "status": "processing"
+}
+```
+
+Con CLABE el banco destino se deriva de los primeros dígitos; con tarjeta
+es obligatorio `bank_code`.
+
+</Tab>
+<Tab title="Venezuela">
+
+Dos métodos: **Pago Móvil** (teléfono + banco + cédula) y transferencia
+bancaria (cuenta de 20 dígitos):
+
+<CodeGroup>
+
+```bash pago_movil
+curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "VE",
+    "currency": "VES",
+    "method": "pago_movil",
+    "amount": "2000.00",
+    "beneficiary": {
+      "phone": "04141234567",
+      "bank_code": "0102",
+      "document_value": "V12345678"
+    },
+    "idempotency_key": "ve-pm-5567"
+  }'
+```
+
+```bash bank_transfer
+curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "VE",
+    "currency": "VES",
+    "method": "bank_transfer",
+    "amount": "5000.00",
+    "beneficiary": {
+      "name": "Carmen Delgado",
+      "account_number": "01020123456789012345",
+      "document_value": "V87654321"
+    },
+    "idempotency_key": "ve-bank-7810"
+  }'
+```
+
+</CodeGroup>
+
+```json
+{
+  "payout_id": "e9b4…",
+  "country": "VE",
+  "currency": "VES",
+  "method": "pago_movil",
+  "local_amount": "2000.00",
+  "fx_rate": "666.00",
+  "usdt_amount": "3.003004",
+  "fee": "0.300000",
+  "total_debit": "3.303004",
+  "status": "completed"
+}
+```
+
+`bank_code` usa códigos SUDEBAN; en `bank_transfer` puede derivarse de los
+primeros 4 dígitos de la cuenta.
+
+</Tab>
+<Tab title="Bolivia">
+
+Transferencia ACH en BOB o USD (además del [QR](#payout-qr)):
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BO",
+    "currency": "BOB",
+    "method": "bank_transfer",
+    "amount": "1382.00",
+    "beneficiary": {
+      "name": "Juan Quispe Mamani",
+      "tax_id": "4567890",
+      "bank_code": "1016",
+      "account_number": "1234567890"
+    },
+    "idempotency_key": "bo-ach-2204"
+  }'
+```
+
+```json
+{
+  "payout_id": "f2c8…",
+  "country": "BO",
+  "currency": "BOB",
+  "method": "bank_transfer",
+  "local_amount": "1382.00",
+  "fx_rate": "6.91",
+  "usdt_amount": "200.000000",
+  "fee": "0.300000",
+  "total_debit": "200.300000",
+  "status": "processing"
+}
+```
+
+Para USD envía `currency: "USD"` con la misma estructura.
+
+</Tab>
+<Tab title="Brasil">
+
+PIX por llave (además del [QR PIX](#payout-qr)):
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BR",
+    "currency": "BRL",
+    "method": "pix",
+    "amount": "350.00",
+    "beneficiary": {
+      "name": "João da Silva",
+      "tax_id": "123.456.789-09",
+      "pix_key_type": "cpf",
+      "pix_key": "12345678909"
+    },
+    "idempotency_key": "br-pix-3321"
+  }'
+```
+
+```json
+{
+  "payout_id": "a6d1…",
+  "country": "BR",
+  "currency": "BRL",
+  "method": "pix",
+  "local_amount": "350.00",
+  "fx_rate": "5.13",
+  "usdt_amount": "68.226121",
+  "fee": "0.300000",
+  "total_debit": "68.526121",
+  "status": "processing"
+}
+```
+
+`pix_key_type`: `cpf`, `cnpj`, `phone`, `email` o `evp` (llave aleatoria).
+
+</Tab>
+<Tab title="Paraguay">
+
+Transferencia bancaria en PYG:
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "PY",
+    "currency": "PYG",
+    "method": "bank_transfer",
+    "amount": "500000",
+    "beneficiary": {
+      "name": "Sofía Benítez",
+      "tax_id": "4123456",
+      "bank_code": "0011",
+      "account_number": "600123456"
+    },
+    "idempotency_key": "py-bank-9917"
+  }'
+```
+
+```json
+{
+  "payout_id": "d4e7…",
+  "country": "PY",
+  "currency": "PYG",
+  "method": "bank_transfer",
+  "local_amount": "500000",
+  "fx_rate": "6055.76",
+  "usdt_amount": "82.566020",
+  "fee": "0.300000",
+  "total_debit": "82.866020",
+  "status": "processing"
+}
+```
+
+`name` acepta hasta 35 caracteres en este corredor.
+
+</Tab>
+</Tabs>
+
 ## Payout PIX (Brasil)
 
 En Brasil los payouts van por **PIX**, el sistema de pagos instantáneos del

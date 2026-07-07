@@ -20,7 +20,9 @@ They work between **any combination of accounts**:
 
 The destination is identified by `to_account_id` **or** `to_email`:
 
-```bash
+<CodeGroup>
+
+```bash By email (person → person)
 curl -X POST https://exchange.qbank.cl/platform/v1/transfers \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
@@ -31,6 +33,35 @@ curl -X POST https://exchange.qbank.cl/platform/v1/transfers \
     "idempotency_key": "split-2026-07-06-a"
   }'
 ```
+
+```bash By account_id (person → company)
+curl -X POST https://exchange.qbank.cl/platform/v1/transfers \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to_account_id": "ae8cf540-22a9-414d-82cc-8ac04732be4f",
+    "amount": "120.500000",
+    "description": "Monthly service payment",
+    "idempotency_key": "serv-2026-07-a"
+  }'
+```
+
+```bash Company → person (payroll)
+curl -X POST https://exchange.qbank.cl/platform/v1/transfers \
+  -H "Authorization: Bearer <company token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to_email": "employee@example.com",
+    "amount": "850.000000",
+    "description": "July salary",
+    "idempotency_key": "payroll-2026-07-emp01"
+  }'
+```
+
+</CodeGroup>
+
+The request shape is identical for every combination (person or company,
+in any direction) — only the calling credential changes.
 
 Response `201` — the transfer is **synchronous and immediate**:
 
@@ -44,6 +75,17 @@ Response `201` — the transfer is **synchronous and immediate**:
   "description": "Expense split",
   "status": "completed",
   "created_at": "2026-07-06T20:10:00Z"
+}
+```
+
+Replay with the same `idempotency_key` — `200` with the original transfer:
+
+```json
+{
+  "transfer_id": "77b1…",
+  "amount": "25.000000",
+  "status": "completed",
+  "idempotency_hit": true
 }
 ```
 

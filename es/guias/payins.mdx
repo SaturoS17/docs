@@ -24,7 +24,9 @@ cobro activo en Venezuela y cuentas de depósito dedicadas en México.
 
 ## Cobro con QR
 
-```bash
+<CodeGroup>
+
+```bash Bolivia (QR interoperable)
 curl -X POST https://exchange.qbank.cl/platform/v1/payins \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
@@ -38,6 +40,22 @@ curl -X POST https://exchange.qbank.cl/platform/v1/payins \
   }'
 ```
 
+```bash Brasil (QR PIX dinámico)
+curl -X POST https://exchange.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BR",
+    "currency": "BRL",
+    "method": "qr",
+    "amount": "120.00",
+    "description": "Pedido 7719",
+    "expires_in": 1800
+  }'
+```
+
+</CodeGroup>
+
 Respuesta `201`:
 
 ```json
@@ -46,21 +64,21 @@ Respuesta `201`:
   "status": "pending",
   "charge": {
     "charge_id": "…",
-    "qr_image": "…",
-    "our_reference": "…"
+    "qr_image": "<base64>",
+    "qr_payload": "<contenido del QR / copia e cola>",
+    "our_reference": "482915073",
+    "status": "pending"
   }
 }
 ```
 
 El objeto `charge` contiene los datos del cobro para mostrar a tu cliente
 (imagen/datos del QR, referencias). Su forma exacta depende del método del
-país.
+país. En Brasil `qr_payload` es el código **"copia e cola"** de PIX, para
+que el pagador pueda pegarlo en su app bancaria si no escanea la imagen.
 
-En **Brasil** el mismo endpoint genera un **QR PIX dinámico** con el monto
-embebido — usa `country: "BR"` y `currency: "BRL"`; el `charge` incluye la
-imagen del QR y el código "copia e cola" (`qr_payload`) para que el pagador
-pueda pegarlo en su app bancaria. Cuando el PIX se paga, tu cuenta se
-acredita automáticamente como en cualquier otro payin.
+Cuando el QR se paga, tu cuenta se acredita automáticamente y llega el
+webhook `payin_credited` (ver [Recibir el abono](#recibir-el-abono)).
 
 ## Transferencia bancaria (depósito anunciado)
 
@@ -115,9 +133,23 @@ curl -X POST https://exchange.qbank.cl/platform/v1/payins/collect/otp \
   }'
 ```
 
-Luego ejecuta el cobro:
+Respuesta `200` — el pagador recibe la clave en su banco:
 
-```bash
+```json
+{
+  "method": "debito_inmediato",
+  "result": {
+    "status": "sent",
+    "otp_reference": "OTP-5521"
+  }
+}
+```
+
+Luego ejecuta el cobro (los campos del pagador dependen del método):
+
+<CodeGroup>
+
+```bash c2p (teléfono + cédula + OTP del pagador)
 curl -X POST https://exchange.qbank.cl/platform/v1/payins/collect \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
@@ -131,6 +163,25 @@ curl -X POST https://exchange.qbank.cl/platform/v1/payins/collect \
     "otp": "12345678"
   }'
 ```
+
+```bash debito_inmediato (cuenta + OTP solicitado antes)
+curl -X POST https://exchange.qbank.cl/platform/v1/payins/collect \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method": "debito_inmediato",
+    "amount": "1200.00",
+    "description": "Cobro pedido 5512",
+    "payer_document": "V12345678",
+    "payer_account": "01020123456789012345",
+    "payer_bank": "0102",
+    "payer_account_type": "CNTA",
+    "otp": "87654321",
+    "otp_reference": "OTP-5521"
+  }'
+```
+
+</CodeGroup>
 
 Respuesta `200` (cobro aprobado y acreditado):
 

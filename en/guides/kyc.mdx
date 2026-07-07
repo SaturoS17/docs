@@ -22,13 +22,18 @@ One endpoint for person and company; the type is detected from the payload:
 
 <CodeGroup>
 
-```bash Person
+```bash Person (KYC)
 curl -X POST https://exchange.qbank.cl/platform/v1/kyc \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
     "customer": {
-      "person": { "full_name": "Ana Perez Rojas" },
+      "person": {
+        "full_name": "Ana Perez Rojas",
+        "birth_date": "1990-04-12",
+        "document_type": "national_id",
+        "document_value": "12.345.678-5"
+      },
       "email": "ana@example.com",
       "country": "CL"
     },
@@ -36,36 +41,66 @@ curl -X POST https://exchange.qbank.cl/platform/v1/kyc \
   }'
 ```
 
-```bash Company
+```bash Company (KYB)
 curl -X POST https://exchange.qbank.cl/platform/v1/kyc \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
     "customer": {
-      "company": { "legal_name": "Comercial Andina SpA" },
+      "company": {
+        "legal_name": "Comercial Andina SpA",
+        "tax_id": "76.543.210-8"
+      },
+      "email": "legal@andina.cl",
       "country": "CL"
     },
     "monitor": true
   }'
 ```
 
+```bash Minimal (autofilled)
+curl -X POST https://exchange.qbank.cl/platform/v1/kyc \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "customer": {}, "monitor": false }'
+```
+
 </CodeGroup>
 
-If you omit `person`/`company`, the account's own data is used.
+If you omit `person`/`company`, the account's own data is used (the
+person/company type is taken from the account type).
 
-Response `201` (screening result + billing fields):
+Response `201` — person and company return the same shape;
+`compliance_service` changes (`compliance_person` vs `compliance_company`,
+each with its own fee):
 
-```json
+<CodeGroup>
+
+```json Person
 {
-  "customer_id": "…",
-  "status": "…",
-  "risk_level": "…",
-  "screening_result": "…",
+  "customer_id": "cus_8f2e1a…",
+  "status": "screened",
+  "risk_level": "low",
+  "screening_result": "no_match",
   "kyc_status": "pending",
   "compliance_service": "compliance_person",
-  "compliance_fee": "0.000000"
+  "compliance_fee": "0.500000"
 }
 ```
+
+```json Company
+{
+  "customer_id": "cus_5b7c33…",
+  "status": "screened",
+  "risk_level": "medium",
+  "screening_result": "potential_match",
+  "kyc_status": "pending",
+  "compliance_service": "compliance_company",
+  "compliance_fee": "1.000000"
+}
+```
+
+</CodeGroup>
 
 Your account stays at `kyc_status: pending` until CBPay approves or rejects
 it.
@@ -73,11 +108,25 @@ it.
 ## Rescreening
 
 Re-run the analysis of the same identity (e.g. after a data change or as a
-periodic policy):
+periodic policy). No body needed — it uses the `customer_id` from your
+previous screening:
 
 ```bash
 curl -X POST https://exchange.qbank.cl/platform/v1/kyc/rescreen \
   -H "Authorization: Bearer <token>"
+```
+
+Response `200` (bills `compliance_rescreen`, when configured):
+
+```json
+{
+  "customer_id": "cus_8f2e1a…",
+  "status": "screened",
+  "risk_level": "low",
+  "screening_result": "no_match",
+  "compliance_service": "compliance_rescreen",
+  "compliance_fee": "0.250000"
+}
 ```
 
 Requires a prior KYC/KYB submission; otherwise `409 no_kyc`.
@@ -87,15 +136,37 @@ Requires a prior KYC/KYB submission; otherwise `409 no_kyc`.
 Enable (or disable) permanent watching of the identity — list changes, PEP,
 adverse media:
 
-```bash
+<CodeGroup>
+
+```bash Enable (bills compliance_monitoring)
 curl -X PATCH https://exchange.qbank.cl/platform/v1/kyc/monitoring \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{ "enabled": true }'
 ```
 
-Enabling bills the `compliance_monitoring` fee (when configured);
-**disabling is always free**.
+```bash Disable (always free)
+curl -X PATCH https://exchange.qbank.cl/platform/v1/kyc/monitoring \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "enabled": false }'
+```
+
+</CodeGroup>
+
+Response `200`:
+
+```json
+{
+  "customer_id": "cus_8f2e1a…",
+  "monitoring": true,
+  "compliance_service": "compliance_monitoring",
+  "compliance_fee": "0.100000"
+}
+```
+
+When disabling, `compliance_fee` comes back as `"0.000000"` — disabling is
+always free.
 
 ## Errors
 

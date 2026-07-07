@@ -7,6 +7,28 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="7 de julio de 2026" description="v1.11">
+
+**Mejorado**
+
+- **Ejemplos completos por caso de uso en toda la documentación**:
+  - Payouts: ejemplo de cada país y método con su `beneficiary` real y la
+    respuesta (Chile, Perú CCI + Yape, México CLABE + tarjeta, Venezuela
+    Pago Móvil + transferencia, Bolivia ACH, Brasil PIX, Paraguay).
+  - Payins: QR de Bolivia y Brasil lado a lado, cobro activo `c2p` y
+    `debito_inmediato` con la respuesta del OTP, cuenta de depósito
+    dedicada.
+  - KYC/KYB: requests de persona, empresa y mínimo autocompletado, con las
+    respuestas de screening, rescreening y monitoreo (activar/desactivar).
+  - Transferencias: por email, por `account_id`, empresa→persona (nómina) y
+    replay idempotente.
+  - Crypto: creación de wallet persona vs empresa, y el error
+    `wallet_limit_reached`.
+  - API Reference: ejemplos nombrados seleccionables en cada endpoint (10
+    corredores en payouts, 3 modos en payins, persona/empresa en KYC…).
+
+</Update>
+
 <Update label="7 de julio de 2026" description="v1.10">
 
 **Agregado**

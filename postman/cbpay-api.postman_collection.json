@@ -1193,7 +1193,7 @@
             "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically. Charging is free; the payin fee applies when the deposit is credited.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"country\": \"BO\",\n  \"currency\": \"BOB\",\n  \"amount\": \"700.00\",\n  \"description\": \"App top-up\",\n  \"expires_in\": 3600,\n  \"method\": \"qr\"\n}",
+              "raw": "{}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1579,7 +1579,7 @@
             "description": "Moves USDT between two CBPay accounts, atomically and always free of charge — any combination works: person to person, person to company, company to person or company to company. The destination is resolved by `to_account_id` or `to_email`. The recipient's webhook subscribers receive `transfer_received`.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"to_email\": \"carlos@example.com\",\n  \"amount\": \"25.000000\",\n  \"description\": \"Expense split\",\n  \"idempotency_key\": \"split-2026-07-07-a\"\n}",
+              "raw": "{}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1894,7 +1894,7 @@
             "description": "Creates a new on-chain USDT wallet for the calling account. Person accounts hold **one wallet per network**; company accounts can create **unlimited** wallets per network (use `label` to tell them apart).\n\nEvery creation bills the `wallet_creation` fee when configured by CBPay (fixed per wallet; 0 = free, the default; configurable per account). The charge is refunded automatically if creation fails.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"chain\": \"tron\",\n  \"label\": \"Main treasury\"\n}",
+              "raw": "{}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1960,7 +1960,7 @@
             "description": "Verifies the calling account's identity — KYC for persons, KYB for companies (detected from the payload) — against the compliance service. If a compliance fee is configured, it is debited before the call and refunded if the screening fails. The response includes the screening result plus `kyc_status`, `compliance_service` and `compliance_fee`.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"customer\": {\n    \"person\": {\n      \"full_name\": \"Ana Perez Rojas\"\n    },\n    \"email\": \"ana@example.com\",\n    \"country\": \"CL\"\n  },\n  \"monitor\": false\n}",
+              "raw": "{}",
               "options": {
                 "raw": {
                   "language": "json"

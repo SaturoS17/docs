@@ -636,8 +636,45 @@ paths:
                 idempotency_key:
                   type: string
             examples:
-              bank_transfer_mx:
-                summary: Bank transfer (Mexico SPEI)
+              cl_bank_transfer:
+                summary: Chile — bank transfer (CLP)
+                value:
+                  country: CL
+                  currency: CLP
+                  method: bank_transfer
+                  amount: '100000'
+                  beneficiary:
+                    name: Pedro Soto Fuentes
+                    tax_id: 12.345.678-5
+                    bank_code: '012'
+                    account_type: checking
+                    account_number: '123456789'
+                  description: Supplier payment
+                  idempotency_key: cl-prov-0091
+              pe_bank_transfer:
+                summary: Peru — bank transfer via CCI (PEN)
+                value:
+                  country: PE
+                  currency: PEN
+                  method: bank_transfer
+                  amount: '1000.00'
+                  beneficiary:
+                    name: Rosa Alvarez Diaz
+                    account_number: 00219300123456789012
+                  idempotency_key: pe-cci-3310
+              pe_yape:
+                summary: Peru — Yape to a phone number (PEN)
+                value:
+                  country: PE
+                  currency: PEN
+                  method: yape
+                  amount: '150.00'
+                  beneficiary:
+                    name: Luis Ramos Vega
+                    phone: '51987654321'
+                  idempotency_key: pe-yape-8874
+              mx_clabe:
+                summary: Mexico — SPEI to a CLABE (MXN)
                 value:
                   country: MX
                   currency: MXN
@@ -647,10 +684,59 @@ paths:
                     name: Maria Lopez
                     account_type: clabe
                     account_number: 012180001234567895
-                  description: Invoice 8841
-                  idempotency_key: invoice-8841
-              pix_br:
-                summary: PIX by key (Brazil)
+                  idempotency_key: mx-clabe-8841
+              mx_debit_card:
+                summary: Mexico — SPEI to a debit card (MXN)
+                value:
+                  country: MX
+                  currency: MXN
+                  method: bank_transfer
+                  amount: '800.00'
+                  beneficiary:
+                    name: Jorge Herrera
+                    account_type: debit_card
+                    account_number: '4152313412341234'
+                    bank_code: '40012'
+                  idempotency_key: mx-card-1102
+              ve_pago_movil:
+                summary: Venezuela — Pago Móvil (VES)
+                value:
+                  country: VE
+                  currency: VES
+                  method: pago_movil
+                  amount: '2000.00'
+                  beneficiary:
+                    phone: '04141234567'
+                    bank_code: '0102'
+                    document_value: V12345678
+                  idempotency_key: ve-pm-5567
+              ve_bank_transfer:
+                summary: Venezuela — bank transfer (VES)
+                value:
+                  country: VE
+                  currency: VES
+                  method: bank_transfer
+                  amount: '5000.00'
+                  beneficiary:
+                    name: Carmen Delgado
+                    account_number: 01020123456789012345
+                    document_value: V87654321
+                  idempotency_key: ve-bank-7810
+              bo_bank_transfer:
+                summary: Bolivia — ACH transfer (BOB)
+                value:
+                  country: BO
+                  currency: BOB
+                  method: bank_transfer
+                  amount: '1382.00'
+                  beneficiary:
+                    name: Juan Quispe Mamani
+                    tax_id: '4567890'
+                    bank_code: '1016'
+                    account_number: '1234567890'
+                  idempotency_key: bo-ach-2204
+              br_pix:
+                summary: Brazil — PIX by key (BRL)
                 value:
                   country: BR
                   currency: BRL
@@ -661,8 +747,20 @@ paths:
                     tax_id: 123.456.789-09
                     pix_key_type: cpf
                     pix_key: '12345678909'
-                  description: Order 3321 payment
-                  idempotency_key: order-3321
+                  idempotency_key: br-pix-3321
+              py_bank_transfer:
+                summary: Paraguay — bank transfer (PYG)
+                value:
+                  country: PY
+                  currency: PYG
+                  method: bank_transfer
+                  amount: '500000'
+                  beneficiary:
+                    name: Sofia Benitez
+                    tax_id: '4123456'
+                    bank_code: '0011'
+                    account_number: '600123456'
+                  idempotency_key: py-bank-9917
       responses:
         '202':
           description: Payout accepted and dispatching.
@@ -988,13 +1086,32 @@ paths:
                   description: Collection mode. `qr` creates an active QR charge through the processor;
                     `bank_transfer` announces an incoming deposit and returns the reference to include
                     in the transfer description. Use /v1/payins/collect for pull collections.
-            example:
-              country: BO
-              currency: BOB
-              amount: '700.00'
-              description: App top-up
-              expires_in: 3600
-              method: qr
+            examples:
+              bo_qr:
+                summary: Bolivia — QR charge (BOB)
+                value:
+                  country: BO
+                  currency: BOB
+                  method: qr
+                  amount: '700.00'
+                  description: App top-up
+                  expires_in: 3600
+              br_pix_qr:
+                summary: Brazil — dynamic PIX QR (BRL)
+                value:
+                  country: BR
+                  currency: BRL
+                  method: qr
+                  amount: '120.00'
+                  description: Order 7719
+                  expires_in: 1800
+              cl_announced_transfer:
+                summary: Chile — announced bank transfer (CLP)
+                value:
+                  country: CL
+                  currency: CLP
+                  method: bank_transfer
+                  amount: '500000'
       responses:
         '201':
           description: Charge created.
@@ -1216,11 +1333,28 @@ paths:
                   type: string
                 idempotency_key:
                   type: string
-            example:
-              to_email: carlos@example.com
-              amount: '25.000000'
-              description: Expense split
-              idempotency_key: split-2026-07-07-a
+            examples:
+              by_email:
+                summary: Person → person, by email
+                value:
+                  to_email: carlos@example.com
+                  amount: '25.000000'
+                  description: Expense split
+                  idempotency_key: split-2026-07-06-a
+              by_account_id:
+                summary: Person → company, by account_id
+                value:
+                  to_account_id: ae8cf540-22a9-414d-82cc-8ac04732be4f
+                  amount: '120.500000'
+                  description: Monthly service payment
+                  idempotency_key: serv-2026-07-a
+              payroll:
+                summary: Company → person (payroll)
+                value:
+                  to_email: employee@example.com
+                  amount: '850.000000'
+                  description: July salary
+                  idempotency_key: payroll-2026-07-emp01
       responses:
         '201':
           description: Transfer completed.
@@ -1555,13 +1689,34 @@ paths:
                   type: boolean
                   default: false
                   description: Enable continuous monitoring from the start.
-            example:
-              customer:
-                person:
-                  full_name: Ana Perez Rojas
-                email: ana@example.com
-                country: CL
-              monitor: false
+            examples:
+              person:
+                summary: Person (KYC)
+                value:
+                  customer:
+                    person:
+                      full_name: Ana Perez Rojas
+                      birth_date: '1990-04-12'
+                      document_type: national_id
+                      document_value: 12.345.678-5
+                    email: ana@example.com
+                    country: CL
+                  monitor: false
+              company:
+                summary: Company (KYB)
+                value:
+                  customer:
+                    company:
+                      legal_name: Comercial Andina SpA
+                      tax_id: 76.543.210-8
+                    email: legal@andina.cl
+                    country: CL
+                  monitor: true
+              minimal:
+                summary: Minimal — autofilled from the account
+                value:
+                  customer: {}
+                  monitor: false
       responses:
         '201':
           description: Screening submitted; account KYC status set to `pending`.
@@ -1845,9 +2000,21 @@ paths:
                 label:
                   type: string
                   description: Optional descriptive label.
-            example:
-              chain: tron
-              label: Main treasury
+            examples:
+              person:
+                summary: Person — one wallet per network
+                value:
+                  chain: tron
+              company_labeled:
+                summary: Company — labeled wallet (unlimited)
+                value:
+                  chain: tron
+                  label: Main treasury
+              company_eth:
+                summary: Company — Ethereum network
+                value:
+                  chain: eth
+                  label: E-commerce collections
       responses:
         '201':
           description: Wallet created.

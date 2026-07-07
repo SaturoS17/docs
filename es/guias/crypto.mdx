@@ -13,7 +13,16 @@ Tu saldo USDT vive conectado a la blockchain. Redes soportadas: **TRON**
 
 ## Crear una wallet
 
-```bash
+<CodeGroup>
+
+```bash Persona (1 por red)
+curl -X POST https://exchange.qbank.cl/platform/v1/crypto/wallets \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "chain": "tron" }'
+```
+
+```bash Empresa (con label, ilimitadas)
 curl -X POST https://exchange.qbank.cl/platform/v1/crypto/wallets \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
@@ -22,6 +31,18 @@ curl -X POST https://exchange.qbank.cl/platform/v1/crypto/wallets \
     "label": "Tesorería principal"
   }'
 ```
+
+```bash Empresa, red Ethereum
+curl -X POST https://exchange.qbank.cl/platform/v1/crypto/wallets \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "eth",
+    "label": "Cobros e-commerce"
+  }'
+```
+
+</CodeGroup>
 
 Respuesta `201`:
 
@@ -34,6 +55,15 @@ Respuesta `201`:
   "label": "Tesorería principal",
   "created_at": "2026-07-07T12:00:00Z",
   "creation_fee": "1.000000"
+}
+```
+
+Si una persona intenta una segunda wallet en la misma red — `422`:
+
+```json
+{
+  "error": "wallet_limit_reached",
+  "message": "person accounts can hold one wallet per network"
 }
 ```
 

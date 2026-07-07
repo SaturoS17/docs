@@ -13,7 +13,16 @@ Your USDT balance is connected to the blockchain. Supported networks:
 
 ## Create a wallet
 
-```bash
+<CodeGroup>
+
+```bash Person (1 per network)
+curl -X POST https://exchange.qbank.cl/platform/v1/crypto/wallets \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "chain": "tron" }'
+```
+
+```bash Company (with label, unlimited)
 curl -X POST https://exchange.qbank.cl/platform/v1/crypto/wallets \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
@@ -22,6 +31,18 @@ curl -X POST https://exchange.qbank.cl/platform/v1/crypto/wallets \
     "label": "Main treasury"
   }'
 ```
+
+```bash Company, Ethereum network
+curl -X POST https://exchange.qbank.cl/platform/v1/crypto/wallets \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "eth",
+    "label": "E-commerce collections"
+  }'
+```
+
+</CodeGroup>
 
 Response `201`:
 
@@ -34,6 +55,15 @@ Response `201`:
   "label": "Main treasury",
   "created_at": "2026-07-07T12:00:00Z",
   "creation_fee": "1.000000"
+}
+```
+
+If a person attempts a second wallet on the same network — `422`:
+
+```json
+{
+  "error": "wallet_limit_reached",
+  "message": "person accounts can hold one wallet per network"
 }
 ```
 
