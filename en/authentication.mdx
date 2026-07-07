@@ -21,7 +21,7 @@ Obtained from `POST /v1/auth/register` or `POST /v1/auth/login`, valid for
 **24 hours**. Meant for apps where users sign in.
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/auth/login \
+curl -X POST https://api.qbank.cl/platform/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{ "org": "cbpay", "email": "ana@example.com", "password": "…" }'
 ```
@@ -45,7 +45,7 @@ Format `pk_<key_id>.<secret>`. Never expires and is not tied to a session.
 Issue one with:
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/api-keys \
+curl -X POST https://api.qbank.cl/platform/v1/api-keys \
   -H "Authorization: Bearer <session-token>" \
   -H "Content-Type: application/json" \
   -d '{ "label": "production-backend" }'

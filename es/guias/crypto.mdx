@@ -16,14 +16,14 @@ Tu saldo USDT vive conectado a la blockchain. Redes soportadas: **TRON**
 <CodeGroup>
 
 ```bash Persona (1 por red)
-curl -X POST https://exchange.qbank.cl/platform/v1/crypto/wallets \
+curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{ "chain": "tron" }'
 ```
 
 ```bash Empresa (con label, ilimitadas)
-curl -X POST https://exchange.qbank.cl/platform/v1/crypto/wallets \
+curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -33,7 +33,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/crypto/wallets \
 ```
 
 ```bash Empresa, red Ethereum
-curl -X POST https://exchange.qbank.cl/platform/v1/crypto/wallets \
+curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -79,7 +79,7 @@ Si una persona intenta una segunda wallet en la misma red — `422`:
 ## Ver mis wallets
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/crypto/wallets \
+curl https://api.qbank.cl/platform/v1/crypto/wallets \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -134,7 +134,7 @@ estables: puedes reutilizarlas para todos tus depósitos.
 Envía USDT desde tu saldo a cualquier dirección externa:
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/crypto/withdrawals \
+curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -175,15 +175,15 @@ gratis.
 
 ```bash
 # Actividad on-chain: depósitos + retiros, con tx_id
-curl https://exchange.qbank.cl/platform/v1/crypto/transactions \
+curl https://api.qbank.cl/platform/v1/crypto/transactions \
   -H "Authorization: Bearer <token>"
 
 # Saldo actual (available + held)
-curl https://exchange.qbank.cl/platform/v1/balances \
+curl https://api.qbank.cl/platform/v1/balances \
   -H "Authorization: Bearer <token>"
 
 # Historial contable completo (funding, retiros, comisiones de wallet…)
-curl "https://exchange.qbank.cl/platform/v1/movements?type=funding" \
+curl "https://api.qbank.cl/platform/v1/movements?type=funding" \
   -H "Authorization: Bearer <token>"
 ```
 

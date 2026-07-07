@@ -23,7 +23,7 @@ One endpoint for person and company; the type is detected from the payload:
 <CodeGroup>
 
 ```bash Person (KYC)
-curl -X POST https://exchange.qbank.cl/platform/v1/kyc \
+curl -X POST https://api.qbank.cl/platform/v1/kyc \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -42,7 +42,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/kyc \
 ```
 
 ```bash Company (KYB)
-curl -X POST https://exchange.qbank.cl/platform/v1/kyc \
+curl -X POST https://api.qbank.cl/platform/v1/kyc \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -59,7 +59,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/kyc \
 ```
 
 ```bash Minimal (autofilled)
-curl -X POST https://exchange.qbank.cl/platform/v1/kyc \
+curl -X POST https://api.qbank.cl/platform/v1/kyc \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{ "customer": {}, "monitor": false }'
@@ -112,7 +112,7 @@ periodic policy). No body needed — it uses the `customer_id` from your
 previous screening:
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/kyc/rescreen \
+curl -X POST https://api.qbank.cl/platform/v1/kyc/rescreen \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -139,14 +139,14 @@ adverse media:
 <CodeGroup>
 
 ```bash Enable (bills compliance_monitoring)
-curl -X PATCH https://exchange.qbank.cl/platform/v1/kyc/monitoring \
+curl -X PATCH https://api.qbank.cl/platform/v1/kyc/monitoring \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{ "enabled": true }'
 ```
 
 ```bash Disable (always free)
-curl -X PATCH https://exchange.qbank.cl/platform/v1/kyc/monitoring \
+curl -X PATCH https://api.qbank.cl/platform/v1/kyc/monitoring \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{ "enabled": false }'

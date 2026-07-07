@@ -23,7 +23,7 @@ Un solo endpoint para persona y empresa; el tipo se detecta del payload:
 <CodeGroup>
 
 ```bash Persona (KYC)
-curl -X POST https://exchange.qbank.cl/platform/v1/kyc \
+curl -X POST https://api.qbank.cl/platform/v1/kyc \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -42,7 +42,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/kyc \
 ```
 
 ```bash Empresa (KYB)
-curl -X POST https://exchange.qbank.cl/platform/v1/kyc \
+curl -X POST https://api.qbank.cl/platform/v1/kyc \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -59,7 +59,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/kyc \
 ```
 
 ```bash Mínimo (autocompletado)
-curl -X POST https://exchange.qbank.cl/platform/v1/kyc \
+curl -X POST https://api.qbank.cl/platform/v1/kyc \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{ "customer": {}, "monitor": false }'
@@ -112,7 +112,7 @@ datos o por política periódica). No lleva body — usa el `customer_id` de tu
 screening anterior:
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/kyc/rescreen \
+curl -X POST https://api.qbank.cl/platform/v1/kyc/rescreen \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -139,14 +139,14 @@ listas, PEP, prensa adversa:
 <CodeGroup>
 
 ```bash Activar (cobra compliance_monitoring)
-curl -X PATCH https://exchange.qbank.cl/platform/v1/kyc/monitoring \
+curl -X PATCH https://api.qbank.cl/platform/v1/kyc/monitoring \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{ "enabled": true }'
 ```
 
 ```bash Desactivar (siempre gratis)
-curl -X PATCH https://exchange.qbank.cl/platform/v1/kyc/monitoring \
+curl -X PATCH https://api.qbank.cl/platform/v1/kyc/monitoring \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{ "enabled": false }'

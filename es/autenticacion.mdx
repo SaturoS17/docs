@@ -21,7 +21,7 @@ Se obtiene con `POST /v1/auth/register` o `POST /v1/auth/login` y dura
 **24 horas**. Pensada para apps con usuarios que inician sesión.
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/auth/login \
+curl -X POST https://api.qbank.cl/platform/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{ "org": "cbpay", "email": "ana@ejemplo.com", "password": "…" }'
 ```
@@ -45,7 +45,7 @@ Formato `pk_<key_id>.<secret>`. No expira y no depende de una sesión.
 Se emite con:
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/api-keys \
+curl -X POST https://api.qbank.cl/platform/v1/api-keys \
   -H "Authorization: Bearer <token-de-sesion>" \
   -H "Content-Type: application/json" \
   -d '{ "label": "backend-produccion" }'

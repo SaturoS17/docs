@@ -14,7 +14,7 @@ Countries, currencies and methods are defined by CBPay. Always check
 the catalog:
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/payouts/methods \
+curl https://api.qbank.cl/platform/v1/payouts/methods \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -50,7 +50,7 @@ For bank transfers you also need the banks catalog (that is where the
 beneficiary's `bank_code` comes from):
 
 ```bash
-curl "https://exchange.qbank.cl/platform/v1/payouts/banks?country=CL" \
+curl "https://api.qbank.cl/platform/v1/payouts/banks?country=CL" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -68,7 +68,7 @@ curl "https://exchange.qbank.cl/platform/v1/payouts/banks?country=CL" \
 ## 2. Create the payout
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -140,7 +140,7 @@ Subscribe to the `payout_status_changed` event ([webhooks](/en/webhooks)):
 You can also query at any time:
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/payouts/0d4f… \
+curl https://api.qbank.cl/platform/v1/payouts/0d4f… \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -165,7 +165,7 @@ Rates (`fx_rate`) are illustrative — your account's rates from
 Bank transfer in CLP. Requires RUT, bank and account:
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -212,7 +212,7 @@ number).
 <CodeGroup>
 
 ```bash bank_transfer (CCI)
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -229,7 +229,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
 ```
 
 ```bash yape (phone)
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -273,7 +273,7 @@ SPEI in MXN, to a CLABE (18 digits) or a debit card:
 <CodeGroup>
 
 ```bash CLABE
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -291,7 +291,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
 ```
 
 ```bash Debit card
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -338,7 +338,7 @@ Two methods: **Pago Móvil** (phone + bank + ID) and bank transfer
 <CodeGroup>
 
 ```bash pago_movil
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -356,7 +356,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
 ```
 
 ```bash bank_transfer
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -399,7 +399,7 @@ account's first 4 digits.
 ACH transfer in BOB or USD (besides the [QR](#qr-payout)):
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -440,7 +440,7 @@ For USD send `currency: "USD"` with the same structure.
 PIX by key (besides the [PIX QR](#qr-payout)):
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -481,7 +481,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
 Bank transfer in PYG:
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -530,7 +530,7 @@ assumed; for Brazil send `country: "BR"` and `currency: "BRL"`.
 ### 1. Scan the QR (free)
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts/qr/scan \
+curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/scan \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -557,7 +557,7 @@ Returns the recipient's data so the user can confirm who they are paying:
 ### 2. Confirm the payment (charged here)
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts/qr/confirm \
+curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{

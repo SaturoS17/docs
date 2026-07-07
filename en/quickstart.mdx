@@ -7,7 +7,7 @@ Before you start, the data you will need everywhere:
 
 | Item | Value |
 |---|---|
-| **Base URL** | `https://exchange.qbank.cl/platform` |
+| **Base URL** | `https://api.qbank.cl/platform` |
 | **Authentication** | `Authorization: Bearer <token>` header (or `X-API-Key`) |
 | **Organization slug** | `cbpay` (for register and login) |
 | **Balance currency** | USDT, 6 decimals, always as a string (`"52.618258"`) |
@@ -28,7 +28,7 @@ Create your account (person or company — same endpoint, `type` changes):
 <CodeGroup>
 
 ```bash Person
-curl -X POST https://exchange.qbank.cl/platform/v1/auth/register \
+curl -X POST https://api.qbank.cl/platform/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "org": "cbpay",
@@ -41,7 +41,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/auth/register \
 ```
 
 ```bash Company
-curl -X POST https://exchange.qbank.cl/platform/v1/auth/register \
+curl -X POST https://api.qbank.cl/platform/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "org": "cbpay",
@@ -73,7 +73,7 @@ The response includes your `access_token` (24-hour session):
 Send the token in the `Authorization` header:
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/me \
+curl https://api.qbank.cl/platform/v1/me \
   -H "Authorization: Bearer <access_token>"
 ```
 
@@ -86,7 +86,7 @@ For server-to-server integrations, issue a **permanent API key** with
 <Step title="Check your balance">
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/balances \
+curl https://api.qbank.cl/platform/v1/balances \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -109,7 +109,7 @@ USDT on-chain via [crypto funding](/en/guides/crypto).
 Before a payout, check the current FX rate and your effective fees:
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/rates \
+curl https://api.qbank.cl/platform/v1/rates \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -137,7 +137,7 @@ before creating: `usdt_amount ≈ local_amount / rate` (rounded up) and
 <Step title="Create your first payout">
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{

@@ -16,14 +16,14 @@ Your USDT balance is connected to the blockchain. Supported networks:
 <CodeGroup>
 
 ```bash Person (1 per network)
-curl -X POST https://exchange.qbank.cl/platform/v1/crypto/wallets \
+curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{ "chain": "tron" }'
 ```
 
 ```bash Company (with label, unlimited)
-curl -X POST https://exchange.qbank.cl/platform/v1/crypto/wallets \
+curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -33,7 +33,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/crypto/wallets \
 ```
 
 ```bash Company, Ethereum network
-curl -X POST https://exchange.qbank.cl/platform/v1/crypto/wallets \
+curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -79,7 +79,7 @@ If a person attempts a second wallet on the same network — `422`:
 ## View my wallets
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/crypto/wallets \
+curl https://api.qbank.cl/platform/v1/crypto/wallets \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -134,7 +134,7 @@ stable: you can reuse them for every deposit.
 Send USDT from your balance to any external address:
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/crypto/withdrawals \
+curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -174,15 +174,15 @@ To move balance to **another CBPay account**, skip the blockchain:
 
 ```bash
 # On-chain activity: deposits + withdrawals, with tx_id
-curl https://exchange.qbank.cl/platform/v1/crypto/transactions \
+curl https://api.qbank.cl/platform/v1/crypto/transactions \
   -H "Authorization: Bearer <token>"
 
 # Current balance (available + held)
-curl https://exchange.qbank.cl/platform/v1/balances \
+curl https://api.qbank.cl/platform/v1/balances \
   -H "Authorization: Bearer <token>"
 
 # Full accounting history (funding, withdrawals, wallet fees…)
-curl "https://exchange.qbank.cl/platform/v1/movements?type=funding" \
+curl "https://api.qbank.cl/platform/v1/movements?type=funding" \
   -H "Authorization: Bearer <token>"
 ```
 

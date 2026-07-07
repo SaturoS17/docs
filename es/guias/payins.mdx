@@ -13,7 +13,7 @@ Los países, monedas y modalidades disponibles los define CBPay.
 Consúltalos siempre por catálogo:
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/payins/methods \
+curl https://api.qbank.cl/platform/v1/payins/methods \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -57,7 +57,7 @@ de payin.
 referencia con quien transfiere.
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payins \
+curl -X POST https://api.qbank.cl/platform/v1/payins \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -88,7 +88,7 @@ por monto+moneda como respaldo) y tu cuenta se acredita automáticamente.
 **Transferencia anunciada**, igual que Chile pero en soles:
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payins \
+curl -X POST https://api.qbank.cl/platform/v1/payins \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -110,7 +110,7 @@ tu cuenta — todo SPEI que llegue a ella se acredita automáticamente, sin
 referencias:
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payins/deposit-accounts \
+curl -X POST https://api.qbank.cl/platform/v1/payins/deposit-accounts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{ "country": "MX", "currency": "MXN" }'
@@ -147,7 +147,7 @@ abono se acredita en la misma llamada.
 Para `debito_inmediato`, primero solicita el OTP (gratis):
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payins/collect/otp \
+curl -X POST https://api.qbank.cl/platform/v1/payins/collect/otp \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -172,7 +172,7 @@ Luego ejecuta el cobro:
 <CodeGroup>
 
 ```bash c2p (teléfono + cédula + OTP del pagador)
-curl -X POST https://exchange.qbank.cl/platform/v1/payins/collect \
+curl -X POST https://api.qbank.cl/platform/v1/payins/collect \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -187,7 +187,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/payins/collect \
 ```
 
 ```bash debito_inmediato (cuenta + OTP solicitado antes)
-curl -X POST https://exchange.qbank.cl/platform/v1/payins/collect \
+curl -X POST https://api.qbank.cl/platform/v1/payins/collect \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -233,7 +233,7 @@ queda `failed` y no se cobra nada.
 lo escanea con su app bancaria.
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payins \
+curl -X POST https://api.qbank.cl/platform/v1/payins \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -272,7 +272,7 @@ automáticamente. También funciona en USD (`currency: "USD"`).
 embebido.
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payins \
+curl -X POST https://api.qbank.cl/platform/v1/payins \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -317,7 +317,7 @@ acredita automáticamente y se emite el webhook `payin_credited`:
 El objeto payin queda con el detalle completo:
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/payins/9c2a… \
+curl https://api.qbank.cl/platform/v1/payins/9c2a… \
   -H "Authorization: Bearer <token>"
 ```
 

@@ -7,7 +7,7 @@ Antes de empezar, los datos que vas a necesitar en todos lados:
 
 | Dato | Valor |
 |---|---|
-| **URL base** | `https://exchange.qbank.cl/platform` |
+| **URL base** | `https://api.qbank.cl/platform` |
 | **Autenticación** | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | **Slug de organización** | `cbpay` (para registro y login) |
 | **Moneda del saldo** | USDT, 6 decimales, siempre como string (`"52.618258"`) |
@@ -28,7 +28,7 @@ Crea tu cuenta (persona o empresa — mismo endpoint, cambia `type`):
 <CodeGroup>
 
 ```bash Persona
-curl -X POST https://exchange.qbank.cl/platform/v1/auth/register \
+curl -X POST https://api.qbank.cl/platform/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "org": "cbpay",
@@ -41,7 +41,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/auth/register \
 ```
 
 ```bash Empresa
-curl -X POST https://exchange.qbank.cl/platform/v1/auth/register \
+curl -X POST https://api.qbank.cl/platform/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "org": "cbpay",
@@ -73,7 +73,7 @@ La respuesta incluye tu `access_token` (sesión de 24 horas):
 Envía el token en el header `Authorization`:
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/me \
+curl https://api.qbank.cl/platform/v1/me \
   -H "Authorization: Bearer <access_token>"
 ```
 
@@ -86,7 +86,7 @@ Para integraciones servidor-a-servidor, emite una **API key permanente** con
 <Step title="Consulta tu saldo">
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/balances \
+curl https://api.qbank.cl/platform/v1/balances \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -109,7 +109,7 @@ USDT on-chain con [crypto funding](/es/guias/crypto).
 Antes de un payout, consulta la tasa FX vigente y tus comisiones efectivas:
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/rates \
+curl https://api.qbank.cl/platform/v1/rates \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -137,7 +137,7 @@ de crear: `usdt_amount ≈ monto_local / rate` (redondeo hacia arriba) y
 <Step title="Crea tu primer payout">
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{

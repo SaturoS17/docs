@@ -23,7 +23,7 @@ The destination is identified by `to_account_id` **or** `to_email`:
 <CodeGroup>
 
 ```bash By email (person → person)
-curl -X POST https://exchange.qbank.cl/platform/v1/transfers \
+curl -X POST https://api.qbank.cl/platform/v1/transfers \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -35,7 +35,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/transfers \
 ```
 
 ```bash By account_id (person → company)
-curl -X POST https://exchange.qbank.cl/platform/v1/transfers \
+curl -X POST https://api.qbank.cl/platform/v1/transfers \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -47,7 +47,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/transfers \
 ```
 
 ```bash Company → person (payroll)
-curl -X POST https://exchange.qbank.cl/platform/v1/transfers \
+curl -X POST https://api.qbank.cl/platform/v1/transfers \
   -H "Authorization: Bearer <company token>" \
   -H "Content-Type: application/json" \
   -d '{

@@ -11,7 +11,7 @@ USDT on-chain y verificación KYC/KYB — una sola API, un solo saldo.
 
 | Dato | Valor |
 |---|---|
-| URL base | `https://exchange.qbank.cl/platform` |
+| URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
 | API Reference interactiva | https://docs.cbpayapp.com |
@@ -73,7 +73,7 @@ Además incluye verificación **KYC/KYB** (personas y empresas) integrada
 ### URL base
 
 ```
-https://exchange.qbank.cl/platform
+https://api.qbank.cl/platform
 ```
 
 Todas las rutas de esta documentación son relativas a esa URL base.
@@ -104,7 +104,7 @@ Antes de empezar, los datos que vas a necesitar en todos lados:
 
 | Dato | Valor |
 |---|---|
-| **URL base** | `https://exchange.qbank.cl/platform` |
+| **URL base** | `https://api.qbank.cl/platform` |
 | **Autenticación** | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | **Slug de organización** | `cbpay` (para registro y login) |
 | **Moneda del saldo** | USDT, 6 decimales, siempre como string (`"52.618258"`) |
@@ -119,7 +119,7 @@ directo al paso 3. ¿Dudas típicas? Están respondidas en las
 Crea tu cuenta (persona o empresa — mismo endpoint, cambia `type`):
 
 ```bash Persona
-curl -X POST https://exchange.qbank.cl/platform/v1/auth/register \
+curl -X POST https://api.qbank.cl/platform/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "org": "cbpay",
@@ -132,7 +132,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/auth/register \
 ```
 
 ```bash Empresa
-curl -X POST https://exchange.qbank.cl/platform/v1/auth/register \
+curl -X POST https://api.qbank.cl/platform/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "org": "cbpay",
@@ -160,7 +160,7 @@ La respuesta incluye tu `access_token` (sesión de 24 horas):
 Envía el token en el header `Authorization`:
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/me \
+curl https://api.qbank.cl/platform/v1/me \
   -H "Authorization: Bearer <access_token>"
 ```
 
@@ -171,7 +171,7 @@ Para integraciones servidor-a-servidor, emite una **API key permanente** con
 ### Consulta tu saldo
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/balances \
+curl https://api.qbank.cl/platform/v1/balances \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -192,7 +192,7 @@ USDT on-chain con [crypto funding](#crypto-wallets-depositos-y-retiros).
 Antes de un payout, consulta la tasa FX vigente y tus comisiones efectivas:
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/rates \
+curl https://api.qbank.cl/platform/v1/rates \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -218,7 +218,7 @@ de crear: `usdt_amount ≈ monto_local / rate` (redondeo hacia arriba) y
 ### Crea tu primer payout
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -286,7 +286,7 @@ Se obtiene con `POST /v1/auth/register` o `POST /v1/auth/login` y dura
 **24 horas**. Pensada para apps con usuarios que inician sesión.
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/auth/login \
+curl -X POST https://api.qbank.cl/platform/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{ "org": "cbpay", "email": "ana@ejemplo.com", "password": "…" }'
 ```
@@ -309,7 +309,7 @@ Formato `pk_<key_id>.<secret>`. No expira y no depende de una sesión.
 Se emite con:
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/api-keys \
+curl -X POST https://api.qbank.cl/platform/v1/api-keys \
   -H "Authorization: Bearer <token-de-sesion>" \
   -H "Content-Type: application/json" \
   -d '{ "label": "backend-produccion" }'
@@ -415,7 +415,7 @@ Cada movimiento genera una entrada inmutable con saldo resultante
 | `adjustment` | Ajuste manual de CBPay (auditado) |
 
 ```bash
-curl "https://exchange.qbank.cl/platform/v1/movements?type=payout_debit&page_size=20" \
+curl "https://api.qbank.cl/platform/v1/movements?type=payout_debit&page_size=20" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -605,7 +605,7 @@ Los países, monedas y métodos disponibles los define CBPay.
 Consúltalos siempre por catálogo:
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/payouts/methods \
+curl https://api.qbank.cl/platform/v1/payouts/methods \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -641,7 +641,7 @@ Para transferencias bancarias necesitas además el catálogo de bancos (de
 ahí sale el `bank_code` del beneficiario):
 
 ```bash
-curl "https://exchange.qbank.cl/platform/v1/payouts/banks?country=CL" \
+curl "https://api.qbank.cl/platform/v1/payouts/banks?country=CL" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -659,7 +659,7 @@ curl "https://exchange.qbank.cl/platform/v1/payouts/banks?country=CL" \
 ### 2. Crea el payout
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -730,7 +730,7 @@ Suscríbete al evento `payout_status_changed` ([webhooks](#webhooks)):
 También puedes consultar en cualquier momento:
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/payouts/0d4f… \
+curl https://api.qbank.cl/platform/v1/payouts/0d4f… \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -754,7 +754,7 @@ tasas (`fx_rate`) son ilustrativas — siempre aplican las de tu cuenta en
 Transferencia bancaria en CLP. Requiere RUT, banco y cuenta:
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -798,7 +798,7 @@ Dos métodos: transferencia bancaria (CCI interbancario) y **Yape** (al
 número de teléfono).
 
 ```bash bank_transfer (CCI)
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -815,7 +815,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
 ```
 
 ```bash yape (teléfono)
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -854,7 +854,7 @@ país). El resultado suele ser síncrono.
 SPEI en MXN, a CLABE (18 dígitos) o a tarjeta de débito:
 
 ```bash CLABE
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -872,7 +872,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
 ```
 
 ```bash Tarjeta de débito
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -914,7 +914,7 @@ Dos métodos: **Pago Móvil** (teléfono + banco + cédula) y transferencia
 bancaria (cuenta de 20 dígitos):
 
 ```bash pago_movil
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -932,7 +932,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
 ```
 
 ```bash bank_transfer
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -972,7 +972,7 @@ primeros 4 dígitos de la cuenta.
 Transferencia ACH en BOB o USD (además del [QR](#payout-qr)):
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1012,7 +1012,7 @@ Para USD envía `currency: "USD"` con la misma estructura.
 PIX por llave (además del [QR PIX](#payout-qr)):
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1052,7 +1052,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
 Transferencia bancaria en PYG:
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1098,7 +1098,7 @@ para Brasil envía `country: "BR"` y `currency: "BRL"`.
 #### 1. Escanea el QR (gratis)
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts/qr/scan \
+curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/scan \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1126,7 +1126,7 @@ paga:
 #### 2. Confirma el pago (se cobra aquí)
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts/qr/confirm \
+curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1180,7 +1180,7 @@ Los países, monedas y modalidades disponibles los define CBPay.
 Consúltalos siempre por catálogo:
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/payins/methods \
+curl https://api.qbank.cl/platform/v1/payins/methods \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -1223,7 +1223,7 @@ de payin.
 referencia con quien transfiere.
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payins \
+curl -X POST https://api.qbank.cl/platform/v1/payins \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1253,7 +1253,7 @@ por monto+moneda como respaldo) y tu cuenta se acredita automáticamente.
 **Transferencia anunciada**, igual que Chile pero en soles:
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payins \
+curl -X POST https://api.qbank.cl/platform/v1/payins \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1274,7 +1274,7 @@ tu cuenta — todo SPEI que llegue a ella se acredita automáticamente, sin
 referencias:
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payins/deposit-accounts \
+curl -X POST https://api.qbank.cl/platform/v1/payins/deposit-accounts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{ "country": "MX", "currency": "MXN" }'
@@ -1310,7 +1310,7 @@ abono se acredita en la misma llamada.
 Para `debito_inmediato`, primero solicita el OTP (gratis):
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payins/collect/otp \
+curl -X POST https://api.qbank.cl/platform/v1/payins/collect/otp \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1333,7 +1333,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/payins/collect/otp \
 Luego ejecuta el cobro:
 
 ```bash c2p (teléfono + cédula + OTP del pagador)
-curl -X POST https://exchange.qbank.cl/platform/v1/payins/collect \
+curl -X POST https://api.qbank.cl/platform/v1/payins/collect \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1348,7 +1348,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/payins/collect \
 ```
 
 ```bash debito_inmediato (cuenta + OTP solicitado antes)
-curl -X POST https://exchange.qbank.cl/platform/v1/payins/collect \
+curl -X POST https://api.qbank.cl/platform/v1/payins/collect \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1391,7 +1391,7 @@ queda `failed` y no se cobra nada.
 lo escanea con su app bancaria.
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payins \
+curl -X POST https://api.qbank.cl/platform/v1/payins \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1429,7 +1429,7 @@ automáticamente. También funciona en USD (`currency: "USD"`).
 embebido.
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payins \
+curl -X POST https://api.qbank.cl/platform/v1/payins \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1471,7 +1471,7 @@ acredita automáticamente y se emite el webhook `payin_credited`:
 El objeto payin queda con el detalle completo:
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/payins/9c2a… \
+curl https://api.qbank.cl/platform/v1/payins/9c2a… \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -1526,7 +1526,7 @@ Funcionan entre **cualquier combinación de cuentas**:
 El destino se identifica por `to_account_id` **o** por `to_email`:
 
 ```bash Por email (persona → persona)
-curl -X POST https://exchange.qbank.cl/platform/v1/transfers \
+curl -X POST https://api.qbank.cl/platform/v1/transfers \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1538,7 +1538,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/transfers \
 ```
 
 ```bash Por account_id (persona → empresa)
-curl -X POST https://exchange.qbank.cl/platform/v1/transfers \
+curl -X POST https://api.qbank.cl/platform/v1/transfers \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1550,7 +1550,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/transfers \
 ```
 
 ```bash Empresa → persona (nómina)
-curl -X POST https://exchange.qbank.cl/platform/v1/transfers \
+curl -X POST https://api.qbank.cl/platform/v1/transfers \
   -H "Authorization: Bearer <token de la empresa>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1629,14 +1629,14 @@ Tu saldo USDT vive conectado a la blockchain. Redes soportadas: **TRON**
 ### Crear una wallet
 
 ```bash Persona (1 por red)
-curl -X POST https://exchange.qbank.cl/platform/v1/crypto/wallets \
+curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{ "chain": "tron" }'
 ```
 
 ```bash Empresa (con label, ilimitadas)
-curl -X POST https://exchange.qbank.cl/platform/v1/crypto/wallets \
+curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1646,7 +1646,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/crypto/wallets \
 ```
 
 ```bash Empresa, red Ethereum
-curl -X POST https://exchange.qbank.cl/platform/v1/crypto/wallets \
+curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1690,7 +1690,7 @@ Si una persona intenta una segunda wallet en la misma red — `422`:
 ### Ver mis wallets
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/crypto/wallets \
+curl https://api.qbank.cl/platform/v1/crypto/wallets \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -1743,7 +1743,7 @@ estables: puedes reutilizarlas para todos tus depósitos.
 Envía USDT desde tu saldo a cualquier dirección externa:
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/crypto/withdrawals \
+curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1782,15 +1782,15 @@ gratis.
 
 ```bash
 # Actividad on-chain: depósitos + retiros, con tx_id
-curl https://exchange.qbank.cl/platform/v1/crypto/transactions \
+curl https://api.qbank.cl/platform/v1/crypto/transactions \
   -H "Authorization: Bearer <token>"
 
 # Saldo actual (available + held)
-curl https://exchange.qbank.cl/platform/v1/balances \
+curl https://api.qbank.cl/platform/v1/balances \
   -H "Authorization: Bearer <token>"
 
 # Historial contable completo (funding, retiros, comisiones de wallet…)
-curl "https://exchange.qbank.cl/platform/v1/movements?type=funding" \
+curl "https://api.qbank.cl/platform/v1/movements?type=funding" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -1848,7 +1848,7 @@ Una vez por cuenta. Si no envías `type`, `name` o `email`, se completan con
 los datos de tu cuenta CBPay:
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/banking/customer \
+curl -X POST https://api.qbank.cl/platform/v1/banking/customer \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1874,7 +1874,7 @@ Si tu cuenta ya tiene perfil bancario — `409 banking_customer_exists`.
 Consulta el estado en cualquier momento:
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/banking/customer \
+curl https://api.qbank.cl/platform/v1/banking/customer \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -1883,7 +1883,7 @@ curl https://exchange.qbank.cl/platform/v1/banking/customer \
 Sube cada documento en base64 (gratis):
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/banking/customer/documents \
+curl -X POST https://api.qbank.cl/platform/v1/banking/customer/documents \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1896,7 +1896,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/banking/customer/documents \
 Y envía el perfil a revisión (gratis):
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/banking/customer/submit \
+curl -X POST https://api.qbank.cl/platform/v1/banking/customer/submit \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -1917,7 +1917,7 @@ Estados del perfil: `draft` → `submitted` → `under_review` →
 Con el perfil `approved`, crea una cuenta por moneda:
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/banking/accounts \
+curl -X POST https://api.qbank.cl/platform/v1/banking/accounts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{ "currency": "USD", "name": "Operativa USD" }'
@@ -1939,10 +1939,10 @@ cuenta/IBAN, routing, banco):
 Lista tus cuentas y consulta saldo:
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/banking/accounts \
+curl https://api.qbank.cl/platform/v1/banking/accounts \
   -H "Authorization: Bearer <token>"
 
-curl https://exchange.qbank.cl/platform/v1/banking/accounts/c4d1…/balance \
+curl https://api.qbank.cl/platform/v1/banking/accounts/c4d1…/balance \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -1952,7 +1952,7 @@ Para pagar a terceros, primero registra al beneficiario con sus datos
 bancarios (gratis; pasa por moderación antes de poder usarse):
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/banking/counterparties \
+curl -X POST https://api.qbank.cl/platform/v1/banking/counterparties \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1992,7 +1992,7 @@ Dos tipos de operación:
 Cotiza primero (gratis, no mueve dinero):
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/banking/operations/prepare \
+curl -X POST https://api.qbank.cl/platform/v1/banking/operations/prepare \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -2008,7 +2008,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/banking/operations/prepare \
 Ejecuta con clave de idempotencia (se cobra `banking_operation` aquí):
 
 ```bash WITHDRAW (a un beneficiario)
-curl -X POST https://exchange.qbank.cl/platform/v1/banking/operations \
+curl -X POST https://api.qbank.cl/platform/v1/banking/operations \
   -H "Authorization: Bearer <token>" \
   -H "Idempotency-Key: pago-acme-0071" \
   -H "Content-Type: application/json" \
@@ -2024,7 +2024,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/banking/operations \
 ```
 
 ```bash TRANSFER (entre tus cuentas)
-curl -X POST https://exchange.qbank.cl/platform/v1/banking/operations \
+curl -X POST https://api.qbank.cl/platform/v1/banking/operations \
   -H "Authorization: Bearer <token>" \
   -H "Idempotency-Key: mov-interno-0012" \
   -H "Content-Type: application/json" \
@@ -2101,7 +2101,7 @@ gratuito para ti.
 Un solo endpoint para persona y empresa; el tipo se detecta del payload:
 
 ```bash Persona (KYC)
-curl -X POST https://exchange.qbank.cl/platform/v1/kyc \
+curl -X POST https://api.qbank.cl/platform/v1/kyc \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -2120,7 +2120,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/kyc \
 ```
 
 ```bash Empresa (KYB)
-curl -X POST https://exchange.qbank.cl/platform/v1/kyc \
+curl -X POST https://api.qbank.cl/platform/v1/kyc \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -2137,7 +2137,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/kyc \
 ```
 
 ```bash Mínimo (autocompletado)
-curl -X POST https://exchange.qbank.cl/platform/v1/kyc \
+curl -X POST https://api.qbank.cl/platform/v1/kyc \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{ "customer": {}, "monitor": false }'
@@ -2184,7 +2184,7 @@ datos o por política periódica). No lleva body — usa el `customer_id` de tu
 screening anterior:
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/kyc/rescreen \
+curl -X POST https://api.qbank.cl/platform/v1/kyc/rescreen \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -2209,14 +2209,14 @@ Activa (o desactiva) la vigilancia permanente de la identidad — cambios en
 listas, PEP, prensa adversa:
 
 ```bash Activar (cobra compliance_monitoring)
-curl -X PATCH https://exchange.qbank.cl/platform/v1/kyc/monitoring \
+curl -X PATCH https://api.qbank.cl/platform/v1/kyc/monitoring \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{ "enabled": true }'
 ```
 
 ```bash Desactivar (siempre gratis)
-curl -X PATCH https://exchange.qbank.cl/platform/v1/kyc/monitoring \
+curl -X PATCH https://api.qbank.cl/platform/v1/kyc/monitoring \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{ "enabled": false }'
@@ -2258,7 +2258,7 @@ propio, firmados criptográficamente.
 ### Crear una suscripción
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/webhooks/subscriptions \
+curl -X POST https://api.qbank.cl/platform/v1/webhooks/subscriptions \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -2531,9 +2531,9 @@ Todos los errores comparten el mismo formato:
 ### Empezando
 
 #### ¿Cuál es la URL base de la API?
-`https://exchange.qbank.cl/platform` — todos los endpoints de esta
+`https://api.qbank.cl/platform` — todos los endpoints de esta
 documentación cuelgan de ahí (por ejemplo
-`https://exchange.qbank.cl/platform/v1/balances`).
+`https://api.qbank.cl/platform/v1/balances`).
 #### ¿Hay un ambiente sandbox de pruebas?
 No. La API opera directo en producción. Para probar tu integración usa
 **montos pequeños reales**: deposita unos pocos USDT, haz un payout mínimo
@@ -2674,7 +2674,7 @@ La colección trae dos variables:
 
 | Variable | Valor |
 |---|---|
-| `baseUrl` | `https://exchange.qbank.cl/platform` (ya configurada) |
+| `baseUrl` | `https://api.qbank.cl/platform` (ya configurada) |
 | `token` | Tu JWT de sesión o API key `pk_...` |
 ### Prueba
 
@@ -2694,6 +2694,16 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.14 — 7 de julio de 2026
+
+**Cambiado**
+
+- **Nueva URL base: `https://api.qbank.cl/platform`** (antes
+  `exchange.qbank.cl/platform`). El dominio anterior sigue funcionando
+  como alias, así que ninguna integración existente se rompe — pero usa
+  `api.qbank.cl` para todo lo nuevo. Toda la documentación, el spec y el
+  Postman ya apuntan a la URL nueva.
 
 ### v1.13 — 7 de julio de 2026
 

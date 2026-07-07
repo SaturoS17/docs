@@ -40,7 +40,7 @@ Una vez por cuenta. Si no envías `type`, `name` o `email`, se completan con
 los datos de tu cuenta CBPay:
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/banking/customer \
+curl -X POST https://api.qbank.cl/platform/v1/banking/customer \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -66,7 +66,7 @@ Si tu cuenta ya tiene perfil bancario — `409 banking_customer_exists`.
 Consulta el estado en cualquier momento:
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/banking/customer \
+curl https://api.qbank.cl/platform/v1/banking/customer \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -75,7 +75,7 @@ curl https://exchange.qbank.cl/platform/v1/banking/customer \
 Sube cada documento en base64 (gratis):
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/banking/customer/documents \
+curl -X POST https://api.qbank.cl/platform/v1/banking/customer/documents \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -88,7 +88,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/banking/customer/documents \
 Y envía el perfil a revisión (gratis):
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/banking/customer/submit \
+curl -X POST https://api.qbank.cl/platform/v1/banking/customer/submit \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -109,7 +109,7 @@ Estados del perfil: `draft` → `submitted` → `under_review` →
 Con el perfil `approved`, crea una cuenta por moneda:
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/banking/accounts \
+curl -X POST https://api.qbank.cl/platform/v1/banking/accounts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{ "currency": "USD", "name": "Operativa USD" }'
@@ -131,10 +131,10 @@ cuenta/IBAN, routing, banco):
 Lista tus cuentas y consulta saldo:
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/banking/accounts \
+curl https://api.qbank.cl/platform/v1/banking/accounts \
   -H "Authorization: Bearer <token>"
 
-curl https://exchange.qbank.cl/platform/v1/banking/accounts/c4d1…/balance \
+curl https://api.qbank.cl/platform/v1/banking/accounts/c4d1…/balance \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -144,7 +144,7 @@ Para pagar a terceros, primero registra al beneficiario con sus datos
 bancarios (gratis; pasa por moderación antes de poder usarse):
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/banking/counterparties \
+curl -X POST https://api.qbank.cl/platform/v1/banking/counterparties \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -184,7 +184,7 @@ Dos tipos de operación:
 Cotiza primero (gratis, no mueve dinero):
 
 ```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/banking/operations/prepare \
+curl -X POST https://api.qbank.cl/platform/v1/banking/operations/prepare \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -202,7 +202,7 @@ Ejecuta con clave de idempotencia (se cobra `banking_operation` aquí):
 <CodeGroup>
 
 ```bash WITHDRAW (a un beneficiario)
-curl -X POST https://exchange.qbank.cl/platform/v1/banking/operations \
+curl -X POST https://api.qbank.cl/platform/v1/banking/operations \
   -H "Authorization: Bearer <token>" \
   -H "Idempotency-Key: pago-acme-0071" \
   -H "Content-Type: application/json" \
@@ -218,7 +218,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/banking/operations \
 ```
 
 ```bash TRANSFER (entre tus cuentas)
-curl -X POST https://exchange.qbank.cl/platform/v1/banking/operations \
+curl -X POST https://api.qbank.cl/platform/v1/banking/operations \
   -H "Authorization: Bearer <token>" \
   -H "Idempotency-Key: mov-interno-0012" \
   -H "Content-Type: application/json" \
