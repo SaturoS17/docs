@@ -445,9 +445,14 @@ Cada movimiento genera una entrada inmutable con saldo resultante
 | `adjustment` | Ajuste manual de CBPay (auditado) |
 
 ```bash
-curl "https://api.qbank.cl/platform/v1/movements?type=payout_debit&page_size=20" \
+curl "https://api.qbank.cl/platform/v1/movements?type=payout_debit&from=2026-07-01&to=2026-07-07&page_size=20" \
   -H "Authorization: Bearer <token>"
 ```
+
+Todos los listados (`/v1/movements`, `/v1/payouts`, `/v1/payins`,
+`/v1/crypto/transactions`, `/v1/banking/operations`) aceptan paginación
+(`page`, `page_size` hasta 200) y filtros de fecha `from`/`to`
+(YYYY-MM-DD, UTC, inclusive).
 
 ### Estados de operación
 
@@ -2995,6 +3000,12 @@ con anticipación y quedan marcados como **Breaking**.
 ### v1.16 — 7 de julio de 2026
 
 **Agregado**
+
+- **Filtros de fecha `from`/`to` en todos los listados**: `/v1/movements`,
+  `/v1/payouts`, `/v1/payins` y `/v1/crypto/transactions` ahora aceptan
+  `from`/`to` (YYYY-MM-DD, UTC, inclusive), además de la paginación de
+  siempre (`page`, `page_size` hasta 200). Fechas inválidas devuelven
+  `400 invalid_range`.
 
 - **Cartola / estado de cuenta** (`GET /v1/reports/statement`): consolida
   todos los movimientos del período — payouts, payins, crypto,

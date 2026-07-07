@@ -10,6 +10,12 @@ Breaking changes are announced in advance and flagged as **Breaking**.
 
 **Added**
 
+- **`from`/`to` date filters on every list endpoint**: `/v1/movements`,
+  `/v1/payouts`, `/v1/payins` and `/v1/crypto/transactions` now accept
+  `from`/`to` (YYYY-MM-DD, UTC, inclusive), on top of the usual pagination
+  (`page`, `page_size` up to 200). Invalid dates return
+  `400 invalid_range`.
+
 - **Account statement** (`GET /v1/reports/statement`): consolidates every
   movement of the period — payouts, payins, crypto, transfers and fees —
   into one auditable document with an exact accounting reconciliation

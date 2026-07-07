@@ -11,6 +11,12 @@ con anticipación y quedan marcados como **Breaking**.
 
 **Agregado**
 
+- **Filtros de fecha `from`/`to` en todos los listados**: `/v1/movements`,
+  `/v1/payouts`, `/v1/payins` y `/v1/crypto/transactions` ahora aceptan
+  `from`/`to` (YYYY-MM-DD, UTC, inclusive), además de la paginación de
+  siempre (`page`, `page_size` hasta 200). Fechas inválidas devuelven
+  `400 invalid_range`.
+
 - **Cartola / estado de cuenta** (`GET /v1/reports/statement`): consolida
   todos los movimientos del período — payouts, payins, crypto,
   transferencias y comisiones — en un solo documento auditable con
