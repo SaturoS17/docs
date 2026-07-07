@@ -7,6 +7,16 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="7 de julio de 2026" description="v1.5">
+
+**Eliminado (Breaking)**
+
+- Se eliminó definitivamente `GET /v1/crypto/deposit-address` (el alias que
+  quedó deprecado en v1.4). Usa `POST /v1/crypto/wallets` para crear
+  wallets y `GET /v1/crypto/wallets` para consultarlas.
+
+</Update>
+
 <Update label="7 de julio de 2026" description="v1.4">
 
 **Agregado**
