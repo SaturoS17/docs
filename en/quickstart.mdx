@@ -14,7 +14,9 @@ account and handed you a `pk_...` API key, skip to step 3.
 
 Create your account (person or company — same endpoint, `type` changes):
 
-```bash
+<CodeGroup>
+
+```bash Person
 curl -X POST https://exchange.qbank.cl/platform/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
@@ -26,6 +28,22 @@ curl -X POST https://exchange.qbank.cl/platform/v1/auth/register \
     "country": "CL"
   }'
 ```
+
+```bash Company
+curl -X POST https://exchange.qbank.cl/platform/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "org": "cbpay",
+    "type": "company",
+    "email": "legal@andina.cl",
+    "password": "a-secure-password",
+    "display_name": "Comercial Andina SpA",
+    "tax_id": "76.543.210-8",
+    "country": "CL"
+  }'
+```
+
+</CodeGroup>
 
 The response includes your `access_token` (24-hour session):
 

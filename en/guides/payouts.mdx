@@ -27,7 +27,7 @@ Available corridors and methods:
 | Mexico | MXN | `bank_transfer` (SPEI: CLABE or debit card) |
 | Venezuela | VES | `bank_transfer`, `pago_movil` |
 | Bolivia | BOB / USD | `bank_transfer`, `qr` (see [QR payout](#qr-payout)) |
-| Brazil | BRL | `pix` (by key, see [PIX payout](#pix-payout-brazil)), `qr` (see [QR payout](#qr-payout)) |
+| Brazil | BRL | `pix` (by key), `qr` (see [QR payout](#qr-payout)) |
 | Paraguay | PYG | `bank_transfer` |
 
 Availability may vary; the catalog (`GET /v1/payouts/methods`) is always
@@ -486,40 +486,6 @@ curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
 
 </Tab>
 </Tabs>
-
-## PIX payout (Brazil)
-
-In Brazil payouts run on **PIX**, the central bank's instant payment
-system. The `pix` method pays directly to a **PIX key** (CPF/CNPJ, phone,
-email or random key) through the same unified endpoint:
-
-```bash
-curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "country": "BR",
-    "currency": "BRL",
-    "method": "pix",
-    "amount": "350.00",
-    "beneficiary": {
-      "name": "João da Silva",
-      "tax_id": "123.456.789-09",
-      "pix_key_type": "cpf",
-      "pix_key": "12345678909"
-    },
-    "description": "Order 3321 payment",
-    "idempotency_key": "order-3321"
-  }'
-```
-
-`pix_key_type` accepts `cpf`, `cnpj`, `phone`, `email` and `evp` (random
-key). Charging, statuses and refunds work exactly like any other payout:
-your rate + fixed fee, `202` with the debit applied, and the final state by
-webhook.
-
-To pay a **PIX QR** (static or dynamic "copia e cola"), use the
-[QR payout](#qr-payout) flow with `country: "BR"`.
 
 ## QR payout
 

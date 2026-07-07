@@ -37,7 +37,77 @@ The subscription receives **your account's** events.
 | `crypto_deposit_credited` | An on-chain deposit was confirmed and credited |
 | `crypto_withdrawal_status_changed` | An on-chain withdrawal changed state |
 
-Exact payloads for each event are documented in the API Reference.
+### Payload of each event
+
+<CodeGroup>
+
+```json payin_credited
+{
+  "payin_id": "9c2a…",
+  "account_id": "ae8c…",
+  "country": "BO",
+  "currency": "BOB",
+  "local_amount": "700.00",
+  "fx_rate": "6.91",
+  "usdt_credited": "100.310000",
+  "fee": "1.000000"
+}
+```
+
+```json payout_status_changed
+{
+  "payout_id": "0d4f…",
+  "account_id": "ae8c…",
+  "country": "MX",
+  "currency": "MXN",
+  "local_amount": "1500.00",
+  "usdt_amount": "85.714286",
+  "total_debit": "86.014286",
+  "status": "completed",
+  "status_code": ""
+}
+```
+
+```json transfer_received
+{
+  "transfer_id": "77b1…",
+  "from_account_id": "389d…",
+  "to_account_id": "ae8c…",
+  "asset": "USDT",
+  "amount": "25.000000",
+  "description": "Expense split",
+  "created_at": "2026-07-06T20:10:00Z"
+}
+```
+
+```json crypto_deposit_credited
+{
+  "account_id": "ae8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "tx_id": "b1946ac9…",
+  "amount": "499.000000",
+  "fee": "1.000000"
+}
+```
+
+```json crypto_withdrawal_status_changed
+{
+  "withdrawal_id": "5e8c…",
+  "account_id": "ae8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "tx_id": "7d3f01aa…",
+  "status": "completed",
+  "amount": "100.000000"
+}
+```
+
+</CodeGroup>
+
+In `payout_status_changed` and `crypto_withdrawal_status_changed`, `status`
+can be `completed` or `failed` (with `failed`, the debit has already been
+refunded by the time you receive the event).
 
 ## Delivery format
 
