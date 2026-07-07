@@ -6,16 +6,23 @@ description: "Deposit and withdraw USDT on-chain over TRON or Ethereum"
 Your USDT balance can be funded and withdrawn directly on-chain. Supported
 networks: **TRON** (`tron`) and **Ethereum** (`eth`), asset **USDT**.
 
-## Funding (deposits)
+## Create your wallet
 
-### 1. Get your deposit address
-
-Every account gets its own address per network, created on demand:
+Every account gets its **own on-chain wallet per network** (one on TRON, one
+on Ethereum). The wallet is created automatically the **first time** you
+request your deposit address on that network; from then on the address is
+yours, stable and reusable.
 
 ```bash
 curl "https://exchange.qbank.cl/platform/v1/crypto/deposit-address?chain=tron" \
   -H "Authorization: Bearer <token>"
 ```
+
+- **First call on the network** → creates the wallet and returns `201` with
+  the address. If your operator configured the `wallet_creation` fee, it is
+  charged here (fixed per wallet; reported in `creation_fee` and refunded
+  automatically if creation fails).
+- **Subsequent calls** → return `200` with the same address, always free.
 
 ```json
 {
@@ -27,17 +34,16 @@ curl "https://exchange.qbank.cl/platform/v1/crypto/deposit-address?chain=tron" \
 }
 ```
 
-<Note>
-The **first wallet creation** on each chain may carry a fixed charge
-(`wallet_creation`, as configured by your operator; 0 = free). The response
-reports it in `creation_fee`. Fetching an already-created address is always
-free, and if creation fails the charge is refunded automatically. With
-insufficient balance for the charge you receive `402 insufficient_funds`.
-</Note>
+With insufficient balance for the creation fee you receive
+`402 insufficient_funds`.
+
+## Funding (deposits)
+
+### 1. Send USDT to your wallet address
 
 <Warning>
-Send **only USDT over the correct network** to that address. The address is
-yours and stable: you can reuse it for every deposit.
+Send **only USDT over the correct network** to your wallet address. The
+address is yours and stable: you can reuse it for every deposit.
 </Warning>
 
 ### 2. Get credited automatically

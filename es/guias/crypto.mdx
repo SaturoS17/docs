@@ -6,16 +6,24 @@ description: "Deposita y retira USDT on-chain por TRON o Ethereum"
 Tu saldo USDT puede fondearse y retirarse directamente on-chain. Redes
 soportadas: **TRON** (`tron`) y **Ethereum** (`eth`), activo **USDT**.
 
-## Fondeo (depósitos)
+## Crear tu wallet
 
-### 1. Obtén tu dirección de depósito
-
-Cada cuenta tiene una dirección propia por red, creada bajo demanda:
+Cada cuenta tiene una **wallet on-chain propia por red** (una en TRON, una en
+Ethereum). La wallet se crea automáticamente la **primera vez** que pides tu
+dirección de depósito en esa red; desde entonces la dirección es tuya,
+estable y reutilizable.
 
 ```bash
 curl "https://exchange.qbank.cl/platform/v1/crypto/deposit-address?chain=tron" \
   -H "Authorization: Bearer <token>"
 ```
+
+- **Primera llamada en la red** → crea la wallet y devuelve `201` con la
+  dirección. Si tu operador configuró la comisión `wallet_creation`, se
+  cobra aquí (fijo por wallet; la respuesta lo informa en `creation_fee` y
+  se reembolsa automáticamente si la creación falla).
+- **Llamadas siguientes** → devuelven `200` con la misma dirección, siempre
+  gratis.
 
 ```json
 {
@@ -27,18 +35,16 @@ curl "https://exchange.qbank.cl/platform/v1/crypto/deposit-address?chain=tron" \
 }
 ```
 
-<Note>
-La **primera creación** de wallet en cada red puede tener un cargo fijo
-(`wallet_creation`, según lo configure tu operador; 0 = gratis). La
-respuesta lo informa en `creation_fee`. Consultar una dirección ya creada
-es siempre gratis, y si la creación falla el cargo se reembolsa
-automáticamente. Con saldo insuficiente para el cargo recibes
+Con saldo insuficiente para la comisión de creación recibes
 `402 insufficient_funds`.
-</Note>
+
+## Fondeo (depósitos)
+
+### 1. Envía USDT a la dirección de tu wallet
 
 <Warning>
-Envía **solo USDT por la red correcta** a esa dirección. La dirección es
-tuya y estable: puedes reutilizarla para todos tus depósitos.
+Envía **solo USDT por la red correcta** a la dirección de tu wallet. La
+dirección es tuya y estable: puedes reutilizarla para todos tus depósitos.
 </Warning>
 
 ### 2. Recibe el abono automático
