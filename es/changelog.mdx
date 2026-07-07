@@ -7,6 +7,25 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="7 de julio de 2026" description="v1.10">
+
+**Agregado**
+
+- **Brasil (BRL) con PIX** documentado en payouts y payins:
+  - Payout `pix` por llave (CPF/CNPJ, teléfono, email o llave aleatoria
+    `evp`) vía `POST /v1/payouts`.
+  - Payout a QR PIX (estático o "copia e cola") vía el flujo
+    `qr/scan` + `qr/confirm` con `country: "BR"`.
+  - Payin con QR PIX dinámico vía `POST /v1/payins` (`method: "qr"`,
+    `country: "BR"`), con imagen del QR y código "copia e cola".
+  - Payin por transferencia anunciada (`method: "bank_transfer"`).
+
+La habilitación del corredor es gradual; el catálogo
+(`GET /v1/payouts/methods`, `GET /v1/payins/methods`) refleja la
+disponibilidad en cada momento.
+
+</Update>
+
 <Update label="7 de julio de 2026" description="v1.9">
 
 **Agregado**

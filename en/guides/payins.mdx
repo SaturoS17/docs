@@ -18,8 +18,8 @@ There are four ways to collect, depending on the country:
 
 <Note>
 Check the available collection corridors with `GET /v1/payins/methods`.
-Each country exposes its modes; for example QR in Bolivia, active
-collection in Venezuela, and dedicated deposit accounts in Mexico.
+Each country exposes its modes; for example QR in Bolivia and Brazil (PIX),
+active collection in Venezuela, and dedicated deposit accounts in Mexico.
 </Note>
 
 ## QR collection
@@ -55,6 +55,12 @@ Response `201`:
 The `charge` object carries the collection data to display to your customer
 (QR image/data, references). Its exact shape depends on the country's
 method.
+
+In **Brazil** the same endpoint generates a **dynamic PIX QR** with the
+amount embedded — use `country: "BR"` and `currency: "BRL"`; the `charge`
+includes the QR image and the "copia e cola" code (`qr_payload`) so the
+payer can paste it into their banking app. When the PIX is paid, your
+account is credited automatically like any other payin.
 
 ## Bank transfer (announced deposit)
 

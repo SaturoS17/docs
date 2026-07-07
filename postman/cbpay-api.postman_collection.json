@@ -741,7 +741,7 @@
             "description": "Disperses fiat to a local bank account. The local amount converts to USDT at **your account's rate** (the same one returned by `GET /v1/rates`); `usdt_amount` plus the fixed fee (when configured) is debited and held until the dispersal completes. If it fails, the full debit is refunded.\n\nRequires an idempotency key (body field or `Idempotency-Key` header). Retrying with the same key returns the original payout (`200` with `idempotency_hit: true`).",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"country\": \"MX\",\n  \"currency\": \"MXN\",\n  \"method\": \"bank_transfer\",\n  \"amount\": \"1500.00\",\n  \"beneficiary\": {\n    \"name\": \"Maria Lopez\",\n    \"account_type\": \"clabe\",\n    \"account_number\": \"012180001234567895\"\n  },\n  \"description\": \"Invoice 8841\",\n  \"idempotency_key\": \"invoice-8841\"\n}",
+              "raw": "{}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -951,7 +951,7 @@
           ]
         },
         {
-          "name": "Scan a payout QR (Bolivia)",
+          "name": "Scan a payout QR (Bolivia, Brazil)",
           "request": {
             "method": "POST",
             "header": [
@@ -972,7 +972,7 @@
                 "scan"
               ]
             },
-            "description": "Step 1 of the Bolivia QR payout: reads a collection QR and returns the recipient's data plus the `provider_reference` needed to confirm. **Free of charge** — nothing is debited until the confirm step.",
+            "description": "Step 1 of the QR payout — Bolivia (local interoperable QR) and Brazil (PIX QR, including the \"copia e cola\" code): reads a collection QR and returns the recipient's data plus the `provider_reference` needed to confirm. **Free of charge** — nothing is debited until the confirm step. Defaults to Bolivia; for Brazil send `country: \"BR\"` and `currency: \"BRL\"`.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"qr_payload\": \"<QR content>\",\n  \"currency\": \"BOB\"\n}",
@@ -1015,7 +1015,7 @@
           ]
         },
         {
-          "name": "Confirm a QR payout (Bolivia)",
+          "name": "Confirm a QR payout (Bolivia, Brazil)",
           "request": {
             "method": "POST",
             "header": [
@@ -1041,7 +1041,7 @@
                 "confirm"
               ]
             },
-            "description": "Step 2 of the Bolivia QR payout, charged exactly like a regular payout: the local amount converts at **your account's rate** and `usdt_amount + fixed fee` is debited. The result is **synchronous** — the response carries the final state (`completed`, or `failed` with an automatic refund). A scanned QR can only be paid once; requires an idempotency key like every money-moving operation.",
+            "description": "Step 2 of the QR payout (Bolivia and Brazil/PIX), charged exactly like a regular payout: the local amount converts at **your account's rate** and `usdt_amount + fixed fee` is debited. The result is **synchronous** — the response carries the final state (`completed`, or `failed` with an automatic refund). A scanned QR can only be paid once; requires an idempotency key like every money-moving operation.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"provider_reference\": \"QR-REF-889923\",\n  \"amount\": \"700.00\",\n  \"currency\": \"BOB\",\n  \"description\": \"QR lunch payment\",\n  \"idempotency_key\": \"qr-2026-07-07-a\"\n}",
@@ -1190,7 +1190,7 @@
                 "payins"
               ]
             },
-            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor; with `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically. Charging is free; the payin fee applies when the deposit is credited.",
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically. Charging is free; the payin fee applies when the deposit is credited.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"country\": \"BO\",\n  \"currency\": \"BOB\",\n  \"amount\": \"700.00\",\n  \"description\": \"App top-up\",\n  \"expires_in\": 3600,\n  \"method\": \"qr\"\n}",

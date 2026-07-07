@@ -624,24 +624,45 @@ paths:
 
                     country and method; see `GET /v1/payouts/methods` and
 
-                    `GET /v1/payouts/banks`.
+                    `GET /v1/payouts/banks`. Examples: RUT + bank in Chile, CLABE in
+
+                    Mexico, CCI in Peru, `pix_key` + `pix_key_type` (cpf, cnpj, phone,
+
+                    email, evp) in Brazil.
 
                     '
                 description:
                   type: string
                 idempotency_key:
                   type: string
-            example:
-              country: MX
-              currency: MXN
-              method: bank_transfer
-              amount: '1500.00'
-              beneficiary:
-                name: Maria Lopez
-                account_type: clabe
-                account_number: 012180001234567895
-              description: Invoice 8841
-              idempotency_key: invoice-8841
+            examples:
+              bank_transfer_mx:
+                summary: Bank transfer (Mexico SPEI)
+                value:
+                  country: MX
+                  currency: MXN
+                  method: bank_transfer
+                  amount: '1500.00'
+                  beneficiary:
+                    name: Maria Lopez
+                    account_type: clabe
+                    account_number: 012180001234567895
+                  description: Invoice 8841
+                  idempotency_key: invoice-8841
+              pix_br:
+                summary: PIX by key (Brazil)
+                value:
+                  country: BR
+                  currency: BRL
+                  method: pix
+                  amount: '350.00'
+                  beneficiary:
+                    name: João da Silva
+                    tax_id: 123.456.789-09
+                    pix_key_type: cpf
+                    pix_key: '12345678909'
+                  description: Order 3321 payment
+                  idempotency_key: order-3321
       responses:
         '202':
           description: Payout accepted and dispatching.
@@ -925,9 +946,11 @@ paths:
       operationId: createPayin
       summary: Create a payin (top-up charge)
       description: 'Creates a fiat top-up. With `method: "qr"` (default) an active QR charge is generated
-        through the processor; with `method: "bank_transfer"` the deposit is announced and the response
-        carries the reference the sender must include so the arriving transfer is matched and credited
-        automatically. Charging is free; the payin fee applies when the deposit is credited.'
+        through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose
+        `charge` carries the QR image and the "copia e cola" payload. With `method: "bank_transfer"` the
+        deposit is announced and the response carries the reference the sender must include so the arriving
+        transfer is matched and credited automatically. Charging is free; the payin fee applies when the
+        deposit is credited.'
       requestBody:
         required: true
         content:
@@ -1907,10 +1930,11 @@ paths:
       tags:
       - Payouts
       operationId: payoutQrScan
-      summary: Scan a payout QR (Bolivia)
-      description: 'Step 1 of the Bolivia QR payout: reads a collection QR and returns the recipient''s
-        data plus the `provider_reference` needed to confirm. **Free of charge** — nothing is debited
-        until the confirm step.'
+      summary: Scan a payout QR (Bolivia, Brazil)
+      description: 'Step 1 of the QR payout — Bolivia (local interoperable QR) and Brazil (PIX QR, including
+        the "copia e cola" code): reads a collection QR and returns the recipient''s data plus the `provider_reference`
+        needed to confirm. **Free of charge** — nothing is debited until the confirm step. Defaults to
+        Bolivia; for Brazil send `country: "BR"` and `currency: "BRL"`.'
       requestBody:
         required: true
         content:
@@ -1922,16 +1946,20 @@ paths:
               properties:
                 country:
                   type: string
+                  enum:
+                  - BO
+                  - BR
                   default: BO
                 currency:
                   type: string
                   enum:
                   - BOB
                   - USD
+                  - BRL
                   default: BOB
                 qr_payload:
                   type: string
-                  description: Raw content of the scanned QR.
+                  description: Raw content of the scanned QR (in Brazil, also the PIX "copia e cola" code).
             example:
               qr_payload: <QR content>
               currency: BOB
@@ -1994,12 +2022,12 @@ paths:
       tags:
       - Payouts
       operationId: payoutQrConfirm
-      summary: Confirm a QR payout (Bolivia)
-      description: 'Step 2 of the Bolivia QR payout, charged exactly like a regular payout: the local
-        amount converts at **your account''s rate** and `usdt_amount + fixed fee` is debited. The result
-        is **synchronous** — the response carries the final state (`completed`, or `failed` with an automatic
-        refund). A scanned QR can only be paid once; requires an idempotency key like every money-moving
-        operation.'
+      summary: Confirm a QR payout (Bolivia, Brazil)
+      description: 'Step 2 of the QR payout (Bolivia and Brazil/PIX), charged exactly like a regular payout:
+        the local amount converts at **your account''s rate** and `usdt_amount + fixed fee` is debited.
+        The result is **synchronous** — the response carries the final state (`completed`, or `failed`
+        with an automatic refund). A scanned QR can only be paid once; requires an idempotency key like
+        every money-moving operation.'
       parameters:
       - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:
@@ -2014,12 +2042,16 @@ paths:
               properties:
                 country:
                   type: string
+                  enum:
+                  - BO
+                  - BR
                   default: BO
                 currency:
                   type: string
                   enum:
                   - BOB
                   - USD
+                  - BRL
                   default: BOB
                 provider_reference:
                   type: string

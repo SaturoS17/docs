@@ -18,8 +18,8 @@ Hay cuatro formas de cobrar, según el país:
 
 <Note>
 Consulta los corredores de cobro disponibles con `GET /v1/payins/methods`.
-Cada país expone sus modalidades; por ejemplo QR en Bolivia, cobro activo
-en Venezuela y cuentas de depósito dedicadas en México.
+Cada país expone sus modalidades; por ejemplo QR en Bolivia y Brasil (PIX),
+cobro activo en Venezuela y cuentas de depósito dedicadas en México.
 </Note>
 
 ## Cobro con QR
@@ -55,6 +55,12 @@ Respuesta `201`:
 El objeto `charge` contiene los datos del cobro para mostrar a tu cliente
 (imagen/datos del QR, referencias). Su forma exacta depende del método del
 país.
+
+En **Brasil** el mismo endpoint genera un **QR PIX dinámico** con el monto
+embebido — usa `country: "BR"` y `currency: "BRL"`; el `charge` incluye la
+imagen del QR y el código "copia e cola" (`qr_payload`) para que el pagador
+pueda pegarlo en su app bancaria. Cuando el PIX se paga, tu cuenta se
+acredita automáticamente como en cualquier otro payin.
 
 ## Transferencia bancaria (depósito anunciado)
 

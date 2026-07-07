@@ -26,7 +26,8 @@ Available corridors and methods:
 | Peru | PEN | `bank_transfer`, `yape` |
 | Mexico | MXN | `bank_transfer` (SPEI: CLABE or debit card) |
 | Venezuela | VES | `bank_transfer`, `pago_movil` |
-| Bolivia | BOB / USD | `bank_transfer`, `qr` (see [QR payout](#qr-payout-bolivia)) |
+| Bolivia | BOB / USD | `bank_transfer`, `qr` (see [QR payout](#qr-payout)) |
+| Brazil | BRL | `pix` (by key, see [PIX payout](#pix-payout-brazil)), `qr` (see [QR payout](#qr-payout)) |
 | Paraguay | PYG | `bank_transfer` |
 
 Availability may vary; the catalog (`GET /v1/payouts/methods`) is always
@@ -63,8 +64,8 @@ curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
 
 <Warning>
 `beneficiary` is a key/value object whose required fields depend on the
-corridor (RUT and bank in Chile, CLABE in Mexico, CCI in Peru, etc.). The
-methods catalog documents each one.
+corridor (RUT and bank in Chile, CLABE in Mexico, CCI in Peru, PIX key in
+Brazil, etc.). The methods catalog documents each one.
 </Warning>
 
 Response `202 Accepted`:
@@ -119,11 +120,47 @@ curl https://exchange.qbank.cl/platform/v1/payouts/0d4f… \
   -H "Authorization: Bearer <token>"
 ```
 
-## QR payout (Bolivia)
+## PIX payout (Brazil)
 
-In Bolivia you can also **pay a collection QR** (the local interoperable
-standard) in two steps: scan and confirm. Scanning is **free**; you are only
-charged on confirm, exactly like a regular payout (your rate + fixed fee).
+In Brazil payouts run on **PIX**, the central bank's instant payment
+system. The `pix` method pays directly to a **PIX key** (CPF/CNPJ, phone,
+email or random key) through the same unified endpoint:
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BR",
+    "currency": "BRL",
+    "method": "pix",
+    "amount": "350.00",
+    "beneficiary": {
+      "name": "João da Silva",
+      "tax_id": "123.456.789-09",
+      "pix_key_type": "cpf",
+      "pix_key": "12345678909"
+    },
+    "description": "Order 3321 payment",
+    "idempotency_key": "order-3321"
+  }'
+```
+
+`pix_key_type` accepts `cpf`, `cnpj`, `phone`, `email` and `evp` (random
+key). Charging, statuses and refunds work exactly like any other payout:
+your rate + fixed fee, `202` with the debit applied, and the final state by
+webhook.
+
+To pay a **PIX QR** (static or dynamic "copia e cola"), use the
+[QR payout](#qr-payout) flow with `country: "BR"`.
+
+## QR payout
+
+In Bolivia (the local interoperable QR) and Brazil (PIX QR) you can also
+**pay a collection QR** in two steps: scan and confirm. Scanning is
+**free**; you are only charged on confirm, exactly like a regular payout
+(your rate + fixed fee). Without `country`/`currency` Bolivia (BOB) is
+assumed; for Brazil send `country: "BR"` and `currency: "BRL"`.
 
 ### 1. Scan the QR (free)
 
@@ -173,6 +210,8 @@ curl -X POST https://exchange.qbank.cl/platform/v1/payouts/qr/confirm \
   state (`completed`, or `failed` with an automatic refund) — no waiting.
 - A scanned QR can only be paid once; retries with the same
   `idempotency_key` return the original payout.
+- In Brazil, `qr_payload` accepts the QR content or the PIX "copia e cola"
+  code; the same flow covers static and dynamic QRs.
 
 ## Common errors
 

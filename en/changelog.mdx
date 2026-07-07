@@ -6,6 +6,24 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 7, 2026" description="v1.10">
+
+**Added**
+
+- **Brazil (BRL) with PIX** documented for payouts and payins:
+  - `pix` payout by key (CPF/CNPJ, phone, email or `evp` random key) via
+    `POST /v1/payouts`.
+  - Payout to a PIX QR (static or "copia e cola") via the
+    `qr/scan` + `qr/confirm` flow with `country: "BR"`.
+  - Payin with a dynamic PIX QR via `POST /v1/payins` (`method: "qr"`,
+    `country: "BR"`), carrying the QR image and the "copia e cola" code.
+  - Payin by announced bank transfer (`method: "bank_transfer"`).
+
+Corridor enablement is gradual; the catalog (`GET /v1/payouts/methods`,
+`GET /v1/payins/methods`) reflects availability at any given time.
+
+</Update>
+
 <Update label="July 7, 2026" description="v1.9">
 
 **Added**
