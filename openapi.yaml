@@ -1251,14 +1251,9 @@ paths:
       tags:
       - Crypto
       operationId: getDepositAddress
-      summary: Create or get my wallet (deposit address)
-      description: 'Returns (creating on first call) the on-chain USDT deposit address of the calling
-        account. Confirmed deposits credit the balance automatically, minus the funding fee.
-
-
-        The first creation on each chain bills the `wallet_creation` fee when configured (fixed per wallet;
-        0 = free, the default), reported in `creation_fee` and refunded if creation fails. Fetching an
-        existing address is always free.'
+      summary: Get primary wallet (legacy)
+      description: 'Legacy alias: returns the account''s primary (oldest) wallet on the chain, creating
+        it on first call. New integrations should use `POST /v1/crypto/wallets` and `GET /v1/crypto/wallets`.'
       parameters:
       - name: chain
         in: query
@@ -1282,10 +1277,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DepositAddress'
-              example:
+              example: &id009
+                wallet_id: b7e3a940-6f1d-4c2b-9a8e-5d4c3b2a1f0e
                 chain: tron
                 asset: USDT
                 address: TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT
+                label: Main treasury
                 created_at: '2026-07-07T12:00:00Z'
         '201':
           description: Address created.
@@ -1301,9 +1298,11 @@ paths:
                       example: '0.000000'
                       description: Wallet creation fee charged (0.000000 when free).
               example:
+                wallet_id: b7e3a940-6f1d-4c2b-9a8e-5d4c3b2a1f0e
                 chain: tron
                 asset: USDT
                 address: TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT
+                label: Main treasury
                 created_at: '2026-07-07T12:00:00Z'
                 creation_fee: '1.000000'
         '403':
@@ -1312,6 +1311,7 @@ paths:
           $ref: '#/components/responses/InsufficientFunds'
         '401':
           $ref: '#/components/responses/Unauthorized'
+      deprecated: true
   /v1/crypto/withdrawals:
     post:
       tags:
@@ -1841,11 +1841,120 @@ paths:
           description: Database not reachable (`store_unavailable`).
           content:
             application/json:
-              schema: &id008
+              schema: &id010
                 $ref: '#/components/schemas/Error'
               example:
                 error: store_unavailable
                 message: database not reachable
+  /v1/crypto/wallets:
+    post:
+      tags:
+      - Crypto
+      operationId: createCryptoWallet
+      summary: Create a wallet
+      description: 'Creates a new on-chain USDT wallet for the calling account. Person accounts hold **one
+        wallet per network**; company accounts can create **unlimited** wallets per network (use `label`
+        to tell them apart).
+
+
+        Every creation bills the `wallet_creation` fee when configured by CBPay (fixed per wallet; 0 =
+        free, the default; configurable per account). The charge is refunded automatically if creation
+        fails.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - chain
+              properties:
+                chain:
+                  type: string
+                  enum:
+                  - tron
+                  - eth
+                asset:
+                  type: string
+                  default: USDT
+                label:
+                  type: string
+                  description: Optional descriptive label.
+            example:
+              chain: tron
+              label: Main treasury
+      responses:
+        '201':
+          description: Wallet created.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/CryptoWallet'
+                - type: object
+                  properties:
+                    creation_fee:
+                      type: string
+              example:
+                wallet_id: b7e3a940-6f1d-4c2b-9a8e-5d4c3b2a1f0e
+                chain: tron
+                asset: USDT
+                address: TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT
+                label: Main treasury
+                created_at: '2026-07-07T12:00:00Z'
+                creation_fee: '1.000000'
+        '400':
+          description: invalid_chain / invalid_asset
+          content:
+            application/json:
+              schema: &id008
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_chain
+                message: unsupported chain "btc" (tron, eth)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '402':
+          $ref: '#/components/responses/InsufficientFunds'
+        '422':
+          description: Person account already holds a wallet on that network.
+          content:
+            application/json:
+              schema: *id008
+              example:
+                error: wallet_limit_reached
+                message: person accounts hold one wallet per network; company accounts can create more
+    get:
+      tags:
+      - Crypto
+      operationId: listCryptoWallets
+      summary: List my wallets
+      description: Returns every wallet of the calling account, oldest first.
+      responses:
+        '200':
+          description: The account's wallets.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  wallets:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CryptoWallet'
+              example:
+                wallets:
+                - *id009
+                - wallet_id: a1c9d8e7-2b3c-4d5e-6f70-8a9b0c1d2e3f
+                  chain: eth
+                  asset: USDT
+                  address: '0x8f3Bc55D9F4a2E71c06b9a3D2e1F0A9B8C7D6E5F'
+                  label: E-commerce collections
+                  created_at: '2026-07-07T12:05:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
 components:
   securitySchemes:
     bearerAuth:
@@ -1928,7 +2037,7 @@ components:
       description: Missing or invalid credential (`unauthorized`).
       content:
         application/json:
-          schema: *id008
+          schema: *id010
           example:
             error: unauthorized
             message: invalid or missing credentials
@@ -2253,9 +2362,12 @@ components:
           format: date-time
         idempotency_hit:
           type: boolean
-    DepositAddress:
+    DepositAddress: &id011
       type: object
       properties:
+        wallet_id:
+          type: string
+          format: uuid
         chain:
           type: string
           enum:
@@ -2266,6 +2378,9 @@ components:
           example: USDT
         address:
           type: string
+        label:
+          type: string
+          description: Optional descriptive label.
         created_at:
           type: string
           format: date-time
@@ -2317,6 +2432,7 @@ components:
           format: date-time
         idempotency_hit:
           type: boolean
+    CryptoWallet: *id011
 webhooks:
   payin_credited:
     post:
@@ -2333,15 +2449,15 @@ webhooks:
             schema:
               type: object
               properties:
-                payin_id: &id009
+                payin_id: &id012
                   type: string
-                account_id: *id009
-                country: *id009
-                currency: *id009
-                local_amount: *id009
-                fx_rate: *id009
-                usdt_credited: *id009
-                fee: *id009
+                account_id: *id012
+                country: *id012
+                currency: *id012
+                local_amount: *id012
+                fx_rate: *id012
+                usdt_credited: *id012
+                fee: *id012
             example:
               payin_id: 4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -2369,15 +2485,15 @@ webhooks:
             schema:
               type: object
               properties:
-                payout_id: *id009
-                account_id: *id009
-                country: *id009
-                currency: *id009
-                local_amount: *id009
-                usdt_amount: *id009
-                total_debit: *id009
-                status: *id009
-                status_code: *id009
+                payout_id: *id012
+                account_id: *id012
+                country: *id012
+                currency: *id012
+                local_amount: *id012
+                usdt_amount: *id012
+                total_debit: *id012
+                status: *id012
+                status_code: *id012
             example:
               payout_id: 7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -2406,13 +2522,13 @@ webhooks:
             schema:
               type: object
               properties:
-                transfer_id: *id009
-                from_account_id: *id009
-                to_account_id: *id009
-                asset: *id009
-                amount: *id009
-                description: *id009
-                created_at: *id009
+                transfer_id: *id012
+                from_account_id: *id012
+                to_account_id: *id012
+                asset: *id012
+                amount: *id012
+                description: *id012
+                created_at: *id012
             example:
               transfer_id: 2a7b9c1d-4e5f-6a70-8b9c-0d1e2f3a4b5c
               from_account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -2439,12 +2555,12 @@ webhooks:
             schema:
               type: object
               properties:
-                account_id: *id009
-                chain: *id009
-                asset: *id009
-                tx_id: *id009
-                amount: *id009
-                fee: *id009
+                account_id: *id012
+                chain: *id012
+                asset: *id012
+                tx_id: *id012
+                amount: *id012
+                fee: *id012
             example:
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
               chain: tron
@@ -2470,13 +2586,13 @@ webhooks:
             schema:
               type: object
               properties:
-                withdrawal_id: *id009
-                account_id: *id009
-                chain: *id009
-                asset: *id009
-                tx_id: *id009
-                status: *id009
-                amount: *id009
+                withdrawal_id: *id012
+                account_id: *id012
+                chain: *id012
+                asset: *id012
+                tx_id: *id012
+                status: *id012
+                amount: *id012
             example:
               withdrawal_id: 6c5d4e3f-2a1b-0c9d-8e7f-6a5b4c3d2e1f
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d

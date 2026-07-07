@@ -7,6 +7,29 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="7 de julio de 2026" description="v1.4">
+
+**Agregado**
+
+- **Wallets múltiples para empresas**: las cuentas empresa ahora pueden
+  crear wallets **ilimitadas por red** (las personas mantienen 1 por red).
+- Nuevos endpoints: `POST /v1/crypto/wallets` (crear wallet, con `label`
+  opcional para distinguirlas) y `GET /v1/crypto/wallets` (listar mis
+  wallets). Cada creación cobra la comisión fija `wallet_creation` si está
+  configurada.
+- Nuevo error `422 wallet_limit_reached` cuando una persona intenta crear
+  una segunda wallet en la misma red.
+- Las respuestas de wallet ahora incluyen `wallet_id` y `label`.
+
+**Cambiado**
+
+- La guía de Crypto se reorganizó en: **crear wallet, ver mis wallets,
+  depositar, transferir y movimientos**.
+- `GET /v1/crypto/deposit-address` queda como alias legacy (deprecado):
+  usa los endpoints de wallets.
+
+</Update>
+
 <Update label="7 de julio de 2026" description="v1.3">
 
 **Mejorado**

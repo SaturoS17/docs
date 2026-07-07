@@ -1,57 +1,87 @@
 ---
-title: "Crypto: fondeo y retiros"
-description: "Deposita y retira USDT on-chain por TRON o Ethereum"
+title: "Crypto: wallets, depósitos y retiros"
+description: "Crea wallets on-chain, deposita, transfiere y consulta movimientos"
 ---
 
-Tu saldo USDT puede fondearse y retirarse directamente on-chain. Redes
-soportadas: **TRON** (`tron`) y **Ethereum** (`eth`), activo **USDT**.
+Tu saldo USDT vive conectado a la blockchain. Redes soportadas: **TRON**
+(`tron`) y **Ethereum** (`eth`), activo **USDT**.
 
-## Crear tu wallet
+| Tipo de cuenta | Wallets por red |
+|---|---|
+| Persona | **1** |
+| Empresa | **Ilimitadas** (usa `label` para distinguirlas) |
 
-Cada cuenta tiene una **wallet on-chain propia por red** (una en TRON, una en
-Ethereum). La wallet se crea automáticamente la **primera vez** que pides tu
-dirección de depósito en esa red; desde entonces la dirección es tuya,
-estable y reutilizable.
+## Crear una wallet
 
 ```bash
-curl "https://exchange.qbank.cl/platform/v1/crypto/deposit-address?chain=tron" \
-  -H "Authorization: Bearer <token>"
+curl -X POST https://exchange.qbank.cl/platform/v1/crypto/wallets \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "tron",
+    "label": "Tesorería principal"
+  }'
 ```
 
-- **Primera llamada en la red** → crea la wallet y devuelve `201` con la
-  dirección. Si CBPay configuró la comisión `wallet_creation`, se
-  cobra aquí (fijo por wallet; la respuesta lo informa en `creation_fee` y
-  se reembolsa automáticamente si la creación falla).
-- **Llamadas siguientes** → devuelven `200` con la misma dirección, siempre
-  gratis.
+Respuesta `201`:
 
 ```json
 {
+  "wallet_id": "b7e3…",
   "chain": "tron",
   "asset": "USDT",
   "address": "TQmZ…",
-  "created_at": "2026-07-06T20:00:00Z",
-  "creation_fee": "0.000000"
+  "label": "Tesorería principal",
+  "created_at": "2026-07-07T12:00:00Z",
+  "creation_fee": "1.000000"
 }
 ```
 
-Con saldo insuficiente para la comisión de creación recibes
-`402 insufficient_funds`.
+- Cada creación tiene un **costo fijo** (`wallet_creation`) configurado por
+  CBPay — puede diferenciarse para personas y empresas, e incluso por
+  cuenta. Con comisión 0 (el default) es gratis. Si la creación falla, el
+  cargo se reembolsa automáticamente.
+- Una **persona** que ya tiene wallet en esa red recibe
+  `422 wallet_limit_reached`; las **empresas** pueden crear tantas como
+  necesiten (una por proveedor, por sucursal, por producto…).
+- `label` es opcional y solo descriptivo.
 
-## Fondeo (depósitos)
+## Ver mis wallets
 
-### 1. Envía USDT a la dirección de tu wallet
+```bash
+curl https://exchange.qbank.cl/platform/v1/crypto/wallets \
+  -H "Authorization: Bearer <token>"
+```
 
-<Warning>
-Envía **solo USDT por la red correcta** a la dirección de tu wallet. La
-dirección es tuya y estable: puedes reutilizarla para todos tus depósitos.
-</Warning>
+```json
+{
+  "wallets": [
+    {
+      "wallet_id": "b7e3…",
+      "chain": "tron",
+      "asset": "USDT",
+      "address": "TQmZ…",
+      "label": "Tesorería principal",
+      "created_at": "2026-07-07T12:00:00Z"
+    },
+    {
+      "wallet_id": "a1c9…",
+      "chain": "eth",
+      "asset": "USDT",
+      "address": "0x8f3B…",
+      "label": "Cobros e-commerce",
+      "created_at": "2026-07-07T12:05:00Z"
+    }
+  ]
+}
+```
 
-### 2. Recibe el abono automático
+## Depositar
 
-Cuando el depósito se confirma on-chain, tu saldo se acredita
-automáticamente (neto de la comisión de `funding` si CBPay la
-configuró) y se emite el webhook `crypto_deposit_credited`:
+Envía USDT a la dirección de cualquiera de tus wallets, **por la red
+correcta**. Cuando el depósito se confirma on-chain, tu saldo se acredita
+automáticamente (neto de la comisión de `funding` si CBPay la configuró) y
+se emite el webhook `crypto_deposit_credited`:
 
 ```json
 {
@@ -64,9 +94,14 @@ configuró) y se emite el webhook `crypto_deposit_credited`:
 }
 ```
 
-## Retiros
+<Warning>
+Envía **solo USDT por la red de la wallet**. Las direcciones son tuyas y
+estables: puedes reutilizarlas para todos tus depósitos.
+</Warning>
 
-### Crear un retiro
+## Transferir (retiros on-chain)
+
+Envía USDT desde tu saldo a cualquier dirección externa:
 
 ```bash
 curl -X POST https://exchange.qbank.cl/platform/v1/crypto/withdrawals \
@@ -76,7 +111,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/crypto/withdrawals \
     "chain": "tron",
     "to_address": "TVJ6…",
     "amount": "100.000000",
-    "idempotency_key": "retiro-2026-07-06-b"
+    "idempotency_key": "retiro-2026-07-07-b"
   }'
 ```
 
@@ -96,48 +131,42 @@ Respuesta `202` — se debita `amount + fee` y la transacción se transmite:
 }
 ```
 
-### Estado final
+El estado final llega por el webhook `crypto_withdrawal_status_changed`:
+**`completed`** (el `tx_id` es tu comprobante) o **`failed`** (se reembolsa
+el débito completo).
 
-Llega por el webhook `crypto_withdrawal_status_changed`:
+<Note>
+Para mover saldo a **otra cuenta CBPay** no uses la blockchain: las
+[transferencias internas](/es/guias/transferencias) son instantáneas y
+gratis.
+</Note>
 
-- **`completed`**: confirmado on-chain; el `tx_id` es tu comprobante.
-- **`failed`**: se reembolsa el débito completo (`withdrawal_refund`).
-
-Historial completo de actividad on-chain (depósitos + retiros):
+## Movimientos
 
 ```bash
+# Actividad on-chain: depósitos + retiros, con tx_id
 curl https://exchange.qbank.cl/platform/v1/crypto/transactions \
   -H "Authorization: Bearer <token>"
-```
 
-## Saldo y actividad de tu wallet
-
-Los depósitos on-chain acreditan tu **saldo USDT de cuenta** (no hay un
-saldo separado por wallet):
-
-```bash
 # Saldo actual (available + held)
 curl https://exchange.qbank.cl/platform/v1/balances \
   -H "Authorization: Bearer <token>"
 
-# Actividad on-chain: depósitos recibidos + retiros, con tx_id
-curl https://exchange.qbank.cl/platform/v1/crypto/transactions \
-  -H "Authorization: Bearer <token>"
-
-# Historial contable completo (incluye funding, retiros y comisiones)
+# Historial contable completo (funding, retiros, comisiones de wallet…)
 curl "https://exchange.qbank.cl/platform/v1/movements?type=funding" \
   -H "Authorization: Bearer <token>"
 ```
 
-Cada depósito y retiro incluye su `tx_id` on-chain como comprobante
-verificable en el explorador de la red.
+Los depósitos acreditan el **saldo USDT de la cuenta** (las wallets son
+puertas de entrada; el saldo es uno solo).
 
 ## Errores
 
 | HTTP | `error` | Causa |
 |---|---|---|
 | 400 | `invalid_chain` | Red no soportada (usa `tron` o `eth`) |
-| 400 | `to_address_required` | Falta la dirección destino |
-| 402 | `insufficient_funds` | Saldo insuficiente para `amount + fee` |
+| 400 | `to_address_required` | Falta la dirección destino del retiro |
+| 402 | `insufficient_funds` | Saldo insuficiente (para el retiro o para la comisión de creación) |
+| 422 | `wallet_limit_reached` | Una persona intentó crear una segunda wallet en la misma red |
 | 422 | (retiro con `status: failed`) | Rechazado al transmitir; débito reembolsado |
 | 503 | `withdrawals_unavailable` | Retiros no habilitados aún para este corredor |

@@ -1,55 +1,86 @@
 ---
-title: "Crypto: funding and withdrawals"
-description: "Deposit and withdraw USDT on-chain over TRON or Ethereum"
+title: "Crypto: wallets, deposits and withdrawals"
+description: "Create on-chain wallets, deposit, transfer and check movements"
 ---
 
-Your USDT balance can be funded and withdrawn directly on-chain. Supported
-networks: **TRON** (`tron`) and **Ethereum** (`eth`), asset **USDT**.
+Your USDT balance is connected to the blockchain. Supported networks:
+**TRON** (`tron`) and **Ethereum** (`eth`), asset **USDT**.
 
-## Create your wallet
+| Account type | Wallets per network |
+|---|---|
+| Person | **1** |
+| Company | **Unlimited** (use `label` to tell them apart) |
 
-Every account gets its **own on-chain wallet per network** (one on TRON, one
-on Ethereum). The wallet is created automatically the **first time** you
-request your deposit address on that network; from then on the address is
-yours, stable and reusable.
+## Create a wallet
 
 ```bash
-curl "https://exchange.qbank.cl/platform/v1/crypto/deposit-address?chain=tron" \
-  -H "Authorization: Bearer <token>"
+curl -X POST https://exchange.qbank.cl/platform/v1/crypto/wallets \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "tron",
+    "label": "Main treasury"
+  }'
 ```
 
-- **First call on the network** → creates the wallet and returns `201` with
-  the address. If CBPay configured the `wallet_creation` fee, it is
-  charged here (fixed per wallet; reported in `creation_fee` and refunded
-  automatically if creation fails).
-- **Subsequent calls** → return `200` with the same address, always free.
+Response `201`:
 
 ```json
 {
+  "wallet_id": "b7e3…",
   "chain": "tron",
   "asset": "USDT",
   "address": "TQmZ…",
-  "created_at": "2026-07-06T20:00:00Z",
-  "creation_fee": "0.000000"
+  "label": "Main treasury",
+  "created_at": "2026-07-07T12:00:00Z",
+  "creation_fee": "1.000000"
 }
 ```
 
-With insufficient balance for the creation fee you receive
-`402 insufficient_funds`.
+- Every creation carries a **fixed cost** (`wallet_creation`) configured by
+  CBPay — it can differ for persons and companies, and even per account.
+  With a fee of 0 (the default) it is free. If creation fails, the charge is
+  refunded automatically.
+- A **person** who already holds a wallet on that network receives
+  `422 wallet_limit_reached`; **companies** can create as many as they need
+  (one per supplier, per branch, per product…).
+- `label` is optional and descriptive only.
 
-## Funding (deposits)
+## View my wallets
 
-### 1. Send USDT to your wallet address
+```bash
+curl https://exchange.qbank.cl/platform/v1/crypto/wallets \
+  -H "Authorization: Bearer <token>"
+```
 
-<Warning>
-Send **only USDT over the correct network** to your wallet address. The
-address is yours and stable: you can reuse it for every deposit.
-</Warning>
+```json
+{
+  "wallets": [
+    {
+      "wallet_id": "b7e3…",
+      "chain": "tron",
+      "asset": "USDT",
+      "address": "TQmZ…",
+      "label": "Main treasury",
+      "created_at": "2026-07-07T12:00:00Z"
+    },
+    {
+      "wallet_id": "a1c9…",
+      "chain": "eth",
+      "asset": "USDT",
+      "address": "0x8f3B…",
+      "label": "E-commerce collections",
+      "created_at": "2026-07-07T12:05:00Z"
+    }
+  ]
+}
+```
 
-### 2. Get credited automatically
+## Deposit
 
-When the deposit confirms on-chain, your balance is credited automatically
-(net of the `funding` fee if CBPay configured one) and the
+Send USDT to the address of any of your wallets, **over the correct
+network**. When the deposit confirms on-chain, your balance is credited
+automatically (net of the `funding` fee if CBPay configured one) and the
 `crypto_deposit_credited` webhook fires:
 
 ```json
@@ -63,9 +94,14 @@ When the deposit confirms on-chain, your balance is credited automatically
 }
 ```
 
-## Withdrawals
+<Warning>
+Send **only USDT over the wallet's network**. Addresses are yours and
+stable: you can reuse them for every deposit.
+</Warning>
 
-### Create a withdrawal
+## Transfer (on-chain withdrawals)
+
+Send USDT from your balance to any external address:
 
 ```bash
 curl -X POST https://exchange.qbank.cl/platform/v1/crypto/withdrawals \
@@ -75,7 +111,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/crypto/withdrawals \
     "chain": "tron",
     "to_address": "TVJ6…",
     "amount": "100.000000",
-    "idempotency_key": "withdrawal-2026-07-06-b"
+    "idempotency_key": "withdrawal-2026-07-07-b"
   }'
 ```
 
@@ -95,48 +131,41 @@ Response `202` — `amount + fee` is debited and the transaction broadcasts:
 }
 ```
 
-### Final state
+The final state arrives via the `crypto_withdrawal_status_changed` webhook:
+**`completed`** (the `tx_id` is your receipt) or **`failed`** (the full
+debit is refunded).
 
-Arrives via the `crypto_withdrawal_status_changed` webhook:
+<Note>
+To move balance to **another CBPay account**, skip the blockchain:
+[internal transfers](/en/guides/transfers) are instant and free.
+</Note>
 
-- **`completed`**: confirmed on-chain; the `tx_id` is your receipt.
-- **`failed`**: the full debit is refunded (`withdrawal_refund`).
-
-Full on-chain activity history (deposits + withdrawals):
+## Movements
 
 ```bash
+# On-chain activity: deposits + withdrawals, with tx_id
 curl https://exchange.qbank.cl/platform/v1/crypto/transactions \
   -H "Authorization: Bearer <token>"
-```
 
-## Wallet balance and activity
-
-On-chain deposits credit your **account USDT balance** (there is no separate
-per-wallet balance):
-
-```bash
 # Current balance (available + held)
 curl https://exchange.qbank.cl/platform/v1/balances \
   -H "Authorization: Bearer <token>"
 
-# On-chain activity: received deposits + withdrawals, with tx_id
-curl https://exchange.qbank.cl/platform/v1/crypto/transactions \
-  -H "Authorization: Bearer <token>"
-
-# Full accounting history (includes funding, withdrawals and fees)
+# Full accounting history (funding, withdrawals, wallet fees…)
 curl "https://exchange.qbank.cl/platform/v1/movements?type=funding" \
   -H "Authorization: Bearer <token>"
 ```
 
-Every deposit and withdrawal carries its on-chain `tx_id` as a receipt you
-can verify on the network explorer.
+Deposits credit the **account's USDT balance** (wallets are entry points;
+the balance is one).
 
 ## Errors
 
 | HTTP | `error` | Cause |
 |---|---|---|
 | 400 | `invalid_chain` | Unsupported network (use `tron` or `eth`) |
-| 400 | `to_address_required` | Missing destination address |
-| 402 | `insufficient_funds` | Not enough balance for `amount + fee` |
+| 400 | `to_address_required` | Missing withdrawal destination address |
+| 402 | `insufficient_funds` | Not enough balance (for the withdrawal or the creation fee) |
+| 422 | `wallet_limit_reached` | A person tried to create a second wallet on the same network |
 | 422 | (withdrawal with `status: failed`) | Rejected at broadcast; debit refunded |
 | 503 | `withdrawals_unavailable` | Withdrawals not enabled for this corridor yet |
