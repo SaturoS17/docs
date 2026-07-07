@@ -39,8 +39,7 @@ Cuando creas un payout o retiro, el débito (`monto + comisión`) sale de
 
 Las operaciones fiat se convierten a USDT con la tasa vigente del momento
 (`GET /v1/rates`, base USD). La conversión redondea **hacia arriba** en el
-débito (nunca se te cobra de menos… ni se debita de más de 1 micro-USDT de
-diferencia).
+débito, con una diferencia máxima de 1 micro-USDT.
 
 Ejemplo de un payout de 50.000 CLP con tasa 950.25:
 
@@ -64,7 +63,8 @@ Cada movimiento genera una entrada inmutable con saldo resultante
 | `funding` | Depósito USDT on-chain acreditado |
 | `withdrawal_debit` / `withdrawal_refund` | Retiro on-chain / reembolso si falló |
 | `compliance_fee` / `compliance_refund` | Cargo por servicio KYC/KYB / reembolso |
-| `adjustment` | Ajuste manual del administrador (auditado) |
+| `wallet_creation_fee` / `wallet_creation_refund` | Cargo por creación de wallet / reembolso |
+| `adjustment` | Ajuste manual de CBPay (auditado) |
 
 ```bash
 curl "https://exchange.qbank.cl/platform/v1/movements?type=payout_debit&page_size=20" \

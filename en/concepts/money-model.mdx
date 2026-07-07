@@ -62,7 +62,8 @@ Every movement produces an immutable entry with the resulting balance
 | `funding` | On-chain USDT deposit credited |
 | `withdrawal_debit` / `withdrawal_refund` | On-chain withdrawal / refund on failure |
 | `compliance_fee` / `compliance_refund` | KYC/KYB service charge / refund |
-| `adjustment` | Manual admin adjustment (audited) |
+| `wallet_creation_fee` / `wallet_creation_refund` | Wallet creation charge / refund |
+| `adjustment` | Manual adjustment by CBPay (audited) |
 
 ```bash
 curl "https://exchange.qbank.cl/platform/v1/movements?type=payout_debit&page_size=20" \
