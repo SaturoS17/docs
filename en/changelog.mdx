@@ -6,6 +6,17 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 7, 2026" description="v1.6">
+
+**Improved**
+
+- `GET /v1/rates` now returns **your account's own exchange rate** per
+  country: the same rate your operations execute at
+  (`local_amount / rate = USDT`), with no difference between what is quoted
+  and what is charged.
+
+</Update>
+
 <Update label="July 7, 2026" description="v1.5">
 
 **Removed (Breaking)**

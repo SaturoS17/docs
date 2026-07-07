@@ -45,6 +45,12 @@ Las transferencias entre cuentas CBPay (`POST /v1/transfers`) **no tienen
 comisión**, sin importar la combinación: persona↔persona, persona↔empresa o
 empresa↔empresa. El dinero se mueve dentro del ecosistema.
 
+## Tu tipo de cambio
+
+`GET /v1/rates` devuelve **el tipo de cambio que aplica a tu cuenta** en
+cada país — es la misma tasa que se usa al ejecutar tus operaciones, sin
+sorpresas: `monto_local / rate = USDT`.
+
 ## Consulta tus comisiones efectivas
 
 `GET /v1/rates` devuelve, junto a las tasas FX, la configuración de

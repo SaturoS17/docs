@@ -45,6 +45,12 @@ Transfers between CBPay accounts (`POST /v1/transfers`) carry **no fee**,
 regardless of the combination: person↔person, person↔company or
 company↔company. The money moves inside the ecosystem.
 
+## Your exchange rate
+
+`GET /v1/rates` returns **the exchange rate that applies to your account**
+for each country — the same rate used when your operations execute, no
+surprises: `local_amount / rate = USDT`.
+
 ## Check your effective fees
 
 `GET /v1/rates` returns, along with FX rates, the fee configuration

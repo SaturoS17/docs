@@ -506,12 +506,10 @@ paths:
       tags:
       - Balances
       operationId: getRates
-      summary: Get FX rates and my fees
-      description: 'USD/local reference rates plus the effective fee configuration of the
-
-        calling account, so clients can compute net prices before operating.
-
-        '
+      summary: Get my FX rates and fees
+      description: Returns the exchange rate that applies to the calling account for each country — the
+        same rate used when operations execute (`local_amount / rate = USDT`) — plus the account's fee
+        configuration so clients can compute net prices.
       responses:
         '200':
           description: Rates and fees.

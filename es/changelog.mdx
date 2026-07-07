@@ -7,6 +7,17 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="7 de julio de 2026" description="v1.6">
+
+**Mejorado**
+
+- `GET /v1/rates` ahora entrega **el tipo de cambio propio de tu cuenta**
+  por país: la misma tasa con la que se ejecutan tus operaciones
+  (`monto_local / rate = USDT`), sin diferencias entre lo cotizado y lo
+  cobrado.
+
+</Update>
+
 <Update label="7 de julio de 2026" description="v1.5">
 
 **Eliminado (Breaking)**
