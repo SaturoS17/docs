@@ -6,6 +6,25 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 7, 2026" description="v1.3">
+
+**Improved**
+
+- Professional-grade API Reference: all 25 endpoints now include request and
+  response examples for **every case** (success, idempotency replay, and
+  each possible error with its real body), ready to try from the docs
+  playground.
+- The 5 webhooks are now documented inside the API Reference itself
+  (standard OpenAPI Webhooks section), with schema and example payload for
+  each event.
+- Methods and banks catalogs documented with the system's real response
+  shapes.
+- `GET /healthz` endpoint documented (service status).
+- The Crypto guide adds **"Wallet balance and activity"**: how to check your
+  balance, on-chain activity with `tx_id`, and the accounting history.
+
+</Update>
+
 <Update label="July 7, 2026" description="v1.2">
 
 **Added**

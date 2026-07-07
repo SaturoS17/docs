@@ -39,6 +39,8 @@ tags:
   description: Compliance screening of persons and companies.
 - name: Webhooks
   description: Subscriptions to receive signed event notifications.
+- name: Status
+  description: Service availability.
 paths:
   /v1/auth/register:
     post:
@@ -91,6 +93,13 @@ paths:
                 profile:
                   type: object
                   description: Free-form profile data.
+            example:
+              org: cbpay
+              type: person
+              email: ana@example.com
+              password: a-secure-password
+              display_name: Ana Perez
+              country: CL
       responses:
         '201':
           description: Account created.
@@ -107,6 +116,23 @@ paths:
                   expires_at:
                     type: string
                     format: date-time
+              example:
+                account: &id001
+                  id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                  org_id: 1c9e7a2b-5f6d-4e3a-8c1b-2a9d8e7f6a5b
+                  type: person
+                  status: active
+                  kyc_status: approved
+                  email: ana@example.com
+                  display_name: Ana Perez
+                  tax_id: 12345678-9
+                  phone: '+56912345678'
+                  country: CL
+                  profile: &id002 {}
+                  created_at: '2026-07-07T12:00:00Z'
+                  updated_at: '2026-07-07T12:00:00Z'
+                access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…
+                expires_at: '2026-07-08T12:00:00Z'
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':
@@ -115,12 +141,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: org_suspended
+                message: organization is not active
         '409':
           description: An account with that email already exists (`duplicate`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: duplicate
+                message: resource already exists
   /v1/auth/login:
     post:
       tags:
@@ -147,6 +179,10 @@ paths:
                   format: email
                 password:
                   type: string
+            example:
+              org: cbpay
+              email: ana@example.com
+              password: a-secure-password
       responses:
         '200':
           description: Session issued.
@@ -169,12 +205,20 @@ paths:
                     - owner
                     - operator
                     - viewer
+              example:
+                access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…
+                expires_at: '2026-07-08T12:00:00Z'
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                role: owner
         '401':
           description: Email or password is incorrect (`invalid_credentials`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_credentials
+                message: email or password is incorrect
   /v1/me:
     get:
       tags:
@@ -188,8 +232,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Account'
+              example: *id001
         '403':
           $ref: '#/components/responses/AccountRequired'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
     patch:
       tags:
       - Account
@@ -210,6 +257,8 @@ paths:
                   type: string
                 country:
                   type: string
+            example:
+              phone: '+56987654321'
       responses:
         '200':
           description: Updated account.
@@ -217,8 +266,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Account'
+              example:
+                id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                org_id: 1c9e7a2b-5f6d-4e3a-8c1b-2a9d8e7f6a5b
+                type: person
+                status: active
+                kyc_status: approved
+                email: ana@example.com
+                display_name: Ana Perez
+                tax_id: 12345678-9
+                phone: '+56987654321'
+                country: CL
+                profile: *id002
+                created_at: '2026-07-07T12:00:00Z'
+                updated_at: '2026-07-07T12:00:00Z'
         '403':
           $ref: '#/components/responses/AccountRequired'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/members:
     get:
       tags:
@@ -238,8 +303,18 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Member'
+              example:
+                members:
+                - &id003
+                  id: 5a4b3c2d-1e0f-9a8b-7c6d-5e4f3a2b1c0d
+                  email: ops@example.com
+                  role: operator
+                  status: active
+                  created_at: '2026-07-07T12:00:00Z'
         '403':
           $ref: '#/components/responses/AccountRequired'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
     post:
       tags:
       - Account
@@ -269,6 +344,10 @@ paths:
                   - operator
                   - viewer
                   default: operator
+            example:
+              email: ops@example.com
+              password: another-secure-pass
+              role: operator
       responses:
         '201':
           description: Member created.
@@ -276,12 +355,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Member'
+              example: *id003
         '403':
           description: Not a company account (`company_only`) or missing account credential.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: company_only
+                message: members are only available for company accounts
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/api-keys:
     post:
       tags:
@@ -304,6 +389,8 @@ paths:
               properties:
                 label:
                   type: string
+            example:
+              label: production-backend
       responses:
         '201':
           description: Key issued.
@@ -311,8 +398,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiKeyIssued'
+              example:
+                api_key_id: 7f6e5d4c-3b2a-1908-a7b6-c5d4e3f2a1b0
+                key_id: a1b2c3d4e5f60718
+                token: pk_a1b2c3d4e5f60718.k9J2mX4pQ7wR5tY8uZ0aB3cD6eF1gH2i
+                label: production-backend
+                note: store this token now; it cannot be retrieved again
         '403':
           $ref: '#/components/responses/AccountRequired'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/balances:
     get:
       tags:
@@ -326,8 +421,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BalancesResponse'
+              example:
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                balances:
+                - asset: USDT
+                  available: '125.430000'
+                  held: '10.000000'
+                  updated_at: '2026-07-07T12:00:00Z'
         '403':
           $ref: '#/components/responses/AccountRequired'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/movements:
     get:
       tags:
@@ -369,8 +473,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MovementsResponse'
+              example:
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                page: 1
+                page_size: 50
+                movements:
+                - id: 0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0
+                  asset: USDT
+                  amount: '-87.300001'
+                  type: payout_debit
+                  reference_type: payout
+                  reference_id: 7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f
+                  description: ''
+                  balance_after: '38.129999'
+                  created_at: '2026-07-07T12:00:00Z'
+                - id: 9a8b7c6d-5e4f-3a2b-1c0d-e9f8a7b6c5d4
+                  asset: USDT
+                  amount: '-1.000000'
+                  type: wallet_creation_fee
+                  reference_type: crypto_wallet
+                  reference_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d:tron:usdt
+                  description: 'service fee: wallet_creation'
+                  balance_after: '125.430000'
+                  created_at: '2026-07-07T12:00:00Z'
         '403':
           $ref: '#/components/responses/AccountRequired'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/rates:
     get:
       tags:
@@ -410,6 +539,30 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/FeeConfig'
+              example:
+                base: USD
+                rates:
+                  chile:
+                    currency: CLP
+                    rate: '950.25'
+                  mexico:
+                    currency: MXN
+                    rate: '17.50'
+                  peru:
+                    currency: PEN
+                    rate: '3.72'
+                updated_at: '2026-07-07T12:00:00Z'
+                fees:
+                - id: 3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c
+                  org_id: 1c9e7a2b-5f6d-4e3a-8c1b-2a9d8e7f6a5b
+                  account_id: ''
+                  service: payout
+                  country: CL
+                  asset: USDT
+                  percent: '1.5'
+                  fixed_amount: '0.30'
+                  status: active
+                  updated_at: '2026-07-07T12:00:00Z'
         '403':
           $ref: '#/components/responses/AccountRequired'
         '502':
@@ -418,6 +571,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: rates_unavailable
+                message: could not fetch fx rates
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/payouts:
     post:
       tags:
@@ -480,6 +638,17 @@ paths:
                   type: string
                 idempotency_key:
                   type: string
+            example:
+              country: MX
+              currency: MXN
+              method: bank_transfer
+              amount: '1500.00'
+              beneficiary:
+                name: Maria Lopez
+                account_type: clabe
+                account_number: 012180001234567895
+              description: Invoice 8841
+              idempotency_key: invoice-8841
       responses:
         '202':
           description: Payout accepted and dispatching.
@@ -487,12 +656,54 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Payout'
+              example: &id005
+                payout_id: 7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                idempotency_key: invoice-8841
+                country: MX
+                currency: MXN
+                method: bank_transfer
+                local_amount: '1500.00'
+                fx_rate: '17.50'
+                usdt_amount: '85.714286'
+                fee: '1.585715'
+                total_debit: '87.300001'
+                beneficiary: &id004
+                  name: Maria Lopez
+                  account_type: clabe
+                  account_number: 012180001234567895
+                description: Invoice 8841
+                status: processing
+                status_code: ''
+                status_message: ''
+                created_at: '2026-07-07T12:00:00Z'
+                updated_at: '2026-07-07T12:00:00Z'
         '200':
           description: Idempotency replay of an existing payout.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Payout'
+              example:
+                payout_id: 7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                idempotency_key: invoice-8841
+                country: MX
+                currency: MXN
+                method: bank_transfer
+                local_amount: '1500.00'
+                fx_rate: '17.50'
+                usdt_amount: '85.714286'
+                fee: '1.585715'
+                total_debit: '87.300001'
+                beneficiary: *id004
+                description: Invoice 8841
+                status: processing
+                status_code: ''
+                status_message: ''
+                created_at: '2026-07-07T12:00:00Z'
+                updated_at: '2026-07-07T12:00:00Z'
+                idempotency_hit: true
         '400':
           $ref: '#/components/responses/BadRequest'
         '402':
@@ -503,6 +714,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: account_blocked
+                message: account is not active
         '422':
           description: 'No FX rate for the currency (`currency_not_supported`), or the
 
@@ -517,6 +731,27 @@ paths:
                 oneOf:
                 - $ref: '#/components/schemas/Error'
                 - $ref: '#/components/schemas/Payout'
+              example:
+                payout_id: 7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                idempotency_key: invoice-8841
+                country: MX
+                currency: MXN
+                method: bank_transfer
+                local_amount: '1500.00'
+                fx_rate: '17.50'
+                usdt_amount: '85.714286'
+                fee: '1.585715'
+                total_debit: '87.300001'
+                beneficiary: *id004
+                description: Invoice 8841
+                status: failed
+                status_code: core_rejected
+                status_message: beneficiary account is invalid
+                created_at: '2026-07-07T12:00:00Z'
+                updated_at: '2026-07-07T12:00:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
     get:
       tags:
       - Payouts
@@ -551,8 +786,15 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Payout'
+              example:
+                page: 1
+                page_size: 50
+                payouts:
+                - *id005
         '403':
           $ref: '#/components/responses/Forbidden'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/payouts/{payoutID}:
     get:
       tags:
@@ -573,8 +815,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Payout'
+              example:
+                payout_id: 7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                idempotency_key: invoice-8841
+                country: MX
+                currency: MXN
+                method: bank_transfer
+                local_amount: '1500.00'
+                fx_rate: '17.50'
+                usdt_amount: '85.714286'
+                fee: '1.585715'
+                total_debit: '87.300001'
+                beneficiary: *id004
+                description: Invoice 8841
+                status: completed
+                status_code: ''
+                status_message: ''
+                created_at: '2026-07-07T12:00:00Z'
+                updated_at: '2026-07-07T12:00:00Z'
         '404':
           $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/payouts/methods:
     get:
       tags:
@@ -594,8 +857,41 @@ paths:
               schema:
                 type: object
                 description: Catalog of available corridors.
+              example:
+                items:
+                - country: BO
+                  currency: BOB
+                  method: bank_transfer
+                - country: BO
+                  currency: BOB
+                  method: qr
+                - country: CL
+                  currency: CLP
+                  method: bank_transfer
+                - country: MX
+                  currency: MXN
+                  method: bank_transfer
+                - country: PE
+                  currency: PEN
+                  method: bank_transfer
+                - country: PE
+                  currency: PEN
+                  method: yape
+                - country: PY
+                  currency: PYG
+                  method: bank_transfer
+                - country: VE
+                  currency: VES
+                  method: bank_transfer
+                - country: VE
+                  currency: VES
+                  method: pago_movil
+                meta:
+                  retrieved: 9
         '403':
           $ref: '#/components/responses/Forbidden'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/payouts/banks:
     get:
       tags:
@@ -615,8 +911,20 @@ paths:
             application/json:
               schema:
                 type: object
+              example:
+                items:
+                - code: '0001'
+                  name: Banco de Chile
+                - code: '0012'
+                  name: BancoEstado
+                - code: '0037'
+                  name: Santander
+                - code: '0051'
+                  name: Banco Falabella
         '403':
           $ref: '#/components/responses/Forbidden'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/payins:
     post:
       tags:
@@ -660,6 +968,12 @@ paths:
                 expires_in:
                   type: integer
                   description: Charge expiration in seconds.
+            example:
+              country: BO
+              currency: BOB
+              amount: '700.00'
+              description: App top-up
+              expires_in: 3600
       responses:
         '201':
           description: Charge created.
@@ -677,6 +991,13 @@ paths:
                   charge:
                     type: object
                     description: Charge details (QR data, references) from the core.
+              example:
+                payin_id: 4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b
+                status: pending
+                charge:
+                  charge_id: c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4
+                  our_reference: QR-778812
+                  qr_image: data:image/png;base64,iVBORw0KGgo…
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':
@@ -687,12 +1008,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: core_rejected
+                message: amount is below the minimum for this corridor
         '502':
           description: Core unavailable (`core_unavailable`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: core_unavailable
+                message: could not create the charge
+        '401':
+          $ref: '#/components/responses/Unauthorized'
     get:
       tags:
       - Payins
@@ -727,8 +1056,30 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Payin'
+              example:
+                page: 1
+                page_size: 50
+                payins:
+                - &id006
+                  payin_id: 4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b
+                  account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                  kind: qr
+                  country: BO
+                  currency: BOB
+                  method: ''
+                  local_amount: '700.00'
+                  status: credited
+                  reference: QR-778812
+                  created_at: '2026-07-07T12:00:00Z'
+                  updated_at: '2026-07-07T12:00:00Z'
+                  fx_rate: '6.91'
+                  usdt_gross: '101.310000'
+                  fee: '1.000000'
+                  usdt_credited: '100.310000'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/payins/{payinID}:
     get:
       tags:
@@ -749,8 +1100,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Payin'
+              example: *id006
         '404':
           $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/payins/methods:
     get:
       tags:
@@ -764,8 +1118,34 @@ paths:
             application/json:
               schema:
                 type: object
+              example:
+                items:
+                - country: BO
+                  currency: BOB
+                  method: qr
+                  delivery: push
+                - country: CL
+                  currency: CLP
+                  method: bank_transfer
+                  delivery: push
+                - country: MX
+                  currency: MXN
+                  method: bank_transfer
+                  delivery: push
+                - country: PE
+                  currency: PEN
+                  method: bank_transfer
+                  delivery: polling
+                - country: VE
+                  currency: VES
+                  method: c2p
+                  delivery: push+polling
+                meta:
+                  retrieved: 5
         '403':
           $ref: '#/components/responses/Forbidden'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/transfers:
     post:
       tags:
@@ -809,6 +1189,11 @@ paths:
                   type: string
                 idempotency_key:
                   type: string
+            example:
+              to_email: carlos@example.com
+              amount: '25.000000'
+              description: Expense split
+              idempotency_key: split-2026-07-07-a
       responses:
         '201':
           description: Transfer completed.
@@ -816,12 +1201,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Transfer'
+              example:
+                transfer_id: 2a7b9c1d-4e5f-6a70-8b9c-0d1e2f3a4b5c
+                from_account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                to_account_id: 5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b
+                asset: USDT
+                amount: '25.000000'
+                description: Expense split
+                status: completed
+                created_at: '2026-07-07T12:00:00Z'
         '200':
           description: Idempotency replay.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Transfer'
+              example:
+                transfer_id: 2a7b9c1d-4e5f-6a70-8b9c-0d1e2f3a4b5c
+                from_account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                to_account_id: 5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b
+                asset: USDT
+                amount: '25.000000'
+                description: Expense split
+                status: completed
+                created_at: '2026-07-07T12:00:00Z'
+                idempotency_hit: true
         '400':
           $ref: '#/components/responses/BadRequest'
         '402':
@@ -832,12 +1236,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: recipient_not_found
+                message: no account matches that email
         '422':
           description: Destination cannot receive transfers (`recipient_unavailable`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: recipient_unavailable
+                message: destination account cannot receive transfers
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/crypto/deposit-address:
     get:
       tags:
@@ -874,6 +1286,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DepositAddress'
+              example:
+                chain: tron
+                asset: USDT
+                address: TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT
+                created_at: '2026-07-07T12:00:00Z'
         '201':
           description: Address created.
           content:
@@ -887,10 +1304,18 @@ paths:
                       type: string
                       example: '0.000000'
                       description: Wallet creation fee charged (0.000000 when free).
+              example:
+                chain: tron
+                asset: USDT
+                address: TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT
+                created_at: '2026-07-07T12:00:00Z'
+                creation_fee: '1.000000'
         '403':
           $ref: '#/components/responses/AccountRequired'
         '402':
           $ref: '#/components/responses/InsufficientFunds'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/crypto/withdrawals:
     post:
       tags:
@@ -934,6 +1359,11 @@ paths:
                   description: Positive decimal string, up to 6 decimal places.
                 idempotency_key:
                   type: string
+            example:
+              chain: tron
+              to_address: TVJ6njG5Fyrq6XwYok3xPQx8kR7HQx6vXk
+              amount: '100.000000'
+              idempotency_key: withdrawal-2026-07-07-a
       responses:
         '202':
           description: Withdrawal accepted and broadcasting.
@@ -941,12 +1371,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CryptoWithdrawal'
+              example: &id007
+                withdrawal_id: 6c5d4e3f-2a1b-0c9d-8e7f-6a5b4c3d2e1f
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                idempotency_key: withdrawal-2026-07-07-a
+                chain: tron
+                asset: USDT
+                to_address: TVJ6njG5Fyrq6XwYok3xPQx8kR7HQx6vXk
+                amount: '100.000000'
+                fee: '1.000000'
+                total_debit: '101.000000'
+                status: processing
+                status_code: ''
+                status_message: broadcasted
+                tx_id: b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b
+                created_at: '2026-07-07T12:00:00Z'
+                updated_at: '2026-07-07T12:00:00Z'
         '200':
           description: Idempotency replay.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CryptoWithdrawal'
+              example:
+                withdrawal_id: 6c5d4e3f-2a1b-0c9d-8e7f-6a5b4c3d2e1f
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                idempotency_key: withdrawal-2026-07-07-a
+                chain: tron
+                asset: USDT
+                to_address: TVJ6njG5Fyrq6XwYok3xPQx8kR7HQx6vXk
+                amount: '100.000000'
+                fee: '1.000000'
+                total_debit: '101.000000'
+                status: processing
+                status_code: ''
+                status_message: broadcasted
+                tx_id: b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b
+                created_at: '2026-07-07T12:00:00Z'
+                updated_at: '2026-07-07T12:00:00Z'
+                idempotency_hit: true
         '400':
           $ref: '#/components/responses/BadRequest'
         '402':
@@ -957,12 +1420,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CryptoWithdrawal'
+              example:
+                withdrawal_id: 6c5d4e3f-2a1b-0c9d-8e7f-6a5b4c3d2e1f
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                idempotency_key: withdrawal-2026-07-07-a
+                chain: tron
+                asset: USDT
+                to_address: TVJ6njG5Fyrq6XwYok3xPQx8kR7HQx6vXk
+                amount: '100.000000'
+                fee: '1.000000'
+                total_debit: '101.000000'
+                status: failed
+                status_code: core_rejected
+                status_message: destination address is invalid
+                tx_id: ''
+                created_at: '2026-07-07T12:00:00Z'
+                updated_at: '2026-07-07T12:00:00Z'
         '503':
           description: Withdrawals not enabled for this corridor (`withdrawals_unavailable`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: withdrawals_unavailable
+                message: on-chain withdrawals are not enabled for this corridor yet
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/crypto/withdrawals/{withdrawalID}:
     get:
       tags:
@@ -983,8 +1467,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CryptoWithdrawal'
+              example:
+                withdrawal_id: 6c5d4e3f-2a1b-0c9d-8e7f-6a5b4c3d2e1f
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                idempotency_key: withdrawal-2026-07-07-a
+                chain: tron
+                asset: USDT
+                to_address: TVJ6njG5Fyrq6XwYok3xPQx8kR7HQx6vXk
+                amount: '100.000000'
+                fee: '1.000000'
+                total_debit: '101.000000'
+                status: completed
+                status_code: ''
+                status_message: broadcasted
+                tx_id: b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b
+                created_at: '2026-07-07T12:00:00Z'
+                updated_at: '2026-07-07T12:00:00Z'
         '404':
           $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/crypto/transactions:
     get:
       tags:
@@ -1032,8 +1534,23 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/CryptoWithdrawal'
+              example:
+                page: 1
+                page_size: 50
+                deposits:
+                - asset: USDT
+                  amount: '499.000000'
+                  reference: b1946ac9…:0
+                  tx_id: b1946ac92492d2347c6235b4d26111…
+                  chain: tron
+                  from_address: TNPeeaaFB7K9cmo4uQpcU32zGK8G1NYqeL
+                  created_at: '2026-07-07T12:00:00Z'
+                withdrawals:
+                - *id007
         '403':
           $ref: '#/components/responses/AccountRequired'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/kyc:
     post:
       tags:
@@ -1084,6 +1601,13 @@ paths:
                   type: boolean
                   default: false
                   description: Enable continuous monitoring from the start.
+            example:
+              customer:
+                person:
+                  full_name: Ana Perez Rojas
+                email: ana@example.com
+                country: CL
+              monitor: false
       responses:
         '201':
           description: Screening submitted; account KYC status set to `pending`.
@@ -1104,6 +1628,16 @@ paths:
                   compliance_fee:
                     type: string
                     example: '0.000000'
+              example:
+                customer_id: e1d2c3b4-a596-8778-695a-4b3c2d1e0f9a
+                status: completed
+                risk_level: low
+                screening_result: no_hits
+                monitored: false
+                deduplicated: false
+                kyc_status: pending
+                compliance_service: compliance_person
+                compliance_fee: '2.000000'
         '402':
           $ref: '#/components/responses/InsufficientFunds'
         '403':
@@ -1114,6 +1648,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: compliance_unavailable
+                message: screening temporarily unavailable
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/kyc/rescreen:
     post:
       tags:
@@ -1140,6 +1679,12 @@ paths:
                     example: compliance_rescreen
                   compliance_fee:
                     type: string
+              example:
+                customer_id: e1d2c3b4-a596-8778-695a-4b3c2d1e0f9a
+                status: completed
+                screening_result: no_hits
+                compliance_service: compliance_rescreen
+                compliance_fee: '1.000000'
         '402':
           $ref: '#/components/responses/InsufficientFunds'
         '409':
@@ -1148,6 +1693,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: no_kyc
+                message: account has no compliance screening to rescreen
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/kyc/monitoring:
     patch:
       tags:
@@ -1172,6 +1722,8 @@ paths:
               properties:
                 enabled:
                   type: boolean
+            example:
+              enabled: true
       responses:
         '200':
           description: Monitoring state plus billing fields.
@@ -1187,6 +1739,11 @@ paths:
                     example: compliance_monitoring
                   compliance_fee:
                     type: string
+              example:
+                customer_id: e1d2c3b4-a596-8778-695a-4b3c2d1e0f9a
+                monitored: true
+                compliance_service: compliance_monitoring
+                compliance_fee: '0.500000'
         '402':
           $ref: '#/components/responses/InsufficientFunds'
         '409':
@@ -1195,6 +1752,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: no_kyc
+                message: account has no compliance screening to monitor
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/webhooks/subscriptions:
     post:
       tags:
@@ -1235,6 +1797,10 @@ paths:
                 secret:
                   type: string
                   minLength: 16
+            example:
+              event_type: payout_status_changed
+              callback_url: https://api.myapp.com/webhooks/cbpay
+              secret: a-strong-shared-secret-123
       responses:
         '201':
           description: Subscription created.
@@ -1258,10 +1824,48 @@ paths:
                     format: date-time
                   secret_stored:
                     type: boolean
+              example:
+                id: 8e7f6a5b-4c3d-2e1f-0a9b-8c7d6e5f4a3b
+                event_type: payout_status_changed
+                callback_url: https://api.myapp.com/webhooks/cbpay
+                status: active
+                created_at: '2026-07-07T12:00:00Z'
+                secret_stored: true
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /healthz:
+    get:
+      tags:
+      - Status
+      security: []
+      operationId: healthz
+      summary: Service health
+      description: Public liveness check of the API and its database.
+      responses:
+        '200':
+          description: Healthy.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+              example:
+                status: ok
+        '503':
+          description: Database not reachable (`store_unavailable`).
+          content:
+            application/json:
+              schema: &id008
+                $ref: '#/components/schemas/Error'
+              example:
+                error: store_unavailable
+                message: database not reachable
 components:
   securitySchemes:
     bearerAuth:
@@ -1301,30 +1905,53 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: invalid_json
+            message: 'request body is not valid JSON: unknown field'
     InsufficientFunds:
       description: Account balance is not enough for this operation (`insufficient_funds`).
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: insufficient_funds
+            message: account balance is not enough for this operation
     AccountRequired:
       description: This endpoint requires an account credential (`account_required`).
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: account_required
+            message: this endpoint requires an account credential
     Forbidden:
       description: Credential level not allowed for this endpoint (`forbidden`).
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: forbidden
+            message: credentials required
     NotFound:
       description: Resource not found (`not_found`).
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: not_found
+            message: resource not found
+    Unauthorized:
+      description: Missing or invalid credential (`unauthorized`).
+      content:
+        application/json:
+          schema: *id008
+          example:
+            error: unauthorized
+            message: invalid or missing credentials
   schemas:
     Error:
       type: object
@@ -1710,56 +2337,174 @@ components:
           format: date-time
         idempotency_hit:
           type: boolean
-  x-webhooks:
-    payin_credited:
-      description: A fiat top-up was received and credited.
-      payload:
-        payin_id: uuid
-        account_id: uuid
-        country: string
-        currency: string
-        local_amount: string
-        fx_rate: string
-        usdt_credited: string
-        fee: string
-    payout_status_changed:
-      description: A payout changed state (processing/completed/failed).
-      payload:
-        payout_id: uuid
-        account_id: uuid
-        country: string
-        currency: string
-        local_amount: string
-        usdt_amount: string
-        total_debit: string
-        status: string
-        status_code: string
-    transfer_received:
-      description: The account received an internal transfer.
-      payload:
-        transfer_id: uuid
-        from_account_id: uuid
-        to_account_id: uuid
-        asset: string
-        amount: string
-        description: string
-        created_at: date-time
-    crypto_deposit_credited:
-      description: An on-chain deposit was confirmed and credited (net of fee).
-      payload:
-        account_id: uuid
-        chain: string
-        asset: string
-        tx_id: string
-        amount: string
-        fee: string
-    crypto_withdrawal_status_changed:
-      description: An on-chain withdrawal changed state.
-      payload:
-        withdrawal_id: uuid
-        account_id: uuid
-        chain: string
-        asset: string
-        tx_id: string
-        status: string
-        amount: string
+webhooks:
+  payin_credited:
+    post:
+      summary: Payin credited
+      description: 'A fiat collection was received and credited to the account in USDT.
+
+
+        Every delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
+        and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`. Respond 2xx; up
+        to 5 attempts with incremental backoff.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payin_id: &id009
+                  type: string
+                account_id: *id009
+                country: *id009
+                currency: *id009
+                local_amount: *id009
+                fx_rate: *id009
+                usdt_credited: *id009
+                fee: *id009
+            example:
+              payin_id: 4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              country: BO
+              currency: BOB
+              local_amount: '700.00'
+              fx_rate: '6.91'
+              usdt_credited: '100.310000'
+              fee: '1.000000'
+      responses:
+        '200':
+          description: Return any 2xx to acknowledge the delivery.
+  payout_status_changed:
+    post:
+      summary: Payout status changed
+      description: 'A payout reached a new state (processing, completed or failed).
+
+
+        Every delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
+        and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`. Respond 2xx; up
+        to 5 attempts with incremental backoff.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payout_id: *id009
+                account_id: *id009
+                country: *id009
+                currency: *id009
+                local_amount: *id009
+                usdt_amount: *id009
+                total_debit: *id009
+                status: *id009
+                status_code: *id009
+            example:
+              payout_id: 7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              country: MX
+              currency: MXN
+              local_amount: '1500.00'
+              usdt_amount: '85.714286'
+              total_debit: '87.300001'
+              status: completed
+              status_code: ''
+      responses:
+        '200':
+          description: Return any 2xx to acknowledge the delivery.
+  transfer_received:
+    post:
+      summary: Transfer received
+      description: 'The account received an internal transfer.
+
+
+        Every delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
+        and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`. Respond 2xx; up
+        to 5 attempts with incremental backoff.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                transfer_id: *id009
+                from_account_id: *id009
+                to_account_id: *id009
+                asset: *id009
+                amount: *id009
+                description: *id009
+                created_at: *id009
+            example:
+              transfer_id: 2a7b9c1d-4e5f-6a70-8b9c-0d1e2f3a4b5c
+              from_account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              to_account_id: 5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b
+              asset: USDT
+              amount: '25.000000'
+              description: Expense split
+              created_at: '2026-07-07T12:00:00Z'
+      responses:
+        '200':
+          description: Return any 2xx to acknowledge the delivery.
+  crypto_deposit_credited:
+    post:
+      summary: Crypto deposit credited
+      description: 'An on-chain deposit was confirmed and credited (net of the funding fee).
+
+
+        Every delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
+        and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`. Respond 2xx; up
+        to 5 attempts with incremental backoff.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                account_id: *id009
+                chain: *id009
+                asset: *id009
+                tx_id: *id009
+                amount: *id009
+                fee: *id009
+            example:
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              chain: tron
+              asset: USDT
+              tx_id: b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b
+              amount: '499.000000'
+              fee: '1.000000'
+      responses:
+        '200':
+          description: Return any 2xx to acknowledge the delivery.
+  crypto_withdrawal_status_changed:
+    post:
+      summary: Crypto withdrawal status changed
+      description: 'An on-chain withdrawal reached a new state.
+
+
+        Every delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
+        and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`. Respond 2xx; up
+        to 5 attempts with incremental backoff.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                withdrawal_id: *id009
+                account_id: *id009
+                chain: *id009
+                asset: *id009
+                tx_id: *id009
+                status: *id009
+                amount: *id009
+            example:
+              withdrawal_id: 6c5d4e3f-2a1b-0c9d-8e7f-6a5b4c3d2e1f
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              chain: tron
+              asset: USDT
+              tx_id: b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b
+              status: completed
+              amount: '100.000000'
+      responses:
+        '200':
+          description: Return any 2xx to acknowledge the delivery.

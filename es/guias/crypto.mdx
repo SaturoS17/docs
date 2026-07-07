@@ -110,6 +110,28 @@ curl https://exchange.qbank.cl/platform/v1/crypto/transactions \
   -H "Authorization: Bearer <token>"
 ```
 
+## Saldo y actividad de tu wallet
+
+Los depósitos on-chain acreditan tu **saldo USDT de cuenta** (no hay un
+saldo separado por wallet):
+
+```bash
+# Saldo actual (available + held)
+curl https://exchange.qbank.cl/platform/v1/balances \
+  -H "Authorization: Bearer <token>"
+
+# Actividad on-chain: depósitos recibidos + retiros, con tx_id
+curl https://exchange.qbank.cl/platform/v1/crypto/transactions \
+  -H "Authorization: Bearer <token>"
+
+# Historial contable completo (incluye funding, retiros y comisiones)
+curl "https://exchange.qbank.cl/platform/v1/movements?type=funding" \
+  -H "Authorization: Bearer <token>"
+```
+
+Cada depósito y retiro incluye su `tx_id` on-chain como comprobante
+verificable en el explorador de la red.
+
 ## Errores
 
 | HTTP | `error` | Causa |

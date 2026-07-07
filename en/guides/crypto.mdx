@@ -109,6 +109,28 @@ curl https://exchange.qbank.cl/platform/v1/crypto/transactions \
   -H "Authorization: Bearer <token>"
 ```
 
+## Wallet balance and activity
+
+On-chain deposits credit your **account USDT balance** (there is no separate
+per-wallet balance):
+
+```bash
+# Current balance (available + held)
+curl https://exchange.qbank.cl/platform/v1/balances \
+  -H "Authorization: Bearer <token>"
+
+# On-chain activity: received deposits + withdrawals, with tx_id
+curl https://exchange.qbank.cl/platform/v1/crypto/transactions \
+  -H "Authorization: Bearer <token>"
+
+# Full accounting history (includes funding, withdrawals and fees)
+curl "https://exchange.qbank.cl/platform/v1/movements?type=funding" \
+  -H "Authorization: Bearer <token>"
+```
+
+Every deposit and withdrawal carries its on-chain `tx_id` as a receipt you
+can verify on the network explorer.
+
 ## Errors
 
 | HTTP | `error` | Cause |
