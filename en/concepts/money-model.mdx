@@ -36,9 +36,9 @@ When you create a payout or withdrawal, the debit (`amount + fee`) leaves
 
 ## FX conversion (fiat ↔ USDT)
 
-Fiat operations convert to USDT at the current rate (`GET /v1/rates`, USD
-base). Conversion rounds **up** on the debit side, with at most 1 micro-USDT
-of difference.
+Fiat operations convert to USDT at **your account's rate** at execution
+time (the same one returned by `GET /v1/rates`, USD base). Conversion
+rounds **up** on the debit side, with at most 1 micro-USDT of difference.
 
 Example — a 50,000 CLP payout at a 950.25 rate:
 

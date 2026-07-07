@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "CBPay API",
-    "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain USDT funding and\nwithdrawals, and KYC screening â€” all against a single USDT-denominated\nbalance per account.\n\nAll amounts are decimal strings. Balances are held in USDT with 6 decimal\nplaces. Errors always return `{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
+    "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain USDT funding and\nwithdrawals, and KYC screening — all against a single USDT-denominated\nbalance per account.\n\nAll amounts are decimal strings. Balances are held in USDT with 6 decimal\nplaces. Errors always return `{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -89,7 +89,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"account\": {\n    \"id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n    \"org_id\": \"1c9e7a2b-5f6d-4e3a-8c1b-2a9d8e7f6a5b\",\n    \"type\": \"person\",\n    \"status\": \"active\",\n    \"kyc_status\": \"approved\",\n    \"email\": \"ana@example.com\",\n    \"display_name\": \"Ana Perez\",\n    \"tax_id\": \"12345678-9\",\n    \"phone\": \"+56912345678\",\n    \"country\": \"CL\",\n    \"profile\": {},\n    \"created_at\": \"2026-07-07T12:00:00Z\",\n    \"updated_at\": \"2026-07-07T12:00:00Z\"\n  },\n  \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9â€¦\",\n  \"expires_at\": \"2026-07-08T12:00:00Z\"\n}"
+              "body": "{\n  \"account\": {\n    \"id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n    \"org_id\": \"1c9e7a2b-5f6d-4e3a-8c1b-2a9d8e7f6a5b\",\n    \"type\": \"person\",\n    \"status\": \"active\",\n    \"kyc_status\": \"approved\",\n    \"email\": \"ana@example.com\",\n    \"display_name\": \"Ana Perez\",\n    \"tax_id\": \"12345678-9\",\n    \"phone\": \"+56912345678\",\n    \"country\": \"CL\",\n    \"profile\": {},\n    \"created_at\": \"2026-07-07T12:00:00Z\",\n    \"updated_at\": \"2026-07-07T12:00:00Z\"\n  },\n  \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…\",\n  \"expires_at\": \"2026-07-08T12:00:00Z\"\n}"
             }
           ]
         },
@@ -154,7 +154,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9â€¦\",\n  \"expires_at\": \"2026-07-08T12:00:00Z\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"role\": \"owner\"\n}"
+              "body": "{\n  \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…\",\n  \"expires_at\": \"2026-07-08T12:00:00Z\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"role\": \"owner\"\n}"
             }
           ]
         }
@@ -576,7 +576,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"page\": 1,\n  \"page_size\": 50,\n  \"movements\": [\n    {\n      \"id\": \"0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0\",\n      \"asset\": \"USDT\",\n      \"amount\": \"-87.300001\",\n      \"type\": \"payout_debit\",\n      \"reference_type\": \"payout\",\n      \"reference_id\": \"7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f\",\n      \"description\": \"\",\n      \"balance_after\": \"38.129999\",\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    },\n    {\n      \"id\": \"9a8b7c6d-5e4f-3a2b-1c0d-e9f8a7b6c5d4\",\n      \"asset\": \"USDT\",\n      \"amount\": \"-1.000000\",\n      \"type\": \"wallet_creation_fee\",\n      \"reference_type\": \"crypto_wallet\",\n      \"reference_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d:tron:usdt\",\n      \"description\": \"service fee: wallet_creation\",\n      \"balance_after\": \"125.430000\",\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
+              "body": "{\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"page\": 1,\n  \"page_size\": 50,\n  \"movements\": [\n    {\n      \"id\": \"0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0\",\n      \"asset\": \"USDT\",\n      \"amount\": \"-86.014286\",\n      \"type\": \"payout_debit\",\n      \"reference_type\": \"payout\",\n      \"reference_id\": \"7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f\",\n      \"description\": \"\",\n      \"balance_after\": \"39.415714\",\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    },\n    {\n      \"id\": \"9a8b7c6d-5e4f-3a2b-1c0d-e9f8a7b6c5d4\",\n      \"asset\": \"USDT\",\n      \"amount\": \"-1.000000\",\n      \"type\": \"wallet_creation_fee\",\n      \"reference_type\": \"crypto_wallet\",\n      \"reference_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d:tron:usdt\",\n      \"description\": \"service fee: wallet_creation\",\n      \"balance_after\": \"125.430000\",\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
             }
           ]
         },
@@ -709,7 +709,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"payouts\": [\n    {\n      \"payout_id\": \"7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f\",\n      \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n      \"idempotency_key\": \"invoice-8841\",\n      \"country\": \"MX\",\n      \"currency\": \"MXN\",\n      \"method\": \"bank_transfer\",\n      \"local_amount\": \"1500.00\",\n      \"fx_rate\": \"17.50\",\n      \"usdt_amount\": \"85.714286\",\n      \"fee\": \"0.300000\",\n      \"total_debit\": \"87.300001\",\n      \"beneficiary\": {\n        \"name\": \"Maria Lopez\",\n        \"account_type\": \"clabe\",\n        \"account_number\": \"012180001234567895\"\n      },\n      \"description\": \"Invoice 8841\",\n      \"status\": \"processing\",\n      \"status_code\": \"\",\n      \"status_message\": \"\",\n      \"created_at\": \"2026-07-07T12:00:00Z\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"payouts\": [\n    {\n      \"payout_id\": \"7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f\",\n      \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n      \"idempotency_key\": \"invoice-8841\",\n      \"country\": \"MX\",\n      \"currency\": \"MXN\",\n      \"method\": \"bank_transfer\",\n      \"local_amount\": \"1500.00\",\n      \"fx_rate\": \"17.50\",\n      \"usdt_amount\": \"85.714286\",\n      \"fee\": \"0.300000\",\n      \"total_debit\": \"86.014286\",\n      \"beneficiary\": {\n        \"name\": \"Maria Lopez\",\n        \"account_type\": \"clabe\",\n        \"account_number\": \"012180001234567895\"\n      },\n      \"description\": \"Invoice 8841\",\n      \"status\": \"processing\",\n      \"status_code\": \"\",\n      \"status_message\": \"\",\n      \"created_at\": \"2026-07-07T12:00:00Z\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
             }
           ]
         },
@@ -774,7 +774,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"payout_id\": \"7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"idempotency_key\": \"invoice-8841\",\n  \"country\": \"MX\",\n  \"currency\": \"MXN\",\n  \"method\": \"bank_transfer\",\n  \"local_amount\": \"1500.00\",\n  \"fx_rate\": \"17.50\",\n  \"usdt_amount\": \"85.714286\",\n  \"fee\": \"0.300000\",\n  \"total_debit\": \"87.300001\",\n  \"beneficiary\": {\n    \"name\": \"Maria Lopez\",\n    \"account_type\": \"clabe\",\n    \"account_number\": \"012180001234567895\"\n  },\n  \"description\": \"Invoice 8841\",\n  \"status\": \"processing\",\n  \"status_code\": \"\",\n  \"status_message\": \"\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:00Z\",\n  \"idempotency_hit\": true\n}"
+              "body": "{\n  \"payout_id\": \"7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"idempotency_key\": \"invoice-8841\",\n  \"country\": \"MX\",\n  \"currency\": \"MXN\",\n  \"method\": \"bank_transfer\",\n  \"local_amount\": \"1500.00\",\n  \"fx_rate\": \"17.50\",\n  \"usdt_amount\": \"85.714286\",\n  \"fee\": \"0.300000\",\n  \"total_debit\": \"86.014286\",\n  \"beneficiary\": {\n    \"name\": \"Maria Lopez\",\n    \"account_type\": \"clabe\",\n    \"account_number\": \"012180001234567895\"\n  },\n  \"description\": \"Invoice 8841\",\n  \"status\": \"processing\",\n  \"status_code\": \"\",\n  \"status_message\": \"\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:00Z\",\n  \"idempotency_hit\": true\n}"
             }
           ]
         },
@@ -834,7 +834,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"payout_id\": \"7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"idempotency_key\": \"invoice-8841\",\n  \"country\": \"MX\",\n  \"currency\": \"MXN\",\n  \"method\": \"bank_transfer\",\n  \"local_amount\": \"1500.00\",\n  \"fx_rate\": \"17.50\",\n  \"usdt_amount\": \"85.714286\",\n  \"fee\": \"0.300000\",\n  \"total_debit\": \"87.300001\",\n  \"beneficiary\": {\n    \"name\": \"Maria Lopez\",\n    \"account_type\": \"clabe\",\n    \"account_number\": \"012180001234567895\"\n  },\n  \"description\": \"Invoice 8841\",\n  \"status\": \"completed\",\n  \"status_code\": \"\",\n  \"status_message\": \"\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:00Z\"\n}"
+              "body": "{\n  \"payout_id\": \"7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"idempotency_key\": \"invoice-8841\",\n  \"country\": \"MX\",\n  \"currency\": \"MXN\",\n  \"method\": \"bank_transfer\",\n  \"local_amount\": \"1500.00\",\n  \"fx_rate\": \"17.50\",\n  \"usdt_amount\": \"85.714286\",\n  \"fee\": \"0.300000\",\n  \"total_debit\": \"86.014286\",\n  \"beneficiary\": {\n    \"name\": \"Maria Lopez\",\n    \"account_type\": \"clabe\",\n    \"account_number\": \"012180001234567895\"\n  },\n  \"description\": \"Invoice 8841\",\n  \"status\": \"completed\",\n  \"status_code\": \"\",\n  \"status_message\": \"\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:00Z\"\n}"
             }
           ]
         },
@@ -1093,7 +1093,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgoâ€¦\"\n  }\n}"
+              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\"\n  }\n}"
             }
           ]
         },
@@ -1477,7 +1477,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"deposits\": [\n    {\n      \"asset\": \"USDT\",\n      \"amount\": \"499.000000\",\n      \"reference\": \"b1946ac9â€¦:0\",\n      \"tx_id\": \"b1946ac92492d2347c6235b4d26111â€¦\",\n      \"chain\": \"tron\",\n      \"from_address\": \"TNPeeaaFB7K9cmo4uQpcU32zGK8G1NYqeL\",\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ],\n  \"withdrawals\": [\n    {\n      \"withdrawal_id\": \"6c5d4e3f-2a1b-0c9d-8e7f-6a5b4c3d2e1f\",\n      \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n      \"idempotency_key\": \"withdrawal-2026-07-07-a\",\n      \"chain\": \"tron\",\n      \"asset\": \"USDT\",\n      \"to_address\": \"TVJ6njG5Fyrq6XwYok3xPQx8kR7HQx6vXk\",\n      \"amount\": \"100.000000\",\n      \"fee\": \"1.000000\",\n      \"total_debit\": \"101.000000\",\n      \"status\": \"processing\",\n      \"status_code\": \"\",\n      \"status_message\": \"broadcasted\",\n      \"tx_id\": \"b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b\",\n      \"created_at\": \"2026-07-07T12:00:00Z\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"deposits\": [\n    {\n      \"asset\": \"USDT\",\n      \"amount\": \"499.000000\",\n      \"reference\": \"b1946ac9…:0\",\n      \"tx_id\": \"b1946ac92492d2347c6235b4d26111…\",\n      \"chain\": \"tron\",\n      \"from_address\": \"TNPeeaaFB7K9cmo4uQpcU32zGK8G1NYqeL\",\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ],\n  \"withdrawals\": [\n    {\n      \"withdrawal_id\": \"6c5d4e3f-2a1b-0c9d-8e7f-6a5b4c3d2e1f\",\n      \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n      \"idempotency_key\": \"withdrawal-2026-07-07-a\",\n      \"chain\": \"tron\",\n      \"asset\": \"USDT\",\n      \"to_address\": \"TVJ6njG5Fyrq6XwYok3xPQx8kR7HQx6vXk\",\n      \"amount\": \"100.000000\",\n      \"fee\": \"1.000000\",\n      \"total_debit\": \"101.000000\",\n      \"status\": \"processing\",\n      \"status_code\": \"\",\n      \"status_message\": \"broadcasted\",\n      \"tx_id\": \"b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b\",\n      \"created_at\": \"2026-07-07T12:00:00Z\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
             }
           ]
         },

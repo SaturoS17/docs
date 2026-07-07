@@ -4,8 +4,9 @@ description: "Send fiat to local bank accounts, debited from your USDT balance"
 ---
 
 A payout sends money in local currency to a bank account in the destination
-country. The amount converts from local currency to USDT at the current rate
-and `usdt_amount + fee` is debited from your balance.
+country. The amount converts from local currency to USDT at **your
+account's rate** (the one from `GET /v1/rates`) and `usdt_amount + fee`
+(the fixed fee, when configured) is debited from your balance.
 
 ## 1. Discover the available corridors
 
@@ -59,8 +60,8 @@ Response `202 Accepted`:
 
 ```json
 {
-  "payout_id": "0d4fâ€¦",
-  "account_id": "â€¦",
+  "payout_id": "0d4f…",
+  "account_id": "…",
   "idempotency_key": "invoice-8841",
   "country": "MX",
   "currency": "MXN",
@@ -84,8 +85,8 @@ Subscribe to the `payout_status_changed` event ([webhooks](/en/webhooks)):
 
 ```json
 {
-  "payout_id": "0d4fâ€¦",
-  "account_id": "â€¦",
+  "payout_id": "0d4f…",
+  "account_id": "…",
   "country": "MX",
   "currency": "MXN",
   "local_amount": "1500.00",
@@ -103,7 +104,7 @@ Subscribe to the `payout_status_changed` event ([webhooks](/en/webhooks)):
 You can also query at any time:
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/payouts/0d4fâ€¦ \
+curl https://exchange.qbank.cl/platform/v1/payouts/0d4f… \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -116,7 +117,7 @@ curl https://exchange.qbank.cl/platform/v1/payouts/0d4fâ€¦ \
 | 402 | `insufficient_funds` | Fund the account; the payout was not created |
 | 403 | `account_blocked` | The account is not active; contact the CBPay team |
 | 422 | `currency_not_supported` | No FX rate for that currency |
-| 422 | (payout with `status: failed`) | The corridor rejected the data; the debit was already refunded â€” fix `beneficiary` and retry with a new key |
+| 422 | (payout with `status: failed`) | The corridor rejected the data; the debit was already refunded — fix `beneficiary` and retry with a new key |
 
 ## Immediate rejection vs later failure
 

@@ -37,9 +37,10 @@ Cuando creas un payout o retiro, el débito (`monto + comisión`) sale de
 
 ## Conversión FX (fiat ↔ USDT)
 
-Las operaciones fiat se convierten a USDT con la tasa vigente del momento
-(`GET /v1/rates`, base USD). La conversión redondea **hacia arriba** en el
-débito, con una diferencia máxima de 1 micro-USDT.
+Las operaciones fiat se convierten a USDT con **la tasa de tu cuenta** al
+momento de ejecutar (la misma que devuelve `GET /v1/rates`, base USD). La
+conversión redondea **hacia arriba** en el débito, con una diferencia
+máxima de 1 micro-USDT.
 
 Ejemplo de un payout de 50.000 CLP con tasa 950.25:
 

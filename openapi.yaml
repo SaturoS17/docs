@@ -6,7 +6,7 @@ info:
 
     across Latin America, internal transfers, on-chain USDT funding and
 
-    withdrawals, and KYC screening â€” all against a single USDT-denominated
+    withdrawals, and KYC screening — all against a single USDT-denominated
 
     balance per account.
 
@@ -132,7 +132,7 @@ paths:
                   profile: &id002 {}
                   created_at: '2026-07-07T12:00:00Z'
                   updated_at: '2026-07-07T12:00:00Z'
-                access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9â€¦
+                access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…
                 expires_at: '2026-07-08T12:00:00Z'
         '400':
           $ref: '#/components/responses/BadRequest'
@@ -207,7 +207,7 @@ paths:
                     - operator
                     - viewer
               example:
-                access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9â€¦
+                access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…
                 expires_at: '2026-07-08T12:00:00Z'
                 account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
                 role: owner
@@ -481,12 +481,12 @@ paths:
                 movements:
                 - id: 0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0
                   asset: USDT
-                  amount: '-87.300001'
+                  amount: '-86.014286'
                   type: payout_debit
                   reference_type: payout
                   reference_id: 7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f
                   description: ''
-                  balance_after: '38.129999'
+                  balance_after: '39.415714'
                   created_at: '2026-07-07T12:00:00Z'
                 - id: 9a8b7c6d-5e4f-3a2b-1c0d-e9f8a7b6c5d4
                   asset: USDT
@@ -660,7 +660,7 @@ paths:
                 fx_rate: '17.50'
                 usdt_amount: '85.714286'
                 fee: '0.300000'
-                total_debit: '87.300001'
+                total_debit: '86.014286'
                 beneficiary: &id004
                   name: Maria Lopez
                   account_type: clabe
@@ -688,7 +688,7 @@ paths:
                 fx_rate: '17.50'
                 usdt_amount: '85.714286'
                 fee: '0.300000'
-                total_debit: '87.300001'
+                total_debit: '86.014286'
                 beneficiary: *id004
                 description: Invoice 8841
                 status: processing
@@ -713,7 +713,7 @@ paths:
         '422':
           description: 'No FX rate for the currency (`currency_not_supported`), or the
 
-            payout was rejected upfront â€” the response is the payout object
+            payout was rejected upfront — the response is the payout object
 
             with `status: failed` and the debit already refunded.
 
@@ -735,7 +735,7 @@ paths:
                 fx_rate: '17.50'
                 usdt_amount: '85.714286'
                 fee: '0.300000'
-                total_debit: '87.300001'
+                total_debit: '86.014286'
                 beneficiary: *id004
                 description: Invoice 8841
                 status: failed
@@ -819,7 +819,7 @@ paths:
                 fx_rate: '17.50'
                 usdt_amount: '85.714286'
                 fee: '0.300000'
-                total_debit: '87.300001'
+                total_debit: '86.014286'
                 beneficiary: *id004
                 description: Invoice 8841
                 status: completed
@@ -990,7 +990,7 @@ paths:
                 charge:
                   charge_id: c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4
                   our_reference: QR-778812
-                  qr_image: data:image/png;base64,iVBORw0KGgoâ€¦
+                  qr_image: data:image/png;base64,iVBORw0KGgo…
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':
@@ -1462,8 +1462,8 @@ paths:
                 deposits:
                 - asset: USDT
                   amount: '499.000000'
-                  reference: b1946ac9â€¦:0
-                  tx_id: b1946ac92492d2347c6235b4d26111â€¦
+                  reference: b1946ac9…:0
+                  tx_id: b1946ac92492d2347c6235b4d26111…
                   chain: tron
                   from_address: TNPeeaaFB7K9cmo4uQpcU32zGK8G1NYqeL
                   created_at: '2026-07-07T12:00:00Z'
@@ -2431,7 +2431,7 @@ webhooks:
               currency: MXN
               local_amount: '1500.00'
               usdt_amount: '85.714286'
-              total_debit: '87.300001'
+              total_debit: '86.014286'
               status: completed
               status_code: ''
       responses:

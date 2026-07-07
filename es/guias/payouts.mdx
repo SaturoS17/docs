@@ -3,25 +3,26 @@ title: "Payouts"
 description: "Dispersa fiat a cuentas bancarias locales debitando tu saldo USDT"
 ---
 
-Un payout envÃ­a dinero en moneda local a una cuenta bancaria del paÃ­s
-destino. El monto se convierte de moneda local a USDT con la tasa vigente y
-se debita `usdt_amount + fee` de tu saldo.
+Un payout envía dinero en moneda local a una cuenta bancaria del país
+destino. El monto se convierte de moneda local a USDT con **la tasa de tu
+cuenta** (la de `GET /v1/rates`) y se debita `usdt_amount + fee` (el fijo,
+si está configurado) de tu saldo.
 
 ## 1. Descubre los corredores disponibles
 
-Los paÃ­ses, monedas y mÃ©todos disponibles los define CBPay.
-ConsÃºltalos siempre por catÃ¡logo:
+Los países, monedas y métodos disponibles los define CBPay.
+Consúltalos siempre por catálogo:
 
 ```bash
 curl https://exchange.qbank.cl/platform/v1/payouts/methods \
   -H "Authorization: Bearer <token>"
 ```
 
-Corredores tÃ­picos: Chile (CLP), PerÃº (PEN), MÃ©xico (MXN), Venezuela (VES),
-Bolivia (BOB/USD) y Paraguay (PYG), con mÃ©todos como `bank_transfer` y
-variantes locales segÃºn el paÃ­s.
+Corredores típicos: Chile (CLP), Perú (PEN), México (MXN), Venezuela (VES),
+Bolivia (BOB/USD) y Paraguay (PYG), con métodos como `bank_transfer` y
+variantes locales según el país.
 
-Para transferencias bancarias necesitas ademÃ¡s el catÃ¡logo de bancos:
+Para transferencias bancarias necesitas además el catálogo de bancos:
 
 ```bash
 curl "https://exchange.qbank.cl/platform/v1/payouts/banks?country=CL" \
@@ -40,7 +41,7 @@ curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
     "method": "bank_transfer",
     "amount": "1500.00",
     "beneficiary": {
-      "name": "MarÃ­a LÃ³pez",
+      "name": "María López",
       "account_type": "clabe",
       "account_number": "012180001234567895"
     },
@@ -51,16 +52,16 @@ curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
 
 <Warning>
 `beneficiary` es un objeto de pares clave/valor cuyos campos requeridos
-dependen del corredor (RUT y banco en Chile, CLABE en MÃ©xico, CCI en PerÃº,
-etc.). El catÃ¡logo de mÃ©todos documenta los campos de cada uno.
+dependen del corredor (RUT y banco en Chile, CLABE en México, CCI en Perú,
+etc.). El catálogo de métodos documenta los campos de cada uno.
 </Warning>
 
 Respuesta `202 Accepted`:
 
 ```json
 {
-  "payout_id": "0d4fâ€¦",
-  "account_id": "â€¦",
+  "payout_id": "0d4f…",
+  "account_id": "…",
   "idempotency_key": "factura-8841",
   "country": "MX",
   "currency": "MXN",
@@ -75,17 +76,17 @@ Respuesta `202 Accepted`:
 }
 ```
 
-En ese momento tu saldo ya refleja el dÃ©bito: `total_debit` pasÃ³ de
+En ese momento tu saldo ya refleja el débito: `total_debit` pasó de
 `available` a `held`.
 
 ## 3. Recibe el estado final
 
-SuscrÃ­bete al evento `payout_status_changed` ([webhooks](/es/webhooks)):
+Suscríbete al evento `payout_status_changed` ([webhooks](/es/webhooks)):
 
 ```json
 {
-  "payout_id": "0d4fâ€¦",
-  "account_id": "â€¦",
+  "payout_id": "0d4f…",
+  "account_id": "…",
   "country": "MX",
   "currency": "MXN",
   "local_amount": "1500.00",
@@ -96,31 +97,31 @@ SuscrÃ­bete al evento `payout_status_changed` ([webhooks](/es/webhooks)):
 }
 ```
 
-- **`completed`**: el dinero llegÃ³; el hold se consume.
-- **`failed`**: se reembolsa el dÃ©bito completo automÃ¡ticamente
+- **`completed`**: el dinero llegó; el hold se consume.
+- **`failed`**: se reembolsa el débito completo automáticamente
   (`payout_refund` en tu ledger).
 
-TambiÃ©n puedes consultar en cualquier momento:
+También puedes consultar en cualquier momento:
 
 ```bash
-curl https://exchange.qbank.cl/platform/v1/payouts/0d4fâ€¦ \
+curl https://exchange.qbank.cl/platform/v1/payouts/0d4f… \
   -H "Authorization: Bearer <token>"
 ```
 
 ## Errores frecuentes
 
-| HTTP | `error` | QuÃ© hacer |
+| HTTP | `error` | Qué hacer |
 |---|---|---|
-| 400 | `idempotency_key_required` | EnvÃ­a la clave en body o header |
+| 400 | `idempotency_key_required` | Envía la clave en body o header |
 | 400 | `beneficiary_required` | Incluye el objeto `beneficiary` |
-| 402 | `insufficient_funds` | Fondea la cuenta; el payout no se creÃ³ |
-| 403 | `account_blocked` | La cuenta no estÃ¡ activa; contacta al equipo de CBPay |
+| 402 | `insufficient_funds` | Fondea la cuenta; el payout no se creó |
+| 403 | `account_blocked` | La cuenta no está activa; contacta al equipo de CBPay |
 | 422 | `currency_not_supported` | No hay tasa FX para esa moneda |
-| 422 | (payout con `status: failed`) | El corredor rechazÃ³ los datos; el dÃ©bito ya fue reembolsado â€” corrige `beneficiary` y reintenta con clave nueva |
+| 422 | (payout con `status: failed`) | El corredor rechazó los datos; el débito ya fue reembolsado — corrige `beneficiary` y reintenta con clave nueva |
 
 ## Rechazo inmediato vs fallo posterior
 
 Si el procesador rechaza el payout al crearlo, recibes `422` con el objeto
-en `status: failed` y el reembolso ya aplicado. Si falla despuÃ©s (por
+en `status: failed` y el reembolso ya aplicado. Si falla después (por
 ejemplo, cuenta destino inexistente detectada por el banco), te llega el
-webhook con `status: failed` y el reembolso automÃ¡tico en ese momento.
+webhook con `status: failed` y el reembolso automático en ese momento.
