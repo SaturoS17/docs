@@ -1,0 +1,39 @@
+---
+title: "Postman"
+description: "Colección lista para importar y probar toda la API"
+---
+
+Descarga la colección oficial de Postman de CBPay, generada desde la misma
+especificación OpenAPI de esta documentación: incluye los 25 endpoints con
+sus cuerpos de ejemplo y una respuesta guardada por operación.
+
+<Card title="CBPay API — Colección Postman" icon="download" href="/postman/cbpay-api.postman_collection.json">
+  Descargar `cbpay-api.postman_collection.json` (v2.1)
+</Card>
+
+## Cómo usarla
+
+<Steps>
+  <Step title="Importa la colección">
+    En Postman: **Import** → arrastra el archivo descargado.
+  </Step>
+  <Step title="Configura tus variables">
+    La colección trae dos variables:
+
+    | Variable | Valor |
+    |---|---|
+    | `baseUrl` | `https://exchange.qbank.cl/platform` (ya configurada) |
+    | `token` | Tu JWT de sesión o API key `pk_...` |
+  </Step>
+  <Step title="Prueba">
+    Todas las requests heredan la autenticación Bearer con `{{token}}`.
+    Empieza por `GET /v1/me` para validar tu credencial y `GET /v1/balances`
+    para ver tu saldo.
+  </Step>
+</Steps>
+
+<Note>
+La colección se regenera con cada versión de la API — descárgala de nuevo
+después de cada entrada del [changelog](/es/changelog) para tener los
+últimos endpoints.
+</Note>
