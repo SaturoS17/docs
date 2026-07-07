@@ -68,17 +68,12 @@ un hash — si lo pierdes, emite una key nueva.
 </Tab>
 </Tabs>
 
-## Niveles de acceso
+## Nivel de acceso
 
-| Nivel | Credencial | Qué puede hacer |
-|---|---|---|
-| **Cuenta** | JWT de sesión o API key de cuenta | Operar su propia cuenta: saldos, payouts, payins, transferencias, crypto, KYC, webhooks propios |
-| **Admin de organización** | API key de organización | Administrar todas las cuentas de la organización: crearlas, configurar comisiones, ajustes, revenue, asignar payins |
-
-Los endpoints de administración están en la pestaña
-[Admin](/es/admin/introduccion). Si llamas un endpoint de cuenta con una
-credencial admin recibirás `403 account_required`, y viceversa `403
-org_admin_required`.
+Tu credencial (JWT de sesión o API key) opera **tu propia cuenta**: saldos,
+payouts, payins, transferencias, crypto, KYC y webhooks propios. Si un
+endpoint responde `403 account_required` u `403 org_admin_required`, esa
+operación corresponde a otro nivel de credencial — contacta a tu operador.
 
 ## Buenas prácticas
 

@@ -1,69 +1,78 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "1.0"
-  description: |
-    CBPay is a multi-currency payment platform: fiat payouts and collections
+  version: '1.0'
+  description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
+
     across Latin America, internal transfers, on-chain USDT funding and
+
     withdrawals, and KYC screening — all against a single USDT-denominated
+
     balance per account.
 
-    All amounts are decimal strings. Balances are held in USDT with 6 decimal
-    places. Errors always return `{"error": "<code>", "message": "<detail>"}`.
-servers:
-  - url: https://exchange.qbank.cl/platform
-security:
-  - bearerAuth: []
-tags:
-  - name: Authentication
-    description: Register and log in account members. Sessions last 24 hours.
-  - name: Account
-    description: Profile, members and API keys of the calling account.
-  - name: Balances
-    description: Balances, movement history and FX rates.
-  - name: Payouts
-    description: Fiat dispersals debited from the USDT balance.
-  - name: Payins
-    description: Fiat top-ups credited to the USDT balance.
-  - name: Transfers
-    description: Free internal transfers between accounts of the same organization.
-  - name: Crypto
-    description: On-chain USDT funding and withdrawals (TRON and Ethereum).
-  - name: KYC
-    description: Compliance screening of persons and companies.
-  - name: Webhooks
-    description: Subscriptions to receive signed event notifications.
-  - name: Admin - Accounts
-    description: Organization admin — manage client accounts.
-  - name: Admin - Fees
-    description: Organization admin — fee configuration per service and country.
-  - name: Admin - Operations
-    description: Organization admin — adjustments, revenue and payin assignment.
 
+    All amounts are decimal strings. Balances are held in USDT with 6 decimal
+
+    places. Errors always return `{"error": "<code>", "message": "<detail>"}`.
+
+    '
+servers:
+- url: https://exchange.qbank.cl/platform
+security:
+- bearerAuth: []
+tags:
+- name: Authentication
+  description: Register and log in account members. Sessions last 24 hours.
+- name: Account
+  description: Profile, members and API keys of the calling account.
+- name: Balances
+  description: Balances, movement history and FX rates.
+- name: Payouts
+  description: Fiat dispersals debited from the USDT balance.
+- name: Payins
+  description: Fiat top-ups credited to the USDT balance.
+- name: Transfers
+  description: Free internal transfers between accounts of the same organization.
+- name: Crypto
+  description: On-chain USDT funding and withdrawals (TRON and Ethereum).
+- name: KYC
+  description: Compliance screening of persons and companies.
+- name: Webhooks
+  description: Subscriptions to receive signed event notifications.
 paths:
   /v1/auth/register:
     post:
-      tags: [Authentication]
+      tags:
+      - Authentication
       security: []
       operationId: register
       summary: Register an account
-      description: |
-        Creates a person or company account with its owner login member and
+      description: 'Creates a person or company account with its owner login member and
+
         returns a session token. One endpoint for both types: `type` is data.
+
+        '
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [org, type, email, password, display_name]
+              required:
+              - org
+              - type
+              - email
+              - password
+              - display_name
               properties:
                 org:
                   type: string
                   description: Organization slug provided by your operator (e.g. `cbpay`).
                 type:
                   type: string
-                  enum: [person, company]
+                  enum:
+                  - person
+                  - company
                 email:
                   type: string
                   format: email
@@ -83,7 +92,7 @@ paths:
                   type: object
                   description: Free-form profile data.
       responses:
-        "201":
+        '201':
           description: Account created.
           content:
             application/json:
@@ -91,31 +100,31 @@ paths:
                 type: object
                 properties:
                   account:
-                    $ref: "#/components/schemas/Account"
+                    $ref: '#/components/schemas/Account'
                   access_token:
                     type: string
                     description: Session JWT, valid for 24 hours.
                   expires_at:
                     type: string
                     format: date-time
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "403":
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
           description: Organization suspended (`org_suspended`).
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "409":
+                $ref: '#/components/schemas/Error'
+        '409':
           description: An account with that email already exists (`duplicate`).
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-
+                $ref: '#/components/schemas/Error'
   /v1/auth/login:
     post:
-      tags: [Authentication]
+      tags:
+      - Authentication
       security: []
       operationId: login
       summary: Log in
@@ -125,7 +134,10 @@ paths:
           application/json:
             schema:
               type: object
-              required: [org, email, password]
+              required:
+              - org
+              - email
+              - password
               properties:
                 org:
                   type: string
@@ -136,7 +148,7 @@ paths:
                 password:
                   type: string
       responses:
-        "200":
+        '200':
           description: Session issued.
           content:
             application/json:
@@ -153,30 +165,34 @@ paths:
                     format: uuid
                   role:
                     type: string
-                    enum: [owner, operator, viewer]
-        "401":
+                    enum:
+                    - owner
+                    - operator
+                    - viewer
+        '401':
           description: Email or password is incorrect (`invalid_credentials`).
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-
+                $ref: '#/components/schemas/Error'
   /v1/me:
     get:
-      tags: [Account]
+      tags:
+      - Account
       operationId: getMe
       summary: Get my account
       responses:
-        "200":
+        '200':
           description: The calling account.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Account"
-        "403":
-          $ref: "#/components/responses/AccountRequired"
+                $ref: '#/components/schemas/Account'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
     patch:
-      tags: [Account]
+      tags:
+      - Account
       operationId: updateMe
       summary: Update my profile
       requestBody:
@@ -195,23 +211,23 @@ paths:
                 country:
                   type: string
       responses:
-        "200":
+        '200':
           description: Updated account.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Account"
-        "403":
-          $ref: "#/components/responses/AccountRequired"
-
+                $ref: '#/components/schemas/Account'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
   /v1/members:
     get:
-      tags: [Account]
+      tags:
+      - Account
       operationId: listMembers
       summary: List members
       description: Login members of the calling account (company accounts).
       responses:
-        "200":
+        '200':
           description: Members.
           content:
             application/json:
@@ -221,11 +237,12 @@ paths:
                   members:
                     type: array
                     items:
-                      $ref: "#/components/schemas/Member"
-        "403":
-          $ref: "#/components/responses/AccountRequired"
+                      $ref: '#/components/schemas/Member'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
     post:
-      tags: [Account]
+      tags:
+      - Account
       operationId: addMember
       summary: Add a member
       description: Adds a login member. Only available for company accounts.
@@ -235,7 +252,9 @@ paths:
           application/json:
             schema:
               type: object
-              required: [email, password]
+              required:
+              - email
+              - password
               properties:
                 email:
                   type: string
@@ -245,31 +264,37 @@ paths:
                   minLength: 8
                 role:
                   type: string
-                  enum: [owner, operator, viewer]
+                  enum:
+                  - owner
+                  - operator
+                  - viewer
                   default: operator
       responses:
-        "201":
+        '201':
           description: Member created.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Member"
-        "403":
+                $ref: '#/components/schemas/Member'
+        '403':
           description: Not a company account (`company_only`) or missing account credential.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-
+                $ref: '#/components/schemas/Error'
   /v1/api-keys:
     post:
-      tags: [Account]
+      tags:
+      - Account
       operationId: createApiKey
       summary: Create an API key
-      description: |
-        Issues a server-to-server API key bound to the calling account. The
+      description: 'Issues a server-to-server API key bound to the calling account. The
+
         plaintext token (`pk_...`) is returned exactly once and cannot be
+
         retrieved again.
+
+        '
       requestBody:
         required: true
         content:
@@ -280,70 +305,83 @@ paths:
                 label:
                   type: string
       responses:
-        "201":
+        '201':
           description: Key issued.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiKeyIssued"
-        "403":
-          $ref: "#/components/responses/AccountRequired"
-
+                $ref: '#/components/schemas/ApiKeyIssued'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
   /v1/balances:
     get:
-      tags: [Balances]
+      tags:
+      - Balances
       operationId: getBalances
       summary: Get balances
       responses:
-        "200":
+        '200':
           description: Balances of the calling account.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BalancesResponse"
-        "403":
-          $ref: "#/components/responses/AccountRequired"
-
+                $ref: '#/components/schemas/BalancesResponse'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
   /v1/movements:
     get:
-      tags: [Balances]
+      tags:
+      - Balances
       operationId: listMovements
       summary: List movements
       description: Immutable ledger history of the calling account.
       parameters:
-        - $ref: "#/components/parameters/page"
-        - $ref: "#/components/parameters/pageSize"
-        - name: asset
-          in: query
-          schema:
-            type: string
-            example: USDT
-        - name: type
-          in: query
-          description: Filter by ledger entry type.
-          schema:
-            type: string
-            enum: [payout_debit, payout_refund, payin_credit, adjustment, transfer_in, transfer_out, funding, withdrawal_debit, withdrawal_refund, compliance_fee, compliance_refund]
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/pageSize'
+      - name: asset
+        in: query
+        schema:
+          type: string
+          example: USDT
+      - name: type
+        in: query
+        description: Filter by ledger entry type.
+        schema:
+          type: string
+          enum:
+          - payout_debit
+          - payout_refund
+          - payin_credit
+          - adjustment
+          - transfer_in
+          - transfer_out
+          - funding
+          - withdrawal_debit
+          - withdrawal_refund
+          - compliance_fee
+          - compliance_refund
       responses:
-        "200":
+        '200':
           description: Paged movements.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MovementsResponse"
-        "403":
-          $ref: "#/components/responses/AccountRequired"
-
+                $ref: '#/components/schemas/MovementsResponse'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
   /v1/rates:
     get:
-      tags: [Balances]
+      tags:
+      - Balances
       operationId: getRates
       summary: Get FX rates and my fees
-      description: |
-        USD/local reference rates plus the effective fee configuration of the
+      description: 'USD/local reference rates plus the effective fee configuration of the
+
         calling account, so clients can compute net prices before operating.
+
+        '
       responses:
-        "200":
+        '200':
           description: Rates and fees.
           content:
             application/json:
@@ -363,44 +401,54 @@ paths:
                           example: CLP
                         rate:
                           type: string
-                          example: "950.123456"
+                          example: '950.123456'
                   updated_at:
                     type: string
                   fees:
                     type: array
                     items:
-                      $ref: "#/components/schemas/FeeConfig"
-        "403":
-          $ref: "#/components/responses/AccountRequired"
-        "502":
+                      $ref: '#/components/schemas/FeeConfig'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+        '502':
           description: FX rates temporarily unavailable (`rates_unavailable`).
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-
+                $ref: '#/components/schemas/Error'
   /v1/payouts:
     post:
-      tags: [Payouts]
+      tags:
+      - Payouts
       operationId: createPayout
       summary: Create a payout
-      description: |
-        Disperses fiat to a local bank account. The local amount is converted
+      description: 'Disperses fiat to a local bank account. The local amount is converted
+
         to USDT at the current rate; `usdt_amount + fee` is debited and held
+
         until the dispersal completes. If it fails, the full debit is refunded.
 
+
         Requires an idempotency key (body field or `Idempotency-Key` header).
+
         Retrying with the same key returns the original payout (`200` with
+
         `idempotency_hit: true`).
+
+        '
       parameters:
-        - $ref: "#/components/parameters/idempotencyKeyHeader"
+      - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [country, currency, amount, beneficiary]
+              required:
+              - country
+              - currency
+              - amount
+              - beneficiary
               properties:
                 country:
                   type: string
@@ -414,76 +462,79 @@ paths:
                 amount:
                   type: string
                   description: Local currency amount as a positive decimal string.
-                  example: "50000.00"
+                  example: '50000.00'
                 beneficiary:
                   type: object
                   additionalProperties:
                     type: string
-                  description: |
-                    Destination account details. Required keys depend on the
+                  description: 'Destination account details. Required keys depend on the
+
                     country and method; see `GET /v1/payouts/methods` and
+
                     `GET /v1/payouts/banks`.
+
+                    '
                 description:
                   type: string
                 idempotency_key:
                   type: string
       responses:
-        "202":
+        '202':
           description: Payout accepted and dispatching.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Payout"
-        "200":
+                $ref: '#/components/schemas/Payout'
+        '200':
           description: Idempotency replay of an existing payout.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Payout"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "402":
-          $ref: "#/components/responses/InsufficientFunds"
-        "403":
+                $ref: '#/components/schemas/Payout'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '402':
+          $ref: '#/components/responses/InsufficientFunds'
+        '403':
           description: Account not active (`account_blocked`) or missing account credential.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "422":
-          description: |
-            No FX rate for the currency (`currency_not_supported`), or the
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 'No FX rate for the currency (`currency_not_supported`), or the
+
             payout was rejected upfront — the response is the payout object
+
             with `status: failed` and the debit already refunded.
+
+            '
           content:
             application/json:
               schema:
                 oneOf:
-                  - $ref: "#/components/schemas/Error"
-                  - $ref: "#/components/schemas/Payout"
+                - $ref: '#/components/schemas/Error'
+                - $ref: '#/components/schemas/Payout'
     get:
-      tags: [Payouts]
+      tags:
+      - Payouts
       operationId: listPayouts
       summary: List payouts
-      description: |
-        Accounts see their own payouts. Organization admins see the whole
-        organization and can filter with `account_id`.
+      description: Returns the payouts of the calling account.
       parameters:
-        - $ref: "#/components/parameters/page"
-        - $ref: "#/components/parameters/pageSize"
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum: [pending, processing, completed, failed]
-        - name: account_id
-          in: query
-          description: Organization admin only.
-          schema:
-            type: string
-            format: uuid
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/pageSize'
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - pending
+          - processing
+          - completed
+          - failed
       responses:
-        "200":
+        '200':
           description: Paged payouts.
           content:
             application/json:
@@ -497,89 +548,98 @@ paths:
                   payouts:
                     type: array
                     items:
-                      $ref: "#/components/schemas/Payout"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-
+                      $ref: '#/components/schemas/Payout'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /v1/payouts/{payoutID}:
     get:
-      tags: [Payouts]
+      tags:
+      - Payouts
       operationId: getPayout
       summary: Get a payout
       parameters:
-        - name: payoutID
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: payoutID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
-        "200":
+        '200':
           description: The payout.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Payout"
-        "404":
-          $ref: "#/components/responses/NotFound"
-
+                $ref: '#/components/schemas/Payout'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/payouts/methods:
     get:
-      tags: [Payouts]
+      tags:
+      - Payouts
       operationId: getPayoutMethods
       summary: List payout methods
-      description: |
-        Available payout corridors (country, currency, method) for your
+      description: 'Available payout corridors (country, currency, method) for your
+
         organization. Pass-through of the processing core catalog.
+
+        '
       responses:
-        "200":
+        '200':
           description: Methods catalog.
           content:
             application/json:
               schema:
                 type: object
                 description: Catalog of available corridors.
-        "403":
-          $ref: "#/components/responses/Forbidden"
-
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /v1/payouts/banks:
     get:
-      tags: [Payouts]
+      tags:
+      - Payouts
       operationId: getPayoutBanks
       summary: List destination banks
       parameters:
-        - name: country
-          in: query
-          schema:
-            type: string
-            example: CL
+      - name: country
+        in: query
+        schema:
+          type: string
+          example: CL
       responses:
-        "200":
+        '200':
           description: Banks catalog for the country.
           content:
             application/json:
               schema:
                 type: object
-        "403":
-          $ref: "#/components/responses/Forbidden"
-
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /v1/payins:
     post:
-      tags: [Payins]
+      tags:
+      - Payins
       operationId: createPayin
       summary: Create a payin (top-up charge)
-      description: |
-        Creates an active fiat charge (e.g. a QR) through the processing core.
+      description: 'Creates an active fiat charge (e.g. a QR) through the processing core.
+
         When the payment arrives, the account is credited automatically in
+
         USDT (gross at FX rate, minus the payin fee) and the
+
         `payin_credited` webhook fires.
+
+        '
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [country, currency, amount]
+              required:
+              - country
+              - currency
+              - amount
               properties:
                 country:
                   type: string
@@ -599,7 +659,7 @@ paths:
                   type: integer
                   description: Charge expiration in seconds.
       responses:
-        "201":
+        '201':
           description: Charge created.
           content:
             application/json:
@@ -615,42 +675,42 @@ paths:
                   charge:
                     type: object
                     description: Charge details (QR data, references) from the core.
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "403":
-          $ref: "#/components/responses/AccountRequired"
-        "422":
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+        '422':
           description: The core rejected the charge (`core_rejected`).
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "502":
+                $ref: '#/components/schemas/Error'
+        '502':
           description: Core unavailable (`core_unavailable`).
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
     get:
-      tags: [Payins]
+      tags:
+      - Payins
       operationId: listPayins
       summary: List payins
       parameters:
-        - $ref: "#/components/parameters/page"
-        - $ref: "#/components/parameters/pageSize"
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum: [pending, credited, unassigned, expired, failed]
-        - name: account_id
-          in: query
-          description: Organization admin only.
-          schema:
-            type: string
-            format: uuid
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/pageSize'
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - pending
+          - credited
+          - unassigned
+          - expired
+          - failed
       responses:
-        "200":
+        '200':
           description: Paged payins.
           content:
             application/json:
@@ -664,66 +724,71 @@ paths:
                   payins:
                     type: array
                     items:
-                      $ref: "#/components/schemas/Payin"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-
+                      $ref: '#/components/schemas/Payin'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /v1/payins/{payinID}:
     get:
-      tags: [Payins]
+      tags:
+      - Payins
       operationId: getPayin
       summary: Get a payin
       parameters:
-        - name: payinID
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: payinID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
-        "200":
+        '200':
           description: The payin.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Payin"
-        "404":
-          $ref: "#/components/responses/NotFound"
-
+                $ref: '#/components/schemas/Payin'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/payins/methods:
     get:
-      tags: [Payins]
+      tags:
+      - Payins
       operationId: getPayinMethods
       summary: List payin methods
       responses:
-        "200":
+        '200':
           description: Catalog of available payin corridors.
           content:
             application/json:
               schema:
                 type: object
-        "403":
-          $ref: "#/components/responses/Forbidden"
-
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /v1/transfers:
     post:
-      tags: [Transfers]
+      tags:
+      - Transfers
       operationId: createTransfer
       summary: Create an internal transfer
-      description: |
-        Moves USDT between two accounts of the same organization, atomically
+      description: 'Moves USDT between two accounts of the same organization, atomically
+
         and free of charge. The destination is resolved by `to_account_id` or
-        `to_email`. The recipient's webhook subscribers receive
+
+        `to_email`. The recipient''s webhook subscribers receive
+
         `transfer_received`.
+
+        '
       parameters:
-        - $ref: "#/components/parameters/idempotencyKeyHeader"
+      - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [amount]
+              required:
+              - amount
               properties:
                 to_account_id:
                   type: string
@@ -737,102 +802,116 @@ paths:
                 amount:
                   type: string
                   description: Positive decimal string, up to 6 decimal places.
-                  example: "10.500000"
+                  example: '10.500000'
                 description:
                   type: string
                 idempotency_key:
                   type: string
       responses:
-        "201":
+        '201':
           description: Transfer completed.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Transfer"
-        "200":
+                $ref: '#/components/schemas/Transfer'
+        '200':
           description: Idempotency replay.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Transfer"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "402":
-          $ref: "#/components/responses/InsufficientFunds"
-        "404":
+                $ref: '#/components/schemas/Transfer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '402':
+          $ref: '#/components/responses/InsufficientFunds'
+        '404':
           description: Destination not found (`recipient_not_found`).
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "422":
+                $ref: '#/components/schemas/Error'
+        '422':
           description: Destination cannot receive transfers (`recipient_unavailable`).
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-
+                $ref: '#/components/schemas/Error'
   /v1/crypto/deposit-address:
     get:
-      tags: [Crypto]
+      tags:
+      - Crypto
       operationId: getDepositAddress
       summary: Get my deposit address
-      description: |
-        Returns (creating on first call) the on-chain USDT deposit address of
+      description: 'Returns (creating on first call) the on-chain USDT deposit address of
+
         the calling account. Confirmed deposits credit the balance
+
         automatically, minus the funding fee.
+
+        '
       parameters:
-        - name: chain
-          in: query
-          schema:
-            type: string
-            enum: [tron, eth]
-            default: tron
-        - name: asset
-          in: query
-          schema:
-            type: string
-            enum: [usdt]
-            default: usdt
+      - name: chain
+        in: query
+        schema:
+          type: string
+          enum:
+          - tron
+          - eth
+          default: tron
+      - name: asset
+        in: query
+        schema:
+          type: string
+          enum:
+          - usdt
+          default: usdt
       responses:
-        "200":
+        '200':
           description: Existing address.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DepositAddress"
-        "201":
+                $ref: '#/components/schemas/DepositAddress'
+        '201':
           description: Address created.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DepositAddress"
-        "403":
-          $ref: "#/components/responses/AccountRequired"
-
+                $ref: '#/components/schemas/DepositAddress'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
   /v1/crypto/withdrawals:
     post:
-      tags: [Crypto]
+      tags:
+      - Crypto
       operationId: createCryptoWithdrawal
       summary: Create an on-chain withdrawal
-      description: |
-        Sends USDT on-chain. `amount + withdrawal fee` is debited atomically
+      description: 'Sends USDT on-chain. `amount + withdrawal fee` is debited atomically
+
         and held; final state arrives via the
+
         `crypto_withdrawal_status_changed` webhook. `failed` refunds the full
+
         debit.
+
+        '
       parameters:
-        - $ref: "#/components/parameters/idempotencyKeyHeader"
+      - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [to_address, amount]
+              required:
+              - to_address
+              - amount
               properties:
                 chain:
                   type: string
-                  enum: [tron, eth]
+                  enum:
+                  - tron
+                  - eth
                   default: tron
                 asset:
                   type: string
@@ -845,68 +924,68 @@ paths:
                 idempotency_key:
                   type: string
       responses:
-        "202":
+        '202':
           description: Withdrawal accepted and broadcasting.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CryptoWithdrawal"
-        "200":
+                $ref: '#/components/schemas/CryptoWithdrawal'
+        '200':
           description: Idempotency replay.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CryptoWithdrawal"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "402":
-          $ref: "#/components/responses/InsufficientFunds"
-        "422":
+                $ref: '#/components/schemas/CryptoWithdrawal'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '402':
+          $ref: '#/components/responses/InsufficientFunds'
+        '422':
           description: The core rejected the withdrawal; the debit was refunded.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CryptoWithdrawal"
-        "503":
+                $ref: '#/components/schemas/CryptoWithdrawal'
+        '503':
           description: Withdrawals not enabled for this corridor (`withdrawals_unavailable`).
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-
+                $ref: '#/components/schemas/Error'
   /v1/crypto/withdrawals/{withdrawalID}:
     get:
-      tags: [Crypto]
+      tags:
+      - Crypto
       operationId: getCryptoWithdrawal
       summary: Get a withdrawal
       parameters:
-        - name: withdrawalID
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: withdrawalID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
-        "200":
+        '200':
           description: The withdrawal.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CryptoWithdrawal"
-        "404":
-          $ref: "#/components/responses/NotFound"
-
+                $ref: '#/components/schemas/CryptoWithdrawal'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/crypto/transactions:
     get:
-      tags: [Crypto]
+      tags:
+      - Crypto
       operationId: listCryptoTransactions
       summary: List on-chain activity
       description: Funding credits and withdrawals of the calling account.
       parameters:
-        - $ref: "#/components/parameters/page"
-        - $ref: "#/components/parameters/pageSize"
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/pageSize'
       responses:
-        "200":
+        '200':
           description: Deposits and withdrawals.
           content:
             application/json:
@@ -941,21 +1020,26 @@ paths:
                   withdrawals:
                     type: array
                     items:
-                      $ref: "#/components/schemas/CryptoWithdrawal"
-        "403":
-          $ref: "#/components/responses/AccountRequired"
-
+                      $ref: '#/components/schemas/CryptoWithdrawal'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
   /v1/kyc:
     post:
-      tags: [KYC]
+      tags:
+      - KYC
       operationId: submitKyc
       summary: Submit KYC screening
-      description: |
-        Screens the calling account (person or company, detected from the
+      description: 'Screens the calling account (person or company, detected from the
+
         payload) against the compliance service. If a compliance fee is
+
         configured, it is debited before the call and refunded if the
+
         screening fails. The response includes the screening result plus
+
         `kyc_status`, `compliance_service` and `compliance_fee`.
+
+        '
       requestBody:
         required: true
         content:
@@ -965,9 +1049,11 @@ paths:
               properties:
                 customer:
                   type: object
-                  description: |
-                    Identity data. Provide `person` or `company`; when omitted
+                  description: 'Identity data. Provide `person` or `company`; when omitted
+
                     it is filled from the account profile.
+
+                    '
                   properties:
                     person:
                       type: object
@@ -988,7 +1074,7 @@ paths:
                   default: false
                   description: Enable continuous monitoring from the start.
       responses:
-        "201":
+        '201':
           description: Screening submitted; account KYC status set to `pending`.
           content:
             application/json:
@@ -1001,32 +1087,37 @@ paths:
                     example: pending
                   compliance_service:
                     type: string
-                    enum: [compliance_person, compliance_company]
+                    enum:
+                    - compliance_person
+                    - compliance_company
                   compliance_fee:
                     type: string
-                    example: "0.000000"
-        "402":
-          $ref: "#/components/responses/InsufficientFunds"
-        "403":
-          $ref: "#/components/responses/AccountRequired"
-        "502":
+                    example: '0.000000'
+        '402':
+          $ref: '#/components/responses/InsufficientFunds'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+        '502':
           description: Screening temporarily unavailable (`compliance_unavailable`).
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-
+                $ref: '#/components/schemas/Error'
   /v1/kyc/rescreen:
     post:
-      tags: [KYC]
+      tags:
+      - KYC
       operationId: rescreenKyc
       summary: Re-run KYC screening
-      description: |
-        Re-runs the account's screening. Requires a prior KYC submission.
+      description: 'Re-runs the account''s screening. Requires a prior KYC submission.
+
         Bills the `compliance_rescreen` fee if configured; refunded on
+
         upstream failure.
+
+        '
       responses:
-        "200":
+        '200':
           description: Rescreen result plus billing fields.
           content:
             application/json:
@@ -1038,36 +1129,40 @@ paths:
                     example: compliance_rescreen
                   compliance_fee:
                     type: string
-        "402":
-          $ref: "#/components/responses/InsufficientFunds"
-        "409":
+        '402':
+          $ref: '#/components/responses/InsufficientFunds'
+        '409':
           description: Account has no prior screening (`no_kyc`).
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-
+                $ref: '#/components/schemas/Error'
   /v1/kyc/monitoring:
     patch:
-      tags: [KYC]
+      tags:
+      - KYC
       operationId: setKycMonitoring
       summary: Enable or disable monitoring
-      description: |
-        Toggles continuous compliance monitoring for the account's screened
+      description: 'Toggles continuous compliance monitoring for the account''s screened
+
         identity. Enabling bills the `compliance_monitoring` fee if
+
         configured; disabling is free. Requires a prior KYC submission.
+
+        '
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [enabled]
+              required:
+              - enabled
               properties:
                 enabled:
                   type: boolean
       responses:
-        "200":
+        '200':
           description: Monitoring state plus billing fields.
           content:
             application/json:
@@ -1081,39 +1176,47 @@ paths:
                     example: compliance_monitoring
                   compliance_fee:
                     type: string
-        "402":
-          $ref: "#/components/responses/InsufficientFunds"
-        "409":
+        '402':
+          $ref: '#/components/responses/InsufficientFunds'
+        '409':
           description: Account has no prior screening (`no_kyc`).
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-
+                $ref: '#/components/schemas/Error'
   /v1/webhooks/subscriptions:
     post:
-      tags: [Webhooks]
+      tags:
+      - Webhooks
       operationId: createWebhookSubscription
       summary: Create a webhook subscription
-      description: |
-        Subscribes an HTTPS callback to platform events. Account credentials
-        subscribe to their own account's events; organization admin keys
-        subscribe to events of the whole organization.
+      description: 'Subscribes an HTTPS callback to the calling account''s events.
 
-        Deliveries are signed: `X-Webhook-Signature =
-        hex(HMAC-SHA256(secret, timestamp + "." + body))` with the timestamp
-        in `X-Webhook-Timestamp`. Up to 5 attempts with incremental backoff.
+
+        Deliveries are signed: `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`
+        with the timestamp in `X-Webhook-Timestamp`. Up to 5 attempts with incremental backoff.
+
+        '
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [event_type, callback_url, secret]
+              required:
+              - event_type
+              - callback_url
+              - secret
               properties:
                 event_type:
                   type: string
-                  enum: [payin_credited, payout_status_changed, transfer_received, crypto_deposit_credited, crypto_withdrawal_status_changed, "*"]
+                  enum:
+                  - payin_credited
+                  - payout_status_changed
+                  - transfer_received
+                  - crypto_deposit_credited
+                  - crypto_withdrawal_status_changed
+                  - '*'
                 callback_url:
                   type: string
                   format: uri
@@ -1122,7 +1225,7 @@ paths:
                   type: string
                   minLength: 16
       responses:
-        "201":
+        '201':
           description: Subscription created.
           content:
             application/json:
@@ -1144,409 +1247,20 @@ paths:
                     format: date-time
                   secret_stored:
                     type: boolean
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-
-  /v1/accounts:
-    post:
-      tags: [Admin - Accounts]
-      operationId: adminCreateAccount
-      summary: Create an account
-      description: |
-        Organization admin: creates a client account. If `password` is
-        omitted, the account is API-only (an unguessable random password is
-        set) — issue it an API key with
-        `POST /v1/accounts/{accountID}/api-keys`.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [type, email]
-              properties:
-                type:
-                  type: string
-                  enum: [person, company]
-                email:
-                  type: string
-                  format: email
-                password:
-                  type: string
-                display_name:
-                  type: string
-                tax_id:
-                  type: string
-                phone:
-                  type: string
-                country:
-                  type: string
-                profile:
-                  type: object
-      responses:
-        "201":
-          description: Account created.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Account"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "403":
-          $ref: "#/components/responses/OrgAdminRequired"
-    get:
-      tags: [Admin - Accounts]
-      operationId: adminListAccounts
-      summary: List accounts
-      parameters:
-        - $ref: "#/components/parameters/page"
-        - $ref: "#/components/parameters/pageSize"
-      responses:
-        "200":
-          description: Paged accounts.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  page:
-                    type: integer
-                  page_size:
-                    type: integer
-                  accounts:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Account"
-        "403":
-          $ref: "#/components/responses/OrgAdminRequired"
-
-  /v1/accounts/{accountID}:
-    get:
-      tags: [Admin - Accounts]
-      operationId: adminGetAccount
-      summary: Get an account
-      parameters:
-        - $ref: "#/components/parameters/accountID"
-      responses:
-        "200":
-          description: The account.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Account"
-        "404":
-          $ref: "#/components/responses/NotFound"
-    patch:
-      tags: [Admin - Accounts]
-      operationId: adminUpdateAccount
-      summary: Update an account
-      description: Update profile fields, `status` (active/blocked/closed) or `kyc_status`.
-      parameters:
-        - $ref: "#/components/parameters/accountID"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                display_name:
-                  type: string
-                tax_id:
-                  type: string
-                phone:
-                  type: string
-                country:
-                  type: string
-                status:
-                  type: string
-                  enum: [active, blocked, closed]
-                kyc_status:
-                  type: string
-                  enum: [none, pending, approved, rejected]
-      responses:
-        "200":
-          description: Updated account.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Account"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-
-  /v1/accounts/{accountID}/balances:
-    get:
-      tags: [Admin - Accounts]
-      operationId: adminGetAccountBalances
-      summary: Get an account's balances
-      parameters:
-        - $ref: "#/components/parameters/accountID"
-      responses:
-        "200":
-          description: Balances.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BalancesResponse"
-        "403":
-          $ref: "#/components/responses/OrgAdminRequired"
-
-  /v1/accounts/{accountID}/movements:
-    get:
-      tags: [Admin - Accounts]
-      operationId: adminGetAccountMovements
-      summary: Get an account's movements
-      parameters:
-        - $ref: "#/components/parameters/accountID"
-        - $ref: "#/components/parameters/page"
-        - $ref: "#/components/parameters/pageSize"
-      responses:
-        "200":
-          description: Paged movements.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/MovementsResponse"
-        "403":
-          $ref: "#/components/responses/OrgAdminRequired"
-
-  /v1/accounts/{accountID}/api-keys:
-    post:
-      tags: [Admin - Accounts]
-      operationId: adminCreateAccountApiKey
-      summary: Issue an API key for an account
-      description: For API-first end clients without a front-end login.
-      parameters:
-        - $ref: "#/components/parameters/accountID"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                label:
-                  type: string
-      responses:
-        "201":
-          description: Key issued (plaintext returned exactly once).
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiKeyIssued"
-        "404":
-          $ref: "#/components/responses/NotFound"
-
-  /v1/accounts/{accountID}/fees:
-    get:
-      tags: [Admin - Fees]
-      operationId: adminGetAccountFees
-      summary: Get an account's fee overrides
-      parameters:
-        - $ref: "#/components/parameters/accountID"
-      responses:
-        "200":
-          description: Fee overrides for the account.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  fees:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/FeeConfig"
-        "403":
-          $ref: "#/components/responses/OrgAdminRequired"
-    put:
-      tags: [Admin - Fees]
-      operationId: adminPutAccountFees
-      summary: Set a fee override for an account
-      description: |
-        Overrides the organization default for one (service, country, asset)
-        combination. Account override beats org default; country-specific
-        beats country-less.
-      parameters:
-        - $ref: "#/components/parameters/accountID"
-      requestBody:
-        $ref: "#/components/requestBodies/FeeUpsert"
-      responses:
-        "200":
-          description: Upserted fee.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/FeeConfig"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-
-  /v1/org/fees:
-    get:
-      tags: [Admin - Fees]
-      operationId: adminGetOrgFees
-      summary: Get organization fee defaults
-      responses:
-        "200":
-          description: Organization fee defaults.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  fees:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/FeeConfig"
-        "403":
-          $ref: "#/components/responses/OrgAdminRequired"
-    put:
-      tags: [Admin - Fees]
-      operationId: adminPutOrgFees
-      summary: Set an organization fee default
-      description: |
-        Default fee applied to every account of the organization (unless an
-        account override exists) for one (service, country, asset)
-        combination. Fees default to 0 when nothing is configured.
-      requestBody:
-        $ref: "#/components/requestBodies/FeeUpsert"
-      responses:
-        "200":
-          description: Upserted fee.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/FeeConfig"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "403":
-          $ref: "#/components/responses/OrgAdminRequired"
-
-  /v1/org/revenue:
-    get:
-      tags: [Admin - Operations]
-      operationId: adminGetOrgRevenue
-      summary: Get organization revenue
-      description: Accumulated fee revenue kept by the organization (its share of collected fees).
-      responses:
-        "200":
-          description: Revenue balance.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  org_id:
-                    type: string
-                    format: uuid
-                  asset:
-                    type: string
-                    example: USDT
-                  revenue:
-                    type: string
-                    example: "1250.375000"
-        "403":
-          $ref: "#/components/responses/OrgAdminRequired"
-
-  /v1/accounts/{accountID}/adjustments:
-    post:
-      tags: [Admin - Operations]
-      operationId: adminCreateAdjustment
-      summary: Apply a manual adjustment
-      description: |
-        Credits or debits an account manually. Every adjustment is an audited
-        ledger entry recording the acting credential and the reason.
-      parameters:
-        - $ref: "#/components/parameters/accountID"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [amount, direction, reason]
-              properties:
-                asset:
-                  type: string
-                  default: USDT
-                amount:
-                  type: string
-                  description: Positive decimal string.
-                direction:
-                  type: string
-                  enum: [credit, debit]
-                reason:
-                  type: string
-                idempotency_key:
-                  type: string
-      responses:
-        "200":
-          description: Resulting balances.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BalancesResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "402":
-          $ref: "#/components/responses/InsufficientFunds"
-        "404":
-          $ref: "#/components/responses/NotFound"
-
-  /v1/payins/{payinID}/assign:
-    post:
-      tags: [Admin - Operations]
-      operationId: adminAssignPayin
-      summary: Assign an unassigned payin
-      description: |
-        Attaches an inbound deposit that arrived without an account match
-        (`status: unassigned`) to an account. If the funds already arrived,
-        fees are computed for the destination account and the credit happens
-        immediately.
-      parameters:
-        - name: payinID
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [account_id]
-              properties:
-                account_id:
-                  type: string
-                  format: uuid
-      responses:
-        "200":
-          description: The payin after assignment (and credit, when applicable).
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Payin"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
-      description: |
-        Session JWT (from register/login) or API key (`pk_...`).
+      description: 'Session JWT (from register/login) or API key (`pk_...`).
+
         `X-API-Key: <token>` is accepted as an alternative header.
 
+        '
   parameters:
     page:
       name: page
@@ -1562,13 +1276,6 @@ components:
         type: integer
         default: 50
         maximum: 200
-    accountID:
-      name: accountID
-      in: path
-      required: true
-      schema:
-        type: string
-        format: uuid
     idempotencyKeyHeader:
       name: Idempotency-Key
       in: header
@@ -1576,77 +1283,37 @@ components:
       description: Alternative to the `idempotency_key` body field.
       schema:
         type: string
-
-  requestBodies:
-    FeeUpsert:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            required: [service]
-            properties:
-              service:
-                type: string
-                enum: [payout, payin, funding, withdrawal, compliance_person, compliance_company, compliance_rescreen, compliance_transaction, compliance_monitoring]
-                description: |
-                  Transactional services (payout, payin, funding, withdrawal)
-                  charge `percent` over the amount plus `fixed_amount`.
-                  Compliance services are per-call charges with no
-                  transactional base: only `fixed_amount` applies.
-              country:
-                type: string
-                description: ISO country code; empty applies to all countries.
-              asset:
-                type: string
-                default: USDT
-              percent:
-                type: string
-                default: "0"
-                example: "1.5"
-              fixed_amount:
-                type: string
-                default: "0"
-                example: "0.30"
-
   responses:
     BadRequest:
       description: Invalid request (see `error` code for the specific validation).
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Error"
+            $ref: '#/components/schemas/Error'
     InsufficientFunds:
       description: Account balance is not enough for this operation (`insufficient_funds`).
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Error"
+            $ref: '#/components/schemas/Error'
     AccountRequired:
       description: This endpoint requires an account credential (`account_required`).
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Error"
-    OrgAdminRequired:
-      description: This endpoint requires an organization admin credential (`org_admin_required`).
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"
+            $ref: '#/components/schemas/Error'
     Forbidden:
       description: Credential level not allowed for this endpoint (`forbidden`).
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Error"
+            $ref: '#/components/schemas/Error'
     NotFound:
       description: Resource not found (`not_found`).
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Error"
-
+            $ref: '#/components/schemas/Error'
   schemas:
     Error:
       type: object
@@ -1658,7 +1325,6 @@ components:
         message:
           type: string
           description: Human-readable explanation.
-
     Account:
       type: object
       properties:
@@ -1670,13 +1336,22 @@ components:
           format: uuid
         type:
           type: string
-          enum: [person, company]
+          enum:
+          - person
+          - company
         status:
           type: string
-          enum: [active, blocked, closed]
+          enum:
+          - active
+          - blocked
+          - closed
         kyc_status:
           type: string
-          enum: [none, pending, approved, rejected]
+          enum:
+          - none
+          - pending
+          - approved
+          - rejected
         email:
           type: string
         display_name:
@@ -1695,7 +1370,6 @@ components:
         updated_at:
           type: string
           format: date-time
-
     Member:
       type: object
       properties:
@@ -1706,14 +1380,18 @@ components:
           type: string
         role:
           type: string
-          enum: [owner, operator, viewer]
+          enum:
+          - owner
+          - operator
+          - viewer
         status:
           type: string
-          enum: [active, disabled]
+          enum:
+          - active
+          - disabled
         created_at:
           type: string
           format: date-time
-
     ApiKeyIssued:
       type: object
       properties:
@@ -1729,7 +1407,6 @@ components:
           type: string
         note:
           type: string
-
     BalancesResponse:
       type: object
       properties:
@@ -1746,15 +1423,14 @@ components:
                 example: USDT
               available:
                 type: string
-                example: "100.000000"
+                example: '100.000000'
               held:
                 type: string
                 description: Reserved by in-flight payouts/withdrawals.
-                example: "5.000000"
+                example: '5.000000'
               updated_at:
                 type: string
                 format: date-time
-
     MovementsResponse:
       type: object
       properties:
@@ -1792,7 +1468,6 @@ components:
               created_at:
                 type: string
                 format: date-time
-
     FeeConfig:
       type: object
       properties:
@@ -1807,7 +1482,16 @@ components:
           description: Empty for organization defaults.
         service:
           type: string
-          enum: [payout, payin, funding, withdrawal, compliance_person, compliance_company, compliance_rescreen, compliance_transaction, compliance_monitoring]
+          enum:
+          - payout
+          - payin
+          - funding
+          - withdrawal
+          - compliance_person
+          - compliance_company
+          - compliance_rescreen
+          - compliance_transaction
+          - compliance_monitoring
         country:
           type: string
         asset:
@@ -1815,17 +1499,16 @@ components:
           example: USDT
         percent:
           type: string
-          example: "1.5"
+          example: '1.5'
         fixed_amount:
           type: string
-          example: "0.30"
+          example: '0.30'
         status:
           type: string
           example: active
         updated_at:
           type: string
           format: date-time
-
     Payout:
       type: object
       properties:
@@ -1860,7 +1543,11 @@ components:
           type: string
         status:
           type: string
-          enum: [pending, processing, completed, failed]
+          enum:
+          - pending
+          - processing
+          - completed
+          - failed
         status_code:
           type: string
         status_message:
@@ -1874,7 +1561,6 @@ components:
         idempotency_hit:
           type: boolean
           description: Present (true) when the response is an idempotent replay.
-
     Payin:
       type: object
       properties:
@@ -1885,7 +1571,10 @@ components:
           type: string
         kind:
           type: string
-          enum: [qr, collect, push]
+          enum:
+          - qr
+          - collect
+          - push
         country:
           type: string
         currency:
@@ -1896,7 +1585,12 @@ components:
           type: string
         status:
           type: string
-          enum: [pending, credited, unassigned, expired, failed]
+          enum:
+          - pending
+          - credited
+          - unassigned
+          - expired
+          - failed
         reference:
           type: string
         created_at:
@@ -1914,7 +1608,6 @@ components:
           type: string
         usdt_credited:
           type: string
-
     Transfer:
       type: object
       properties:
@@ -1942,13 +1635,14 @@ components:
           format: date-time
         idempotency_hit:
           type: boolean
-
     DepositAddress:
       type: object
       properties:
         chain:
           type: string
-          enum: [tron, eth]
+          enum:
+          - tron
+          - eth
         asset:
           type: string
           example: USDT
@@ -1957,7 +1651,6 @@ components:
         created_at:
           type: string
           format: date-time
-
     CryptoWithdrawal:
       type: object
       properties:
@@ -1971,7 +1664,9 @@ components:
           type: string
         chain:
           type: string
-          enum: [tron, eth]
+          enum:
+          - tron
+          - eth
         asset:
           type: string
           example: USDT
@@ -1985,7 +1680,11 @@ components:
           type: string
         status:
           type: string
-          enum: [pending, processing, completed, failed]
+          enum:
+          - pending
+          - processing
+          - completed
+          - failed
         status_code:
           type: string
         status_message:
@@ -2000,7 +1699,6 @@ components:
           format: date-time
         idempotency_hit:
           type: boolean
-
   x-webhooks:
     payin_credited:
       description: A fiat top-up was received and credited.
