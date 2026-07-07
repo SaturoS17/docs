@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" width="1200" height="300">
+  <defs>
+    <clipPath id="frame">
+      <rect width="1200" height="300" rx="18"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#frame)">
+    <rect width="1200" height="300" fill="#2E2E2E"/>
+
+    <!-- rieles diagonales (velocidad / transacciones en movimiento) -->
+    <polygon points="690,300 810,0 890,0 770,300" fill="#FBC140"/>
+    <polygon points="800,300 920,0 965,0 845,300" fill="#5A5A5A"/>
+    <polygon points="880,300 1000,0 1025,0 905,300" fill="#434343"/>
+
+    <!-- doughnut amarillo (flujo continuo, recurso 75) -->
+    <g stroke="#FBC140" stroke-width="34" fill="none">
+      <path d="M 90 20 a 78 78 0 0 0 156 0"/>
+      <path d="M 90 285 a 78 78 0 0 1 156 0"/>
+    </g>
+
+    <!-- circulos de la simbologia -->
+    <circle cx="420" cy="80" r="52" fill="#434343"/>
+    <circle cx="524" cy="80" r="52" fill="#5A5A5A"/>
+    <circle cx="420" cy="184" r="52" fill="#FBC140"/>
+
+    <!-- destello (recurso 92) -->
+    <g transform="translate(1105,150)" fill="#F4F1EE" opacity="0.22">
+      <rect x="-9" y="-92" width="18" height="184" rx="9"/>
+      <rect x="-9" y="-92" width="18" height="184" rx="9" transform="rotate(60)"/>
+      <rect x="-9" y="-92" width="18" height="184" rx="9" transform="rotate(120)"/>
+      <rect x="-9" y="-92" width="18" height="184" rx="9" transform="rotate(30)"/>
+      <rect x="-9" y="-92" width="18" height="184" rx="9" transform="rotate(90)"/>
+      <rect x="-9" y="-92" width="18" height="184" rx="9" transform="rotate(150)"/>
+    </g>
+
+    <!-- triangulo direccional (recurso 60) -->
+    <polygon points="580,235 580,295 640,265" fill="#F4F1EE" opacity="0.35"/>
+  </g>
+</svg>
