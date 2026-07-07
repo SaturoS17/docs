@@ -1,0 +1,84 @@
+---
+title: "Errors"
+description: "Error format and complete code catalog"
+---
+
+All errors share the same shape:
+
+```json
+{
+  "error": "insufficient_funds",
+  "message": "account balance is not enough for this operation"
+}
+```
+
+- `error`: stable `snake_case` code — use it in your logic.
+- `message`: human-readable explanation — may change, don't parse it.
+
+## Codes by category
+
+### Authentication and permissions
+
+| HTTP | `error` | Meaning |
+|---|---|---|
+| 401 | `unauthorized` | Missing or invalid credential |
+| 401 | `invalid_credentials` | Wrong email or password (login) |
+| 403 | `account_required` | Endpoint requires an account credential |
+| 403 | `org_admin_required` | Endpoint requires an admin credential |
+| 403 | `forbidden` | Credential level not allowed |
+| 403 | `account_blocked` | The account is not active |
+| 403 | `org_suspended` | The organization is not active |
+| 403 | `company_only` | Feature only for company accounts |
+
+### Validation (400)
+
+| `error` | Meaning |
+|---|---|
+| `invalid_json` | Body is not valid JSON or has unknown fields |
+| `invalid_type` | `type` must be `person` or `company` |
+| `invalid_email` / `invalid_display_name` | Invalid required field |
+| `weak_password` | Password shorter than 8 characters |
+| `invalid_role` | Invalid member role |
+| `unknown_org` | Organization slug does not exist |
+| `invalid_request` | Missing `country`/`currency` |
+| `idempotency_key_required` | Missing idempotency key |
+| `beneficiary_required` | Missing payout beneficiary |
+| `invalid_amount` | Amount is not a valid positive decimal |
+| `recipient_required` / `self_transfer` | Invalid transfer destination |
+| `invalid_chain` / `invalid_asset` | Unsupported network or asset |
+| `to_address_required` | Missing withdrawal destination address |
+| `invalid_payload` | Missing `enabled` (KYC monitoring) |
+| `invalid_event_type` / `weak_secret` / `invalid_callback_url` | Invalid webhook subscription |
+| `invalid_status` / `invalid_kyc_status` / `invalid_direction` / `reason_required` / `account_id_required` / `invalid_service` / `invalid_fee` | Administration validations |
+
+### Money and state (402 / 404 / 409 / 422)
+
+| HTTP | `error` | Meaning |
+|---|---|---|
+| 402 | `insufficient_funds` | Not enough available balance |
+| 404 | `not_found` | Resource does not exist (or belongs to another account) |
+| 404 | `recipient_not_found` | Transfer destination does not exist |
+| 409 | `duplicate` | The resource already exists |
+| 409 | `no_kyc` | Rescreen/monitoring without a prior KYC |
+| 422 | `currency_not_supported` | No FX rate for that currency |
+| 422 | `core_rejected` | The processor rejected the operation |
+| 422 | `recipient_unavailable` | The destination account cannot receive |
+
+### Service (5xx)
+
+| HTTP | `error` | Meaning |
+|---|---|---|
+| 500 | `internal_error` | Unexpected error; retry with the same idempotency key |
+| 502 | `rates_unavailable` | FX rates temporarily unavailable |
+| 502 | `core_unavailable` | Processor temporarily unavailable |
+| 502 | `compliance_unavailable` | Screening temporarily unavailable |
+| 503 | `org_credential_missing` | Organization not configured; contact your operator |
+| 503 | `withdrawals_unavailable` | On-chain withdrawals not enabled for the corridor |
+
+## How to handle them
+
+- **Validation 4xx**: fix the request. Don't retry as-is.
+- **402**: fund the account and retry (new idempotency key only if the
+  operation was never created).
+- **5xx / timeouts**: retry with **the same** idempotency key; the operation
+  will never duplicate.

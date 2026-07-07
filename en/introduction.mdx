@@ -1,0 +1,69 @@
+---
+title: "Introduction"
+description: "What CBPay is and what you can build with the API"
+---
+
+CBPay is a multi-currency payment platform for Latin America. Every account
+holds a virtual **USDT** balance and operates against it:
+
+<CardGroup cols={2}>
+  <Card title="Fiat payouts" icon="money-bill-transfer" href="/en/guides/payouts">
+    Disperse money to local bank accounts in Chile, Peru, Mexico, Venezuela,
+    Bolivia and Paraguay, debited from your USDT balance.
+  </Card>
+  <Card title="Fiat payins" icon="qrcode" href="/en/guides/payins">
+    Collect in local currency (QR and transfers) and get credited
+    automatically in USDT.
+  </Card>
+  <Card title="Internal transfers" icon="arrows-left-right" href="/en/guides/transfers">
+    Move balance between accounts of the same organization, instantly and
+    free of charge.
+  </Card>
+  <Card title="On-chain crypto" icon="link" href="/en/guides/crypto">
+    Fund with USDT over TRON or Ethereum and withdraw on-chain to any
+    address.
+  </Card>
+</CardGroup>
+
+It also ships with integrated **KYC/screening** for persons and companies
+([guide](/en/guides/kyc)) and **signed webhooks** for every event
+([guide](/en/webhooks)).
+
+## How it works
+
+1. Your operator (the organization) gives you access: email/password
+   registration or a direct API key.
+2. You fund your account: with a fiat payin or an on-chain USDT deposit.
+3. You operate: payouts, transfers, withdrawals — everything debits and
+   credits your USDT balance with FX conversion at execution time.
+4. You stay informed: every movement lands in an immutable history
+   (`GET /v1/movements`) and events reach your webhooks.
+
+## Base URL
+
+```
+https://exchange.qbank.cl/platform
+```
+
+All paths in this documentation are relative to that base URL.
+
+<Note>
+Amounts are always **decimal strings** (e.g. `"10.500000"`), never floating
+point numbers. Balances use 6 decimal places (USDT precision).
+</Note>
+
+## Next steps
+
+<Steps>
+  <Step title="Create your account and token">
+    Follow the [quickstart](/en/quickstart) to register and make your first
+    call.
+  </Step>
+  <Step title="Understand the money model">
+    Read [money model](/en/concepts/money-model) and
+    [fees](/en/concepts/fees).
+  </Step>
+  <Step title="Integrate your first product">
+    Start with [payouts](/en/guides/payouts) or [payins](/en/guides/payins).
+  </Step>
+</Steps>

@@ -1,0 +1,90 @@
+---
+title: "Autenticación"
+description: "Sesiones JWT, API keys y niveles de acceso"
+---
+
+Todas las llamadas (salvo registro y login) requieren una credencial en el
+header `Authorization`:
+
+```
+Authorization: Bearer <token>
+```
+
+También se acepta `X-API-Key: <token>` como header alternativo.
+
+## Tipos de credencial
+
+<Tabs>
+<Tab title="Sesión JWT (personas con login)">
+
+Se obtiene con `POST /v1/auth/register` o `POST /v1/auth/login` y dura
+**24 horas**. Pensada para apps con usuarios que inician sesión.
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{ "org": "cbpay", "email": "ana@ejemplo.com", "password": "…" }'
+```
+
+```json
+{
+  "access_token": "eyJ…",
+  "expires_at": "2026-07-08T00:00:00Z",
+  "account_id": "…",
+  "role": "owner"
+}
+```
+
+Las cuentas empresa pueden tener varios **miembros** con roles `owner`,
+`operator` o `viewer` (`POST /v1/members`).
+
+</Tab>
+<Tab title="API key (servidor a servidor)">
+
+Formato `pk_<key_id>.<secret>`. No expira y no depende de una sesión.
+Se emite con:
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/api-keys \
+  -H "Authorization: Bearer <token-de-sesion>" \
+  -H "Content-Type: application/json" \
+  -d '{ "label": "backend-produccion" }'
+```
+
+```json
+{
+  "api_key_id": "…",
+  "key_id": "a1b2c3d4e5f60718",
+  "token": "pk_a1b2c3d4e5f60718.XXXXXXXX…",
+  "note": "store this token now; it cannot be retrieved again"
+}
+```
+
+<Warning>
+El token en claro se muestra **una sola vez**. En el servidor solo se guarda
+un hash — si lo pierdes, emite una key nueva.
+</Warning>
+
+</Tab>
+</Tabs>
+
+## Niveles de acceso
+
+| Nivel | Credencial | Qué puede hacer |
+|---|---|---|
+| **Cuenta** | JWT de sesión o API key de cuenta | Operar su propia cuenta: saldos, payouts, payins, transferencias, crypto, KYC, webhooks propios |
+| **Admin de organización** | API key de organización | Administrar todas las cuentas de la organización: crearlas, configurar comisiones, ajustes, revenue, asignar payins |
+
+Los endpoints de administración están en la pestaña
+[Admin](/es/admin/introduccion). Si llamas un endpoint de cuenta con una
+credencial admin recibirás `403 account_required`, y viceversa `403
+org_admin_required`.
+
+## Buenas prácticas
+
+- Guarda las API keys en un gestor de secretos; nunca en el código ni en el
+  navegador.
+- Usa una key por ambiente/servicio (`label` descriptivo) para poder rotar
+  sin downtime.
+- Las sesiones JWT son para front-ends; para procesos automatizados usa
+  siempre API keys.

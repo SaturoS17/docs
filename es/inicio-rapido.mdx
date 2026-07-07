@@ -1,0 +1,143 @@
+---
+title: "Inicio rápido"
+description: "De cero a tu primer payout en cinco pasos"
+---
+
+<Info>
+Necesitas el **slug de tu organización** (te lo entrega tu operador, ej.
+`cbpay`). Si tu operador ya te creó la cuenta y te entregó una API key
+`pk_...`, salta directo al paso 3.
+</Info>
+
+<Steps>
+
+<Step title="Regístrate">
+
+Crea tu cuenta (persona o empresa — mismo endpoint, cambia `type`):
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "org": "cbpay",
+    "type": "person",
+    "email": "ana@ejemplo.com",
+    "password": "una-clave-segura",
+    "display_name": "Ana Pérez",
+    "country": "CL"
+  }'
+```
+
+La respuesta incluye tu `access_token` (sesión de 24 horas):
+
+```json
+{
+  "account": { "id": "…", "type": "person", "kyc_status": "none", "…": "…" },
+  "access_token": "eyJhbGciOiJIUzI1NiIs…",
+  "expires_at": "2026-07-08T00:00:00Z"
+}
+```
+
+</Step>
+
+<Step title="Autentícate en cada llamada">
+
+Envía el token en el header `Authorization`:
+
+```bash
+curl https://exchange.qbank.cl/platform/v1/me \
+  -H "Authorization: Bearer <access_token>"
+```
+
+Para integraciones servidor-a-servidor, emite una **API key permanente** con
+`POST /v1/api-keys` — se muestra una sola vez. Más detalles en
+[autenticación](/es/autenticacion).
+
+</Step>
+
+<Step title="Consulta tu saldo">
+
+```bash
+curl https://exchange.qbank.cl/platform/v1/balances \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "account_id": "…",
+  "balances": [
+    { "asset": "USDT", "available": "0.000000", "held": "0.000000" }
+  ]
+}
+```
+
+Para operar necesitas fondos: crea un [payin](/es/guias/payins) o deposita
+USDT on-chain con [crypto funding](/es/guias/crypto).
+
+</Step>
+
+<Step title="Revisa tasas y comisiones">
+
+Antes de un payout, consulta la tasa FX vigente y tus comisiones efectivas:
+
+```bash
+curl https://exchange.qbank.cl/platform/v1/rates \
+  -H "Authorization: Bearer <token>"
+```
+
+</Step>
+
+<Step title="Crea tu primer payout">
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "CL",
+    "currency": "CLP",
+    "method": "bank_transfer",
+    "amount": "50000",
+    "beneficiary": {
+      "name": "Juan Soto",
+      "rut": "12345678-9",
+      "bank_code": "012",
+      "account_type": "checking",
+      "account_number": "001122334455"
+    },
+    "description": "Pago proveedor",
+    "idempotency_key": "mi-pago-0001"
+  }'
+```
+
+Respuesta `202 Accepted` — el payout queda `processing` y el estado final
+llega por [webhook](/es/webhooks) (`payout_status_changed`):
+
+```json
+{
+  "payout_id": "…",
+  "status": "processing",
+  "local_amount": "50000",
+  "fx_rate": "950.25",
+  "usdt_amount": "52.618258",
+  "fee": "0.500000",
+  "total_debit": "53.118258"
+}
+```
+
+<Warning>
+Los campos de `beneficiary` dependen del país y método. Consulta
+`GET /v1/payouts/methods` y `GET /v1/payouts/banks?country=CL` para conocer
+los requisitos de cada corredor.
+</Warning>
+
+</Step>
+
+</Steps>
+
+## ¿Y ahora?
+
+- [Suscríbete a webhooks](/es/webhooks) para recibir los cambios de estado.
+- Revisa el [modelo de dinero](/es/conceptos/modelo-de-dinero) para entender
+  débitos, holds y reembolsos.
+- Explora la **API Reference** completa con playground interactivo.

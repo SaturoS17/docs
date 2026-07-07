@@ -1,72 +1,143 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mintlify Starter Kit",
+  "name": "CBPay",
+  "description": "CBPay developer documentation - fiat payouts and collections across Latin America, internal transfers, on-chain USDT and KYC.",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#0D9373",
+    "light": "#55D799",
+    "dark": "#0D9373"
   },
   "favicon": "/favicon.svg",
   "navigation": {
-    "pages": [
+    "languages": [
       {
-        "group": "Getting Started",
-        "pages": [
-          "index",
-          "quickstart"
+        "language": "es",
+        "tabs": [
+          {
+            "tab": "Guías",
+            "groups": [
+              {
+                "group": "Comenzar",
+                "pages": [
+                  "es/introduccion",
+                  "es/inicio-rapido",
+                  "es/autenticacion"
+                ]
+              },
+              {
+                "group": "Conceptos",
+                "pages": [
+                  "es/conceptos/modelo-de-dinero",
+                  "es/conceptos/comisiones",
+                  "es/conceptos/idempotencia"
+                ]
+              },
+              {
+                "group": "Productos",
+                "pages": [
+                  "es/guias/payouts",
+                  "es/guias/payins",
+                  "es/guias/transferencias",
+                  "es/guias/crypto",
+                  "es/guias/kyc"
+                ]
+              },
+              {
+                "group": "Integración",
+                "pages": [
+                  "es/webhooks",
+                  "es/errores"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "Admin",
+            "groups": [
+              {
+                "group": "Administración",
+                "pages": [
+                  "es/admin/introduccion",
+                  "es/admin/cuentas",
+                  "es/admin/comisiones",
+                  "es/admin/operaciones"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "API Reference",
+            "openapi": "openapi.yaml"
+          }
+        ]
+      },
+      {
+        "language": "en",
+        "tabs": [
+          {
+            "tab": "Guides",
+            "groups": [
+              {
+                "group": "Getting Started",
+                "pages": [
+                  "en/introduction",
+                  "en/quickstart",
+                  "en/authentication"
+                ]
+              },
+              {
+                "group": "Concepts",
+                "pages": [
+                  "en/concepts/money-model",
+                  "en/concepts/fees",
+                  "en/concepts/idempotency"
+                ]
+              },
+              {
+                "group": "Products",
+                "pages": [
+                  "en/guides/payouts",
+                  "en/guides/payins",
+                  "en/guides/transfers",
+                  "en/guides/crypto",
+                  "en/guides/kyc"
+                ]
+              },
+              {
+                "group": "Integration",
+                "pages": [
+                  "en/webhooks",
+                  "en/errors"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "Admin",
+            "groups": [
+              {
+                "group": "Administration",
+                "pages": [
+                  "en/admin/introduction",
+                  "en/admin/accounts",
+                  "en/admin/fees",
+                  "en/admin/operations"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "API Reference",
+            "openapi": "openapi.yaml"
+          }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://app.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-      "copy",
-      "view",
-      "chatgpt",
-      "claude",
-      "perplexity",
-      "mcp",
-      "cursor",
-      "vscode"
     ]
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "website": "https://cbpayapp.com"
     }
   }
 }

@@ -1,0 +1,77 @@
+---
+title: "Fees"
+description: "How fees are computed and where to check your effective pricing"
+---
+
+Fees are configured by your operator per **service, country and asset**.
+When nothing is configured for a combination, the fee is **0**.
+
+## Formula
+
+Every fee has two components that are **added together** (either can be 0):
+
+```
+fee = ceil(amount × percent / 100) + fixed_amount
+```
+
+- `percent`: percentage over the USDT amount of the operation (rounded up
+  to the micro-USDT).
+- `fixed_amount`: fixed amount in USDT.
+
+## Billable services
+
+| Service | Applied over | When it is charged |
+|---|---|---|
+| `payout` | The payout's USDT amount | At payout creation (included in `total_debit`) |
+| `payin` | The gross USDT received | On credit (you receive `usdt_gross − fee`) |
+| `funding` | The gross crypto deposit | When the on-chain deposit is credited |
+| `withdrawal` | The withdrawal amount | At creation (included in `total_debit`) |
+| `compliance_person` | — (fixed per-call charge) | When submitting a person's KYC |
+| `compliance_company` | — | When submitting a company's KYC |
+| `compliance_rescreen` | — | When re-running a screening |
+| `compliance_monitoring` | — | When enabling continuous monitoring (disabling is free) |
+
+<Note>
+Compliance services have no transactional amount, so only the fixed
+component applies. If the upstream call fails, the charge is refunded
+automatically (`compliance_refund`).
+</Note>
+
+## Internal transfers: free
+
+Transfers between accounts of the same organization (`POST /v1/transfers`)
+carry **no fee**.
+
+## Check your effective fees
+
+`GET /v1/rates` returns, along with FX rates, the fee configuration
+currently applied to your account:
+
+```json
+{
+  "base": "USD",
+  "rates": { "chile": { "currency": "CLP", "rate": "950.25" } },
+  "fees": [
+    {
+      "service": "payout",
+      "country": "CL",
+      "asset": "USDT",
+      "percent": "1.5",
+      "fixed_amount": "0.30"
+    }
+  ]
+}
+```
+
+That lets you compute the total cost before operating. The charged fee is
+always explicit in each operation's response (`fee` field) and in the
+ledger.
+
+## Full example
+
+A payout worth 100 USDT with `percent: "1.5"` and `fixed_amount: "0.30"`:
+
+```
+fee         = ceil(100 × 1.5%) + 0.30 = 1.50 + 0.30 = 1.80 USDT
+total_debit = 100 + 1.80 = 101.80 USDT
+```

@@ -1,0 +1,84 @@
+---
+title: "Errores"
+description: "Formato de error y catálogo completo de códigos"
+---
+
+Todos los errores comparten el mismo formato:
+
+```json
+{
+  "error": "insufficient_funds",
+  "message": "account balance is not enough for this operation"
+}
+```
+
+- `error`: código estable en `snake_case` — úsalo en tu lógica.
+- `message`: explicación legible — puede cambiar, no lo parsees.
+
+## Códigos por categoría
+
+### Autenticación y permisos
+
+| HTTP | `error` | Significado |
+|---|---|---|
+| 401 | `unauthorized` | Credencial ausente o inválida |
+| 401 | `invalid_credentials` | Email o contraseña incorrectos (login) |
+| 403 | `account_required` | El endpoint exige credencial de cuenta |
+| 403 | `org_admin_required` | El endpoint exige credencial de administrador |
+| 403 | `forbidden` | Nivel de credencial no permitido |
+| 403 | `account_blocked` | La cuenta no está activa |
+| 403 | `org_suspended` | La organización no está activa |
+| 403 | `company_only` | Función solo para cuentas empresa |
+
+### Validación (400)
+
+| `error` | Significado |
+|---|---|
+| `invalid_json` | Body no es JSON válido o tiene campos desconocidos |
+| `invalid_type` | `type` debe ser `person` o `company` |
+| `invalid_email` / `invalid_display_name` | Campo requerido inválido |
+| `weak_password` | Contraseña menor a 8 caracteres |
+| `invalid_role` | Rol de miembro inválido |
+| `unknown_org` | Slug de organización inexistente |
+| `invalid_request` | Faltan `country`/`currency` |
+| `idempotency_key_required` | Falta la clave de idempotencia |
+| `beneficiary_required` | Falta el beneficiario del payout |
+| `invalid_amount` | Monto no es un decimal positivo válido |
+| `recipient_required` / `self_transfer` | Destino de transferencia inválido |
+| `invalid_chain` / `invalid_asset` | Red o activo no soportado |
+| `to_address_required` | Falta dirección destino del retiro |
+| `invalid_payload` | Falta `enabled` (monitoreo KYC) |
+| `invalid_event_type` / `weak_secret` / `invalid_callback_url` | Suscripción de webhook inválida |
+| `invalid_status` / `invalid_kyc_status` / `invalid_direction` / `reason_required` / `account_id_required` / `invalid_service` / `invalid_fee` | Validaciones de administración |
+
+### Dinero y estado (402 / 404 / 409 / 422)
+
+| HTTP | `error` | Significado |
+|---|---|---|
+| 402 | `insufficient_funds` | Saldo disponible insuficiente |
+| 404 | `not_found` | Recurso inexistente (o de otra cuenta) |
+| 404 | `recipient_not_found` | Destino de transferencia inexistente |
+| 409 | `duplicate` | El recurso ya existe |
+| 409 | `no_kyc` | Rescreen/monitoreo sin KYC previo |
+| 422 | `currency_not_supported` | Sin tasa FX para esa moneda |
+| 422 | `core_rejected` | El procesador rechazó la operación |
+| 422 | `recipient_unavailable` | La cuenta destino no puede recibir |
+
+### Servicio (5xx)
+
+| HTTP | `error` | Significado |
+|---|---|---|
+| 500 | `internal_error` | Error inesperado; reintenta con la misma clave de idempotencia |
+| 502 | `rates_unavailable` | Tasas FX temporalmente no disponibles |
+| 502 | `core_unavailable` | Procesador temporalmente no disponible |
+| 502 | `compliance_unavailable` | Screening temporalmente no disponible |
+| 503 | `org_credential_missing` | Organización sin configurar; contacta a tu operador |
+| 503 | `withdrawals_unavailable` | Retiros on-chain no habilitados para el corredor |
+
+## Cómo manejarlos
+
+- **4xx de validación**: corrige el request. No reintentes igual.
+- **402**: fondea la cuenta y reintenta (clave de idempotencia nueva solo si
+  la operación nunca se creó).
+- **5xx / timeouts**: reintenta con **la misma** clave de idempotencia; la
+  operación nunca se duplicará.

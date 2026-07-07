@@ -1,0 +1,105 @@
+---
+title: "Crypto: fondeo y retiros"
+description: "Deposita y retira USDT on-chain por TRON o Ethereum"
+---
+
+Tu saldo USDT puede fondearse y retirarse directamente on-chain. Redes
+soportadas: **TRON** (`tron`) y **Ethereum** (`eth`), activo **USDT**.
+
+## Fondeo (depósitos)
+
+### 1. Obtén tu dirección de depósito
+
+Cada cuenta tiene una dirección propia por red, creada bajo demanda:
+
+```bash
+curl "https://exchange.qbank.cl/platform/v1/crypto/deposit-address?chain=tron" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "chain": "tron",
+  "asset": "USDT",
+  "address": "TQmZ…",
+  "created_at": "2026-07-06T20:00:00Z"
+}
+```
+
+<Warning>
+Envía **solo USDT por la red correcta** a esa dirección. La dirección es
+tuya y estable: puedes reutilizarla para todos tus depósitos.
+</Warning>
+
+### 2. Recibe el abono automático
+
+Cuando el depósito se confirma on-chain, tu saldo se acredita
+automáticamente (neto de la comisión de `funding` si tu operador la
+configuró) y se emite el webhook `crypto_deposit_credited`:
+
+```json
+{
+  "account_id": "…",
+  "chain": "tron",
+  "asset": "USDT",
+  "tx_id": "b1946ac9…",
+  "amount": "499.000000",
+  "fee": "1.000000"
+}
+```
+
+## Retiros
+
+### Crear un retiro
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/crypto/withdrawals \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "tron",
+    "to_address": "TVJ6…",
+    "amount": "100.000000",
+    "idempotency_key": "retiro-2026-07-06-b"
+  }'
+```
+
+Respuesta `202` — se debita `amount + fee` y la transacción se transmite:
+
+```json
+{
+  "withdrawal_id": "5e8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "to_address": "TVJ6…",
+  "amount": "100.000000",
+  "fee": "1.000000",
+  "total_debit": "101.000000",
+  "status": "processing",
+  "tx_id": "…"
+}
+```
+
+### Estado final
+
+Llega por el webhook `crypto_withdrawal_status_changed`:
+
+- **`completed`**: confirmado on-chain; el `tx_id` es tu comprobante.
+- **`failed`**: se reembolsa el débito completo (`withdrawal_refund`).
+
+Historial completo de actividad on-chain (depósitos + retiros):
+
+```bash
+curl https://exchange.qbank.cl/platform/v1/crypto/transactions \
+  -H "Authorization: Bearer <token>"
+```
+
+## Errores
+
+| HTTP | `error` | Causa |
+|---|---|---|
+| 400 | `invalid_chain` | Red no soportada (usa `tron` o `eth`) |
+| 400 | `to_address_required` | Falta la dirección destino |
+| 402 | `insufficient_funds` | Saldo insuficiente para `amount + fee` |
+| 422 | (retiro con `status: failed`) | Rechazado al transmitir; débito reembolsado |
+| 503 | `withdrawals_unavailable` | Retiros no habilitados aún para este corredor |

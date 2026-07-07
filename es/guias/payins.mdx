@@ -1,0 +1,101 @@
+---
+title: "Payins"
+description: "Cobra en moneda local y recibe el abono en USDT"
+---
+
+Un payin es un cobro fiat: generas un cargo (por ejemplo un QR), tu cliente
+paga en moneda local, y tu cuenta recibe el abono en USDT automáticamente
+(convertido a la tasa del momento, menos la comisión de payin).
+
+## Crear un cargo
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BO",
+    "currency": "BOB",
+    "amount": "700.00",
+    "description": "Recarga app",
+    "expires_in": 3600
+  }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "payin_id": "9c2a…",
+  "status": "pending",
+  "charge": {
+    "charge_id": "…",
+    "qr_image": "…",
+    "our_reference": "…"
+  }
+}
+```
+
+El objeto `charge` contiene los datos del cobro para mostrar a tu cliente
+(imagen/datos del QR, referencias). Su forma exacta depende del método del
+país.
+
+<Note>
+Consulta los corredores de cobro disponibles con
+`GET /v1/payins/methods`.
+</Note>
+
+## Recibir el abono
+
+Cuando el pago llega, tu cuenta se acredita automáticamente y se emite el
+webhook `payin_credited`:
+
+```json
+{
+  "payin_id": "9c2a…",
+  "account_id": "…",
+  "country": "BO",
+  "currency": "BOB",
+  "local_amount": "700.00",
+  "fx_rate": "6.91",
+  "usdt_credited": "100.310000",
+  "fee": "1.000000"
+}
+```
+
+El objeto payin queda con el detalle completo:
+
+```bash
+curl https://exchange.qbank.cl/platform/v1/payins/9c2a… \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "payin_id": "9c2a…",
+  "kind": "qr",
+  "status": "credited",
+  "local_amount": "700.00",
+  "fx_rate": "6.91",
+  "usdt_gross": "101.310000",
+  "fee": "1.000000",
+  "usdt_credited": "100.310000"
+}
+```
+
+## Estados
+
+| Estado | Significado |
+|---|---|
+| `pending` | Cargo creado, esperando el pago |
+| `credited` | Pago recibido y abonado en USDT |
+| `unassigned` | Depósito recibido sin match automático (lo asigna el administrador) |
+| `expired` | El cargo venció sin pago |
+| `failed` | El cobro falló |
+
+<Info>
+Los depósitos que llegan por transferencia directa sin referencia clara
+quedan `unassigned` hasta que el administrador de tu organización los asigna
+a una cuenta ([ver Admin](/es/admin/operaciones)). Al asignarse, se acreditan
+con las comisiones de la cuenta destino.
+</Info>

@@ -1,0 +1,77 @@
+---
+title: "Operaciones"
+description: "Ajustes manuales, depósitos sin asignar y vistas globales"
+---
+
+## Ajustes manuales
+
+Acredita o debita una cuenta manualmente (correcciones, compensaciones,
+promociones). Cada ajuste queda como asiento auditado con la credencial que
+lo ejecutó y el motivo:
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/accounts/{accountID}/adjustments \
+  -H "Authorization: Bearer pk_…" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "direction": "credit",
+    "amount": "10.000000",
+    "reason": "Compensación por incidente #4521",
+    "idempotency_key": "comp-4521"
+  }'
+```
+
+- `direction`: `credit` o `debit`.
+- `reason`: **obligatorio** (queda en el ledger).
+- Un débito mayor al saldo disponible devuelve `402 insufficient_funds`.
+
+La respuesta son los saldos resultantes de la cuenta.
+
+## Depósitos sin asignar (`unassigned`)
+
+Cuando llega un depósito fiat que no se pudo asociar automáticamente a una
+cuenta, queda en estado `unassigned`. Los ves en la lista global:
+
+```bash
+curl "https://exchange.qbank.cl/platform/v1/payins?status=unassigned" \
+  -H "Authorization: Bearer pk_…"
+```
+
+Asócialo a la cuenta correcta — si los fondos ya llegaron, se acredita al
+momento con las comisiones de esa cuenta:
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payins/{payinID}/assign \
+  -H "Authorization: Bearer pk_…" \
+  -d '{ "account_id": "…" }'
+```
+
+## Vistas globales de operaciones
+
+Con la credencial admin, las listas muestran toda la organización y aceptan
+filtro por cuenta:
+
+```bash
+curl "https://exchange.qbank.cl/platform/v1/payouts?status=processing" \
+  -H "Authorization: Bearer pk_…"
+
+curl "https://exchange.qbank.cl/platform/v1/payins?account_id={accountID}" \
+  -H "Authorization: Bearer pk_…"
+```
+
+## Webhooks de organización
+
+Una suscripción creada con la API key admin recibe los eventos de **todas**
+las cuentas — ideal para conciliación central:
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/webhooks/subscriptions \
+  -H "Authorization: Bearer pk_…" \
+  -d '{
+    "event_type": "*",
+    "callback_url": "https://backoffice.miorg.com/webhooks",
+    "secret": "secreto-largo-de-conciliacion"
+  }'
+```
+
+Ver [webhooks](/es/webhooks) para firma y reintentos.

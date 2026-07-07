@@ -1,0 +1,58 @@
+---
+title: "Idempotency"
+description: "Retry safely without duplicating operations"
+---
+
+Every money-moving operation requires an **idempotency key**:
+
+- `POST /v1/payouts`
+- `POST /v1/transfers`
+- `POST /v1/crypto/withdrawals`
+- `POST /v1/accounts/{id}/adjustments` (admin, optional but recommended)
+
+## How to send it
+
+Two equivalent ways (if you send both, the body wins):
+
+<CodeGroup>
+
+```bash Body
+curl -X POST …/v1/payouts \
+  -d '{ "idempotency_key": "payroll-2026-07-001", … }'
+```
+
+```bash Header
+curl -X POST …/v1/payouts \
+  -H "Idempotency-Key: payroll-2026-07-001" \
+  -d '{ … }'
+```
+
+</CodeGroup>
+
+Omitting it returns `400 idempotency_key_required`.
+
+## What happens on retry
+
+The key is unique per **source account**. If you repeat a call with the same
+key:
+
+- No new operation is created and no money moves again.
+- You receive `200 OK` (instead of `201`/`202`) with the original object
+  plus `idempotency_hit: true`.
+
+```json
+{
+  "payout_id": "same-as-the-first-time",
+  "status": "processing",
+  "idempotency_hit": true
+}
+```
+
+## Recommendations
+
+- Use an identifier from **your** system (order ID, payroll ID, etc.), not a
+  timestamp or a UUID regenerated on every retry.
+- Persist the key before calling the API; that way you can retry after a
+  timeout with a no-duplication guarantee.
+- On network errors or `5xx`, **retry with the same key**. On validation
+  `4xx`, fix the request and use a new key.

@@ -1,0 +1,69 @@
+---
+title: "Introducción"
+description: "Qué es CBPay y qué puedes construir con la API"
+---
+
+CBPay es una plataforma de pagos multi-moneda para Latinoamérica. Cada cuenta
+mantiene un saldo virtual en **USDT** y opera sobre él:
+
+<CardGroup cols={2}>
+  <Card title="Payouts fiat" icon="money-bill-transfer" href="/es/guias/payouts">
+    Dispersa dinero a cuentas bancarias locales en Chile, Perú, México,
+    Venezuela, Bolivia y Paraguay, debitado de tu saldo USDT.
+  </Card>
+  <Card title="Payins fiat" icon="qrcode" href="/es/guias/payins">
+    Cobra en moneda local (QR y transferencias) y recibe el abono
+    automáticamente en USDT.
+  </Card>
+  <Card title="Transferencias internas" icon="arrows-left-right" href="/es/guias/transferencias">
+    Mueve saldo entre cuentas de la misma organización, al instante y sin
+    comisión.
+  </Card>
+  <Card title="Crypto on-chain" icon="link" href="/es/guias/crypto">
+    Fondea con USDT por TRON o Ethereum y retira on-chain a cualquier
+    dirección.
+  </Card>
+</CardGroup>
+
+Además incluye **KYC/screening** de personas y empresas integrado
+([guía](/es/guias/kyc)) y **webhooks firmados** para todos los eventos
+([guía](/es/webhooks)).
+
+## Cómo funciona
+
+1. Tu operador (la organización) te da acceso: registro con email/contraseña
+   o una API key directa.
+2. Fondeas tu cuenta: con un payin fiat o un depósito USDT on-chain.
+3. Operas: payouts, transferencias, retiros — todo se debita y acredita
+   sobre tu saldo USDT con conversión FX al momento.
+4. Te enteras de todo: cada movimiento queda en un historial inmutable
+   (`GET /v1/movements`) y los eventos llegan a tus webhooks.
+
+## URL base
+
+```
+https://exchange.qbank.cl/platform
+```
+
+Todas las rutas de esta documentación son relativas a esa URL base.
+
+<Note>
+Los montos son siempre **strings decimales** (ej. `"10.500000"`), nunca
+números flotantes. Los saldos usan 6 decimales (precisión USDT).
+</Note>
+
+## Siguientes pasos
+
+<Steps>
+  <Step title="Crea tu cuenta y token">
+    Sigue el [inicio rápido](/es/inicio-rapido) para registrarte y hacer tu
+    primera llamada.
+  </Step>
+  <Step title="Entiende el modelo de dinero">
+    Lee [modelo de dinero](/es/conceptos/modelo-de-dinero) y
+    [comisiones](/es/conceptos/comisiones).
+  </Step>
+  <Step title="Integra tu primer producto">
+    Empieza por [payouts](/es/guias/payouts) o [payins](/es/guias/payins).
+  </Step>
+</Steps>

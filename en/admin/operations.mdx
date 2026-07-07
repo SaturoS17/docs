@@ -1,0 +1,78 @@
+---
+title: "Operations"
+description: "Manual adjustments, unassigned deposits and global views"
+---
+
+## Manual adjustments
+
+Credit or debit an account manually (corrections, compensations,
+promotions). Every adjustment lands as an audited ledger entry recording the
+acting credential and the reason:
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/accounts/{accountID}/adjustments \
+  -H "Authorization: Bearer pk_…" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "direction": "credit",
+    "amount": "10.000000",
+    "reason": "Compensation for incident #4521",
+    "idempotency_key": "comp-4521"
+  }'
+```
+
+- `direction`: `credit` or `debit`.
+- `reason`: **required** (stored in the ledger).
+- A debit larger than the available balance returns
+  `402 insufficient_funds`.
+
+The response is the account's resulting balances.
+
+## Unassigned deposits (`unassigned`)
+
+When a fiat deposit arrives that couldn't be matched to an account
+automatically, it stays in `unassigned` state. See them in the global list:
+
+```bash
+curl "https://exchange.qbank.cl/platform/v1/payins?status=unassigned" \
+  -H "Authorization: Bearer pk_…"
+```
+
+Attach it to the right account — if the funds already arrived, it is
+credited immediately with that account's fees:
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payins/{payinID}/assign \
+  -H "Authorization: Bearer pk_…" \
+  -d '{ "account_id": "…" }'
+```
+
+## Global operation views
+
+With the admin credential, lists cover the whole organization and accept a
+per-account filter:
+
+```bash
+curl "https://exchange.qbank.cl/platform/v1/payouts?status=processing" \
+  -H "Authorization: Bearer pk_…"
+
+curl "https://exchange.qbank.cl/platform/v1/payins?account_id={accountID}" \
+  -H "Authorization: Bearer pk_…"
+```
+
+## Organization webhooks
+
+A subscription created with the admin API key receives events from **every**
+account — ideal for central reconciliation:
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/webhooks/subscriptions \
+  -H "Authorization: Bearer pk_…" \
+  -d '{
+    "event_type": "*",
+    "callback_url": "https://backoffice.myorg.com/webhooks",
+    "secret": "long-reconciliation-secret"
+  }'
+```
+
+See [webhooks](/en/webhooks) for signature and retries.

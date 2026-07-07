@@ -1,0 +1,58 @@
+---
+title: "Idempotencia"
+description: "Reintenta con seguridad sin duplicar operaciones"
+---
+
+Toda operación que mueve dinero exige una **clave de idempotencia**:
+
+- `POST /v1/payouts`
+- `POST /v1/transfers`
+- `POST /v1/crypto/withdrawals`
+- `POST /v1/accounts/{id}/adjustments` (admin, opcional pero recomendada)
+
+## Cómo enviarla
+
+Dos formas equivalentes (si mandas ambas, gana el body):
+
+<CodeGroup>
+
+```bash Body
+curl -X POST …/v1/payouts \
+  -d '{ "idempotency_key": "pago-nomina-2026-07-001", … }'
+```
+
+```bash Header
+curl -X POST …/v1/payouts \
+  -H "Idempotency-Key: pago-nomina-2026-07-001" \
+  -d '{ … }'
+```
+
+</CodeGroup>
+
+Si la omites recibes `400 idempotency_key_required`.
+
+## Qué pasa al reintentar
+
+La clave es única por **cuenta origen**. Si repites una llamada con la misma
+clave:
+
+- No se crea una operación nueva ni se mueve dinero otra vez.
+- Recibes `200 OK` (en vez de `201`/`202`) con el objeto original más el
+  campo `idempotency_hit: true`.
+
+```json
+{
+  "payout_id": "el-mismo-de-la-primera-vez",
+  "status": "processing",
+  "idempotency_hit": true
+}
+```
+
+## Recomendaciones
+
+- Usa un identificador de **tu** sistema (ID de orden, de nómina, etc.), no
+  un timestamp ni un UUID generado al vuelo en cada retry.
+- Guarda la clave antes de llamar a la API; así puedes reintentar tras un
+  timeout con garantía de no duplicar.
+- Ante un error de red o `5xx`, **reintenta con la misma clave**. Ante un
+  `4xx` de validación, corrige el request y usa una clave nueva.

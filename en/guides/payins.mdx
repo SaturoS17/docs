@@ -1,0 +1,100 @@
+---
+title: "Payins"
+description: "Collect in local currency and get credited in USDT"
+---
+
+A payin is a fiat collection: you generate a charge (for example a QR), your
+customer pays in local currency, and your account gets credited in USDT
+automatically (converted at the current rate, minus the payin fee).
+
+## Create a charge
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BO",
+    "currency": "BOB",
+    "amount": "700.00",
+    "description": "App top-up",
+    "expires_in": 3600
+  }'
+```
+
+Response `201`:
+
+```json
+{
+  "payin_id": "9c2a…",
+  "status": "pending",
+  "charge": {
+    "charge_id": "…",
+    "qr_image": "…",
+    "our_reference": "…"
+  }
+}
+```
+
+The `charge` object contains the payment data to show your customer
+(QR image/data, references). Its exact shape depends on the country's
+method.
+
+<Note>
+Check the available collection corridors with `GET /v1/payins/methods`.
+</Note>
+
+## Receive the credit
+
+When the payment lands, your account is credited automatically and the
+`payin_credited` webhook fires:
+
+```json
+{
+  "payin_id": "9c2a…",
+  "account_id": "…",
+  "country": "BO",
+  "currency": "BOB",
+  "local_amount": "700.00",
+  "fx_rate": "6.91",
+  "usdt_credited": "100.310000",
+  "fee": "1.000000"
+}
+```
+
+The payin object holds the full detail:
+
+```bash
+curl https://exchange.qbank.cl/platform/v1/payins/9c2a… \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "payin_id": "9c2a…",
+  "kind": "qr",
+  "status": "credited",
+  "local_amount": "700.00",
+  "fx_rate": "6.91",
+  "usdt_gross": "101.310000",
+  "fee": "1.000000",
+  "usdt_credited": "100.310000"
+}
+```
+
+## States
+
+| State | Meaning |
+|---|---|
+| `pending` | Charge created, waiting for the payment |
+| `credited` | Payment received and credited in USDT |
+| `unassigned` | Deposit received without an automatic match (assigned by the admin) |
+| `expired` | The charge expired unpaid |
+| `failed` | The collection failed |
+
+<Info>
+Deposits arriving by direct transfer without a clear reference stay
+`unassigned` until your organization's admin assigns them to an account
+([see Admin](/en/admin/operations)). On assignment they are credited with
+the destination account's fees.
+</Info>

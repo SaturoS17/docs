@@ -1,0 +1,104 @@
+---
+title: "KYC y compliance"
+description: "Screening de personas y empresas, rescreening y monitoreo continuo"
+---
+
+CBPay integra el screening KYC/AML como servicio: envías la identidad de la
+cuenta y recibes el resultado del análisis. El estado KYC de la cuenta
+(`kyc_status`) lo resuelve tu operador tras revisar el resultado.
+
+<Note>
+Si tu operador configuró una comisión de compliance, se debita **antes** de
+la llamada (verás `compliance_fee` en la respuesta) y se **reembolsa
+automáticamente** si el screening falla. Con comisión 0 el servicio es
+gratuito para ti.
+</Note>
+
+## Enviar el screening
+
+Un solo endpoint para persona y empresa; el tipo se detecta del payload:
+
+<CodeGroup>
+
+```bash Persona
+curl -X POST https://exchange.qbank.cl/platform/v1/kyc \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer": {
+      "person": { "full_name": "Ana Pérez Rojas" },
+      "email": "ana@ejemplo.com",
+      "country": "CL"
+    },
+    "monitor": false
+  }'
+```
+
+```bash Empresa
+curl -X POST https://exchange.qbank.cl/platform/v1/kyc \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer": {
+      "company": { "legal_name": "Comercial Andina SpA" },
+      "country": "CL"
+    },
+    "monitor": true
+  }'
+```
+
+</CodeGroup>
+
+Si omites `person`/`company`, se completa con los datos de tu cuenta.
+
+Respuesta `201` (resultado del screening + campos de facturación):
+
+```json
+{
+  "customer_id": "…",
+  "status": "…",
+  "risk_level": "…",
+  "screening_result": "…",
+  "kyc_status": "pending",
+  "compliance_service": "compliance_person",
+  "compliance_fee": "0.000000"
+}
+```
+
+Tu cuenta queda con `kyc_status: pending` hasta que el administrador la
+apruebe o rechace.
+
+## Rescreening
+
+Re-ejecuta el análisis de la misma identidad (por ejemplo, ante un cambio de
+datos o por política periódica):
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/kyc/rescreen \
+  -H "Authorization: Bearer <token>"
+```
+
+Requiere haber enviado un KYC antes; si no, `409 no_kyc`.
+
+## Monitoreo continuo
+
+Activa (o desactiva) la vigilancia permanente de la identidad — cambios en
+listas, PEP, prensa adversa:
+
+```bash
+curl -X PATCH https://exchange.qbank.cl/platform/v1/kyc/monitoring \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "enabled": true }'
+```
+
+Activar cobra la comisión `compliance_monitoring` (si está configurada);
+**desactivar es siempre gratis**.
+
+## Errores
+
+| HTTP | `error` | Causa |
+|---|---|---|
+| 402 | `insufficient_funds` | Saldo insuficiente para la comisión de compliance |
+| 409 | `no_kyc` | Rescreen/monitoreo sin un KYC previo |
+| 502 | `compliance_unavailable` | Servicio temporalmente no disponible (la comisión se reembolsó) |

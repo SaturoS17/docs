@@ -1,0 +1,78 @@
+---
+title: "Comisiones"
+description: "Cómo se calculan y dónde ver tus comisiones efectivas"
+---
+
+Las comisiones las configura tu operador por **servicio, país y activo**.
+Si no hay nada configurado para una combinación, la comisión es **0**.
+
+## Fórmula
+
+Cada comisión tiene dos componentes que se **suman** (cualquiera puede ser 0):
+
+```
+comisión = ceil(monto × percent / 100) + fixed_amount
+```
+
+- `percent`: porcentaje sobre el monto en USDT de la operación (redondeo
+  hacia arriba al micro-USDT).
+- `fixed_amount`: monto fijo en USDT.
+
+## Servicios con comisión
+
+| Servicio | Se aplica sobre | Cuándo se cobra |
+|---|---|---|
+| `payout` | Monto USDT del payout | Al crear el payout (incluido en `total_debit`) |
+| `payin` | USDT bruto recibido | Al acreditar (recibes `usdt_gross − fee`) |
+| `funding` | Depósito crypto bruto | Al acreditar el depósito on-chain |
+| `withdrawal` | Monto del retiro | Al crear el retiro (incluido en `total_debit`) |
+| `compliance_person` | — (cargo fijo por llamada) | Al enviar el KYC de una persona |
+| `compliance_company` | — | Al enviar el KYC de una empresa |
+| `compliance_rescreen` | — | Al re-ejecutar un screening |
+| `compliance_monitoring` | — | Al activar monitoreo continuo (desactivar es gratis) |
+
+<Note>
+Los servicios de compliance no tienen monto transaccional, por lo que solo
+aplica el componente fijo. Si el cargo falla aguas arriba, se reembolsa
+automáticamente (`compliance_refund`).
+</Note>
+
+## Transferencias internas: gratis
+
+Las transferencias entre cuentas de la misma organización
+(`POST /v1/transfers`) **no tienen comisión**.
+
+## Consulta tus comisiones efectivas
+
+`GET /v1/rates` devuelve, junto a las tasas FX, la configuración de
+comisiones vigente para tu cuenta:
+
+```json
+{
+  "base": "USD",
+  "rates": { "chile": { "currency": "CLP", "rate": "950.25" } },
+  "fees": [
+    {
+      "service": "payout",
+      "country": "CL",
+      "asset": "USDT",
+      "percent": "1.5",
+      "fixed_amount": "0.30"
+    }
+  ]
+}
+```
+
+Con eso puedes calcular el costo total antes de operar. La comisión cobrada
+queda siempre explícita en la respuesta de cada operación (campo `fee`) y en
+el ledger.
+
+## Ejemplo completo
+
+Payout de 100 USDT equivalentes con `percent: "1.5"` y
+`fixed_amount: "0.30"`:
+
+```
+fee         = ceil(100 × 1.5%) + 0.30 = 1.50 + 0.30 = 1.80 USDT
+total_debit = 100 + 1.80 = 101.80 USDT
+```

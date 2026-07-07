@@ -1,0 +1,67 @@
+---
+title: "Panel de administración"
+description: "Administra las cuentas, comisiones y operación de tu organización"
+---
+
+Esta sección es para **administradores de la organización**: el equipo que
+opera CBPay (o tu producto white-label) y gestiona a sus clientes.
+
+## Credencial de administrador
+
+Usas una **API key de organización** (`pk_...`) emitida por el operador de
+la plataforma. Se envía igual que cualquier credencial:
+
+```
+Authorization: Bearer pk_…
+```
+
+Con ella accedes a los endpoints de administración y además a las vistas
+globales de operaciones (`GET /v1/payouts`, `GET /v1/payins` con filtro
+`?account_id=`).
+
+<Warning>
+La API key admin puede mover dinero de todas las cuentas (ajustes). Trátala
+como una credencial de máxima sensibilidad: gestor de secretos, rotación
+periódica y nunca en el front-end.
+</Warning>
+
+## Qué puedes hacer
+
+<CardGroup cols={2}>
+  <Card title="Cuentas" icon="users" href="/es/admin/cuentas">
+    Crear cuentas de clientes (con o sin login), actualizarlas, bloquearlas
+    y resolver su estado KYC.
+  </Card>
+  <Card title="Comisiones" icon="percent" href="/es/admin/comisiones">
+    Configurar comisiones por servicio y país: defaults de la organización y
+    overrides por cuenta.
+  </Card>
+  <Card title="Operaciones" icon="gears" href="/es/admin/operaciones">
+    Ajustes manuales auditados, asignación de depósitos sin match y consulta
+    de revenue.
+  </Card>
+  <Card title="Webhooks" icon="bolt" href="/es/webhooks">
+    Suscripciones a eventos de toda la organización (no solo de una cuenta).
+  </Card>
+</CardGroup>
+
+## Flujo típico de onboarding de un cliente
+
+<Steps>
+  <Step title="Crea la cuenta">
+    `POST /v1/accounts` con `type` persona o empresa. Si es API-first, omite
+    `password` y emite una API key de cuenta.
+  </Step>
+  <Step title="Configura sus comisiones (opcional)">
+    Si no configuras nada aplican los defaults de la organización; con
+    `PUT /v1/accounts/{id}/fees` defines overrides.
+  </Step>
+  <Step title="KYC">
+    El cliente envía su screening (`POST /v1/kyc`); tú revisas el resultado
+    y resuelves con `PATCH /v1/accounts/{id}` → `kyc_status: approved`.
+  </Step>
+  <Step title="A operar">
+    El cliente fondea (payin o crypto) y empieza a operar. Tú lo ves todo:
+    movimientos, saldos y operaciones por cuenta.
+  </Step>
+</Steps>

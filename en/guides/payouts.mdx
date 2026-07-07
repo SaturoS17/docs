@@ -1,0 +1,126 @@
+---
+title: "Payouts"
+description: "Disperse fiat to local bank accounts, debited from your USDT balance"
+---
+
+A payout sends money in local currency to a bank account in the destination
+country. The amount converts from local currency to USDT at the current rate
+and `usdt_amount + fee` is debited from your balance.
+
+## 1. Discover the available corridors
+
+Countries, currencies and methods depend on your organization. Always check
+the catalog:
+
+```bash
+curl https://exchange.qbank.cl/platform/v1/payouts/methods \
+  -H "Authorization: Bearer <token>"
+```
+
+Typical corridors: Chile (CLP), Peru (PEN), Mexico (MXN), Venezuela (VES),
+Bolivia (BOB/USD) and Paraguay (PYG), with methods such as `bank_transfer`
+and local variants per country.
+
+For bank transfers you also need the banks catalog:
+
+```bash
+curl "https://exchange.qbank.cl/platform/v1/payouts/banks?country=CL" \
+  -H "Authorization: Bearer <token>"
+```
+
+## 2. Create the payout
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "MX",
+    "currency": "MXN",
+    "method": "bank_transfer",
+    "amount": "1500.00",
+    "beneficiary": {
+      "name": "Maria Lopez",
+      "account_type": "clabe",
+      "account_number": "012180001234567895"
+    },
+    "description": "Invoice 8841",
+    "idempotency_key": "invoice-8841"
+  }'
+```
+
+<Warning>
+`beneficiary` is a key/value object whose required fields depend on the
+corridor (RUT and bank in Chile, CLABE in Mexico, CCI in Peru, etc.). The
+methods catalog documents each one.
+</Warning>
+
+Response `202 Accepted`:
+
+```json
+{
+  "payout_id": "0d4f…",
+  "account_id": "…",
+  "idempotency_key": "invoice-8841",
+  "country": "MX",
+  "currency": "MXN",
+  "method": "bank_transfer",
+  "local_amount": "1500.00",
+  "fx_rate": "17.50",
+  "usdt_amount": "85.714286",
+  "fee": "1.585715",
+  "total_debit": "87.300001",
+  "status": "processing",
+  "created_at": "2026-07-06T20:00:00Z"
+}
+```
+
+At that moment your balance already reflects the debit: `total_debit` moved
+from `available` into `held`.
+
+## 3. Receive the final state
+
+Subscribe to the `payout_status_changed` event ([webhooks](/en/webhooks)):
+
+```json
+{
+  "payout_id": "0d4f…",
+  "account_id": "…",
+  "country": "MX",
+  "currency": "MXN",
+  "local_amount": "1500.00",
+  "usdt_amount": "85.714286",
+  "total_debit": "87.300001",
+  "status": "completed",
+  "status_code": ""
+}
+```
+
+- **`completed`**: the money arrived; the hold is consumed.
+- **`failed`**: the full debit is refunded automatically (`payout_refund`
+  in your ledger).
+
+You can also query at any time:
+
+```bash
+curl https://exchange.qbank.cl/platform/v1/payouts/0d4f… \
+  -H "Authorization: Bearer <token>"
+```
+
+## Common errors
+
+| HTTP | `error` | What to do |
+|---|---|---|
+| 400 | `idempotency_key_required` | Send the key in body or header |
+| 400 | `beneficiary_required` | Include the `beneficiary` object |
+| 402 | `insufficient_funds` | Fund the account; the payout was not created |
+| 403 | `account_blocked` | The account is not active; contact your operator |
+| 422 | `currency_not_supported` | No FX rate for that currency |
+| 422 | (payout with `status: failed`) | The corridor rejected the data; the debit was already refunded — fix `beneficiary` and retry with a new key |
+
+## Immediate rejection vs later failure
+
+If the processor rejects the payout at creation, you receive `422` with the
+object in `status: failed` and the refund already applied. If it fails later
+(e.g. the destination account does not exist), the webhook arrives with
+`status: failed` and the automatic refund happens at that moment.

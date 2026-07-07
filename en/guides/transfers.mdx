@@ -1,0 +1,60 @@
+---
+title: "Internal transfers"
+description: "Move USDT between accounts of your organization, free and instant"
+---
+
+Internal transfers move balance between two accounts of the **same
+organization**, atomically in the ledger and **free of charge**.
+
+## Create a transfer
+
+The destination is identified by `to_account_id` **or** `to_email`:
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/transfers \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to_email": "carlos@example.com",
+    "amount": "25.000000",
+    "description": "Expense split",
+    "idempotency_key": "split-2026-07-06-a"
+  }'
+```
+
+Response `201` — the transfer is **synchronous and immediate**:
+
+```json
+{
+  "transfer_id": "77b1…",
+  "from_account_id": "…",
+  "to_account_id": "…",
+  "asset": "USDT",
+  "amount": "25.000000",
+  "description": "Expense split",
+  "status": "completed",
+  "created_at": "2026-07-06T20:10:00Z"
+}
+```
+
+The recipient can be notified via the `transfer_received` webhook, and both
+sides see the movement in their history (`transfer_out` / `transfer_in`).
+
+## Rules
+
+- Only between **active** accounts of the same organization; internal system
+  accounts cannot receive.
+- You cannot transfer to yourself (`400 self_transfer`).
+- Requires `idempotency_key` (body or `Idempotency-Key` header); replays
+  return `200` with `idempotency_hit: true`.
+- `amount` accepts up to 6 decimal places.
+
+## Errors
+
+| HTTP | `error` | Cause |
+|---|---|---|
+| 400 | `recipient_required` | Missing `to_account_id` and `to_email` |
+| 400 | `self_transfer` | Source and destination are the same account |
+| 402 | `insufficient_funds` | Not enough available balance |
+| 404 | `recipient_not_found` | The email/ID does not match an account of your organization |
+| 422 | `recipient_unavailable` | The destination account is blocked/closed |

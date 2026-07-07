@@ -1,0 +1,126 @@
+---
+title: "Payouts"
+description: "Dispersa fiat a cuentas bancarias locales debitando tu saldo USDT"
+---
+
+Un payout envía dinero en moneda local a una cuenta bancaria del país
+destino. El monto se convierte de moneda local a USDT con la tasa vigente y
+se debita `usdt_amount + fee` de tu saldo.
+
+## 1. Descubre los corredores disponibles
+
+Los países, monedas y métodos disponibles dependen de tu organización.
+Consúltalos siempre por catálogo:
+
+```bash
+curl https://exchange.qbank.cl/platform/v1/payouts/methods \
+  -H "Authorization: Bearer <token>"
+```
+
+Corredores típicos: Chile (CLP), Perú (PEN), México (MXN), Venezuela (VES),
+Bolivia (BOB/USD) y Paraguay (PYG), con métodos como `bank_transfer` y
+variantes locales según el país.
+
+Para transferencias bancarias necesitas además el catálogo de bancos:
+
+```bash
+curl "https://exchange.qbank.cl/platform/v1/payouts/banks?country=CL" \
+  -H "Authorization: Bearer <token>"
+```
+
+## 2. Crea el payout
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "MX",
+    "currency": "MXN",
+    "method": "bank_transfer",
+    "amount": "1500.00",
+    "beneficiary": {
+      "name": "María López",
+      "account_type": "clabe",
+      "account_number": "012180001234567895"
+    },
+    "description": "Pago factura 8841",
+    "idempotency_key": "factura-8841"
+  }'
+```
+
+<Warning>
+`beneficiary` es un objeto de pares clave/valor cuyos campos requeridos
+dependen del corredor (RUT y banco en Chile, CLABE en México, CCI en Perú,
+etc.). El catálogo de métodos documenta los campos de cada uno.
+</Warning>
+
+Respuesta `202 Accepted`:
+
+```json
+{
+  "payout_id": "0d4f…",
+  "account_id": "…",
+  "idempotency_key": "factura-8841",
+  "country": "MX",
+  "currency": "MXN",
+  "method": "bank_transfer",
+  "local_amount": "1500.00",
+  "fx_rate": "17.50",
+  "usdt_amount": "85.714286",
+  "fee": "1.585715",
+  "total_debit": "87.300001",
+  "status": "processing",
+  "created_at": "2026-07-06T20:00:00Z"
+}
+```
+
+En ese momento tu saldo ya refleja el débito: `total_debit` pasó de
+`available` a `held`.
+
+## 3. Recibe el estado final
+
+Suscríbete al evento `payout_status_changed` ([webhooks](/es/webhooks)):
+
+```json
+{
+  "payout_id": "0d4f…",
+  "account_id": "…",
+  "country": "MX",
+  "currency": "MXN",
+  "local_amount": "1500.00",
+  "usdt_amount": "85.714286",
+  "total_debit": "87.300001",
+  "status": "completed",
+  "status_code": ""
+}
+```
+
+- **`completed`**: el dinero llegó; el hold se consume.
+- **`failed`**: se reembolsa el débito completo automáticamente
+  (`payout_refund` en tu ledger).
+
+También puedes consultar en cualquier momento:
+
+```bash
+curl https://exchange.qbank.cl/platform/v1/payouts/0d4f… \
+  -H "Authorization: Bearer <token>"
+```
+
+## Errores frecuentes
+
+| HTTP | `error` | Qué hacer |
+|---|---|---|
+| 400 | `idempotency_key_required` | Envía la clave en body o header |
+| 400 | `beneficiary_required` | Incluye el objeto `beneficiary` |
+| 402 | `insufficient_funds` | Fondea la cuenta; el payout no se creó |
+| 403 | `account_blocked` | La cuenta no está activa; contacta a tu operador |
+| 422 | `currency_not_supported` | No hay tasa FX para esa moneda |
+| 422 | (payout con `status: failed`) | El corredor rechazó los datos; el débito ya fue reembolsado — corrige `beneficiary` y reintenta con clave nueva |
+
+## Rechazo inmediato vs fallo posterior
+
+Si el procesador rechaza el payout al crearlo, recibes `422` con el objeto
+en `status: failed` y el reembolso ya aplicado. Si falla después (por
+ejemplo, cuenta destino inexistente detectada por el banco), te llega el
+webhook con `status: failed` y el reembolso automático en ese momento.

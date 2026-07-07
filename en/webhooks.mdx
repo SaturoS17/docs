@@ -1,0 +1,110 @@
+---
+title: "Webhooks"
+description: "Receive signed events in real time"
+---
+
+Webhooks notify your own HTTPS callback about your account's events (or the
+whole organization's, when using an admin credential).
+
+## Create a subscription
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/webhooks/subscriptions \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_type": "payout_status_changed",
+    "callback_url": "https://api.myapp.com/webhooks/cbpay",
+    "secret": "a-secret-of-at-least-16-chars"
+  }'
+```
+
+- `event_type`: one of the events below, or `*` for all.
+- `callback_url`: **HTTPS required**; localhost and private IPs are
+  rejected.
+- `secret`: at least 16 characters; used to sign every delivery. Stored
+  encrypted and cannot be retrieved.
+
+With an account credential the subscription receives **your account's**
+events; with an admin API key, the events of **every account** in the
+organization.
+
+## Events
+
+| Event | When it fires |
+|---|---|
+| `payin_credited` | A fiat collection was received and credited |
+| `payout_status_changed` | A payout changed state |
+| `transfer_received` | The account received an internal transfer |
+| `crypto_deposit_credited` | An on-chain deposit was confirmed and credited |
+| `crypto_withdrawal_status_changed` | An on-chain withdrawal changed state |
+
+Exact payloads for each event are documented in the API Reference.
+
+## Delivery format
+
+Every delivery is a JSON `POST` with these headers:
+
+| Header | Content |
+|---|---|
+| `X-Webhook-Event` | Event type |
+| `X-Webhook-Event-ID` | Unique event ID |
+| `X-Webhook-Delivery-ID` | This delivery's ID (changes across retries) |
+| `X-Webhook-Timestamp` | Unix timestamp (seconds, UTC) |
+| `X-Webhook-Signature` | HMAC signature (see below) |
+
+## Verify the signature
+
+```
+X-Webhook-Signature = hex( HMAC-SHA256( secret, timestamp + "." + body ) )
+```
+
+<CodeGroup>
+
+```javascript Node.js
+const crypto = require("crypto");
+
+function verifyWebhook(req, secret) {
+  const ts = req.headers["x-webhook-timestamp"];
+  const sig = req.headers["x-webhook-signature"];
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(ts + "." + req.rawBody)
+    .digest("hex");
+  return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+}
+```
+
+```python Python
+import hashlib, hmac
+
+def verify_webhook(headers, raw_body: bytes, secret: str) -> bool:
+    ts = headers["X-Webhook-Timestamp"]
+    sig = headers["X-Webhook-Signature"]
+    expected = hmac.new(
+        secret.encode(), f"{ts}.".encode() + raw_body, hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(sig, expected)
+```
+
+</CodeGroup>
+
+<Warning>
+Compute the HMAC over the **raw body** (bytes as received), not over
+re-serialized JSON. Reject old timestamps (> 5 minutes) to prevent replay.
+</Warning>
+
+## Retries and idempotency
+
+- Your endpoint must respond **2xx** within the timeout; anything else is
+  retried.
+- Up to **5 attempts** with incremental backoff (5s, 20s, 45s, 80s…).
+- Use `X-Webhook-Event-ID` to deduplicate: the same event can arrive more
+  than once (at-least-once delivery).
+
+## Best practices
+
+- Respond `200` immediately and process in the background.
+- Log the `X-Webhook-Delivery-ID` for traceability.
+- Don't rely solely on webhooks for critical states: you can always query
+  the object by API (`GET /v1/payouts/{id}`, etc.).

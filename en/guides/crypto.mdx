@@ -1,0 +1,105 @@
+---
+title: "Crypto: funding and withdrawals"
+description: "Deposit and withdraw USDT on-chain over TRON or Ethereum"
+---
+
+Your USDT balance can be funded and withdrawn directly on-chain. Supported
+networks: **TRON** (`tron`) and **Ethereum** (`eth`), asset **USDT**.
+
+## Funding (deposits)
+
+### 1. Get your deposit address
+
+Every account gets its own address per network, created on demand:
+
+```bash
+curl "https://exchange.qbank.cl/platform/v1/crypto/deposit-address?chain=tron" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "chain": "tron",
+  "asset": "USDT",
+  "address": "TQmZ…",
+  "created_at": "2026-07-06T20:00:00Z"
+}
+```
+
+<Warning>
+Send **only USDT over the correct network** to that address. The address is
+yours and stable: you can reuse it for every deposit.
+</Warning>
+
+### 2. Get credited automatically
+
+When the deposit confirms on-chain, your balance is credited automatically
+(net of the `funding` fee if your operator configured one) and the
+`crypto_deposit_credited` webhook fires:
+
+```json
+{
+  "account_id": "…",
+  "chain": "tron",
+  "asset": "USDT",
+  "tx_id": "b1946ac9…",
+  "amount": "499.000000",
+  "fee": "1.000000"
+}
+```
+
+## Withdrawals
+
+### Create a withdrawal
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/crypto/withdrawals \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "tron",
+    "to_address": "TVJ6…",
+    "amount": "100.000000",
+    "idempotency_key": "withdrawal-2026-07-06-b"
+  }'
+```
+
+Response `202` — `amount + fee` is debited and the transaction broadcasts:
+
+```json
+{
+  "withdrawal_id": "5e8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "to_address": "TVJ6…",
+  "amount": "100.000000",
+  "fee": "1.000000",
+  "total_debit": "101.000000",
+  "status": "processing",
+  "tx_id": "…"
+}
+```
+
+### Final state
+
+Arrives via the `crypto_withdrawal_status_changed` webhook:
+
+- **`completed`**: confirmed on-chain; the `tx_id` is your receipt.
+- **`failed`**: the full debit is refunded (`withdrawal_refund`).
+
+Full on-chain activity history (deposits + withdrawals):
+
+```bash
+curl https://exchange.qbank.cl/platform/v1/crypto/transactions \
+  -H "Authorization: Bearer <token>"
+```
+
+## Errors
+
+| HTTP | `error` | Cause |
+|---|---|---|
+| 400 | `invalid_chain` | Unsupported network (use `tron` or `eth`) |
+| 400 | `to_address_required` | Missing destination address |
+| 402 | `insufficient_funds` | Not enough balance for `amount + fee` |
+| 422 | (withdrawal with `status: failed`) | Rejected at broadcast; debit refunded |
+| 503 | `withdrawals_unavailable` | Withdrawals not enabled for this corridor yet |

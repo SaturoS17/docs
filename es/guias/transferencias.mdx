@@ -1,0 +1,60 @@
+---
+title: "Transferencias internas"
+description: "Mueve USDT entre cuentas de tu organización, gratis y al instante"
+---
+
+Las transferencias internas mueven saldo entre dos cuentas de la **misma
+organización**, de forma atómica en el ledger y **sin comisión**.
+
+## Crear una transferencia
+
+El destino se identifica por `to_account_id` **o** por `to_email`:
+
+```bash
+curl -X POST https://exchange.qbank.cl/platform/v1/transfers \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to_email": "carlos@ejemplo.com",
+    "amount": "25.000000",
+    "description": "Split de gastos",
+    "idempotency_key": "split-2026-07-06-a"
+  }'
+```
+
+Respuesta `201` — la transferencia es **síncrona e inmediata**:
+
+```json
+{
+  "transfer_id": "77b1…",
+  "from_account_id": "…",
+  "to_account_id": "…",
+  "asset": "USDT",
+  "amount": "25.000000",
+  "description": "Split de gastos",
+  "status": "completed",
+  "created_at": "2026-07-06T20:10:00Z"
+}
+```
+
+El receptor puede enterarse por el webhook `transfer_received` y ambos ven
+el movimiento en su historial (`transfer_out` / `transfer_in`).
+
+## Reglas
+
+- Solo entre cuentas **activas** de la misma organización; las cuentas
+  internas del sistema no pueden recibir.
+- No puedes transferirte a ti mismo (`400 self_transfer`).
+- Requiere `idempotency_key` (body o header `Idempotency-Key`); el replay
+  devuelve `200` con `idempotency_hit: true`.
+- `amount` acepta hasta 6 decimales.
+
+## Errores
+
+| HTTP | `error` | Causa |
+|---|---|---|
+| 400 | `recipient_required` | Falta `to_account_id` y `to_email` |
+| 400 | `self_transfer` | Origen y destino son la misma cuenta |
+| 402 | `insufficient_funds` | Saldo disponible insuficiente |
+| 404 | `recipient_not_found` | El email/ID no corresponde a una cuenta de tu organización |
+| 422 | `recipient_unavailable` | La cuenta destino está bloqueada/cerrada |

@@ -1,0 +1,67 @@
+---
+title: "Administration panel"
+description: "Manage your organization's accounts, fees and operations"
+---
+
+This section is for **organization administrators**: the team operating
+CBPay (or your white-label product) and managing its clients.
+
+## Admin credential
+
+You use an **organization API key** (`pk_...`) issued by the platform
+operator. Send it like any credential:
+
+```
+Authorization: Bearer pk_…
+```
+
+It grants access to the administration endpoints plus the global operation
+views (`GET /v1/payouts`, `GET /v1/payins` with the `?account_id=` filter).
+
+<Warning>
+The admin API key can move money across all accounts (adjustments). Treat it
+as a maximum-sensitivity credential: secrets manager, periodic rotation and
+never in the front-end.
+</Warning>
+
+## What you can do
+
+<CardGroup cols={2}>
+  <Card title="Accounts" icon="users" href="/en/admin/accounts">
+    Create client accounts (with or without login), update them, block them
+    and resolve their KYC state.
+  </Card>
+  <Card title="Fees" icon="percent" href="/en/admin/fees">
+    Configure fees per service and country: organization defaults and
+    per-account overrides.
+  </Card>
+  <Card title="Operations" icon="gears" href="/en/admin/operations">
+    Audited manual adjustments, assignment of unmatched deposits and revenue
+    queries.
+  </Card>
+  <Card title="Webhooks" icon="bolt" href="/en/webhooks">
+    Subscriptions to events of the whole organization (not just one
+    account).
+  </Card>
+</CardGroup>
+
+## Typical client onboarding flow
+
+<Steps>
+  <Step title="Create the account">
+    `POST /v1/accounts` with `type` person or company. For API-first
+    clients, omit `password` and issue an account API key.
+  </Step>
+  <Step title="Configure its fees (optional)">
+    Organization defaults apply when nothing is set; define overrides with
+    `PUT /v1/accounts/{id}/fees`.
+  </Step>
+  <Step title="KYC">
+    The client submits its screening (`POST /v1/kyc`); you review the result
+    and resolve with `PATCH /v1/accounts/{id}` → `kyc_status: approved`.
+  </Step>
+  <Step title="Operate">
+    The client funds (payin or crypto) and starts operating. You see
+    everything: movements, balances and operations per account.
+  </Step>
+</Steps>
