@@ -1,0 +1,55 @@
+---
+title: "Changelog"
+description: "History of API and documentation changes"
+---
+
+Every change to the CBPay API and this documentation, most recent first.
+Breaking changes are announced in advance and flagged as **Breaking**.
+
+<Update label="July 7, 2026" description="v1.2">
+
+**Added**
+
+- New `wallet_creation` fee service: the first creation of a deposit address
+  on each chain may carry a fixed charge configured by your operator
+  (0 = free, the default). The `GET /v1/crypto/deposit-address` response now
+  includes `creation_fee`, and the movements history adds the
+  `wallet_creation_fee` and `wallet_creation_refund` entry types. Fetching
+  an existing address remains always free; if creation fails, the charge is
+  refunded automatically.
+- New **Changelog** page (this page) with the version history of the API
+  and documentation.
+
+</Update>
+
+<Update label="July 6, 2026" description="v1.1">
+
+**Added**
+
+- Per-operation compliance fees: `compliance_person`, `compliance_company`,
+  `compliance_rescreen` and `compliance_monitoring` (fixed per-call charge;
+  0 = free). KYC responses now include `compliance_service` and
+  `compliance_fee`.
+- `POST /v1/kyc/rescreen` and `PATCH /v1/kyc/monitoring` endpoints
+  (disabling monitoring is free). Both require a prior KYC (`409 no_kyc`).
+
+**Changed**
+
+- Official CBPay brand identity applied across the documentation.
+- Organization administration documentation moved to a separate operator
+  portal; this site now covers the account API only.
+
+</Update>
+
+<Update label="July 6, 2026" description="v1.0">
+
+**Initial release**
+
+- Public CBPay API documentation, bilingual (Spanish and English):
+  authentication (JWT sessions and `pk_` API keys), USDT money model, fees,
+  idempotency, multi-country fiat payouts, payins, internal transfers,
+  crypto (on-chain funding and withdrawals), KYC, signed webhooks and the
+  full error catalog.
+- Interactive API Reference generated from OpenAPI 3.1.
+
+</Update>

@@ -22,9 +22,19 @@ curl "https://exchange.qbank.cl/platform/v1/crypto/deposit-address?chain=tron" \
   "chain": "tron",
   "asset": "USDT",
   "address": "TQmZ…",
-  "created_at": "2026-07-06T20:00:00Z"
+  "created_at": "2026-07-06T20:00:00Z",
+  "creation_fee": "0.000000"
 }
 ```
+
+<Note>
+La **primera creación** de wallet en cada red puede tener un cargo fijo
+(`wallet_creation`, según lo configure tu operador; 0 = gratis). La
+respuesta lo informa en `creation_fee`. Consultar una dirección ya creada
+es siempre gratis, y si la creación falla el cargo se reembolsa
+automáticamente. Con saldo insuficiente para el cargo recibes
+`402 insufficient_funds`.
+</Note>
 
 <Warning>
 Envía **solo USDT por la red correcta** a esa dirección. La dirección es

@@ -22,9 +22,18 @@ curl "https://exchange.qbank.cl/platform/v1/crypto/deposit-address?chain=tron" \
   "chain": "tron",
   "asset": "USDT",
   "address": "TQmZ…",
-  "created_at": "2026-07-06T20:00:00Z"
+  "created_at": "2026-07-06T20:00:00Z",
+  "creation_fee": "0.000000"
 }
 ```
+
+<Note>
+The **first wallet creation** on each chain may carry a fixed charge
+(`wallet_creation`, as configured by your operator; 0 = free). The response
+reports it in `creation_fee`. Fetching an already-created address is always
+free, and if creation fails the charge is refunded automatically. With
+insufficient balance for the charge you receive `402 insufficient_funds`.
+</Note>
 
 <Warning>
 Send **only USDT over the correct network** to that address. The address is

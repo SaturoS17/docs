@@ -360,6 +360,8 @@ paths:
           - withdrawal_refund
           - compliance_fee
           - compliance_refund
+          - wallet_creation_fee
+          - wallet_creation_refund
       responses:
         '200':
           description: Paged movements.
@@ -842,13 +844,13 @@ paths:
       - Crypto
       operationId: getDepositAddress
       summary: Get my deposit address
-      description: 'Returns (creating on first call) the on-chain USDT deposit address of
+      description: 'Returns (creating on first call) the on-chain USDT deposit address of the calling
+        account. Confirmed deposits credit the balance automatically, minus the funding fee.
 
-        the calling account. Confirmed deposits credit the balance
 
-        automatically, minus the funding fee.
-
-        '
+        The first creation on each chain bills the `wallet_creation` fee when configured (fixed per wallet;
+        0 = free, the default), reported in `creation_fee` and refunded if creation fails. Fetching an
+        existing address is always free.'
       parameters:
       - name: chain
         in: query
@@ -877,9 +879,18 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DepositAddress'
+                allOf:
+                - $ref: '#/components/schemas/DepositAddress'
+                - type: object
+                  properties:
+                    creation_fee:
+                      type: string
+                      example: '0.000000'
+                      description: Wallet creation fee charged (0.000000 when free).
         '403':
           $ref: '#/components/responses/AccountRequired'
+        '402':
+          $ref: '#/components/responses/InsufficientFunds'
   /v1/crypto/withdrawals:
     post:
       tags:

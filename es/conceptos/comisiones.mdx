@@ -26,15 +26,17 @@ comisión = ceil(monto × percent / 100) + fixed_amount
 | `payin` | USDT bruto recibido | Al acreditar (recibes `usdt_gross − fee`) |
 | `funding` | Depósito crypto bruto | Al acreditar el depósito on-chain |
 | `withdrawal` | Monto del retiro | Al crear el retiro (incluido en `total_debit`) |
+| `wallet_creation` | — (cargo fijo por wallet) | Al crear tu primera dirección de depósito en una red; consultar una dirección existente es siempre gratis |
 | `compliance_person` | — (cargo fijo por llamada) | Al enviar el KYC de una persona |
 | `compliance_company` | — | Al enviar el KYC de una empresa |
 | `compliance_rescreen` | — | Al re-ejecutar un screening |
 | `compliance_monitoring` | — | Al activar monitoreo continuo (desactivar es gratis) |
 
 <Note>
-Los servicios de compliance no tienen monto transaccional, por lo que solo
-aplica el componente fijo. Si el cargo falla aguas arriba, se reembolsa
-automáticamente (`compliance_refund`).
+Los servicios de compliance y la creación de wallets no tienen monto
+transaccional, por lo que solo aplica el componente fijo. Si la operación
+falla aguas arriba después de cobrar, el cargo se reembolsa automáticamente
+(`compliance_refund` / `wallet_creation_refund`).
 </Note>
 
 ## Transferencias internas: gratis

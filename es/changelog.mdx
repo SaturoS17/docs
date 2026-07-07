@@ -1,0 +1,57 @@
+---
+title: "Novedades"
+description: "Historial de cambios de la API y de esta documentación"
+---
+
+Todos los cambios de la API de CBPay y de esta documentación, del más
+reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
+con anticipación y quedan marcados como **Breaking**.
+
+<Update label="7 de julio de 2026" description="v1.2">
+
+**Agregado**
+
+- Nuevo servicio de comisión `wallet_creation`: la primera creación de una
+  dirección de depósito en cada red puede tener un cargo fijo configurado
+  por tu operador (0 = gratis, valor por defecto). La respuesta de
+  `GET /v1/crypto/deposit-address` ahora incluye `creation_fee`, y el
+  historial de movimientos incorpora los tipos `wallet_creation_fee` y
+  `wallet_creation_refund`. Consultar una dirección existente sigue siendo
+  siempre gratis; si la creación falla, el cargo se reembolsa
+  automáticamente.
+- Nueva página **Novedades** (esta página) con el historial de versiones de
+  la API y la documentación.
+
+</Update>
+
+<Update label="6 de julio de 2026" description="v1.1">
+
+**Agregado**
+
+- Comisiones de compliance por operación: `compliance_person`,
+  `compliance_company`, `compliance_rescreen` y `compliance_monitoring`
+  (cargo fijo por llamada; 0 = gratis). Las respuestas de KYC ahora incluyen
+  `compliance_service` y `compliance_fee`.
+- Endpoints `POST /v1/kyc/rescreen` y `PATCH /v1/kyc/monitoring`
+  (desactivar monitoreo es gratis). Requieren un KYC previo (`409 no_kyc`).
+
+**Cambiado**
+
+- Identidad visual oficial de CBPay aplicada a toda la documentación.
+- La documentación de administración de organizaciones se movió a un portal
+  separado para operadores; este sitio contiene solo la API de cuentas.
+
+</Update>
+
+<Update label="6 de julio de 2026" description="v1.0">
+
+**Lanzamiento inicial**
+
+- Documentación pública de la API de CBPay, bilingüe (español e inglés):
+  autenticación (sesiones JWT y API keys `pk_`), modelo de dinero USDT,
+  comisiones, idempotencia, payouts fiat multi-país, payins, transferencias
+  internas, crypto (fondeo y retiros on-chain), KYC, webhooks firmados y
+  catálogo completo de errores.
+- API Reference interactiva generada desde OpenAPI 3.1.
+
+</Update>
