@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.23'
+  version: '1.24'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain USDT funding and
@@ -47,6 +47,9 @@ tags:
 - name: Cards
   description: 'Virtual and physical cards that spend Just-In-Time from the account''s USDT balance,
     with per-card spending limits.'
+- name: Security (OTP)
+  description: One-time verification codes over SMS/WhatsApp protecting
+    sensitive actions. Applies to user sessions only — API keys are exempt.
 paths:
   /v1/auth/register:
     post:
@@ -191,7 +194,10 @@ paths:
               password: a-secure-password
       responses:
         '200':
-          description: Session issued.
+          description: >-
+            Session issued — or, when the account's policy requires OTP on
+            login, an intermediate response with `otp_required` true and a
+            `pending_token` to exchange at `POST /v1/auth/login/otp`.
           content:
             application/json:
               schema:
@@ -211,11 +217,39 @@ paths:
                     - owner
                     - operator
                     - viewer
-              example:
-                access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…
-                expires_at: '2026-07-08T12:00:00Z'
-                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
-                role: owner
+                  otp_required:
+                    type: boolean
+                    description: Present (true) when the login needs a second step.
+                  pending_token:
+                    type: string
+                    description: Intermediate token for `POST /v1/auth/login/otp`. It cannot authenticate API requests.
+                  challenge_id:
+                    type: string
+                    format: uuid
+                  channel:
+                    type: string
+                    enum: [sms, whatsapp]
+                  phone:
+                    type: string
+                    description: Masked phone the code was sent to.
+              examples:
+                session:
+                  summary: Session issued (no OTP policy)
+                  value:
+                    access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…
+                    expires_at: '2026-07-08T12:00:00Z'
+                    account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                    role: owner
+                otpRequired:
+                  summary: Two-step login (OTP policy active)
+                  value:
+                    otp_required: true
+                    pending_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…
+                    challenge_id: 6f1c02aa-93a1-4f0e-a7d1-1f2e3c4b5a69
+                    channel: sms
+                    phone: '********5678'
+                    expires_at: '2026-07-08T21:10:00Z'
+                    note: verify the code with POST /v1/auth/login/otp to receive the session token
         '401':
           description: Email or password is incorrect (`invalid_credentials`).
           content:
@@ -225,6 +259,79 @@ paths:
               example:
                 error: invalid_credentials
                 message: email or password is incorrect
+  /v1/auth/login/otp:
+    post:
+      tags:
+      - Authentication
+      security: []
+      operationId: loginOTP
+      summary: Complete two-step login
+      description: Exchanges the `pending_token` from `POST /v1/auth/login`
+        plus the OTP code received over SMS/WhatsApp for the real session
+        token. The pending token expires after 10 minutes and can never call
+        the API by itself.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - pending_token
+              - code
+              properties:
+                pending_token:
+                  type: string
+                code:
+                  type: string
+                  minLength: 4
+                  maxLength: 10
+            example:
+              pending_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…
+              code: '482913'
+      responses:
+        '200':
+          description: Session issued.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                  account_id:
+                    type: string
+                    format: uuid
+                  role:
+                    type: string
+              example:
+                access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…
+                expires_at: '2026-07-09T21:00:00Z'
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                role: owner
+        '401':
+          description: The code is wrong (`invalid_code`) or the pending token
+            expired (`invalid_pending_token`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_code
+                message: the code is incorrect; check it and try again
+        '409':
+          description: The challenge expired or was already used
+            (`challenge_not_pending`); log in again.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: challenge_not_pending
+                message: the challenge already expired or was used; log in again
   /v1/me:
     get:
       tags:
@@ -4501,6 +4608,280 @@ paths:
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/otp/settings:
+    get:
+      tags:
+      - Security (OTP)
+      operationId: getOTPSettings
+      summary: My OTP policy
+      description: Effective OTP policy for the calling account — whether the
+        feature is enabled, which actions require a code and over which
+        channel, plus the (masked) phone and its verification state.
+      responses:
+        '200':
+          description: Effective policy.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                  phone:
+                    type: string
+                    description: Masked phone ("" when unset).
+                  phone_verified:
+                    type: boolean
+                  actions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        action:
+                          type: string
+                        required:
+                          type: boolean
+                        channel:
+                          type: string
+                          enum: [sms, whatsapp]
+              example:
+                enabled: true
+                phone: '********5678'
+                phone_verified: true
+                actions:
+                - action: login
+                  required: true
+                  channel: sms
+                - action: payout
+                  required: true
+                  channel: whatsapp
+                - action: crypto_withdrawal
+                  required: true
+                  channel: sms
+                - action: transfer
+                  required: false
+                  channel: sms
+                - action: banking_operation
+                  required: false
+                  channel: sms
+                - action: card_reveal
+                  required: true
+                  channel: sms
+                - action: api_key_create
+                  required: true
+                  channel: sms
+                - action: member_add
+                  required: false
+                  channel: sms
+                - action: phone_change
+                  required: true
+                  channel: sms
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+  /v1/otp/challenges:
+    post:
+      tags:
+      - Security (OTP)
+      operationId: createOTPChallenge
+      summary: Request an OTP code
+      description: Sends a one-time code to the account's phone over the
+        channel configured for the action. Requires a user session (JWT) —
+        API keys receive `403 session_required`. Hourly send limits apply.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - action
+              properties:
+                action:
+                  type: string
+                  enum: [login, payout, crypto_withdrawal, transfer, banking_operation, card_reveal, api_key_create, member_add, phone_change]
+            example:
+              action: payout
+      responses:
+        '201':
+          description: Challenge created; the code is on its way.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OTPChallenge'
+              example: &otpChallengeExample
+                challenge_id: 6f1c02aa-93a1-4f0e-a7d1-1f2e3c4b5a69
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                action: payout
+                channel: whatsapp
+                phone: '********5678'
+                status: pending
+                created_at: '2026-07-08T21:00:00Z'
+                expires_at: '2026-07-08T21:10:00Z'
+        '403':
+          description: API key credential (`session_required`) or recently
+            linked, unverified phone (`phone_binding_cooldown`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: session_required
+                message: OTP verification requires a user session (JWT), not an API key
+        '409':
+          description: The account has no phone number (`phone_required`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: phone_required
+                message: the account has no phone number; set it with PATCH /v1/me before requesting OTP codes
+        '429':
+          description: Send quota reached (`too_many_attempts`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: too_many_attempts
+                message: too many verification attempts; wait before retrying
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags:
+      - Security (OTP)
+      operationId: listOTPChallenges
+      summary: List my OTP challenges
+      parameters:
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/pageSize'
+      - name: from
+        in: query
+        schema:
+          type: string
+          format: date
+        description: Start date (YYYY-MM-DD, UTC, inclusive).
+      - name: to
+        in: query
+        schema:
+          type: string
+          format: date
+        description: End date (YYYY-MM-DD, UTC, inclusive).
+      responses:
+        '200':
+          description: Challenge history (audit).
+          content:
+            application/json:
+              example:
+                page: 1
+                page_size: 50
+                challenges:
+                - challenge_id: 6f1c02aa-93a1-4f0e-a7d1-1f2e3c4b5a69
+                  account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                  action: payout
+                  channel: whatsapp
+                  phone: '********5678'
+                  status: consumed
+                  created_at: '2026-07-08T21:00:00Z'
+                  expires_at: '2026-07-08T21:10:00Z'
+                  verified_at: '2026-07-08T21:01:12Z'
+                  consumed_at: '2026-07-08T21:01:40Z'
+        '400':
+          $ref: '#/components/responses/InvalidRange'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+  /v1/otp/challenges/{challengeID}:
+    get:
+      tags:
+      - Security (OTP)
+      operationId: getOTPChallenge
+      summary: Get an OTP challenge
+      parameters:
+      - name: challengeID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: The challenge.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OTPChallenge'
+              example: *otpChallengeExample
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/otp/challenges/{challengeID}/verify:
+    post:
+      tags:
+      - Security (OTP)
+      operationId: verifyOTPChallenge
+      summary: Verify the code
+      description: Validates the code received over SMS/WhatsApp and returns
+        the single-use `otp_token` that authorizes the protected action
+        (send it in the `X-OTP-Token` header). 5 attempts per challenge.
+      parameters:
+      - name: challengeID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - code
+              properties:
+                code:
+                  type: string
+                  minLength: 4
+                  maxLength: 10
+            example:
+              code: '482913'
+      responses:
+        '200':
+          description: Code approved; single-use token issued.
+          content:
+            application/json:
+              example:
+                challenge_id: 6f1c02aa-93a1-4f0e-a7d1-1f2e3c4b5a69
+                action: payout
+                otp_token: otp_Zk9uY2XIr1EYE0lq8xqlM3VayVZYX4aa11bb22cc33
+                expires_at: '2026-07-08T21:10:00Z'
+                note: 'single use: send it in the X-OTP-Token header of the protected action'
+        '401':
+          description: The code is incorrect (`invalid_code`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_code
+                message: the code is incorrect; check it and try again
+        '409':
+          description: The challenge expired or was already used
+            (`challenge_not_pending`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: challenge_not_pending
+                message: the challenge already expired or was used; create a new one
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/services:
     get:
       tags:
@@ -4653,6 +5034,15 @@ components:
           example:
             error: insufficient_funds
             message: account balance is not enough for this operation
+    InvalidRange:
+      description: Invalid `from`/`to` date filter (`invalid_range`).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: invalid_range
+            message: invalid from date (YYYY-MM-DD)
     AccountRequired:
       description: This endpoint requires an account credential (`account_required`).
       content:
@@ -4689,6 +5079,39 @@ components:
             error: unauthorized
             message: invalid or missing credentials
   schemas:
+    OTPChallenge:
+      type: object
+      properties:
+        challenge_id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [login, payout, crypto_withdrawal, transfer, banking_operation, card_reveal, api_key_create, member_add, phone_change]
+        channel:
+          type: string
+          enum: [sms, whatsapp]
+        phone:
+          type: string
+          description: Masked phone the code was sent to.
+        status:
+          type: string
+          enum: [pending, verified, consumed, expired]
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        verified_at:
+          type: string
+          format: date-time
+        consumed_at:
+          type: string
+          format: date-time
     CardObject:
       type: object
       properties:

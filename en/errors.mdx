@@ -32,6 +32,25 @@ All errors share the same shape:
 | 403 | `org_suspended` | Service suspended; contact the CBPay team |
 | 403 | `company_only` | Feature only for company accounts |
 
+### OTP / 2FA
+
+Full flow and details in [security and 2FA](/en/security-2fa).
+
+| HTTP | `error` | Meaning |
+|---|---|---|
+| 403 | `otp_required` | The action requires OTP: verify a challenge and retry with `X-OTP-Token` |
+| 403 | `otp_invalid` | OTP token invalid, expired or already used |
+| 403 | `session_required` | OTP challenges require a user session, not an API key |
+| 403 | `phone_binding_cooldown` | Phone linked less than 24 h ago without verification |
+| 401 | `invalid_code` | The code does not match |
+| 401 | `invalid_pending_token` | The intermediate login token expired; log in again |
+| 400 | `invalid_action` / `invalid_channel` | Action or channel outside the catalog |
+| 409 | `phone_required` | The account has no phone (`PATCH /v1/me`) |
+| 409 | `otp_phone_missing` | Login requires OTP and the account has no phone; contact your operator |
+| 409 | `challenge_not_pending` | The challenge expired or was already used; create a new one |
+| 429 | `too_many_attempts` | Send/verification limits reached; wait a few minutes |
+| 503 | `otp_unavailable` | Verification service unavailable (the action stays blocked; OTP is never skipped) |
+
 ### Validation (400)
 
 | `error` | Meaning |

@@ -8,6 +8,30 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="8 de julio de 2026" description="v1.24">
+
+**Agregado — OTP/2FA por SMS y WhatsApp**
+
+- **Verificación en dos pasos para acciones sensibles**: tu operador puede
+  exigir un código de un solo uso (por SMS o WhatsApp) antes de login,
+  payouts, retiros crypto, transferencias, pagos bancarios, revelar una
+  tarjeta, emitir API keys, agregar miembros o cambiar el teléfono. Guía
+  completa en [seguridad y 2FA](/es/seguridad-2fa).
+- **Endpoints nuevos**: `POST /v1/otp/challenges` (envía el código),
+  `POST /v1/otp/challenges/{id}/verify` (devuelve el `otp_token` de un solo
+  uso para el header `X-OTP-Token`), `GET /v1/otp/challenges` (+ detalle) y
+  `GET /v1/otp/settings` (tu política efectiva).
+- **Login en dos pasos**: con OTP activo en `login`, `POST /v1/auth/login`
+  devuelve `otp_required: true` + `pending_token`, y la sesión se emite en
+  `POST /v1/auth/login/otp`.
+- **Solo sesiones de usuario**: las API keys `pk_` quedan exentas — tus
+  integraciones server-to-server no cambian.
+- Códigos de error nuevos en el [catálogo](/es/errores): `otp_required`,
+  `otp_invalid`, `phone_required`, `phone_binding_cooldown`,
+  `too_many_attempts` y más.
+
+</Update>
+
 <Update label="8 de julio de 2026" description="v1.23">
 
 **Documentación — persona vs empresa y guías unificadas**

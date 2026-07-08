@@ -12,7 +12,7 @@ solo saldo.
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.23 (8 de julio de 2026) |
+| Versión de la documentación | v1.24 (8 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -45,6 +45,7 @@ solo saldo.
   - [KYC/KYB y compliance](#kyckyb-y-compliance)
   - [Cartola (estado de cuenta)](#cartola-estado-de-cuenta)
 - **Integración**
+  - [Seguridad y 2FA (OTP)](#seguridad-y-2fa-otp)
   - [Webhooks](#webhooks)
   - [Errores](#errores)
   - [Preguntas frecuentes](#preguntas-frecuentes)
@@ -392,6 +393,11 @@ curl -X POST https://api.qbank.cl/platform/v1/auth/login \
 Las cuentas empresa pueden tener varios **miembros** con roles — ver
 [miembros de una empresa](#miembros-de-una-empresa) más abajo.
 
+> **Nota**
+Si la política de la cuenta exige **OTP en el login**, la respuesta trae
+`otp_required: true` con un `pending_token` en vez de la sesión: el segundo
+paso se completa en `POST /v1/auth/login/otp` con el código recibido por
+SMS/WhatsApp. Flujo completo en [seguridad y 2FA](#seguridad-y-2fa-otp).
 #### API key (servidor a servidor)
 
 Formato `pk_<key_id>.<secret>`. No expira y no depende de una sesión.
@@ -4041,6 +4047,223 @@ curl "https://api.qbank.cl/platform/v1/accounts/{accountID}/reports/statement?fr
 # Integración
 
 
+## Seguridad y 2FA (OTP)
+
+*Códigos de un solo uso por SMS o WhatsApp para proteger login, payouts, retiros y más*
+
+CBPay puede exigir un **código de verificación de un solo uso (OTP)** antes
+de las acciones sensibles: iniciar sesión, crear un payout, retirar crypto,
+revelar una tarjeta, emitir una API key… El código llega por **SMS o
+WhatsApp** al teléfono de la cuenta, y tu operador decide **qué acciones lo
+exigen y por qué canal** — por cuenta o para toda la organización.
+
+> **Nota**
+El OTP aplica **solo a sesiones de usuario** (login con JWT). Las **API keys
+`pk_` están exentas**: son integraciones server-to-server y no hay un humano
+con teléfono al otro lado. Si toda tu operación usa API keys, esta página no
+cambia nada de tu integración.
+### Cómo funciona
+
+```mermaid
+sequenceDiagram
+    participant U as Usuario (sesión JWT)
+    participant API as CBPay API
+    U->>API: POST /v1/payouts (sin OTP)
+    API-->>U: 403 otp_required {action, channel}
+    U->>API: POST /v1/otp/challenges {action: "payout"}
+    Note over U: Llega el código por SMS/WhatsApp
+    API-->>U: 201 {challenge_id, expires_at}
+    U->>API: POST /v1/otp/challenges/{id}/verify {code}
+    API-->>U: 200 {otp_token}
+    U->>API: POST /v1/payouts + header X-OTP-Token
+    API-->>U: 201 payout creado
+```
+
+El `otp_token` es de **un solo uso**, está ligado a tu usuario y a la acción
+para la que se emitió, y expira junto con el desafío (10 minutos desde el
+envío del código).
+
+### 1. Consulta tu política
+
+`GET /v1/otp/settings` te dice si el OTP está activo y qué acciones lo
+exigen:
+
+```bash
+curl https://api.qbank.cl/platform/v1/otp/settings \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "enabled": true,
+  "phone": "********5678",
+  "phone_verified": true,
+  "actions": [
+    { "action": "login", "required": true, "channel": "sms" },
+    { "action": "payout", "required": true, "channel": "whatsapp" },
+    { "action": "crypto_withdrawal", "required": true, "channel": "sms" },
+    { "action": "transfer", "required": false, "channel": "sms" },
+    { "action": "banking_operation", "required": false, "channel": "sms" },
+    { "action": "card_reveal", "required": true, "channel": "sms" },
+    { "action": "api_key_create", "required": true, "channel": "sms" },
+    { "action": "member_add", "required": false, "channel": "sms" },
+    { "action": "phone_change", "required": true, "channel": "sms" }
+  ]
+}
+```
+
+### 2. Pide el código
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/otp/challenges \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "action": "payout" }'
+```
+
+Respuesta `201` — el código ya viaja al teléfono de la cuenta:
+
+```json
+{
+  "challenge_id": "6f1c02aa-93a1-4f0e-a7d1-1f2e3c4b5a69",
+  "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "action": "payout",
+  "channel": "whatsapp",
+  "phone": "********5678",
+  "status": "pending",
+  "created_at": "2026-07-08T21:00:00Z",
+  "expires_at": "2026-07-08T21:10:00Z"
+}
+```
+
+Si la cuenta no tiene teléfono: `409 phone_required` (cárgalo con
+`PATCH /v1/me`). Hay límites de envío por hora — si te pasas,
+`429 too_many_attempts`.
+
+### 3. Verifica el código
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/otp/challenges/6f1c02aa-93a1-4f0e-a7d1-1f2e3c4b5a69/verify \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "code": "482913" }'
+```
+
+```json
+{
+  "challenge_id": "6f1c02aa-93a1-4f0e-a7d1-1f2e3c4b5a69",
+  "action": "payout",
+  "otp_token": "otp_Zk9uY2XIr1EYE0lq8xqlM3VayVZYX4aa11bb22cc33",
+  "expires_at": "2026-07-08T21:10:00Z",
+  "note": "single use: send it in the X-OTP-Token header of the protected action"
+}
+```
+
+Código incorrecto → `401 invalid_code` (tienes 5 intentos por desafío).
+
+### 4. Ejecuta la acción con el token
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "X-OTP-Token: otp_Zk9uY2XIr1EYE0lq8xqlM3VayVZYX4aa11bb22cc33" \
+  -H "Content-Type: application/json" \
+  -d '{ "country": "CL", "currency": "CLP", "method": "bank_transfer", "amount": "50000", "beneficiary": { "...": "..." }, "idempotency_key": "pay-991" }'
+```
+
+El token se consume al usarlo, incluso si la acción falla después (por
+ejemplo por saldo insuficiente): para reintentar necesitas verificar un
+desafío nuevo. Tu `idempotency_key` sigue siendo la protección contra
+duplicados — el OTP no la reemplaza.
+
+### Login en dos pasos
+
+Si tu política exige OTP en `login`, `POST /v1/auth/login` deja de devolver
+la sesión directamente:
+
+```json
+{
+  "otp_required": true,
+  "pending_token": "eyJhbGciOi…",
+  "challenge_id": "8a2b…",
+  "channel": "sms",
+  "phone": "********5678",
+  "expires_at": "2026-07-08T21:10:00Z",
+  "note": "verify the code with POST /v1/auth/login/otp to receive the session token"
+}
+```
+
+El `pending_token` **no sirve para llamar a la API**: solo se canjea, junto
+con el código, por la sesión real:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/auth/login/otp \
+  -H "Content-Type: application/json" \
+  -d '{ "pending_token": "eyJhbGciOi…", "code": "482913" }'
+```
+
+```json
+{
+  "access_token": "eyJhbGciOi…",
+  "expires_at": "2026-07-09T21:00:00Z",
+  "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "role": "owner"
+}
+```
+
+### El teléfono de la cuenta
+
+- Formato **E.164** (`+56912345678`), se define en el registro, con
+  `PATCH /v1/me` o por tu operador.
+- `phone_verified` pasa a `true` la primera vez que verificas un desafío:
+  demuestra que el titular tiene el teléfono en mano.
+- **Cambiar el teléfono** (acción `phone_change`) valida el código contra el
+  número **anterior** — así nadie puede redirigir tus códigos sin tener tu
+  teléfono actual.
+- Si el teléfono se enlaza por primera vez (o se cambia sin verificación),
+  las acciones protegidas quedan bloqueadas por **24 horas**
+  (`403 phone_binding_cooldown`): es la ventana anti-secuestro de sesión.
+  El teléfono cargado por tu operador no tiene cooldown.
+
+### Errores
+
+| HTTP | `error` | Qué significa | Qué hacer |
+|---|---|---|---|
+| 403 | `otp_required` | La acción exige OTP y no enviaste `X-OTP-Token` | Crea y verifica un desafío, reintenta con el header |
+| 403 | `otp_invalid` | Token inválido, expirado o ya usado | Verifica un desafío nuevo |
+| 403 | `session_required` | Pediste un desafío con una API key | Los desafíos son solo para sesiones de usuario |
+| 403 | `phone_binding_cooldown` | Teléfono enlazado hace menos de 24 h sin verificación | Espera el cooldown o pide a tu operador fijar el número |
+| 401 | `invalid_code` | El código no coincide | Revisa el SMS/WhatsApp y reintenta (5 intentos) |
+| 401 | `invalid_pending_token` | El token intermedio del login expiró | Vuelve a iniciar sesión |
+| 409 | `phone_required` | La cuenta no tiene teléfono | `PATCH /v1/me` con `phone` E.164 |
+| 409 | `otp_phone_missing` | El login exige OTP y no hay teléfono | Contacta a tu operador |
+| 409 | `challenge_not_pending` | El desafío expiró o ya se usó | Crea uno nuevo |
+| 429 | `too_many_attempts` | Límite de envíos/verificaciones | Espera unos minutos |
+| 503 | `otp_unavailable` | El servicio de verificación no está disponible | Reintenta; la acción queda bloqueada (nunca se salta el OTP) |
+
+### FAQ
+
+#### ¿El OTP afecta mis integraciones server-to-server?
+    No. Las API keys `pk_` están exentas por diseño: la automatización no
+    pasa por OTP. Protege tus keys como corresponde — emitir una key nueva
+    sí puede exigir OTP (acción `api_key_create`).
+#### ¿Puedo elegir SMS o WhatsApp?
+    El canal lo configura tu operador por acción (por cuenta o para toda la
+    organización). Lo ves en `GET /v1/otp/settings`.
+#### ¿Cuánto dura un código y cuántos intentos tengo?
+    El código y el desafío duran 10 minutos. Tienes 5 verificaciones por
+    desafío y un límite de envíos por hora. El `otp_token` resultante es de
+    un solo uso.
+#### ¿Puedo pedir el token una vez y usarlo en varias acciones?
+    No: el token queda ligado a la acción exacta para la que pediste el
+    desafío (un token de `payout` no sirve para `transfer`) y se consume al
+    primer uso.
+#### La acción falló después de consumir el token, ¿pago dos veces?
+    No. El token consumido solo te obliga a verificar un desafío nuevo; la
+    `idempotency_key` de la operación sigue garantizando que no haya
+    duplicados.
+
+
 ## Webhooks
 
 *Recibe eventos firmados en tiempo real*
@@ -4332,6 +4555,25 @@ Todos los errores comparten el mismo formato:
 | 403 | `org_suspended` | El servicio está suspendido; contacta al equipo de CBPay |
 | 403 | `company_only` | Función solo para cuentas empresa |
 
+#### OTP / 2FA
+
+Detalle y flujo completo en [seguridad y 2FA](#seguridad-y-2fa-otp).
+
+| HTTP | `error` | Significado |
+|---|---|---|
+| 403 | `otp_required` | La acción exige OTP: verifica un desafío y reintenta con `X-OTP-Token` |
+| 403 | `otp_invalid` | Token OTP inválido, expirado o ya usado |
+| 403 | `session_required` | Los desafíos OTP requieren sesión de usuario, no API key |
+| 403 | `phone_binding_cooldown` | Teléfono enlazado hace menos de 24 h sin verificación |
+| 401 | `invalid_code` | El código no coincide |
+| 401 | `invalid_pending_token` | El token intermedio del login expiró; vuelve a iniciar sesión |
+| 400 | `invalid_action` / `invalid_channel` | Acción o canal fuera de catálogo |
+| 409 | `phone_required` | La cuenta no tiene teléfono (`PATCH /v1/me`) |
+| 409 | `otp_phone_missing` | El login exige OTP y la cuenta no tiene teléfono; contacta a tu operador |
+| 409 | `challenge_not_pending` | El desafío expiró o ya se usó; crea uno nuevo |
+| 429 | `too_many_attempts` | Límite de envíos o verificaciones; espera unos minutos |
+| 503 | `otp_unavailable` | Servicio de verificación no disponible (la acción queda bloqueada, nunca se salta el OTP) |
+
 #### Validación (400)
 
 | `error` | Significado |
@@ -4581,7 +4823,7 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-08 20:22 UTC (<PostmanFreshness iso="2026-07-08T20:22:00Z" lang="es" />) · 89 requests · versión `ca1bc7c450ac`
+> **Colección actualizada:** 2026-07-08 22:13 UTC (<PostmanFreshness iso="2026-07-08T22:13:00Z" lang="es" />) · 95 requests · versión `2c31dcb3acca`
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -4615,6 +4857,28 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.24 — 8 de julio de 2026
+
+**Agregado — OTP/2FA por SMS y WhatsApp**
+
+- **Verificación en dos pasos para acciones sensibles**: tu operador puede
+  exigir un código de un solo uso (por SMS o WhatsApp) antes de login,
+  payouts, retiros crypto, transferencias, pagos bancarios, revelar una
+  tarjeta, emitir API keys, agregar miembros o cambiar el teléfono. Guía
+  completa en [seguridad y 2FA](#seguridad-y-2fa-otp).
+- **Endpoints nuevos**: `POST /v1/otp/challenges` (envía el código),
+  `POST /v1/otp/challenges/{id}/verify` (devuelve el `otp_token` de un solo
+  uso para el header `X-OTP-Token`), `GET /v1/otp/challenges` (+ detalle) y
+  `GET /v1/otp/settings` (tu política efectiva).
+- **Login en dos pasos**: con OTP activo en `login`, `POST /v1/auth/login`
+  devuelve `otp_required: true` + `pending_token`, y la sesión se emite en
+  `POST /v1/auth/login/otp`.
+- **Solo sesiones de usuario**: las API keys `pk_` quedan exentas — tus
+  integraciones server-to-server no cambian.
+- Códigos de error nuevos en el [catálogo](#errores): `otp_required`,
+  `otp_invalid`, `phone_required`, `phone_binding_cooldown`,
+  `too_many_attempts` y más.
 
 ### v1.23 — 8 de julio de 2026
 
@@ -5072,6 +5336,7 @@ está en la API Reference interactiva y en la colección Postman.
 |---|---|---|
 | `POST` | `/v1/auth/register` | Registrar una cuenta |
 | `POST` | `/v1/auth/login` | Iniciar sesión |
+| `POST` | `/v1/auth/login/otp` | Completar el login en dos pasos |
 
 
 ## Cuenta
@@ -5200,6 +5465,17 @@ está en la API Reference interactiva y en la colección Postman.
 | `GET` | `/v1/cards/{cardID}/transactions` | Listar transacciones de la tarjeta |
 | `GET` | `/v1/cards/catalog/occupations` | Catálogo de ocupaciones |
 | `GET` | `/v1/cards/catalog/business-activities` | Catálogo de giros |
+
+
+## Seguridad (OTP)
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/v1/otp/settings` | Mi política OTP |
+| `GET` | `/v1/otp/challenges` | Listar mis desafíos OTP |
+| `POST` | `/v1/otp/challenges` | Pedir un código OTP |
+| `GET` | `/v1/otp/challenges/{challengeID}` | Consultar un desafío OTP |
+| `POST` | `/v1/otp/challenges/{challengeID}/verify` | Verificar el código |
 
 
 ## Account

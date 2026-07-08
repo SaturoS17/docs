@@ -40,6 +40,13 @@ curl -X POST https://api.qbank.cl/platform/v1/auth/login \
 Las cuentas empresa pueden tener varios **miembros** con roles — ver
 [miembros de una empresa](#miembros-de-una-empresa) más abajo.
 
+<Note>
+Si la política de la cuenta exige **OTP en el login**, la respuesta trae
+`otp_required: true` con un `pending_token` en vez de la sesión: el segundo
+paso se completa en `POST /v1/auth/login/otp` con el código recibido por
+SMS/WhatsApp. Flujo completo en [seguridad y 2FA](/es/seguridad-2fa).
+</Note>
+
 </Tab>
 <Tab title="API key (servidor a servidor)">
 

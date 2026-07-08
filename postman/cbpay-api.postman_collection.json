@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain USDT funding and\nwithdrawals, and KYC screening — all against a single USDT-denominated\nbalance per account.\n\nAll amounts are decimal strings. Balances are held in USDT with 6 decimal\nplaces. Errors always return `{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-08 20:22 UTC",
-    "_content_sha256": "ca1bc7c450acf8880405949a87d33cb396636cfdb7a371906b6fcf09b0c544aa"
+    "_generated_at": "2026-07-08 22:13 UTC",
+    "_content_sha256": "2c31dcb3acca91d8df40b2b64878882471149fac4cd05f6633e17c205e5c7718"
   },
   "auth": {
     "type": "bearer",
@@ -132,7 +132,7 @@
           },
           "response": [
             {
-              "name": "200 Session issued.",
+              "name": "200 Session issued — or, when the account's policy requires OTP ",
               "originalRequest": {
                 "method": "POST",
                 "url": {
@@ -147,7 +147,7 @@
                   ]
                 }
               },
-              "status": "Session issued.",
+              "status": "Session issued — or, when the account's policy requires OTP ",
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [
@@ -157,6 +157,73 @@
                 }
               ],
               "body": "{\n  \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…\",\n  \"expires_at\": \"2026-07-08T12:00:00Z\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"role\": \"owner\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Complete two-step login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/login/otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "login",
+                "otp"
+              ]
+            },
+            "description": "Exchanges the `pending_token` from `POST /v1/auth/login` plus the OTP code received over SMS/WhatsApp for the real session token. The pending token expires after 10 minutes and can never call the API by itself.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pending_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…\",\n  \"code\": \"482913\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 Session issued.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/auth/login/otp",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "auth",
+                    "login",
+                    "otp"
+                  ]
+                }
+              },
+              "status": "Session issued.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…\",\n  \"expires_at\": \"2026-07-09T21:00:00Z\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"role\": \"owner\"\n}"
             }
           ]
         }
@@ -5823,6 +5890,357 @@
                 }
               ],
               "body": "{\n  \"items\": [\n    {\n      \"code\": \"J6201\",\n      \"label\": \"Computer programming activities\"\n    }\n  ],\n  \"meta\": {\n    \"retrieved\": 1\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Security (OTP)",
+      "item": [
+        {
+          "name": "My OTP policy",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/otp/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "otp",
+                "settings"
+              ]
+            },
+            "description": "Effective OTP policy for the calling account — whether the feature is enabled, which actions require a code and over which channel, plus the (masked) phone and its verification state."
+          },
+          "response": [
+            {
+              "name": "200 Effective policy.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/otp/settings",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "otp",
+                    "settings"
+                  ]
+                }
+              },
+              "status": "Effective policy.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"enabled\": true,\n  \"phone\": \"********5678\",\n  \"phone_verified\": true,\n  \"actions\": [\n    {\n      \"action\": \"login\",\n      \"required\": true,\n      \"channel\": \"sms\"\n    },\n    {\n      \"action\": \"payout\",\n      \"required\": true,\n      \"channel\": \"whatsapp\"\n    },\n    {\n      \"action\": \"crypto_withdrawal\",\n      \"required\": true,\n      \"channel\": \"sms\"\n    },\n    {\n      \"action\": \"transfer\",\n      \"required\": false,\n      \"channel\": \"sms\"\n    },\n    {\n      \"action\": \"banking_operation\",\n      \"required\": false,\n      \"channel\": \"sms\"\n    },\n    {\n      \"action\": \"card_reveal\",\n      \"required\": true,\n      \"channel\": \"sms\"\n    },\n    {\n      \"action\": \"api_key_create\",\n      \"required\": true,\n      \"channel\": \"sms\"\n    },\n    {\n      \"action\": \"member_add\",\n      \"required\": false,\n      \"channel\": \"sms\"\n    },\n    {\n      \"action\": \"phone_change\",\n      \"required\": true,\n      \"channel\": \"sms\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "List my OTP challenges",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/otp/challenges",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "otp",
+                "challenges"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true,
+                  "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 Challenge history (audit).",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/otp/challenges",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "otp",
+                    "challenges"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": true,
+                      "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                    }
+                  ]
+                }
+              },
+              "status": "Challenge history (audit).",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"challenges\": [\n    {\n      \"challenge_id\": \"6f1c02aa-93a1-4f0e-a7d1-1f2e3c4b5a69\",\n      \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n      \"action\": \"payout\",\n      \"channel\": \"whatsapp\",\n      \"phone\": \"********5678\",\n      \"status\": \"consumed\",\n      \"created_at\": \"2026-07-08T21:00:00Z\",\n      \"expires_at\": \"2026-07-08T21:10:00Z\",\n      \"verified_at\": \"2026-07-08T21:01:12Z\",\n      \"consumed_at\": \"2026-07-08T21:01:40Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Request an OTP code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/otp/challenges",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "otp",
+                "challenges"
+              ]
+            },
+            "description": "Sends a one-time code to the account's phone over the channel configured for the action. Requires a user session (JWT) — API keys receive `403 session_required`. Hourly send limits apply.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"payout\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Challenge created; the code is on its way.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/otp/challenges",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "otp",
+                    "challenges"
+                  ]
+                }
+              },
+              "status": "Challenge created; the code is on its way.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"challenge_id\": \"6f1c02aa-93a1-4f0e-a7d1-1f2e3c4b5a69\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"action\": \"payout\",\n  \"channel\": \"whatsapp\",\n  \"phone\": \"********5678\",\n  \"status\": \"pending\",\n  \"created_at\": \"2026-07-08T21:00:00Z\",\n  \"expires_at\": \"2026-07-08T21:10:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get an OTP challenge",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/otp/challenges/:challengeID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "otp",
+                "challenges",
+                ":challengeID"
+              ],
+              "variable": [
+                {
+                  "key": "challengeID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 The challenge.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/otp/challenges/:challengeID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "otp",
+                    "challenges",
+                    ":challengeID"
+                  ],
+                  "variable": [
+                    {
+                      "key": "challengeID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "The challenge.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"challenge_id\": \"6f1c02aa-93a1-4f0e-a7d1-1f2e3c4b5a69\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"action\": \"payout\",\n  \"channel\": \"whatsapp\",\n  \"phone\": \"********5678\",\n  \"status\": \"pending\",\n  \"created_at\": \"2026-07-08T21:00:00Z\",\n  \"expires_at\": \"2026-07-08T21:10:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Verify the code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/otp/challenges/:challengeID/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "otp",
+                "challenges",
+                ":challengeID",
+                "verify"
+              ],
+              "variable": [
+                {
+                  "key": "challengeID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Validates the code received over SMS/WhatsApp and returns the single-use `otp_token` that authorizes the protected action (send it in the `X-OTP-Token` header). 5 attempts per challenge.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"482913\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Code approved; single-use token issued.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/otp/challenges/:challengeID/verify",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "otp",
+                    "challenges",
+                    ":challengeID",
+                    "verify"
+                  ],
+                  "variable": [
+                    {
+                      "key": "challengeID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Code approved; single-use token issued.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"challenge_id\": \"6f1c02aa-93a1-4f0e-a7d1-1f2e3c4b5a69\",\n  \"action\": \"payout\",\n  \"otp_token\": \"otp_Zk9uY2XIr1EYE0lq8xqlM3VayVZYX4aa11bb22cc33\",\n  \"expires_at\": \"2026-07-08T21:10:00Z\",\n  \"note\": \"single use: send it in the X-OTP-Token header of the protected action\"\n}"
             }
           ]
         }
