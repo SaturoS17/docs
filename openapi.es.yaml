@@ -1802,9 +1802,11 @@ paths:
       operationId: submitKyc
       summary: Enviar verificación KYC/KYB
       description: Verifica la identidad de la cuenta que llama — KYC para personas, KYB para empresas
-        (detectado desde el payload) — contra el servicio de compliance. Si hay una comisión de compliance
-        configurada, se debita antes de la llamada y se reembolsa si el screening falla. La respuesta
-        incluye el resultado del screening más `kyc_status`, `compliance_service` y `compliance_fee`.
+        (detectado desde el payload) — contra el servicio de compliance. Todos los campos de identidad
+        son opcionales y se reenvían íntegros al motor de screening; mientras más datos envíes (fecha
+        de nacimiento, países, documentos fuertes, alias), más preciso es el análisis. Si hay una comisión
+        de compliance configurada, se debita antes de la llamada y se reembolsa si el screening falla.
+        La respuesta incluye el resultado del screening más `kyc_status`, `compliance_service` y `compliance_fee`.
       requestBody:
         required: true
         content:
@@ -1816,20 +1818,88 @@ paths:
                   type: object
                   description: 'Datos de identidad. Envía `person` o `company`; cuando se omite
 
-                    se completa desde el perfil de la cuenta.
+                    se completa desde el perfil de la cuenta. Se aceptan campos adicionales
+
+                    y se reenvían al motor de screening.
 
                     '
                   properties:
                     person:
                       type: object
+                      description: Identidad de la persona. Todos los campos son opcionales; más datos
+                        de identidad producen un screening más preciso.
                       properties:
                         full_name:
                           type: string
+                        first_name:
+                          type: string
+                        middle_name:
+                          type: string
+                        last_name:
+                          type: string
+                        date_of_birth:
+                          description: String "YYYY-MM-DD" u objeto {year, month, day}.
+                        nationality:
+                          type: string
+                          description: Código de país ISO-3166 (o arreglo `nationalities`).
+                        country_of_birth:
+                          type: string
+                        residential_information:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              country_of_residence:
+                                type: string
+                        personal_identification:
+                          type: array
+                          description: Documentos de identidad fuertes (cédula, pasaporte, ...).
+                          items:
+                            type: object
+                            properties:
+                              type:
+                                type: string
+                              issuing_country:
+                                type: string
+                              number:
+                                type: string
+                        alias:
+                          type: array
+                          items:
+                            type: string
+                          description: Otros nombres conocidos.
                     company:
                       type: object
+                      description: Identidad de la empresa. Todos los campos son opcionales; más datos
+                        de identidad producen un screening más preciso.
                       properties:
                         legal_name:
                           type: string
+                        alias:
+                          type: array
+                          items:
+                            type: string
+                          description: Nombres comerciales / de fantasía.
+                        tax_id:
+                          type: string
+                        registration_number:
+                          type: string
+                        registration_authority_identification:
+                          type: string
+                          description: Número ante el registro mercantil.
+                        place_of_registration:
+                          type: string
+                        country_of_incorporation:
+                          type: string
+                        incorporation_date:
+                          type: string
+                        address:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              country:
+                                type: string
                     email:
                       type: string
                     country:
@@ -1845,9 +1915,32 @@ paths:
                   customer:
                     person:
                       full_name: Ana Perez Rojas
-                      birth_date: '1990-04-12'
-                      document_type: national_id
-                      document_value: 12.345.678-5
+                      date_of_birth: '1990-04-12'
+                      personal_identification:
+                      - type: national_id
+                        issuing_country: CL
+                        number: 12.345.678-5
+                    email: ana@example.com
+                    country: CL
+                  monitor: false
+              personFull:
+                summary: Persona (KYC) — identidad completa para el screening más preciso
+                value:
+                  customer:
+                    person:
+                      full_name: Ana Perez Rojas
+                      date_of_birth: '1990-04-12'
+                      nationality: CL
+                      country_of_birth: CL
+                      residential_information:
+                      - country_of_residence: CL
+                      personal_identification:
+                      - type: national_id
+                        issuing_country: CL
+                        number: 12.345.678-5
+                      - type: passport
+                        issuing_country: CL
+                        number: P0123456
                     email: ana@example.com
                     country: CL
                   monitor: false
@@ -1858,6 +1951,23 @@ paths:
                     company:
                       legal_name: Comercial Andina SpA
                       tax_id: 76.543.210-8
+                    email: legal@andina.cl
+                    country: CL
+                  monitor: true
+              companyFull:
+                summary: Empresa (KYB) — identidad completa para el screening más preciso
+                value:
+                  customer:
+                    company:
+                      legal_name: Comercial Andina SpA
+                      alias:
+                      - Andina Market
+                      tax_id: 76.543.210-8
+                      registration_authority_identification: '76543210'
+                      place_of_registration: CL
+                      incorporation_date: '2015-08-01'
+                      address:
+                      - country: CL
                     email: legal@andina.cl
                     country: CL
                   monitor: true

@@ -40,9 +40,10 @@ curl -X POST https://api.qbank.cl/platform/v1/kyc \
     "customer": {
       "person": {
         "full_name": "Ana Perez Rojas",
-        "birth_date": "1990-04-12",
-        "document_type": "national_id",
-        "document_value": "12.345.678-5"
+        "date_of_birth": "1990-04-12",
+        "personal_identification": [
+          { "type": "national_id", "issuing_country": "CL", "number": "12.345.678-5" }
+        ]
       },
       "email": "ana@example.com",
       "country": "CL"
@@ -79,6 +80,97 @@ curl -X POST https://api.qbank.cl/platform/v1/kyc \
 
 If you omit `person`/`company`, the account's own data is used (the
 person/company type is taken from the account type).
+
+## Send all the identity data you have (recommended)
+
+The examples above are the minimum. The `customer` object accepts **many
+more fields, all optional**, and they are forwarded whole to the screening
+engine: **the more identity data you send, the more precise the
+analysis** — date of birth, countries and strong identifiers rule out
+homonyms and reduce false positives, so send everything you have about the
+customer.
+
+Identity fields that sharpen the matching:
+
+| Field (person) | What it is |
+|---|---|
+| `full_name` — or `first_name` / `middle_name` / `last_name` | Full or structured name |
+| `date_of_birth` | `"YYYY-MM-DD"` or an object `{ "year": 1990, "month": 4, "day": 12 }` |
+| `nationality` / `nationalities` | Nationality(ies), ISO-3166 |
+| `country_of_birth` | Country of birth |
+| `residential_information[]` | Residences, each with `country_of_residence` |
+| `personal_identification[]` | Strong documents: `{ "type", "issuing_country", "number" }` (national ID, passport…) |
+| `alias` / `aliases` | Other known names |
+
+| Field (company) | What it is |
+|---|---|
+| `legal_name` | Legal name |
+| `alias[]` | Trade / brand names |
+| `tax_id` / `registration_number` | Tax/mercantile identifiers |
+| `registration_authority_identification` | Company registry number |
+| `place_of_registration` / `country_of_incorporation` | Country of registration/incorporation |
+| `incorporation_date` | Incorporation date |
+| `address[]` | Addresses, each with `country` |
+
+Person KYC example with full identity:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/kyc \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer": {
+      "person": {
+        "full_name": "Ana Perez Rojas",
+        "date_of_birth": "1990-04-12",
+        "nationality": "CL",
+        "country_of_birth": "CL",
+        "residential_information": [
+          { "country_of_residence": "CL" }
+        ],
+        "personal_identification": [
+          { "type": "national_id", "issuing_country": "CL", "number": "12.345.678-5" },
+          { "type": "passport", "issuing_country": "CL", "number": "P0123456" }
+        ]
+      },
+      "email": "ana@example.com",
+      "country": "CL"
+    },
+    "monitor": false
+  }'
+```
+
+And a company KYB:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/kyc \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer": {
+      "company": {
+        "legal_name": "Comercial Andina SpA",
+        "alias": ["Andina Market"],
+        "tax_id": "76.543.210-8",
+        "registration_authority_identification": "76543210",
+        "place_of_registration": "CL",
+        "incorporation_date": "2015-08-01",
+        "address": [{ "country": "CL" }]
+      },
+      "email": "legal@andina.cl",
+      "country": "CL"
+    },
+    "monitor": true
+  }'
+```
+
+<Note>
+A query with **exactly the same identity data** reuses the previous
+screening (no new charge). Adding or changing identity fields (name, date,
+country, document, alias) makes the search more specific and runs — and
+bills — a new screening. Cosmetic fields (email, phone, free-text address)
+do not change the matching.
+</Note>
 
 Response `201` — person and company return the same shape;
 `compliance_service` changes (`compliance_person` vs `compliance_company`,

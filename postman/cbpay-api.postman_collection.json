@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain USDT funding and\nwithdrawals, and KYC screening — all against a single USDT-denominated\nbalance per account.\n\nAll amounts are decimal strings. Balances are held in USDT with 6 decimal\nplaces. Errors always return `{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-08 17:58 UTC",
-    "_content_sha256": "127e228e4faf0a727377dd5f53b7e2278beed5d6a2ac1cdc200b5422fc31868c"
+    "_generated_at": "2026-07-08 18:36 UTC",
+    "_content_sha256": "5302f1a549b2945f0d18d329bb27daee7a6dc48c23ad7059eb88751b68b3bab7"
   },
   "auth": {
     "type": "bearer",
@@ -3411,10 +3411,70 @@
                 "kyc"
               ]
             },
-            "description": "Verifies the calling account's identity — KYC for persons, KYB for companies (detected from the payload) — against the compliance service. If a compliance fee is configured, it is debited before the call and refunded if the screening fails. The response includes the screening result plus `kyc_status`, `compliance_service` and `compliance_fee`.",
+            "description": "Verifies the calling account's identity — KYC for persons, KYB for companies (detected from the payload) — against the compliance service. All identity fields are optional and forwarded whole to the screening engine; the more identity data you send (date of birth, countries, strong identifiers, aliases), the more precise the analysis. If a compliance fee is configured, it is debited before the call and refunded if the screening fails. The response includes the screening result plus `kyc_status`, `compliance_service` and `compliance_fee`.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"customer\": {\n    \"person\": {\n      \"full_name\": \"Ana Perez Rojas\",\n      \"birth_date\": \"1990-04-12\",\n      \"document_type\": \"national_id\",\n      \"document_value\": \"12.345.678-5\"\n    },\n    \"email\": \"ana@example.com\",\n    \"country\": \"CL\"\n  },\n  \"monitor\": false\n}",
+              "raw": "{\n  \"customer\": {\n    \"person\": {\n      \"full_name\": \"Ana Perez Rojas\",\n      \"date_of_birth\": \"1990-04-12\",\n      \"personal_identification\": [\n        {\n          \"type\": \"national_id\",\n          \"issuing_country\": \"CL\",\n          \"number\": \"12.345.678-5\"\n        }\n      ]\n    },\n    \"email\": \"ana@example.com\",\n    \"country\": \"CL\"\n  },\n  \"monitor\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Screening submitted; account KYC status set to `pending`.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyc",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyc"
+                  ]
+                }
+              },
+              "status": "Screening submitted; account KYC status set to `pending`.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"customer_id\": \"e1d2c3b4-a596-8778-695a-4b3c2d1e0f9a\",\n  \"status\": \"completed\",\n  \"risk_level\": \"low\",\n  \"screening_result\": \"no_hits\",\n  \"monitored\": false,\n  \"deduplicated\": false,\n  \"kyc_status\": \"pending\",\n  \"compliance_service\": \"compliance_person\",\n  \"compliance_fee\": \"2.000000\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Submit KYC/KYB verification — Person (KYC) — full identity for the most precise screening",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyc"
+              ]
+            },
+            "description": "Verifies the calling account's identity — KYC for persons, KYB for companies (detected from the payload) — against the compliance service. All identity fields are optional and forwarded whole to the screening engine; the more identity data you send (date of birth, countries, strong identifiers, aliases), the more precise the analysis. If a compliance fee is configured, it is debited before the call and refunded if the screening fails. The response includes the screening result plus `kyc_status`, `compliance_service` and `compliance_fee`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer\": {\n    \"person\": {\n      \"full_name\": \"Ana Perez Rojas\",\n      \"date_of_birth\": \"1990-04-12\",\n      \"nationality\": \"CL\",\n      \"country_of_birth\": \"CL\",\n      \"residential_information\": [\n        {\n          \"country_of_residence\": \"CL\"\n        }\n      ],\n      \"personal_identification\": [\n        {\n          \"type\": \"national_id\",\n          \"issuing_country\": \"CL\",\n          \"number\": \"12.345.678-5\"\n        },\n        {\n          \"type\": \"passport\",\n          \"issuing_country\": \"CL\",\n          \"number\": \"P0123456\"\n        }\n      ]\n    },\n    \"email\": \"ana@example.com\",\n    \"country\": \"CL\"\n  },\n  \"monitor\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3471,10 +3531,70 @@
                 "kyc"
               ]
             },
-            "description": "Verifies the calling account's identity — KYC for persons, KYB for companies (detected from the payload) — against the compliance service. If a compliance fee is configured, it is debited before the call and refunded if the screening fails. The response includes the screening result plus `kyc_status`, `compliance_service` and `compliance_fee`.",
+            "description": "Verifies the calling account's identity — KYC for persons, KYB for companies (detected from the payload) — against the compliance service. All identity fields are optional and forwarded whole to the screening engine; the more identity data you send (date of birth, countries, strong identifiers, aliases), the more precise the analysis. If a compliance fee is configured, it is debited before the call and refunded if the screening fails. The response includes the screening result plus `kyc_status`, `compliance_service` and `compliance_fee`.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"customer\": {\n    \"company\": {\n      \"legal_name\": \"Comercial Andina SpA\",\n      \"tax_id\": \"76.543.210-8\"\n    },\n    \"email\": \"legal@andina.cl\",\n    \"country\": \"CL\"\n  },\n  \"monitor\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Screening submitted; account KYC status set to `pending`.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyc",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyc"
+                  ]
+                }
+              },
+              "status": "Screening submitted; account KYC status set to `pending`.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"customer_id\": \"e1d2c3b4-a596-8778-695a-4b3c2d1e0f9a\",\n  \"status\": \"completed\",\n  \"risk_level\": \"low\",\n  \"screening_result\": \"no_hits\",\n  \"monitored\": false,\n  \"deduplicated\": false,\n  \"kyc_status\": \"pending\",\n  \"compliance_service\": \"compliance_person\",\n  \"compliance_fee\": \"2.000000\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Submit KYC/KYB verification — Company (KYB) — full identity for the most precise screening",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyc"
+              ]
+            },
+            "description": "Verifies the calling account's identity — KYC for persons, KYB for companies (detected from the payload) — against the compliance service. All identity fields are optional and forwarded whole to the screening engine; the more identity data you send (date of birth, countries, strong identifiers, aliases), the more precise the analysis. If a compliance fee is configured, it is debited before the call and refunded if the screening fails. The response includes the screening result plus `kyc_status`, `compliance_service` and `compliance_fee`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer\": {\n    \"company\": {\n      \"legal_name\": \"Comercial Andina SpA\",\n      \"alias\": [\n        \"Andina Market\"\n      ],\n      \"tax_id\": \"76.543.210-8\",\n      \"registration_authority_identification\": \"76543210\",\n      \"place_of_registration\": \"CL\",\n      \"incorporation_date\": \"2015-08-01\",\n      \"address\": [\n        {\n          \"country\": \"CL\"\n        }\n      ]\n    },\n    \"email\": \"legal@andina.cl\",\n    \"country\": \"CL\"\n  },\n  \"monitor\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3531,7 +3651,7 @@
                 "kyc"
               ]
             },
-            "description": "Verifies the calling account's identity — KYC for persons, KYB for companies (detected from the payload) — against the compliance service. If a compliance fee is configured, it is debited before the call and refunded if the screening fails. The response includes the screening result plus `kyc_status`, `compliance_service` and `compliance_fee`.",
+            "description": "Verifies the calling account's identity — KYC for persons, KYB for companies (detected from the payload) — against the compliance service. All identity fields are optional and forwarded whole to the screening engine; the more identity data you send (date of birth, countries, strong identifiers, aliases), the more precise the analysis. If a compliance fee is configured, it is debited before the call and refunded if the screening fails. The response includes the screening result plus `kyc_status`, `compliance_service` and `compliance_fee`.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"customer\": {},\n  \"monitor\": false\n}",

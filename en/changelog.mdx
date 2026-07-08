@@ -24,6 +24,15 @@ Breaking changes are announced in advance and flagged as **Breaking**.
 - Credit conversions round down to the micro-USDT (debits keep rounding
   up), with at most 1 micro-USDT of difference.
 
+**Documentation**
+
+- **KYC/KYB: full identity field reference.** The `customer` object has
+  always accepted many more optional fields than the examples showed
+  (date of birth, nationalities, documents with issuing country, aliases,
+  residences, company registry data…) and sending them makes the screening
+  more precise. The [KYC guide](/en/guides/kyc) now documents every field,
+  with full-identity examples and the deduplication rule.
+
 </Update>
 
 <Update label="July 8, 2026" description="v1.20">

@@ -2620,9 +2620,10 @@ curl -X POST https://api.qbank.cl/platform/v1/kyc \
     "customer": {
       "person": {
         "full_name": "Ana Pérez Rojas",
-        "birth_date": "1990-04-12",
-        "document_type": "national_id",
-        "document_value": "12.345.678-5"
+        "date_of_birth": "1990-04-12",
+        "personal_identification": [
+          { "type": "national_id", "issuing_country": "CL", "number": "12.345.678-5" }
+        ]
       },
       "email": "ana@ejemplo.com",
       "country": "CL"
@@ -2658,6 +2659,95 @@ curl -X POST https://api.qbank.cl/platform/v1/kyc \
 Si omites `person`/`company`, se completa con los datos de tu cuenta (el
 tipo persona/empresa se toma del tipo de la cuenta).
 
+### Envía toda la identidad que tengas (recomendado)
+
+Los ejemplos de arriba son el mínimo. El objeto `customer` acepta **muchos
+más campos, todos opcionales**, y se reenvían íntegros al motor de
+screening: **mientras más datos de identidad envíes, más preciso es el
+análisis** — la fecha de nacimiento, los países y los documentos fuertes
+descartan homónimos y reducen falsos positivos, así que conviene mandar
+todo lo que tengas del cliente.
+
+Campos de identidad que afinan el matching:
+
+| Campo (persona) | Qué es |
+|---|---|
+| `full_name` — o `first_name` / `middle_name` / `last_name` | Nombre completo o por partes |
+| `date_of_birth` | `"YYYY-MM-DD"` u objeto `{ "year": 1990, "month": 4, "day": 12 }` |
+| `nationality` / `nationalities` | Nacionalidad(es), ISO-3166 |
+| `country_of_birth` | País de nacimiento |
+| `residential_information[]` | Domicilios, cada uno con `country_of_residence` |
+| `personal_identification[]` | Documentos fuertes: `{ "type", "issuing_country", "number" }` (cédula, pasaporte, RUT…) |
+| `alias` / `aliases` | Otros nombres conocidos |
+
+| Campo (empresa) | Qué es |
+|---|---|
+| `legal_name` | Razón social |
+| `alias[]` | Nombres comerciales / de fantasía |
+| `tax_id` / `registration_number` | Identificadores tributarios/mercantiles |
+| `registration_authority_identification` | Número ante el registro mercantil |
+| `place_of_registration` / `country_of_incorporation` | País de registro/constitución |
+| `incorporation_date` | Fecha de constitución |
+| `address[]` | Domicilios, cada uno con `country` |
+
+Ejemplo de KYC de persona con identidad completa:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/kyc \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer": {
+      "person": {
+        "full_name": "Ana Pérez Rojas",
+        "date_of_birth": "1990-04-12",
+        "nationality": "CL",
+        "country_of_birth": "CL",
+        "residential_information": [
+          { "country_of_residence": "CL" }
+        ],
+        "personal_identification": [
+          { "type": "national_id", "issuing_country": "CL", "number": "12.345.678-5" },
+          { "type": "passport", "issuing_country": "CL", "number": "P0123456" }
+        ]
+      },
+      "email": "ana@ejemplo.com",
+      "country": "CL"
+    },
+    "monitor": false
+  }'
+```
+
+Y de KYB de empresa:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/kyc \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer": {
+      "company": {
+        "legal_name": "Comercial Andina SpA",
+        "alias": ["Andina Market"],
+        "tax_id": "76.543.210-8",
+        "registration_authority_identification": "76543210",
+        "place_of_registration": "CL",
+        "incorporation_date": "2015-08-01",
+        "address": [{ "country": "CL" }]
+      },
+      "email": "legal@andina.cl",
+      "country": "CL"
+    },
+    "monitor": true
+  }'
+```
+
+> **Nota**
+Una consulta con **exactamente los mismos datos de identidad** reutiliza el
+screening anterior (no se cobra uno nuevo). Agregar o cambiar campos de
+identidad (nombre, fecha, país, documento, alias) hace la búsqueda más
+específica y ejecuta — y cobra — un screening nuevo. Los campos cosméticos
+(email, teléfono, dirección textual) no cambian el matching.
 Respuesta `201` — persona y empresa devuelven la misma forma; cambia
 `compliance_service` (`compliance_person` vs `compliance_company`, cada uno
 con su comisión):
@@ -3363,7 +3453,7 @@ sus cuerpos de ejemplo y una respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-08 17:58 UTC · 87 requests · versión `127e228e4faf`
+> **Colección actualizada:** 2026-07-08 18:36 UTC · 89 requests · versión `5302f1a549b2`
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -3416,6 +3506,16 @@ con anticipación y quedan marcados como **Breaking**.
   [guía de payins](#payins).
 - La conversión de abonos redondea hacia abajo al micro-USDT (los débitos
   siguen redondeando hacia arriba), con diferencia máxima de 1 micro-USDT.
+
+**Documentación**
+
+- **KYC/KYB: referencia completa de campos de identidad.** El objeto
+  `customer` siempre aceptó muchos más campos opcionales de los que
+  mostraban los ejemplos (fecha de nacimiento, nacionalidades, documentos
+  con país emisor, alias, domicilios, datos registrales de empresa…) y
+  enviarlos hace el screening más preciso. La
+  [guía de KYC](#kyckyb-y-compliance) ahora documenta todos los campos, con
+  ejemplos de identidad completa y la regla de deduplicación.
 
 ### v1.20 — 8 de julio de 2026
 
