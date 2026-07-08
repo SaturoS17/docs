@@ -45,23 +45,22 @@ cargo de emisión se **reembolsa automáticamente** si la emisión falla.
 
 ## Crear una tarjeta
 
-Antes de los ejemplos, la regla que ordena todo: **el titular (cardholder)
-se verifica UNA sola vez por cuenta**, en la primera emisión.
+El flujo depende de si tu cuenta es **persona** o **empresa** — elige tu
+pestaña. La regla común: el **titular (cardholder) se verifica UNA sola vez
+por cuenta**, en la primera emisión; las siguientes tarjetas lo reutilizan
+sin pedir datos. La `idempotency_key` es obligatoria siempre (un retry con
+la misma clave devuelve la tarjeta original y nunca cobra dos veces).
 
-| Situación | ¿Debes enviar `cardholder`? |
-|---|---|
-| **Primera tarjeta** de la cuenta (persona o empresa para sí misma) | **Sí, completo** — crea y verifica al titular en el emisor |
-| **Siguientes tarjetas** de la misma cuenta | No — se reutiliza el titular ya verificado (basta `physical` + `idempotency_key`) |
-| Empresa emitiendo **para un empleado** (`cardholder.kind: "person"`) | **Sí, completo, siempre** — cada persona designada es un titular nuevo |
+<Tabs>
+<Tab title="Cuenta persona">
 
-La clave de idempotencia es obligatoria en todos los casos: un retry con la
-misma clave devuelve la tarjeta original y nunca cobra dos veces.
+Una cuenta persona emite tarjetas **para sí misma** (máximo 1 virtual +
+1 física).
 
-### Primera tarjeta (crea al titular)
+**Tu primera tarjeta** crea y verifica tu titular en el emisor, así que
+lleva tus datos completos y documentos de identidad por URL:
 
-<CodeGroup>
-
-```bash Persona — primera tarjeta (datos completos)
+```bash
 curl -X POST https://api.qbank.cl/platform/v1/cards \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
@@ -89,7 +88,80 @@ curl -X POST https://api.qbank.cl/platform/v1/cards \
   }'
 ```
 
-```bash Empresa — para un empleado (siempre completo)
+`occupation` es un **código del catálogo**
+([ver abajo](#ocupacion-y-giro-codigos-de-catalogo)) y `salary_usd` va en
+dólares enteros.
+
+**Tu segunda tarjeta** (por ejemplo la física) ya no pide ningún dato —
+tu titular quedó verificado:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/cards \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "physical": true, "idempotency_key": "card-f-1" }'
+```
+
+Si intentas una tercera del mismo tipo: `409 card_limit_reached` (cancela
+la existente primero).
+
+</Tab>
+<Tab title="Cuenta empresa">
+
+Una cuenta empresa emite **tarjetas ilimitadas**, en dos modalidades:
+
+**A. Para la empresa misma** (tarjetas corporativas). La primera emisión
+crea el titular empresa con los datos societarios; las siguientes no piden
+nada:
+
+<CodeGroup>
+
+```bash Primera tarjeta (crea el titular empresa)
+curl -X POST https://api.qbank.cl/platform/v1/cards \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "physical": false,
+    "idempotency_key": "card-corp-1",
+    "cardholder": {
+      "kind_of_business": "J63",
+      "legal_representation": "Carlos Soto, Gerente General",
+      "email": "finanzas@andina.cl",
+      "certificate_of_good_standing_url": "https://files.example.com/kyb/vigencia.pdf",
+      "business_license_url": "https://files.example.com/kyb/patente.pdf",
+      "register_shareholder_url": "https://files.example.com/kyb/socios.pdf",
+      "id_shareholders_url": "https://files.example.com/kyb/ids-socios.pdf",
+      "address_verification_shareholders_url": "https://files.example.com/kyb/domicilios.pdf",
+      "address": {
+        "line1": "Av. Apoquindo 4500",
+        "city": "Santiago",
+        "region": "RM",
+        "postal_code": "7550000",
+        "country": "CL"
+      }
+    }
+  }'
+```
+
+```bash Siguientes tarjetas (sin datos, con límites)
+curl -X POST https://api.qbank.cl/platform/v1/cards \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "physical": true,
+    "idempotency_key": "card-f-ops-1",
+    "limits": { "per_transaction": "500.00", "monthly": "5000.00" }
+  }'
+```
+
+</CodeGroup>
+
+**B. Para una persona designada** (ej. un empleado): agrega
+`cardholder.kind: "person"` con los datos completos de ESA persona — cada
+designación es un titular nuevo, así que sus datos y documentos van
+**siempre**, en cada tarjeta para una persona distinta:
+
+```bash
 curl -X POST https://api.qbank.cl/platform/v1/cards \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
@@ -118,38 +190,11 @@ curl -X POST https://api.qbank.cl/platform/v1/cards \
   }'
 ```
 
-</CodeGroup>
+El nombre impreso usa `first_name` + `last_name` (máximo 22 caracteres
+combinados) y la respuesta llega con `cardholder_kind: "person"`.
 
-<Warning>
-Los documentos **se validan de verdad** por el emisor: las URLs deben
-apuntar a documentos legítimos y accesibles (cédula por ambos lados,
-comprobante de domicilio). Si faltan o son insuficientes, la emisión falla
-(`422 core_rejected` o `409 cardholder_kyc_pending`), **el fee se
-reembolsa automáticamente** y puedes reintentar corrigiendo los datos.
-
-En la **primera emisión de una cuenta empresa para sí misma**, el
-`cardholder` lleva los datos societarios en vez de los personales:
-`kind_of_business` (código de catálogo), `legal_representation` y los
-documentos por URL `certificate_of_good_standing_url`,
-`business_license_url`, `register_shareholder_url`, `id_shareholders_url`
-y `address_verification_shareholders_url`.
-</Warning>
-
-### Siguientes tarjetas (titular ya verificado)
-
-Con el titular creado, las emisiones posteriores de esa cuenta no piden
-ningún dato:
-
-```bash
-curl -X POST https://api.qbank.cl/platform/v1/cards \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "physical": true,
-    "idempotency_key": "card-f-ops-1",
-    "limits": { "per_transaction": "500.00", "monthly": "5000.00" }
-  }'
-```
+</Tab>
+</Tabs>
 
 Respuesta (misma forma en todos los casos):
 
@@ -167,14 +212,18 @@ Respuesta (misma forma en todos los casos):
 }
 ```
 
+<Warning>
+Los documentos **se validan de verdad** por el emisor: las URLs deben
+apuntar a documentos legítimos y accesibles. Si faltan o son
+insuficientes, la emisión falla (`422 core_rejected` o
+`409 cardholder_kyc_pending`), **el fee se reembolsa automáticamente** y
+puedes reintentar corrigiendo los datos.
+</Warning>
+
 <Note>
-Al emitir para una **persona designada** (empresas), los documentos de
-identidad son obligatorios en esa misma llamada: el titular queda
-verificado de inmediato y la tarjeta se emite junto con él
-(`cardholder_kind: "person"` en la respuesta). El nombre impreso usa
-`first_name` + `last_name` (máximo 22 caracteres combinados). Recuerda el
-límite: las cuentas persona pueden tener **1 virtual + 1 física**; las
-empresas, ilimitadas.
+¿Persona o empresa? Las diferencias entre ambos tipos de cuenta en TODOS
+los productos están resumidas en
+[personas y empresas](/es/conceptos/personas-y-empresas).
 </Note>
 
 ### Ocupación y giro (códigos de catálogo)

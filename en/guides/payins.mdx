@@ -66,16 +66,250 @@ USDT at your current `payin_rate` and credited net of the fixed payin fee.
 
 ## 2. Pick the mode and create the charge
 
-Each country has its own mode (QR, hosted payment page, announced
-transfer, dedicated CLABE or pull collection). The complete reference with
-real request and response for all 6 countries lives on its own page:
+Each country has its own collection mode. The real request and response of
+each one:
 
-<Card title="Country reference" icon="earth-americas" href="/en/guides/payins-by-country">
-  Chile, Peru, Mexico, Venezuela, Bolivia and Brazil — every collection
-  mode with its full request and the response you get back.
-</Card>
+<Tabs>
+<Tab title="Chile">
 
-One example to set expectations (Bolivia, collection QR):
+**Hosted payment page (`fintoc`)** — recommended: you get a `payment_url`;
+the payer opens it and transfers from **any Chilean bank or wallet** (Banco
+Estado, Santander, Mach, Tenpo, Mercado Pago…). The payment is
+detected and validated automatically — no manual references.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "CL",
+    "currency": "CLP",
+    "method": "fintoc",
+    "amount": "150000",
+    "description": "Top-up order 8841",
+    "idempotency_key": "topup-8841"
+  }'
+```
+
+Response `201`:
+
+```json
+{
+  "payin_id": "7a2b…",
+  "status": "pending",
+  "reference": "7a2b…",
+  "payment_url": "https://pay.fintoc.com/plink_K2zwNNSxPyx8w3GZ",
+  "expires_at": "2026-07-08T18:48:25Z",
+  "note": "share the payment_url with the payer; the deposit is credited automatically once the transfer is detected"
+}
+```
+
+Share the `payment_url` with the payer (link, redirect or WebView). Once
+the payment is confirmed your account is credited in USDT and you receive
+the `payin_credited` webhook. The CLP amount must be an integer (the
+Chilean peso has no decimals) and the payment session expires after 24
+hours by default. A retry with the same `idempotency_key` returns the same
+payin and the same URL — it never opens a second payment session.
+
+**Announced bank transfer** (manual alternative): announce the incoming
+deposit and share the reference with the sender.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "CL",
+    "currency": "CLP",
+    "method": "bank_transfer",
+    "amount": "500000"
+  }'
+```
+
+Response `201`:
+
+```json
+{
+  "payin_id": "4f81…",
+  "status": "pending",
+  "reference": "4f81…",
+  "note": "include the reference in the transfer description so the deposit is credited automatically"
+}
+```
+
+When the transfer arrives it is matched by the reference in the transfer
+description (or by amount+currency as a fallback) and your account is
+credited automatically.
+
+</Tab>
+<Tab title="Peru">
+
+**Announced bank transfer**, same as Chile but in soles:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "PE",
+    "currency": "PEN",
+    "method": "bank_transfer",
+    "amount": "1800.00"
+  }'
+```
+
+Response `201`:
+
+```json
+{
+  "payin_id": "6d20…",
+  "status": "pending",
+  "reference": "6d20…",
+  "note": "include the reference in the transfer description so the deposit is credited automatically"
+}
+```
+
+The `reference` must travel in the transfer description for the automatic
+match; amount+currency is used as a fallback matcher.
+
+</Tab>
+<Tab title="Mexico">
+
+**Dedicated CLABE account** (recommended): create a fixed CLABE bound to
+your account — every SPEI arriving to it is credited automatically, no
+references needed:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins/deposit-accounts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "country": "MX", "currency": "MXN" }'
+```
+
+Response `201`:
+
+```json
+{
+  "instrument_id": "a1d4…",
+  "account_id": "…",
+  "country": "MX",
+  "currency": "MXN",
+  "method": "bank_transfer",
+  "instrument": "734180000151000006",
+  "status": "active"
+}
+```
+
+`instrument` is the CLABE you share with your payers. Creation is free;
+each deposit pays the regular payin fee. List your accounts with
+`GET /v1/payins/deposit-accounts`.
+
+You can also use a one-off **announced bank transfer**
+(`POST /v1/payins` with `method: "bank_transfer"`, `country: "MX"`).
+
+</Tab>
+<Tab title="Venezuela">
+
+**Active collection (pull)**: you charge the payer directly with their
+authorization. The result is **synchronous** — if the charge is approved,
+the credit lands in the same call.
+
+For `debito_inmediato`, request the OTP first (free):
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins/collect/otp \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method": "debito_inmediato",
+    "amount": "1200.00",
+    "payer_document": "V12345678",
+    "payer_phone": "04141234567",
+    "payer_bank": "0102",
+    "payer_account": "01020123456789012345"
+  }'
+```
+
+```json
+{
+  "method": "debito_inmediato",
+  "result": { "status": "sent", "otp_reference": "OTP-5521" }
+}
+```
+
+Then execute the collection:
+
+<CodeGroup>
+
+```bash c2p (phone + ID + payer's OTP)
+curl -X POST https://api.qbank.cl/platform/v1/payins/collect \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method": "c2p",
+    "amount": "1200.00",
+    "description": "Order 5512",
+    "payer_document": "V12345678",
+    "payer_phone": "04141234567",
+    "payer_bank": "0102",
+    "otp": "12345678",
+    "idempotency_key": "order-5512"
+  }'
+```
+
+```bash debito_inmediato (account + previously requested OTP)
+curl -X POST https://api.qbank.cl/platform/v1/payins/collect \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method": "debito_inmediato",
+    "amount": "1200.00",
+    "description": "Order 5512",
+    "payer_document": "V12345678",
+    "payer_account": "01020123456789012345",
+    "payer_bank": "0102",
+    "payer_account_type": "CNTA",
+    "otp": "87654321",
+    "otp_reference": "OTP-5521",
+    "idempotency_key": "order-5512"
+  }'
+```
+
+<Note>
+An active collection executes a real charge against the payer, so
+`idempotency_key` is **required** (body or `Idempotency-Key` header): a
+retry with the same key returns the original result with `idempotency_hit`
+and never re-charges.
+</Note>
+
+</CodeGroup>
+
+Response `200` (charge approved and credited):
+
+```json
+{
+  "payin_id": "7b3c…",
+  "kind": "collect",
+  "method": "c2p",
+  "status": "credited",
+  "local_amount": "1200.00",
+  "fx_rate": "36.50",
+  "usdt_gross": "32.876712",
+  "fee": "0.300000",
+  "usdt_credited": "32.576712",
+  "paid": true,
+  "provider_reference": "…"
+}
+```
+
+If the payer declines or the authorization fails, `paid` is `false`, the
+payin is marked `failed`, and nothing is charged.
+
+</Tab>
+<Tab title="Bolivia">
+
+**Collection QR** (the local interoperable standard): you generate the QR
+and your customer scans it with their banking app.
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/payins \
@@ -91,6 +325,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
   }'
 ```
 
+Response `201`:
+
 ```json
 {
   "payin_id": "9c2a…",
@@ -104,6 +340,62 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
   }
 }
 ```
+
+Display `qr_image` to your customer; when they pay, your account is
+credited automatically. It also works in USD (`currency: "USD"`).
+
+</Tab>
+<Tab title="Brazil">
+
+**Dynamic PIX QR**: the same endpoint generates a PIX QR with the amount
+embedded.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BR",
+    "currency": "BRL",
+    "method": "qr",
+    "amount": "120.00",
+    "description": "Order 7719",
+    "expires_in": 1800
+  }'
+```
+
+In the response, `charge.qr_payload` is the PIX **"copia e cola"** code,
+so the payer can paste it into their banking app instead of scanning the
+image (`charge.qr_image`).
+
+You can also use the **announced bank transfer**, sharing the reference in
+the PIX description:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BR",
+    "currency": "BRL",
+    "method": "bank_transfer",
+    "amount": "350.00"
+  }'
+```
+
+Response `201`:
+
+```json
+{
+  "payin_id": "b1a7…",
+  "status": "pending",
+  "reference": "b1a7…",
+  "note": "include the reference in the transfer description so the deposit is credited automatically"
+}
+```
+
+</Tab>
+</Tabs>
 
 ## 3. Receiving the credit
 

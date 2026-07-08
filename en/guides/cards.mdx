@@ -45,23 +45,22 @@ Exact amounts come from `GET /v1/rates` (`fees` field). Every issuance charge is
 
 ## Create a card
 
-Before the examples, the rule that organizes everything: **the cardholder
-is verified ONCE per account**, on the first issuance.
+The flow depends on whether your account is a **person** or a **company** —
+pick your tab. The common rule: the **cardholder is verified ONCE per
+account**, on the first issuance; subsequent cards reuse it with no data.
+The `idempotency_key` is always required (a retry with the same key returns
+the original card and never double-charges).
 
-| Situation | Do you send `cardholder`? |
-|---|---|
-| The account's **first card** (person, or company for itself) | **Yes, complete** — creates and verifies the holder at the issuer |
-| **Subsequent cards** of the same account | No — the verified holder is reused (`physical` + `idempotency_key` is enough) |
-| Company issuing **for an employee** (`cardholder.kind: "person"`) | **Yes, complete, always** — every designated person is a new holder |
+<Tabs>
+<Tab title="Person account">
 
-The idempotency key is required in every case: a retry with the same key
-returns the original card and never double-charges.
+A person account issues cards **for itself** (at most 1 virtual +
+1 physical).
 
-### First card (creates the holder)
+**Your first card** creates and verifies your holder at the issuer, so it
+carries your full data and identity documents by URL:
 
-<CodeGroup>
-
-```bash Person — first card (full data)
+```bash
 curl -X POST https://api.qbank.cl/platform/v1/cards \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
@@ -89,7 +88,79 @@ curl -X POST https://api.qbank.cl/platform/v1/cards \
   }'
 ```
 
-```bash Company — for an employee (always full)
+`occupation` is a **catalog code**
+([see below](#occupation-and-business-activity-catalog-codes)) and
+`salary_usd` is whole US dollars.
+
+**Your second card** (the physical one, for example) asks for no data —
+your holder is already verified:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/cards \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "physical": true, "idempotency_key": "card-f-1" }'
+```
+
+A third card of the same type responds `409 card_limit_reached` (cancel
+the existing one first).
+
+</Tab>
+<Tab title="Company account">
+
+A company account issues **unlimited cards**, in two modes:
+
+**A. For the company itself** (corporate cards). The first issuance
+creates the company holder with corporate data; later ones need nothing:
+
+<CodeGroup>
+
+```bash First card (creates the company holder)
+curl -X POST https://api.qbank.cl/platform/v1/cards \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "physical": false,
+    "idempotency_key": "card-corp-1",
+    "cardholder": {
+      "kind_of_business": "J63",
+      "legal_representation": "Carlos Soto, General Manager",
+      "email": "finance@andina.cl",
+      "certificate_of_good_standing_url": "https://files.example.com/kyb/standing.pdf",
+      "business_license_url": "https://files.example.com/kyb/license.pdf",
+      "register_shareholder_url": "https://files.example.com/kyb/shareholders.pdf",
+      "id_shareholders_url": "https://files.example.com/kyb/shareholder-ids.pdf",
+      "address_verification_shareholders_url": "https://files.example.com/kyb/addresses.pdf",
+      "address": {
+        "line1": "Av. Apoquindo 4500",
+        "city": "Santiago",
+        "region": "RM",
+        "postal_code": "7550000",
+        "country": "CL"
+      }
+    }
+  }'
+```
+
+```bash Subsequent cards (no data, with limits)
+curl -X POST https://api.qbank.cl/platform/v1/cards \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "physical": true,
+    "idempotency_key": "card-f-ops-1",
+    "limits": { "per_transaction": "500.00", "monthly": "5000.00" }
+  }'
+```
+
+</CodeGroup>
+
+**B. For a designated person** (e.g. an employee): add
+`cardholder.kind: "person"` with THAT person's full data — every
+designation is a new holder, so their data and documents go **every
+time**, on each card for a different person:
+
+```bash
 curl -X POST https://api.qbank.cl/platform/v1/cards \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
@@ -118,37 +189,11 @@ curl -X POST https://api.qbank.cl/platform/v1/cards \
   }'
 ```
 
-</CodeGroup>
+The printed name uses `first_name` + `last_name` (22 characters combined
+max) and the response carries `cardholder_kind: "person"`.
 
-<Warning>
-Documents are **actually validated** by the issuer: URLs must point to
-legitimate, reachable documents (both sides of the ID, proof of address).
-If they are missing or insufficient, issuance fails (`422 core_rejected`
-or `409 cardholder_kyc_pending`), **the fee is refunded automatically**
-and you can retry with corrected data.
-
-On a company account's **first issuance for itself**, the `cardholder`
-carries the corporate data instead of the personal one:
-`kind_of_business` (catalog code), `legal_representation` and the
-documents by URL `certificate_of_good_standing_url`,
-`business_license_url`, `register_shareholder_url`, `id_shareholders_url`
-and `address_verification_shareholders_url`.
-</Warning>
-
-### Subsequent cards (holder already verified)
-
-Once the holder exists, later issuances for that account need no data:
-
-```bash
-curl -X POST https://api.qbank.cl/platform/v1/cards \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "physical": true,
-    "idempotency_key": "card-f-ops-1",
-    "limits": { "per_transaction": "500.00", "monthly": "5000.00" }
-  }'
-```
+</Tab>
+</Tabs>
 
 Response (same shape in every case):
 
@@ -166,13 +211,18 @@ Response (same shape in every case):
 }
 ```
 
+<Warning>
+Documents are **actually validated** by the issuer: URLs must point to
+legitimate, reachable documents. If they are missing or insufficient,
+issuance fails (`422 core_rejected` or `409 cardholder_kyc_pending`),
+**the fee is refunded automatically** and you can retry with corrected
+data.
+</Warning>
+
 <Note>
-When issuing for a **designated person** (companies), identity documents
-are required in that same call: the holder is verified immediately and the
-card is issued along with it (`cardholder_kind: "person"` in the
-response). The printed name uses `first_name` + `last_name` (22 characters
-combined max). Remember the limit: person accounts can hold **1 virtual +
-1 physical**; companies, unlimited.
+Person or company? The differences between both account types across ALL
+products are summarized in
+[persons and companies](/en/concepts/persons-companies).
 </Note>
 
 ### Occupation and business activity (catalog codes)

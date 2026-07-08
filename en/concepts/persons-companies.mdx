@@ -1,0 +1,75 @@
+---
+title: "Persons and companies"
+icon: "user-group"
+description: "The differences between the two account types, product by product, on a single page"
+---
+
+CBPay has two account types — **person** (`type: "person"`) and **company**
+(`type: "company"`) — that use **the same API** with the same endpoints.
+This page gathers ALL the differences in one place, so you never have to
+guess which one applies.
+
+The type is set at account creation and does not change. You see it in
+`GET /v1/me` → `type`.
+
+## Complete differences table
+
+| Capability | Person | Company |
+|---|---|---|
+| USDT balance, payouts, payins, transfers, banking, statement | Same | Same |
+| **Crypto wallets** per network | **1** (`422 wallet_limit_reached` on the second) | **Unlimited** (use `label` to tell them apart) |
+| **Cards** | **1 virtual + 1 physical**, for itself only | **Unlimited**, for the company or for **designated persons** (employees) |
+| **Members with login** (`POST /v1/members`) | No (`403 company_only`) | Yes — `owner` / `operator` / `viewer` roles |
+| **KYC** (`POST /v1/kyc`) | **Person** screening (`customer.person`), bills `compliance_person` | **Company/KYB** screening (`customer.company`), bills `compliance_company` |
+| Card holder (first issuance) | Personal data + identity documents | Corporate data + corporate documents (or the designated person's) |
+| Registration | `type: "person"` | `type: "company"` (+ `tax_id` recommended) |
+
+Everything else — authentication, idempotency, webhooks, statuses, errors,
+per-card spending limits, enabled services — works identically.
+
+## What it looks like in practice
+
+<Tabs>
+<Tab title="Person account">
+
+- Registration: `POST /v1/auth/register` with `type: "person"` (or your
+  operator creates it).
+- KYC: submit `customer.person` with your identity —
+  [guide](/en/guides/kyc).
+- Crypto: **one wallet per network** (TRON and ETH). Need more addresses?
+  That is a company-account use case.
+- Cards: up to **1 virtual + 1 physical**; the first issuance carries your
+  data and documents — [guide](/en/guides/cards).
+- No members: your login and your API keys operate the account.
+
+</Tab>
+<Tab title="Company account">
+
+- Registration: `type: "company"`, ideally with `tax_id`.
+- KYB: submit `customer.company` with the corporate data —
+  [guide](/en/guides/kyc).
+- Crypto: **unlimited wallets** per network (one per branch, per product,
+  per vendor…), with a descriptive `label`.
+- Cards: **unlimited** — corporate (holder = the company, with corporate
+  documents on the first one) or for **employees** (designated person with
+  their data on every designation) — [guide](/en/guides/cards).
+- Members: add users with their own login and permissions
+  (`owner`/`operator`/`viewer`) — [guide](/en/authentication#company-members).
+
+</Tab>
+</Tabs>
+
+## Errors that reveal the account type
+
+| `error` | What it means |
+|---|---|
+| `403 company_only` | You tried a company feature (members) from a person account |
+| `422 wallet_limit_reached` | A person tried their second wallet on the same network |
+| `409 card_limit_reached` | A person tried their second card of the same type |
+
+<Note>
+Did your operation outgrow a person account? The account type cannot be
+changed through the API: ask your CBPay administrator to create the company
+account and migrate the balance with an internal transfer (free and
+instant).
+</Note>

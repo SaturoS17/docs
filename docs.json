@@ -41,7 +41,13 @@
     "timestamp": true
   },
   "contextual": {
-    "options": ["copy", "view", "chatgpt", "claude", "cursor"]
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "cursor"
+    ]
   },
   "errors": {
     "404": {
@@ -78,6 +84,7 @@
                   "es/conceptos/modelo-de-dinero",
                   "es/conceptos/comisiones",
                   "es/conceptos/idempotencia",
+                  "es/conceptos/personas-y-empresas",
                   "es/conceptos/servicios",
                   "es/conceptos/estados",
                   "es/conceptos/movimientos-y-conciliacion"
@@ -93,9 +100,7 @@
                 "group": "Productos",
                 "pages": [
                   "es/guias/payouts",
-                  "es/guias/payouts-por-pais",
                   "es/guias/payins",
-                  "es/guias/payins-por-pais",
                   "es/guias/transferencias",
                   "es/guias/crypto",
                   "es/guias/tarjetas",
@@ -148,6 +153,7 @@
                   "en/concepts/money-model",
                   "en/concepts/fees",
                   "en/concepts/idempotency",
+                  "en/concepts/persons-companies",
                   "en/concepts/services",
                   "en/concepts/statuses",
                   "en/concepts/movements-reconciliation"
@@ -163,9 +169,7 @@
                 "group": "Products",
                 "pages": [
                   "en/guides/payouts",
-                  "en/guides/payouts-by-country",
                   "en/guides/payins",
-                  "en/guides/payins-by-country",
                   "en/guides/transfers",
                   "en/guides/crypto",
                   "en/guides/cards",
@@ -203,5 +207,23 @@
     "socials": {
       "website": "https://cbpayapp.com"
     }
-  }
+  },
+  "redirects": [
+    {
+      "source": "/es/guias/payouts-por-pais",
+      "destination": "/es/guias/payouts"
+    },
+    {
+      "source": "/es/guias/payins-por-pais",
+      "destination": "/es/guias/payins"
+    },
+    {
+      "source": "/en/guides/payouts-by-country",
+      "destination": "/en/guides/payouts"
+    },
+    {
+      "source": "/en/guides/payins-by-country",
+      "destination": "/en/guides/payins"
+    }
+  ]
 }
