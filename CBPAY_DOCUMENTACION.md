@@ -3306,6 +3306,10 @@ sus cuerpos de ejemplo y una respuesta guardada por operación.
 
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
+{/* postman-meta:cbpay-api.postman_collection.json */}
+> **Colección actualizada:** 2026-07-08 16:32 UTC · 85 requests · versión `1567d313a8f4`
+{/* /postman-meta */}
+
 ### Cómo usarla
 
 ### Importa la colección
