@@ -1,5 +1,6 @@
 ---
 title: "Cards: virtual and physical"
+icon: "credit-card"
 description: "Issue cards that spend straight from the account's USDT balance, with per-card limits"
 ---
 
@@ -39,7 +40,7 @@ you can change at any time.
 | `card_monthly` | Monthly fee per active card (with no balance, the card is frozen — no debt) |
 | `card_cancellation` | When cancelling a card |
 
-Exact amounts come from `GET /v1/fees`. Every issuance charge is
+Exact amounts come from `GET /v1/rates` (`fees` field). Every issuance charge is
 **automatically refunded** if issuance fails.
 
 ## Create a card
@@ -80,7 +81,7 @@ curl -X POST https://api.qbank.cl/platform/v1/cards \
       "first_name": "Maria",
       "last_name": "Perez",
       "email": "maria@empresa.com",
-      "occupation": "Sales",
+      "occupation": "52201",
       "salary_usd": 1800,
       "id_front_url": "https://files.example.com/kyc/mp-front.jpg",
       "id_back_url": "https://files.example.com/kyc/mp-back.jpg",
@@ -210,7 +211,7 @@ curl -X PATCH https://api.qbank.cl/platform/v1/cards/{card_id} \
 ## Transactions and their lifecycle
 
 ```bash
-curl "https://api.qbank.cl/platform/v1/cards/{card_id}/transactions?page=1&page_size=50" \
+curl "https://api.qbank.cl/platform/v1/cards/{card_id}/transactions?from=2026-07-01&to=2026-07-08&page=1&page_size=50" \
   -H "Authorization: Bearer <token>"
 ```
 

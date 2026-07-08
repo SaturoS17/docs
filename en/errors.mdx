@@ -1,5 +1,6 @@
 ---
 title: "Errors"
+icon: "triangle-exclamation"
 description: "Error format and complete code catalog"
 ---
 
@@ -61,6 +62,8 @@ All errors share the same shape:
 | 404 | `recipient_not_found` | Transfer destination does not exist |
 | 409 | `duplicate` | The resource already exists |
 | 409 | `no_kyc` | Rescreen/monitoring without a prior KYC/KYB |
+| 409 | `no_banking_customer` | Banking operation without a banking profile (`POST /v1/banking/customer` first) |
+| 409 | `banking_customer_exists` | The account already has a banking profile (one per account) |
 | 422 | `currency_not_supported` | No FX rate for that currency |
 | 422 | `core_rejected` | The processor rejected the operation |
 | 422 | `recipient_unavailable` | The destination account cannot receive |

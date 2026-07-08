@@ -1,0 +1,117 @@
+---
+title: "Ambiente y pruebas"
+icon: "flask"
+description: "Cómo probar tu integración de forma segura: ambiente, montos, webhooks en local y checklist de go-live"
+---
+
+CBPay opera sobre **un único ambiente de producción**: no existe un sandbox
+separado. Esta página explica cómo probar de forma segura y qué revisar
+antes de salir a producción con tráfico real.
+
+## Un solo ambiente (producción)
+
+```
+https://api.qbank.cl/platform
+```
+
+No hay sandbox: cada payout dispersa dinero real y cada payin cobra dinero
+real. La forma segura de probar es la misma que usan los equipos de pago
+profesionales:
+
+<Steps>
+  <Step title="Prueba con montos mínimos">
+    Usa los montos más pequeños que el corredor permita (ej. 1.000 CLP,
+    10 BOB). La API no impone mínimos técnicos; con montos muy chicos la
+    comisión fija puede superar el monto — para pruebas está bien.
+  </Step>
+  <Step title="Usa cuentas y beneficiarios propios">
+    Dispersa a cuentas bancarias de tu propio equipo y cobra desde tus
+    propios medios de pago, así el dinero nunca sale de tu control.
+  </Step>
+  <Step title="Aprovecha la idempotencia">
+    Toda operación de dinero exige `idempotency_key`: puedes reintentar sin
+    miedo — un retry con la misma clave jamás duplica. Ver
+    [idempotencia](/es/conceptos/idempotencia).
+  </Step>
+  <Step title="Verifica cada paso con lecturas">
+    Después de cada operación consulta `GET /v1/balances`,
+    `GET /v1/movements` y el `GET` del recurso para confirmar el estado
+    real. Nada es write-only.
+  </Step>
+</Steps>
+
+<Warning>
+Las operaciones son **reales e irreversibles** una vez completadas. Un
+payout `completed` ya está en la cuenta del beneficiario; la única vía de
+reverso es fuera de la API (contacto con el equipo CBPay).
+</Warning>
+
+## Probar webhooks en desarrollo local
+
+Las URLs de callback deben ser **HTTPS públicas**: `localhost`, IPs
+privadas y dominios `.local` se rechazan al crear la suscripción. Para
+desarrollar en tu máquina usa un túnel HTTPS:
+
+<CodeGroup>
+
+```bash Cloudflare Tunnel (gratis)
+# Instala cloudflared y expone tu puerto local
+cloudflared tunnel --url http://localhost:3000
+# → https://<aleatorio>.trycloudflare.com  ← úsala como callback_url
+```
+
+```bash ngrok
+ngrok http 3000
+# → https://<aleatorio>.ngrok-free.app  ← úsala como callback_url
+```
+
+</CodeGroup>
+
+Luego crea la suscripción con esa URL pública:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/webhooks/subscriptions \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_type": "payin_credited",
+    "callback_url": "https://tu-tunel.trycloudflare.com/webhooks/cbpay",
+    "secret": "un-secreto-largo-y-aleatorio"
+  }'
+```
+
+<Tip>
+Los eventos fallidos se reintentan hasta **5 veces con backoff
+incremental**, así que si tu túnel se cae unos minutos no pierdes el
+evento. Verifica siempre la firma HMAC — receta completa en
+[webhooks](/es/webhooks#verificacion-de-la-firma).
+</Tip>
+
+## Simular cada flujo con seguridad
+
+| Producto | Cómo probarlo barato |
+|---|---|
+| Payout | Dispersa un monto mínimo a una cuenta bancaria de tu equipo |
+| Payin | Crea un cargo QR o página de pago y págalo tú mismo; el abono vuelve a tu saldo |
+| Transferencia | Crea una segunda cuenta en tu organización y transfiere entre ambas (gratis) |
+| Crypto | Deposita un monto pequeño de USDT a tu wallet y retíralo a una dirección propia |
+| KYC | Envía el screening con los datos reales de tu empresa (el resultado es reutilizable) |
+| Tarjetas | Emite una tarjeta virtual y haz una compra pequeña online |
+
+## Checklist de go-live
+
+Antes de enviar tráfico de clientes reales:
+
+- [ ] Guardas las API keys en un gestor de secretos (nunca en el front ni en el repo).
+- [ ] Toda operación de dinero envía `idempotency_key` derivada de TU id interno (no un UUID aleatorio por intento).
+- [ ] Ante timeout o `5xx` **no reintentas con clave nueva**: repites con la misma clave o consultas el estado con el `GET`.
+- [ ] Verificas la firma HMAC de cada webhook y respondes `2xx` rápido (procesa async).
+- [ ] Manejas los estados no finales (`pending`, `processing`) sin asumir éxito.
+- [ ] Consultas `GET /v1/services` para mostrar solo los productos habilitados — ver [servicios](/es/conceptos/servicios).
+- [ ] Concilias a diario con `GET /v1/movements` o la [cartola](/es/guias/cartola).
+- [ ] Tienes un canal con el equipo CBPay para depósitos `unassigned` o incidencias.
+
+<Note>
+¿Dudas que no cubre esta página? Revisa el [FAQ](/es/faq) — y si falta
+algo, repórtalo: la documentación se actualiza con cada pregunta real.
+</Note>

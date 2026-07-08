@@ -21,14 +21,22 @@ USDT on-chain y verificación KYC/KYB — una sola API, un solo saldo.
 - **Comenzar**
   - [Introducción](#introduccion)
   - [Inicio rápido](#inicio-rapido)
-  - [Autenticación](#autenticacion)
+  - [Autenticación y cuenta](#autenticacion-y-cuenta)
+  - [Ambiente y pruebas](#ambiente-y-pruebas)
 - **Conceptos**
   - [Modelo de dinero](#modelo-de-dinero)
   - [Comisiones](#comisiones)
   - [Idempotencia](#idempotencia)
+  - [Servicios habilitados](#servicios-habilitados)
+  - [Estados y ciclo de vida](#estados-y-ciclo-de-vida)
+  - [Movimientos y conciliación](#movimientos-y-conciliacion)
+- **Flujos de integración**
+  - [Flujos de integración](#flujos-de-integracion)
 - **Productos**
   - [Payouts](#payouts)
+  - [Payouts por país](#payouts-por-pais)
   - [Payins](#payins)
+  - [Payins por país](#payins-por-pais)
   - [Transferencias internas](#transferencias-internas)
   - [Crypto: wallets, depósitos y retiros](#crypto-wallets-depositos-y-retiros)
   - [Tarjetas: virtuales y físicas](#tarjetas-virtuales-y-fisicas)
@@ -54,12 +62,14 @@ USDT on-chain y verificación KYC/KYB — una sola API, un solo saldo.
 CBPay es una plataforma de pagos multi-moneda para Latinoamérica. Cada cuenta
 mantiene un saldo virtual en **USDT** y opera sobre él:
 
-- **Payouts fiat** — Dispersa dinero a cuentas bancarias locales en Chile, Perú, México, Venezuela, Bolivia y Paraguay, debitado de tu saldo USDT.
-- **Payins fiat** — Cobra en moneda local (QR y transferencias) y recibe el abono automáticamente en USDT.
+- **Payouts fiat** — Dispersa dinero a cuentas bancarias locales en Chile, Perú, México, Venezuela, Bolivia, Brasil y Paraguay, debitado de tu saldo USDT.
+- **Payins fiat** — Cobra en moneda local (QR, transferencias, página de pago y cobro pull) y recibe el abono automáticamente en USDT.
 - **Transferencias internas** — Mueve saldo a cualquier otra cuenta CBPay, al instante y sin comisión.
 - **Crypto on-chain** — Fondea con USDT por TRON o Ethereum y retira on-chain a cualquier dirección.
+- **Tarjetas** — Emite tarjetas virtuales y físicas que gastan directo del saldo USDT de la cuenta, con autorización en tiempo real.
 - **Banking** — Cuentas bancarias reales a tu nombre: recibe, mantén y envía dinero por rieles internacionales (SEPA, SWIFT, ACH).
 - **KYC/KYB** — Verificación de personas y empresas con screening AML, rescreening y monitoreo continuo.
+- **Cartola** — Estado de cuenta completo por período en JSON, PDF o Excel, con cuadratura contable garantizada.
 Todos los eventos llegan a tus **webhooks firmados**
 ([guía](#webhooks)).
 
@@ -129,7 +139,19 @@ Empieza por [payouts](#payouts) o [payins](#payins).
 
 ## Inicio rápido
 
-*De cero a tu primer payout en cinco pasos*
+*De cero a tu primer payout — con el ciclo cerrado por webhook — en seis pasos*
+
+Este es el camino completo de una primera integración: registro → saldo →
+tasas → payout → webhook. Al terminar habrás cerrado el ciclo entero:
+
+```mermaid
+flowchart LR
+    reg["1-2. Registro y<br/>autenticación"] --> saldo["3. Saldo<br/>(fondea con payin o crypto)"]
+    saldo --> tasas["4. Tasas y<br/>comisiones"]
+    tasas --> payout["5. Primer payout<br/>(processing)"]
+    payout --> wh["6. Webhook<br/>payout_status_changed"]
+    wh --> fin(("Ciclo<br/>cerrado"))
+```
 
 Antes de empezar, los datos que vas a necesitar en todos lados:
 
@@ -197,7 +219,7 @@ curl https://api.qbank.cl/platform/v1/me \
 
 Para integraciones servidor-a-servidor, emite una **API key permanente** con
 `POST /v1/api-keys` — se muestra una sola vez. Más detalles en
-[autenticación](#autenticacion).
+[autenticación](#autenticacion-y-cuenta).
 
 ### Consulta tu saldo
 
@@ -287,18 +309,53 @@ llega por [webhook](#webhooks) (`payout_status_changed`):
 > **Importante**
 Los campos de `beneficiary` dependen del país y método. Consulta
 `GET /v1/payouts/methods` y `GET /v1/payouts/banks?country=CL` para conocer
-los requisitos de cada corredor.
+los requisitos de cada corredor — la referencia completa está en
+[payouts por país](#payouts-por-pais).
+### Cierra el ciclo: suscríbete al webhook
+
+El estado final del payout llega por push. Suscribe tu endpoint HTTPS (en
+desarrollo usa un [túnel](#ambiente-y-pruebas)):
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/webhooks/subscriptions \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_type": "payout_status_changed",
+    "callback_url": "https://tuapp.com/webhooks/cbpay",
+    "secret": "un-secreto-largo-y-aleatorio"
+  }'
+```
+
+Minutos después recibirás el cierre del payout del paso 5:
+
+```json
+{
+  "payout_id": "…",
+  "status": "completed",
+  "local_amount": "50000",
+  "usdt_amount": "52.618258",
+  "total_debit": "53.118258",
+  "status_code": ""
+}
+```
+
+Verifica **siempre** la firma HMAC de la entrega
+(`X-Webhook-Signature`) — receta con código en [webhooks](#webhooks).
+Si el payout hubiera fallado, `status: failed` llega con el reembolso
+completo ya aplicado.
+
 ### ¿Y ahora?
 
-- [Suscríbete a webhooks](#webhooks) para recibir los cambios de estado.
-- Revisa el [modelo de dinero](#modelo-de-dinero) para entender
-  débitos, holds y reembolsos.
-- Explora la **API Reference** completa con playground interactivo.
+- **Flujos de integración** — Fondear, dispersar, cobrar, conciliar y banking — los cinco flujos E2E con diagramas.
+- **Modelo de dinero** — Débitos, holds, reembolsos y el ledger inmutable.
+- **Ambiente y pruebas** — Cómo probar seguro y el checklist de go-live.
+- **Preguntas frecuentes** — Las dudas reales de integradores, respondidas — y la API Reference completa vive en su propia pestaña, con playground interactivo.
 
 
-## Autenticación
+## Autenticación y cuenta
 
-*Sesiones JWT, API keys y niveles de acceso*
+*Sesiones JWT, API keys, tu perfil de cuenta y los miembros de una empresa*
 
 Todas las llamadas (salvo registro y login) requieren una credencial en el
 header `Authorization`:
@@ -331,8 +388,8 @@ curl -X POST https://api.qbank.cl/platform/v1/auth/login \
 }
 ```
 
-Las cuentas empresa pueden tener varios **miembros** con roles `owner`,
-`operator` o `viewer` (`POST /v1/members`).
+Las cuentas empresa pueden tener varios **miembros** con roles — ver
+[miembros de una empresa](#miembros-de-una-empresa) más abajo.
 
 #### API key (servidor a servidor)
 
@@ -366,14 +423,208 @@ endpoint responde `403 account_required` o `403 org_admin_required`, esa
 operación corresponde a otro nivel de credencial — contacta al equipo de
 CBPay.
 
+### Tu perfil de cuenta
+
+```bash
+# Leer el perfil (incluye kyc_status y type)
+curl https://api.qbank.cl/platform/v1/me \
+  -H "Authorization: Bearer <token>"
+
+# Actualizar campos del perfil (todos opcionales)
+curl -X PATCH https://api.qbank.cl/platform/v1/me \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "display_name": "Comercial Andina SpA",
+    "tax_id": "76.543.210-8",
+    "phone": "+56 9 1234 5678",
+    "country": "CL"
+  }'
+```
+
+```json
+{
+  "id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "type": "company",
+  "display_name": "Comercial Andina SpA",
+  "email": "legal@andina.cl",
+  "tax_id": "76.543.210-8",
+  "phone": "+56 9 1234 5678",
+  "country": "CL",
+  "status": "active",
+  "kyc_status": "approved",
+  "created_at": "2026-06-01T12:00:00Z"
+}
+```
+
+`PATCH /v1/me` acepta `display_name`, `tax_id`, `phone` y `country` (envía
+solo los que cambian). El `email`, `status` y `kyc_status` no se
+autogestionan: los resuelve el administrador.
+
+### Miembros de una empresa
+
+Las cuentas **empresa** pueden tener varios usuarios con login propio y
+distinto nivel de permiso:
+
+| Rol | Permisos |
+|---|---|
+| `owner` | Todo: opera, administra miembros y credenciales |
+| `operator` | Opera el día a día (default al crear un miembro) |
+| `viewer` | Solo lectura |
+
+```bash
+# Agregar un miembro (solo cuentas company)
+curl -X POST https://api.qbank.cl/platform/v1/members \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "finanzas@andina.cl",
+    "password": "una-clave-segura",
+    "role": "viewer"
+  }'
+
+# Listar miembros
+curl "https://api.qbank.cl/platform/v1/members?page_size=50" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "page": 1,
+  "page_size": 50,
+  "members": [
+    { "id": "…", "email": "legal@andina.cl", "role": "owner", "status": "active" },
+    { "id": "…", "email": "finanzas@andina.cl", "role": "viewer", "status": "active" }
+  ]
+}
+```
+
+En una cuenta persona, `POST /v1/members` responde `403 company_only`.
+
 ### Buenas prácticas
 
 - Guarda las API keys en un gestor de secretos; nunca en el código ni en el
   navegador.
 - Usa una key por ambiente/servicio (`label` descriptivo) para poder rotar
   sin downtime.
+
+### Rotación sin downtime
+
+Emite la key nueva con `POST /v1/api-keys` (label nuevo).
+### Despliega
+
+Actualiza tu servicio para usar la key nueva.
+### Retira la antigua
+
+Pide al equipo de CBPay revocar la key anterior una vez que el tráfico
+migró.
 - Las sesiones JWT son para front-ends; para procesos automatizados usa
   siempre API keys.
+
+
+## Ambiente y pruebas
+
+*Cómo probar tu integración de forma segura: ambiente, montos, webhooks en local y checklist de go-live*
+
+CBPay opera sobre **un único ambiente de producción**: no existe un sandbox
+separado. Esta página explica cómo probar de forma segura y qué revisar
+antes de salir a producción con tráfico real.
+
+### Un solo ambiente (producción)
+
+```
+https://api.qbank.cl/platform
+```
+
+No hay sandbox: cada payout dispersa dinero real y cada payin cobra dinero
+real. La forma segura de probar es la misma que usan los equipos de pago
+profesionales:
+
+### Prueba con montos mínimos
+
+Usa los montos más pequeños que el corredor permita (ej. 1.000 CLP,
+10 BOB). La API no impone mínimos técnicos; con montos muy chicos la
+comisión fija puede superar el monto — para pruebas está bien.
+### Usa cuentas y beneficiarios propios
+
+Dispersa a cuentas bancarias de tu propio equipo y cobra desde tus
+propios medios de pago, así el dinero nunca sale de tu control.
+### Aprovecha la idempotencia
+
+Toda operación de dinero exige `idempotency_key`: puedes reintentar sin
+miedo — un retry con la misma clave jamás duplica. Ver
+[idempotencia](#idempotencia).
+### Verifica cada paso con lecturas
+
+Después de cada operación consulta `GET /v1/balances`,
+`GET /v1/movements` y el `GET` del recurso para confirmar el estado
+real. Nada es write-only.
+> **Importante**
+Las operaciones son **reales e irreversibles** una vez completadas. Un
+payout `completed` ya está en la cuenta del beneficiario; la única vía de
+reverso es fuera de la API (contacto con el equipo CBPay).
+### Probar webhooks en desarrollo local
+
+Las URLs de callback deben ser **HTTPS públicas**: `localhost`, IPs
+privadas y dominios `.local` se rechazan al crear la suscripción. Para
+desarrollar en tu máquina usa un túnel HTTPS:
+
+```bash Cloudflare Tunnel (gratis)
+# Instala cloudflared y expone tu puerto local
+cloudflared tunnel --url http://localhost:3000
+# → https://<aleatorio>.trycloudflare.com  ← úsala como callback_url
+```
+
+```bash ngrok
+ngrok http 3000
+# → https://<aleatorio>.ngrok-free.app  ← úsala como callback_url
+```
+
+Luego crea la suscripción con esa URL pública:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/webhooks/subscriptions \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_type": "payin_credited",
+    "callback_url": "https://tu-tunel.trycloudflare.com/webhooks/cbpay",
+    "secret": "un-secreto-largo-y-aleatorio"
+  }'
+```
+
+> **Tip**
+Los eventos fallidos se reintentan hasta **5 veces con backoff
+incremental**, así que si tu túnel se cae unos minutos no pierdes el
+evento. Verifica siempre la firma HMAC — receta completa en
+[webhooks](#webhooks).
+### Simular cada flujo con seguridad
+
+| Producto | Cómo probarlo barato |
+|---|---|
+| Payout | Dispersa un monto mínimo a una cuenta bancaria de tu equipo |
+| Payin | Crea un cargo QR o página de pago y págalo tú mismo; el abono vuelve a tu saldo |
+| Transferencia | Crea una segunda cuenta en tu organización y transfiere entre ambas (gratis) |
+| Crypto | Deposita un monto pequeño de USDT a tu wallet y retíralo a una dirección propia |
+| KYC | Envía el screening con los datos reales de tu empresa (el resultado es reutilizable) |
+| Tarjetas | Emite una tarjeta virtual y haz una compra pequeña online |
+
+### Checklist de go-live
+
+Antes de enviar tráfico de clientes reales:
+
+- [ ] Guardas las API keys en un gestor de secretos (nunca en el front ni en el repo).
+- [ ] Toda operación de dinero envía `idempotency_key` derivada de TU id interno (no un UUID aleatorio por intento).
+- [ ] Ante timeout o `5xx` **no reintentas con clave nueva**: repites con la misma clave o consultas el estado con el `GET`.
+- [ ] Verificas la firma HMAC de cada webhook y respondes `2xx` rápido (procesa async).
+- [ ] Manejas los estados no finales (`pending`, `processing`) sin asumir éxito.
+- [ ] Consultas `GET /v1/services` para mostrar solo los productos habilitados — ver [servicios](#servicios-habilitados).
+- [ ] Concilias a diario con `GET /v1/movements` o la [cartola](#cartola-estado-de-cuenta).
+- [ ] Tienes un canal con el equipo CBPay para depósitos `unassigned` o incidencias.
+
+> **Nota**
+¿Dudas que no cubre esta página? Revisa el [FAQ](#preguntas-frecuentes) — y si falta
+algo, repórtalo: la documentación se actualiza con cada pregunta real.
 
 
 # Conceptos
@@ -604,12 +855,20 @@ equivalente a tu `payin_rate` menos el fijo.
 
 *Reintenta con seguridad sin duplicar operaciones*
 
-Toda operación que mueve dinero exige una **clave de idempotencia**:
+Toda operación que mueve dinero exige una **clave de idempotencia**. La
+tabla completa:
 
-- `POST /v1/payouts`
-- `POST /v1/transfers`
-- `POST /v1/crypto/withdrawals`
-- `POST /v1/accounts/{id}/adjustments` (admin, opcional pero recomendada)
+| Endpoint | Clave | Por qué |
+|---|---|---|
+| `POST /v1/payouts` | **Obligatoria** | Debita tu saldo y dispersa |
+| `POST /v1/payouts/qr/confirm` | **Obligatoria** | Debita y paga el QR (el `scan` es gratis y no la necesita) |
+| `POST /v1/payins/collect` | **Obligatoria** | Ejecuta un débito real contra el pagador |
+| `POST /v1/transfers` | **Obligatoria** | Mueve saldo entre cuentas |
+| `POST /v1/crypto/withdrawals` | **Obligatoria** | Debita y transmite on-chain |
+| `POST /v1/banking/operations` | **Obligatoria** | Envía un pago bancario (el `prepare` es gratis y no la necesita) |
+| `POST /v1/cards` | **Obligatoria** | Puede cobrar el fee de emisión |
+| `POST /v1/payins` con `method: "fintoc"` | Opcional, **recomendada** | Un retry con la misma clave devuelve la misma sesión de pago (no abre una segunda) |
+| `POST /v1/payins` (qr / bank_transfer) | No aplica | El cargo no mueve dinero hasta que alguien paga; un duplicado sin pagar simplemente vence |
 
 ### Cómo enviarla
 
@@ -669,6 +928,420 @@ flowchart LR
   timeout con garantía de no duplicar.
 - Ante un error de red o `5xx`, **reintenta con la misma clave**. Ante un
   `4xx` de validación, corrige el request y usa una clave nueva.
+
+
+## Servicios habilitados
+
+*Qué productos tiene habilitados tu cuenta y cómo reaccionar a service_disabled*
+
+Cada cuenta tiene un **conjunto de servicios habilitados** según su acuerdo
+comercial con CBPay. Antes de mostrar un producto en tu UI (o de intentar
+usarlo), consulta el mapa efectivo:
+
+```bash
+curl https://api.qbank.cl/platform/v1/services \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "services": {
+    "payouts": true,
+    "payins": true,
+    "transfers": true,
+    "crypto": true,
+    "banking": false,
+    "kyc": true,
+    "cards": false
+  }
+}
+```
+
+### Catálogo de servicios
+
+| Servicio | Qué habilita |
+|---|---|
+| `payouts` | Dispersiones fiat (`POST /v1/payouts`, QR scan/confirm) |
+| `payins` | Cobros fiat (QR, transferencia, página de pago, collect, CLABE) |
+| `transfers` | Transferencias internas entre cuentas CBPay |
+| `crypto` | Wallets on-chain y retiros USDT |
+| `banking` | Cuentas bancarias internacionales (perfil, cuentas, pagos) |
+| `kyc` | Verificación KYC/KYB, rescreening y monitoreo |
+| `cards` | Emisión y operación de tarjetas |
+
+### Qué pasa cuando un servicio está apagado
+
+Las **acciones** del producto responden `403 service_disabled`:
+
+```json
+{
+  "error": "service_disabled",
+  "message": "this service is not enabled for your account"
+}
+```
+
+Reglas importantes:
+
+- **Las lecturas nunca se bloquean**: siempre puedes listar y consultar tus
+  operaciones históricas, saldos y movimientos.
+- **El dinero en tránsito termina su ciclo**: un payout `processing` se
+  completa (o reembolsa) aunque el servicio se apague después.
+- Con `cards` apagado, las compras con tarjeta dejan de autorizarse al
+  instante y no se generan mensualidades.
+
+### Patrón recomendado en tu integración
+
+```mermaid
+flowchart LR
+    inicio["Al iniciar sesión /<br/>cargar el dashboard"] --> get["GET /v1/services"]
+    get --> ui{"services.X"}
+    ui -->|"true"| muestra["Muestra el producto"]
+    ui -->|"false"| oculta["Oculta o deshabilita<br/>el producto"]
+    muestra --> accion["El usuario opera"]
+    accion --> err{"403 service_disabled?"}
+    err -->|"sí"| refresca["Refresca GET /v1/services<br/>y actualiza la UI"]
+```
+
+1. Consulta `GET /v1/services` al cargar tu aplicación (y cachea unos minutos).
+2. Muestra solo los productos en `true`.
+3. Aun así, maneja `403 service_disabled` en cualquier acción: la
+   configuración puede cambiar entre tu caché y la operación.
+
+> **Nota**
+Los servicios los habilita tu organización según el acuerdo comercial. Si
+necesitas activar un producto (por ejemplo `banking` o `cards`), contacta a
+tu administrador CBPay — el cambio es inmediato, sin redeploy.
+
+
+## Estados y ciclo de vida
+
+*Todos los estados de cada producto, cuáles son finales y qué hacer en cada uno*
+
+Todas las operaciones de CBPay siguen ciclos de vida explícitos. Esta
+página reúne **todos los estados de todos los productos** en un solo lugar,
+con la regla de oro: nunca asumas éxito hasta ver un **estado final**.
+
+### Tabla unificada
+
+| Producto | Estados | Finales | Evento webhook |
+|---|---|---|---|
+| Payout | `pending` → `processing` → `completed` / `failed` | `completed`, `failed` | `payout_status_changed` |
+| Payin | `pending` → `credited` / `expired` / `failed` (+ `unassigned`) | `credited`, `expired`, `failed` | `payin_credited` |
+| Transferencia | `completed` (síncrona) | `completed` | `transfer_received` (al receptor) |
+| Depósito crypto | detección → `credited` al confirmar la red | `credited` | `crypto_deposit_credited` |
+| Retiro crypto | `pending` → `processing` → `completed` / `failed` | `completed`, `failed` | `crypto_withdrawal_status_changed` |
+| Banking (pago) | según riel: `pending` → `processing` → `completed` / `failed` | `completed`, `failed` | `banking_operation_status_changed` |
+| Tarjeta | `pending_activation` → `active` ⇄ `frozen` → `cancelled` | `cancelled` | `card_status_changed` |
+| KYC de la cuenta | `none` → `pending` → `approved` / `rejected` | `approved`, `rejected` | — (consultar `GET /v1/me`) |
+
+### Payouts: el ciclo con dinero retenido
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending: POST /v1/payouts<br/>(debito a held)
+    pending --> processing: el corredor acepta
+    processing --> completed: pagado al beneficiario<br/>(hold consumido)
+    processing --> failed: rechazo del corredor<br/>(reembolso TOTAL a available)
+    pending --> failed: rechazo inmediato<br/>(reembolso TOTAL)
+    completed --> [*]
+    failed --> [*]
+```
+
+- El débito completo (`total_debit`) sale de `available` y queda en `held`
+  mientras la operación está en vuelo.
+- `failed` **siempre reembolsa el débito completo** (monto + comisión) a
+  `available`, automáticamente.
+- Un payout en `processing` no se puede cancelar por API: espera el estado
+  final (webhook o `GET /v1/payouts/{id}`).
+
+#### Catálogo de `status_code` en payouts fallidos
+
+Cuando un payout falla, `status_code` y `status_message` explican la causa
+en términos neutros:
+
+| `status_code` | Significado | Qué hacer |
+|---|---|---|
+| `core_rejected` | El procesador rechazó la operación al crearla (datos del beneficiario inválidos, cuenta destino inexistente, corredor no disponible) | Lee `status_message`, corrige los datos y crea un payout nuevo (clave nueva) |
+| *código del corredor* | Rechazo posterior del riel bancario (p. ej. cuenta cerrada) | Igual: corrige y reintenta como operación nueva |
+| *(vacío)* con `failed` | Fallo genérico reportado por el corredor | Revisa `status_message`; si no es claro, contacta soporte con el `payout_id` |
+
+El reembolso ya ocurrió en todos los casos: verifícalo en
+`GET /v1/movements` (entrada `payout_refund`).
+
+### Payins: estados de un cobro
+
+- `pending` — el cargo existe y espera el pago. Los QR y páginas de pago
+  tienen vencimiento (`expired` si nadie paga).
+- `credited` — pago recibido, convertido a tu `payin_rate` y abonado.
+- `unassigned` — llegó un depósito que no se pudo asociar a ninguna cuenta;
+  el administrador lo asigna manualmente y entonces se acredita con la tasa
+  y comisiones de la cuenta destino.
+- `failed` — el cobro falló (p. ej. un collect rechazado por el pagador).
+  No se movió dinero.
+
+### Retiros crypto: confirmación on-chain
+
+Un retiro pasa a `completed` cuando la transacción se confirma en la red.
+Tiempos típicos: **TRON ~1 minuto** (19 confirmaciones), **Ethereum algunos
+minutos** según congestión. El `tx_id` viene en la respuesta y en el
+webhook para que lo verifiques en el explorador.
+
+Si el retiro falla antes de transmitirse, el débito completo se reembolsa
+(entrada `withdrawal_refund`).
+
+### Tarjetas
+
+- `pending_activation` — física emitida, viaja inactiva; se activa con
+  `POST /v1/cards/{id}/activate`.
+- `active` — autoriza compras en tiempo real contra el saldo USDT.
+- `frozen` — congelada (manual o por mensualidad impaga); las compras se
+  rechazan con `unfunded_card_frozen`. Se descongela pagando lo pendiente.
+- `cancelled` — final; no se puede revertir.
+
+### Reglas transversales
+
+#### ¿Cuándo confío en un estado?
+Estado final por webhook **o** por `GET` del recurso — ambos son fuentes de
+verdad equivalentes. El webhook es push (recomendado); el `GET` es tu
+respaldo si un webhook se pierde.
+#### ¿Qué hago ante timeout creando una operación?
+NO reintentes con clave nueva. Repite el mismo request con la **misma**
+`idempotency_key` (te devuelve el original con `idempotency_hit: true`) o
+consulta el listado del recurso. Detalle en
+[idempotencia](#idempotencia).
+#### ¿Un estado puede retroceder?
+No. Los ciclos son monótonos: `completed` y `failed` son definitivos, y una
+operación nunca vuelve a un estado anterior.
+#### ¿Dónde veo el efecto de cada estado en mi saldo?
+En `GET /v1/movements`: cada transición con efecto económico deja una
+entrada inmutable (`payout_debit`, `payout_refund`, `payin_credit`…). Ver
+[movimientos y conciliación](#movimientos-y-conciliacion).
+
+
+## Movimientos y conciliación
+
+*El ledger inmutable (GET /v1/movements), todos los tipos de asiento y cómo conciliar contra la cartola y los webhooks*
+
+Cada vez que tu saldo cambia, CBPay escribe una **entrada inmutable** en el
+ledger con el saldo resultante. `GET /v1/movements` es tu fuente de verdad
+para conciliar: nada mueve dinero sin dejar asiento.
+
+### Consultar movimientos
+
+```bash
+curl "https://api.qbank.cl/platform/v1/movements?from=2026-07-01&to=2026-07-08&page_size=100" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "page": 1,
+  "page_size": 100,
+  "movements": [
+    {
+      "id": "a3f1…",
+      "asset": "USDT",
+      "amount": "-101.602460",
+      "type": "payout_debit",
+      "reference_type": "payout",
+      "reference_id": "8e2a…",
+      "description": "Payout 700.00 BOB",
+      "balance_after": "3898.397540",
+      "created_at": "2026-07-07T15:22:10Z"
+    }
+  ]
+}
+```
+
+Filtros: `from`/`to` (`YYYY-MM-DD`, UTC), `type`, `asset`, `page`,
+`page_size` (máx. 200). Cada entrada trae `reference_type` +
+`reference_id`: el recurso de negocio que la originó.
+
+### Catálogo completo de tipos
+
+| `type` | Signo | Origen (`reference_type`) |
+|---|---|---|
+| `payin_credit` | + | Cobro fiat abonado (`payin`) |
+| `payout_debit` / `payout_refund` | − / + | Payout creado / reembolso si falló (`payout`) |
+| `transfer_in` / `transfer_out` | + / − | Transferencia interna recibida / enviada (`transfer`) |
+| `funding` | + | Depósito USDT on-chain acreditado (`deposit`) |
+| `withdrawal_debit` / `withdrawal_refund` | − / + | Retiro on-chain / reembolso si falló (`withdrawal`) |
+| `card_debit` / `card_refund` | − / + | Compra con tarjeta / reversa (`card_transaction`) |
+| `card_fee` / `card_fee_refund` | − / + | Fee de tarjeta (emisión, mensualidad, cancelación) |
+| `compliance_fee` / `compliance_refund` | − / + | Cobro por screening KYC / reembolso si falló |
+| `wallet_creation_fee` / `wallet_creation_refund` | − / + | Fee por creación de wallet |
+| `banking_fee` / `banking_fee_refund` | − / + | Fee de operación banking |
+| `adjustment` | ± | Ajuste manual auditado del administrador |
+
+> **Nota**
+Los saldos de banking viven en tus cuentas bancarias (no en el ledger
+USDT): aquí solo aparecen sus **fees**. Las comisiones transaccionales de
+payout/payin/retiro no tienen asiento propio — viajan dentro del monto de
+su operación (`total_debit`, `usdt_credited`).
+### Conciliación en tres capas
+
+Tu integración tiene tres vistas del mismo dinero. Así se mapean:
+
+| Capa | Qué es | Clave de cruce |
+|---|---|---|
+| **Webhooks** | Notificación push de cada evento | `payout_id` / `payin_id` / `transfer_id` / `withdrawal_id` |
+| **Movements** | Asiento contable inmutable con `balance_after` | `reference_id` = el mismo id del recurso |
+| **Cartola** | Estado de cuenta del período (JSON/PDF/Excel) con cuadratura | Secciones por producto con los mismos ids |
+
+```mermaid
+flowchart LR
+    evento["Webhook<br/>payin_credited (payin_id)"] --> negocio["Recurso de negocio<br/>GET /v1/payins/{id}"]
+    negocio --> asiento["Movimiento<br/>type=payin_credit<br/>reference_id=payin_id"]
+    asiento --> cartola["Cartola del período<br/>sección payins"]
+    cartola --> cuadre["Cuadratura:<br/>saldo inicial + créditos − débitos = saldo final"]
+```
+
+#### Receta de conciliación diaria
+
+### Descarga los movimientos del día
+
+`GET /v1/movements?from=AYER&to=AYER` paginando hasta el final.
+### Cruza contra tu registro interno
+
+Tu `idempotency_key` derivada de tu id interno te permite unir cada
+operación tuya con su `reference_id` de CBPay.
+### Verifica la continuidad del saldo
+
+Ordena por fecha: el `balance_after` de cada entrada debe ser el
+anterior ± `amount`. Cualquier salto es señal de que te falta una
+entrada (no de un error del ledger — es inmutable).
+### Cierra el período con la cartola
+
+La [cartola](#cartola-estado-de-cuenta) garantiza la identidad contable
+`saldo_inicial + créditos − débitos = saldo_final` y te sirve como
+respaldo formal (PDF/Excel).
+### Movements vs cartola: ¿cuándo usar cuál?
+
+- **`GET /v1/movements`** — programático, paginado, en vivo: para tu
+  conciliación automática y tu UI de historial.
+- **Cartola** — snapshot del período con totales, desgloses por producto/
+  país/moneda y cuadratura garantizada: para cierres contables, auditoría
+  y para compartir con tu equipo de finanzas.
+
+Ambos leen el mismo ledger: nunca van a discrepar entre sí.
+
+
+# Flujos de integración
+
+
+## Flujos de integración
+
+*Los cinco flujos end-to-end de una integración típica, con diagramas de secuencia paso a paso*
+
+Esta página conecta los productos en **flujos completos de negocio**: qué
+llamar, qué esperar y qué webhook cierra cada ciclo. Cada flujo linkea a la
+guía detallada de su producto.
+
+### 1. Fondear la cuenta
+
+Tres caminos para que entre dinero; todos terminan en un abono al saldo
+USDT y un webhook:
+
+```mermaid
+sequenceDiagram
+    participant App as Tu app
+    participant CB as CBPay
+    participant Pagador as Pagador / Red
+    App->>CB: POST /v1/payins (o wallet crypto)
+    CB-->>App: pending + datos de pago (QR, URL, referencia, dirección)
+    App->>Pagador: comparte el medio de pago
+    Pagador->>CB: paga (transferencia, QR, USDT on-chain)
+    CB->>CB: convierte a tu payin_rate − fee (fiat)
+    CB-->>App: webhook payin_credited / crypto_deposit_credited
+    App->>CB: GET /v1/balances (verifica)
+```
+
+| Camino | Endpoint | Webhook de cierre |
+|---|---|---|
+| Cobro fiat (QR, transferencia, página de pago, pull) | `POST /v1/payins` / `/collect` | `payin_credited` |
+| Depósito USDT on-chain | `POST /v1/crypto/wallets` (dirección fija) | `crypto_deposit_credited` |
+| Transferencia interna de otra cuenta | — (la inicia el emisor) | `transfer_received` |
+
+Detalle: [payins](#payins) · [crypto](#crypto-wallets-depositos-y-retiros) ·
+[transferencias](#transferencias-internas).
+
+### 2. Dispersar (payout)
+
+```mermaid
+sequenceDiagram
+    participant App as Tu app
+    participant CB as CBPay
+    participant Banco as Riel local
+    App->>CB: POST /v1/payouts (idempotency_key)
+    CB-->>App: 202 processing (fx_rate, total_debit; débito queda en held)
+    CB->>Banco: ejecuta la dispersión
+    alt pagado
+        Banco-->>CB: confirmación
+        CB-->>App: webhook payout_status_changed (completed)
+    else rechazo
+        Banco-->>CB: rechazo
+        CB->>CB: reembolsa el débito COMPLETO a available
+        CB-->>App: webhook payout_status_changed (failed + status_code)
+    end
+    App->>CB: GET /v1/payouts/{id} (verifica estado final)
+```
+
+Variante **QR** (Bolivia): `POST /v1/payouts/qr/scan` (gratis, decodifica)
+→ muestra los datos → `POST /v1/payouts/qr/confirm` (cobra como un payout
+normal). Detalle: [payouts](#payouts).
+
+### 3. Cobrar a un cliente
+
+Elige la modalidad según el país y la experiencia que quieras dar:
+
+| Modalidad | Países | Experiencia del pagador | Confirmación |
+|---|---|---|---|
+| Página de pago hosted | CL | Abre una URL y paga desde su banco | Automática |
+| QR | BO, BR (PIX) | Escanea con su app bancaria | Automática |
+| Transferencia anunciada | CL, PE, MX, BR | Transfiere incluyendo la referencia | Automática por referencia (o monto) |
+| CLABE dedicada | MX | Transfiere a una CLABE fija tuya | Automática, sin referencias |
+| Cobro pull (c2p / débito) | VE | Autoriza con OTP y tú ejecutas el cobro | **Síncrona** en la misma llamada |
+
+Todos cierran con `payin_credited` y el abono neto en tu saldo.
+Detalle: [payins](#payins).
+
+### 4. Conciliar
+
+```mermaid
+flowchart LR
+    webhooks["Webhooks<br/>(push, por evento)"] --> interno["Tu registro interno<br/>(por idempotency_key)"]
+    movements["GET /v1/movements<br/>(ledger inmutable)"] --> interno
+    cartola["Cartola del período<br/>(JSON/PDF/Excel)"] --> cierre["Cierre contable<br/>con cuadratura"]
+    interno --> cierre
+```
+
+Receta completa en
+[movimientos y conciliación](#movimientos-y-conciliacion) y
+[cartola](#cartola-estado-de-cuenta).
+
+### 5. Banking internacional end-to-end
+
+```mermaid
+sequenceDiagram
+    participant App as Tu app
+    participant CB as CBPay
+    App->>CB: POST /v1/banking/customers (perfil, una vez)
+    CB-->>App: webhook banking_customer_status_changed (approved)
+    App->>CB: POST /v1/banking/accounts (cuenta USD/EUR)
+    App->>CB: POST /v1/banking/operations/prepare (cotiza, gratis)
+    App->>CB: POST /v1/banking/operations (idempotency_key)
+    CB-->>App: webhook banking_operation_status_changed (completed/failed)
+```
+
+El saldo banking vive en tus cuentas bancarias (separado del USDT); CBPay
+solo cobra los fees fijos configurados. Detalle:
+[banking](#banking).
+
+> **Tip**
+¿Primera integración? Sigue el [inicio rápido](#inicio-rapido) (fondeo →
+payout → webhook) y vuelve aquí cuando agregues productos.
 
 
 # Productos
@@ -849,12 +1522,186 @@ curl https://api.qbank.cl/platform/v1/payouts/0d4f… \
 | `completed` | El dinero llegó al beneficiario | Hold consumido — final |
 | `failed` | El corredor lo rechazó o falló | **Reembolso automático completo** (monto + comisión) |
 
+### Consulta e historial
+
+Cada payout se puede leer individualmente y el listado acepta filtros:
+
+```bash
+# Un payout
+curl https://api.qbank.cl/platform/v1/payouts/0d4f… \
+  -H "Authorization: Bearer <token>"
+
+# Historial con filtros: fechas, estado y paginación
+curl "https://api.qbank.cl/platform/v1/payouts?from=2026-07-01&to=2026-07-08&status=failed&page=1&page_size=50" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "page": 1,
+  "page_size": 50,
+  "payouts": [
+    {
+      "payout_id": "0d4f…",
+      "country": "MX",
+      "currency": "MXN",
+      "method": "bank_transfer",
+      "local_amount": "1500.00",
+      "fx_rate": "17.50",
+      "usdt_amount": "85.714286",
+      "fee": "0.300000",
+      "total_debit": "86.014286",
+      "status": "failed",
+      "status_code": "core_rejected",
+      "status_message": "beneficiary account does not exist",
+      "created_at": "2026-07-06T20:00:00Z"
+    }
+  ]
+}
+```
+
+`from`/`to` van en `YYYY-MM-DD` (UTC, ambos inclusive); una fecha inválida
+responde `400 invalid_range`.
+
 ### Ejemplos por país
 
-Cada corredor con su `beneficiary` real y la respuesta que recibes. Las
-tasas (`fx_rate`) son ilustrativas — siempre aplican las de tu cuenta en
-`GET /v1/rates`. En todos los casos el débito es
-`usdt_amount + fee` (fijo, si está configurado; aquí `0.30`).
+Cada corredor tiene su propio objeto `beneficiary` (RUT y banco en Chile,
+CLABE en México, CCI en Perú, llave PIX en Brasil…). La referencia completa
+con request y response reales de los 7 países está en su propia página:
+
+- **Referencia por país** — Chile, Perú, México, Venezuela, Bolivia, Brasil y Paraguay — el `beneficiary` exacto, el request completo y la respuesta de cada corredor.
+
+### Payout QR
+
+En Bolivia (QR interoperable local) y Brasil (QR PIX) también puedes
+**pagar a un QR de cobro** en dos pasos: escanear y confirmar. El escaneo
+es **gratis**; solo se cobra al confirmar, igual que un payout normal (tu
+tasa + fijo). Si no envías `country`/`currency`, se asume Bolivia (BOB);
+para Brasil envía `country: "BR"` y `currency: "BRL"`.
+
+```mermaid
+flowchart LR
+    scan["1. POST qr/scan<br/>(gratis)"] --> datos["Datos del destinatario<br/>+ provider_reference"]
+    datos --> confirmaUsuario{"¿El usuario<br/>confirma?"}
+    confirmaUsuario -->|"Sí"| confirm["2. POST qr/confirm<br/>(se cobra: tu tasa + fijo)"]
+    confirmaUsuario -->|"No"| fin["Nada se cobró"]
+    confirm --> resultado{"Resultado<br/>síncrono"}
+    resultado -->|"completed"| pagado["Pagado — débito consumido"]
+    resultado -->|"failed"| refund["Reembolso automático<br/>completo"]
+```
+
+#### 1. Escanea el QR (gratis)
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/scan \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "qr_payload": "<contenido del QR>",
+    "currency": "BOB"
+  }'
+```
+
+Devuelve los datos del destinatario para que el usuario confirme a quién le
+paga:
+
+```json
+{
+  "scan_id": "…",
+  "provider_reference": "…",
+  "beneficiary_name": "Juan Quispe",
+  "destination_account": "…",
+  "amount": "700.00",
+  "currency": "BOB",
+  "glosa": "",
+  "status": "…"
+}
+```
+
+#### 2. Confirma el pago (se cobra aquí)
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider_reference": "<del scan>",
+    "amount": "700.00",
+    "currency": "BOB",
+    "description": "Pago QR almuerzo",
+    "idempotency_key": "qr-2026-07-07-a"
+  }'
+```
+
+- Se debita `usdt_amount + fijo` a **tu tasa**, igual que un
+  `bank_transfer`.
+- El resultado es **síncrono**: la respuesta ya trae el estado final
+  (`completed` o `failed` con reembolso automático) — sin esperas.
+- Un mismo QR escaneado solo puede pagarse una vez; reintentos con la misma
+  `idempotency_key` devuelven el payout original.
+- En Brasil, `qr_payload` acepta el contenido del QR o el código
+  "copia e cola" de PIX; el mismo flujo cubre QR estáticos y dinámicos.
+
+### Errores frecuentes
+
+| HTTP | `error` | Qué hacer |
+|---|---|---|
+| 400 | `idempotency_key_required` | Envía la clave en body o header |
+| 400 | `beneficiary_required` | Incluye el objeto `beneficiary` |
+| 402 | `insufficient_funds` | Fondea la cuenta; el payout no se creó |
+| 403 | `account_blocked` | La cuenta no está activa; contacta al equipo de CBPay |
+| 403 | `service_disabled` | Payouts no está habilitado para tu cuenta — ver [servicios](#servicios-habilitados) |
+| 422 | `currency_not_supported` | No hay tasa FX para esa moneda |
+| 422 | (payout con `status: failed`) | El corredor rechazó los datos; el débito ya fue reembolsado — corrige `beneficiary` y reintenta con clave nueva |
+
+### Rechazo inmediato vs fallo posterior
+
+Si el procesador rechaza el payout al crearlo, recibes `422` con el objeto
+en `status: failed` y el reembolso ya aplicado. Si falla después (por
+ejemplo, cuenta destino inexistente detectada por el banco), te llega el
+webhook con `status: failed` y el reembolso automático en ese momento.
+
+#### Cómo leer `status_code` en un payout fallido
+
+| `status_code` | Significado | Acción |
+|---|---|---|
+| `core_rejected` | El procesador rechazó la operación al crearla (datos del beneficiario inválidos, corredor no disponible) | Lee `status_message`, corrige y crea un payout nuevo con clave nueva |
+| *otro código* | Rechazo posterior del riel bancario (p. ej. cuenta destino cerrada) | Igual: corrige los datos y crea una operación nueva |
+| *(vacío)* | Fallo genérico del corredor | Revisa `status_message`; si no es claro, contacta soporte con el `payout_id` |
+
+En todos los casos el reembolso ya está aplicado — verifícalo con la
+entrada `payout_refund` en
+[movimientos](#movimientos-y-conciliacion).
+
+> **Nota**
+Un payout en `processing` no se puede cancelar por API: el rail ya lo tiene.
+Espera el estado final por webhook o `GET` — llega siempre, con reembolso
+automático si falla.
+
+
+## Payouts por país
+
+*El beneficiary exacto y la respuesta real de cada corredor: CL, PE, MX, VE, BO, BR y PY*
+
+Referencia completa de cada corredor de [payouts](#payouts): el
+objeto `beneficiary` con sus campos exactos, el request completo y la
+respuesta que recibes. Las tasas (`fx_rate`) son ilustrativas — siempre
+aplican las de tu cuenta en `GET /v1/rates`. En todos los casos el débito
+es `usdt_amount + fee` (fijo, si está configurado; aquí `0.30`).
+
+### Campos del beneficiary por corredor
+
+| País | Método | Campos del `beneficiary` |
+|---|---|---|
+| CL | `bank_transfer` | `name`, `tax_id` (RUT), `bank_code`, `account_type`, `account_number` |
+| PE | `bank_transfer` | `name`, `account_number` (CCI de 20 dígitos) |
+| PE | `yape` | `name`, `phone` (`51XXXXXXXXX`) |
+| MX | `bank_transfer` | `name`, `account_type` (`clabe`/`debit_card`), `account_number` (+ `bank_code` si es tarjeta) |
+| VE | `pago_movil` | `phone`, `bank_code` (SUDEBAN), `document_value` |
+| VE | `bank_transfer` | `name`, `account_number` (20 dígitos), `document_value` |
+| BO | `bank_transfer` | `name`, `tax_id`, `bank_code`, `account_number` |
+| BR | `pix` | `name`, `tax_id`, `pix_key_type`, `pix_key` |
+| PY | `bank_transfer` | `name` (≤35), `tax_id`, `bank_code`, `account_number` |
 
 #### Chile
 
@@ -1076,7 +1923,8 @@ primeros 4 dígitos de la cuenta.
 
 #### Bolivia
 
-Transferencia ACH en BOB o USD (además del [QR](#payout-qr)):
+Transferencia ACH en BOB o USD (además del
+[payout QR](#payouts)):
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/payouts \
@@ -1116,7 +1964,8 @@ Para USD envía `currency: "USD"` con la misma estructura.
 
 #### Brasil
 
-PIX por llave (además del [QR PIX](#payout-qr)):
+PIX por llave (además del
+[QR PIX](#payouts)):
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/payouts \
@@ -1194,94 +2043,11 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
 
 `name` acepta hasta 35 caracteres en este corredor.
 
-### Payout QR
-
-En Bolivia (QR interoperable local) y Brasil (QR PIX) también puedes
-**pagar a un QR de cobro** en dos pasos: escanear y confirmar. El escaneo
-es **gratis**; solo se cobra al confirmar, igual que un payout normal (tu
-tasa + fijo). Si no envías `country`/`currency`, se asume Bolivia (BOB);
-para Brasil envía `country: "BR"` y `currency: "BRL"`.
-
-```mermaid
-flowchart LR
-    scan["1. POST qr/scan<br/>(gratis)"] --> datos["Datos del destinatario<br/>+ provider_reference"]
-    datos --> confirmaUsuario{"¿El usuario<br/>confirma?"}
-    confirmaUsuario -->|"Sí"| confirm["2. POST qr/confirm<br/>(se cobra: tu tasa + fijo)"]
-    confirmaUsuario -->|"No"| fin["Nada se cobró"]
-    confirm --> resultado{"Resultado<br/>síncrono"}
-    resultado -->|"completed"| pagado["Pagado — débito consumido"]
-    resultado -->|"failed"| refund["Reembolso automático<br/>completo"]
-```
-
-#### 1. Escanea el QR (gratis)
-
-```bash
-curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/scan \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "qr_payload": "<contenido del QR>",
-    "currency": "BOB"
-  }'
-```
-
-Devuelve los datos del destinatario para que el usuario confirme a quién le
-paga:
-
-```json
-{
-  "scan_id": "…",
-  "provider_reference": "…",
-  "beneficiary_name": "Juan Quispe",
-  "destination_account": "…",
-  "amount": "700.00",
-  "currency": "BOB",
-  "glosa": "",
-  "status": "…"
-}
-```
-
-#### 2. Confirma el pago (se cobra aquí)
-
-```bash
-curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "provider_reference": "<del scan>",
-    "amount": "700.00",
-    "currency": "BOB",
-    "description": "Pago QR almuerzo",
-    "idempotency_key": "qr-2026-07-07-a"
-  }'
-```
-
-- Se debita `usdt_amount + fijo` a **tu tasa**, igual que un
-  `bank_transfer`.
-- El resultado es **síncrono**: la respuesta ya trae el estado final
-  (`completed` o `failed` con reembolso automático) — sin esperas.
-- Un mismo QR escaneado solo puede pagarse una vez; reintentos con la misma
-  `idempotency_key` devuelven el payout original.
-- En Brasil, `qr_payload` acepta el contenido del QR o el código
-  "copia e cola" de PIX; el mismo flujo cubre QR estáticos y dinámicos.
-
-### Errores frecuentes
-
-| HTTP | `error` | Qué hacer |
-|---|---|---|
-| 400 | `idempotency_key_required` | Envía la clave en body o header |
-| 400 | `beneficiary_required` | Incluye el objeto `beneficiary` |
-| 402 | `insufficient_funds` | Fondea la cuenta; el payout no se creó |
-| 403 | `account_blocked` | La cuenta no está activa; contacta al equipo de CBPay |
-| 422 | `currency_not_supported` | No hay tasa FX para esa moneda |
-| 422 | (payout con `status: failed`) | El corredor rechazó los datos; el débito ya fue reembolsado — corrige `beneficiary` y reintenta con clave nueva |
-
-### Rechazo inmediato vs fallo posterior
-
-Si el procesador rechaza el payout al crearlo, recibes `422` con el objeto
-en `status: failed` y el reembolso ya aplicado. Si falla después (por
-ejemplo, cuenta destino inexistente detectada por el banco), te llega el
-webhook con `status: failed` y el reembolso automático en ese momento.
+> **Nota**
+¿Un país que no está aquí? El catálogo vivo es
+`GET /v1/payouts/methods` — si un corredor aparece ahí, se opera con esta
+misma estructura. Los `bank_code` de cada país salen de
+`GET /v1/payouts/banks?country=XX`.
 
 
 ## Payins
@@ -1349,7 +2115,144 @@ siempre la fuente de verdad. En todos los casos el abono llega igual: se
 convierte a USDT a tu `payin_rate` del momento y se acredita neto de la
 comisión fija de payin.
 
-### 2. Ejemplos por país
+### 2. Elige la modalidad y crea el cobro
+
+Cada país tiene su propia modalidad (QR, página de pago, transferencia
+anunciada, CLABE dedicada o cobro pull). La referencia completa con
+request y response reales de los 6 países está en su propia página:
+
+- **Referencia por país** — Chile, Perú, México, Venezuela, Bolivia y Brasil — cada modalidad de cobro con su request completo y la respuesta que recibes.
+
+Un ejemplo para dimensionar (Bolivia, QR de cobro):
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BO",
+    "currency": "BOB",
+    "method": "qr",
+    "amount": "700.00",
+    "description": "Recarga app",
+    "expires_in": 3600
+  }'
+```
+
+```json
+{
+  "payin_id": "9c2a…",
+  "status": "pending",
+  "charge": {
+    "charge_id": "…",
+    "qr_image": "<base64>",
+    "qr_payload": "<contenido del QR>",
+    "our_reference": "482915073",
+    "status": "pending"
+  }
+}
+```
+
+### 3. Recibe el abono
+
+Cuando el pago llega (por cualquiera de las modalidades), tu cuenta se
+acredita automáticamente y se emite el webhook `payin_credited`:
+
+```json
+{
+  "payin_id": "9c2a…",
+  "account_id": "…",
+  "country": "BO",
+  "currency": "BOB",
+  "local_amount": "700.00",
+  "fx_rate": "6.91",
+  "usdt_credited": "100.302460",
+  "fee": "1.000000"
+}
+```
+
+`fx_rate` es tu `payin_rate` del momento del abono — la conversión se hace
+exactamente a esa tasa: `usdt_gross = 700.00 / 6.91`.
+
+El objeto payin queda con el detalle completo:
+
+```bash
+curl https://api.qbank.cl/platform/v1/payins/9c2a… \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "payin_id": "9c2a…",
+  "kind": "qr",
+  "status": "credited",
+  "local_amount": "700.00",
+  "fx_rate": "6.91",
+  "usdt_gross": "101.302460",
+  "fee": "1.000000",
+  "usdt_credited": "100.302460"
+}
+```
+
+### Estados
+
+| Estado | Significado |
+|---|---|
+| `pending` | Cargo creado, esperando el pago |
+| `credited` | Pago recibido y abonado en USDT |
+| `unassigned` | Depósito recibido sin match automático (lo asigna el administrador) |
+| `expired` | El cargo venció sin pago |
+| `failed` | El cobro falló |
+
+> **Nota**
+Los depósitos que llegan por transferencia directa sin referencia clara
+quedan `unassigned` hasta que el equipo de CBPay los asigna a una cuenta.
+Al asignarse, se acreditan con la tasa y comisiones de la cuenta destino.
+### Consulta e historial
+
+```bash
+# Un payin
+curl https://api.qbank.cl/platform/v1/payins/9c2a… \
+  -H "Authorization: Bearer <token>"
+
+# Historial con filtros
+curl "https://api.qbank.cl/platform/v1/payins?from=2026-07-01&to=2026-07-08&status=credited&page_size=50" \
+  -H "Authorization: Bearer <token>"
+```
+
+`from`/`to` van en `YYYY-MM-DD` (UTC); fecha inválida responde
+`400 invalid_range`.
+
+### Errores frecuentes
+
+| HTTP | `error` | Qué hacer |
+|---|---|---|
+| 400 | `invalid_request` | Revisa `method` (qr, bank_transfer, fintoc; collect va en su endpoint) |
+| 400 | `idempotency_key_required` | El collect exige clave de idempotencia (débito real al pagador) |
+| 403 | `service_disabled` | Payins no está habilitado para tu cuenta — ver [servicios](#servicios-habilitados) |
+| 422 | `core_rejected` | El procesador rechazó el cargo; revisa el mensaje |
+| 502 | `core_unavailable` | No se pudo crear el cargo; reintenta la creación (no se cobró nada) |
+
+
+## Payins por país
+
+*Cada modalidad de cobro con su request y response real: CL, PE, MX, VE, BO y BR*
+
+Referencia completa de cada corredor de [payins](#payins): la
+modalidad de cobro de cada país con el request completo y la respuesta que
+recibes. Las tasas son ilustrativas — tu `payin_rate` real está en
+`GET /v1/rates`.
+
+### Modalidades por país
+
+| País | Moneda | Modalidades |
+|---|---|---|
+| Chile | CLP | Página de pago hosted (`fintoc`), transferencia anunciada |
+| Perú | PEN | Transferencia anunciada |
+| México | MXN | Cuenta CLABE dedicada, transferencia anunciada |
+| Venezuela | VES | Cobro activo `c2p` y `debito_inmediato` (pull) |
+| Bolivia | BOB / USD | QR de cobro |
+| Brasil | BRL | QR PIX dinámico, transferencia anunciada |
 
 #### Chile
 
@@ -1438,8 +2341,19 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
   }'
 ```
 
-La respuesta trae la `reference` que debe viajar en la descripción de la
-transferencia para el match automático.
+Respuesta `201`:
+
+```json
+{
+  "payin_id": "6d20…",
+  "status": "pending",
+  "reference": "6d20…",
+  "note": "include the reference in the transfer description so the deposit is credited automatically"
+}
+```
+
+La `reference` debe viajar en la descripción de la transferencia para el
+match automático; como respaldo también se matchea por monto+moneda.
 
 #### México
 
@@ -1627,65 +2541,37 @@ En la respuesta, `charge.qr_payload` es el código **"copia e cola"** de
 PIX, para que el pagador pueda pegarlo en su app bancaria si no escanea la
 imagen (`charge.qr_image`).
 
-También puedes usar la **transferencia anunciada**
-(`method: "bank_transfer"`) compartiendo la referencia en la descripción
-del PIX.
-
-### 3. Recibe el abono
-
-Cuando el pago llega (por cualquiera de las modalidades), tu cuenta se
-acredita automáticamente y se emite el webhook `payin_credited`:
-
-```json
-{
-  "payin_id": "9c2a…",
-  "account_id": "…",
-  "country": "BO",
-  "currency": "BOB",
-  "local_amount": "700.00",
-  "fx_rate": "6.91",
-  "usdt_credited": "100.302460",
-  "fee": "1.000000"
-}
-```
-
-`fx_rate` es tu `payin_rate` del momento del abono — la conversión se hace
-exactamente a esa tasa: `usdt_gross = 700.00 / 6.91`.
-
-El objeto payin queda con el detalle completo:
+También puedes usar la **transferencia anunciada** compartiendo la
+referencia en la descripción del PIX:
 
 ```bash
-curl https://api.qbank.cl/platform/v1/payins/9c2a… \
-  -H "Authorization: Bearer <token>"
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BR",
+    "currency": "BRL",
+    "method": "bank_transfer",
+    "amount": "350.00"
+  }'
 ```
+
+Respuesta `201`:
 
 ```json
 {
-  "payin_id": "9c2a…",
-  "kind": "qr",
-  "status": "credited",
-  "local_amount": "700.00",
-  "fx_rate": "6.91",
-  "usdt_gross": "101.302460",
-  "fee": "1.000000",
-  "usdt_credited": "100.302460"
+  "payin_id": "b1a7…",
+  "status": "pending",
+  "reference": "b1a7…",
+  "note": "include the reference in the transfer description so the deposit is credited automatically"
 }
 ```
 
-### Estados
-
-| Estado | Significado |
-|---|---|
-| `pending` | Cargo creado, esperando el pago |
-| `credited` | Pago recibido y abonado en USDT |
-| `unassigned` | Depósito recibido sin match automático (lo asigna el administrador) |
-| `expired` | El cargo venció sin pago |
-| `failed` | El cobro falló |
-
 > **Nota**
-Los depósitos que llegan por transferencia directa sin referencia clara
-quedan `unassigned` hasta que el equipo de CBPay los asigna a una cuenta.
-Al asignarse, se acreditan con la tasa y comisiones de la cuenta destino.
+El catálogo vivo es `GET /v1/payins/methods` — la disponibilidad por país
+puede variar. Sea cual sea la modalidad, el abono siempre llega igual:
+conversión a tu `payin_rate` menos el fijo, entrada `payin_credit` en tus
+movimientos y webhook `payin_credited`.
 
 
 ## Transferencias internas
@@ -1970,6 +2856,16 @@ se emite el webhook `crypto_deposit_credited`:
 > **Importante**
 Envía **solo USDT por la red de la wallet**. Las direcciones son tuyas y
 estables: puedes reutilizarlas para todos tus depósitos.
+#### Tiempos de confirmación
+
+| Red | Detección | Abono (confirmación de la red) |
+|---|---|---|
+| TRON | Casi inmediata | **~1 minuto** (19 confirmaciones) |
+| Ethereum | Casi inmediata | **Algunos minutos** según congestión |
+
+El abono siempre llega con el webhook y el `tx_id` para verificarlo en el
+explorador de la red.
+
 ### Transferir (retiros on-chain)
 
 Envía USDT desde tu saldo a cualquier dirección externa:
@@ -2006,6 +2902,29 @@ El estado final llega por el webhook `crypto_withdrawal_status_changed`:
 **`completed`** (el `tx_id` es tu comprobante) o **`failed`** (se reembolsa
 el débito completo).
 
+También puedes consultar el retiro en cualquier momento:
+
+```bash
+curl https://api.qbank.cl/platform/v1/crypto/withdrawals/5e8c… \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "withdrawal_id": "5e8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "to_address": "TVJ6…",
+  "amount": "100.000000",
+  "fee": "1.000000",
+  "total_debit": "101.000000",
+  "status": "completed",
+  "status_code": "confirmed",
+  "status_message": "confirmed on-chain",
+  "tx_id": "7d1f…"
+}
+```
+
 > **Nota**
 Para mover saldo a **otra cuenta CBPay** no uses la blockchain: las
 [transferencias internas](#transferencias-internas) son instantáneas y
@@ -2013,16 +2932,50 @@ gratis.
 ### Movimientos
 
 ```bash
-# Actividad on-chain: depósitos + retiros, con tx_id
-curl https://api.qbank.cl/platform/v1/crypto/transactions \
+# Actividad on-chain: depósitos + retiros, con tx_id y filtros de fecha
+curl "https://api.qbank.cl/platform/v1/crypto/transactions?from=2026-07-01&to=2026-07-08" \
   -H "Authorization: Bearer <token>"
+```
 
+```json
+{
+  "page": 1,
+  "page_size": 50,
+  "deposits": [
+    {
+      "chain": "tron",
+      "asset": "USDT",
+      "tx_id": "b1946ac9…",
+      "from_address": "TX9a…",
+      "amount": "499.000000",
+      "reference": "dep_8813…",
+      "created_at": "2026-07-07T12:10:00Z"
+    }
+  ],
+  "withdrawals": [
+    {
+      "withdrawal_id": "5e8c…",
+      "chain": "tron",
+      "asset": "USDT",
+      "to_address": "TVJ6…",
+      "amount": "100.000000",
+      "fee": "1.000000",
+      "total_debit": "101.000000",
+      "status": "completed",
+      "tx_id": "7d1f…",
+      "created_at": "2026-07-07T15:00:00Z"
+    }
+  ]
+}
+```
+
+```bash
 # Saldo actual (available + held)
 curl https://api.qbank.cl/platform/v1/balances \
   -H "Authorization: Bearer <token>"
 
 # Historial contable completo (funding, retiros, comisiones de wallet…)
-curl "https://api.qbank.cl/platform/v1/movements?type=funding" \
+curl "https://api.qbank.cl/platform/v1/movements?type=funding&from=2026-07-01&to=2026-07-08" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -2081,8 +3034,8 @@ mensual), que puedes cambiar en cualquier momento.
 | `card_monthly` | Mensualidad por tarjeta activa (si no hay saldo, la tarjeta se congela — sin deuda) |
 | `card_cancellation` | Al cancelar una tarjeta |
 
-Los montos exactos se consultan en `GET /v1/fees`. Todo cargo de emisión se
-**reembolsa automáticamente** si la emisión falla.
+Los montos exactos se consultan en `GET /v1/rates` (campo `fees`). Todo
+cargo de emisión se **reembolsa automáticamente** si la emisión falla.
 
 ### Crear una tarjeta
 
@@ -2120,7 +3073,7 @@ curl -X POST https://api.qbank.cl/platform/v1/cards \
       "first_name": "Maria",
       "last_name": "Perez",
       "email": "maria@empresa.com",
-      "occupation": "Sales",
+      "occupation": "52201",
       "salary_usd": 1800,
       "id_front_url": "https://files.example.com/kyc/mp-front.jpg",
       "id_back_url": "https://files.example.com/kyc/mp-back.jpg",
@@ -2242,7 +3195,7 @@ curl -X PATCH https://api.qbank.cl/platform/v1/cards/{card_id} \
 ### Transacciones y su ciclo de vida
 
 ```bash
-curl "https://api.qbank.cl/platform/v1/cards/{card_id}/transactions?page=1&page_size=50" \
+curl "https://api.qbank.cl/platform/v1/cards/{card_id}/transactions?from=2026-07-01&to=2026-07-08&page=1&page_size=50" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -2416,13 +3369,21 @@ Estados del perfil: `draft` → `submitted` → `under_review` →
 
 ### 3. Abre cuentas bancarias
 
-Con el perfil `approved`, crea una cuenta por moneda:
+Con el perfil `approved`, crea una cuenta por moneda. Monedas disponibles:
+**USD** (rieles ACH/Fedwire/SWIFT) y **EUR** (SEPA/SWIFT):
 
-```bash
+```bash Cuenta USD
 curl -X POST https://api.qbank.cl/platform/v1/banking/accounts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{ "currency": "USD", "name": "Operativa USD" }'
+```
+
+```bash Cuenta EUR
+curl -X POST https://api.qbank.cl/platform/v1/banking/accounts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "currency": "EUR", "name": "Operativa EUR" }'
 ```
 
 Respuesta `201` — `data` incluye los datos para **recibir** (número de
@@ -2558,8 +3519,26 @@ Respuesta `202`:
   `GET /v1/banking/operations/{id}`.
 - Reintentos con la misma `Idempotency-Key` devuelven la operación original
   (`idempotency_hit: true`) **sin volver a cobrar** la comisión.
-- El historial completo está en `GET /v1/banking/operations`
-  (filtros: `type`, `status`, `from`, `to`, paginación).
+
+El historial completo, con filtros:
+
+```bash
+curl "https://api.qbank.cl/platform/v1/banking/operations?from=2026-07-01&to=2026-07-08&status=completed&type=WITHDRAW&page_size=50" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "items": [
+    {
+      "id": "7e8a…",
+      "type": "withdraw",
+      "status": "completed"
+    }
+  ],
+  "meta": { "page": 1, "page_size": 50, "retrieved": 1 }
+}
+```
 
 ### Estados de operación
 
@@ -3017,11 +3996,34 @@ curl -X POST https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 
 - `event_type`: uno de los eventos de la tabla siguiente, o `*` para todos.
 - `callback_url`: **HTTPS obligatorio**; se rechazan localhost e IPs
-  privadas.
+  privadas — para desarrollo local usa un
+  [túnel HTTPS](#ambiente-y-pruebas).
 - `secret`: mínimo 16 caracteres; se usa para firmar cada entrega. Se
   almacena cifrado y no puede recuperarse.
 
-La suscripción recibe los eventos de **tu cuenta**.
+La suscripción recibe los eventos de **tu cuenta**. Puedes listar las
+suscripciones activas en cualquier momento:
+
+```bash
+curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "page": 1,
+  "page_size": 50,
+  "subscriptions": [
+    {
+      "id": "5f3a…",
+      "event_type": "payout_status_changed",
+      "callback_url": "https://api.miapp.com/webhooks/cbpay",
+      "status": "active",
+      "created_at": "2026-07-01T12:00:00Z"
+    }
+  ]
+}
+```
 
 ### Eventos
 
@@ -3195,9 +4197,17 @@ prevenir replay.
 
 - Tu endpoint debe responder **2xx** dentro del timeout; cualquier otra
   respuesta se reintenta.
-- Hasta **5 intentos** con backoff incremental (5s, 20s, 45s, 80s…).
+- Hasta **5 intentos** con backoff incremental:
+
+| Intento | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|
+| Espera aprox. | inmediato | ~5s | ~20s | ~45s | ~80s |
+
 - Usa `X-Webhook-Event-ID` para deduplicar: el mismo evento puede llegar más
   de una vez (entregas at-least-once).
+- Si los 5 intentos fallan, el evento no se reenvía — recupera el estado
+  con el `GET` del recurso (por eso ningún flujo debe depender SOLO del
+  webhook).
 
 ### Buenas prácticas
 
@@ -3269,6 +4279,8 @@ Todos los errores comparten el mismo formato:
 | 404 | `recipient_not_found` | Destino de transferencia inexistente |
 | 409 | `duplicate` | El recurso ya existe |
 | 409 | `no_kyc` | Rescreen/monitoreo sin KYC/KYB previo |
+| 409 | `no_banking_customer` | Operación banking sin perfil bancario creado (`POST /v1/banking/customer` primero) |
+| 409 | `banking_customer_exists` | La cuenta ya tiene perfil bancario (es uno por cuenta) |
 | 422 | `currency_not_supported` | Sin tasa FX para esa moneda |
 | 422 | `core_rejected` | El procesador rechazó la operación |
 | 422 | `recipient_unavailable` | La cuenta destino no puede recibir |
@@ -3388,12 +4400,24 @@ clave, recibes el payout original (`idempotency_hit: true`) sin crear ni
 debitar nada nuevo. Usa una clave distinta solo cuando realmente quieras
 crear otro pago. Ver [idempotencia](#idempotencia).
 #### ¿Cómo sé qué campos lleva el beneficiary de cada país?
-En la guía de [payouts](#payouts) hay un ejemplo
-completo por país y método, y `GET /v1/payouts/banks?country=XX` te da los
-códigos de banco vigentes cuando aplican.
+En [payouts por país](#payouts-por-pais) hay una tabla de campos
+y un ejemplo completo por país y método, y
+`GET /v1/payouts/banks?country=XX` te da los códigos de banco vigentes
+cuando aplican.
 #### ¿Un QR escaneado se puede pagar dos veces?
 No: cada `provider_reference` del scan admite un solo confirm. Reintentos
 con la misma `idempotency_key` devuelven el payout original.
+#### ¿Puedo cancelar o editar un payout en processing?
+No. Cuando el payout está `processing` el rail bancario ya lo tiene; no
+existe cancelación por API. Espera el estado final: si el rail lo rechaza,
+el reembolso completo es automático. Verifica los datos del beneficiario
+**antes** de crear (el `qr/scan` gratuito existe justamente para confirmar
+el destinatario antes de pagar un QR).
+#### ¿Hay montos mínimos, máximos o límites diarios?
+La API no impone mínimos técnicos (con montos muy chicos la comisión fija
+puede superar el monto). Los máximos y límites operacionales dependen de tu
+acuerdo comercial y del corredor — si necesitas ampliar límites, contacta a
+tu administrador CBPay indicando país, volumen esperado y ticket promedio.
 ### Payins y depósitos
 
 #### ¿Cuándo se acredita mi saldo tras un cobro?
@@ -3403,9 +4427,17 @@ llega y se matchea. Siempre recibes el webhook `payin_credited` con el
 monto neto acreditado.
 #### Mi cliente transfirió sin la referencia, ¿se perdió el dinero?
 No. El depósito queda en estado `unassigned` y el equipo de CBPay lo
-asigna manualmente a tu cuenta (se acredita con tus comisiones normales).
-Para evitarlo, usa la **cuenta CLABE dedicada** en México o insiste en que
-la referencia viaje en la descripción de la transferencia.
+asigna manualmente a tu cuenta (al asignarse se acredita con tu tasa y
+comisiones normales). Mientras tanto no aparece en tu saldo — si esperas
+un depósito que no llega, avisa a tu administrador con el monto, moneda y
+hora aproximada para acelerar la asignación. Para evitarlo, usa la
+**cuenta CLABE dedicada** en México, la **página de pago** en Chile, o
+insiste en que la referencia viaje en la descripción de la transferencia.
+#### ¿Cuánto tarda en confirmarse un depósito crypto?
+La detección es casi inmediata y el abono llega cuando la red confirma:
+**TRON ~1 minuto** (19 confirmaciones), **Ethereum algunos minutos** según
+congestión. El webhook `crypto_deposit_credited` cierra el ciclo con el
+`tx_id` para que lo verifiques en el explorador.
 #### ¿Cómo saco un estado de cuenta para mi contador?
 Con la [cartola](#cartola-estado-de-cuenta): un endpoint que consolida todos los
 movimientos del período (payouts, payins, crypto, transferencias y
@@ -3429,6 +4461,16 @@ en el mismo saldo USDT, con webhooks distintos (`payin_credited` vs
 No, pero sí muy recomendados: los estados finales llegan por webhook sin
 que hagas polling. De todas formas puedes consultar cualquier objeto por
 API (`GET /v1/payouts/{id}`, `GET /v1/payins/{id}`…) en cualquier momento.
+#### ¿Cómo pruebo webhooks desde mi máquina (localhost)?
+Las URLs locales se rechazan por seguridad. Usa un túnel HTTPS gratuito
+(Cloudflare Tunnel o ngrok) y suscribe esa URL pública — receta paso a
+paso en [ambiente y pruebas](#ambiente-y-pruebas).
+#### ¿Cuál es la diferencia entre GET /v1/movements y la cartola?
+Leen el mismo ledger: `movements` es la vista programática paginada (para
+conciliación automática y tu UI); la cartola es el snapshot del período con
+totales, desgloses y cuadratura garantizada (para cierres contables).
+Nunca discrepan. Detalle en
+[movimientos y conciliación](#movimientos-y-conciliacion).
 #### ¿Por qué recibí el mismo webhook dos veces?
 Las entregas son **at-least-once**: ante timeouts se reintenta (hasta 5
 veces). Deduplica con el header `X-Webhook-Event-ID`, que es único por
@@ -3453,7 +4495,7 @@ sus cuerpos de ejemplo y una respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-08 18:36 UTC · 89 requests · versión `5302f1a549b2`
+> **Colección actualizada:** 2026-07-08 18:56 UTC · 89 requests · versión `dcd181634bd8`
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -3487,6 +4529,27 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.22 — 8 de julio de 2026
+
+**Documentación — rediseño completo del sitio**
+
+- **Navegación nueva**: Comenzar → Conceptos → Flujos de integración →
+  Productos → Integración → Recursos, con icono por página y breadcrumbs.
+- **Páginas nuevas**: [ambiente y pruebas](#ambiente-y-pruebas) (túnel
+  para webhooks en local + checklist de go-live),
+  [servicios habilitados](#servicios-habilitados),
+  [estados y ciclo de vida](#estados-y-ciclo-de-vida) (incluye el catálogo de
+  `status_code` de payouts fallidos),
+  [movimientos y conciliación](#movimientos-y-conciliacion) y
+  [flujos de integración](#flujos-de-integracion) con diagramas end-to-end.
+- **Payouts y payins divididos**: guía general + referencia por país con el
+  request y response real de cada corredor.
+- **Guías ampliadas**: quickstart cierra el ciclo con webhooks; perfil
+  (`PATCH /v1/me`) y miembros con roles; tabla completa de endpoints con
+  idempotencia; schedule de reintentos de webhooks; tiempos de confirmación
+  on-chain; cuentas banking en EUR; errores de banking en el catálogo; FAQ
+  con límites, cancelaciones y conciliación.
 
 ### v1.21 — 8 de julio de 2026
 

@@ -1,5 +1,6 @@
 ---
 title: "Crypto: wallets, deposits and withdrawals"
+icon: "link"
 description: "Create on-chain wallets, deposit, transfer and check movements"
 ---
 
@@ -147,6 +148,16 @@ Send **only USDT over the wallet's network**. Addresses are yours and
 stable: you can reuse them for every deposit.
 </Warning>
 
+### Confirmation times
+
+| Network | Detection | Credit (network confirmation) |
+|---|---|---|
+| TRON | Near-instant | **~1 minute** (19 confirmations) |
+| Ethereum | Near-instant | **A few minutes** depending on congestion |
+
+The credit always arrives with the webhook and the `tx_id` so you can
+verify it on the network explorer.
+
 ## Transfer (on-chain withdrawals)
 
 Send USDT from your balance to any external address:
@@ -183,6 +194,29 @@ The final state arrives via the `crypto_withdrawal_status_changed` webhook:
 **`completed`** (the `tx_id` is your receipt) or **`failed`** (the full
 debit is refunded).
 
+You can also query the withdrawal at any time:
+
+```bash
+curl https://api.qbank.cl/platform/v1/crypto/withdrawals/5e8c… \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "withdrawal_id": "5e8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "to_address": "TVJ6…",
+  "amount": "100.000000",
+  "fee": "1.000000",
+  "total_debit": "101.000000",
+  "status": "completed",
+  "status_code": "confirmed",
+  "status_message": "confirmed on-chain",
+  "tx_id": "7d1f…"
+}
+```
+
 <Note>
 To move balance to **another CBPay account**, skip the blockchain:
 [internal transfers](/en/guides/transfers) are instant and free.
@@ -191,16 +225,50 @@ To move balance to **another CBPay account**, skip the blockchain:
 ## Movements
 
 ```bash
-# On-chain activity: deposits + withdrawals, with tx_id
-curl https://api.qbank.cl/platform/v1/crypto/transactions \
+# On-chain activity: deposits + withdrawals, with tx_id and date filters
+curl "https://api.qbank.cl/platform/v1/crypto/transactions?from=2026-07-01&to=2026-07-08" \
   -H "Authorization: Bearer <token>"
+```
 
+```json
+{
+  "page": 1,
+  "page_size": 50,
+  "deposits": [
+    {
+      "chain": "tron",
+      "asset": "USDT",
+      "tx_id": "b1946ac9…",
+      "from_address": "TX9a…",
+      "amount": "499.000000",
+      "reference": "dep_8813…",
+      "created_at": "2026-07-07T12:10:00Z"
+    }
+  ],
+  "withdrawals": [
+    {
+      "withdrawal_id": "5e8c…",
+      "chain": "tron",
+      "asset": "USDT",
+      "to_address": "TVJ6…",
+      "amount": "100.000000",
+      "fee": "1.000000",
+      "total_debit": "101.000000",
+      "status": "completed",
+      "tx_id": "7d1f…",
+      "created_at": "2026-07-07T15:00:00Z"
+    }
+  ]
+}
+```
+
+```bash
 # Current balance (available + held)
 curl https://api.qbank.cl/platform/v1/balances \
   -H "Authorization: Bearer <token>"
 
 # Full accounting history (funding, withdrawals, wallet fees…)
-curl "https://api.qbank.cl/platform/v1/movements?type=funding" \
+curl "https://api.qbank.cl/platform/v1/movements?type=funding&from=2026-07-01&to=2026-07-08" \
   -H "Authorization: Bearer <token>"
 ```
 

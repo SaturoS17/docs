@@ -1,0 +1,117 @@
+---
+title: "Environment and testing"
+icon: "flask"
+description: "How to test your integration safely: environment, amounts, local webhooks and the go-live checklist"
+---
+
+CBPay runs on **a single production environment**: there is no separate
+sandbox. This page explains how to test safely and what to review before
+sending real customer traffic.
+
+## One environment (production)
+
+```
+https://api.qbank.cl/platform
+```
+
+There is no sandbox: every payout disperses real money and every payin
+collects real money. The safe way to test is the same one professional
+payment teams use:
+
+<Steps>
+  <Step title="Test with minimal amounts">
+    Use the smallest amounts the corridor allows (e.g. 1,000 CLP, 10 BOB).
+    The API imposes no technical minimums; with tiny amounts the fixed fee
+    may exceed the amount — that is fine for testing.
+  </Step>
+  <Step title="Use your own accounts and beneficiaries">
+    Disperse to bank accounts owned by your team and collect from your own
+    payment methods, so the money never leaves your control.
+  </Step>
+  <Step title="Lean on idempotency">
+    Every money operation requires an `idempotency_key`: you can retry
+    without fear — a retry with the same key never duplicates. See
+    [idempotency](/en/concepts/idempotency).
+  </Step>
+  <Step title="Verify every step with reads">
+    After each operation query `GET /v1/balances`, `GET /v1/movements` and
+    the resource's `GET` to confirm the real state. Nothing is write-only.
+  </Step>
+</Steps>
+
+<Warning>
+Operations are **real and irreversible** once completed. A `completed`
+payout is already in the beneficiary's account; the only reversal path is
+outside the API (contact the CBPay team).
+</Warning>
+
+## Testing webhooks in local development
+
+Callback URLs must be **public HTTPS**: `localhost`, private IPs and
+`.local` domains are rejected when creating the subscription. To develop
+on your machine use an HTTPS tunnel:
+
+<CodeGroup>
+
+```bash Cloudflare Tunnel (free)
+# Install cloudflared and expose your local port
+cloudflared tunnel --url http://localhost:3000
+# → https://<random>.trycloudflare.com  ← use it as callback_url
+```
+
+```bash ngrok
+ngrok http 3000
+# → https://<random>.ngrok-free.app  ← use it as callback_url
+```
+
+</CodeGroup>
+
+Then create the subscription with that public URL:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/webhooks/subscriptions \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_type": "payin_credited",
+    "callback_url": "https://your-tunnel.trycloudflare.com/webhooks/cbpay",
+    "secret": "a-long-random-secret"
+  }'
+```
+
+<Tip>
+Failed deliveries retry up to **5 times with incremental backoff**, so if
+your tunnel drops for a few minutes you will not lose the event. Always
+verify the HMAC signature — full recipe in
+[webhooks](/en/webhooks#signature-verification).
+</Tip>
+
+## Exercising every flow safely
+
+| Product | Cheap way to test it |
+|---|---|
+| Payout | Disperse a minimal amount to a bank account owned by your team |
+| Payin | Create a QR charge or payment page and pay it yourself; the credit returns to your balance |
+| Transfer | Create a second account in your organization and transfer between both (free) |
+| Crypto | Deposit a small amount of USDT to your wallet and withdraw it to an address you own |
+| KYC | Submit the screening with your company's real data (the result is reusable) |
+| Cards | Issue a virtual card and make a small online purchase |
+
+## Go-live checklist
+
+Before sending real customer traffic:
+
+- [ ] API keys live in a secrets manager (never in the frontend or the repo).
+- [ ] Every money operation sends an `idempotency_key` derived from YOUR internal id (not a random UUID per attempt).
+- [ ] On timeout or `5xx` you **do not retry with a new key**: repeat with the same key or query the state with the `GET`.
+- [ ] You verify the HMAC signature of every webhook and answer `2xx` fast (process async).
+- [ ] You handle non-final states (`pending`, `processing`) without assuming success.
+- [ ] You query `GET /v1/services` to show only enabled products — see [services](/en/concepts/services).
+- [ ] You reconcile daily with `GET /v1/movements` or the [statement](/en/guides/statement).
+- [ ] You have a channel with the CBPay team for `unassigned` deposits or incidents.
+
+<Note>
+Questions this page does not answer? Check the [FAQ](/en/faq) — and if
+something is missing, report it: the documentation is updated with every
+real question.
+</Note>

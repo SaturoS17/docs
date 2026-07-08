@@ -1,14 +1,23 @@
 ---
 title: "Idempotency"
+icon: "rotate"
 description: "Retry safely without duplicating operations"
 ---
 
-Every money-moving operation requires an **idempotency key**:
+Every money-moving operation requires an **idempotency key**. The
+complete table:
 
-- `POST /v1/payouts`
-- `POST /v1/transfers`
-- `POST /v1/crypto/withdrawals`
-- `POST /v1/accounts/{id}/adjustments` (admin, optional but recommended)
+| Endpoint | Key | Why |
+|---|---|---|
+| `POST /v1/payouts` | **Required** | Debits your balance and disperses |
+| `POST /v1/payouts/qr/confirm` | **Required** | Debits and pays the QR (the `scan` is free and does not need one) |
+| `POST /v1/payins/collect` | **Required** | Executes a real debit against the payer |
+| `POST /v1/transfers` | **Required** | Moves balance between accounts |
+| `POST /v1/crypto/withdrawals` | **Required** | Debits and broadcasts on-chain |
+| `POST /v1/banking/operations` | **Required** | Sends a bank payment (the `prepare` is free and does not need one) |
+| `POST /v1/cards` | **Required** | May charge the issuance fee |
+| `POST /v1/payins` with `method: "fintoc"` | Optional, **recommended** | A retry with the same key returns the same payment session (never opens a second one) |
+| `POST /v1/payins` (qr / bank_transfer) | Not applicable | The charge moves no money until someone pays; an unpaid duplicate simply expires |
 
 ## How to send it
 

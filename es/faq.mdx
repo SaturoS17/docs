@@ -1,5 +1,6 @@
 ---
 title: "Preguntas frecuentes"
+icon: "circle-question"
 description: "Las dudas típicas al integrar, respondidas de una"
 ---
 
@@ -125,14 +126,30 @@ crear otro pago. Ver [idempotencia](/es/conceptos/idempotencia).
 </Accordion>
 
 <Accordion title="¿Cómo sé qué campos lleva el beneficiary de cada país?">
-En la guía de [payouts](/es/guias/payouts#ejemplos-por-pais) hay un ejemplo
-completo por país y método, y `GET /v1/payouts/banks?country=XX` te da los
-códigos de banco vigentes cuando aplican.
+En [payouts por país](/es/guias/payouts-por-pais) hay una tabla de campos
+y un ejemplo completo por país y método, y
+`GET /v1/payouts/banks?country=XX` te da los códigos de banco vigentes
+cuando aplican.
 </Accordion>
 
 <Accordion title="¿Un QR escaneado se puede pagar dos veces?">
 No: cada `provider_reference` del scan admite un solo confirm. Reintentos
 con la misma `idempotency_key` devuelven el payout original.
+</Accordion>
+
+<Accordion title="¿Puedo cancelar o editar un payout en processing?">
+No. Cuando el payout está `processing` el rail bancario ya lo tiene; no
+existe cancelación por API. Espera el estado final: si el rail lo rechaza,
+el reembolso completo es automático. Verifica los datos del beneficiario
+**antes** de crear (el `qr/scan` gratuito existe justamente para confirmar
+el destinatario antes de pagar un QR).
+</Accordion>
+
+<Accordion title="¿Hay montos mínimos, máximos o límites diarios?">
+La API no impone mínimos técnicos (con montos muy chicos la comisión fija
+puede superar el monto). Los máximos y límites operacionales dependen de tu
+acuerdo comercial y del corredor — si necesitas ampliar límites, contacta a
+tu administrador CBPay indicando país, volumen esperado y ticket promedio.
 </Accordion>
 
 </AccordionGroup>
@@ -150,9 +167,19 @@ monto neto acreditado.
 
 <Accordion title="Mi cliente transfirió sin la referencia, ¿se perdió el dinero?">
 No. El depósito queda en estado `unassigned` y el equipo de CBPay lo
-asigna manualmente a tu cuenta (se acredita con tus comisiones normales).
-Para evitarlo, usa la **cuenta CLABE dedicada** en México o insiste en que
-la referencia viaje en la descripción de la transferencia.
+asigna manualmente a tu cuenta (al asignarse se acredita con tu tasa y
+comisiones normales). Mientras tanto no aparece en tu saldo — si esperas
+un depósito que no llega, avisa a tu administrador con el monto, moneda y
+hora aproximada para acelerar la asignación. Para evitarlo, usa la
+**cuenta CLABE dedicada** en México, la **página de pago** en Chile, o
+insiste en que la referencia viaje en la descripción de la transferencia.
+</Accordion>
+
+<Accordion title="¿Cuánto tarda en confirmarse un depósito crypto?">
+La detección es casi inmediata y el abono llega cuando la red confirma:
+**TRON ~1 minuto** (19 confirmaciones), **Ethereum algunos minutos** según
+congestión. El webhook `crypto_deposit_credited` cierra el ciclo con el
+`tx_id` para que lo verifiques en el explorador.
 </Accordion>
 
 <Accordion title="¿Cómo saco un estado de cuenta para mi contador?">
@@ -188,6 +215,20 @@ en el mismo saldo USDT, con webhooks distintos (`payin_credited` vs
 No, pero sí muy recomendados: los estados finales llegan por webhook sin
 que hagas polling. De todas formas puedes consultar cualquier objeto por
 API (`GET /v1/payouts/{id}`, `GET /v1/payins/{id}`…) en cualquier momento.
+</Accordion>
+
+<Accordion title="¿Cómo pruebo webhooks desde mi máquina (localhost)?">
+Las URLs locales se rechazan por seguridad. Usa un túnel HTTPS gratuito
+(Cloudflare Tunnel o ngrok) y suscribe esa URL pública — receta paso a
+paso en [ambiente y pruebas](/es/entorno-y-pruebas).
+</Accordion>
+
+<Accordion title="¿Cuál es la diferencia entre GET /v1/movements y la cartola?">
+Leen el mismo ledger: `movements` es la vista programática paginada (para
+conciliación automática y tu UI); la cartola es el snapshot del período con
+totales, desgloses y cuadratura garantizada (para cierres contables).
+Nunca discrepan. Detalle en
+[movimientos y conciliación](/es/conceptos/movimientos-y-conciliacion).
 </Accordion>
 
 <Accordion title="¿Por qué recibí el mismo webhook dos veces?">

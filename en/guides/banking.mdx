@@ -1,5 +1,6 @@
 ---
 title: "Banking"
+icon: "building-columns"
 description: "Real bank accounts for your account: receive, hold and send money over international banking rails"
 ---
 
@@ -118,7 +119,8 @@ change:
 
 ## 3. Open bank accounts
 
-With the profile `approved`, create one account per currency:
+With the profile `approved`, create one account per currency. Available
+currencies: **USD** (ACH/Fedwire/SWIFT rails) and **EUR** (SEPA/SWIFT):
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/banking/accounts \
@@ -264,8 +266,26 @@ Response `202`:
   `GET /v1/banking/operations/{id}`.
 - Retries with the same `Idempotency-Key` return the original operation
   (`idempotency_hit: true`) **without charging the fee again**.
-- The full history is at `GET /v1/banking/operations`
-  (filters: `type`, `status`, `from`, `to`, pagination).
+
+The full history, with filters:
+
+```bash
+curl "https://api.qbank.cl/platform/v1/banking/operations?from=2026-07-01&to=2026-07-08&status=completed&type=WITHDRAW&page_size=50" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "items": [
+    {
+      "id": "7e8a…",
+      "type": "withdraw",
+      "status": "completed"
+    }
+  ],
+  "meta": { "page": 1, "page_size": 50, "retrieved": 1 }
+}
+```
 
 ## Operation statuses
 

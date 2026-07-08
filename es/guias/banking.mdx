@@ -1,5 +1,6 @@
 ---
 title: "Banking"
+icon: "building-columns"
 description: "Cuentas bancarias reales para tu cuenta: recibe, mantén y envía dinero por rieles bancarios internacionales"
 ---
 
@@ -119,14 +120,26 @@ Estados del perfil: `draft` → `submitted` → `under_review` →
 
 ## 3. Abre cuentas bancarias
 
-Con el perfil `approved`, crea una cuenta por moneda:
+Con el perfil `approved`, crea una cuenta por moneda. Monedas disponibles:
+**USD** (rieles ACH/Fedwire/SWIFT) y **EUR** (SEPA/SWIFT):
 
-```bash
+<CodeGroup>
+
+```bash Cuenta USD
 curl -X POST https://api.qbank.cl/platform/v1/banking/accounts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{ "currency": "USD", "name": "Operativa USD" }'
 ```
+
+```bash Cuenta EUR
+curl -X POST https://api.qbank.cl/platform/v1/banking/accounts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "currency": "EUR", "name": "Operativa EUR" }'
+```
+
+</CodeGroup>
 
 Respuesta `201` — `data` incluye los datos para **recibir** (número de
 cuenta/IBAN, routing, banco):
@@ -265,8 +278,26 @@ Respuesta `202`:
   `GET /v1/banking/operations/{id}`.
 - Reintentos con la misma `Idempotency-Key` devuelven la operación original
   (`idempotency_hit: true`) **sin volver a cobrar** la comisión.
-- El historial completo está en `GET /v1/banking/operations`
-  (filtros: `type`, `status`, `from`, `to`, paginación).
+
+El historial completo, con filtros:
+
+```bash
+curl "https://api.qbank.cl/platform/v1/banking/operations?from=2026-07-01&to=2026-07-08&status=completed&type=WITHDRAW&page_size=50" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "items": [
+    {
+      "id": "7e8a…",
+      "type": "withdraw",
+      "status": "completed"
+    }
+  ],
+  "meta": { "page": 1, "page_size": 50, "retrieved": 1 }
+}
+```
 
 ## Estados de operación
 

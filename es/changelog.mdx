@@ -1,11 +1,35 @@
 ---
 title: "Novedades"
+icon: "clock-rotate-left"
 description: "Historial de cambios de la API y de esta documentación"
 ---
 
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+<Update label="8 de julio de 2026" description="v1.22">
+
+**Documentación — rediseño completo del sitio**
+
+- **Navegación nueva**: Comenzar → Conceptos → Flujos de integración →
+  Productos → Integración → Recursos, con icono por página y breadcrumbs.
+- **Páginas nuevas**: [ambiente y pruebas](/es/entorno-y-pruebas) (túnel
+  para webhooks en local + checklist de go-live),
+  [servicios habilitados](/es/conceptos/servicios),
+  [estados y ciclo de vida](/es/conceptos/estados) (incluye el catálogo de
+  `status_code` de payouts fallidos),
+  [movimientos y conciliación](/es/conceptos/movimientos-y-conciliacion) y
+  [flujos de integración](/es/flujos) con diagramas end-to-end.
+- **Payouts y payins divididos**: guía general + referencia por país con el
+  request y response real de cada corredor.
+- **Guías ampliadas**: quickstart cierra el ciclo con webhooks; perfil
+  (`PATCH /v1/me`) y miembros con roles; tabla completa de endpoints con
+  idempotencia; schedule de reintentos de webhooks; tiempos de confirmación
+  on-chain; cuentas banking en EUR; errores de banking en el catálogo; FAQ
+  con límites, cancelaciones y conciliación.
+
+</Update>
 
 <Update label="8 de julio de 2026" description="v1.21">
 

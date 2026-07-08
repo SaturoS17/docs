@@ -1,7 +1,20 @@
 ---
 title: "Quickstart"
-description: "From zero to your first payout in five steps"
+icon: "bolt"
+description: "From zero to your first payout — with the cycle closed by webhook — in six steps"
 ---
+
+This is the full path of a first integration: register → balance → rates →
+payout → webhook. By the end you will have closed the entire cycle:
+
+```mermaid
+flowchart LR
+    reg["1-2. Register and<br/>authenticate"] --> saldo["3. Balance<br/>(fund with payin or crypto)"]
+    saldo --> tasas["4. Rates and<br/>fees"]
+    tasas --> payout["5. First payout<br/>(processing)"]
+    payout --> wh["6. Webhook<br/>payout_status_changed"]
+    wh --> fin(("Cycle<br/>closed"))
+```
 
 Before you start, the data you will need everywhere:
 
@@ -175,8 +188,45 @@ arrives via [webhook](/en/webhooks) (`payout_status_changed`):
 <Warning>
 `beneficiary` fields depend on the country and method. Check
 `GET /v1/payouts/methods` and `GET /v1/payouts/banks?country=CL` for each
-corridor's requirements.
+corridor's requirements — the full reference lives in
+[payouts by country](/en/guides/payouts-by-country).
 </Warning>
+
+</Step>
+
+<Step title="Close the cycle: subscribe to the webhook">
+
+The payout's final state arrives via push. Subscribe your HTTPS endpoint
+(in development use a
+[tunnel](/en/environment-testing#testing-webhooks-in-local-development)):
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/webhooks/subscriptions \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_type": "payout_status_changed",
+    "callback_url": "https://yourapp.com/webhooks/cbpay",
+    "secret": "a-long-random-secret"
+  }'
+```
+
+Minutes later you will receive the closure of the step-5 payout:
+
+```json
+{
+  "payout_id": "…",
+  "status": "completed",
+  "local_amount": "50000",
+  "usdt_amount": "52.618258",
+  "total_debit": "53.118258",
+  "status_code": ""
+}
+```
+
+**Always** verify the delivery's HMAC signature (`X-Webhook-Signature`) —
+recipe with code in [webhooks](/en/webhooks). Had the payout failed,
+`status: failed` arrives with the full refund already applied.
 
 </Step>
 
@@ -184,7 +234,19 @@ corridor's requirements.
 
 ## What's next?
 
-- [Subscribe to webhooks](/en/webhooks) to receive status changes.
-- Read the [money model](/en/concepts/money-model) to understand debits,
-  holds and refunds.
-- Explore the full **API Reference** with its interactive playground.
+<CardGroup cols={2}>
+  <Card title="Integration flows" icon="route" href="/en/flows">
+    Funding, dispersing, collecting, reconciling and banking — the five
+    E2E flows with diagrams.
+  </Card>
+  <Card title="Money model" icon="coins" href="/en/concepts/money-model">
+    Debits, holds, refunds and the immutable ledger.
+  </Card>
+  <Card title="Environment and testing" icon="flask" href="/en/environment-testing">
+    How to test safely and the go-live checklist.
+  </Card>
+  <Card title="FAQ" icon="circle-question" href="/en/faq">
+    Real integrator questions, answered — and the full API Reference lives
+    in its own tab, with an interactive playground.
+  </Card>
+</CardGroup>

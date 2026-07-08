@@ -1,5 +1,6 @@
 ---
 title: "Tarjetas: virtuales y físicas"
+icon: "credit-card"
 description: "Emite tarjetas que gastan directo del saldo USDT de la cuenta, con límites por tarjeta"
 ---
 
@@ -39,8 +40,8 @@ mensual), que puedes cambiar en cualquier momento.
 | `card_monthly` | Mensualidad por tarjeta activa (si no hay saldo, la tarjeta se congela — sin deuda) |
 | `card_cancellation` | Al cancelar una tarjeta |
 
-Los montos exactos se consultan en `GET /v1/fees`. Todo cargo de emisión se
-**reembolsa automáticamente** si la emisión falla.
+Los montos exactos se consultan en `GET /v1/rates` (campo `fees`). Todo
+cargo de emisión se **reembolsa automáticamente** si la emisión falla.
 
 ## Crear una tarjeta
 
@@ -80,7 +81,7 @@ curl -X POST https://api.qbank.cl/platform/v1/cards \
       "first_name": "Maria",
       "last_name": "Perez",
       "email": "maria@empresa.com",
-      "occupation": "Sales",
+      "occupation": "52201",
       "salary_usd": 1800,
       "id_front_url": "https://files.example.com/kyc/mp-front.jpg",
       "id_back_url": "https://files.example.com/kyc/mp-back.jpg",
@@ -211,7 +212,7 @@ curl -X PATCH https://api.qbank.cl/platform/v1/cards/{card_id} \
 ## Transacciones y su ciclo de vida
 
 ```bash
-curl "https://api.qbank.cl/platform/v1/cards/{card_id}/transactions?page=1&page_size=50" \
+curl "https://api.qbank.cl/platform/v1/cards/{card_id}/transactions?from=2026-07-01&to=2026-07-08&page=1&page_size=50" \
   -H "Authorization: Bearer <token>"
 ```
 

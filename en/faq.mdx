@@ -1,5 +1,6 @@
 ---
 title: "FAQ"
+icon: "circle-question"
 description: "The typical integration questions, answered upfront"
 ---
 
@@ -125,14 +126,30 @@ another payment. See [idempotency](/en/concepts/idempotency).
 </Accordion>
 
 <Accordion title="How do I know which beneficiary fields each country takes?">
-The [payouts guide](/en/guides/payouts#examples-by-country) has a complete
-example per country and method, and `GET /v1/payouts/banks?country=XX`
-returns the current bank codes where they apply.
+[Payouts by country](/en/guides/payouts-by-country) has a field table and
+a complete example per country and method, and
+`GET /v1/payouts/banks?country=XX` returns the current bank codes where
+they apply.
 </Accordion>
 
 <Accordion title="Can a scanned QR be paid twice?">
 No: each scan `provider_reference` admits a single confirm. Retries with
 the same `idempotency_key` return the original payout.
+</Accordion>
+
+<Accordion title="Can I cancel or edit a payout in processing?">
+No. Once a payout is `processing` the banking rail already has it; there
+is no API cancellation. Wait for the final state: if the rail rejects it,
+the full refund is automatic. Verify the beneficiary data **before**
+creating (the free `qr/scan` exists precisely to confirm the recipient
+before paying a QR).
+</Accordion>
+
+<Accordion title="Are there minimum, maximum or daily limits?">
+The API imposes no technical minimums (with tiny amounts the fixed fee may
+exceed the amount). Maximums and operational limits depend on your
+commercial agreement and the corridor — to raise limits, contact your
+CBPay administrator with the country, expected volume and average ticket.
 </Accordion>
 
 </AccordionGroup>
@@ -150,9 +167,19 @@ credited amount.
 
 <Accordion title="My customer transferred without the reference — is the money lost?">
 No. The deposit lands as `unassigned` and the CBPay team routes it to your
-account manually (credited with your normal fees). To avoid it, use the
-**dedicated CLABE account** in Mexico or make sure the reference travels
-in the transfer description.
+account manually (once assigned it is credited with your normal rate and
+fees). Meanwhile it does not show in your balance — if you are expecting a
+deposit that never arrives, tell your administrator the amount, currency
+and approximate time to speed up the assignment. To avoid it, use the
+**dedicated CLABE account** in Mexico, the **payment page** in Chile, or
+make sure the reference travels in the transfer description.
+</Accordion>
+
+<Accordion title="How long does a crypto deposit take to confirm?">
+Detection is near-instant and the credit lands when the network confirms:
+**TRON ~1 minute** (19 confirmations), **Ethereum a few minutes** depending
+on congestion. The `crypto_deposit_credited` webhook closes the cycle with
+the `tx_id` so you can verify it on the explorer.
 </Accordion>
 
 <Accordion title="How do I get an account statement for my accountant?">
@@ -188,6 +215,20 @@ up in the same USDT balance, with different webhooks (`payin_credited` vs
 No, but strongly recommended: final states arrive by webhook with no
 polling. You can still fetch any object by API (`GET /v1/payouts/{id}`,
 `GET /v1/payins/{id}`…) at any time.
+</Accordion>
+
+<Accordion title="How do I test webhooks from my machine (localhost)?">
+Local URLs are rejected for security. Use a free HTTPS tunnel (Cloudflare
+Tunnel or ngrok) and subscribe that public URL — step-by-step recipe in
+[environment and testing](/en/environment-testing).
+</Accordion>
+
+<Accordion title="What is the difference between GET /v1/movements and the statement?">
+They read the same ledger: `movements` is the paginated programmatic view
+(for automatic reconciliation and your UI); the statement is the period
+snapshot with totals, breakdowns and a guaranteed balance (for accounting
+closes). They never disagree. Details in
+[movements and reconciliation](/en/concepts/movements-reconciliation).
 </Accordion>
 
 <Accordion title="Why did I receive the same webhook twice?">

@@ -1,14 +1,23 @@
 ---
 title: "Idempotencia"
+icon: "rotate"
 description: "Reintenta con seguridad sin duplicar operaciones"
 ---
 
-Toda operación que mueve dinero exige una **clave de idempotencia**:
+Toda operación que mueve dinero exige una **clave de idempotencia**. La
+tabla completa:
 
-- `POST /v1/payouts`
-- `POST /v1/transfers`
-- `POST /v1/crypto/withdrawals`
-- `POST /v1/accounts/{id}/adjustments` (admin, opcional pero recomendada)
+| Endpoint | Clave | Por qué |
+|---|---|---|
+| `POST /v1/payouts` | **Obligatoria** | Debita tu saldo y dispersa |
+| `POST /v1/payouts/qr/confirm` | **Obligatoria** | Debita y paga el QR (el `scan` es gratis y no la necesita) |
+| `POST /v1/payins/collect` | **Obligatoria** | Ejecuta un débito real contra el pagador |
+| `POST /v1/transfers` | **Obligatoria** | Mueve saldo entre cuentas |
+| `POST /v1/crypto/withdrawals` | **Obligatoria** | Debita y transmite on-chain |
+| `POST /v1/banking/operations` | **Obligatoria** | Envía un pago bancario (el `prepare` es gratis y no la necesita) |
+| `POST /v1/cards` | **Obligatoria** | Puede cobrar el fee de emisión |
+| `POST /v1/payins` con `method: "fintoc"` | Opcional, **recomendada** | Un retry con la misma clave devuelve la misma sesión de pago (no abre una segunda) |
+| `POST /v1/payins` (qr / bank_transfer) | No aplica | El cargo no mueve dinero hasta que alguien paga; un duplicado sin pagar simplemente vence |
 
 ## Cómo enviarla
 

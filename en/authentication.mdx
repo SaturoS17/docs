@@ -1,6 +1,8 @@
 ---
-title: "Authentication"
-description: "JWT sessions, API keys and access levels"
+title: "Authentication and account"
+sidebarTitle: "Authentication"
+icon: "key"
+description: "JWT sessions, API keys, your account profile and company members"
 ---
 
 Every call (except register and login) requires a credential in the
@@ -35,8 +37,8 @@ curl -X POST https://api.qbank.cl/platform/v1/auth/login \
 }
 ```
 
-Company accounts can have multiple **members** with `owner`, `operator` or
-`viewer` roles (`POST /v1/members`).
+Company accounts can have multiple **members** with roles — see
+[company members](#company-members) below.
 
 </Tab>
 <Tab title="API key (server to server)">
@@ -76,10 +78,101 @@ an endpoint responds `403 account_required` or `403 org_admin_required`,
 that operation belongs to a different credential level — contact the CBPay
 team.
 
+## Your account profile
+
+```bash
+# Read the profile (includes kyc_status and type)
+curl https://api.qbank.cl/platform/v1/me \
+  -H "Authorization: Bearer <token>"
+
+# Update profile fields (all optional)
+curl -X PATCH https://api.qbank.cl/platform/v1/me \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "display_name": "Comercial Andina SpA",
+    "tax_id": "76.543.210-8",
+    "phone": "+56 9 1234 5678",
+    "country": "CL"
+  }'
+```
+
+```json
+{
+  "id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "type": "company",
+  "display_name": "Comercial Andina SpA",
+  "email": "legal@andina.cl",
+  "tax_id": "76.543.210-8",
+  "phone": "+56 9 1234 5678",
+  "country": "CL",
+  "status": "active",
+  "kyc_status": "approved",
+  "created_at": "2026-06-01T12:00:00Z"
+}
+```
+
+`PATCH /v1/me` accepts `display_name`, `tax_id`, `phone` and `country`
+(send only the ones that change). `email`, `status` and `kyc_status` are
+not self-managed: the administrator resolves them.
+
+## Company members
+
+**Company** accounts can have multiple users with their own login and
+different permission levels:
+
+| Role | Permissions |
+|---|---|
+| `owner` | Everything: operates, manages members and credentials |
+| `operator` | Day-to-day operation (default when creating a member) |
+| `viewer` | Read-only |
+
+```bash
+# Add a member (company accounts only)
+curl -X POST https://api.qbank.cl/platform/v1/members \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "finance@andina.cl",
+    "password": "a-strong-password",
+    "role": "viewer"
+  }'
+
+# List members
+curl "https://api.qbank.cl/platform/v1/members?page_size=50" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "page": 1,
+  "page_size": 50,
+  "members": [
+    { "id": "…", "email": "legal@andina.cl", "role": "owner", "status": "active" },
+    { "id": "…", "email": "finance@andina.cl", "role": "viewer", "status": "active" }
+  ]
+}
+```
+
+On a person account, `POST /v1/members` responds `403 company_only`.
+
 ## Best practices
 
 - Store API keys in a secrets manager; never in code or in the browser.
 - Use one key per environment/service (descriptive `label`) so you can
   rotate without downtime.
+
+<Steps>
+  <Step title="Zero-downtime rotation">
+    Issue the new key with `POST /v1/api-keys` (new label).
+  </Step>
+  <Step title="Deploy">
+    Update your service to use the new key.
+  </Step>
+  <Step title="Retire the old one">
+    Ask the CBPay team to revoke the previous key once traffic migrated.
+  </Step>
+</Steps>
+
 - JWT sessions are for front-ends; automated processes should always use
   API keys.

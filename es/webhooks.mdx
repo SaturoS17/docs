@@ -1,5 +1,6 @@
 ---
 title: "Webhooks"
+icon: "bell"
 description: "Recibe eventos firmados en tiempo real"
 ---
 
@@ -37,11 +38,34 @@ curl -X POST https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 
 - `event_type`: uno de los eventos de la tabla siguiente, o `*` para todos.
 - `callback_url`: **HTTPS obligatorio**; se rechazan localhost e IPs
-  privadas.
+  privadas — para desarrollo local usa un
+  [túnel HTTPS](/es/entorno-y-pruebas#probar-webhooks-en-desarrollo-local).
 - `secret`: mínimo 16 caracteres; se usa para firmar cada entrega. Se
   almacena cifrado y no puede recuperarse.
 
-La suscripción recibe los eventos de **tu cuenta**.
+La suscripción recibe los eventos de **tu cuenta**. Puedes listar las
+suscripciones activas en cualquier momento:
+
+```bash
+curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "page": 1,
+  "page_size": 50,
+  "subscriptions": [
+    {
+      "id": "5f3a…",
+      "event_type": "payout_status_changed",
+      "callback_url": "https://api.miapp.com/webhooks/cbpay",
+      "status": "active",
+      "created_at": "2026-07-01T12:00:00Z"
+    }
+  ]
+}
+```
 
 ## Eventos
 
@@ -225,9 +249,17 @@ prevenir replay.
 
 - Tu endpoint debe responder **2xx** dentro del timeout; cualquier otra
   respuesta se reintenta.
-- Hasta **5 intentos** con backoff incremental (5s, 20s, 45s, 80s…).
+- Hasta **5 intentos** con backoff incremental:
+
+| Intento | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|
+| Espera aprox. | inmediato | ~5s | ~20s | ~45s | ~80s |
+
 - Usa `X-Webhook-Event-ID` para deduplicar: el mismo evento puede llegar más
   de una vez (entregas at-least-once).
+- Si los 5 intentos fallan, el evento no se reenvía — recupera el estado
+  con el `GET` del recurso (por eso ningún flujo debe depender SOLO del
+  webhook).
 
 ## Buenas prácticas
 
