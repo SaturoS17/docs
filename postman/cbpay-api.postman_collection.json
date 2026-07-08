@@ -4804,6 +4804,729 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Cards",
+      "item": [
+        {
+          "name": "List cards",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/cards",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "cards"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                }
+              ]
+            },
+            "description": "Account credentials list the account's cards; org admin credentials list every card in the organization (filter with `account_id`)."
+          },
+          "response": [
+            {
+              "name": "200 Paged cards.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/cards",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "cards"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                    }
+                  ]
+                }
+              },
+              "status": "Paged cards.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"cards\": [\n    {\n      \"card_id\": \"3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c\",\n      \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n      \"physical\": false,\n      \"cardholder_kind\": \"account\",\n      \"status\": \"active\",\n      \"limits\": {},\n      \"created_at\": \"2026-07-08T12:00:00Z\",\n      \"updated_at\": \"2026-07-08T12:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a card — Person — virtual card",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/cards",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "cards"
+              ]
+            },
+            "description": "Issues a card (virtual or physical) that spends Just-In-Time from the account's central USDT balance — no prefunding: every purchase is authorized in real time against the available balance and the card's own limits. Person accounts can hold **1 virtual + 1 physical** card; company accounts can create **unlimited** cards, for the company itself or for designated persons (e.g. employees, passing their identity documents). Issuance bills the `card_creation_virtual` / `card_creation_physical` fee when configured (0 = free); the charge is refunded automatically if issuance fails. Physical cards are born `pending_activation` until the holder confirms reception.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"physical\": false,\n  \"idempotency_key\": \"card-v-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Card created.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/cards",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "cards"
+                  ]
+                }
+              },
+              "status": "Card created.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"card_id\": \"3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"physical\": false,\n  \"cardholder_kind\": \"account\",\n  \"cardholder_name\": \"Client X SpA\",\n  \"status\": \"active\",\n  \"limits\": {\n    \"monthly\": \"5000.000000\"\n  },\n  \"created_at\": \"2026-07-08T12:00:00Z\",\n  \"updated_at\": \"2026-07-08T12:00:00Z\",\n  \"creation_fee\": \"3.000000\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a card — Company — physical card with limits",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/cards",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "cards"
+              ]
+            },
+            "description": "Issues a card (virtual or physical) that spends Just-In-Time from the account's central USDT balance — no prefunding: every purchase is authorized in real time against the available balance and the card's own limits. Person accounts can hold **1 virtual + 1 physical** card; company accounts can create **unlimited** cards, for the company itself or for designated persons (e.g. employees, passing their identity documents). Issuance bills the `card_creation_virtual` / `card_creation_physical` fee when configured (0 = free); the charge is refunded automatically if issuance fails. Physical cards are born `pending_activation` until the holder confirms reception.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"physical\": true,\n  \"idempotency_key\": \"card-f-ops-1\",\n  \"limits\": {\n    \"per_transaction\": \"500.00\",\n    \"monthly\": \"5000.00\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Card created.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/cards",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "cards"
+                  ]
+                }
+              },
+              "status": "Card created.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"card_id\": \"3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"physical\": false,\n  \"cardholder_kind\": \"account\",\n  \"cardholder_name\": \"Client X SpA\",\n  \"status\": \"active\",\n  \"limits\": {\n    \"monthly\": \"5000.000000\"\n  },\n  \"created_at\": \"2026-07-08T12:00:00Z\",\n  \"updated_at\": \"2026-07-08T12:00:00Z\",\n  \"creation_fee\": \"3.000000\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a card — Company — card for a designated person",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/cards",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "cards"
+              ]
+            },
+            "description": "Issues a card (virtual or physical) that spends Just-In-Time from the account's central USDT balance — no prefunding: every purchase is authorized in real time against the available balance and the card's own limits. Person accounts can hold **1 virtual + 1 physical** card; company accounts can create **unlimited** cards, for the company itself or for designated persons (e.g. employees, passing their identity documents). Issuance bills the `card_creation_virtual` / `card_creation_physical` fee when configured (0 = free); the charge is refunded automatically if issuance fails. Physical cards are born `pending_activation` until the holder confirms reception.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"physical\": false,\n  \"idempotency_key\": \"card-emp-77\",\n  \"limits\": {\n    \"monthly\": \"1500.00\"\n  },\n  \"cardholder\": {\n    \"kind\": \"person\",\n    \"first_name\": \"Maria\",\n    \"last_name\": \"Perez\",\n    \"email\": \"maria@empresa.com\",\n    \"occupation\": \"Sales\",\n    \"salary_usd\": 1800,\n    \"id_front_url\": \"https://files.example.com/kyc/mp-front.jpg\",\n    \"id_back_url\": \"https://files.example.com/kyc/mp-back.jpg\",\n    \"residence_proof_url\": \"https://files.example.com/kyc/mp-address.pdf\",\n    \"address\": {\n      \"line1\": \"Av. Providencia 123\",\n      \"city\": \"Santiago\",\n      \"region\": \"RM\",\n      \"postal_code\": \"7500000\",\n      \"country\": \"CL\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Card created.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/cards",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "cards"
+                  ]
+                }
+              },
+              "status": "Card created.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"card_id\": \"3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"physical\": false,\n  \"cardholder_kind\": \"account\",\n  \"cardholder_name\": \"Client X SpA\",\n  \"status\": \"active\",\n  \"limits\": {\n    \"monthly\": \"5000.000000\"\n  },\n  \"created_at\": \"2026-07-08T12:00:00Z\",\n  \"updated_at\": \"2026-07-08T12:00:00Z\",\n  \"creation_fee\": \"3.000000\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get a card",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/cards/:cardID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "cards",
+                ":cardID"
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 The card.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/cards/:cardID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "cards",
+                    ":cardID"
+                  ]
+                }
+              },
+              "status": "The card.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"card_id\": \"3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"physical\": false,\n  \"cardholder_kind\": \"account\",\n  \"status\": \"active\",\n  \"limits\": {\n    \"monthly\": \"5000.000000\"\n  },\n  \"created_at\": \"2026-07-08T12:00:00Z\",\n  \"updated_at\": \"2026-07-08T12:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update limits or freeze/unfreeze — Freeze the card",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/cards/:cardID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "cards",
+                ":cardID"
+              ]
+            },
+            "description": "Updates the card's spending limits (send \"0\" to remove a limit) and freezes or unfreezes it. Frozen cards decline every authorization instantly.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"frozen\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Updated card.",
+              "originalRequest": {
+                "method": "PATCH",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/cards/:cardID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "cards",
+                    ":cardID"
+                  ]
+                }
+              },
+              "status": "Updated card.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"card_id\": \"3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"physical\": false,\n  \"cardholder_kind\": \"account\",\n  \"status\": \"frozen\",\n  \"limits\": {\n    \"per_transaction\": \"200.000000\"\n  },\n  \"created_at\": \"2026-07-08T12:00:00Z\",\n  \"updated_at\": \"2026-07-08T13:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update limits or freeze/unfreeze — Update limits",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/cards/:cardID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "cards",
+                ":cardID"
+              ]
+            },
+            "description": "Updates the card's spending limits (send \"0\" to remove a limit) and freezes or unfreezes it. Frozen cards decline every authorization instantly.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"limits\": {\n    \"per_transaction\": \"200.00\",\n    \"daily\": \"0\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Updated card.",
+              "originalRequest": {
+                "method": "PATCH",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/cards/:cardID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "cards",
+                    ":cardID"
+                  ]
+                }
+              },
+              "status": "Updated card.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"card_id\": \"3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"physical\": false,\n  \"cardholder_kind\": \"account\",\n  \"status\": \"frozen\",\n  \"limits\": {\n    \"per_transaction\": \"200.000000\"\n  },\n  \"created_at\": \"2026-07-08T12:00:00Z\",\n  \"updated_at\": \"2026-07-08T13:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Activate a physical card",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/cards/:cardID/activate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "cards",
+                ":cardID",
+                "activate"
+              ]
+            },
+            "description": "Confirms the holder received the physical card. Only cards in `pending_activation`."
+          },
+          "response": [
+            {
+              "name": "200 Activated card.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/cards/:cardID/activate",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "cards",
+                    ":cardID",
+                    "activate"
+                  ]
+                }
+              },
+              "status": "Activated card.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"card_id\": \"4d3c2b1a-9e8f-7a6b-5c4d-3e2f1a0b9c8d\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"physical\": true,\n  \"cardholder_kind\": \"account\",\n  \"status\": \"active\",\n  \"limits\": {},\n  \"created_at\": \"2026-07-01T12:00:00Z\",\n  \"updated_at\": \"2026-07-08T13:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Cancel a card",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/cards/:cardID/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "cards",
+                ":cardID",
+                "cancel"
+              ]
+            },
+            "description": "Cancels the card permanently (irreversible). Bills the `card_cancellation` fee when configured (0 = free); refunded if the cancellation fails upstream."
+          },
+          "response": [
+            {
+              "name": "200 Cancelled card.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/cards/:cardID/cancel",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "cards",
+                    ":cardID",
+                    "cancel"
+                  ]
+                }
+              },
+              "status": "Cancelled card.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"card_id\": \"3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"physical\": false,\n  \"cardholder_kind\": \"account\",\n  \"status\": \"cancelled\",\n  \"limits\": {},\n  \"created_at\": \"2026-07-08T12:00:00Z\",\n  \"updated_at\": \"2026-07-09T10:00:00Z\",\n  \"cancellation_fee\": \"1.000000\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reveal PAN and CVV",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/cards/:cardID/reveal",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "cards",
+                ":cardID",
+                "reveal"
+              ]
+            },
+            "description": "Returns the card's sensitive data (PAN, CVV, expiration) as a one-time pass-through for display to the holder. Only the owning account can call it (never the org admin). **Never store or log this response** — the platform does not persist it either (PCI)."
+          },
+          "response": [
+            {
+              "name": "200 Sensitive card data (display once).",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/cards/:cardID/reveal",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "cards",
+                    ":cardID",
+                    "reveal"
+                  ]
+                }
+              },
+              "status": "Sensitive card data (display once).",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"card_id\": \"3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c\",\n  \"pan\": \"5339880000001234\",\n  \"cvv\": \"123\",\n  \"exp_date\": \"202907\",\n  \"note\": \"sensitive data: display once, never store\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List card transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/cards/:cardID/transactions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "cards",
+                ":cardID",
+                "transactions"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Purchases and their lifecycle: `authorized` (real-time hold), `settled` (confirmed at clearing), `reversed` (annulled, funds returned) and `declined` (with the reason: insufficient_funds, card_limit_exceeded, card_frozen...)."
+          },
+          "response": [
+            {
+              "name": "200 Paged card transactions.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/cards/:cardID/transactions",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "cards",
+                    ":cardID",
+                    "transactions"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Paged card transactions.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"transactions\": [\n    {\n      \"transaction_id\": \"5e4d3c2b-1a09-8f7e-6d5c-4b3a2c1d0e9f\",\n      \"card_id\": \"3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c\",\n      \"kind\": \"purchase\",\n      \"merchant\": \"AMZN Mktp\",\n      \"mcc\": \"5999\",\n      \"amount_usd\": \"16.17\",\n      \"amount_usdt\": \"16.170000\",\n      \"status\": \"settled\",\n      \"auth_number\": \"040031\",\n      \"created_at\": \"2026-07-08T15:00:00Z\",\n      \"updated_at\": \"2026-07-09T02:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

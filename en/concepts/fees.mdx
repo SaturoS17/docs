@@ -38,6 +38,10 @@ rate for that country. Quoted = charged, always.
 | `banking_customer` | Fixed per profile | When creating your banking profile ([banking](/en/guides/banking)) |
 | `banking_account` | Fixed per account | When opening each bank account |
 | `banking_operation` | Fixed per payment | When sending each bank payment (quoting with `prepare` is free) |
+| `card_creation_virtual` | Fixed per card | When issuing a virtual card ([cards](/en/guides/cards)) |
+| `card_creation_physical` | Fixed per card | When issuing a physical card |
+| `card_monthly` | Fixed monthly | Monthly fee per active card (with no balance the card is frozen — no debt) |
+| `card_cancellation` | Fixed per card | When cancelling a card |
 
 For `%`-based services the formula is
 `fee = ceil(amount × percent / 100) + fixed_amount` (rounded up to the

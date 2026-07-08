@@ -7,6 +7,30 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="8 de julio de 2026" description="v1.18">
+
+**Agregado**
+
+- **Tarjetas virtuales y físicas** que gastan directo del saldo USDT de la
+  cuenta, sin prefondeo: cada compra se autoriza en tiempo real contra el
+  saldo disponible y los límites de la tarjeta. Personas: 1 virtual + 1
+  física; empresas: ilimitadas, propias o para personas designadas (ej.
+  empleados). Nuevos endpoints `POST/GET /v1/cards`,
+  `GET/PATCH /v1/cards/{id}` (límites y congelar/descongelar),
+  `POST /v1/cards/{id}/activate|cancel|reveal` y
+  `GET /v1/cards/{id}/transactions`. Ver la
+  [guía de tarjetas](/es/guias/tarjetas).
+- **Nuevos servicios facturables** (fijos, configurables, pueden ser 0):
+  `card_creation_virtual`, `card_creation_physical`, `card_monthly` (si no
+  hay saldo, la tarjeta se congela — sin deuda) y `card_cancellation`.
+- **Nuevos webhooks** `card_transaction` (autorizada/anulada/ajustada) y
+  `card_status_changed` (cambios de estado, incluido el congelamiento
+  automático).
+- **Nuevos tipos de movimiento** en el ledger: `card_debit`, `card_refund`,
+  `card_fee`, `card_fee_refund`.
+
+</Update>
+
 <Update label="7 de julio de 2026" description="v1.17">
 
 **Agregado**

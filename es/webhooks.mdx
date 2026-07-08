@@ -54,6 +54,8 @@ La suscripción recibe los eventos de **tu cuenta**.
 | `crypto_withdrawal_status_changed` | Un retiro on-chain cambió de estado |
 | `banking_customer_status_changed` | Cambió la verificación de tu perfil bancario |
 | `banking_operation_status_changed` | Un pago bancario cambió de estado |
+| `card_transaction` | Una compra con tarjeta fue autorizada, anulada o ajustada |
+| `card_status_changed` | Una tarjeta cambió de estado (incluye congelamiento automático) |
 
 ### Payload de cada evento
 
@@ -136,6 +138,26 @@ La suscripción recibe los eventos de **tu cuenta**.
   "operation_id": "7e8a…",
   "type": "withdraw",
   "status": "completed"
+}
+```
+
+```json card_transaction
+{
+  "account_id": "ae8c…",
+  "card_id": "3c2b…",
+  "transaction_id": "5e4d…",
+  "status": "authorized",
+  "amount_usdt": "16.170000",
+  "merchant": "AMZN Mktp"
+}
+```
+
+```json card_status_changed
+{
+  "account_id": "ae8c…",
+  "card_id": "3c2b…",
+  "status": "frozen",
+  "reason": "monthly_fee_unpaid"
 }
 ```
 

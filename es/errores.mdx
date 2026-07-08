@@ -64,6 +64,10 @@ Todos los errores comparten el mismo formato:
 | 422 | `core_rejected` | El procesador rechazó la operación |
 | 422 | `recipient_unavailable` | La cuenta destino no puede recibir |
 | 422 | `wallet_limit_reached` | Una cuenta persona intentó crear una segunda wallet en la misma red |
+| 409 | `card_limit_reached` | Una cuenta persona intentó crear una segunda tarjeta del mismo tipo |
+| 409 | `card_cancelled` | La tarjeta ya está cancelada y no se puede modificar |
+| 409 | `card_not_pending` | Solo tarjetas en `pending_activation` se pueden activar |
+| 409 | `cardholder_kyc_pending` | El titular designado requiere documentos de identidad |
 
 ### Servicio (5xx)
 

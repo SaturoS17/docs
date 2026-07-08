@@ -6,6 +6,29 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 8, 2026" description="v1.18">
+
+**Added**
+
+- **Virtual and physical cards** that spend straight from the account's
+  USDT balance, with no prefunding: every purchase is authorized in real
+  time against the available balance and the card's limits. Persons: 1
+  virtual + 1 physical; companies: unlimited, for the company or for
+  designated persons (e.g. employees). New endpoints `POST/GET /v1/cards`,
+  `GET/PATCH /v1/cards/{id}` (limits and freeze/unfreeze),
+  `POST /v1/cards/{id}/activate|cancel|reveal` and
+  `GET /v1/cards/{id}/transactions`. See the
+  [cards guide](/en/guides/cards).
+- **New billable services** (fixed, configurable, can be 0):
+  `card_creation_virtual`, `card_creation_physical`, `card_monthly` (with
+  no balance the card is frozen — no debt) and `card_cancellation`.
+- **New webhooks** `card_transaction` (authorized/annulled/adjusted) and
+  `card_status_changed` (state changes, including automatic freezes).
+- **New ledger movement types**: `card_debit`, `card_refund`, `card_fee`,
+  `card_fee_refund`.
+
+</Update>
+
 <Update label="July 7, 2026" description="v1.17">
 
 **Added**

@@ -31,6 +31,7 @@ USDT on-chain y verificación KYC/KYB — una sola API, un solo saldo.
   - [Payins](#payins)
   - [Transferencias internas](#transferencias-internas)
   - [Crypto: wallets, depósitos y retiros](#crypto-wallets-depositos-y-retiros)
+  - [Tarjetas: virtuales y físicas](#tarjetas-virtuales-y-fisicas)
   - [Banking](#banking)
   - [KYC/KYB y compliance](#kyckyb-y-compliance)
   - [Cartola (estado de cuenta)](#cartola-estado-de-cuenta)
@@ -508,6 +509,10 @@ cuenta para ese país. Cotizado = cobrado, siempre.
 | `banking_customer` | Fijo por perfil | Al crear tu perfil bancario ([banking](#banking)) |
 | `banking_account` | Fijo por cuenta | Al abrir cada cuenta bancaria |
 | `banking_operation` | Fijo por pago | Al enviar cada pago bancario (cotizar con `prepare` es gratis) |
+| `card_creation_virtual` | Fijo por tarjeta | Al emitir una tarjeta virtual ([tarjetas](#tarjetas-virtuales-y-fisicas)) |
+| `card_creation_physical` | Fijo por tarjeta | Al emitir una tarjeta física |
+| `card_monthly` | Fijo mensual | Mensualidad por tarjeta activa (sin saldo, la tarjeta se congela — sin deuda) |
+| `card_cancellation` | Fijo por tarjeta | Al cancelar una tarjeta |
 
 Para los servicios con `%`, la fórmula es
 `fee = ceil(monto × percent / 100) + fixed_amount` (redondeo hacia arriba al
@@ -2004,6 +2009,233 @@ puertas de entrada; el saldo es uno solo).
 | 503 | `withdrawals_unavailable` | Retiros no habilitados aún para este corredor |
 
 
+## Tarjetas: virtuales y físicas
+
+*Emite tarjetas que gastan directo del saldo USDT de la cuenta, con límites por tarjeta*
+
+Las tarjetas CBPay gastan **Just-In-Time del saldo USDT central de la
+cuenta**: no hay que prefondearlas ni moverles saldo. Cada compra se autoriza
+en tiempo real contra el saldo disponible y los límites propios de la
+tarjeta, y el débito queda de inmediato en el historial de movimientos.
+
+```mermaid
+flowchart LR
+    compra["Compra en comercio<br/>(POS / e-commerce / ATM)"] --> red["Red de tarjetas"]
+    red --> jit{"Autorización JIT<br/>en tiempo real"}
+    jit -->|"saldo y límites OK"| debito["Débito USDT<br/>+ hold"]
+    jit -->|"insuficiente / límite /<br/>congelada"| rechazo["Compra rechazada<br/>(razón auditada)"]
+    debito --> liquidacion{"Liquidación<br/>(1-2 días)"}
+    liquidacion -->|"confirmada"| settle["Hold consumido"]
+    liquidacion -->|"anulada"| refund["Fondos devueltos<br/>al saldo"]
+```
+
+### Cuántas tarjetas puedes tener
+
+| Tipo de cuenta | Virtuales | Físicas | ¿Para terceros? |
+|---|---|---|---|
+| Persona | **1** | **1** | No |
+| Empresa | **Ilimitadas** | **Ilimitadas** | Sí: personas designadas (ej. empleados) |
+
+Todas las tarjetas de una cuenta gastan del **mismo saldo USDT**. El control
+fino es por límites de gasto de cada tarjeta (por transacción, diario,
+mensual), que puedes cambiar en cualquier momento.
+
+### Costos (configurados por tu operador, pueden ser 0)
+
+| Servicio | Cuándo se cobra |
+|---|---|
+| `card_creation_virtual` | Al emitir una tarjeta virtual |
+| `card_creation_physical` | Al emitir una tarjeta física |
+| `card_monthly` | Mensualidad por tarjeta activa (si no hay saldo, la tarjeta se congela — sin deuda) |
+| `card_cancellation` | Al cancelar una tarjeta |
+
+Los montos exactos se consultan en `GET /v1/fees`. Todo cargo de emisión se
+**reembolsa automáticamente** si la emisión falla.
+
+### Crear una tarjeta
+
+La clave de idempotencia es obligatoria: un retry con la misma clave devuelve
+la tarjeta original y nunca cobra dos veces.
+
+```bash Persona — virtual
+curl -X POST https://api.qbank.cl/platform/v1/cards \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "physical": false, "idempotency_key": "card-v-1" }'
+```
+
+```bash Empresa — física con límites
+curl -X POST https://api.qbank.cl/platform/v1/cards \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "physical": true,
+    "idempotency_key": "card-f-ops-1",
+    "limits": { "per_transaction": "500.00", "monthly": "5000.00" }
+  }'
+```
+
+```bash Empresa — para un empleado
+curl -X POST https://api.qbank.cl/platform/v1/cards \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "physical": false,
+    "idempotency_key": "card-emp-77",
+    "limits": { "monthly": "1500.00" },
+    "cardholder": {
+      "kind": "person",
+      "first_name": "Maria",
+      "last_name": "Perez",
+      "email": "maria@empresa.com",
+      "occupation": "Sales",
+      "salary_usd": 1800,
+      "id_front_url": "https://files.example.com/kyc/mp-front.jpg",
+      "id_back_url": "https://files.example.com/kyc/mp-back.jpg",
+      "residence_proof_url": "https://files.example.com/kyc/mp-address.pdf",
+      "address": {
+        "line1": "Av. Providencia 123",
+        "city": "Santiago",
+        "region": "RM",
+        "postal_code": "7500000",
+        "country": "CL"
+      }
+    }
+  }'
+```
+
+Respuesta:
+
+```json
+{
+  "card_id": "3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c",
+  "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "physical": false,
+  "cardholder_kind": "account",
+  "status": "active",
+  "limits": { "monthly": "5000.000000" },
+  "created_at": "2026-07-08T12:00:00Z",
+  "updated_at": "2026-07-08T12:00:00Z",
+  "creation_fee": "3.000000"
+}
+```
+
+> **Nota**
+Al emitir para una **persona designada** (empresas), los documentos de
+identidad son obligatorios (`id_front_url`, `id_back_url`,
+`residence_proof_url`): el titular queda verificado de inmediato y la
+tarjeta se emite en la misma llamada. El nombre impreso usa `first_name` +
+`last_name` (máximo 22 caracteres combinados).
+### Tarjetas físicas: activación
+
+Una tarjeta física nace en `pending_activation` y viaja **inactiva** por
+seguridad. Cuando el titular la tiene en mano:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/cards/{card_id}/activate \
+  -H "Authorization: Bearer <token>"
+```
+
+### Ver PAN y CVV (datos sensibles)
+
+Solo la **cuenta dueña** puede revelarlos (nunca el org admin). La respuesta
+es de una sola pasada: muéstrala al titular y descártala.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/cards/{card_id}/reveal \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "card_id": "3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c",
+  "pan": "5339880000001234",
+  "cvv": "123",
+  "exp_date": "202907",
+  "note": "sensitive data: display once, never store"
+}
+```
+
+> **Importante**
+**Nunca almacenes ni loguees el PAN/CVV.** CBPay tampoco lo persiste: la
+respuesta viene directo del emisor (estándar PCI).
+### Límites y congelar/descongelar
+
+```bash Actualizar límites
+curl -X PATCH https://api.qbank.cl/platform/v1/cards/{card_id} \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "limits": { "per_transaction": "200.00", "daily": "0" } }'
+```
+
+`"0"` elimina un límite. Para congelar (rechaza toda compra al instante):
+
+```bash Congelar
+curl -X PATCH https://api.qbank.cl/platform/v1/cards/{card_id} \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "frozen": true }'
+```
+
+### Transacciones y su ciclo de vida
+
+```bash
+curl "https://api.qbank.cl/platform/v1/cards/{card_id}/transactions?page=1&page_size=50" \
+  -H "Authorization: Bearer <token>"
+```
+
+| Estado | Significado |
+|---|---|
+| `authorized` | Compra aprobada en tiempo real: el monto salió del disponible y quedó en hold |
+| `settled` | Confirmada en la liquidación de la red (el hold se consume) |
+| `reversed` | Anulada: los fondos volvieron completos al saldo |
+| `declined` | Rechazada, con la razón: `insufficient_funds`, `card_limit_exceeded`, `card_frozen`, `account_blocked` |
+
+Si la liquidación llega por un monto distinto al autorizado (propinas,
+conversión del comercio), el ajuste se aplica automáticamente: positivo
+debita la diferencia, negativo la devuelve.
+
+### Cancelar una tarjeta
+
+Irreversible. Cobra `card_cancellation` si está configurado.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/cards/{card_id}/cancel \
+  -H "Authorization: Bearer <token>"
+```
+
+### Webhooks
+
+| Evento | Cuándo |
+|---|---|
+| `card_transaction` | Compra autorizada, anulada o ajustada |
+| `card_status_changed` | La tarjeta cambió de estado (incluye congelamiento automático por mensualidad impaga) |
+
+Suscríbete igual que al resto de eventos (ver [Webhooks](#webhooks)).
+
+### Preguntas frecuentes
+
+#### ¿Tengo que prefondear las tarjetas?
+No. Las tarjetas no tienen saldo propio: cada compra se autoriza en tiempo
+real contra el saldo USDT de la cuenta. Si hay saldo y la compra respeta los
+límites, se aprueba.
+#### ¿Qué pasa si varias tarjetas de mi empresa compran a la vez?
+Todas gastan del mismo saldo central. Cada autorización debita de forma
+atómica: nunca se aprueba más que el saldo disponible, sin importar cuántas
+tarjetas operen en paralelo.
+#### ¿En qué moneda se debita?
+Las compras se procesan en USD y se debitan 1:1 en USDT (1 USD = 1 USDT),
+con precisión de 6 decimales.
+#### ¿Qué pasa si no hay saldo para la mensualidad?
+La tarjeta se congela automáticamente (evento `card_status_changed` con
+`reason: monthly_fee_unpaid`). No se genera deuda; al regularizar el saldo,
+pide descongelarla con `PATCH { "frozen": false }`.
+#### ¿Puedo emitir una tarjeta para alguien que no es de mi empresa?
+Las cuentas empresa pueden emitir para cualquier persona designada pasando
+sus datos y documentos de identidad. La tarjeta gasta siempre del saldo de la
+cuenta empresa que la emitió.
+
+
 ## Banking
 
 *Cuentas bancarias reales para tu cuenta: recibe, mantén y envía dinero por rieles bancarios internacionales*
@@ -2650,6 +2882,8 @@ La suscripción recibe los eventos de **tu cuenta**.
 | `crypto_withdrawal_status_changed` | Un retiro on-chain cambió de estado |
 | `banking_customer_status_changed` | Cambió la verificación de tu perfil bancario |
 | `banking_operation_status_changed` | Un pago bancario cambió de estado |
+| `card_transaction` | Una compra con tarjeta fue autorizada, anulada o ajustada |
+| `card_status_changed` | Una tarjeta cambió de estado (incluye congelamiento automático) |
 
 #### Payload de cada evento
 
@@ -2730,6 +2964,26 @@ La suscripción recibe los eventos de **tu cuenta**.
   "operation_id": "7e8a…",
   "type": "withdraw",
   "status": "completed"
+}
+```
+
+```json card_transaction
+{
+  "account_id": "ae8c…",
+  "card_id": "3c2b…",
+  "transaction_id": "5e4d…",
+  "status": "authorized",
+  "amount_usdt": "16.170000",
+  "merchant": "AMZN Mktp"
+}
+```
+
+```json card_status_changed
+{
+  "account_id": "ae8c…",
+  "card_id": "3c2b…",
+  "status": "frozen",
+  "reason": "monthly_fee_unpaid"
 }
 ```
 
@@ -2866,6 +3120,10 @@ Todos los errores comparten el mismo formato:
 | 422 | `core_rejected` | El procesador rechazó la operación |
 | 422 | `recipient_unavailable` | La cuenta destino no puede recibir |
 | 422 | `wallet_limit_reached` | Una cuenta persona intentó crear una segunda wallet en la misma red |
+| 409 | `card_limit_reached` | Una cuenta persona intentó crear una segunda tarjeta del mismo tipo |
+| 409 | `card_cancelled` | La tarjeta ya está cancelada y no se puede modificar |
+| 409 | `card_not_pending` | Solo tarjetas en `pending_activation` se pueden activar |
+| 409 | `cardholder_kyc_pending` | El titular designado requiere documentos de identidad |
 
 #### Servicio (5xx)
 
@@ -3063,6 +3321,28 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.18 — 8 de julio de 2026
+
+**Agregado**
+
+- **Tarjetas virtuales y físicas** que gastan directo del saldo USDT de la
+  cuenta, sin prefondeo: cada compra se autoriza en tiempo real contra el
+  saldo disponible y los límites de la tarjeta. Personas: 1 virtual + 1
+  física; empresas: ilimitadas, propias o para personas designadas (ej.
+  empleados). Nuevos endpoints `POST/GET /v1/cards`,
+  `GET/PATCH /v1/cards/{id}` (límites y congelar/descongelar),
+  `POST /v1/cards/{id}/activate|cancel|reveal` y
+  `GET /v1/cards/{id}/transactions`. Ver la
+  [guía de tarjetas](#tarjetas-virtuales-y-fisicas).
+- **Nuevos servicios facturables** (fijos, configurables, pueden ser 0):
+  `card_creation_virtual`, `card_creation_physical`, `card_monthly` (si no
+  hay saldo, la tarjeta se congela — sin deuda) y `card_cancellation`.
+- **Nuevos webhooks** `card_transaction` (autorizada/anulada/ajustada) y
+  `card_status_changed` (cambios de estado, incluido el congelamiento
+  automático).
+- **Nuevos tipos de movimiento** en el ledger: `card_debit`, `card_refund`,
+  `card_fee`, `card_fee_refund`.
 
 ### v1.17 — 7 de julio de 2026
 

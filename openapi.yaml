@@ -44,6 +44,9 @@ tags:
   description: Service availability.
 - name: Banking
   description: 'Real bank accounts: receive, hold and send money over international banking rails.'
+- name: Cards
+  description: 'Virtual and physical cards that spend Just-In-Time from the account''s USDT balance,
+    with per-card spending limits.'
 paths:
   /v1/auth/register:
     post:
@@ -469,6 +472,10 @@ paths:
           - compliance_refund
           - wallet_creation_fee
           - wallet_creation_refund
+          - card_debit
+          - card_refund
+          - card_fee
+          - card_fee_refund
       - name: from
         in: query
         schema:
@@ -3888,6 +3895,473 @@ paths:
               example:
                 error: not_found
                 message: resource not found
+  /v1/cards:
+    post:
+      tags:
+      - Cards
+      operationId: createCard
+      summary: Create a card
+      description: 'Issues a card (virtual or physical) that spends Just-In-Time from the account''s
+        central USDT balance — no prefunding: every purchase is authorized in real time against the
+        available balance and the card''s own limits. Person accounts can hold **1 virtual + 1
+        physical** card; company accounts can create **unlimited** cards, for the company itself or
+        for designated persons (e.g. employees, passing their identity documents). Issuance bills the
+        `card_creation_virtual` / `card_creation_physical` fee when configured (0 = free); the charge
+        is refunded automatically if issuance fails. Physical cards are born `pending_activation`
+        until the holder confirms reception.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - idempotency_key
+              properties:
+                physical:
+                  type: boolean
+                  default: false
+                idempotency_key:
+                  type: string
+                  description: Required (also accepted as the Idempotency-Key header). A retry with
+                    the same key returns the original card and never double-charges the issuance fee.
+                limits:
+                  type: object
+                  description: Optional spending limits in USDT (enforced at authorization time; 0 or
+                    omitted = no limit).
+                  properties:
+                    per_transaction:
+                      type: string
+                    daily:
+                      type: string
+                    monthly:
+                      type: string
+                cardholder:
+                  type: object
+                  description: 'Company accounts only: issue the card to a designated person. Requires
+                    kind "person", personal data and identity documents by URL (id_front_url,
+                    id_back_url, residence_proof_url) so the holder is verified immediately.'
+            examples:
+              person_virtual:
+                summary: Person — virtual card
+                value:
+                  physical: false
+                  idempotency_key: card-v-1
+              company_physical_limited:
+                summary: Company — physical card with limits
+                value:
+                  physical: true
+                  idempotency_key: card-f-ops-1
+                  limits:
+                    per_transaction: '500.00'
+                    monthly: '5000.00'
+              company_for_employee:
+                summary: Company — card for a designated person
+                value:
+                  physical: false
+                  idempotency_key: card-emp-77
+                  limits:
+                    monthly: '1500.00'
+                  cardholder:
+                    kind: person
+                    first_name: Maria
+                    last_name: Perez
+                    email: maria@empresa.com
+                    occupation: Sales
+                    salary_usd: 1800
+                    id_front_url: https://files.example.com/kyc/mp-front.jpg
+                    id_back_url: https://files.example.com/kyc/mp-back.jpg
+                    residence_proof_url: https://files.example.com/kyc/mp-address.pdf
+                    address:
+                      line1: Av. Providencia 123
+                      city: Santiago
+                      region: RM
+                      postal_code: '7500000'
+                      country: CL
+      responses:
+        '201':
+          description: Card created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardObject'
+              example:
+                card_id: 3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                physical: false
+                cardholder_kind: account
+                cardholder_name: Client X SpA
+                status: active
+                limits:
+                  monthly: '5000.000000'
+                created_at: '2026-07-08T12:00:00Z'
+                updated_at: '2026-07-08T12:00:00Z'
+                creation_fee: '3.000000'
+        '400':
+          description: idempotency_key_required / invalid_amount
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: idempotency_key_required
+                message: provide idempotency_key (body or Idempotency-Key header)
+        '402':
+          description: Balance cannot cover the issuance fee (insufficient_funds).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: insufficient_funds
+                message: account balance is not enough for this operation
+        '409':
+          description: card_limit_reached (person accounts) / cardholder_kyc_pending
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: card_limit_reached
+                message: person accounts can hold at most 1 virtual card (cancel the existing one first)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+    get:
+      tags:
+      - Cards
+      operationId: listCards
+      summary: List cards
+      description: Account credentials list the account's cards; org admin credentials list every card
+        in the organization (filter with `account_id`).
+      parameters:
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/pageSize'
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - pending_activation
+          - active
+          - frozen
+          - cancelled
+      - name: from
+        in: query
+        schema:
+          type: string
+          format: date
+        description: Filter from this date (YYYY-MM-DD, UTC, inclusive).
+      - name: to
+        in: query
+        schema:
+          type: string
+          format: date
+        description: Filter up to this date (YYYY-MM-DD, UTC, inclusive).
+      responses:
+        '200':
+          description: Paged cards.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  cards:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CardObject'
+              example:
+                page: 1
+                page_size: 50
+                cards:
+                - card_id: 3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c
+                  account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                  physical: false
+                  cardholder_kind: account
+                  status: active
+                  limits: {}
+                  created_at: '2026-07-08T12:00:00Z'
+                  updated_at: '2026-07-08T12:00:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/cards/{cardID}:
+    get:
+      tags:
+      - Cards
+      operationId: getCard
+      summary: Get a card
+      parameters:
+      - $ref: '#/components/parameters/cardID'
+      responses:
+        '200':
+          description: The card.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardObject'
+              example:
+                card_id: 3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                physical: false
+                cardholder_kind: account
+                status: active
+                limits:
+                  monthly: '5000.000000'
+                created_at: '2026-07-08T12:00:00Z'
+                updated_at: '2026-07-08T12:00:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags:
+      - Cards
+      operationId: updateCard
+      summary: Update limits or freeze/unfreeze
+      description: Updates the card's spending limits (send "0" to remove a limit) and freezes or
+        unfreezes it. Frozen cards decline every authorization instantly.
+      parameters:
+      - $ref: '#/components/parameters/cardID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                frozen:
+                  type: boolean
+                limits:
+                  type: object
+                  properties:
+                    per_transaction:
+                      type: string
+                    daily:
+                      type: string
+                    monthly:
+                      type: string
+            examples:
+              freeze:
+                summary: Freeze the card
+                value:
+                  frozen: true
+              set_limits:
+                summary: Update limits
+                value:
+                  limits:
+                    per_transaction: '200.00'
+                    daily: '0'
+      responses:
+        '200':
+          description: Updated card.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardObject'
+              example:
+                card_id: 3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                physical: false
+                cardholder_kind: account
+                status: frozen
+                limits:
+                  per_transaction: '200.000000'
+                created_at: '2026-07-08T12:00:00Z'
+                updated_at: '2026-07-08T13:00:00Z'
+        '400':
+          description: invalid_amount
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_amount
+                message: limits must be positive decimal strings (or "0" to remove)
+        '409':
+          description: card_cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: card_cancelled
+                message: a cancelled card cannot be updated
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/cards/{cardID}/activate:
+    post:
+      tags:
+      - Cards
+      operationId: activateCard
+      summary: Activate a physical card
+      description: Confirms the holder received the physical card. Only cards in `pending_activation`.
+      parameters:
+      - $ref: '#/components/parameters/cardID'
+      responses:
+        '200':
+          description: Activated card.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardObject'
+              example:
+                card_id: 4d3c2b1a-9e8f-7a6b-5c4d-3e2f1a0b9c8d
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                physical: true
+                cardholder_kind: account
+                status: active
+                limits: {}
+                created_at: '2026-07-01T12:00:00Z'
+                updated_at: '2026-07-08T13:00:00Z'
+        '409':
+          description: card_not_pending
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: card_not_pending
+                message: only cards pending activation can be activated
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/cards/{cardID}/cancel:
+    post:
+      tags:
+      - Cards
+      operationId: cancelCard
+      summary: Cancel a card
+      description: Cancels the card permanently (irreversible). Bills the `card_cancellation` fee when
+        configured (0 = free); refunded if the cancellation fails upstream.
+      parameters:
+      - $ref: '#/components/parameters/cardID'
+      responses:
+        '200':
+          description: Cancelled card.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardObject'
+              example:
+                card_id: 3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                physical: false
+                cardholder_kind: account
+                status: cancelled
+                limits: {}
+                created_at: '2026-07-08T12:00:00Z'
+                updated_at: '2026-07-09T10:00:00Z'
+                cancellation_fee: '1.000000'
+        '402':
+          description: Balance cannot cover the cancellation fee (insufficient_funds).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: insufficient_funds
+                message: account balance is not enough for this operation
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/cards/{cardID}/reveal:
+    post:
+      tags:
+      - Cards
+      operationId: revealCard
+      summary: Reveal PAN and CVV
+      description: 'Returns the card''s sensitive data (PAN, CVV, expiration) as a one-time
+        pass-through for display to the holder. Only the owning account can call it (never the org
+        admin). **Never store or log this response** — the platform does not persist it either (PCI).'
+      parameters:
+      - $ref: '#/components/parameters/cardID'
+      responses:
+        '200':
+          description: Sensitive card data (display once).
+          content:
+            application/json:
+              example:
+                card_id: 3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c
+                pan: '5339880000001234'
+                cvv: '123'
+                exp_date: '202907'
+                note: 'sensitive data: display once, never store'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+  /v1/cards/{cardID}/transactions:
+    get:
+      tags:
+      - Cards
+      operationId: listCardTransactions
+      summary: List card transactions
+      description: 'Purchases and their lifecycle: `authorized` (real-time hold), `settled`
+        (confirmed at clearing), `reversed` (annulled, funds returned) and `declined` (with the
+        reason: insufficient_funds, card_limit_exceeded, card_frozen...).'
+      parameters:
+      - $ref: '#/components/parameters/cardID'
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/pageSize'
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - authorized
+          - settled
+          - reversed
+          - declined
+      - name: from
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Paged card transactions.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  transactions:
+                    type: array
+                    items:
+                      type: object
+              example:
+                page: 1
+                page_size: 50
+                transactions:
+                - transaction_id: 5e4d3c2b-1a09-8f7e-6d5c-4b3a2c1d0e9f
+                  card_id: 3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c
+                  kind: purchase
+                  merchant: AMZN Mktp
+                  mcc: '5999'
+                  amount_usd: '16.17'
+                  amount_usdt: '16.170000'
+                  status: settled
+                  auth_number: '040031'
+                  created_at: '2026-07-08T15:00:00Z'
+                  updated_at: '2026-07-09T02:00:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 components:
   securitySchemes:
     bearerAuth:
@@ -3899,6 +4373,12 @@ components:
 
         '
   parameters:
+    cardID:
+      name: cardID
+      in: path
+      required: true
+      schema:
+        type: string
     page:
       name: page
       in: query
@@ -3975,6 +4455,48 @@ components:
             error: unauthorized
             message: invalid or missing credentials
   schemas:
+    CardObject:
+      type: object
+      properties:
+        card_id:
+          type: string
+        account_id:
+          type: string
+        physical:
+          type: boolean
+        cardholder_kind:
+          type: string
+          enum:
+          - account
+          - person
+        cardholder_name:
+          type: string
+        status:
+          type: string
+          enum:
+          - pending_activation
+          - active
+          - frozen
+          - cancelled
+        limits:
+          type: object
+          properties:
+            per_transaction:
+              type: string
+            daily:
+              type: string
+            monthly:
+              type: string
+        creation_fee:
+          type: string
+        cancellation_fee:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
     Error:
       type: object
       properties:
@@ -4593,6 +5115,40 @@ webhooks:
               operation_id: 7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c
               type: withdraw
               status: completed
+      responses:
+        '200':
+          description: Return any 2xx to acknowledge.
+  card_transaction:
+    post:
+      summary: Card transaction
+      description: 'Fires on every card transaction lifecycle change: authorized (real-time hold),
+        reversed (funds returned) and settled adjustments. Same signature headers as every delivery.'
+      requestBody:
+        content:
+          application/json:
+            example:
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              card_id: 3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c
+              transaction_id: 5e4d3c2b-1a09-8f7e-6d5c-4b3a2c1d0e9f
+              status: authorized
+              amount_usdt: '16.170000'
+              merchant: AMZN Mktp
+      responses:
+        '200':
+          description: Return any 2xx to acknowledge.
+  card_status_changed:
+    post:
+      summary: Card status changed
+      description: Fires when a card changes state (active, frozen, cancelled), including automatic
+        freezes when the monthly fee cannot be charged.
+      requestBody:
+        content:
+          application/json:
+            example:
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              card_id: 3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c
+              status: frozen
+              reason: monthly_fee_unpaid
       responses:
         '200':
           description: Return any 2xx to acknowledge.

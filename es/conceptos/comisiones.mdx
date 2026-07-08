@@ -37,6 +37,10 @@ cuenta para ese país. Cotizado = cobrado, siempre.
 | `banking_customer` | Fijo por perfil | Al crear tu perfil bancario ([banking](/es/guias/banking)) |
 | `banking_account` | Fijo por cuenta | Al abrir cada cuenta bancaria |
 | `banking_operation` | Fijo por pago | Al enviar cada pago bancario (cotizar con `prepare` es gratis) |
+| `card_creation_virtual` | Fijo por tarjeta | Al emitir una tarjeta virtual ([tarjetas](/es/guias/tarjetas)) |
+| `card_creation_physical` | Fijo por tarjeta | Al emitir una tarjeta física |
+| `card_monthly` | Fijo mensual | Mensualidad por tarjeta activa (sin saldo, la tarjeta se congela — sin deuda) |
+| `card_cancellation` | Fijo por tarjeta | Al cancelar una tarjeta |
 
 Para los servicios con `%`, la fórmula es
 `fee = ceil(monto × percent / 100) + fixed_amount` (redondeo hacia arriba al
