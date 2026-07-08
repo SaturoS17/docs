@@ -3039,28 +3039,49 @@ cargo de emisión se **reembolsa automáticamente** si la emisión falla.
 
 ### Crear una tarjeta
 
-La clave de idempotencia es obligatoria: un retry con la misma clave devuelve
-la tarjeta original y nunca cobra dos veces.
+Antes de los ejemplos, la regla que ordena todo: **el titular (cardholder)
+se verifica UNA sola vez por cuenta**, en la primera emisión.
 
-```bash Persona — virtual
-curl -X POST https://api.qbank.cl/platform/v1/cards \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{ "physical": false, "idempotency_key": "card-v-1" }'
-```
+| Situación | ¿Debes enviar `cardholder`? |
+|---|---|
+| **Primera tarjeta** de la cuenta (persona o empresa para sí misma) | **Sí, completo** — crea y verifica al titular en el emisor |
+| **Siguientes tarjetas** de la misma cuenta | No — se reutiliza el titular ya verificado (basta `physical` + `idempotency_key`) |
+| Empresa emitiendo **para un empleado** (`cardholder.kind: "person"`) | **Sí, completo, siempre** — cada persona designada es un titular nuevo |
 
-```bash Empresa — física con límites
+La clave de idempotencia es obligatoria en todos los casos: un retry con la
+misma clave devuelve la tarjeta original y nunca cobra dos veces.
+
+#### Primera tarjeta (crea al titular)
+
+```bash Persona — primera tarjeta (datos completos)
 curl -X POST https://api.qbank.cl/platform/v1/cards \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
-    "physical": true,
-    "idempotency_key": "card-f-ops-1",
-    "limits": { "per_transaction": "500.00", "monthly": "5000.00" }
+    "physical": false,
+    "idempotency_key": "card-v-1",
+    "cardholder": {
+      "first_name": "Ana",
+      "last_name": "Perez",
+      "email": "ana@ejemplo.com",
+      "phone": "+56912345678",
+      "occupation": "52201",
+      "salary_usd": 1800,
+      "id_front_url": "https://files.example.com/kyc/ap-front.jpg",
+      "id_back_url": "https://files.example.com/kyc/ap-back.jpg",
+      "residence_proof_url": "https://files.example.com/kyc/ap-address.pdf",
+      "address": {
+        "line1": "Av. Providencia 123",
+        "city": "Santiago",
+        "region": "RM",
+        "postal_code": "7500000",
+        "country": "CL"
+      }
+    }
   }'
 ```
 
-```bash Empresa — para un empleado
+```bash Empresa — para un empleado (siempre completo)
 curl -X POST https://api.qbank.cl/platform/v1/cards \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
@@ -3089,7 +3110,36 @@ curl -X POST https://api.qbank.cl/platform/v1/cards \
   }'
 ```
 
-Respuesta:
+> **Importante**
+Los documentos **se validan de verdad** por el emisor: las URLs deben
+apuntar a documentos legítimos y accesibles (cédula por ambos lados,
+comprobante de domicilio). Si faltan o son insuficientes, la emisión falla
+(`422 core_rejected` o `409 cardholder_kyc_pending`), **el fee se
+reembolsa automáticamente** y puedes reintentar corrigiendo los datos.
+
+En la **primera emisión de una cuenta empresa para sí misma**, el
+`cardholder` lleva los datos societarios en vez de los personales:
+`kind_of_business` (código de catálogo), `legal_representation` y los
+documentos por URL `certificate_of_good_standing_url`,
+`business_license_url`, `register_shareholder_url`, `id_shareholders_url`
+y `address_verification_shareholders_url`.
+#### Siguientes tarjetas (titular ya verificado)
+
+Con el titular creado, las emisiones posteriores de esa cuenta no piden
+ningún dato:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/cards \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "physical": true,
+    "idempotency_key": "card-f-ops-1",
+    "limits": { "per_transaction": "500.00", "monthly": "5000.00" }
+  }'
+```
+
+Respuesta (misma forma en todos los casos):
 
 ```json
 {
@@ -3107,19 +3157,12 @@ Respuesta:
 
 > **Nota**
 Al emitir para una **persona designada** (empresas), los documentos de
-identidad son obligatorios (`id_front_url`, `id_back_url`,
-`residence_proof_url`): el titular queda verificado de inmediato y la
-tarjeta se emite en la misma llamada. El nombre impreso usa `first_name` +
-`last_name` (máximo 22 caracteres combinados).
-> **Importante**
-Los documentos **se validan de verdad** por el emisor: las URLs deben
-apuntar a documentos legítimos y accesibles (cédula por ambos lados,
-comprobante de domicilio). En la **primera emisión de una cuenta empresa**
-(para la empresa misma), el `cardholder` debe incluir además los documentos
-societarios por URL: `certificate_of_good_standing_url`,
-`business_license_url`, `register_shareholder_url`, `id_shareholders_url`,
-`address_verification_shareholders_url`, junto con `legal_representation`.
-Las emisiones siguientes reutilizan el titular ya verificado.
+identidad son obligatorios en esa misma llamada: el titular queda
+verificado de inmediato y la tarjeta se emite junto con él
+(`cardholder_kind: "person"` en la respuesta). El nombre impreso usa
+`first_name` + `last_name` (máximo 22 caracteres combinados). Recuerda el
+límite: las cuentas persona pueden tener **1 virtual + 1 física**; las
+empresas, ilimitadas.
 #### Ocupación y giro (códigos de catálogo)
 
 Al designar una **persona**, `occupation` debe ser un **código** del catálogo
@@ -4495,7 +4538,7 @@ sus cuerpos de ejemplo y una respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-08 18:56 UTC · 89 requests · versión `dcd181634bd8`
+> **Colección actualizada:** 2026-07-08 20:22 UTC · 89 requests · versión `ca1bc7c450ac`
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -4550,6 +4593,11 @@ con anticipación y quedan marcados como **Breaking**.
   idempotencia; schedule de reintentos de webhooks; tiempos de confirmación
   on-chain; cuentas banking en EUR; errores de banking en el catálogo; FAQ
   con límites, cancelaciones y conciliación.
+- **Tarjetas: cuándo se envía el `cardholder`, aclarado.** La guía y el
+  spec ahora explican que la **primera emisión** de una cuenta crea y
+  verifica al titular (datos completos + documentos obligatorios) y que
+  las tarjetas **siguientes** lo reutilizan sin pedir datos — antes el
+  ejemplo mínimo daba a entender que nunca se pedían.
 
 ### v1.21 — 8 de julio de 2026
 

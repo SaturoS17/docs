@@ -4057,17 +4057,37 @@ paths:
                       type: string
                 cardholder:
                   type: object
-                  description: 'Company accounts only: issue the card to a designated person. Requires
-                    kind "person", personal data and identity documents by URL (id_front_url,
-                    id_back_url, residence_proof_url) so the holder is verified immediately.'
+                  description: 'Cardholder data. REQUIRED on the account''s FIRST issuance (it creates
+                    and verifies the holder at the issuer: personal data, occupation catalog code and
+                    identity documents by URL — id_front_url, id_back_url, residence_proof_url; company
+                    accounts issuing for themselves send corporate data and documents instead). Omit it
+                    on subsequent cards: the verified holder is reused. Company accounts can also set
+                    kind "person" to issue for a designated person (full data + documents required on
+                    every designation).'
             examples:
-              person_virtual:
-                summary: Person — virtual card
+              person_first_card:
+                summary: Person — FIRST card (full cardholder data)
                 value:
                   physical: false
                   idempotency_key: card-v-1
-              company_physical_limited:
-                summary: Company — physical card with limits
+                  cardholder:
+                    first_name: Ana
+                    last_name: Perez
+                    email: ana@example.com
+                    phone: '+56912345678'
+                    occupation: '52201'
+                    salary_usd: 1800
+                    id_front_url: https://files.example.com/kyc/ap-front.jpg
+                    id_back_url: https://files.example.com/kyc/ap-back.jpg
+                    residence_proof_url: https://files.example.com/kyc/ap-address.pdf
+                    address:
+                      line1: Av. Providencia 123
+                      city: Santiago
+                      region: RM
+                      postal_code: '7500000'
+                      country: CL
+              subsequent_card:
+                summary: Subsequent card — holder already verified (no data needed)
                 value:
                   physical: true
                   idempotency_key: card-f-ops-1

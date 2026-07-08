@@ -4058,18 +4058,38 @@ paths:
                       type: string
                 cardholder:
                   type: object
-                  description: 'Solo cuentas empresa: emitir la tarjeta a una persona designada.
-                    Requiere kind "person", datos personales y documentos de identidad por URL
-                    (id_front_url, id_back_url, residence_proof_url) para verificar al titular de
-                    inmediato.'
+                  description: 'Datos del titular. OBLIGATORIO en la PRIMERA emisión de la cuenta
+                    (crea y verifica al titular en el emisor: datos personales, código de ocupación
+                    del catálogo y documentos de identidad por URL — id_front_url, id_back_url,
+                    residence_proof_url; las cuentas empresa que emiten para sí mismas envían datos y
+                    documentos societarios en su lugar). Omítelo en las tarjetas siguientes: se
+                    reutiliza el titular ya verificado. Las cuentas empresa también pueden usar kind
+                    "person" para emitir a una persona designada (datos completos + documentos en
+                    cada designación).'
             examples:
-              person_virtual:
-                summary: Persona — tarjeta virtual
+              person_first_card:
+                summary: Persona — PRIMERA tarjeta (datos completos del titular)
                 value:
                   physical: false
                   idempotency_key: card-v-1
-              company_physical_limited:
-                summary: Empresa — tarjeta física con límites
+                  cardholder:
+                    first_name: Ana
+                    last_name: Perez
+                    email: ana@example.com
+                    phone: '+56912345678'
+                    occupation: '52201'
+                    salary_usd: 1800
+                    id_front_url: https://files.example.com/kyc/ap-front.jpg
+                    id_back_url: https://files.example.com/kyc/ap-back.jpg
+                    residence_proof_url: https://files.example.com/kyc/ap-address.pdf
+                    address:
+                      line1: Av. Providencia 123
+                      city: Santiago
+                      region: RM
+                      postal_code: '7500000'
+                      country: CL
+              subsequent_card:
+                summary: Tarjeta siguiente — titular ya verificado (sin datos)
                 value:
                   physical: true
                   idempotency_key: card-f-ops-1

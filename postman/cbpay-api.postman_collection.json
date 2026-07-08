@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain USDT funding and\nwithdrawals, and KYC screening — all against a single USDT-denominated\nbalance per account.\n\nAll amounts are decimal strings. Balances are held in USDT with 6 decimal\nplaces. Errors always return `{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-08 18:56 UTC",
-    "_content_sha256": "dcd181634bd85dd9db3927c21ad01cbfa0307620676349e5ee7f955847183e03"
+    "_generated_at": "2026-07-08 20:22 UTC",
+    "_content_sha256": "ca1bc7c450acf8880405949a87d33cb396636cfdb7a371906b6fcf09b0c544aa"
   },
   "auth": {
     "type": "bearer",
@@ -5083,7 +5083,7 @@
           ]
         },
         {
-          "name": "Create a card — Person — virtual card",
+          "name": "Create a card — Person — FIRST card (full cardholder data)",
           "request": {
             "method": "POST",
             "header": [
@@ -5105,7 +5105,7 @@
             "description": "Issues a card (virtual or physical) that spends Just-In-Time from the account's central USDT balance — no prefunding: every purchase is authorized in real time against the available balance and the card's own limits. Person accounts can hold **1 virtual + 1 physical** card; company accounts can create **unlimited** cards, for the company itself or for designated persons (e.g. employees, passing their identity documents). Issuance bills the `card_creation_virtual` / `card_creation_physical` fee when configured (0 = free); the charge is refunded automatically if issuance fails. Physical cards are born `pending_activation` until the holder confirms reception.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"physical\": false,\n  \"idempotency_key\": \"card-v-1\"\n}",
+              "raw": "{\n  \"physical\": false,\n  \"idempotency_key\": \"card-v-1\",\n  \"cardholder\": {\n    \"first_name\": \"Ana\",\n    \"last_name\": \"Perez\",\n    \"email\": \"ana@example.com\",\n    \"phone\": \"+56912345678\",\n    \"occupation\": \"52201\",\n    \"salary_usd\": 1800,\n    \"id_front_url\": \"https://files.example.com/kyc/ap-front.jpg\",\n    \"id_back_url\": \"https://files.example.com/kyc/ap-back.jpg\",\n    \"residence_proof_url\": \"https://files.example.com/kyc/ap-address.pdf\",\n    \"address\": {\n      \"line1\": \"Av. Providencia 123\",\n      \"city\": \"Santiago\",\n      \"region\": \"RM\",\n      \"postal_code\": \"7500000\",\n      \"country\": \"CL\"\n    }\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5143,7 +5143,7 @@
           ]
         },
         {
-          "name": "Create a card — Company — physical card with limits",
+          "name": "Create a card — Subsequent card — holder already verified (no data needed)",
           "request": {
             "method": "POST",
             "header": [
