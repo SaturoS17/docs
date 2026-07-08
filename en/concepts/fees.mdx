@@ -6,28 +6,35 @@ description: "How each service is charged and where to check your terms"
 Fees are configured by CBPay per **service, country and asset**. When
 nothing is configured for a combination, the fee is **0**.
 
-## How payouts are charged
+## How payouts and payins are charged
 
-Payout pricing lives in **your exchange rate**: the rate you see in
-`GET /v1/rates` is your rate, and it is exactly the one used at execution.
-If you disperse the equivalent of 100 USDT, you are debited **100 USDT plus
-the fixed fee** (when configured for your account) — no separate
-percentages:
+FX pricing lives in **your exchange rate**: the rates you see in
+`GET /v1/rates` are your rates, and they are exactly the ones used at
+execution — no separate percentages. Each country carries both sides:
+
+- `rate` — the rate for your **payouts** (dispersals). If you disperse the
+  equivalent of 100 USDT, you are debited **100 USDT plus the fixed fee**
+  (when configured for your account).
+- `payin_rate` — the rate for your **payins** (fiat collections/deposits).
+  The credit is the local amount converted at that rate, **minus the fixed
+  fee** (when configured for your account).
 
 ```
-usdt_amount = local_amount / your_rate
-total_debit = usdt_amount + fixed_amount
+payout:  usdt_amount   = local_amount / rate
+         total_debit   = usdt_amount + fixed_amount
+payin:   usdt_gross    = local_amount / payin_rate
+         usdt_credited = usdt_gross − fixed_amount
 ```
 
-What the beneficiary receives in local currency depends on your account's
-rate for that country. Quoted = charged, always.
+What the beneficiary receives (payout) or what you are credited (payin)
+depends on your account's rates for that country. Quoted = charged, always.
 
 ## Services with fixed or percent fees
 
 | Service | How it is charged | When |
 |---|---|---|
 | `payout` | Fixed per operation (FX pricing is already in your rate) | At payout creation (included in `total_debit`) |
-| `payin` | `%` over the gross USDT + fixed | On credit (you receive `usdt_gross − fee`) |
+| `payin` | Fixed per operation (FX pricing is already in your `payin_rate`) | On credit (you receive `usdt_gross − fee`) |
 | `funding` | `%` over the deposit + fixed | When the on-chain deposit is credited |
 | `withdrawal` | `%` over the withdrawal + fixed | At creation (included in `total_debit`) |
 | `wallet_creation` | Fixed per wallet | On every wallet creation (persons: 1 per network; companies: unlimited). Fetching existing wallets is always free |
@@ -62,8 +69,8 @@ company↔company. The money moves inside the ecosystem.
 ## Your exchange rate
 
 `GET /v1/rates` returns **your account's own exchange rate** for each
-country — the same rate your operations execute at, no surprises:
-`local_amount / rate = USDT`.
+country — the same rates your operations execute at, no surprises: `rate`
+for payouts and `payin_rate` for payins (`local_amount / rate = USDT`).
 
 ## Check your terms
 
@@ -73,7 +80,7 @@ currently applied to your account:
 ```json
 {
   "base": "USD",
-  "rates": { "chile": { "currency": "CLP", "rate": "950.25" } },
+  "rates": { "chile": { "currency": "CLP", "rate": "950.25", "payin_rate": "955.10" } },
   "fees": [
     {
       "service": "payout",
@@ -94,10 +101,21 @@ field) and in the ledger.
 A payout equivalent to 100 USDT with `fixed_amount: "0.30"`:
 
 ```
-usdt_amount = 100 USDT           (local_amount / your_rate)
+usdt_amount = 100 USDT           (local_amount / rate)
 fee         = 0.30 USDT          (fixed)
 total_debit = 100.30 USDT
 ```
 
 The beneficiary receives the full local amount you specified; you are
 debited the equivalent at your rate plus the fixed fee.
+
+A payin equivalent to 100 USDT with `fixed_amount: "0.30"`:
+
+```
+usdt_gross    = 100 USDT         (local_amount / payin_rate)
+fee           = 0.30 USDT        (fixed)
+usdt_credited = 99.70 USDT
+```
+
+The payer pays the exact local amount you specified; you are credited the
+equivalent at your `payin_rate` minus the fixed fee.

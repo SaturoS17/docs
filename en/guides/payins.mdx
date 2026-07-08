@@ -4,8 +4,9 @@ description: "Collect in local currency and get credited in USDT"
 ---
 
 A payin is a fiat collection: your customer pays in local currency and your
-account gets credited in USDT automatically (converted at the current rate,
-minus the payin fee).
+account gets credited in USDT automatically, converted at **your payin
+rate** (`payin_rate` in `GET /v1/rates`) minus the fixed payin fee when
+configured for your account.
 
 Whatever the mode, every path ends the same way — automatic credit +
 webhook:
@@ -17,7 +18,7 @@ flowchart LR
     announced["Announced transfer<br/>(CL, PE, MX, BR)"] --> pay
     pull["Active pull collection<br/>(VE: c2p, debit)"] --> pay
     clabe["Dedicated CLABE account<br/>(MX)"] --> pay
-    pay --> conv["FX conversion at the current<br/>rate − payin fee"]
+    pay --> conv["FX conversion at your<br/>payin_rate − fixed fee"]
     conv --> credit(("USDT credit<br/>to your balance"))
     credit --> wh["Webhook payin_credited"]
 ```
@@ -60,7 +61,7 @@ Collection corridors and modes:
 
 Availability may vary; the catalog (`GET /v1/payins/methods`) is always the
 source of truth. In every case the credit works the same way: converted to
-USDT at the current rate and credited net of the payin fee.
+USDT at your current `payin_rate` and credited net of the fixed payin fee.
 
 ## 2. Examples by country
 
@@ -278,9 +279,9 @@ Response `200` (charge approved and credited):
   "status": "credited",
   "local_amount": "1200.00",
   "fx_rate": "36.50",
-  "usdt_gross": "32.876713",
-  "fee": "0.328768",
-  "usdt_credited": "32.547945",
+  "usdt_gross": "32.876712",
+  "fee": "0.300000",
+  "usdt_credited": "32.576712",
   "paid": true,
   "provider_reference": "…"
 }
@@ -371,10 +372,13 @@ credited automatically and the `payin_credited` webhook fires:
   "currency": "BOB",
   "local_amount": "700.00",
   "fx_rate": "6.91",
-  "usdt_credited": "100.310000",
+  "usdt_credited": "100.302460",
   "fee": "1.000000"
 }
 ```
+
+`fx_rate` is your `payin_rate` at credit time — the conversion happens at
+exactly that rate: `usdt_gross = 700.00 / 6.91`.
 
 The payin object keeps the full detail:
 
@@ -390,9 +394,9 @@ curl https://api.qbank.cl/platform/v1/payins/9c2a… \
   "status": "credited",
   "local_amount": "700.00",
   "fx_rate": "6.91",
-  "usdt_gross": "101.310000",
+  "usdt_gross": "101.302460",
   "fee": "1.000000",
-  "usdt_credited": "100.310000"
+  "usdt_credited": "100.302460"
 }
 ```
 
@@ -409,5 +413,5 @@ curl https://api.qbank.cl/platform/v1/payins/9c2a… \
 <Info>
 Deposits arriving by direct transfer without a clear reference stay
 `unassigned` until the CBPay team routes them to an account. Once assigned,
-they are credited with the destination account's fees.
+they are credited with the destination account's rate and fees.
 </Info>

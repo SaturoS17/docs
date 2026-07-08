@@ -415,16 +415,24 @@ Cuando creas un payout o retiro, el débito (`monto + comisión`) sale de
 
 ### Conversión FX (fiat ↔ USDT)
 
-Las operaciones fiat se convierten a USDT con **la tasa de tu cuenta** al
-momento de ejecutar (la misma que devuelve `GET /v1/rates`, base USD). La
-conversión redondea **hacia arriba** en el débito, con una diferencia
-máxima de 1 micro-USDT.
+Las operaciones fiat se convierten a USDT con **las tasas de tu cuenta** al
+momento de ejecutar (las mismas que devuelve `GET /v1/rates`, base USD):
+`rate` para payouts y `payin_rate` para payins. La conversión redondea
+**hacia arriba** en los débitos y **hacia abajo** en los abonos, con una
+diferencia máxima de 1 micro-USDT.
 
 Ejemplo de un payout de 50.000 CLP con tasa 950.25:
 
 ```
 usdt_amount = ceil(50000 / 950.25 × 10^6) / 10^6 = 52.618258 USDT
 total_debit = usdt_amount + fee
+```
+
+Ejemplo de un payin de 50.000 CLP con `payin_rate` 955.10:
+
+```
+usdt_gross    = floor(50000 / 955.10 × 10^6) / 10^6 = 52.350539 USDT
+usdt_credited = usdt_gross − fee
 ```
 
 La tasa usada queda registrada en el objeto (`fx_rate`) para auditoría.
@@ -478,27 +486,35 @@ Los estados finales (`completed`/`failed`) llegan por
 Las comisiones las configura CBPay por **servicio, país y activo**.
 Si no hay nada configurado para una combinación, la comisión es **0**.
 
-### Cómo se cobran los payouts
+### Cómo se cobran los payouts y payins
 
-El pricing de un payout está en **tu tipo de cambio**: la tasa que ves en
-`GET /v1/rates` es tu tasa, y es exactamente la que se usa al ejecutar. Si
-dispersas el equivalente a 100 USDT, se debitan **100 USDT + el fijo** (si
-tu cuenta lo tiene configurado) — sin porcentajes aparte:
+El pricing FX está en **tu tipo de cambio**: las tasas que ves en
+`GET /v1/rates` son tus tasas, y son exactamente las que se usan al
+ejecutar — sin porcentajes aparte. Cada país trae las dos puntas:
+
+- `rate` — la tasa de tus **payouts** (dispersiones). Si dispersas el
+  equivalente a 100 USDT, se debitan **100 USDT + el fijo** (si tu cuenta
+  lo tiene configurado).
+- `payin_rate` — la tasa de tus **payins** (cobros/depósitos fiat). El
+  abono es el monto local convertido a esa tasa, **menos el fijo** (si tu
+  cuenta lo tiene configurado).
 
 ```
-usdt_amount = monto_local / tu_rate
-total_debit = usdt_amount + fixed_amount
+payout:  usdt_amount   = monto_local / rate
+         total_debit   = usdt_amount + fixed_amount
+payin:   usdt_gross    = monto_local / payin_rate
+         usdt_credited = usdt_gross − fixed_amount
 ```
 
-Lo que recibe el beneficiario en moneda local depende de la tasa de tu
-cuenta para ese país. Cotizado = cobrado, siempre.
+Lo que recibe el beneficiario (payout) o lo que se te abona (payin) depende
+de las tasas de tu cuenta para ese país. Cotizado = cobrado, siempre.
 
 ### Servicios con comisión fija u porcentual
 
 | Servicio | Cómo se cobra | Cuándo |
 |---|---|---|
 | `payout` | Fijo por operación (el pricing FX ya está en tu tasa) | Al crear el payout (incluido en `total_debit`) |
-| `payin` | `%` sobre el USDT bruto + fijo | Al acreditar (recibes `usdt_gross − fee`) |
+| `payin` | Fijo por operación (el pricing FX ya está en tu `payin_rate`) | Al acreditar (recibes `usdt_gross − fee`) |
 | `funding` | `%` sobre el depósito + fijo | Al acreditar el depósito on-chain |
 | `withdrawal` | `%` sobre el retiro + fijo | Al crear el retiro (incluido en `total_debit`) |
 | `wallet_creation` | Fijo por wallet | Al crear cada wallet (personas: 1 por red; empresas: ilimitadas). Consultar wallets existentes es siempre gratis |
@@ -531,8 +547,9 @@ empresa↔empresa. El dinero se mueve dentro del ecosistema.
 ### Tu tipo de cambio
 
 `GET /v1/rates` devuelve **el tipo de cambio propio de tu cuenta** en cada
-país — la misma tasa con la que se ejecutan tus operaciones, sin sorpresas:
-`monto_local / rate = USDT`.
+país — las mismas tasas con las que se ejecutan tus operaciones, sin
+sorpresas: `rate` para payouts y `payin_rate` para payins
+(`monto_local / tasa = USDT`).
 
 ### Consulta tus condiciones
 
@@ -542,7 +559,7 @@ vigente para tu cuenta:
 ```json
 {
   "base": "USD",
-  "rates": { "chile": { "currency": "CLP", "rate": "950.25" } },
+  "rates": { "chile": { "currency": "CLP", "rate": "950.25", "payin_rate": "955.10" } },
   "fees": [
     {
       "service": "payout",
@@ -563,13 +580,24 @@ operación (campo `fee`) y en el ledger.
 Payout equivalente a 100 USDT con `fixed_amount: "0.30"`:
 
 ```
-usdt_amount = 100 USDT           (monto_local / tu_rate)
+usdt_amount = 100 USDT           (monto_local / rate)
 fee         = 0.30 USDT          (fijo)
 total_debit = 100.30 USDT
 ```
 
 El beneficiario recibe el monto local completo que indicaste; a ti se te
 debita el equivalente a tu tasa más el fijo.
+
+Payin equivalente a 100 USDT con `fixed_amount: "0.30"`:
+
+```
+usdt_gross    = 100 USDT         (monto_local / payin_rate)
+fee           = 0.30 USDT        (fijo)
+usdt_credited = 99.70 USDT
+```
+
+El pagador paga el monto local exacto que indicaste; a ti se te abona el
+equivalente a tu `payin_rate` menos el fijo.
 
 
 ## Idempotencia
@@ -1261,8 +1289,9 @@ webhook con `status: failed` y el reembolso automático en ese momento.
 *Cobra en moneda local y recibe el abono en USDT*
 
 Un payin es un cobro fiat: tu cliente paga en moneda local y tu cuenta
-recibe el abono en USDT automáticamente (convertido a la tasa del momento,
-menos la comisión de payin).
+recibe el abono en USDT automáticamente, convertido a **tu tasa de payin**
+(`payin_rate` en `GET /v1/rates`) menos la comisión fija de payin si tu
+cuenta la tiene configurada.
 
 Sea cual sea la modalidad, todos los caminos terminan igual — abono
 automático + webhook:
@@ -1274,7 +1303,7 @@ flowchart LR
     anunciada["Transferencia anunciada<br/>(CL, PE, MX, BR)"] --> pago
     pull["Cobro activo pull<br/>(VE: c2p, débito)"] --> pago
     clabe["Cuenta CLABE dedicada<br/>(MX)"] --> pago
-    pago --> conv["Conversión FX a la tasa<br/>del momento − fee payin"]
+    pago --> conv["Conversión FX a tu<br/>payin_rate − fee fijo"]
     conv --> credito(("Abono USDT<br/>a tu saldo"))
     credito --> wh["Webhook payin_credited"]
 ```
@@ -1317,8 +1346,8 @@ Corredores y modalidades de cobro:
 
 La disponibilidad puede variar; el catálogo (`GET /v1/payins/methods`) es
 siempre la fuente de verdad. En todos los casos el abono llega igual: se
-convierte a USDT a la tasa del momento y se acredita neto de la comisión
-de payin.
+convierte a USDT a tu `payin_rate` del momento y se acredita neto de la
+comisión fija de payin.
 
 ### 2. Ejemplos por país
 
@@ -1526,9 +1555,9 @@ Respuesta `200` (cobro aprobado y acreditado):
   "status": "credited",
   "local_amount": "1200.00",
   "fx_rate": "36.50",
-  "usdt_gross": "32.876713",
-  "fee": "0.328768",
-  "usdt_credited": "32.547945",
+  "usdt_gross": "32.876712",
+  "fee": "0.300000",
+  "usdt_credited": "32.576712",
   "paid": true,
   "provider_reference": "…"
 }
@@ -1615,10 +1644,13 @@ acredita automáticamente y se emite el webhook `payin_credited`:
   "currency": "BOB",
   "local_amount": "700.00",
   "fx_rate": "6.91",
-  "usdt_credited": "100.310000",
+  "usdt_credited": "100.302460",
   "fee": "1.000000"
 }
 ```
+
+`fx_rate` es tu `payin_rate` del momento del abono — la conversión se hace
+exactamente a esa tasa: `usdt_gross = 700.00 / 6.91`.
 
 El objeto payin queda con el detalle completo:
 
@@ -1634,9 +1666,9 @@ curl https://api.qbank.cl/platform/v1/payins/9c2a… \
   "status": "credited",
   "local_amount": "700.00",
   "fx_rate": "6.91",
-  "usdt_gross": "101.310000",
+  "usdt_gross": "101.302460",
   "fee": "1.000000",
-  "usdt_credited": "100.310000"
+  "usdt_credited": "100.302460"
 }
 ```
 
@@ -1653,7 +1685,7 @@ curl https://api.qbank.cl/platform/v1/payins/9c2a… \
 > **Nota**
 Los depósitos que llegan por transferencia directa sin referencia clara
 quedan `unassigned` hasta que el equipo de CBPay los asigna a una cuenta.
-Al asignarse, se acreditan con las comisiones de la cuenta destino.
+Al asignarse, se acreditan con la tasa y comisiones de la cuenta destino.
 
 
 ## Transferencias internas
@@ -2925,7 +2957,7 @@ La suscripción recibe los eventos de **tu cuenta**.
   "currency": "BOB",
   "local_amount": "700.00",
   "fx_rate": "6.91",
-  "usdt_credited": "100.310000",
+  "usdt_credited": "100.302460",
   "fee": "1.000000"
 }
 ```
@@ -3220,8 +3252,9 @@ inician sesión. Ambas van en `Authorization: Bearer <token>` (o
 
 #### ¿En qué moneda está mi saldo?
 Solo **USDT con 6 decimales**. Todas las operaciones fiat (payouts en CLP,
-cobros en BOB…) se convierten a/desde USDT con la tasa de tu cuenta al
-momento de ejecutar. Ver [modelo de dinero](#modelo-de-dinero).
+cobros en BOB…) se convierten a/desde USDT con las tasas de tu cuenta al
+momento de ejecutar (`rate` para payouts, `payin_rate` para payins). Ver
+[modelo de dinero](#modelo-de-dinero).
 #### ¿Cómo sé cuánto me va a costar un payout antes de crearlo?
 Consulta `GET /v1/rates` (devuelve **tu** tasa por país) y calcula:
 
@@ -3234,9 +3267,9 @@ El objeto payout devuelve los valores exactos (`fx_rate`, `usdt_amount`,
 `fee`, `total_debit`) calculados por el servidor.
 #### ¿La tasa que veo en /v1/rates está garantizada?
 No es una cotización congelada: el payout usa la tasa vigente **al momento
-de crearlo**, que puede variar levemente respecto a la que consultaste. La
-tasa aplicada queda registrada en el campo `fx_rate` del payout para
-auditoría.
+de crearlo** y el payin la vigente **al momento del abono**, que pueden
+variar levemente respecto a la que consultaste. La tasa aplicada queda
+registrada en el campo `fx_rate` de cada operación para auditoría.
 #### ¿Hay montos mínimos o máximos?
 La API no impone mínimos técnicos; con montos muy chicos la comisión fija
 puede superar el monto (recibirás `invalid_amount` o un débito
@@ -3330,7 +3363,7 @@ sus cuerpos de ejemplo y una respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-08 17:09 UTC · 87 requests · versión `da2584638335`
+> **Colección actualizada:** 2026-07-08 17:58 UTC · 87 requests · versión `127e228e4faf`
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -3364,6 +3397,25 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.21 — 8 de julio de 2026
+
+**Agregado**
+
+- **`payin_rate` en `GET /v1/rates`**: cada país ahora entrega tus dos
+  tasas — `rate` para payouts (dispersiones) y `payin_rate` para payins
+  (cobros/depósitos fiat). Cotizado = acreditado, siempre.
+
+**Cambiado**
+
+- **Pricing de payins igual que payouts**: el pricing FX de un payin vive
+  en tu `payin_rate` (la conversión del abono se hace exactamente a esa
+  tasa) y la comisión de payin pasa a ser un **fijo por operación** — sin
+  porcentajes aparte. El campo `fx_rate` de cada payin registra la tasa
+  aplicada. Ver [comisiones](#comisiones) y la
+  [guía de payins](#payins).
+- La conversión de abonos redondea hacia abajo al micro-USDT (los débitos
+  siguen redondeando hacia arriba), con diferencia máxima de 1 micro-USDT.
 
 ### v1.20 — 8 de julio de 2026
 

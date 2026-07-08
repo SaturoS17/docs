@@ -59,8 +59,9 @@ Both travel in `Authorization: Bearer <token>` (or `X-API-Key`).
 
 <Accordion title="What currency is my balance in?">
 Only **USDT with 6 decimals**. Every fiat operation (payouts in CLP,
-collections in BOB…) converts to/from USDT at your account's rate at
-execution time. See the [money model](/en/concepts/money-model).
+collections in BOB…) converts to/from USDT at your account's rates at
+execution time (`rate` for payouts, `payin_rate` for payins). See the
+[money model](/en/concepts/money-model).
 </Accordion>
 
 <Accordion title="How do I know what a payout will cost before creating it?">
@@ -77,8 +78,9 @@ The payout object returns the exact server-computed values (`fx_rate`,
 
 <Accordion title="Is the rate I see in /v1/rates guaranteed?">
 It is not a frozen quote: the payout uses the rate in force **at creation
-time**, which can drift slightly from the one you fetched. The applied
-rate is recorded in the payout's `fx_rate` field for audit.
+time** and the payin the one in force **at credit time**, which can drift
+slightly from the one you fetched. The applied rate is recorded in each
+operation's `fx_rate` field for audit.
 </Accordion>
 
 <Accordion title="Are there minimum or maximum amounts?">

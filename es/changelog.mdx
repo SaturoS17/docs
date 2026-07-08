@@ -7,6 +7,27 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="8 de julio de 2026" description="v1.21">
+
+**Agregado**
+
+- **`payin_rate` en `GET /v1/rates`**: cada país ahora entrega tus dos
+  tasas — `rate` para payouts (dispersiones) y `payin_rate` para payins
+  (cobros/depósitos fiat). Cotizado = acreditado, siempre.
+
+**Cambiado**
+
+- **Pricing de payins igual que payouts**: el pricing FX de un payin vive
+  en tu `payin_rate` (la conversión del abono se hace exactamente a esa
+  tasa) y la comisión de payin pasa a ser un **fijo por operación** — sin
+  porcentajes aparte. El campo `fx_rate` de cada payin registra la tasa
+  aplicada. Ver [comisiones](/es/conceptos/comisiones) y la
+  [guía de payins](/es/guias/payins).
+- La conversión de abonos redondea hacia abajo al micro-USDT (los débitos
+  siguen redondeando hacia arriba), con diferencia máxima de 1 micro-USDT.
+
+</Update>
+
 <Update label="8 de julio de 2026" description="v1.20">
 
 **Agregado**

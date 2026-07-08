@@ -59,8 +59,9 @@ inician sesión. Ambas van en `Authorization: Bearer <token>` (o
 
 <Accordion title="¿En qué moneda está mi saldo?">
 Solo **USDT con 6 decimales**. Todas las operaciones fiat (payouts en CLP,
-cobros en BOB…) se convierten a/desde USDT con la tasa de tu cuenta al
-momento de ejecutar. Ver [modelo de dinero](/es/conceptos/modelo-de-dinero).
+cobros en BOB…) se convierten a/desde USDT con las tasas de tu cuenta al
+momento de ejecutar (`rate` para payouts, `payin_rate` para payins). Ver
+[modelo de dinero](/es/conceptos/modelo-de-dinero).
 </Accordion>
 
 <Accordion title="¿Cómo sé cuánto me va a costar un payout antes de crearlo?">
@@ -77,9 +78,9 @@ El objeto payout devuelve los valores exactos (`fx_rate`, `usdt_amount`,
 
 <Accordion title="¿La tasa que veo en /v1/rates está garantizada?">
 No es una cotización congelada: el payout usa la tasa vigente **al momento
-de crearlo**, que puede variar levemente respecto a la que consultaste. La
-tasa aplicada queda registrada en el campo `fx_rate` del payout para
-auditoría.
+de crearlo** y el payin la vigente **al momento del abono**, que pueden
+variar levemente respecto a la que consultaste. La tasa aplicada queda
+registrada en el campo `fx_rate` de cada operación para auditoría.
 </Accordion>
 
 <Accordion title="¿Hay montos mínimos o máximos?">

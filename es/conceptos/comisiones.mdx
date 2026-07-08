@@ -6,27 +6,35 @@ description: "Cómo se cobra cada servicio y dónde ver tus condiciones"
 Las comisiones las configura CBPay por **servicio, país y activo**.
 Si no hay nada configurado para una combinación, la comisión es **0**.
 
-## Cómo se cobran los payouts
+## Cómo se cobran los payouts y payins
 
-El pricing de un payout está en **tu tipo de cambio**: la tasa que ves en
-`GET /v1/rates` es tu tasa, y es exactamente la que se usa al ejecutar. Si
-dispersas el equivalente a 100 USDT, se debitan **100 USDT + el fijo** (si
-tu cuenta lo tiene configurado) — sin porcentajes aparte:
+El pricing FX está en **tu tipo de cambio**: las tasas que ves en
+`GET /v1/rates` son tus tasas, y son exactamente las que se usan al
+ejecutar — sin porcentajes aparte. Cada país trae las dos puntas:
+
+- `rate` — la tasa de tus **payouts** (dispersiones). Si dispersas el
+  equivalente a 100 USDT, se debitan **100 USDT + el fijo** (si tu cuenta
+  lo tiene configurado).
+- `payin_rate` — la tasa de tus **payins** (cobros/depósitos fiat). El
+  abono es el monto local convertido a esa tasa, **menos el fijo** (si tu
+  cuenta lo tiene configurado).
 
 ```
-usdt_amount = monto_local / tu_rate
-total_debit = usdt_amount + fixed_amount
+payout:  usdt_amount   = monto_local / rate
+         total_debit   = usdt_amount + fixed_amount
+payin:   usdt_gross    = monto_local / payin_rate
+         usdt_credited = usdt_gross − fixed_amount
 ```
 
-Lo que recibe el beneficiario en moneda local depende de la tasa de tu
-cuenta para ese país. Cotizado = cobrado, siempre.
+Lo que recibe el beneficiario (payout) o lo que se te abona (payin) depende
+de las tasas de tu cuenta para ese país. Cotizado = cobrado, siempre.
 
 ## Servicios con comisión fija u porcentual
 
 | Servicio | Cómo se cobra | Cuándo |
 |---|---|---|
 | `payout` | Fijo por operación (el pricing FX ya está en tu tasa) | Al crear el payout (incluido en `total_debit`) |
-| `payin` | `%` sobre el USDT bruto + fijo | Al acreditar (recibes `usdt_gross − fee`) |
+| `payin` | Fijo por operación (el pricing FX ya está en tu `payin_rate`) | Al acreditar (recibes `usdt_gross − fee`) |
 | `funding` | `%` sobre el depósito + fijo | Al acreditar el depósito on-chain |
 | `withdrawal` | `%` sobre el retiro + fijo | Al crear el retiro (incluido en `total_debit`) |
 | `wallet_creation` | Fijo por wallet | Al crear cada wallet (personas: 1 por red; empresas: ilimitadas). Consultar wallets existentes es siempre gratis |
@@ -61,8 +69,9 @@ empresa↔empresa. El dinero se mueve dentro del ecosistema.
 ## Tu tipo de cambio
 
 `GET /v1/rates` devuelve **el tipo de cambio propio de tu cuenta** en cada
-país — la misma tasa con la que se ejecutan tus operaciones, sin sorpresas:
-`monto_local / rate = USDT`.
+país — las mismas tasas con las que se ejecutan tus operaciones, sin
+sorpresas: `rate` para payouts y `payin_rate` para payins
+(`monto_local / tasa = USDT`).
 
 ## Consulta tus condiciones
 
@@ -72,7 +81,7 @@ vigente para tu cuenta:
 ```json
 {
   "base": "USD",
-  "rates": { "chile": { "currency": "CLP", "rate": "950.25" } },
+  "rates": { "chile": { "currency": "CLP", "rate": "950.25", "payin_rate": "955.10" } },
   "fees": [
     {
       "service": "payout",
@@ -93,10 +102,21 @@ operación (campo `fee`) y en el ledger.
 Payout equivalente a 100 USDT con `fixed_amount: "0.30"`:
 
 ```
-usdt_amount = 100 USDT           (monto_local / tu_rate)
+usdt_amount = 100 USDT           (monto_local / rate)
 fee         = 0.30 USDT          (fijo)
 total_debit = 100.30 USDT
 ```
 
 El beneficiario recibe el monto local completo que indicaste; a ti se te
 debita el equivalente a tu tasa más el fijo.
+
+Payin equivalente a 100 USDT con `fixed_amount: "0.30"`:
+
+```
+usdt_gross    = 100 USDT         (monto_local / payin_rate)
+fee           = 0.30 USDT        (fijo)
+usdt_credited = 99.70 USDT
+```
+
+El pagador paga el monto local exacto que indicaste; a ti se te abona el
+equivalente a tu `payin_rate` menos el fijo.

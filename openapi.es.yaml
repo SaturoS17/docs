@@ -528,9 +528,10 @@ paths:
       - Saldos
       operationId: getRates
       summary: Obtener mis tasas de cambio y comisiones
-      description: Devuelve la tasa de cambio que aplica a la cuenta que llama para cada país — la misma
-        tasa usada cuando las operaciones se ejecutan (`local_amount / rate = USDT`) — más la configuración
-        de comisiones de la cuenta, para que los clientes puedan calcular precios netos.
+      description: Devuelve las tasas de cambio que aplican a la cuenta que llama para cada país — las
+        mismas tasas usadas cuando las operaciones se ejecutan (`local_amount / rate = USDT`) — más la
+        configuración de comisiones de la cuenta, para que los clientes puedan calcular precios netos.
+        `rate` es la punta de payouts (dispersiones) y `payin_rate` la de payins (depósitos).
       responses:
         '200':
           description: Tasas y comisiones.
@@ -552,7 +553,12 @@ paths:
                           example: CLP
                         rate:
                           type: string
+                          description: Tasa aplicada a los payouts (dispersiones).
                           example: '950.123456'
+                        payin_rate:
+                          type: string
+                          description: Tasa aplicada a los payins (depósitos/cobros fiat).
+                          example: '955.10'
                   updated_at:
                     type: string
                   fees:
@@ -565,12 +571,15 @@ paths:
                   chile:
                     currency: CLP
                     rate: '950.25'
+                    payin_rate: '955.10'
                   mexico:
                     currency: MXN
                     rate: '17.50'
+                    payin_rate: '17.62'
                   peru:
                     currency: PEN
                     rate: '3.72'
+                    payin_rate: '3.75'
                 updated_at: '2026-07-07T12:00:00Z'
                 fees:
                 - id: 3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c
@@ -1296,9 +1305,9 @@ paths:
                   created_at: '2026-07-07T12:00:00Z'
                   updated_at: '2026-07-07T12:00:00Z'
                   fx_rate: '6.91'
-                  usdt_gross: '101.310000'
+                  usdt_gross: '101.302460'
                   fee: '1.000000'
-                  usdt_credited: '100.310000'
+                  usdt_credited: '100.302460'
         '403':
           $ref: '#/components/responses/Forbidden'
         '401':
@@ -2519,9 +2528,9 @@ paths:
       operationId: payinCollect
       summary: Cobro activo (pull)
       description: 'Cobra al pagador directamente en los corredores que soportan cobros pull (ej. Venezuela
-        `c2p` / `debito_inmediato`). Síncrono: si el cobro se aprueba, el depósito se convierte a la tasa
-        vigente y se acredita en la misma llamada, neto de la comisión de payin. Si el pagador rechaza,
-        `paid` es false, el payin queda marcado como failed y no se cobra nada.'
+        `c2p` / `debito_inmediato`). Síncrono: si el cobro se aprueba, el depósito se convierte a tu
+        `payin_rate` vigente y se acredita en la misma llamada, neto de la comisión de payin. Si el pagador
+        rechaza, `paid` es false, el payin queda marcado como failed y no se cobra nada.'
       requestBody:
         required: true
         content:
@@ -2627,9 +2636,9 @@ paths:
                 status: credited
                 reference: REF-102030
                 fx_rate: '36.50'
-                usdt_gross: '32.876713'
-                fee: '0.328768'
-                usdt_credited: '32.547945'
+                usdt_gross: '32.876712'
+                fee: '0.300000'
+                usdt_credited: '32.576712'
                 paid: true
                 provider_reference: PRV-889911
                 status_code: '00'
@@ -4882,7 +4891,8 @@ components:
           format: date-time
         fx_rate:
           type: string
-          description: Presente una vez que el pago fue recibido y convertido.
+          description: Tu tasa de payin al momento del abono (presente una vez que el pago fue recibido
+            y convertido).
         usdt_gross:
           type: string
         fee:
@@ -5047,7 +5057,7 @@ webhooks:
               currency: BOB
               local_amount: '700.00'
               fx_rate: '6.91'
-              usdt_credited: '100.310000'
+              usdt_credited: '100.302460'
               fee: '1.000000'
       responses:
         '200':

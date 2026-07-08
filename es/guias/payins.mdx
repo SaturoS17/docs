@@ -4,8 +4,9 @@ description: "Cobra en moneda local y recibe el abono en USDT"
 ---
 
 Un payin es un cobro fiat: tu cliente paga en moneda local y tu cuenta
-recibe el abono en USDT automáticamente (convertido a la tasa del momento,
-menos la comisión de payin).
+recibe el abono en USDT automáticamente, convertido a **tu tasa de payin**
+(`payin_rate` en `GET /v1/rates`) menos la comisión fija de payin si tu
+cuenta la tiene configurada.
 
 Sea cual sea la modalidad, todos los caminos terminan igual — abono
 automático + webhook:
@@ -17,7 +18,7 @@ flowchart LR
     anunciada["Transferencia anunciada<br/>(CL, PE, MX, BR)"] --> pago
     pull["Cobro activo pull<br/>(VE: c2p, débito)"] --> pago
     clabe["Cuenta CLABE dedicada<br/>(MX)"] --> pago
-    pago --> conv["Conversión FX a la tasa<br/>del momento − fee payin"]
+    pago --> conv["Conversión FX a tu<br/>payin_rate − fee fijo"]
     conv --> credito(("Abono USDT<br/>a tu saldo"))
     credito --> wh["Webhook payin_credited"]
 ```
@@ -60,8 +61,8 @@ Corredores y modalidades de cobro:
 
 La disponibilidad puede variar; el catálogo (`GET /v1/payins/methods`) es
 siempre la fuente de verdad. En todos los casos el abono llega igual: se
-convierte a USDT a la tasa del momento y se acredita neto de la comisión
-de payin.
+convierte a USDT a tu `payin_rate` del momento y se acredita neto de la
+comisión fija de payin.
 
 ## 2. Ejemplos por país
 
@@ -279,9 +280,9 @@ Respuesta `200` (cobro aprobado y acreditado):
   "status": "credited",
   "local_amount": "1200.00",
   "fx_rate": "36.50",
-  "usdt_gross": "32.876713",
-  "fee": "0.328768",
-  "usdt_credited": "32.547945",
+  "usdt_gross": "32.876712",
+  "fee": "0.300000",
+  "usdt_credited": "32.576712",
   "paid": true,
   "provider_reference": "…"
 }
@@ -373,10 +374,13 @@ acredita automáticamente y se emite el webhook `payin_credited`:
   "currency": "BOB",
   "local_amount": "700.00",
   "fx_rate": "6.91",
-  "usdt_credited": "100.310000",
+  "usdt_credited": "100.302460",
   "fee": "1.000000"
 }
 ```
+
+`fx_rate` es tu `payin_rate` del momento del abono — la conversión se hace
+exactamente a esa tasa: `usdt_gross = 700.00 / 6.91`.
 
 El objeto payin queda con el detalle completo:
 
@@ -392,9 +396,9 @@ curl https://api.qbank.cl/platform/v1/payins/9c2a… \
   "status": "credited",
   "local_amount": "700.00",
   "fx_rate": "6.91",
-  "usdt_gross": "101.310000",
+  "usdt_gross": "101.302460",
   "fee": "1.000000",
-  "usdt_credited": "100.310000"
+  "usdt_credited": "100.302460"
 }
 ```
 
@@ -411,5 +415,5 @@ curl https://api.qbank.cl/platform/v1/payins/9c2a… \
 <Info>
 Los depósitos que llegan por transferencia directa sin referencia clara
 quedan `unassigned` hasta que el equipo de CBPay los asigna a una cuenta.
-Al asignarse, se acreditan con las comisiones de la cuenta destino.
+Al asignarse, se acreditan con la tasa y comisiones de la cuenta destino.
 </Info>

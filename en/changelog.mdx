@@ -6,6 +6,26 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 8, 2026" description="v1.21">
+
+**Added**
+
+- **`payin_rate` in `GET /v1/rates`**: each country now carries your two
+  rates — `rate` for payouts (dispersals) and `payin_rate` for payins
+  (fiat collections/deposits). Quoted = credited, always.
+
+**Changed**
+
+- **Payin pricing now works like payouts**: a payin's FX pricing lives in
+  your `payin_rate` (the credit converts at exactly that rate) and the
+  payin fee becomes a **fixed amount per operation** — no separate
+  percentages. Each payin's `fx_rate` field records the rate applied. See
+  [fees](/en/concepts/fees) and the [payins guide](/en/guides/payins).
+- Credit conversions round down to the micro-USDT (debits keep rounding
+  up), with at most 1 micro-USDT of difference.
+
+</Update>
+
 <Update label="July 8, 2026" description="v1.20">
 
 **Added**

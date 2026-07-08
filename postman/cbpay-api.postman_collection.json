@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain USDT funding and\nwithdrawals, and KYC screening — all against a single USDT-denominated\nbalance per account.\n\nAll amounts are decimal strings. Balances are held in USDT with 6 decimal\nplaces. Errors always return `{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-08 17:09 UTC",
-    "_content_sha256": "da2584638335965b5338a1d3320851144376c6ce356ec67ddfc31a0dcad7be81"
+    "_generated_at": "2026-07-08 17:58 UTC",
+    "_content_sha256": "127e228e4faf0a727377dd5f53b7e2278beed5d6a2ac1cdc200b5422fc31868c"
   },
   "auth": {
     "type": "bearer",
@@ -667,7 +667,7 @@
                 "rates"
               ]
             },
-            "description": "Returns the exchange rate that applies to the calling account for each country — the same rate used when operations execute (`local_amount / rate = USDT`) — plus the account's fee configuration so clients can compute net prices."
+            "description": "Returns the exchange rates that apply to the calling account for each country — the same rates used when operations execute (`local_amount / rate = USDT`) — plus the account's fee configuration so clients can compute net prices. `rate` is the payout (dispersal) side and `payin_rate` the payin (deposit) side."
           },
           "response": [
             {
@@ -694,7 +694,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"base\": \"USD\",\n  \"rates\": {\n    \"chile\": {\n      \"currency\": \"CLP\",\n      \"rate\": \"950.25\"\n    },\n    \"mexico\": {\n      \"currency\": \"MXN\",\n      \"rate\": \"17.50\"\n    },\n    \"peru\": {\n      \"currency\": \"PEN\",\n      \"rate\": \"3.72\"\n    }\n  },\n  \"updated_at\": \"2026-07-07T12:00:00Z\",\n  \"fees\": [\n    {\n      \"id\": \"3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c\",\n      \"org_id\": \"1c9e7a2b-5f6d-4e3a-8c1b-2a9d8e7f6a5b\",\n      \"account_id\": \"\",\n      \"service\": \"payout\",\n      \"country\": \"CL\",\n      \"asset\": \"USDT\",\n      \"percent\": \"0\",\n      \"fixed_amount\": \"0.30\",\n      \"status\": \"active\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
+              "body": "{\n  \"base\": \"USD\",\n  \"rates\": {\n    \"chile\": {\n      \"currency\": \"CLP\",\n      \"rate\": \"950.25\",\n      \"payin_rate\": \"955.10\"\n    },\n    \"mexico\": {\n      \"currency\": \"MXN\",\n      \"rate\": \"17.50\",\n      \"payin_rate\": \"17.62\"\n    },\n    \"peru\": {\n      \"currency\": \"PEN\",\n      \"rate\": \"3.72\",\n      \"payin_rate\": \"3.75\"\n    }\n  },\n  \"updated_at\": \"2026-07-07T12:00:00Z\",\n  \"fees\": [\n    {\n      \"id\": \"3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c\",\n      \"org_id\": \"1c9e7a2b-5f6d-4e3a-8c1b-2a9d8e7f6a5b\",\n      \"account_id\": \"\",\n      \"service\": \"payout\",\n      \"country\": \"CL\",\n      \"asset\": \"USDT\",\n      \"percent\": \"0\",\n      \"fixed_amount\": \"0.30\",\n      \"status\": \"active\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
             }
           ]
         },
@@ -1971,7 +1971,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"payins\": [\n    {\n      \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n      \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n      \"kind\": \"qr\",\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"method\": \"\",\n      \"local_amount\": \"700.00\",\n      \"status\": \"credited\",\n      \"reference\": \"QR-778812\",\n      \"created_at\": \"2026-07-07T12:00:00Z\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\",\n      \"fx_rate\": \"6.91\",\n      \"usdt_gross\": \"101.310000\",\n      \"fee\": \"1.000000\",\n      \"usdt_credited\": \"100.310000\"\n    }\n  ]\n}"
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"payins\": [\n    {\n      \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n      \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n      \"kind\": \"qr\",\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"method\": \"\",\n      \"local_amount\": \"700.00\",\n      \"status\": \"credited\",\n      \"reference\": \"QR-778812\",\n      \"created_at\": \"2026-07-07T12:00:00Z\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\",\n      \"fx_rate\": \"6.91\",\n      \"usdt_gross\": \"101.302460\",\n      \"fee\": \"1.000000\",\n      \"usdt_credited\": \"100.302460\"\n    }\n  ]\n}"
             }
           ]
         },
@@ -2271,7 +2271,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"kind\": \"qr\",\n  \"country\": \"BO\",\n  \"currency\": \"BOB\",\n  \"method\": \"\",\n  \"local_amount\": \"700.00\",\n  \"status\": \"credited\",\n  \"reference\": \"QR-778812\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:00Z\",\n  \"fx_rate\": \"6.91\",\n  \"usdt_gross\": \"101.310000\",\n  \"fee\": \"1.000000\",\n  \"usdt_credited\": \"100.310000\"\n}"
+              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"kind\": \"qr\",\n  \"country\": \"BO\",\n  \"currency\": \"BOB\",\n  \"method\": \"\",\n  \"local_amount\": \"700.00\",\n  \"status\": \"credited\",\n  \"reference\": \"QR-778812\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:00Z\",\n  \"fx_rate\": \"6.91\",\n  \"usdt_gross\": \"101.302460\",\n  \"fee\": \"1.000000\",\n  \"usdt_credited\": \"100.302460\"\n}"
             }
           ]
         },
@@ -2349,7 +2349,7 @@
                 "collect"
               ]
             },
-            "description": "Charges the payer directly in corridors that support pull collections (e.g. Venezuela `c2p` / `debito_inmediato`). Synchronous: if the charge is approved the deposit converts at the current rate and is credited in the same call, net of the payin fee. If the payer declines, `paid` is false, the payin is marked failed and nothing is charged.",
+            "description": "Charges the payer directly in corridors that support pull collections (e.g. Venezuela `c2p` / `debito_inmediato`). Synchronous: if the charge is approved the deposit converts at your current `payin_rate` and is credited in the same call, net of the payin fee. If the payer declines, `paid` is false, the payin is marked failed and nothing is charged.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"method\": \"c2p\",\n  \"amount\": \"1200.00\",\n  \"description\": \"Order 5512\",\n  \"payer_document\": \"V12345678\",\n  \"payer_phone\": \"04141234567\",\n  \"payer_bank\": \"0102\",\n  \"otp\": \"12345678\",\n  \"idempotency_key\": \"collect-2026-07-07-a\"\n}",
@@ -2386,7 +2386,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"payin_id\": \"7b3c9e2f-1a2b-3c4d-5e6f-7a8b9c0d1e2f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"kind\": \"collect\",\n  \"country\": \"VE\",\n  \"currency\": \"VES\",\n  \"method\": \"c2p\",\n  \"local_amount\": \"1200.00\",\n  \"status\": \"credited\",\n  \"reference\": \"REF-102030\",\n  \"fx_rate\": \"36.50\",\n  \"usdt_gross\": \"32.876713\",\n  \"fee\": \"0.328768\",\n  \"usdt_credited\": \"32.547945\",\n  \"paid\": true,\n  \"provider_reference\": \"PRV-889911\",\n  \"status_code\": \"00\",\n  \"status_message\": \"approved\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:02Z\"\n}"
+              "body": "{\n  \"payin_id\": \"7b3c9e2f-1a2b-3c4d-5e6f-7a8b9c0d1e2f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"kind\": \"collect\",\n  \"country\": \"VE\",\n  \"currency\": \"VES\",\n  \"method\": \"c2p\",\n  \"local_amount\": \"1200.00\",\n  \"status\": \"credited\",\n  \"reference\": \"REF-102030\",\n  \"fx_rate\": \"36.50\",\n  \"usdt_gross\": \"32.876712\",\n  \"fee\": \"0.300000\",\n  \"usdt_credited\": \"32.576712\",\n  \"paid\": true,\n  \"provider_reference\": \"PRV-889911\",\n  \"status_code\": \"00\",\n  \"status_message\": \"approved\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:02Z\"\n}"
             }
           ]
         },

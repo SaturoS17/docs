@@ -37,16 +37,24 @@ Cuando creas un payout o retiro, el débito (`monto + comisión`) sale de
 
 ## Conversión FX (fiat ↔ USDT)
 
-Las operaciones fiat se convierten a USDT con **la tasa de tu cuenta** al
-momento de ejecutar (la misma que devuelve `GET /v1/rates`, base USD). La
-conversión redondea **hacia arriba** en el débito, con una diferencia
-máxima de 1 micro-USDT.
+Las operaciones fiat se convierten a USDT con **las tasas de tu cuenta** al
+momento de ejecutar (las mismas que devuelve `GET /v1/rates`, base USD):
+`rate` para payouts y `payin_rate` para payins. La conversión redondea
+**hacia arriba** en los débitos y **hacia abajo** en los abonos, con una
+diferencia máxima de 1 micro-USDT.
 
 Ejemplo de un payout de 50.000 CLP con tasa 950.25:
 
 ```
 usdt_amount = ceil(50000 / 950.25 × 10^6) / 10^6 = 52.618258 USDT
 total_debit = usdt_amount + fee
+```
+
+Ejemplo de un payin de 50.000 CLP con `payin_rate` 955.10:
+
+```
+usdt_gross    = floor(50000 / 955.10 × 10^6) / 10^6 = 52.350539 USDT
+usdt_credited = usdt_gross − fee
 ```
 
 La tasa usada queda registrada en el objeto (`fx_rate`) para auditoría.
