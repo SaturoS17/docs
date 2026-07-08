@@ -4362,6 +4362,44 @@ paths:
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/services:
+    get:
+      tags:
+      - Account
+      operationId: getServices
+      summary: Enabled services
+      description: 'Effective map of which products this account can use right now (payouts, payins,
+        transfers, crypto, banking, kyc, cards). When a service is disabled, its action endpoints
+        answer 403 service_disabled; reads and money already in flight are never affected. Use it to
+        decide what to show in your UI.'
+      responses:
+        '200':
+          description: Effective services map.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  account_id:
+                    type: string
+                  services:
+                    type: object
+                    additionalProperties:
+                      type: boolean
+              example:
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                services:
+                  payouts: true
+                  payins: true
+                  transfers: true
+                  crypto: true
+                  banking: true
+                  kyc: true
+                  cards: false
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
 components:
   securitySchemes:
     bearerAuth:

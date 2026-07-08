@@ -37,6 +37,14 @@ and if any operation returns `403 account_blocked`, contact the CBPay
 team.
 </Accordion>
 
+<Accordion title="Why does an operation return 403 service_disabled?">
+That service is not enabled for your account (services are enabled per
+account according to your commercial agreement). Check `GET /v1/services`
+for the full map of what you can use — also handy to decide what to show in
+your UI — and contact the CBPay team if you need something enabled. Reads
+and money already in flight are never blocked.
+</Accordion>
+
 <Accordion title="Which credential should I use: JWT session or API key?">
 For server-to-server processes always use an **API key** (`pk_…`, never
 expires). JWT sessions (24 h) are for front-ends with users who log in.

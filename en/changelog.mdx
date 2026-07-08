@@ -6,6 +6,19 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 8, 2026" description="v1.19">
+
+**Added**
+
+- **`GET /v1/services`**: effective map of the services enabled for your
+  account (`payouts`, `payins`, `transfers`, `crypto`, `banking`, `kyc`,
+  `cards`) — use it to decide what to show in your UI. Services are enabled
+  per account according to your commercial agreement; when one is off, its
+  actions answer the new `403 service_disabled` error (reads and money in
+  flight are never blocked).
+
+</Update>
+
 <Update label="July 8, 2026" description="v1.18">
 
 **Added**

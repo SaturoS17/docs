@@ -4366,6 +4366,44 @@ paths:
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/services:
+    get:
+      tags:
+      - Account
+      operationId: getServices
+      summary: Servicios habilitados
+      description: 'Mapa efectivo de qué productos puede usar esta cuenta ahora mismo (payouts,
+        payins, transfers, crypto, banking, kyc, cards). Cuando un servicio está deshabilitado, sus
+        endpoints de acción responden 403 service_disabled; las lecturas y el dinero en tránsito
+        nunca se ven afectados. Úsalo para decidir qué mostrar en tu UI.'
+      responses:
+        '200':
+          description: Mapa efectivo de servicios.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  account_id:
+                    type: string
+                  services:
+                    type: object
+                    additionalProperties:
+                      type: boolean
+              example:
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                services:
+                  payouts: true
+                  payins: true
+                  transfers: true
+                  crypto: true
+                  banking: true
+                  kyc: true
+                  cards: false
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
 components:
   securitySchemes:
     bearerAuth:

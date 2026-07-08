@@ -3083,6 +3083,7 @@ Todos los errores comparten el mismo formato:
 | 403 | `org_admin_required` | El endpoint exige credencial de administrador |
 | 403 | `forbidden` | Nivel de credencial no permitido |
 | 403 | `account_blocked` | La cuenta no está activa |
+| 403 | `service_disabled` | El servicio no está habilitado para tu cuenta (consulta `GET /v1/services`) |
 | 403 | `org_suspended` | El servicio está suspendido; contacta al equipo de CBPay |
 | 403 | `company_only` | Función solo para cuentas empresa |
 
@@ -3172,6 +3173,12 @@ La API funciona con tu cuenta **activa**; la política de verificación la
 define el equipo de CBPay según tu caso (montos, país, tipo de cuenta). Si
 tu cuenta requiere verificación, envíala con `POST /v1/kyc` — y si alguna
 operación te responde `403 account_blocked`, contacta al equipo de CBPay.
+#### ¿Por qué una operación me responde 403 service_disabled?
+Ese servicio no está habilitado para tu cuenta (los servicios se activan por
+cuenta según tu acuerdo comercial). Consulta `GET /v1/services` para ver el
+mapa completo de lo que tienes habilitado — úsalo también para decidir qué
+mostrar en tu UI — y contacta al equipo de CBPay si necesitas activar algo.
+Las lecturas y el dinero en tránsito nunca se bloquean.
 #### ¿Qué credencial uso: sesión JWT o API key?
 Para procesos servidor-a-servidor usa siempre una **API key** (`pk_…`, no
 expira). Las sesiones JWT (24 h) son para front-ends con usuarios que
@@ -3321,6 +3328,17 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.19 — 8 de julio de 2026
+
+**Agregado**
+
+- **`GET /v1/services`**: mapa efectivo de los servicios habilitados para tu
+  cuenta (`payouts`, `payins`, `transfers`, `crypto`, `banking`, `kyc`,
+  `cards`) — úsalo para decidir qué mostrar en tu UI. Los servicios se
+  habilitan por cuenta según tu acuerdo comercial; si uno está apagado, sus
+  acciones responden el nuevo error `403 service_disabled` (las lecturas y
+  el dinero en tránsito nunca se bloquean).
 
 ### v1.18 — 8 de julio de 2026
 

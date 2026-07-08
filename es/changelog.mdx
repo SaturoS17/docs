@@ -7,6 +7,19 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="8 de julio de 2026" description="v1.19">
+
+**Agregado**
+
+- **`GET /v1/services`**: mapa efectivo de los servicios habilitados para tu
+  cuenta (`payouts`, `payins`, `transfers`, `crypto`, `banking`, `kyc`,
+  `cards`) — úsalo para decidir qué mostrar en tu UI. Los servicios se
+  habilitan por cuenta según tu acuerdo comercial; si uno está apagado, sus
+  acciones responden el nuevo error `403 service_disabled` (las lecturas y
+  el dinero en tránsito nunca se bloquean).
+
+</Update>
+
 <Update label="8 de julio de 2026" description="v1.18">
 
 **Agregado**

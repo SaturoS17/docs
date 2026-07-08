@@ -36,6 +36,14 @@ tu cuenta requiere verificación, envíala con `POST /v1/kyc` — y si alguna
 operación te responde `403 account_blocked`, contacta al equipo de CBPay.
 </Accordion>
 
+<Accordion title="¿Por qué una operación me responde 403 service_disabled?">
+Ese servicio no está habilitado para tu cuenta (los servicios se activan por
+cuenta según tu acuerdo comercial). Consulta `GET /v1/services` para ver el
+mapa completo de lo que tienes habilitado — úsalo también para decidir qué
+mostrar en tu UI — y contacta al equipo de CBPay si necesitas activar algo.
+Las lecturas y el dinero en tránsito nunca se bloquean.
+</Accordion>
+
 <Accordion title="¿Qué credencial uso: sesión JWT o API key?">
 Para procesos servidor-a-servidor usa siempre una **API key** (`pk_…`, no
 expira). Las sesiones JWT (24 h) son para front-ends con usuarios que

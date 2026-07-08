@@ -434,6 +434,52 @@
               "body": "{\n  \"api_key_id\": \"7f6e5d4c-3b2a-1908-a7b6-c5d4e3f2a1b0\",\n  \"key_id\": \"a1b2c3d4e5f60718\",\n  \"token\": \"pk_a1b2c3d4e5f60718.k9J2mX4pQ7wR5tY8uZ0aB3cD6eF1gH2i\",\n  \"label\": \"production-backend\",\n  \"note\": \"store this token now; it cannot be retrieved again\"\n}"
             }
           ]
+        },
+        {
+          "name": "Enabled services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "services"
+              ]
+            },
+            "description": "Effective map of which products this account can use right now (payouts, payins, transfers, crypto, banking, kyc, cards). When a service is disabled, its action endpoints answer 403 service_disabled; reads and money already in flight are never affected. Use it to decide what to show in your UI."
+          },
+          "response": [
+            {
+              "name": "200 Effective services map.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/services",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "services"
+                  ]
+                }
+              },
+              "status": "Effective services map.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"services\": {\n    \"payouts\": true,\n    \"payins\": true,\n    \"transfers\": true,\n    \"crypto\": true,\n    \"banking\": true,\n    \"kyc\": true,\n    \"cards\": false\n  }\n}"
+            }
+          ]
         }
       ]
     },
