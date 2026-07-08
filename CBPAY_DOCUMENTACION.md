@@ -2126,6 +2126,15 @@ identidad son obligatorios (`id_front_url`, `id_back_url`,
 `residence_proof_url`): el titular queda verificado de inmediato y la
 tarjeta se emite en la misma llamada. El nombre impreso usa `first_name` +
 `last_name` (máximo 22 caracteres combinados).
+> **Importante**
+Los documentos **se validan de verdad** por el emisor: las URLs deben
+apuntar a documentos legítimos y accesibles (cédula por ambos lados,
+comprobante de domicilio). En la **primera emisión de una cuenta empresa**
+(para la empresa misma), el `cardholder` debe incluir además los documentos
+societarios por URL: `certificate_of_good_standing_url`,
+`business_license_url`, `register_shareholder_url`, `id_shareholders_url`,
+`address_verification_shareholders_url`, junto con `legal_representation`.
+Las emisiones siguientes reutilizan el titular ya verificado.
 ### Tarjetas físicas: activación
 
 Una tarjeta física nace en `pending_activation` y viaja **inactiva** por

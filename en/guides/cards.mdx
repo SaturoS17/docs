@@ -121,6 +121,17 @@ is verified immediately and the card is issued in the same call. The printed
 name uses `first_name` + `last_name` (22 characters combined max).
 </Note>
 
+<Warning>
+Documents are **actually validated** by the issuer: URLs must point to
+legitimate, reachable documents (both sides of the ID, proof of address).
+On a company account's **first issuance** (for the company itself), the
+`cardholder` must also include the corporate documents by URL:
+`certificate_of_good_standing_url`, `business_license_url`,
+`register_shareholder_url`, `id_shareholders_url`,
+`address_verification_shareholders_url`, plus `legal_representation`.
+Subsequent issuances reuse the already verified holder.
+</Warning>
+
 ## Physical cards: activation
 
 A physical card is born `pending_activation` and travels **inactive** for
