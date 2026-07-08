@@ -7,6 +7,20 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="8 de julio de 2026" description="v1.20">
+
+**Agregado**
+
+- **Catálogo de tarjetas**: `GET /v1/cards/catalog/occupations` y
+  `GET /v1/cards/catalog/business-activities` (buscables con `?q=`) para
+  poblar selectores. Al designar una persona, `occupation` debe ser un
+  **código** del catálogo; para empresa, `kind_of_business` también. Un valor
+  fuera de catálogo se rechaza con `400 invalid_occupation` /
+  `400 invalid_kind_of_business` antes de tocar el emisor. Ver la
+  [guía de tarjetas](/es/guias/tarjetas).
+
+</Update>
+
 <Update label="8 de julio de 2026" description="v1.19">
 
 **Agregado**

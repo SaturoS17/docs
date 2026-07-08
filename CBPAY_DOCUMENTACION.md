@@ -2135,6 +2135,27 @@ societarios por URL: `certificate_of_good_standing_url`,
 `business_license_url`, `register_shareholder_url`, `id_shareholders_url`,
 `address_verification_shareholders_url`, junto con `legal_representation`.
 Las emisiones siguientes reutilizan el titular ya verificado.
+#### Ocupación y giro (códigos de catálogo)
+
+Al designar una **persona**, `occupation` debe ser un **código** del catálogo
+oficial (no texto libre); para una **empresa**, `kind_of_business` también.
+Consulta y busca los códigos en:
+
+```bash
+# Ocupaciones (personas) — filtra con ?q=
+curl "https://api.qbank.cl/platform/v1/cards/catalog/occupations?q=director" \
+  -H "Authorization: Bearer <token>"
+
+# Giros / actividad económica (empresas)
+curl "https://api.qbank.cl/platform/v1/cards/catalog/business-activities?q=informát" \
+  -H "Authorization: Bearer <token>"
+```
+
+Cada item trae `{ "code": "...", "label": "..." }`. Usa el `code` en
+`occupation` / `kind_of_business`. Si mandas un valor fuera de catálogo, la
+API responde `400 invalid_occupation` o `400 invalid_kind_of_business` antes
+de llegar al emisor. El `salary_usd` va en **dólares** (entero).
+
 ### Tarjetas físicas: activación
 
 Una tarjeta física nace en `pending_activation` y viaja **inactiva** por
@@ -3134,6 +3155,8 @@ Todos los errores comparten el mismo formato:
 | 409 | `card_cancelled` | La tarjeta ya está cancelada y no se puede modificar |
 | 409 | `card_not_pending` | Solo tarjetas en `pending_activation` se pueden activar |
 | 409 | `cardholder_kyc_pending` | El titular designado requiere documentos de identidad |
+| 400 | `invalid_occupation` | `occupation` no es un código del catálogo (`GET /v1/cards/catalog/occupations`) |
+| 400 | `invalid_kind_of_business` | `kind_of_business` no es un código del catálogo (`GET /v1/cards/catalog/business-activities`) |
 
 #### Servicio (5xx)
 
@@ -3307,7 +3330,7 @@ sus cuerpos de ejemplo y una respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-08 16:32 UTC · 85 requests · versión `1567d313a8f4`
+> **Colección actualizada:** 2026-07-08 17:09 UTC · 87 requests · versión `da2584638335`
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -3341,6 +3364,18 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.20 — 8 de julio de 2026
+
+**Agregado**
+
+- **Catálogo de tarjetas**: `GET /v1/cards/catalog/occupations` y
+  `GET /v1/cards/catalog/business-activities` (buscables con `?q=`) para
+  poblar selectores. Al designar una persona, `occupation` debe ser un
+  **código** del catálogo; para empresa, `kind_of_business` también. Un valor
+  fuera de catálogo se rechaza con `400 invalid_occupation` /
+  `400 invalid_kind_of_business` antes de tocar el emisor. Ver la
+  [guía de tarjetas](#tarjetas-virtuales-y-fisicas).
 
 ### v1.19 — 8 de julio de 2026
 

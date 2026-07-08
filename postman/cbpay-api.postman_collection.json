@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain USDT funding and\nwithdrawals, and KYC screening — all against a single USDT-denominated\nbalance per account.\n\nAll amounts are decimal strings. Balances are held in USDT with 6 decimal\nplaces. Errors always return `{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-08 16:32 UTC",
-    "_content_sha256": "1567d313a8f47eeb721e5673e7b884a02b8536358d4ad5d07d8f26927bf3aacf"
+    "_generated_at": "2026-07-08 17:09 UTC",
+    "_content_sha256": "da2584638335965b5338a1d3320851144376c6ce356ec67ddfc31a0dcad7be81"
   },
   "auth": {
     "type": "bearer",
@@ -5571,6 +5571,138 @@
                 }
               ],
               "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"transactions\": [\n    {\n      \"transaction_id\": \"5e4d3c2b-1a09-8f7e-6d5c-4b3a2c1d0e9f\",\n      \"card_id\": \"3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c\",\n      \"kind\": \"purchase\",\n      \"merchant\": \"AMZN Mktp\",\n      \"mcc\": \"5999\",\n      \"amount_usd\": \"16.17\",\n      \"amount_usdt\": \"16.170000\",\n      \"status\": \"settled\",\n      \"auth_number\": \"040031\",\n      \"created_at\": \"2026-07-08T15:00:00Z\",\n      \"updated_at\": \"2026-07-09T02:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Occupation catalog",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/cards/catalog/occupations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "cards",
+                "catalog",
+                "occupations"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Optional case-insensitive filter over code or label."
+                }
+              ]
+            },
+            "description": "Official issuer occupation codes (for the `occupation` field when designating a person cardholder). Search with `q` (matches code or label). Use the `code` value; a free-text occupation is rejected with 400 invalid_occupation."
+          },
+          "response": [
+            {
+              "name": "200 Catalog entries.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/cards/catalog/occupations",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "cards",
+                    "catalog",
+                    "occupations"
+                  ],
+                  "query": [
+                    {
+                      "key": "q",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Optional case-insensitive filter over code or label."
+                    }
+                  ]
+                }
+              },
+              "status": "Catalog entries.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"items\": [\n    {\n      \"code\": \"12101\",\n      \"label\": \"Director General\"\n    },\n    {\n      \"code\": \"21313\",\n      \"label\": \"Computer Systems Designer\"\n    }\n  ],\n  \"meta\": {\n    \"retrieved\": 2\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Business activity catalog",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/cards/catalog/business-activities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "cards",
+                "catalog",
+                "business-activities"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Official issuer economic-activity codes (for `kind_of_business` when creating a company cardholder). Search with `q`. Use the `code` value; a free-text value is rejected with 400 invalid_kind_of_business."
+          },
+          "response": [
+            {
+              "name": "200 Catalog entries.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/cards/catalog/business-activities",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "cards",
+                    "catalog",
+                    "business-activities"
+                  ],
+                  "query": [
+                    {
+                      "key": "q",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Catalog entries.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"items\": [\n    {\n      \"code\": \"J6201\",\n      \"label\": \"Computer programming activities\"\n    }\n  ],\n  \"meta\": {\n    \"retrieved\": 1\n  }\n}"
             }
           ]
         }

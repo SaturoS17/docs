@@ -4404,6 +4404,63 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/AccountRequired'
+  /v1/cards/catalog/occupations:
+    get:
+      tags:
+      - Cards
+      operationId: listCardOccupations
+      summary: Catálogo de ocupaciones
+      description: 'Official issuer occupation codes (for the `occupation` field when designating a
+        person cardholder). Search with `q` (matches code or label). Use the `code` value; a
+        free-text occupation is rejected with 400 invalid_occupation.'
+      parameters:
+      - name: q
+        in: query
+        schema:
+          type: string
+        description: Filtro opcional (case-insensitive) por código o etiqueta.
+      responses:
+        '200':
+          description: Entradas del catálogo.
+          content:
+            application/json:
+              example:
+                items:
+                - code: '12101'
+                  label: Director General
+                - code: '21313'
+                  label: Computer Systems Designer
+                meta:
+                  retrieved: 2
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/cards/catalog/business-activities:
+    get:
+      tags:
+      - Cards
+      operationId: listCardBusinessActivities
+      summary: Catálogo de giros
+      description: 'Official issuer economic-activity codes (for `kind_of_business` when creating a
+        company cardholder). Search with `q`. Use the `code` value; a free-text value is rejected
+        with 400 invalid_kind_of_business.'
+      parameters:
+      - name: q
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Entradas del catálogo.
+          content:
+            application/json:
+              example:
+                items:
+                - code: J6201
+                  label: Computer programming activities
+                meta:
+                  retrieved: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 components:
   securitySchemes:
     bearerAuth:

@@ -69,6 +69,8 @@ Todos los errores comparten el mismo formato:
 | 409 | `card_cancelled` | La tarjeta ya está cancelada y no se puede modificar |
 | 409 | `card_not_pending` | Solo tarjetas en `pending_activation` se pueden activar |
 | 409 | `cardholder_kyc_pending` | El titular designado requiere documentos de identidad |
+| 400 | `invalid_occupation` | `occupation` no es un código del catálogo (`GET /v1/cards/catalog/occupations`) |
+| 400 | `invalid_kind_of_business` | `kind_of_business` no es un código del catálogo (`GET /v1/cards/catalog/business-activities`) |
 
 ### Servicio (5xx)
 

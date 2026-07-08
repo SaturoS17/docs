@@ -132,6 +132,28 @@ On a company account's **first issuance** (for the company itself), the
 Subsequent issuances reuse the already verified holder.
 </Warning>
 
+### Occupation and business activity (catalog codes)
+
+When designating a **person**, `occupation` must be a **code** from the
+official catalog (not free text); for a **company**, so must
+`kind_of_business`. Look them up (searchable with `?q=`):
+
+```bash
+# Occupations (persons)
+curl "https://api.qbank.cl/platform/v1/cards/catalog/occupations?q=director" \
+  -H "Authorization: Bearer <token>"
+
+# Business activities (companies)
+curl "https://api.qbank.cl/platform/v1/cards/catalog/business-activities?q=software" \
+  -H "Authorization: Bearer <token>"
+```
+
+Each item is `{ "code": "...", "label": "..." }`. Use the `code` in
+`occupation` / `kind_of_business`. An out-of-catalog value returns
+`400 invalid_occupation` or `400 invalid_kind_of_business` before reaching
+the issuer. `salary_usd` is in **dollars** (integer).
+
+
 ## Physical cards: activation
 
 A physical card is born `pending_activation` and travels **inactive** for

@@ -69,6 +69,8 @@ All errors share the same shape:
 | 409 | `card_cancelled` | The card is already cancelled and cannot be updated |
 | 409 | `card_not_pending` | Only cards in `pending_activation` can be activated |
 | 409 | `cardholder_kyc_pending` | The designated cardholder requires identity documents |
+| 400 | `invalid_occupation` | `occupation` is not a catalog code (`GET /v1/cards/catalog/occupations`) |
+| 400 | `invalid_kind_of_business` | `kind_of_business` is not a catalog code (`GET /v1/cards/catalog/business-activities`) |
 
 ### Service (5xx)
 

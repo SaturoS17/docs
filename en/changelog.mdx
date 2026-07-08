@@ -6,6 +6,20 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 8, 2026" description="v1.20">
+
+**Added**
+
+- **Card catalogs**: `GET /v1/cards/catalog/occupations` and
+  `GET /v1/cards/catalog/business-activities` (searchable with `?q=`) to
+  populate pickers. When designating a person, `occupation` must be a
+  catalog **code**; for a company, so must `kind_of_business`. An
+  out-of-catalog value is rejected with `400 invalid_occupation` /
+  `400 invalid_kind_of_business` before reaching the issuer. See the
+  [cards guide](/en/guides/cards).
+
+</Update>
+
 <Update label="July 8, 2026" description="v1.19">
 
 **Added**

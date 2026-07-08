@@ -133,6 +133,28 @@ societarios por URL: `certificate_of_good_standing_url`,
 Las emisiones siguientes reutilizan el titular ya verificado.
 </Warning>
 
+### Ocupación y giro (códigos de catálogo)
+
+Al designar una **persona**, `occupation` debe ser un **código** del catálogo
+oficial (no texto libre); para una **empresa**, `kind_of_business` también.
+Consulta y busca los códigos en:
+
+```bash
+# Ocupaciones (personas) — filtra con ?q=
+curl "https://api.qbank.cl/platform/v1/cards/catalog/occupations?q=director" \
+  -H "Authorization: Bearer <token>"
+
+# Giros / actividad económica (empresas)
+curl "https://api.qbank.cl/platform/v1/cards/catalog/business-activities?q=informát" \
+  -H "Authorization: Bearer <token>"
+```
+
+Cada item trae `{ "code": "...", "label": "..." }`. Usa el `code` en
+`occupation` / `kind_of_business`. Si mandas un valor fuera de catálogo, la
+API responde `400 invalid_occupation` o `400 invalid_kind_of_business` antes
+de llegar al emisor. El `salary_usd` va en **dólares** (entero).
+
+
 ## Tarjetas físicas: activación
 
 Una tarjeta física nace en `pending_activation` y viaja **inactiva** por
