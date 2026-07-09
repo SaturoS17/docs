@@ -7,6 +7,8 @@ solo saldo.
 > Documento generado automáticamente desde la documentación oficial
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
+>
+> **Documento actualizado:** 2026-07-09 16:24 UTC · versión `db7bb8382401`
 
 **Datos clave**
 
