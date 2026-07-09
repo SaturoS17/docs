@@ -132,13 +132,54 @@ Respuesta `202 Accepted`:
   "usdt_amount": "85.714286",
   "fee": "0.300000",
   "total_debit": "86.014286",
+  "settlement_asset": "USDT",
+  "settlement_amount": "86.014286",
+  "settlement_rate": "1",
   "status": "processing",
   "created_at": "2026-07-06T20:00:00Z"
 }
 ```
 
 En ese momento tu saldo ya refleja el débito: `total_debit` pasó de
-`available` a `held`.
+`available` a `held` (en el saldo del `settlement_asset`).
+
+### Pagar desde otro saldo (`settlement_asset`)
+
+Por defecto el débito sale de tu asset de settlement predeterminado (USDT
+salvo que lo cambies con `PUT /v1/settlement`). Para pagar una operación
+puntual desde otro saldo, agrega `settlement_asset` al request. Ejemplo:
+un payout de 100.000 CLP pagado desde el saldo BTC pasa por cuatro
+transformaciones, todas registradas en la respuesta:
+
+1. **CLP → USDT** a tu tasa: `100000 / 950.25 = 105.235465 USDT`.
+2. **+ comisión fija**: `105.235465 + 0.30 = 105.535465 USDT` (`total_debit`).
+3. **USDT → BTC** al precio efectivo de settlement (`settlement_rate`
+   `109029.34070000`): `105.535465 / 109029.3407 = 0.00096795 BTC`
+   (redondeo hacia arriba al satoshi).
+4. **Débito y hold en BTC**: `settlement_amount` `0.00096795` sale de tu
+   saldo BTC; el beneficiario recibe sus 100.000 CLP igual que siempre.
+
+```json
+{
+  "country": "CL",
+  "currency": "CLP",
+  "local_amount": "100000",
+  "fx_rate": "950.25",
+  "usdt_amount": "105.235465",
+  "fee": "0.300000",
+  "total_debit": "105.535465",
+  "settlement_asset": "BTC",
+  "settlement_amount": "0.00096795",
+  "settlement_rate": "109029.34070000",
+  "status": "processing"
+}
+```
+
+Si el payout falla, se reembolsa el `settlement_amount` exacto a tu saldo
+BTC — nunca se re-cotiza. Si el precio de ejecución de BTC/GOLD no está
+disponible en ese momento recibirás `503 pricing_unavailable`, y los
+assets volátiles tienen un límite por operación
+(`422 settlement_limit_exceeded`; consúltalo en `GET /v1/settlement`).
 
 ## 3. Recibe el estado final
 

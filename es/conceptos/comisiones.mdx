@@ -102,7 +102,12 @@ vigente para tu cuenta:
 ```
 
 `asset_prices` es el precio USD **de referencia** de cada saldo virtual
-(para valorizarlos en pantalla) — no implica conversión ni spread.
+(para valorizarlos en pantalla) — no implica conversión ni spread. La
+respuesta incluye además un bloque `settlement` con el **precio efectivo**
+por asset si pagas operaciones desde un saldo distinto de USDT
+([modelo de dinero](/es/conceptos/modelo-de-dinero#elige-desde-que-saldo-pagas)):
+ese precio ya incluye el margen de conversión, así que lo que ves es lo
+que se aplica.
 
 La comisión cobrada queda siempre explícita en la respuesta de cada
 operación (campo `fee`) y en el ledger.

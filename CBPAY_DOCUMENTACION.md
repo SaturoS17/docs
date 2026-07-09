@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-09 19:09 UTC · versión `07e05027fc15`
+> **Documento actualizado:** 2026-07-09 22:01 UTC · versión `524c20f250fe`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.28 (9 de julio de 2026) |
+| Versión de la documentación | v1.29 (9 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -924,11 +924,52 @@ esa moneda), como **strings decimales**:
 Internamente cada monto se almacena como entero en la unidad mínima de su
 moneda (micro-USDT, satoshis, micro-gramos) y se calcula con aritmética
 racional exacta. Nunca hay floats ni errores de redondeo acumulados.
-**USDT es la moneda operativa**: los payouts y payins fiat, las tarjetas y
-todas las comisiones de servicios se liquidan siempre contra el saldo USDT.
-Los otros saldos se mueven con [transferencias
-internas](#transferencias-internas) (siempre entre saldos de la misma
-moneda), depósitos on-chain (USDC) o abonos de tu operador (BTC y GOLD).
+**USDT es la moneda operativa**: los precios de payouts, payins fiat y
+comisiones de servicios se cotizan siempre en USDT. Pero el **pago** puede
+salir de cualquiera de los cuatro saldos — ver
+[Elige desde qué saldo pagas](#elige-desde-que-saldo-pagas). Los payins
+siempre acreditan al saldo USDT; los otros saldos se fondean con
+[transferencias internas](#transferencias-internas) (siempre entre saldos
+de la misma moneda), depósitos on-chain (USDC) o abonos de tu operador
+(BTC y GOLD).
+
+### Elige desde qué saldo pagas
+
+Los **payouts** y las **comisiones de servicios** (KYC, creación de
+wallets, banking) pueden debitarse desde cualquiera de tus cuatro saldos.
+El pipeline de pricing no cambia: la operación se cotiza en USDT como
+siempre, y al final el total se traduce al asset elegido con el **precio
+efectivo de settlement** del momento.
+
+- **Predeterminado por cuenta**: `PUT /v1/settlement` con
+  `{"default_settlement_asset": "BTC"}`. Desde ahí, todo payout y toda
+  comisión de servicio sale del saldo BTC (si alcanza; no hay cascadas a
+  otros saldos).
+- **Override por operación**: envía `settlement_asset` en
+  `POST /v1/payouts` (o en el confirm de QR) para pagar esa operación
+  puntual desde otro saldo, sin tocar el predeterminado.
+
+```bash
+# Definir BTC como saldo de pago predeterminado
+curl -X PUT "https://api.qbank.cl/platform/v1/settlement" \
+  -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+  -d '{"default_settlement_asset": "BTC"}'
+```
+
+Reglas del settlement multi-asset:
+
+| Regla | Detalle |
+|---|---|
+| Precio de ejecución | BTC y GOLD usan un feed on-chain de ejecución (no el precio de referencia). Si el feed está viejo o no disponible, la operación devuelve `503 pricing_unavailable` — nunca se ejecuta con un precio dudoso. |
+| Débito, hold y reembolso | Los tres viven en el asset elegido. Si el payout falla, se reembolsa el `settlement_amount` **exacto** — jamás se re-cotiza. |
+| Idempotencia | El replay con la misma llave devuelve el monto original; el precio no se recalcula. |
+| Límite por operación | Los assets volátiles (BTC/GOLD) tienen un límite por operación (equivalente USDT, visible en `GET /v1/settlement`); si lo superas: `422 settlement_limit_exceeded`. |
+| USDT | Sigue siendo el camino por defecto y no cambia en nada para quien no toca esta configuración. |
+
+El bloque `settlement` de `GET /v1/rates` muestra el precio efectivo por
+asset (spread incluido) para estimar antes de operar, y la respuesta del
+payout registra `settlement_asset`, `settlement_amount` y
+`settlement_rate` para auditoría.
 
 ### `available` y `held`
 
@@ -970,23 +1011,41 @@ usdt_credited = usdt_gross − fee
 
 La tasa usada queda registrada en el objeto (`fx_rate`) para auditoría.
 
-### Precios de referencia
+### Precios de referencia y de settlement
 
 `GET /v1/rates` incluye un bloque `asset_prices` con el **precio USD de
 referencia** de cada moneda (BTC por unidad, GOLD por gramo; USDT y USDC
-valen 1 por convención). Es solo para valorizar tus saldos en pantalla — no
-implica conversión ni spread:
+valen 1 por convención), para valorizar tus saldos en pantalla, y un bloque
+`settlement` con el **precio efectivo** al que se valoraría tu saldo si
+pagas una operación desde ese asset (spread incluido):
 
 ```json
 {
   "asset_prices": {
     "USDT": { "currency": "USD", "unit": "usdt", "price": "1" },
     "USDC": { "currency": "USD", "unit": "usdc", "price": "1" },
-    "BTC": { "currency": "USD", "unit": "btc", "price": "109853.24" },
-    "GOLD": { "currency": "USD", "unit": "gram", "price": "107.5341" }
+    "BTC": { "currency": "USD", "unit": "btc", "price": "109853.24",
+             "source": "chainlink", "updated_at": "2026-07-07T11:59:41Z",
+             "settlement_grade": true },
+    "GOLD": { "currency": "USD", "unit": "gram", "price": "107.5341",
+              "source": "chainlink", "updated_at": "2026-07-07T09:12:05Z",
+              "settlement_grade": true }
+  },
+  "settlement": {
+    "default_asset": "USDT",
+    "assets": [
+      { "asset": "USDT", "available": true, "settlement_rate": "1" },
+      { "asset": "USDC", "available": true, "settlement_rate": "0.99900000" },
+      { "asset": "BTC", "available": true, "settlement_rate": "109029.34070000" },
+      { "asset": "GOLD", "available": true, "settlement_rate": "106.99642950" }
+    ]
   }
 }
 ```
+
+`settlement_grade: true` indica que el precio está lo bastante fresco para
+ejecutar operaciones; si baja a `false`, los pagos desde ese asset
+responden `503 pricing_unavailable` hasta que el precio vuelva.
 
 ### Ledger inmutable
 
@@ -1135,7 +1194,12 @@ vigente para tu cuenta:
 ```
 
 `asset_prices` es el precio USD **de referencia** de cada saldo virtual
-(para valorizarlos en pantalla) — no implica conversión ni spread.
+(para valorizarlos en pantalla) — no implica conversión ni spread. La
+respuesta incluye además un bloque `settlement` con el **precio efectivo**
+por asset si pagas operaciones desde un saldo distinto de USDT
+([modelo de dinero](#modelo-de-dinero)):
+ese precio ya incluye el margen de conversión, así que lo que ves es lo
+que se aplica.
 
 La comisión cobrada queda siempre explícita en la respuesta de cada
 operación (campo `fee`) y en el ledger.
@@ -1860,13 +1924,54 @@ Respuesta `202 Accepted`:
   "usdt_amount": "85.714286",
   "fee": "0.300000",
   "total_debit": "86.014286",
+  "settlement_asset": "USDT",
+  "settlement_amount": "86.014286",
+  "settlement_rate": "1",
   "status": "processing",
   "created_at": "2026-07-06T20:00:00Z"
 }
 ```
 
 En ese momento tu saldo ya refleja el débito: `total_debit` pasó de
-`available` a `held`.
+`available` a `held` (en el saldo del `settlement_asset`).
+
+#### Pagar desde otro saldo (`settlement_asset`)
+
+Por defecto el débito sale de tu asset de settlement predeterminado (USDT
+salvo que lo cambies con `PUT /v1/settlement`). Para pagar una operación
+puntual desde otro saldo, agrega `settlement_asset` al request. Ejemplo:
+un payout de 100.000 CLP pagado desde el saldo BTC pasa por cuatro
+transformaciones, todas registradas en la respuesta:
+
+1. **CLP → USDT** a tu tasa: `100000 / 950.25 = 105.235465 USDT`.
+2. **+ comisión fija**: `105.235465 + 0.30 = 105.535465 USDT` (`total_debit`).
+3. **USDT → BTC** al precio efectivo de settlement (`settlement_rate`
+   `109029.34070000`): `105.535465 / 109029.3407 = 0.00096795 BTC`
+   (redondeo hacia arriba al satoshi).
+4. **Débito y hold en BTC**: `settlement_amount` `0.00096795` sale de tu
+   saldo BTC; el beneficiario recibe sus 100.000 CLP igual que siempre.
+
+```json
+{
+  "country": "CL",
+  "currency": "CLP",
+  "local_amount": "100000",
+  "fx_rate": "950.25",
+  "usdt_amount": "105.235465",
+  "fee": "0.300000",
+  "total_debit": "105.535465",
+  "settlement_asset": "BTC",
+  "settlement_amount": "0.00096795",
+  "settlement_rate": "109029.34070000",
+  "status": "processing"
+}
+```
+
+Si el payout falla, se reembolsa el `settlement_amount` exacto a tu saldo
+BTC — nunca se re-cotiza. Si el precio de ejecución de BTC/GOLD no está
+disponible en ese momento recibirás `503 pricing_unavailable`, y los
+assets volátiles tienen un límite por operación
+(`422 settlement_limit_exceeded`; consúltalo en `GET /v1/settlement`).
 
 ### 3. Recibe el estado final
 
@@ -5058,6 +5163,9 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | 409 | `cardholder_kyc_pending` | El titular designado requiere documentos de identidad |
 | 400 | `invalid_occupation` | `occupation` no es un código del catálogo (`GET /v1/cards/catalog/occupations`) |
 | 400 | `invalid_kind_of_business` | `kind_of_business` no es un código del catálogo (`GET /v1/cards/catalog/business-activities`) |
+| 400 | `invalid_settlement_asset` | `settlement_asset` no es USDT, USDC, BTC ni GOLD |
+| 400 | `settlement_asset_disabled` | Tu organización tiene deshabilitado ese asset como origen de settlement |
+| 422 | `settlement_limit_exceeded` | La operación supera el límite por operación de los assets volátiles (BTC/GOLD); usa USDT/USDC o divide la operación |
 
 #### Servicio (5xx)
 
@@ -5069,6 +5177,7 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | 502 | `compliance_unavailable` | Screening temporalmente no disponible |
 | 503 | `org_credential_missing` | Servicio en configuración; contacta al soporte de CBPay |
 | 503 | `withdrawals_unavailable` | Retiros on-chain no habilitados para el corredor |
+| 503 | `pricing_unavailable` | Precio de ejecución de BTC/GOLD no disponible o desactualizado; reintenta más tarde o liquida en USDT/USDC |
 
 ### Cómo manejarlos
 
@@ -5265,9 +5374,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-09 19:09 UTC · 104 requests · versión `29eb764c88a3`
+> **Colección actualizada:** 2026-07-09 22:01 UTC · 107 requests · versión `621e2d5e419a`
 
-<PostmanFreshness iso="2026-07-09T19:09:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-09T22:01:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -5301,6 +5410,30 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.29 — 9 de julio de 2026
+
+**Agregado — Paga payouts y servicios desde cualquier saldo (settlement multi-asset)**
+
+- Los payouts y las comisiones de servicios (KYC, creación de wallets,
+  banking) ahora pueden debitarse desde **cualquiera de tus cuatro saldos**
+  (USDT, USDC, BTC, GOLD). El pricing sigue cotizándose en USDT; el total
+  se traduce al asset elegido con el precio efectivo de settlement del
+  momento. Detalle en el
+  [modelo de dinero](#modelo-de-dinero).
+- Nuevo `GET/PUT /v1/settlement`: define el **saldo predeterminado** de tu
+  cuenta (`default_settlement_asset`). Override puntual por operación con
+  `settlement_asset` en `POST /v1/payouts` y en el confirm de QR.
+- La respuesta del payout ahora registra `settlement_asset`,
+  `settlement_amount` (el monto exacto debitado, que es también el que se
+  reembolsa si falla — nunca se re-cotiza) y `settlement_rate`.
+- `GET /v1/rates` suma un bloque `settlement` con el precio efectivo por
+  asset habilitado, y `asset_prices` ahora trae `source`, `updated_at` y
+  `settlement_grade` (si el precio está apto para ejecutar).
+- Errores nuevos: `503 pricing_unavailable` (precio de ejecución de
+  BTC/GOLD no disponible), `400 settlement_asset_disabled`,
+  `400 invalid_settlement_asset` y `422 settlement_limit_exceeded`
+  (límite por operación de los assets volátiles).
 
 ### v1.28 — 9 de julio de 2026
 
@@ -6019,3 +6152,5 @@ está en la API Reference interactiva y en la colección Postman.
 | Método | Ruta | Qué hace |
 |---|---|---|
 | `GET` | `/v1/services` | Servicios habilitados |
+| `GET` | `/v1/settlement` | Obtener mi configuración de settlement |
+| `PUT` | `/v1/settlement` | Definir mi asset de settlement predeterminado |

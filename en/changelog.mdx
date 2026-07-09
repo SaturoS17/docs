@@ -7,6 +7,31 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 9, 2026" description="v1.29">
+
+**Added — Pay payouts and services from any balance (multi-asset settlement)**
+
+- Payouts and service fees (KYC, wallet creation, banking) can now be
+  debited from **any of your four balances** (USDT, USDC, BTC, GOLD).
+  Pricing is still quoted in USDT; the total translates to the chosen
+  asset at the effective settlement price of the moment. Details in the
+  [money model](/en/concepts/money-model#choose-which-balance-pays).
+- New `GET/PUT /v1/settlement`: set your account's **default balance**
+  (`default_settlement_asset`). Per-operation override with
+  `settlement_asset` in `POST /v1/payouts` and in the QR confirm.
+- The payout response now records `settlement_asset`, `settlement_amount`
+  (the exact amount debited — also the amount refunded on failure, never
+  re-quoted) and `settlement_rate`.
+- `GET /v1/rates` adds a `settlement` block with the effective price per
+  enabled asset, and `asset_prices` now carries `source`, `updated_at` and
+  `settlement_grade` (whether the price is fit to execute).
+- New errors: `503 pricing_unavailable` (BTC/GOLD execution price
+  unavailable), `400 settlement_asset_disabled`,
+  `400 invalid_settlement_asset` and `422 settlement_limit_exceeded`
+  (per-operation limit for volatile assets).
+
+</Update>
+
 <Update label="July 9, 2026" description="v1.28">
 
 **Changed — Short reference for announced bank transfers**

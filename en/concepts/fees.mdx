@@ -101,7 +101,12 @@ currently applied to your account:
 ```
 
 `asset_prices` is the **reference** USD price of each virtual balance (to
-value them on screen) — it implies no conversion and no spread.
+value them on screen) — it implies no conversion and no spread. The
+response also includes a `settlement` block with the **effective price**
+per asset if you pay operations from a balance other than USDT
+([money model](/en/concepts/money-model#choose-which-balance-pays)): that
+price already includes the conversion margin, so what you see is what
+applies.
 
 The charged fee is always explicit in each operation's response (`fee`
 field) and in the ledger.

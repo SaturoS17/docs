@@ -38,11 +38,52 @@ moneda (micro-USDT, satoshis, micro-gramos) y se calcula con aritmética
 racional exacta. Nunca hay floats ni errores de redondeo acumulados.
 </Note>
 
-**USDT es la moneda operativa**: los payouts y payins fiat, las tarjetas y
-todas las comisiones de servicios se liquidan siempre contra el saldo USDT.
-Los otros saldos se mueven con [transferencias
-internas](/es/guias/transferencias) (siempre entre saldos de la misma
-moneda), depósitos on-chain (USDC) o abonos de tu operador (BTC y GOLD).
+**USDT es la moneda operativa**: los precios de payouts, payins fiat y
+comisiones de servicios se cotizan siempre en USDT. Pero el **pago** puede
+salir de cualquiera de los cuatro saldos — ver
+[Elige desde qué saldo pagas](#elige-desde-que-saldo-pagas). Los payins
+siempre acreditan al saldo USDT; los otros saldos se fondean con
+[transferencias internas](/es/guias/transferencias) (siempre entre saldos
+de la misma moneda), depósitos on-chain (USDC) o abonos de tu operador
+(BTC y GOLD).
+
+## Elige desde qué saldo pagas
+
+Los **payouts** y las **comisiones de servicios** (KYC, creación de
+wallets, banking) pueden debitarse desde cualquiera de tus cuatro saldos.
+El pipeline de pricing no cambia: la operación se cotiza en USDT como
+siempre, y al final el total se traduce al asset elegido con el **precio
+efectivo de settlement** del momento.
+
+- **Predeterminado por cuenta**: `PUT /v1/settlement` con
+  `{"default_settlement_asset": "BTC"}`. Desde ahí, todo payout y toda
+  comisión de servicio sale del saldo BTC (si alcanza; no hay cascadas a
+  otros saldos).
+- **Override por operación**: envía `settlement_asset` en
+  `POST /v1/payouts` (o en el confirm de QR) para pagar esa operación
+  puntual desde otro saldo, sin tocar el predeterminado.
+
+```bash
+# Definir BTC como saldo de pago predeterminado
+curl -X PUT "https://api.qbank.cl/platform/v1/settlement" \
+  -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+  -d '{"default_settlement_asset": "BTC"}'
+```
+
+Reglas del settlement multi-asset:
+
+| Regla | Detalle |
+|---|---|
+| Precio de ejecución | BTC y GOLD usan un feed on-chain de ejecución (no el precio de referencia). Si el feed está viejo o no disponible, la operación devuelve `503 pricing_unavailable` — nunca se ejecuta con un precio dudoso. |
+| Débito, hold y reembolso | Los tres viven en el asset elegido. Si el payout falla, se reembolsa el `settlement_amount` **exacto** — jamás se re-cotiza. |
+| Idempotencia | El replay con la misma llave devuelve el monto original; el precio no se recalcula. |
+| Límite por operación | Los assets volátiles (BTC/GOLD) tienen un límite por operación (equivalente USDT, visible en `GET /v1/settlement`); si lo superas: `422 settlement_limit_exceeded`. |
+| USDT | Sigue siendo el camino por defecto y no cambia en nada para quien no toca esta configuración. |
+
+El bloque `settlement` de `GET /v1/rates` muestra el precio efectivo por
+asset (spread incluido) para estimar antes de operar, y la respuesta del
+payout registra `settlement_asset`, `settlement_amount` y
+`settlement_rate` para auditoría.
 
 ## `available` y `held`
 
@@ -84,23 +125,41 @@ usdt_credited = usdt_gross − fee
 
 La tasa usada queda registrada en el objeto (`fx_rate`) para auditoría.
 
-## Precios de referencia
+## Precios de referencia y de settlement
 
 `GET /v1/rates` incluye un bloque `asset_prices` con el **precio USD de
 referencia** de cada moneda (BTC por unidad, GOLD por gramo; USDT y USDC
-valen 1 por convención). Es solo para valorizar tus saldos en pantalla — no
-implica conversión ni spread:
+valen 1 por convención), para valorizar tus saldos en pantalla, y un bloque
+`settlement` con el **precio efectivo** al que se valoraría tu saldo si
+pagas una operación desde ese asset (spread incluido):
 
 ```json
 {
   "asset_prices": {
     "USDT": { "currency": "USD", "unit": "usdt", "price": "1" },
     "USDC": { "currency": "USD", "unit": "usdc", "price": "1" },
-    "BTC": { "currency": "USD", "unit": "btc", "price": "109853.24" },
-    "GOLD": { "currency": "USD", "unit": "gram", "price": "107.5341" }
+    "BTC": { "currency": "USD", "unit": "btc", "price": "109853.24",
+             "source": "chainlink", "updated_at": "2026-07-07T11:59:41Z",
+             "settlement_grade": true },
+    "GOLD": { "currency": "USD", "unit": "gram", "price": "107.5341",
+              "source": "chainlink", "updated_at": "2026-07-07T09:12:05Z",
+              "settlement_grade": true }
+  },
+  "settlement": {
+    "default_asset": "USDT",
+    "assets": [
+      { "asset": "USDT", "available": true, "settlement_rate": "1" },
+      { "asset": "USDC", "available": true, "settlement_rate": "0.99900000" },
+      { "asset": "BTC", "available": true, "settlement_rate": "109029.34070000" },
+      { "asset": "GOLD", "available": true, "settlement_rate": "106.99642950" }
+    ]
   }
 }
 ```
+
+`settlement_grade: true` indica que el precio está lo bastante fresco para
+ejecutar operaciones; si baja a `false`, los pagos desde ese asset
+responden `503 pricing_unavailable` hasta que el precio vuelva.
 
 ## Ledger inmutable
 

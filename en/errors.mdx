@@ -106,6 +106,9 @@ Full flow and details in [social login](/en/guides/social-login).
 | 409 | `cardholder_kyc_pending` | The designated cardholder requires identity documents |
 | 400 | `invalid_occupation` | `occupation` is not a catalog code (`GET /v1/cards/catalog/occupations`) |
 | 400 | `invalid_kind_of_business` | `kind_of_business` is not a catalog code (`GET /v1/cards/catalog/business-activities`) |
+| 400 | `invalid_settlement_asset` | `settlement_asset` is not USDT, USDC, BTC or GOLD |
+| 400 | `settlement_asset_disabled` | Your organization disabled that asset as settlement source |
+| 422 | `settlement_limit_exceeded` | The operation exceeds the per-operation limit for volatile assets (BTC/GOLD); use USDT/USDC or split the operation |
 
 ### Service (5xx)
 
@@ -117,6 +120,7 @@ Full flow and details in [social login](/en/guides/social-login).
 | 502 | `compliance_unavailable` | Screening temporarily unavailable |
 | 503 | `org_credential_missing` | Service being configured; contact CBPay support |
 | 503 | `withdrawals_unavailable` | On-chain withdrawals not enabled for the corridor |
+| 503 | `pricing_unavailable` | BTC/GOLD execution price unavailable or stale; retry later or settle in USDT/USDC |
 
 ## How to handle them
 

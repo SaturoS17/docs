@@ -106,6 +106,9 @@ Detalle y flujo completo en [login social](/es/guias/login-social).
 | 409 | `cardholder_kyc_pending` | El titular designado requiere documentos de identidad |
 | 400 | `invalid_occupation` | `occupation` no es un código del catálogo (`GET /v1/cards/catalog/occupations`) |
 | 400 | `invalid_kind_of_business` | `kind_of_business` no es un código del catálogo (`GET /v1/cards/catalog/business-activities`) |
+| 400 | `invalid_settlement_asset` | `settlement_asset` no es USDT, USDC, BTC ni GOLD |
+| 400 | `settlement_asset_disabled` | Tu organización tiene deshabilitado ese asset como origen de settlement |
+| 422 | `settlement_limit_exceeded` | La operación supera el límite por operación de los assets volátiles (BTC/GOLD); usa USDT/USDC o divide la operación |
 
 ### Servicio (5xx)
 
@@ -117,6 +120,7 @@ Detalle y flujo completo en [login social](/es/guias/login-social).
 | 502 | `compliance_unavailable` | Screening temporalmente no disponible |
 | 503 | `org_credential_missing` | Servicio en configuración; contacta al soporte de CBPay |
 | 503 | `withdrawals_unavailable` | Retiros on-chain no habilitados para el corredor |
+| 503 | `pricing_unavailable` | Precio de ejecución de BTC/GOLD no disponible o desactualizado; reintenta más tarde o liquida en USDT/USDC |
 
 ## Cómo manejarlos
 

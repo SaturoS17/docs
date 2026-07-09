@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.28'
+  version: '1.29'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -11,6 +11,12 @@ info:
     virtual balances — USDT (the operating currency), USDC, BTC and GOLD
 
     (grams of fine gold) — that never mix or convert automatically.
+
+    Payouts and service fees can be paid from any of the four balances:
+
+    set a default with `PUT /v1/settlement` or override per payout with
+
+    `settlement_asset`.
 
 
     All amounts are decimal strings in each currency''s precision (6 decimals
@@ -32,7 +38,7 @@ tags:
 - name: Balances
   description: Balances, movement history and FX rates.
 - name: Payouts
-  description: Fiat dispersals debited from the USDT balance.
+  description: Fiat dispersals debited from the settlement balance of your choice (USDT by default).
 - name: Payins
   description: Fiat top-ups credited to the USDT balance.
 - name: Transfers
@@ -885,9 +891,12 @@ paths:
       description: Returns the exchange rates that apply to the calling account for each country — the
         same rates used when operations execute (`local_amount / rate = USDT`) — plus the account's fee
         configuration so clients can compute net prices. `rate` is the payout (dispersal) side and
-        `payin_rate` the payin (deposit) side. `asset_prices` carries the display-only USD reference
-        price of each virtual balance asset (BTC per unit, GOLD per gram; stablecoins are 1 by
-        convention) — no conversion and no spread.
+        `payin_rate` the payin (deposit) side. `asset_prices` carries the USD reference price of each
+        virtual balance asset (BTC per unit, GOLD per gram; stablecoins are 1 by convention) for
+        display/valuation. The `settlement` block shows, per enabled asset, the **effective settlement
+        price** your account would get right now if it paid an operation from that balance
+        (`settlement_rate`, spread included) and whether the asset is currently `available` — use it to
+        estimate before sending `settlement_asset` in a payout.
       responses:
         '200':
           description: Rates, reference asset prices and fees.
@@ -917,7 +926,7 @@ paths:
                           example: '955.10'
                   asset_prices:
                     type: object
-                    description: Display-only USD reference price per virtual balance asset.
+                    description: USD reference price per virtual balance asset (display/valuation).
                     additionalProperties:
                       type: object
                       properties:
@@ -931,6 +940,44 @@ paths:
                         price:
                           type: string
                           example: '107.5341'
+                        source:
+                          type: string
+                          description: Price source (`chainlink` on-chain execution feed, or a market
+                            reference).
+                          example: chainlink
+                        updated_at:
+                          type: string
+                          description: When the source last updated this price.
+                        settlement_grade:
+                          type: boolean
+                          description: True when the price is fresh enough to execute settlements
+                            (operations paid from that balance).
+                  settlement:
+                    type: object
+                    description: Effective settlement pricing for the calling account.
+                    properties:
+                      default_asset:
+                        type: string
+                        description: The balance operations debit from when no `settlement_asset`
+                          override is sent.
+                        example: USDT
+                      assets:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            asset:
+                              type: string
+                              example: BTC
+                            available:
+                              type: boolean
+                              description: False when the asset cannot be used right now (disabled or
+                                execution price unavailable).
+                            settlement_rate:
+                              type: string
+                              description: Effective USD price per unit at which your balance would be
+                                valued (spread included); empty when unavailable.
+                              example: '109029.34'
                   updated_at:
                     type: string
                   fees:
@@ -965,10 +1012,31 @@ paths:
                     currency: USD
                     unit: btc
                     price: '109853.24'
+                    source: chainlink
+                    updated_at: '2026-07-07T11:59:41Z'
+                    settlement_grade: true
                   GOLD:
                     currency: USD
                     unit: gram
                     price: '107.5341'
+                    source: chainlink
+                    updated_at: '2026-07-07T09:12:05Z'
+                    settlement_grade: true
+                settlement:
+                  default_asset: USDT
+                  assets:
+                  - asset: USDT
+                    available: true
+                    settlement_rate: '1'
+                  - asset: USDC
+                    available: true
+                    settlement_rate: '0.99900000'
+                  - asset: BTC
+                    available: true
+                    settlement_rate: '109029.34070000'
+                  - asset: GOLD
+                    available: true
+                    settlement_rate: '106.99642950'
                 updated_at: '2026-07-07T12:00:00Z'
                 fees:
                 - id: 3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c
@@ -1004,6 +1072,16 @@ paths:
         account''s rate** (the same one returned by `GET /v1/rates`); `usdt_amount` plus the fixed fee
         (when configured) is debited and held until the dispersal completes. If it fails, the full debit
         is refunded.
+
+
+        **Pay from any balance**: by default the debit comes from your account''s default settlement
+        asset (USDT unless changed via `PUT /v1/settlement`). Send `settlement_asset` (USDT, USDC, BTC
+        or GOLD) to pay this specific operation from another balance: the USDT total converts to that
+        asset at the effective settlement price of the moment (see the `settlement` block in
+        `GET /v1/rates`) and the debit, hold and — if it fails — the refund all live in that asset for
+        the exact same amount. If the execution price for BTC/GOLD is unavailable the request returns
+        `503 pricing_unavailable`; volatile assets also have a per-operation limit
+        (`422 settlement_limit_exceeded`).
 
 
         Requires an idempotency key (body field or `Idempotency-Key` header). Retrying with the same key
@@ -1052,6 +1130,16 @@ paths:
                     '
                 description:
                   type: string
+                settlement_asset:
+                  type: string
+                  enum:
+                  - USDT
+                  - USDC
+                  - BTC
+                  - GOLD
+                  description: Virtual balance to debit for this operation. Omit to
+                    use your account's default settlement asset (USDT unless changed
+                    via `PUT /v1/settlement`).
                 idempotency_key:
                   type: string
             examples:
@@ -1180,6 +1268,21 @@ paths:
                     bank_code: '0011'
                     account_number: '600123456'
                   idempotency_key: py-bank-9917
+              cl_paid_from_btc:
+                summary: Chile — paid from the BTC balance (settlement_asset)
+                value:
+                  country: CL
+                  currency: CLP
+                  method: bank_transfer
+                  amount: '100000'
+                  beneficiary:
+                    name: Pedro Soto Fuentes
+                    tax_id: 12.345.678-5
+                    bank_code: '012'
+                    account_type: checking
+                    account_number: '123456789'
+                  settlement_asset: BTC
+                  idempotency_key: cl-btc-0192
       responses:
         '202':
           description: Payout accepted and dispatching.
@@ -1199,6 +1302,9 @@ paths:
                 usdt_amount: '85.714286'
                 fee: '0.300000'
                 total_debit: '86.014286'
+                settlement_asset: USDT
+                settlement_amount: '86.014286'
+                settlement_rate: '1'
                 beneficiary: &id004
                   name: Maria Lopez
                   account_type: clabe
@@ -1227,6 +1333,9 @@ paths:
                 usdt_amount: '85.714286'
                 fee: '0.300000'
                 total_debit: '86.014286'
+                settlement_asset: USDT
+                settlement_amount: '86.014286'
+                settlement_rate: '1'
                 beneficiary: *id004
                 description: Invoice 8841
                 status: processing
@@ -1274,6 +1383,9 @@ paths:
                 usdt_amount: '85.714286'
                 fee: '0.300000'
                 total_debit: '86.014286'
+                settlement_asset: USDT
+                settlement_amount: '86.014286'
+                settlement_rate: '1'
                 beneficiary: *id004
                 description: Invoice 8841
                 status: failed
@@ -1370,6 +1482,9 @@ paths:
                 usdt_amount: '85.714286'
                 fee: '0.300000'
                 total_debit: '86.014286'
+                settlement_asset: USDT
+                settlement_amount: '86.014286'
+                settlement_rate: '1'
                 beneficiary: *id004
                 description: Invoice 8841
                 status: completed
@@ -2962,6 +3077,15 @@ paths:
                   description: Local amount as a positive decimal string.
                 description:
                   type: string
+                settlement_asset:
+                  type: string
+                  enum:
+                  - USDT
+                  - USDC
+                  - BTC
+                  - GOLD
+                  description: Virtual balance to debit for this operation. Omit to
+                    use your account's default settlement asset.
                 idempotency_key:
                   type: string
             example:
@@ -2989,6 +3113,9 @@ paths:
                 usdt_amount: '101.302460'
                 fee: '0.300000'
                 total_debit: '101.602460'
+                settlement_asset: USDT
+                settlement_amount: '101.602460'
+                settlement_rate: '1'
                 beneficiary: &id010
                   qr_reference: QR-REF-889923
                 description: QR lunch payment
@@ -3015,6 +3142,9 @@ paths:
                 usdt_amount: '101.302460'
                 fee: '0.300000'
                 total_debit: '101.602460'
+                settlement_asset: USDT
+                settlement_amount: '101.602460'
+                settlement_rate: '1'
                 beneficiary: *id010
                 description: QR lunch payment
                 status: completed
@@ -3061,6 +3191,9 @@ paths:
                 usdt_amount: '101.302460'
                 fee: '0.300000'
                 total_debit: '101.602460'
+                settlement_asset: USDT
+                settlement_amount: '101.602460'
+                settlement_rate: '1'
                 beneficiary: *id010
                 description: QR lunch payment
                 status: failed
@@ -5266,6 +5399,88 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/AccountRequired'
+  /v1/settlement:
+    get:
+      tags:
+      - Account
+      operationId: getSettlement
+      summary: Get my settlement settings
+      description: Returns which virtual balance your operations (payouts and service fees) debit from
+        by default, which assets your organization allows, and the per-operation limit (USDT
+        equivalent) applied to volatile assets (BTC/GOLD).
+      responses:
+        '200':
+          description: Current settlement settings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettlementSettings'
+              example:
+                default_settlement_asset: USDT
+                enabled_assets:
+                - USDT
+                - USDC
+                - BTC
+                - GOLD
+                volatile_op_limit_usdt: '10000.000000'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+    put:
+      tags:
+      - Account
+      operationId: updateSettlement
+      summary: Set my default settlement asset
+      description: 'Changes the balance your payouts and service fees debit from when a request does
+        not send an explicit `settlement_asset`. Any of USDT, USDC, BTC or GOLD (if enabled for your
+        organization). The change applies to new operations only; nothing in flight is re-quoted.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - default_settlement_asset
+              properties:
+                default_settlement_asset:
+                  type: string
+                  enum:
+                  - USDT
+                  - USDC
+                  - BTC
+                  - GOLD
+            example:
+              default_settlement_asset: BTC
+      responses:
+        '200':
+          description: Updated settlement settings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettlementSettings'
+              example:
+                default_settlement_asset: BTC
+                enabled_assets:
+                - USDT
+                - USDC
+                - BTC
+                - GOLD
+                volatile_op_limit_usdt: '10000.000000'
+        '400':
+          description: Invalid or disabled asset (`invalid_settlement_asset`, `settlement_asset_disabled`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: settlement_asset_disabled
+                message: settlement asset is disabled for this organization
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
   /v1/cards/catalog/occupations:
     get:
       tags:
@@ -5694,6 +5909,33 @@ components:
         updated_at:
           type: string
           format: date-time
+    SettlementSettings:
+      type: object
+      properties:
+        default_settlement_asset:
+          type: string
+          enum:
+          - USDT
+          - USDC
+          - BTC
+          - GOLD
+          description: Balance operations debit from when no per-request override is sent.
+        enabled_assets:
+          type: array
+          items:
+            type: string
+          description: Assets your organization currently allows as settlement source.
+        volatile_op_limit_usdt:
+          type: string
+          description: Per-operation limit (USDT equivalent) for volatile assets (BTC/GOLD).
+      example:
+        default_settlement_asset: USDT
+        enabled_assets:
+        - USDT
+        - USDC
+        - BTC
+        - GOLD
+        volatile_op_limit_usdt: '10000.000000'
     Payout:
       type: object
       properties:
@@ -5722,6 +5964,23 @@ components:
           type: string
         total_debit:
           type: string
+        settlement_asset:
+          type: string
+          enum:
+          - USDT
+          - USDC
+          - BTC
+          - GOLD
+          description: Virtual balance the operation was actually debited from.
+        settlement_amount:
+          type: string
+          description: Exact amount debited from the settlement asset's balance (in
+            that asset's units). Equals `total_debit` when the asset is USDT. If the
+            payout fails this exact amount is refunded — never re-quoted.
+        settlement_rate:
+          type: string
+          description: Effective USD price per unit of the settlement asset used to
+            convert the USDT total ("1" for USDT/USDC).
         beneficiary:
           type: object
         description:

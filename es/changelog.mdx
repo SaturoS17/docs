@@ -8,6 +8,32 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="9 de julio de 2026" description="v1.29">
+
+**Agregado — Paga payouts y servicios desde cualquier saldo (settlement multi-asset)**
+
+- Los payouts y las comisiones de servicios (KYC, creación de wallets,
+  banking) ahora pueden debitarse desde **cualquiera de tus cuatro saldos**
+  (USDT, USDC, BTC, GOLD). El pricing sigue cotizándose en USDT; el total
+  se traduce al asset elegido con el precio efectivo de settlement del
+  momento. Detalle en el
+  [modelo de dinero](/es/conceptos/modelo-de-dinero#elige-desde-que-saldo-pagas).
+- Nuevo `GET/PUT /v1/settlement`: define el **saldo predeterminado** de tu
+  cuenta (`default_settlement_asset`). Override puntual por operación con
+  `settlement_asset` en `POST /v1/payouts` y en el confirm de QR.
+- La respuesta del payout ahora registra `settlement_asset`,
+  `settlement_amount` (el monto exacto debitado, que es también el que se
+  reembolsa si falla — nunca se re-cotiza) y `settlement_rate`.
+- `GET /v1/rates` suma un bloque `settlement` con el precio efectivo por
+  asset habilitado, y `asset_prices` ahora trae `source`, `updated_at` y
+  `settlement_grade` (si el precio está apto para ejecutar).
+- Errores nuevos: `503 pricing_unavailable` (precio de ejecución de
+  BTC/GOLD no disponible), `400 settlement_asset_disabled`,
+  `400 invalid_settlement_asset` y `422 settlement_limit_exceeded`
+  (límite por operación de los assets volátiles).
+
+</Update>
+
 <Update label="9 de julio de 2026" description="v1.28">
 
 **Cambiado — Referencia corta en la transferencia anunciada**
