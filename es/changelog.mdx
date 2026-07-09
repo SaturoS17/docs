@@ -8,6 +8,21 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="9 de julio de 2026" description="v1.27">
+
+**Agregado — Payins en Paraguay (transferencia anunciada)**
+
+- Nuevo corredor de cobro `PY`/`PYG`/`bank_transfer`: anuncia el depósito
+  con `POST /v1/payins`, tu pagador transfiere (SIPAP o transferencia
+  interna del banco receptor) con la `reference` en el concepto, y el
+  abono llega automático en USDT a tu `payin_rate`, como en todos los
+  países. Guía en [payins](/es/guias/payins).
+- Los guaraníes no usan decimales: anuncia el **monto entero exacto**
+  (ej. `"596000"`). El match de respaldo por monto+moneda aplica igual.
+- El corredor aparece en `GET /v1/payins/methods` con `delivery: polling`.
+
+</Update>
+
 <Update label="9 de julio de 2026" description="v1.26">
 
 **Agregado — Saldos virtuales multi-moneda (USDT, USDC, BTC, GOLD)**

@@ -7,6 +7,22 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 9, 2026" description="v1.27">
+
+**Added — Payins in Paraguay (announced bank transfer)**
+
+- New collection corridor `PY`/`PYG`/`bank_transfer`: announce the deposit
+  with `POST /v1/payins`, your payer transfers (SIPAP or an internal
+  transfer at the receiving bank) with the `reference` in the concept, and
+  the credit arrives automatically in USDT at your `payin_rate`, like in
+  every country. Guide in [payins](/en/guides/payins).
+- Guaraníes use no decimals: announce the **exact integer amount**
+  (e.g. `"596000"`). The amount+currency fallback match applies as usual.
+- The corridor shows up in `GET /v1/payins/methods` with
+  `delivery: polling`.
+
+</Update>
+
 <Update label="July 9, 2026" description="v1.26">
 
 **Added — Multi-currency virtual balances (USDT, USDC, BTC, GOLD)**

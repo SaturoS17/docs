@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-09 17:18 UTC · versión `2b3ab18cf5ef`
+> **Documento actualizado:** 2026-07-09 18:17 UTC · versión `357956b8ace2`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.26 (9 de julio de 2026) |
+| Versión de la documentación | v1.27 (9 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -2431,7 +2431,7 @@ automático + webhook:
 flowchart LR
     qr["QR de cobro<br/>(BO, BR·PIX)"] --> pago["Tu cliente paga<br/>en moneda local"]
     hosted["Página de pago hosted<br/>(CL: fintoc)"] --> pago
-    anunciada["Transferencia anunciada<br/>(CL, PE, MX, BR)"] --> pago
+    anunciada["Transferencia anunciada<br/>(CL, PE, MX, PY, BR)"] --> pago
     pull["Cobro activo pull<br/>(VE: c2p, débito)"] --> pago
     clabe["Cuenta CLABE dedicada<br/>(MX)"] --> pago
     pago --> conv["Conversión FX a tu<br/>payin_rate − fee fijo"]
@@ -2473,6 +2473,7 @@ Corredores y modalidades de cobro:
 | México | MXN | Cuenta CLABE dedicada, transferencia anunciada |
 | Venezuela | VES | Cobro activo `c2p` y `debito_inmediato` (pull) |
 | Bolivia | BOB / USD | QR de cobro |
+| Paraguay | PYG | Transferencia anunciada |
 | Brasil | BRL | QR PIX dinámico, transferencia anunciada |
 
 La disponibilidad puede variar; el catálogo (`GET /v1/payins/methods`) es
@@ -2749,6 +2750,40 @@ Respuesta `201`:
 Muestra `qr_image` a tu cliente; cuando paga, tu cuenta se acredita
 automáticamente. También funciona en USD (`currency: "USD"`).
 
+#### Paraguay
+
+**Transferencia anunciada** en guaraníes: anuncias el depósito, tu pagador
+transfiere (SIPAP interbancaria o transferencia interna del banco receptor)
+con la referencia en el concepto, y el abono se detecta automáticamente.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "PY",
+    "currency": "PYG",
+    "method": "bank_transfer",
+    "amount": "596000"
+  }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "payin_id": "8f41…",
+  "status": "pending",
+  "reference": "8f41…",
+  "note": "include the reference in the transfer description so the deposit is credited automatically"
+}
+```
+
+> **Nota**
+Los guaraníes no usan decimales: anuncia el monto **entero exacto** que
+transferirá tu pagador (ej. `"596000"`). La `reference` en el concepto de
+la transferencia asegura el match automático; como respaldo también se
+matchea por monto+moneda.
 #### Brasil
 
 **QR PIX dinámico**: el mismo endpoint genera un QR PIX con el monto
@@ -5226,9 +5261,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-09 17:18 UTC · 103 requests · versión `891be22f57ce`
+> **Colección actualizada:** 2026-07-09 18:17 UTC · 104 requests · versión `4f067f864a46`
 
-<PostmanFreshness iso="2026-07-09T17:18:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-09T18:17:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -5262,6 +5297,19 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.27 — 9 de julio de 2026
+
+**Agregado — Payins en Paraguay (transferencia anunciada)**
+
+- Nuevo corredor de cobro `PY`/`PYG`/`bank_transfer`: anuncia el depósito
+  con `POST /v1/payins`, tu pagador transfiere (SIPAP o transferencia
+  interna del banco receptor) con la `reference` en el concepto, y el
+  abono llega automático en USDT a tu `payin_rate`, como en todos los
+  países. Guía en [payins](#payins).
+- Los guaraníes no usan decimales: anuncia el **monto entero exacto**
+  (ej. `"596000"`). El match de respaldo por monto+moneda aplica igual.
+- El corredor aparece en `GET /v1/payins/methods` con `delivery: polling`.
 
 ### v1.26 — 9 de julio de 2026
 

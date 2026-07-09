@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.26'
+  version: '1.27'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -1553,6 +1553,13 @@ paths:
                   currency: CLP
                   method: bank_transfer
                   amount: '500000'
+              py_announced_transfer:
+                summary: Paraguay — announced bank transfer (PYG, integer amounts)
+                value:
+                  country: PY
+                  currency: PYG
+                  method: bank_transfer
+                  amount: '596000'
               cl_fintoc:
                 summary: Chile — hosted payment page, any bank (CLP)
                 value:
@@ -1757,12 +1764,16 @@ paths:
                   currency: PEN
                   method: bank_transfer
                   delivery: polling
+                - country: PY
+                  currency: PYG
+                  method: bank_transfer
+                  delivery: polling
                 - country: VE
                   currency: VES
                   method: c2p
                   delivery: push+polling
                 meta:
-                  retrieved: 5
+                  retrieved: 6
         '403':
           $ref: '#/components/responses/Forbidden'
         '401':

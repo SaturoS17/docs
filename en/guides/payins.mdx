@@ -16,7 +16,7 @@ webhook:
 flowchart LR
     qr["Collection QR<br/>(BO, BR·PIX)"] --> pay["Your customer pays<br/>in local currency"]
     hosted["Hosted payment page<br/>(CL: fintoc)"] --> pay
-    announced["Announced transfer<br/>(CL, PE, MX, BR)"] --> pay
+    announced["Announced transfer<br/>(CL, PE, MX, PY, BR)"] --> pay
     pull["Active pull collection<br/>(VE: c2p, debit)"] --> pay
     clabe["Dedicated CLABE account<br/>(MX)"] --> pay
     pay --> conv["FX conversion at your<br/>payin_rate − fixed fee"]
@@ -58,6 +58,7 @@ Collection corridors and modes:
 | Mexico | MXN | Dedicated CLABE account, announced bank transfer |
 | Venezuela | VES | Active collection `c2p` and `debito_inmediato` (pull) |
 | Bolivia | BOB / USD | Collection QR |
+| Paraguay | PYG | Announced bank transfer |
 | Brazil | BRL | Dynamic PIX QR, announced bank transfer |
 
 Availability may vary; the catalog (`GET /v1/payins/methods`) is always the
@@ -343,6 +344,44 @@ Response `201`:
 
 Display `qr_image` to your customer; when they pay, your account is
 credited automatically. It also works in USD (`currency: "USD"`).
+
+</Tab>
+<Tab title="Paraguay">
+
+**Announced bank transfer** in guaraníes: you announce the deposit, your
+payer transfers (interbank SIPAP or an internal transfer at the receiving
+bank) with the reference in the transfer concept, and the credit is
+detected automatically.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "PY",
+    "currency": "PYG",
+    "method": "bank_transfer",
+    "amount": "596000"
+  }'
+```
+
+Response `201`:
+
+```json
+{
+  "payin_id": "8f41…",
+  "status": "pending",
+  "reference": "8f41…",
+  "note": "include the reference in the transfer description so the deposit is credited automatically"
+}
+```
+
+<Note>
+Guaraníes use no decimals: announce the **exact integer amount** your
+payer will transfer (e.g. `"596000"`). The `reference` in the transfer
+concept ensures the automatic match; amount+currency matching works as a
+fallback.
+</Note>
 
 </Tab>
 <Tab title="Brazil">

@@ -16,7 +16,7 @@ automático + webhook:
 flowchart LR
     qr["QR de cobro<br/>(BO, BR·PIX)"] --> pago["Tu cliente paga<br/>en moneda local"]
     hosted["Página de pago hosted<br/>(CL: fintoc)"] --> pago
-    anunciada["Transferencia anunciada<br/>(CL, PE, MX, BR)"] --> pago
+    anunciada["Transferencia anunciada<br/>(CL, PE, MX, PY, BR)"] --> pago
     pull["Cobro activo pull<br/>(VE: c2p, débito)"] --> pago
     clabe["Cuenta CLABE dedicada<br/>(MX)"] --> pago
     pago --> conv["Conversión FX a tu<br/>payin_rate − fee fijo"]
@@ -58,6 +58,7 @@ Corredores y modalidades de cobro:
 | México | MXN | Cuenta CLABE dedicada, transferencia anunciada |
 | Venezuela | VES | Cobro activo `c2p` y `debito_inmediato` (pull) |
 | Bolivia | BOB / USD | QR de cobro |
+| Paraguay | PYG | Transferencia anunciada |
 | Brasil | BRL | QR PIX dinámico, transferencia anunciada |
 
 La disponibilidad puede variar; el catálogo (`GET /v1/payins/methods`) es
@@ -344,6 +345,43 @@ Respuesta `201`:
 
 Muestra `qr_image` a tu cliente; cuando paga, tu cuenta se acredita
 automáticamente. También funciona en USD (`currency: "USD"`).
+
+</Tab>
+<Tab title="Paraguay">
+
+**Transferencia anunciada** en guaraníes: anuncias el depósito, tu pagador
+transfiere (SIPAP interbancaria o transferencia interna del banco receptor)
+con la referencia en el concepto, y el abono se detecta automáticamente.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "PY",
+    "currency": "PYG",
+    "method": "bank_transfer",
+    "amount": "596000"
+  }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "payin_id": "8f41…",
+  "status": "pending",
+  "reference": "8f41…",
+  "note": "include the reference in the transfer description so the deposit is credited automatically"
+}
+```
+
+<Note>
+Los guaraníes no usan decimales: anuncia el monto **entero exacto** que
+transferirá tu pagador (ej. `"596000"`). La `reference` en el concepto de
+la transferencia asegura el match automático; como respaldo también se
+matchea por monto+moneda.
+</Note>
 
 </Tab>
 <Tab title="Brasil">
