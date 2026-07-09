@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.24'
+  version: '1.25'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -51,6 +51,10 @@ tags:
   description: Códigos de verificación de un solo uso por SMS/WhatsApp que
     protegen acciones sensibles. Aplican solo a sesiones de usuario — las API
     keys quedan exentas.
+- name: Login social
+  description: Registro e inicio de sesión sin contraseña con Google, Apple,
+    Microsoft y Facebook vía token exchange. El front obtiene la credencial
+    del proveedor; la API la verifica y emite la sesión CBPay.
 paths:
   /v1/auth/register:
     post:
@@ -333,6 +337,227 @@ paths:
               example:
                 error: challenge_not_pending
                 message: the challenge already expired or was used; log in again
+  /v1/auth/oauth:
+    post:
+      tags:
+      - Login social
+      security: []
+      operationId: oauthLogin
+      summary: Iniciar sesión o registrarse con un proveedor social
+      description: Token exchange. El front obtiene la credencial del
+        proveedor (Google/Apple/Microsoft `id_token`, Facebook
+        `access_token`) y la envía aquí. La API la verifica contra el
+        proveedor y devuelve la sesión CBPay — creando la cuenta en el primer
+        uso. Respeta la política de OTP en login de la cuenta (puede devolver
+        `otp_required`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - org
+              - provider
+              - credential
+              properties:
+                org:
+                  type: string
+                  description: Slug de la organización CBPay (`cbpay`).
+                provider:
+                  type: string
+                  enum: [google, apple, microsoft, facebook]
+                credential:
+                  type: string
+                  description: Credencial del proveedor obtenida por el SDK del front.
+                type:
+                  type: string
+                  enum: [person, company]
+                  description: Tipo de cuenta al crear una nueva (default person; se ignora si ya existe).
+            example:
+              org: cbpay
+              provider: google
+              credential: eyJhbGciOiJSUzI1Ni…
+              type: person
+      responses:
+        '200':
+          description: Usuario existente inició sesión (o `otp_required` si la
+            cuenta exige OTP en login).
+          content:
+            application/json:
+              example:
+                access_token: eyJhbGciOiJIUzI1Ni…
+                expires_at: '2026-07-09T21:00:00Z'
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                role: owner
+        '201':
+          description: Cuenta nueva creada y sesión iniciada.
+          content:
+            application/json:
+              example:
+                account:
+                  id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                  type: person
+                  email: ana@gmail.com
+                  display_name: Ana
+                access_token: eyJhbGciOiJIUzI1Ni…
+                expires_at: '2026-07-09T21:00:00Z'
+                created: true
+        '401':
+          description: La credencial es inválida, expiró o es de otra app (`invalid_credential`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_credential
+                message: the login credential is invalid or expired
+        '400':
+          description: Org desconocida, proveedor inválido o no habilitado para la org.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: provider_not_configured
+                message: this login provider is not enabled for this organization
+        '409':
+          description: Ya existe una cuenta con ese email (`email_conflict`); inicia sesión y vincula desde tu sesión.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: email_conflict
+                message: an account with this email already exists; sign in with your current method and link this provider from your session
+  /v1/auth/oauth/providers:
+    get:
+      tags:
+      - Login social
+      security: []
+      operationId: oauthProviders
+      summary: Listar proveedores sociales habilitados
+      description: Público. Devuelve los proveedores sociales habilitados de
+        la org y su `client_id`, para que el front pinte los botones
+        correctos.
+      parameters:
+      - name: org
+        in: query
+        required: true
+        schema:
+          type: string
+        description: Slug de la organización CBPay.
+      responses:
+        '200':
+          description: Proveedores habilitados.
+          content:
+            application/json:
+              example:
+                providers:
+                - provider: google
+                  client_id: 1234567890-abc.apps.googleusercontent.com
+                - provider: apple
+                  client_id: com.yourcompany.cbpay.web
+  /v1/me/identities:
+    get:
+      tags:
+      - Login social
+      operationId: listIdentities
+      summary: Listar mis proveedores vinculados
+      responses:
+        '200':
+          description: Identidades vinculadas del member que llama.
+          content:
+            application/json:
+              example:
+                identities:
+                - account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                  provider: google
+                  email: ana@gmail.com
+                  display_name: Ana
+                  created_at: '2026-07-08T21:00:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+    post:
+      tags:
+      - Login social
+      operationId: linkIdentity
+      summary: Vincular un proveedor a mi cuenta
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - provider
+              - credential
+              properties:
+                provider:
+                  type: string
+                  enum: [google, apple, microsoft, facebook]
+                credential:
+                  type: string
+            example:
+              provider: apple
+              credential: eyJhbGciOiJSUzI1Ni…
+      responses:
+        '201':
+          description: Proveedor vinculado.
+          content:
+            application/json:
+              example:
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                provider: apple
+                email: ana@privaterelay.appleid.com
+                created_at: '2026-07-08T21:05:00Z'
+        '409':
+          description: Esa identidad ya está vinculada a otra cuenta (`identity_taken`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: identity_taken
+                message: this provider identity is already linked to another account
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/me/identities/{provider}:
+    delete:
+      tags:
+      - Login social
+      operationId: unlinkIdentity
+      summary: Desvincular un proveedor
+      description: Bloqueado con `409 last_login_method` si es el único método
+        de acceso (sin contraseña y sin otro proveedor vinculado).
+      parameters:
+      - name: provider
+        in: path
+        required: true
+        schema:
+          type: string
+          enum: [google, apple, microsoft, facebook]
+      responses:
+        '200':
+          description: Proveedor desvinculado.
+          content:
+            application/json:
+              example:
+                provider: apple
+                unlinked: true
+        '409':
+          description: No se puede desvincular el único método de acceso (`last_login_method`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: last_login_method
+                message: cannot unlink the only sign-in method; set a password or link another provider first
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/me:
     get:
       tags:

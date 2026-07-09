@@ -8,6 +8,34 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="8 de julio de 2026" description="v1.25">
+
+**Agregado — Login social (Google, Apple, Microsoft, Meta)**
+
+- **Registro e inicio de sesión sin contraseña** con Google, Apple,
+  Microsoft y Facebook por token exchange: tu front obtiene la credencial
+  con el SDK del proveedor y la intercambias en `POST /v1/auth/oauth` por la
+  sesión CBPay. Guía completa en [login social](/es/guias/login-social).
+- **Endpoints nuevos**: `POST /v1/auth/oauth` (login + registro unificado),
+  `GET /v1/auth/oauth/providers` (proveedores habilitados, público),
+  `GET/POST /v1/me/identities` y `DELETE /v1/me/identities/{provider}`
+  (vincular/desvincular proveedores desde la sesión).
+- **Integra el 2FA**: si la cuenta exige OTP en login, el login social
+  también devuelve `otp_required` + `pending_token`.
+- **Multi-método**: una misma cuenta puede tener contraseña y varios
+  proveedores; el auto-vínculo por email solo ocurre si el proveedor lo
+  entrega verificado.
+- Códigos de error nuevos en el [catálogo](/es/errores): `invalid_provider`,
+  `provider_not_configured`, `invalid_credential`, `email_conflict`,
+  `identity_taken`, `last_login_method`.
+
+**Corregido**
+
+- El sello de "Colección actualizada" en la página de Postman ahora muestra
+  correctamente hace cuánto se actualizó (antes quedaba un indicador vacío).
+
+</Update>
+
 <Update label="8 de julio de 2026" description="v1.24">
 
 **Agregado — OTP/2FA por SMS y WhatsApp**

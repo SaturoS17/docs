@@ -51,6 +51,19 @@ Detalle y flujo completo en [seguridad y 2FA](/es/seguridad-2fa).
 | 429 | `too_many_attempts` | Límite de envíos o verificaciones; espera unos minutos |
 | 503 | `otp_unavailable` | Servicio de verificación no disponible (la acción queda bloqueada, nunca se salta el OTP) |
 
+### Login social (OAuth)
+
+Detalle y flujo completo en [login social](/es/guias/login-social).
+
+| HTTP | `error` | Significado |
+|---|---|---|
+| 400 | `invalid_provider` | Proveedor fuera de `google/apple/microsoft/facebook` |
+| 400 | `provider_not_configured` | Tu organización no tiene ese proveedor habilitado |
+| 401 | `invalid_credential` | La credencial del proveedor es inválida, expiró o es de otra app |
+| 409 | `email_conflict` | Ya existe una cuenta con ese email; entra con tu método actual y vincula el proveedor |
+| 409 | `identity_taken` | Ese proveedor ya está vinculado a otra cuenta |
+| 409 | `last_login_method` | No puedes desvincular tu único método de acceso |
+
 ### Validación (400)
 
 | `error` | Significado |

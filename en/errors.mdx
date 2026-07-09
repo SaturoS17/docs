@@ -51,6 +51,19 @@ Full flow and details in [security and 2FA](/en/security-2fa).
 | 429 | `too_many_attempts` | Send/verification limits reached; wait a few minutes |
 | 503 | `otp_unavailable` | Verification service unavailable (the action stays blocked; OTP is never skipped) |
 
+### Social login (OAuth)
+
+Full flow and details in [social login](/en/guides/social-login).
+
+| HTTP | `error` | Meaning |
+|---|---|---|
+| 400 | `invalid_provider` | Provider outside `google/apple/microsoft/facebook` |
+| 400 | `provider_not_configured` | Your organization has not enabled that provider |
+| 401 | `invalid_credential` | The provider credential is invalid, expired or from another app |
+| 409 | `email_conflict` | An account with that email already exists; sign in and link the provider |
+| 409 | `identity_taken` | That provider is already linked to another account |
+| 409 | `last_login_method` | You cannot unlink your only sign-in method |
+
 ### Validation (400)
 
 | `error` | Meaning |
