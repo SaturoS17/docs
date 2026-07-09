@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.27'
+  version: '1.28'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -1478,9 +1478,11 @@ paths:
       summary: Crear un payin (cobro de recarga)
       description: 'Crea una recarga fiat. Con `method: "qr"` (por defecto) se genera un cobro QR activo
         a través del procesador — en Bolivia el QR interoperable local, en Brasil un QR PIX dinámico cuyo
-        `charge` trae la imagen del QR y el payload "copia e cola". Con `method: "bank_transfer"` el depósito
+        `charge` trae la imagen del QR y el payload "copia e cola".         Con `method: "bank_transfer"` el depósito
         queda anunciado y la respuesta trae la referencia que el remitente debe incluir para que la transferencia
-        entrante se concilie y acredite automáticamente. Con `method: "fintoc"` (Chile) la respuesta trae
+        entrante se concilie y acredite automáticamente — un código corto de 12 caracteres alfanuméricos
+        que cabe en cualquier concepto bancario (algunos rieles lo limitan a 20 caracteres sin caracteres
+        especiales). Con `method: "fintoc"` (Chile) la respuesta trae
         una `payment_url` hosted: el pagador la abre y transfiere desde cualquier banco o billetera chilena;
         el depósito se detecta, valida y acredita automáticamente. Cobrar es gratis; la comisión de payin
         aplica cuando el depósito se acredita.'
@@ -1603,7 +1605,7 @@ paths:
                   value:
                     payin_id: 4f81c1d0-aaaa-bbbb-cccc-ddddeeeeffff
                     status: pending
-                    reference: 4f81c1d0-aaaa-bbbb-cccc-ddddeeeeffff
+                    reference: CBJ6T3W9M2K5
                     note: include the reference in the transfer description so the deposit is credited
                       automatically
                 fintoc:

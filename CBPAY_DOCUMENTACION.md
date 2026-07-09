@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-09 18:17 UTC · versión `357956b8ace2`
+> **Documento actualizado:** 2026-07-09 19:09 UTC · versión `07e05027fc15`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.27 (9 de julio de 2026) |
+| Versión de la documentación | v1.28 (9 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -2549,7 +2549,7 @@ Respuesta `201`:
 {
   "payin_id": "4f81…",
   "status": "pending",
-  "reference": "4f81…",
+  "reference": "CBJ6T3W9M2K5",
   "note": "include the reference in the transfer description so the deposit is credited automatically"
 }
 ```
@@ -2579,13 +2579,15 @@ Respuesta `201`:
 {
   "payin_id": "6d20…",
   "status": "pending",
-  "reference": "6d20…",
+  "reference": "CBK7M2Q9X4T3",
   "note": "include the reference in the transfer description so the deposit is credited automatically"
 }
 ```
 
-La `reference` debe viajar en la descripción de la transferencia para el
-match automático; como respaldo también se matchea por monto+moneda.
+La `reference` es un **código corto de 12 caracteres alfanuméricos** (cabe
+en cualquier concepto bancario) y debe viajar en la descripción de la
+transferencia para el match automático; como respaldo también se matchea
+por monto+moneda.
 
 #### México
 
@@ -2774,16 +2776,18 @@ Respuesta `201`:
 {
   "payin_id": "8f41…",
   "status": "pending",
-  "reference": "8f41…",
+  "reference": "CBW4N8R2T6P9",
   "note": "include the reference in the transfer description so the deposit is credited automatically"
 }
 ```
 
 > **Nota**
 Los guaraníes no usan decimales: anuncia el monto **entero exacto** que
-transferirá tu pagador (ej. `"596000"`). La `reference` en el concepto de
-la transferencia asegura el match automático; como respaldo también se
-matchea por monto+moneda.
+transferirá tu pagador (ej. `"596000"`). La `reference` es un código corto
+de 12 caracteres alfanuméricos — diseñado para el concepto SIPAP, que
+acepta **máximo 20 caracteres sin caracteres especiales** — y ponerla en
+el concepto asegura el match automático; como respaldo también se matchea
+por monto+moneda.
 #### Brasil
 
 **QR PIX dinámico**: el mismo endpoint genera un QR PIX con el monto
@@ -2828,7 +2832,7 @@ Respuesta `201`:
 {
   "payin_id": "b1a7…",
   "status": "pending",
-  "reference": "b1a7…",
+  "reference": "CBQ8H4X7N3R6",
   "note": "include the reference in the transfer description so the deposit is credited automatically"
 }
 ```
@@ -5261,9 +5265,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-09 18:17 UTC · 104 requests · versión `4f067f864a46`
+> **Colección actualizada:** 2026-07-09 19:09 UTC · 104 requests · versión `29eb764c88a3`
 
-<PostmanFreshness iso="2026-07-09T18:17:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-09T19:09:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -5297,6 +5301,21 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.28 — 9 de julio de 2026
+
+**Cambiado — Referencia corta en la transferencia anunciada**
+
+- `POST /v1/payins` con `method: "bank_transfer"` ahora devuelve una
+  `reference` **corta de 12 caracteres alfanuméricos** (ej.
+  `CBW4N8R2T6P9`) en vez del UUID: los conceptos bancarios tienen límites
+  duros (en Paraguay/SIPAP el máximo es 20 caracteres sin caracteres
+  especiales) y el UUID no cabía.
+- El match automático acepta la referencia nueva **y** sigue aceptando el
+  UUID de los anuncios antiguos — los payins `pending` existentes no se
+  ven afectados. El respaldo por monto+moneda no cambia.
+- `GET /v1/payins` y el detalle muestran la referencia de anuncio en
+  `reference` mientras el payin está `pending`.
 
 ### v1.27 — 9 de julio de 2026
 

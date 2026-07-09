@@ -133,7 +133,7 @@ Response `201`:
 {
   "payin_id": "4f81…",
   "status": "pending",
-  "reference": "4f81…",
+  "reference": "CBJ6T3W9M2K5",
   "note": "include the reference in the transfer description so the deposit is credited automatically"
 }
 ```
@@ -165,13 +165,14 @@ Response `201`:
 {
   "payin_id": "6d20…",
   "status": "pending",
-  "reference": "6d20…",
+  "reference": "CBK7M2Q9X4T3",
   "note": "include the reference in the transfer description so the deposit is credited automatically"
 }
 ```
 
-The `reference` must travel in the transfer description for the automatic
-match; amount+currency is used as a fallback matcher.
+The `reference` is a **short 12-character alphanumeric code** (it fits any
+bank concept field) and must travel in the transfer description for the
+automatic match; amount+currency is used as a fallback matcher.
 
 </Tab>
 <Tab title="Mexico">
@@ -371,16 +372,18 @@ Response `201`:
 {
   "payin_id": "8f41…",
   "status": "pending",
-  "reference": "8f41…",
+  "reference": "CBW4N8R2T6P9",
   "note": "include the reference in the transfer description so the deposit is credited automatically"
 }
 ```
 
 <Note>
 Guaraníes use no decimals: announce the **exact integer amount** your
-payer will transfer (e.g. `"596000"`). The `reference` in the transfer
-concept ensures the automatic match; amount+currency matching works as a
-fallback.
+payer will transfer (e.g. `"596000"`). The `reference` is a short
+12-character alphanumeric code — designed for the SIPAP concept field,
+which accepts **at most 20 characters and no special characters** — and
+putting it in the concept ensures the automatic match; amount+currency
+matching works as a fallback.
 </Note>
 
 </Tab>
@@ -428,7 +431,7 @@ Response `201`:
 {
   "payin_id": "b1a7…",
   "status": "pending",
-  "reference": "b1a7…",
+  "reference": "CBQ8H4X7N3R6",
   "note": "include the reference in the transfer description so the deposit is credited automatically"
 }
 ```

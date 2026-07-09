@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.27'
+  version: '1.28'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -1478,7 +1478,8 @@ paths:
         through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose
         `charge` carries the QR image and the "copia e cola" payload. With `method: "bank_transfer"` the
         deposit is announced and the response carries the reference the sender must include so the arriving
-        transfer is matched and credited automatically. With `method: "fintoc"` (Chile) the response
+        transfer is matched and credited automatically — a short 12-character alphanumeric code that fits
+        any bank concept field (some rails cap it at 20 characters with no special characters). With `method: "fintoc"` (Chile) the response
         carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet;
         the deposit is detected, validated and credited automatically. Charging is free; the payin fee
         applies when the deposit is credited.'
@@ -1601,7 +1602,7 @@ paths:
                   value:
                     payin_id: 4f81c1d0-aaaa-bbbb-cccc-ddddeeeeffff
                     status: pending
-                    reference: 4f81c1d0-aaaa-bbbb-cccc-ddddeeeeffff
+                    reference: CBJ6T3W9M2K5
                     note: include the reference in the transfer description so the deposit is credited
                       automatically
                 fintoc:

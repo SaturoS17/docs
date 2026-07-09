@@ -135,7 +135,7 @@ Respuesta `201`:
 {
   "payin_id": "4f81…",
   "status": "pending",
-  "reference": "4f81…",
+  "reference": "CBJ6T3W9M2K5",
   "note": "include the reference in the transfer description so the deposit is credited automatically"
 }
 ```
@@ -166,13 +166,15 @@ Respuesta `201`:
 {
   "payin_id": "6d20…",
   "status": "pending",
-  "reference": "6d20…",
+  "reference": "CBK7M2Q9X4T3",
   "note": "include the reference in the transfer description so the deposit is credited automatically"
 }
 ```
 
-La `reference` debe viajar en la descripción de la transferencia para el
-match automático; como respaldo también se matchea por monto+moneda.
+La `reference` es un **código corto de 12 caracteres alfanuméricos** (cabe
+en cualquier concepto bancario) y debe viajar en la descripción de la
+transferencia para el match automático; como respaldo también se matchea
+por monto+moneda.
 
 </Tab>
 <Tab title="México">
@@ -371,16 +373,18 @@ Respuesta `201`:
 {
   "payin_id": "8f41…",
   "status": "pending",
-  "reference": "8f41…",
+  "reference": "CBW4N8R2T6P9",
   "note": "include the reference in the transfer description so the deposit is credited automatically"
 }
 ```
 
 <Note>
 Los guaraníes no usan decimales: anuncia el monto **entero exacto** que
-transferirá tu pagador (ej. `"596000"`). La `reference` en el concepto de
-la transferencia asegura el match automático; como respaldo también se
-matchea por monto+moneda.
+transferirá tu pagador (ej. `"596000"`). La `reference` es un código corto
+de 12 caracteres alfanuméricos — diseñado para el concepto SIPAP, que
+acepta **máximo 20 caracteres sin caracteres especiales** — y ponerla en
+el concepto asegura el match automático; como respaldo también se matchea
+por monto+moneda.
 </Note>
 
 </Tab>
@@ -428,7 +432,7 @@ Respuesta `201`:
 {
   "payin_id": "b1a7…",
   "status": "pending",
-  "reference": "b1a7…",
+  "reference": "CBQ8H4X7N3R6",
   "note": "include the reference in the transfer description so the deposit is credited automatically"
 }
 ```

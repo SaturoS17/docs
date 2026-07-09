@@ -7,6 +7,22 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 9, 2026" description="v1.28">
+
+**Changed — Short reference for announced bank transfers**
+
+- `POST /v1/payins` with `method: "bank_transfer"` now returns a **short
+  12-character alphanumeric `reference`** (e.g. `CBW4N8R2T6P9`) instead of
+  the UUID: bank concept fields have hard limits (Paraguay/SIPAP caps them
+  at 20 characters with no special characters) and the UUID never fit.
+- Automatic matching accepts the new reference **and** keeps accepting the
+  UUID from old announcements — existing `pending` payins are unaffected.
+  The amount+currency fallback is unchanged.
+- `GET /v1/payins` and the detail expose the announce reference in
+  `reference` while the payin is `pending`.
+
+</Update>
+
 <Update label="July 9, 2026" description="v1.27">
 
 **Added — Payins in Paraguay (announced bank transfer)**

@@ -8,6 +8,23 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="9 de julio de 2026" description="v1.28">
+
+**Cambiado — Referencia corta en la transferencia anunciada**
+
+- `POST /v1/payins` con `method: "bank_transfer"` ahora devuelve una
+  `reference` **corta de 12 caracteres alfanuméricos** (ej.
+  `CBW4N8R2T6P9`) en vez del UUID: los conceptos bancarios tienen límites
+  duros (en Paraguay/SIPAP el máximo es 20 caracteres sin caracteres
+  especiales) y el UUID no cabía.
+- El match automático acepta la referencia nueva **y** sigue aceptando el
+  UUID de los anuncios antiguos — los payins `pending` existentes no se
+  ven afectados. El respaldo por monto+moneda no cambia.
+- `GET /v1/payins` y el detalle muestran la referencia de anuncio en
+  `reference` mientras el payin está `pending`.
+
+</Update>
+
 <Update label="9 de julio de 2026" description="v1.27">
 
 **Agregado — Payins en Paraguay (transferencia anunciada)**
