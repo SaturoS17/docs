@@ -4,7 +4,11 @@ export const PostmanFreshness = ({ iso, lang = "es" }) => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
-  const secs = Math.max(0, Math.floor((now - new Date(iso).getTime()) / 1000));
+  const ts = new Date(iso).getTime();
+  if (!iso || Number.isNaN(ts)) {
+    return null;
+  }
+  const secs = Math.max(0, Math.floor((now - ts) / 1000));
   const units =
     lang === "en"
       ? [
@@ -23,14 +27,19 @@ export const PostmanFreshness = ({ iso, lang = "es" }) => {
           [60, "minuto", "minutos"],
           [1, "segundo", "segundos"],
         ];
-  let label = lang === "en" ? "0 seconds ago" : "hace 0 segundos";
+  let rel = lang === "en" ? "0 seconds ago" : "hace 0 segundos";
   for (const [size, one, many] of units) {
     if (secs >= size || size === 1) {
       const n = Math.floor(secs / size);
       const unit = n === 1 ? one : many;
-      label = lang === "en" ? `${n} ${unit} ago` : `hace ${n} ${unit}`;
+      rel = lang === "en" ? `${n} ${unit} ago` : `hace ${n} ${unit}`;
       break;
     }
   }
-  return <strong>{label}</strong>;
+  const label = lang === "en" ? `Updated ${rel}` : `Actualizada ${rel}`;
+  return (
+    <p className="text-sm text-gray-500 dark:text-zinc-400">
+      <strong>{label}</strong>
+    </p>
+  );
 };

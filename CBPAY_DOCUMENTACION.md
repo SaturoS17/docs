@@ -4823,7 +4823,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-08 22:13 UTC (<PostmanFreshness iso="2026-07-08T22:13:00Z" lang="es" />) · 95 requests · versión `2c31dcb3acca`
+> **Colección actualizada:** 2026-07-08 22:13 UTC · 95 requests · versión `2c31dcb3acca`
+
+<PostmanFreshness iso="2026-07-08T22:13:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
