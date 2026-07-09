@@ -82,6 +82,12 @@ currently applied to your account:
 {
   "base": "USD",
   "rates": { "chile": { "currency": "CLP", "rate": "950.25", "payin_rate": "955.10" } },
+  "asset_prices": {
+    "USDT": { "currency": "USD", "unit": "usdt", "price": "1" },
+    "USDC": { "currency": "USD", "unit": "usdc", "price": "1" },
+    "BTC": { "currency": "USD", "unit": "btc", "price": "109853.24" },
+    "GOLD": { "currency": "USD", "unit": "gram", "price": "107.5341" }
+  },
   "fees": [
     {
       "service": "payout",
@@ -93,6 +99,9 @@ currently applied to your account:
   ]
 }
 ```
+
+`asset_prices` is the **reference** USD price of each virtual balance (to
+value them on screen) — it implies no conversion and no spread.
 
 The charged fee is always explicit in each operation's response (`fee`
 field) and in the ledger.

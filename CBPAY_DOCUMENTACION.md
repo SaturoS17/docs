@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-09 16:24 UTC · versión `db7bb8382401`
+> **Documento actualizado:** 2026-07-09 17:18 UTC · versión `2b3ab18cf5ef`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.25 (8 de julio de 2026) |
+| Versión de la documentación | v1.26 (9 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -64,8 +64,10 @@ solo saldo.
 
 *Qué es CBPay y qué puedes construir con la API*
 
-CBPay es una plataforma de pagos multi-moneda para Latinoamérica. Cada cuenta
-mantiene un saldo virtual en **USDT** y opera sobre él:
+CBPay es una plataforma de pagos multi-moneda para Latinoamérica. Cada
+cuenta mantiene **cuatro saldos virtuales independientes** — `USDT` (la
+moneda operativa), `USDC`, `BTC` y `GOLD` (gramos de oro) — y opera sobre
+ellos:
 
 - **Payouts fiat** — Dispersa dinero a cuentas bancarias locales en Chile, Perú, México, Venezuela, Bolivia, Brasil y Paraguay, debitado de tu saldo USDT.
 - **Payins fiat** — Cobra en moneda local (QR, transferencias, página de pago y cobro pull) y recibe el abono automáticamente en USDT.
@@ -80,8 +82,9 @@ Todos los eventos llegan a tus **webhooks firmados**
 
 ### Cómo funciona
 
-Todo gira alrededor de un único saldo USDT por cuenta — el dinero entra
-por un lado, se convierte, y sale por el otro:
+La operación fiat gira alrededor del saldo USDT (los saldos USDC, BTC y
+GOLD se mueven con transferencias internas, depósitos on-chain y abonos del
+operador) — el dinero entra por un lado, se convierte, y sale por el otro:
 
 ```mermaid
 flowchart LR
@@ -126,7 +129,8 @@ Todas las rutas de esta documentación son relativas a esa URL base.
 
 > **Nota**
 Los montos son siempre **strings decimales** (ej. `"10.500000"`), nunca
-números flotantes. Los saldos usan 6 decimales (precisión USDT).
+números flotantes. Cada moneda usa su precisión: 6 decimales para
+`USDT`/`USDC`/`GOLD` y 8 para `BTC`.
 ### Siguientes pasos
 
 ### Crea tu cuenta y token
@@ -165,7 +169,7 @@ Antes de empezar, los datos que vas a necesitar en todos lados:
 | **URL base** | `https://api.qbank.cl/platform` |
 | **Autenticación** | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | **Slug de organización** | `cbpay` (para registro y login) |
-| **Moneda del saldo** | USDT, 6 decimales, siempre como string (`"52.618258"`) |
+| **Monedas del saldo** | 4 saldos independientes: USDT (operativa), USDC, BTC y GOLD — montos siempre como string (`"52.618258"`) |
 | **Ambiente** | Producción directa — no hay sandbox; prueba con montos pequeños |
 
 > **Nota**
@@ -237,7 +241,10 @@ curl https://api.qbank.cl/platform/v1/balances \
 {
   "account_id": "…",
   "balances": [
-    { "asset": "USDT", "available": "0.000000", "held": "0.000000" }
+    { "asset": "USDT", "available": "0.000000", "held": "0.000000" },
+    { "asset": "USDC", "available": "0.000000", "held": "0.000000" },
+    { "asset": "BTC", "available": "0.00000000", "held": "0.00000000" },
+    { "asset": "GOLD", "available": "0.000000", "held": "0.000000" }
   ]
 }
 ```
@@ -883,25 +890,49 @@ algo, repórtalo: la documentación se actualiza con cada pregunta real.
 
 ## Modelo de dinero
 
-*Saldos USDT, conversión FX, holds y el ledger inmutable*
+*Saldos virtuales por moneda, conversión FX, holds y el ledger inmutable*
 
-### Un solo saldo: USDT
+### Cuatro saldos virtuales independientes
 
-Cada cuenta tiene un saldo virtual en **USDT con 6 decimales**. Todas las
-operaciones — payouts en pesos chilenos, cobros en soles, retiros on-chain —
-se liquidan contra ese único saldo.
+Cada cuenta mantiene **cuatro saldos virtuales, uno por moneda**. Son
+totalmente independientes entre sí: nunca se mezclan ni se convierten
+automáticamente.
 
-Los montos viajan siempre como **strings decimales**:
+| Moneda | Qué es | Decimales | Cómo se fondea |
+|---|---|---|---|
+| `USDT` | Stablecoin USD — **la moneda operativa** | 6 | Payins fiat, depósitos on-chain (TRON/Ethereum), transferencias |
+| `USDC` | Stablecoin USD | 6 | Depósitos on-chain (Ethereum), transferencias |
+| `BTC` | Bitcoin | 8 (satoshis) | Abonos del operador y transferencias internas |
+| `GOLD` | **Gramos de oro fino** con respaldo en custodio | 6 | Abonos del operador y transferencias internas |
+
+`GET /v1/balances` devuelve siempre los cuatro (con ceros si no has operado
+esa moneda), como **strings decimales**:
 
 ```json
-{ "asset": "USDT", "available": "125.430000", "held": "10.000000" }
+{
+  "account_id": "…",
+  "balances": [
+    { "asset": "USDT", "available": "125.430000", "held": "10.000000" },
+    { "asset": "USDC", "available": "50.000000", "held": "0.000000" },
+    { "asset": "BTC", "available": "0.00060000", "held": "0.00000000" },
+    { "asset": "GOLD", "available": "12.500000", "held": "0.000000" }
+  ]
+}
 ```
 
 > **Nota**
-Internamente los montos se almacenan como enteros en micro-USDT
-(1 USDT = 1.000.000 unidades) y se calculan con aritmética racional exacta.
-Nunca hay floats ni errores de redondeo acumulados.
+Internamente cada monto se almacena como entero en la unidad mínima de su
+moneda (micro-USDT, satoshis, micro-gramos) y se calcula con aritmética
+racional exacta. Nunca hay floats ni errores de redondeo acumulados.
+**USDT es la moneda operativa**: los payouts y payins fiat, las tarjetas y
+todas las comisiones de servicios se liquidan siempre contra el saldo USDT.
+Los otros saldos se mueven con [transferencias
+internas](#transferencias-internas) (siempre entre saldos de la misma
+moneda), depósitos on-chain (USDC) o abonos de tu operador (BTC y GOLD).
+
 ### `available` y `held`
+
+Cada saldo tiene sus dos contadores:
 
 | Campo | Significado |
 |---|---|
@@ -939,17 +970,36 @@ usdt_credited = usdt_gross − fee
 
 La tasa usada queda registrada en el objeto (`fx_rate`) para auditoría.
 
+### Precios de referencia
+
+`GET /v1/rates` incluye un bloque `asset_prices` con el **precio USD de
+referencia** de cada moneda (BTC por unidad, GOLD por gramo; USDT y USDC
+valen 1 por convención). Es solo para valorizar tus saldos en pantalla — no
+implica conversión ni spread:
+
+```json
+{
+  "asset_prices": {
+    "USDT": { "currency": "USD", "unit": "usdt", "price": "1" },
+    "USDC": { "currency": "USD", "unit": "usdc", "price": "1" },
+    "BTC": { "currency": "USD", "unit": "btc", "price": "109853.24" },
+    "GOLD": { "currency": "USD", "unit": "gram", "price": "107.5341" }
+  }
+}
+```
+
 ### Ledger inmutable
 
 Cada movimiento genera una entrada inmutable con saldo resultante
-(`balance_after`). Tu historial completo está en `GET /v1/movements`:
+(`balance_after`) **en la moneda del movimiento**. Tu historial completo
+está en `GET /v1/movements` (filtra por moneda con `?asset=`):
 
 | `type` | Qué representa |
 |---|---|
 | `payin_credit` | Abono de un cobro fiat |
 | `payout_debit` / `payout_refund` | Débito de payout / reembolso si falló |
 | `transfer_in` / `transfer_out` | Transferencia interna recibida / enviada |
-| `funding` | Depósito USDT on-chain acreditado |
+| `funding` | Depósito on-chain acreditado (USDT o USDC, cada uno en su saldo) |
 | `withdrawal_debit` / `withdrawal_refund` | Retiro on-chain / reembolso si falló |
 | `compliance_fee` / `compliance_refund` | Cargo por servicio KYC/KYB / reembolso |
 | `wallet_creation_fee` / `wallet_creation_refund` | Cargo por creación de wallet / reembolso |
@@ -957,6 +1007,10 @@ Cada movimiento genera una entrada inmutable con saldo resultante
 
 ```bash
 curl "https://api.qbank.cl/platform/v1/movements?type=payout_debit&from=2026-07-01&to=2026-07-07&page_size=20" \
+  -H "Authorization: Bearer <token>"
+
+# Solo los movimientos del saldo GOLD
+curl "https://api.qbank.cl/platform/v1/movements?asset=GOLD&from=2026-07-01&to=2026-07-07" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -1062,6 +1116,12 @@ vigente para tu cuenta:
 {
   "base": "USD",
   "rates": { "chile": { "currency": "CLP", "rate": "950.25", "payin_rate": "955.10" } },
+  "asset_prices": {
+    "USDT": { "currency": "USD", "unit": "usdt", "price": "1" },
+    "USDC": { "currency": "USD", "unit": "usdc", "price": "1" },
+    "BTC": { "currency": "USD", "unit": "btc", "price": "109853.24" },
+    "GOLD": { "currency": "USD", "unit": "gram", "price": "107.5341" }
+  },
   "fees": [
     {
       "service": "payout",
@@ -1073,6 +1133,9 @@ vigente para tu cuenta:
   ]
 }
 ```
+
+`asset_prices` es el precio USD **de referencia** de cada saldo virtual
+(para valorizarlos en pantalla) — no implica conversión ni spread.
 
 La comisión cobrada queda siempre explícita en la respuesta de cada
 operación (campo `fee`) y en el ledger.
@@ -2818,11 +2881,13 @@ curl "https://api.qbank.cl/platform/v1/payins?from=2026-07-01&to=2026-07-08&stat
 
 ## Transferencias internas
 
-*Mueve USDT entre cuentas CBPay, gratis y al instante*
+*Mueve USDT, USDC, BTC o GOLD entre cuentas CBPay, gratis y al instante*
 
 Las transferencias internas mueven saldo entre dos cuentas **CBPay**, de
 forma atómica en el ledger y **siempre sin comisión** — el dinero nunca sale
-del ecosistema.
+del ecosistema. Funcionan con las cuatro monedas (`USDT`, `USDC`, `BTC`,
+`GOLD`) y siempre **entre saldos de la misma moneda**: el `asset` que envías
+es el `asset` que recibe el destino, sin conversión.
 
 ```mermaid
 sequenceDiagram
@@ -2884,8 +2949,23 @@ curl -X POST https://api.qbank.cl/platform/v1/transfers \
   }'
 ```
 
+```bash En otra moneda (GOLD, gramos de oro)
+curl -X POST https://api.qbank.cl/platform/v1/transfers \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to_email": "carlos@ejemplo.com",
+    "asset": "GOLD",
+    "amount": "2.500000",
+    "description": "Regalo en oro",
+    "idempotency_key": "oro-2026-07-09-a"
+  }'
+```
+
 La forma del request es idéntica en todas las combinaciones (persona o
 empresa, en cualquier dirección) — cambia solo la credencial que llama.
+`asset` es opcional y por defecto `USDT`; acepta `USDT`, `USDC`, `BTC` o
+`GOLD` y el destino recibe **en esa misma moneda**.
 
 Respuesta `201` — la transferencia es **síncrona e inmediata**:
 
@@ -2940,18 +3020,22 @@ Cada fila trae `direction` (`sent` o `received`) desde tu perspectiva.
 
 - Solo entre cuentas CBPay **activas**; las cuentas internas del sistema no
   pueden recibir.
+- Siempre **misma moneda en origen y destino**: no hay conversión entre
+  saldos (`USDT`→`USDT`, `GOLD`→`GOLD`, …).
 - No puedes transferirte a ti mismo (`400 self_transfer`).
 - Requiere `idempotency_key` (body o header `Idempotency-Key`); el replay
   devuelve `200` con `idempotency_hit: true`.
-- `amount` acepta hasta 6 decimales.
+- `amount` acepta hasta los decimales de la moneda: 6 para `USDT`/`USDC`/
+  `GOLD`, 8 para `BTC`.
 
 ### Errores
 
 | HTTP | `error` | Causa |
 |---|---|---|
 | 400 | `recipient_required` | Falta `to_account_id` y `to_email` |
+| 400 | `invalid_amount` | Monto inválido, demasiados decimales o `asset` no soportado |
 | 400 | `self_transfer` | Origen y destino son la misma cuenta |
-| 402 | `insufficient_funds` | Saldo disponible insuficiente |
+| 402 | `insufficient_funds` | Saldo disponible insuficiente en esa moneda |
 | 404 | `recipient_not_found` | El email/ID no corresponde a una cuenta CBPay |
 | 422 | `recipient_unavailable` | La cuenta destino está bloqueada/cerrada |
 
@@ -2960,8 +3044,18 @@ Cada fila trae `direction` (`sent` o `received`) desde tu perspectiva.
 
 *Crea wallets on-chain, deposita, transfiere y consulta movimientos*
 
-Tu saldo USDT vive conectado a la blockchain. Redes soportadas: **TRON**
-(`tron`) y **Ethereum** (`eth`), activo **USDT**.
+Tus saldos stablecoin viven conectados a la blockchain. Combinaciones
+soportadas:
+
+| Red | Activo | Saldo que acredita |
+|---|---|---|
+| `tron` | `usdt` | USDT |
+| `eth` | `usdt` | USDT |
+| `eth` | `usdc` | USDC |
+
+Cada depósito acredita el **saldo de su propio activo** (una wallet USDC
+abona tu saldo USDC). `BTC` y `GOLD` son saldos sin riel on-chain: se
+mueven solo por transferencias internas y abonos del operador.
 
 ```mermaid
 flowchart LR
@@ -2969,7 +3063,7 @@ flowchart LR
         wallet["Tu wallet CBPay<br/>(dirección estable)"] --> confirmado["Confirmación<br/>on-chain"]
         confirmado --> abono["Abono automático<br/>− fee funding"]
     end
-    abono --> saldo(("Saldo USDT<br/>de la cuenta"))
+    abono --> saldo(("Saldo del activo<br/>(USDT o USDC)"))
     subgraph salida [Retirar]
         saldo --> retiro["POST /v1/crypto/withdrawals<br/>debita amount + fee"]
         retiro --> onchain{"Resultado<br/>on-chain"}
@@ -3014,6 +3108,21 @@ curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
     "label": "Cobros e-commerce"
   }'
 ```
+
+```bash Wallet USDC (solo Ethereum)
+curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "eth",
+    "asset": "usdc",
+    "label": "Tesorería USDC"
+  }'
+```
+
+`asset` es opcional y por defecto `usdt`. El límite de una wallet por red
+para personas es por combinación red+activo: una persona puede tener su
+wallet `eth`/`usdt` **y** su wallet `eth`/`usdc`.
 
 Respuesta `201`:
 
@@ -3081,8 +3190,8 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
 
 ### Depositar
 
-Envía USDT a la dirección de cualquiera de tus wallets, **por la red
-correcta**. Cuando el depósito se confirma on-chain, tu saldo se acredita
+Envía el activo de la wallet a su dirección, **por la red correcta**.
+Cuando el depósito se confirma on-chain, el saldo de ese activo se acredita
 automáticamente (neto de la comisión de `funding` si CBPay la configuró) y
 se emite el webhook `crypto_deposit_credited`:
 
@@ -3098,8 +3207,9 @@ se emite el webhook `crypto_deposit_credited`:
 ```
 
 > **Importante**
-Envía **solo USDT por la red de la wallet**. Las direcciones son tuyas y
-estables: puedes reutilizarlas para todos tus depósitos.
+Envía **solo el activo de la wallet y por su red** (USDT a una wallet
+USDT, USDC a una wallet USDC). Las direcciones son tuyas y estables:
+puedes reutilizarlas para todos tus depósitos.
 #### Tiempos de confirmación
 
 | Red | Detección | Abono (confirmación de la red) |
@@ -3112,9 +3222,10 @@ explorador de la red.
 
 ### Transferir (retiros on-chain)
 
-Envía USDT desde tu saldo a cualquier dirección externa:
+Envía USDT o USDC desde su saldo a cualquier dirección externa (`asset`
+opcional, default `USDT`; USDC solo por `eth`):
 
-```bash
+```bash USDT por TRON
 curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
@@ -3123,6 +3234,19 @@ curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
     "to_address": "TVJ6…",
     "amount": "100.000000",
     "idempotency_key": "retiro-2026-07-07-b"
+  }'
+```
+
+```bash USDC por Ethereum
+curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "eth",
+    "asset": "USDC",
+    "to_address": "0x8f3B…",
+    "amount": "50.000000",
+    "idempotency_key": "retiro-usdc-2026-07-09-a"
   }'
 ```
 
@@ -3223,17 +3347,18 @@ curl "https://api.qbank.cl/platform/v1/movements?type=funding&from=2026-07-01&to
   -H "Authorization: Bearer <token>"
 ```
 
-Los depósitos acreditan el **saldo USDT de la cuenta** (las wallets son
-puertas de entrada; el saldo es uno solo).
+Cada depósito acredita el **saldo del activo de su wallet** (USDT o USDC);
+las wallets son puertas de entrada, el saldo por moneda es uno solo.
 
 ### Errores
 
 | HTTP | `error` | Causa |
 |---|---|---|
 | 400 | `invalid_chain` | Red no soportada (usa `tron` o `eth`) |
+| 400 | `invalid_asset` | Combinación red/activo sin riel on-chain (soportadas: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc` — `BTC` y `GOLD` no operan on-chain) |
 | 400 | `to_address_required` | Falta la dirección destino del retiro |
-| 402 | `insufficient_funds` | Saldo insuficiente (para el retiro o para la comisión de creación) |
-| 422 | `wallet_limit_reached` | Una persona intentó crear una segunda wallet en la misma red |
+| 402 | `insufficient_funds` | Saldo insuficiente en ese activo (para el retiro o la comisión de creación) |
+| 422 | `wallet_limit_reached` | Una persona intentó crear una segunda wallet para la misma red+activo |
 | 422 | (retiro con `status: failed`) | Rechazado al transmitir; débito reembolsado |
 | 503 | `withdrawals_unavailable` | Retiros no habilitados aún para este corredor |
 
@@ -4231,9 +4356,21 @@ curl -OJ "https://api.qbank.cl/platform/v1/reports/statement?from=2026-01-01&to=
   },
   "payouts": [ { "created_at": "…", "payout_id": "…", "country": "BO", "beneficiary": "Juan Quispe", "local_amount": "90.00", "fx_rate": "6.91", "usdt_amount": "13.024600", "fee": "0.300000", "total_debit": "13.324600", "status": "completed" } ],
   "payins": [ { "…": "…" } ],
-  "crypto_deposits": [ { "chain": "tron", "tx_id": "…", "usdt_gross": "100.000000", "fee": "1.000000", "usdt_credited": "99.000000", "balance_after": "99.000000" } ],
+  "assets": [
+    {
+      "asset": "GOLD",
+      "opening_balance": "0.000000",
+      "total_in": "12.500000",
+      "total_out": "2.000000",
+      "net_change": "10.500000",
+      "closing_balance": "10.500000",
+      "balanced": true,
+      "movements": [ { "type": "adjustment", "amount": "12.500000", "balance_after": "12.500000", "created_at": "…" } ]
+    }
+  ],
+  "crypto_deposits": [ { "chain": "tron", "asset": "USDT", "tx_id": "…", "usdt_gross": "100.000000", "fee": "1.000000", "usdt_credited": "99.000000", "balance_after": "99.000000" } ],
   "crypto_withdrawals": [ { "…": "…" } ],
-  "transfers": [ { "direction": "sent", "counterparty": "Ana Pérez", "amount": "25.000000" } ],
+  "transfers": [ { "direction": "sent", "counterparty": "Ana Pérez", "asset": "USDT", "amount": "25.000000" } ],
   "service_charges": [ { "type": "banking_fee", "service": "banking_customer", "amount": "-0.500000", "balance_after": "98.500000" } ],
   "movements": [ { "type": "funding", "amount": "99.000000", "balance_after": "99.000000", "created_at": "…" } ]
 }
@@ -4242,14 +4379,21 @@ curl -OJ "https://api.qbank.cl/platform/v1/reports/statement?from=2026-01-01&to=
 Secciones:
 
 1. **`summary`** — saldo inicial, entradas, salidas, saldo final, comisiones
-   por servicio y el flag `balanced`.
-2. **`breakdown`** — por producto, por país (payouts y payins con monto
+   por servicio y el flag `balanced` del **saldo USDT** (la moneda
+   operativa).
+2. **`assets`** — una sección conciliada por cada saldo no-USDT con
+   actividad o saldo (USDC, BTC, GOLD): saldo inicial/final, entradas,
+   salidas, su propio flag `balanced` y sus movimientos, en la precisión de
+   cada moneda. Si solo operas USDT, viene vacía.
+3. **`breakdown`** — por producto, por país (payouts y payins con monto
    local y USDT), por moneda fiat y por mes.
-3. **Detalle por producto** — payouts (con beneficiario, tasa y débito),
-   payins (por modalidad), crypto (con `tx_id`), transferencias (con
-   contraparte) y cargos por servicio (con reembolsos).
-4. **`movements`** — el ledger crudo: cada movimiento con su
-   `balance_after`. Es la sección con la que un auditor cuadra todo.
+4. **Detalle por producto** — payouts (con beneficiario, tasa y débito),
+   payins (por modalidad), crypto (con `tx_id` y su `asset`),
+   transferencias (con contraparte y `asset`) y cargos por servicio (con
+   reembolsos).
+5. **`movements`** — el ledger crudo del saldo USDT: cada movimiento con su
+   `balance_after`. Es la sección con la que un auditor cuadra todo (los
+   movimientos de las otras monedas van dentro de su sección en `assets`).
 
 ### Cómo cuadrar la cartola (para tu contador)
 
@@ -4259,7 +4403,9 @@ La cartola cumple una identidad contable exacta, sin redondeos:
 saldo_inicial + total_entradas − total_salidas = saldo_final
 ```
 
-- `balanced: true` confirma que la identidad se cumple contra el ledger.
+- `balanced: true` confirma que la identidad se cumple contra el ledger —
+  tanto en el resumen USDT como en cada sección de `assets` (cada moneda
+  cuadra por separado; nunca se suman montos de monedas distintas).
 - Cada fila de `movements` trae el saldo resultante (`balance_after`):
   puedes seguir el saldo línea a línea desde el inicial hasta el final.
 - El saldo final de la cartola de un período empalma con el inicial del
@@ -5080,9 +5226,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-09 00:43 UTC · 100 requests · versión `d9cad3e87eea`
+> **Colección actualizada:** 2026-07-09 17:18 UTC · 103 requests · versión `891be22f57ce`
 
-<PostmanFreshness iso="2026-07-09T00:43:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-09T17:18:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -5116,6 +5262,33 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.26 — 9 de julio de 2026
+
+**Agregado — Saldos virtuales multi-moneda (USDT, USDC, BTC, GOLD)**
+
+- Cada cuenta ahora mantiene **cuatro saldos virtuales independientes**:
+  `USDT` (la moneda operativa), `USDC`, `BTC` (8 decimales, satoshis) y
+  `GOLD` (gramos de oro fino, 6 decimales, con respaldo en custodio).
+  Nunca se mezclan ni se convierten automáticamente. Detalle en
+  [modelo de dinero](#modelo-de-dinero).
+- **`GET /v1/balances`** devuelve siempre los cuatro saldos (con ceros si
+  no has operado esa moneda) y `GET /v1/movements` filtra por moneda con
+  `?asset=`.
+- **Transferencias internas multi-moneda**: `POST /v1/transfers` acepta
+  `asset` (`USDT` default, `USDC`, `BTC`, `GOLD`) — siempre entre saldos de
+  la **misma moneda**, sin conversión y sin comisión.
+- **USDC on-chain**: crea wallets `eth`/`usdc`, deposita y retira USDC por
+  Ethereum. Cada depósito acredita el saldo de su propio activo. Guía en
+  [crypto](#crypto-wallets-depositos-y-retiros).
+- **Precios de referencia**: `GET /v1/rates` incluye `asset_prices` con el
+  precio USD referencial de cada moneda (BTC por unidad, GOLD por gramo) —
+  solo para valorizar, sin conversión ni spread.
+- **Cartola multi-moneda**: nueva sección `assets` con la conciliación
+  independiente de cada saldo no-USDT (inicial/entradas/salidas/final y su
+  flag `balanced`), también en el PDF y el Excel.
+- Los payouts, payins, tarjetas y comisiones de servicios siguen operando
+  **exclusivamente contra el saldo USDT**.
 
 ### v1.25 — 8 de julio de 2026
 

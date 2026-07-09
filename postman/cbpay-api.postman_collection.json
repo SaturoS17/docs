@@ -1,10 +1,10 @@
 {
   "info": {
     "name": "CBPay API",
-    "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain USDT funding and\nwithdrawals, and KYC screening — all against a single USDT-denominated\nbalance per account.\n\nAll amounts are decimal strings. Balances are held in USDT with 6 decimal\nplaces. Errors always return `{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
+    "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — that never mix or convert automatically.\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-09 00:43 UTC",
-    "_content_sha256": "d9cad3e87eea9914370f4c6eeef1c2d2c6f365233692b23f0c66c5de19925c40"
+    "_generated_at": "2026-07-09 17:18 UTC",
+    "_content_sha256": "891be22f57ce6cb6a3bf1eb99f2050cbc21abb1506efbc325f779d953cb4af25"
   },
   "auth": {
     "type": "bearer",
@@ -881,11 +881,11 @@
                 "balances"
               ]
             },
-            "description": ""
+            "description": "The four independent virtual balances of the calling account (USDT — the operating currency —, USDC, BTC and GOLD in grams of fine gold). Every supported asset is always present, with zeros if the account has not used that currency yet."
           },
           "response": [
             {
-              "name": "200 Balances of the calling account.",
+              "name": "200 Balances of the calling account (one per supported asset).",
               "originalRequest": {
                 "method": "GET",
                 "url": {
@@ -899,7 +899,7 @@
                   ]
                 }
               },
-              "status": "Balances of the calling account.",
+              "status": "Balances of the calling account (one per supported asset).",
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [
@@ -908,7 +908,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"balances\": [\n    {\n      \"asset\": \"USDT\",\n      \"available\": \"125.430000\",\n      \"held\": \"10.000000\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
+              "body": "{\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"balances\": [\n    {\n      \"asset\": \"USDT\",\n      \"available\": \"125.430000\",\n      \"held\": \"10.000000\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\"\n    },\n    {\n      \"asset\": \"USDC\",\n      \"available\": \"50.000000\",\n      \"held\": \"0.000000\",\n      \"updated_at\": \"2026-07-08T09:00:00Z\"\n    },\n    {\n      \"asset\": \"BTC\",\n      \"available\": \"0.00060000\",\n      \"held\": \"0.00000000\"\n    },\n    {\n      \"asset\": \"GOLD\",\n      \"available\": \"12.500000\",\n      \"held\": \"0.000000\"\n    }\n  ]\n}"
             }
           ]
         },
@@ -941,7 +941,7 @@
                   "key": "asset",
                   "value": "",
                   "disabled": true,
-                  "description": ""
+                  "description": "Filter by balance currency."
                 },
                 {
                   "key": "type",
@@ -994,7 +994,7 @@
                       "key": "asset",
                       "value": "",
                       "disabled": true,
-                      "description": ""
+                      "description": "Filter by balance currency."
                     },
                     {
                       "key": "type",
@@ -1045,11 +1045,11 @@
                 "rates"
               ]
             },
-            "description": "Returns the exchange rates that apply to the calling account for each country — the same rates used when operations execute (`local_amount / rate = USDT`) — plus the account's fee configuration so clients can compute net prices. `rate` is the payout (dispersal) side and `payin_rate` the payin (deposit) side."
+            "description": "Returns the exchange rates that apply to the calling account for each country — the same rates used when operations execute (`local_amount / rate = USDT`) — plus the account's fee configuration so clients can compute net prices. `rate` is the payout (dispersal) side and `payin_rate` the payin (deposit) side. `asset_prices` carries the display-only USD reference price of each virtual balance asset (BTC per unit, GOLD per gram; stablecoins are 1 by convention) — no conversion and no spread."
           },
           "response": [
             {
-              "name": "200 Rates and fees.",
+              "name": "200 Rates, reference asset prices and fees.",
               "originalRequest": {
                 "method": "GET",
                 "url": {
@@ -1063,7 +1063,7 @@
                   ]
                 }
               },
-              "status": "Rates and fees.",
+              "status": "Rates, reference asset prices and fees.",
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [
@@ -1072,7 +1072,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"base\": \"USD\",\n  \"rates\": {\n    \"chile\": {\n      \"currency\": \"CLP\",\n      \"rate\": \"950.25\",\n      \"payin_rate\": \"955.10\"\n    },\n    \"mexico\": {\n      \"currency\": \"MXN\",\n      \"rate\": \"17.50\",\n      \"payin_rate\": \"17.62\"\n    },\n    \"peru\": {\n      \"currency\": \"PEN\",\n      \"rate\": \"3.72\",\n      \"payin_rate\": \"3.75\"\n    }\n  },\n  \"updated_at\": \"2026-07-07T12:00:00Z\",\n  \"fees\": [\n    {\n      \"id\": \"3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c\",\n      \"org_id\": \"1c9e7a2b-5f6d-4e3a-8c1b-2a9d8e7f6a5b\",\n      \"account_id\": \"\",\n      \"service\": \"payout\",\n      \"country\": \"CL\",\n      \"asset\": \"USDT\",\n      \"percent\": \"0\",\n      \"fixed_amount\": \"0.30\",\n      \"status\": \"active\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
+              "body": "{\n  \"base\": \"USD\",\n  \"rates\": {\n    \"chile\": {\n      \"currency\": \"CLP\",\n      \"rate\": \"950.25\",\n      \"payin_rate\": \"955.10\"\n    },\n    \"mexico\": {\n      \"currency\": \"MXN\",\n      \"rate\": \"17.50\",\n      \"payin_rate\": \"17.62\"\n    },\n    \"peru\": {\n      \"currency\": \"PEN\",\n      \"rate\": \"3.72\",\n      \"payin_rate\": \"3.75\"\n    }\n  },\n  \"asset_prices\": {\n    \"USDT\": {\n      \"currency\": \"USD\",\n      \"unit\": \"usdt\",\n      \"price\": \"1\"\n    },\n    \"USDC\": {\n      \"currency\": \"USD\",\n      \"unit\": \"usdc\",\n      \"price\": \"1\"\n    },\n    \"BTC\": {\n      \"currency\": \"USD\",\n      \"unit\": \"btc\",\n      \"price\": \"109853.24\"\n    },\n    \"GOLD\": {\n      \"currency\": \"USD\",\n      \"unit\": \"gram\",\n      \"price\": \"107.5341\"\n    }\n  },\n  \"updated_at\": \"2026-07-07T12:00:00Z\",\n  \"fees\": [\n    {\n      \"id\": \"3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c\",\n      \"org_id\": \"1c9e7a2b-5f6d-4e3a-8c1b-2a9d8e7f6a5b\",\n      \"account_id\": \"\",\n      \"service\": \"payout\",\n      \"country\": \"CL\",\n      \"asset\": \"USDT\",\n      \"percent\": \"0\",\n      \"fixed_amount\": \"0.30\",\n      \"status\": \"active\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
             }
           ]
         },
@@ -1118,7 +1118,7 @@
                 }
               ]
             },
-            "description": "Consolidates every movement of the period — payouts, payins, crypto deposits and withdrawals, internal transfers and service charges — into one auditable statement with an exact reconciliation: opening_balance + total_in − total_out = closing_balance, verified against the ledger (`balanced`). Request `format=pdf` or `format=xlsx` to download the CBPay-branded file (Content-Disposition: attachment)."
+            "description": "Consolidates every movement of the period — payouts, payins, crypto deposits and withdrawals, internal transfers and service charges — into one auditable statement with an exact reconciliation: opening_balance + total_in − total_out = closing_balance, verified against the ledger (`balanced`). The summary and movements cover the USDT operating balance; every other virtual balance (USDC, BTC, GOLD) with activity reconciles independently inside `assets`. Request `format=pdf` or `format=xlsx` to download the CBPay-branded file (Content-Disposition: attachment)."
           },
           "response": [
             {
@@ -1172,7 +1172,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"account\": {\n    \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n    \"display_name\": \"Example Company SpA\",\n    \"email\": \"ops@example.com\",\n    \"type\": \"company\"\n  },\n  \"period\": {\n    \"from\": \"2026-01-01\",\n    \"to\": \"2026-07-07\",\n    \"timezone\": \"UTC\"\n  },\n  \"generated_at\": \"2026-07-07T15:00:00Z\",\n  \"summary\": {\n    \"opening_balance\": \"0.000000\",\n    \"total_in\": \"985633.540000\",\n    \"total_out\": \"38099.870000\",\n    \"net_change\": \"947533.670000\",\n    \"closing_balance\": \"947533.670000\",\n    \"balanced\": true,\n    \"counts\": {\n      \"payouts\": 51,\n      \"payins\": 12,\n      \"crypto_deposits\": 18,\n      \"crypto_withdrawals\": 3,\n      \"transfers\": 4,\n      \"service_charges\": 2,\n      \"movements\": 771\n    },\n    \"fees_by_service\": {\n      \"payout\": \"15.300000\",\n      \"funding\": \"897.550000\"\n    },\n    \"total_fees\": \"912.850000\"\n  },\n  \"breakdown\": {\n    \"by_product\": [\n      {\n        \"product\": \"payouts\",\n        \"count\": 51,\n        \"usdt_in\": \"0.000000\",\n        \"usdt_out\": \"38099.870000\",\n        \"fees\": \"15.300000\"\n      }\n    ],\n    \"by_country\": [\n      {\n        \"flow\": \"payouts\",\n        \"country\": \"BO\",\n        \"currency\": \"BOB\",\n        \"count\": 14,\n        \"local_amount\": \"28748.58\",\n        \"usdt_amount\": \"2902.210000\"\n      }\n    ],\n    \"by_currency\": [\n      {\n        \"currency\": \"BOB\",\n        \"payout_local\": \"28748.58\",\n        \"payin_local\": \"700.00\"\n      }\n    ],\n    \"by_month\": [\n      {\n        \"month\": \"2026-01\",\n        \"usdt_in\": \"985633.540000\",\n        \"usdt_out\": \"35100.000000\"\n      }\n    ]\n  },\n  \"payouts\": [\n    {\n      \"created_at\": \"2026-03-19T22:57:00Z\",\n      \"payout_id\": \"0d4f2a10-1b2c-3d4e-5f60-718293a4b5c6\",\n      \"idempotency_key\": \"bo-90\",\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"method\": \"bank_transfer\",\n      \"beneficiary\": \"Juan Quispe\",\n      \"detail\": \"1234567890\",\n      \"local_amount\": \"90.00\",\n      \"fx_rate\": \"6.91\",\n      \"usdt_amount\": \"13.024600\",\n      \"fee\": \"0.300000\",\n      \"total_debit\": \"13.324600\",\n      \"status\": \"completed\"\n    }\n  ],\n  \"payins\": [],\n  \"crypto_deposits\": [],\n  \"crypto_withdrawals\": [],\n  \"transfers\": [],\n  \"service_charges\": [],\n  \"movements\": [\n    {\n      \"created_at\": \"2026-03-19T22:57:00Z\",\n      \"type\": \"payout_debit\",\n      \"reference\": \"payout 0d4f2a10-1b2c-3d4e-5f60-718293a4b5c6\",\n      \"amount\": \"-13.324600\",\n      \"balance_after\": \"139.600000\"\n    }\n  ]\n}"
+              "body": "{\n  \"account\": {\n    \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n    \"display_name\": \"Example Company SpA\",\n    \"email\": \"ops@example.com\",\n    \"type\": \"company\"\n  },\n  \"period\": {\n    \"from\": \"2026-01-01\",\n    \"to\": \"2026-07-07\",\n    \"timezone\": \"UTC\"\n  },\n  \"generated_at\": \"2026-07-07T15:00:00Z\",\n  \"summary\": {\n    \"opening_balance\": \"0.000000\",\n    \"total_in\": \"985633.540000\",\n    \"total_out\": \"38099.870000\",\n    \"net_change\": \"947533.670000\",\n    \"closing_balance\": \"947533.670000\",\n    \"balanced\": true,\n    \"counts\": {\n      \"payouts\": 51,\n      \"payins\": 12,\n      \"crypto_deposits\": 18,\n      \"crypto_withdrawals\": 3,\n      \"transfers\": 4,\n      \"service_charges\": 2,\n      \"movements\": 771\n    },\n    \"fees_by_service\": {\n      \"payout\": \"15.300000\",\n      \"funding\": \"897.550000\"\n    },\n    \"total_fees\": \"912.850000\"\n  },\n  \"assets\": [\n    {\n      \"asset\": \"GOLD\",\n      \"opening_balance\": \"0.000000\",\n      \"total_in\": \"12.500000\",\n      \"total_out\": \"2.000000\",\n      \"net_change\": \"10.500000\",\n      \"closing_balance\": \"10.500000\",\n      \"balanced\": true,\n      \"movements\": [\n        {\n          \"created_at\": \"2026-07-09T10:00:00Z\",\n          \"type\": \"adjustment\",\n          \"reference\": \"adjustment gold-load-1\",\n          \"amount\": \"12.500000\",\n          \"balance_after\": \"12.500000\"\n        }\n      ]\n    }\n  ],\n  \"breakdown\": {\n    \"by_product\": [\n      {\n        \"product\": \"payouts\",\n        \"count\": 51,\n        \"usdt_in\": \"0.000000\",\n        \"usdt_out\": \"38099.870000\",\n        \"fees\": \"15.300000\"\n      }\n    ],\n    \"by_country\": [\n      {\n        \"flow\": \"payouts\",\n        \"country\": \"BO\",\n        \"currency\": \"BOB\",\n        \"count\": 14,\n        \"local_amount\": \"28748.58\",\n        \"usdt_amount\": \"2902.210000\"\n      }\n    ],\n    \"by_currency\": [\n      {\n        \"currency\": \"BOB\",\n        \"payout_local\": \"28748.58\",\n        \"payin_local\": \"700.00\"\n      }\n    ],\n    \"by_month\": [\n      {\n        \"month\": \"2026-01\",\n        \"usdt_in\": \"985633.540000\",\n        \"usdt_out\": \"35100.000000\"\n      }\n    ]\n  },\n  \"payouts\": [\n    {\n      \"created_at\": \"2026-03-19T22:57:00Z\",\n      \"payout_id\": \"0d4f2a10-1b2c-3d4e-5f60-718293a4b5c6\",\n      \"idempotency_key\": \"bo-90\",\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"method\": \"bank_transfer\",\n      \"beneficiary\": \"Juan Quispe\",\n      \"detail\": \"1234567890\",\n      \"local_amount\": \"90.00\",\n      \"fx_rate\": \"6.91\",\n      \"usdt_amount\": \"13.024600\",\n      \"fee\": \"0.300000\",\n      \"total_debit\": \"13.324600\",\n      \"status\": \"completed\"\n    }\n  ],\n  \"payins\": [],\n  \"crypto_deposits\": [],\n  \"crypto_withdrawals\": [],\n  \"transfers\": [],\n  \"service_charges\": [],\n  \"movements\": [\n    {\n      \"created_at\": \"2026-03-19T22:57:00Z\",\n      \"type\": \"payout_debit\",\n      \"reference\": \"payout 0d4f2a10-1b2c-3d4e-5f60-718293a4b5c6\",\n      \"amount\": \"-13.324600\",\n      \"balance_after\": \"139.600000\"\n    }\n  ]\n}"
             }
           ]
         }
@@ -3070,7 +3070,7 @@
                 "transfers"
               ]
             },
-            "description": "Moves USDT between two CBPay accounts, atomically and always free of charge — any combination works: person to person, person to company, company to person or company to company. The destination is resolved by `to_account_id` or `to_email`. The recipient's webhook subscribers receive `transfer_received`.",
+            "description": "Moves balance between two CBPay accounts, atomically and always free of charge — any combination works: person to person, person to company, company to person or company to company. Works with the four virtual balances (`USDT` default, `USDC`, `BTC`, `GOLD`) and always between balances of the **same currency** (no conversion). The destination is resolved by `to_account_id` or `to_email`. The recipient's webhook subscribers receive `transfer_received`.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"to_email\": \"carlos@example.com\",\n  \"amount\": \"25.000000\",\n  \"description\": \"Expense split\",\n  \"idempotency_key\": \"split-2026-07-06-a\"\n}",
@@ -3135,7 +3135,7 @@
                 "transfers"
               ]
             },
-            "description": "Moves USDT between two CBPay accounts, atomically and always free of charge — any combination works: person to person, person to company, company to person or company to company. The destination is resolved by `to_account_id` or `to_email`. The recipient's webhook subscribers receive `transfer_received`.",
+            "description": "Moves balance between two CBPay accounts, atomically and always free of charge — any combination works: person to person, person to company, company to person or company to company. Works with the four virtual balances (`USDT` default, `USDC`, `BTC`, `GOLD`) and always between balances of the **same currency** (no conversion). The destination is resolved by `to_account_id` or `to_email`. The recipient's webhook subscribers receive `transfer_received`.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"to_account_id\": \"ae8cf540-22a9-414d-82cc-8ac04732be4f\",\n  \"amount\": \"120.500000\",\n  \"description\": \"Monthly service payment\",\n  \"idempotency_key\": \"serv-2026-07-a\"\n}",
@@ -3200,10 +3200,75 @@
                 "transfers"
               ]
             },
-            "description": "Moves USDT between two CBPay accounts, atomically and always free of charge — any combination works: person to person, person to company, company to person or company to company. The destination is resolved by `to_account_id` or `to_email`. The recipient's webhook subscribers receive `transfer_received`.",
+            "description": "Moves balance between two CBPay accounts, atomically and always free of charge — any combination works: person to person, person to company, company to person or company to company. Works with the four virtual balances (`USDT` default, `USDC`, `BTC`, `GOLD`) and always between balances of the **same currency** (no conversion). The destination is resolved by `to_account_id` or `to_email`. The recipient's webhook subscribers receive `transfer_received`.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"to_email\": \"employee@example.com\",\n  \"amount\": \"850.000000\",\n  \"description\": \"July salary\",\n  \"idempotency_key\": \"payroll-2026-07-emp01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Idempotency replay.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/transfers",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "transfers"
+                  ]
+                }
+              },
+              "status": "Idempotency replay.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"transfer_id\": \"2a7b9c1d-4e5f-6a70-8b9c-0d1e2f3a4b5c\",\n  \"from_account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"to_account_id\": \"5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b\",\n  \"asset\": \"USDT\",\n  \"amount\": \"25.000000\",\n  \"description\": \"Expense split\",\n  \"status\": \"completed\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"idempotency_hit\": true\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create an internal transfer — In another currency (GOLD, grams of gold)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/transfers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "transfers"
+              ]
+            },
+            "description": "Moves balance between two CBPay accounts, atomically and always free of charge — any combination works: person to person, person to company, company to person or company to company. Works with the four virtual balances (`USDT` default, `USDC`, `BTC`, `GOLD`) and always between balances of the **same currency** (no conversion). The destination is resolved by `to_account_id` or `to_email`. The recipient's webhook subscribers receive `transfer_received`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"to_email\": \"carlos@example.com\",\n  \"asset\": \"GOLD\",\n  \"amount\": \"2.500000\",\n  \"description\": \"Gold gift\",\n  \"idempotency_key\": \"gold-2026-07-09-a\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3306,7 +3371,7 @@
       "name": "Crypto",
       "item": [
         {
-          "name": "Create an on-chain withdrawal",
+          "name": "Create an on-chain withdrawal — USDT over TRON",
           "request": {
             "method": "POST",
             "header": [
@@ -3331,10 +3396,77 @@
                 "withdrawals"
               ]
             },
-            "description": "Sends USDT on-chain. `amount + withdrawal fee` is debited atomically\nand held; final state arrives via the\n`crypto_withdrawal_status_changed` webhook. `failed` refunds the full\ndebit.",
+            "description": "Sends USDT or USDC on-chain from its own balance. Supported pairs: `tron`/`USDT`, `eth`/`USDT`, `eth`/`USDC` (BTC and GOLD have no on-chain rail). `amount + withdrawal fee` is debited atomically and held; final state arrives via the `crypto_withdrawal_status_changed` webhook. `failed` refunds the full debit.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"chain\": \"tron\",\n  \"to_address\": \"TVJ6njG5Fyrq6XwYok3xPQx8kR7HQx6vXk\",\n  \"amount\": \"100.000000\",\n  \"idempotency_key\": \"withdrawal-2026-07-07-a\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Idempotency replay.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/crypto/withdrawals",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "crypto",
+                    "withdrawals"
+                  ]
+                }
+              },
+              "status": "Idempotency replay.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"withdrawal_id\": \"6c5d4e3f-2a1b-0c9d-8e7f-6a5b4c3d2e1f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"idempotency_key\": \"withdrawal-2026-07-07-a\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"to_address\": \"TVJ6njG5Fyrq6XwYok3xPQx8kR7HQx6vXk\",\n  \"amount\": \"100.000000\",\n  \"fee\": \"1.000000\",\n  \"total_debit\": \"101.000000\",\n  \"status\": \"processing\",\n  \"status_code\": \"\",\n  \"status_message\": \"broadcasted\",\n  \"tx_id\": \"b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:00Z\",\n  \"idempotency_hit\": true\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create an on-chain withdrawal — USDC over Ethereum",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/crypto/withdrawals",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "crypto",
+                "withdrawals"
+              ]
+            },
+            "description": "Sends USDT or USDC on-chain from its own balance. Supported pairs: `tron`/`USDT`, `eth`/`USDT`, `eth`/`USDC` (BTC and GOLD have no on-chain rail). `amount + withdrawal fee` is debited atomically and held; final state arrives via the `crypto_withdrawal_status_changed` webhook. `failed` refunds the full debit.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chain\": \"eth\",\n  \"asset\": \"USDC\",\n  \"to_address\": \"0x8f3Ba1c2De4567890aBcDeF1234567890aBcDeF1\",\n  \"amount\": \"50.000000\",\n  \"idempotency_key\": \"withdrawal-usdc-2026-07-09-a\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3579,7 +3711,7 @@
           ]
         },
         {
-          "name": "Create a wallet — Person — one wallet per network",
+          "name": "Create a wallet — Person — one wallet per network+asset",
           "request": {
             "method": "POST",
             "header": [
@@ -3599,7 +3731,7 @@
                 "wallets"
               ]
             },
-            "description": "Creates a new on-chain USDT wallet for the calling account. Person accounts hold **one wallet per network**; company accounts can create **unlimited** wallets per network (use `label` to tell them apart).\n\nEvery creation bills the `wallet_creation` fee when configured by CBPay (fixed per wallet; 0 = free, the default; configurable per account). The charge is refunded automatically if creation fails.",
+            "description": "Creates a new on-chain wallet for the calling account. Supported pairs: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc` — every deposit credits the wallet's own asset balance. Person accounts hold **one wallet per network+asset**; company accounts can create **unlimited** wallets (use `label` to tell them apart).\n\nEvery creation bills the `wallet_creation` fee when configured by CBPay (fixed per wallet; 0 = free, the default; configurable per account). The charge is refunded automatically if creation fails.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"chain\": \"tron\"\n}",
@@ -3661,7 +3793,7 @@
                 "wallets"
               ]
             },
-            "description": "Creates a new on-chain USDT wallet for the calling account. Person accounts hold **one wallet per network**; company accounts can create **unlimited** wallets per network (use `label` to tell them apart).\n\nEvery creation bills the `wallet_creation` fee when configured by CBPay (fixed per wallet; 0 = free, the default; configurable per account). The charge is refunded automatically if creation fails.",
+            "description": "Creates a new on-chain wallet for the calling account. Supported pairs: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc` — every deposit credits the wallet's own asset balance. Person accounts hold **one wallet per network+asset**; company accounts can create **unlimited** wallets (use `label` to tell them apart).\n\nEvery creation bills the `wallet_creation` fee when configured by CBPay (fixed per wallet; 0 = free, the default; configurable per account). The charge is refunded automatically if creation fails.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"chain\": \"tron\",\n  \"label\": \"Main treasury\"\n}",
@@ -3723,10 +3855,72 @@
                 "wallets"
               ]
             },
-            "description": "Creates a new on-chain USDT wallet for the calling account. Person accounts hold **one wallet per network**; company accounts can create **unlimited** wallets per network (use `label` to tell them apart).\n\nEvery creation bills the `wallet_creation` fee when configured by CBPay (fixed per wallet; 0 = free, the default; configurable per account). The charge is refunded automatically if creation fails.",
+            "description": "Creates a new on-chain wallet for the calling account. Supported pairs: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc` — every deposit credits the wallet's own asset balance. Person accounts hold **one wallet per network+asset**; company accounts can create **unlimited** wallets (use `label` to tell them apart).\n\nEvery creation bills the `wallet_creation` fee when configured by CBPay (fixed per wallet; 0 = free, the default; configurable per account). The charge is refunded automatically if creation fails.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"chain\": \"eth\",\n  \"label\": \"E-commerce collections\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Wallet created.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/crypto/wallets",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "crypto",
+                    "wallets"
+                  ]
+                }
+              },
+              "status": "Wallet created.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"wallet_id\": \"b7e3a940-6f1d-4c2b-9a8e-5d4c3b2a1f0e\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT\",\n  \"label\": \"Main treasury\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"creation_fee\": \"1.000000\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a wallet — USDC wallet (Ethereum only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/crypto/wallets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "crypto",
+                "wallets"
+              ]
+            },
+            "description": "Creates a new on-chain wallet for the calling account. Supported pairs: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc` — every deposit credits the wallet's own asset balance. Person accounts hold **one wallet per network+asset**; company accounts can create **unlimited** wallets (use `label` to tell them apart).\n\nEvery creation bills the `wallet_creation` fee when configured by CBPay (fixed per wallet; 0 = free, the default; configurable per account). The charge is refunded automatically if creation fails.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chain\": \"eth\",\n  \"asset\": \"usdc\",\n  \"label\": \"USDC treasury\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

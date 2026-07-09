@@ -1,12 +1,14 @@
 ---
 title: "Transferencias internas"
 icon: "arrows-left-right"
-description: "Mueve USDT entre cuentas CBPay, gratis y al instante"
+description: "Mueve USDT, USDC, BTC o GOLD entre cuentas CBPay, gratis y al instante"
 ---
 
 Las transferencias internas mueven saldo entre dos cuentas **CBPay**, de
 forma atómica en el ledger y **siempre sin comisión** — el dinero nunca sale
-del ecosistema.
+del ecosistema. Funcionan con las cuatro monedas (`USDT`, `USDC`, `BTC`,
+`GOLD`) y siempre **entre saldos de la misma moneda**: el `asset` que envías
+es el `asset` que recibe el destino, sin conversión.
 
 ```mermaid
 sequenceDiagram
@@ -70,10 +72,25 @@ curl -X POST https://api.qbank.cl/platform/v1/transfers \
   }'
 ```
 
+```bash En otra moneda (GOLD, gramos de oro)
+curl -X POST https://api.qbank.cl/platform/v1/transfers \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to_email": "carlos@ejemplo.com",
+    "asset": "GOLD",
+    "amount": "2.500000",
+    "description": "Regalo en oro",
+    "idempotency_key": "oro-2026-07-09-a"
+  }'
+```
+
 </CodeGroup>
 
 La forma del request es idéntica en todas las combinaciones (persona o
 empresa, en cualquier dirección) — cambia solo la credencial que llama.
+`asset` es opcional y por defecto `USDT`; acepta `USDT`, `USDC`, `BTC` o
+`GOLD` y el destino recibe **en esa misma moneda**.
 
 Respuesta `201` — la transferencia es **síncrona e inmediata**:
 
@@ -128,17 +145,21 @@ Cada fila trae `direction` (`sent` o `received`) desde tu perspectiva.
 
 - Solo entre cuentas CBPay **activas**; las cuentas internas del sistema no
   pueden recibir.
+- Siempre **misma moneda en origen y destino**: no hay conversión entre
+  saldos (`USDT`→`USDT`, `GOLD`→`GOLD`, …).
 - No puedes transferirte a ti mismo (`400 self_transfer`).
 - Requiere `idempotency_key` (body o header `Idempotency-Key`); el replay
   devuelve `200` con `idempotency_hit: true`.
-- `amount` acepta hasta 6 decimales.
+- `amount` acepta hasta los decimales de la moneda: 6 para `USDT`/`USDC`/
+  `GOLD`, 8 para `BTC`.
 
 ## Errores
 
 | HTTP | `error` | Causa |
 |---|---|---|
 | 400 | `recipient_required` | Falta `to_account_id` y `to_email` |
+| 400 | `invalid_amount` | Monto inválido, demasiados decimales o `asset` no soportado |
 | 400 | `self_transfer` | Origen y destino son la misma cuenta |
-| 402 | `insufficient_funds` | Saldo disponible insuficiente |
+| 402 | `insufficient_funds` | Saldo disponible insuficiente en esa moneda |
 | 404 | `recipient_not_found` | El email/ID no corresponde a una cuenta CBPay |
 | 422 | `recipient_unavailable` | La cuenta destino está bloqueada/cerrada |

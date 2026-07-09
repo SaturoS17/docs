@@ -4,8 +4,18 @@ icon: "link"
 description: "Create on-chain wallets, deposit, transfer and check movements"
 ---
 
-Your USDT balance is connected to the blockchain. Supported networks:
-**TRON** (`tron`) and **Ethereum** (`eth`), asset **USDT**.
+Your stablecoin balances are connected to the blockchain. Supported
+combinations:
+
+| Network | Asset | Balance credited |
+|---|---|---|
+| `tron` | `usdt` | USDT |
+| `eth` | `usdt` | USDT |
+| `eth` | `usdc` | USDC |
+
+Every deposit credits the **balance of its own asset** (a USDC wallet
+credits your USDC balance). `BTC` and `GOLD` are balances with no on-chain
+rail: they move only via internal transfers and operator credits.
 
 ```mermaid
 flowchart LR
@@ -13,7 +23,7 @@ flowchart LR
         wallet["Your CBPay wallet<br/>(stable address)"] --> confirmed["On-chain<br/>confirmation"]
         confirmed --> credit["Automatic credit<br/>− funding fee"]
     end
-    credit --> balance(("Account USDT<br/>balance"))
+    credit --> balance(("Asset balance<br/>(USDT or USDC)"))
     subgraph withdrawFlow [Withdraw]
         balance --> withdrawal["POST /v1/crypto/withdrawals<br/>debits amount + fee"]
         withdrawal --> onchain{"On-chain<br/>result"}
@@ -61,7 +71,22 @@ curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
   }'
 ```
 
+```bash USDC wallet (Ethereum only)
+curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "eth",
+    "asset": "usdc",
+    "label": "USDC treasury"
+  }'
+```
+
 </CodeGroup>
+
+`asset` is optional and defaults to `usdt`. The one-wallet-per-network
+limit for persons applies per network+asset combination: a person can hold
+their `eth`/`usdt` wallet **and** their `eth`/`usdc` wallet.
 
 Response `201`:
 
@@ -129,8 +154,8 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
 
 ## Deposit
 
-Send USDT to the address of any of your wallets, **over the correct
-network**. When the deposit confirms on-chain, your balance is credited
+Send the wallet's asset to its address, **over the correct network**. When
+the deposit confirms on-chain, that asset's balance is credited
 automatically (net of the `funding` fee if CBPay configured one) and the
 `crypto_deposit_credited` webhook fires:
 
@@ -146,8 +171,9 @@ automatically (net of the `funding` fee if CBPay configured one) and the
 ```
 
 <Warning>
-Send **only USDT over the wallet's network**. Addresses are yours and
-stable: you can reuse them for every deposit.
+Send **only the wallet's asset over its network** (USDT to a USDT wallet,
+USDC to a USDC wallet). Addresses are yours and stable: you can reuse them
+for every deposit.
 </Warning>
 
 ### Confirmation times
@@ -162,9 +188,12 @@ verify it on the network explorer.
 
 ## Transfer (on-chain withdrawals)
 
-Send USDT from your balance to any external address:
+Send USDT or USDC from its balance to any external address (`asset` is
+optional, default `USDT`; USDC only over `eth`):
 
-```bash
+<CodeGroup>
+
+```bash USDT over TRON
 curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
@@ -175,6 +204,21 @@ curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
     "idempotency_key": "withdrawal-2026-07-07-b"
   }'
 ```
+
+```bash USDC over Ethereum
+curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "eth",
+    "asset": "USDC",
+    "to_address": "0x8f3B…",
+    "amount": "50.000000",
+    "idempotency_key": "withdrawal-usdc-2026-07-09-a"
+  }'
+```
+
+</CodeGroup>
 
 Response `202` — `amount + fee` is debited and the transaction broadcasts:
 
@@ -274,16 +318,17 @@ curl "https://api.qbank.cl/platform/v1/movements?type=funding&from=2026-07-01&to
   -H "Authorization: Bearer <token>"
 ```
 
-Deposits credit the **account's USDT balance** (wallets are entry points;
-the balance is one).
+Every deposit credits the **balance of its wallet's asset** (USDT or
+USDC); wallets are entry points, each currency has a single balance.
 
 ## Errors
 
 | HTTP | `error` | Cause |
 |---|---|---|
 | 400 | `invalid_chain` | Unsupported network (use `tron` or `eth`) |
+| 400 | `invalid_asset` | Network/asset pair without an on-chain rail (supported: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc` — `BTC` and `GOLD` do not operate on-chain) |
 | 400 | `to_address_required` | Missing withdrawal destination address |
-| 402 | `insufficient_funds` | Not enough balance (for the withdrawal or the creation fee) |
-| 422 | `wallet_limit_reached` | A person tried to create a second wallet on the same network |
+| 402 | `insufficient_funds` | Not enough balance in that asset (for the withdrawal or the creation fee) |
+| 422 | `wallet_limit_reached` | A person tried to create a second wallet for the same network+asset |
 | 422 | (withdrawal with `status: failed`) | Rejected at broadcast; debit refunded |
 | 503 | `withdrawals_unavailable` | Withdrawals not enabled for this corridor yet |

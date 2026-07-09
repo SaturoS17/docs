@@ -7,6 +7,35 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 9, 2026" description="v1.26">
+
+**Added — Multi-currency virtual balances (USDT, USDC, BTC, GOLD)**
+
+- Every account now holds **four independent virtual balances**: `USDT`
+  (the operating currency), `USDC`, `BTC` (8 decimals, satoshis) and
+  `GOLD` (grams of fine gold, 6 decimals, custodian-backed). They never
+  mix and are never converted automatically. Details in
+  [money model](/en/concepts/money-model).
+- **`GET /v1/balances`** always returns all four balances (zeros if you
+  have not used that currency) and `GET /v1/movements` filters by currency
+  with `?asset=`.
+- **Multi-currency internal transfers**: `POST /v1/transfers` accepts
+  `asset` (`USDT` default, `USDC`, `BTC`, `GOLD`) — always between
+  balances of the **same currency**, with no conversion and no fee.
+- **On-chain USDC**: create `eth`/`usdc` wallets, deposit and withdraw
+  USDC over Ethereum. Every deposit credits its own asset's balance. Guide
+  in [crypto](/en/guides/crypto).
+- **Reference prices**: `GET /v1/rates` includes `asset_prices` with each
+  currency's USD reference price (BTC per unit, GOLD per gram) — for
+  valuation only, no conversion and no spread.
+- **Multi-currency statement**: new `assets` section with each non-USDT
+  balance reconciled independently (opening/inflows/outflows/closing and
+  its own `balanced` flag), also in the PDF and Excel exports.
+- Payouts, payins, cards and service fees keep operating **exclusively
+  against the USDT balance**.
+
+</Update>
+
 <Update label="July 8, 2026" description="v1.25">
 
 **Added — Social login (Google, Apple, Microsoft, Meta)**

@@ -83,6 +83,12 @@ vigente para tu cuenta:
 {
   "base": "USD",
   "rates": { "chile": { "currency": "CLP", "rate": "950.25", "payin_rate": "955.10" } },
+  "asset_prices": {
+    "USDT": { "currency": "USD", "unit": "usdt", "price": "1" },
+    "USDC": { "currency": "USD", "unit": "usdc", "price": "1" },
+    "BTC": { "currency": "USD", "unit": "btc", "price": "109853.24" },
+    "GOLD": { "currency": "USD", "unit": "gram", "price": "107.5341" }
+  },
   "fees": [
     {
       "service": "payout",
@@ -94,6 +100,9 @@ vigente para tu cuenta:
   ]
 }
 ```
+
+`asset_prices` es el precio USD **de referencia** de cada saldo virtual
+(para valorizarlos en pantalla) — no implica conversión ni spread.
 
 La comisión cobrada queda siempre explícita en la respuesta de cada
 operación (campo `fee`) y en el ledger.

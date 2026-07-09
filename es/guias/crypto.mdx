@@ -4,8 +4,18 @@ icon: "link"
 description: "Crea wallets on-chain, deposita, transfiere y consulta movimientos"
 ---
 
-Tu saldo USDT vive conectado a la blockchain. Redes soportadas: **TRON**
-(`tron`) y **Ethereum** (`eth`), activo **USDT**.
+Tus saldos stablecoin viven conectados a la blockchain. Combinaciones
+soportadas:
+
+| Red | Activo | Saldo que acredita |
+|---|---|---|
+| `tron` | `usdt` | USDT |
+| `eth` | `usdt` | USDT |
+| `eth` | `usdc` | USDC |
+
+Cada depósito acredita el **saldo de su propio activo** (una wallet USDC
+abona tu saldo USDC). `BTC` y `GOLD` son saldos sin riel on-chain: se
+mueven solo por transferencias internas y abonos del operador.
 
 ```mermaid
 flowchart LR
@@ -13,7 +23,7 @@ flowchart LR
         wallet["Tu wallet CBPay<br/>(dirección estable)"] --> confirmado["Confirmación<br/>on-chain"]
         confirmado --> abono["Abono automático<br/>− fee funding"]
     end
-    abono --> saldo(("Saldo USDT<br/>de la cuenta"))
+    abono --> saldo(("Saldo del activo<br/>(USDT o USDC)"))
     subgraph salida [Retirar]
         saldo --> retiro["POST /v1/crypto/withdrawals<br/>debita amount + fee"]
         retiro --> onchain{"Resultado<br/>on-chain"}
@@ -61,7 +71,22 @@ curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
   }'
 ```
 
+```bash Wallet USDC (solo Ethereum)
+curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "eth",
+    "asset": "usdc",
+    "label": "Tesorería USDC"
+  }'
+```
+
 </CodeGroup>
+
+`asset` es opcional y por defecto `usdt`. El límite de una wallet por red
+para personas es por combinación red+activo: una persona puede tener su
+wallet `eth`/`usdt` **y** su wallet `eth`/`usdc`.
 
 Respuesta `201`:
 
@@ -129,8 +154,8 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
 
 ## Depositar
 
-Envía USDT a la dirección de cualquiera de tus wallets, **por la red
-correcta**. Cuando el depósito se confirma on-chain, tu saldo se acredita
+Envía el activo de la wallet a su dirección, **por la red correcta**.
+Cuando el depósito se confirma on-chain, el saldo de ese activo se acredita
 automáticamente (neto de la comisión de `funding` si CBPay la configuró) y
 se emite el webhook `crypto_deposit_credited`:
 
@@ -146,8 +171,9 @@ se emite el webhook `crypto_deposit_credited`:
 ```
 
 <Warning>
-Envía **solo USDT por la red de la wallet**. Las direcciones son tuyas y
-estables: puedes reutilizarlas para todos tus depósitos.
+Envía **solo el activo de la wallet y por su red** (USDT a una wallet
+USDT, USDC a una wallet USDC). Las direcciones son tuyas y estables:
+puedes reutilizarlas para todos tus depósitos.
 </Warning>
 
 ### Tiempos de confirmación
@@ -162,9 +188,12 @@ explorador de la red.
 
 ## Transferir (retiros on-chain)
 
-Envía USDT desde tu saldo a cualquier dirección externa:
+Envía USDT o USDC desde su saldo a cualquier dirección externa (`asset`
+opcional, default `USDT`; USDC solo por `eth`):
 
-```bash
+<CodeGroup>
+
+```bash USDT por TRON
 curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
@@ -175,6 +204,21 @@ curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
     "idempotency_key": "retiro-2026-07-07-b"
   }'
 ```
+
+```bash USDC por Ethereum
+curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "eth",
+    "asset": "USDC",
+    "to_address": "0x8f3B…",
+    "amount": "50.000000",
+    "idempotency_key": "retiro-usdc-2026-07-09-a"
+  }'
+```
+
+</CodeGroup>
 
 Respuesta `202` — se debita `amount + fee` y la transacción se transmite:
 
@@ -275,16 +319,17 @@ curl "https://api.qbank.cl/platform/v1/movements?type=funding&from=2026-07-01&to
   -H "Authorization: Bearer <token>"
 ```
 
-Los depósitos acreditan el **saldo USDT de la cuenta** (las wallets son
-puertas de entrada; el saldo es uno solo).
+Cada depósito acredita el **saldo del activo de su wallet** (USDT o USDC);
+las wallets son puertas de entrada, el saldo por moneda es uno solo.
 
 ## Errores
 
 | HTTP | `error` | Causa |
 |---|---|---|
 | 400 | `invalid_chain` | Red no soportada (usa `tron` o `eth`) |
+| 400 | `invalid_asset` | Combinación red/activo sin riel on-chain (soportadas: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc` — `BTC` y `GOLD` no operan on-chain) |
 | 400 | `to_address_required` | Falta la dirección destino del retiro |
-| 402 | `insufficient_funds` | Saldo insuficiente (para el retiro o para la comisión de creación) |
-| 422 | `wallet_limit_reached` | Una persona intentó crear una segunda wallet en la misma red |
+| 402 | `insufficient_funds` | Saldo insuficiente en ese activo (para el retiro o la comisión de creación) |
+| 422 | `wallet_limit_reached` | Una persona intentó crear una segunda wallet para la misma red+activo |
 | 422 | (retiro con `status: failed`) | Rechazado al transmitir; débito reembolsado |
 | 503 | `withdrawals_unavailable` | Retiros no habilitados aún para este corredor |

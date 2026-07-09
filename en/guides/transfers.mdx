@@ -1,12 +1,14 @@
 ---
 title: "Internal transfers"
 icon: "arrows-left-right"
-description: "Move USDT between CBPay accounts, free and instant"
+description: "Move USDT, USDC, BTC or GOLD between CBPay accounts, free and instant"
 ---
 
 Internal transfers move balance between two **CBPay accounts**, atomically
 in the ledger and **always free of charge** — the money never leaves the
-ecosystem.
+ecosystem. They work with all four currencies (`USDT`, `USDC`, `BTC`,
+`GOLD`) and always **between balances of the same currency**: the `asset`
+you send is the `asset` the destination receives, with no conversion.
 
 ```mermaid
 sequenceDiagram
@@ -70,10 +72,25 @@ curl -X POST https://api.qbank.cl/platform/v1/transfers \
   }'
 ```
 
+```bash In another currency (GOLD, grams of gold)
+curl -X POST https://api.qbank.cl/platform/v1/transfers \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to_email": "carlos@example.com",
+    "asset": "GOLD",
+    "amount": "2.500000",
+    "description": "Gold gift",
+    "idempotency_key": "gold-2026-07-09-a"
+  }'
+```
+
 </CodeGroup>
 
 The request shape is identical for every combination (person or company,
-in any direction) — only the calling credential changes.
+in any direction) — only the calling credential changes. `asset` is
+optional and defaults to `USDT`; it accepts `USDT`, `USDC`, `BTC` or
+`GOLD`, and the destination receives **in that same currency**.
 
 Response `201` — the transfer is **synchronous and immediate**:
 
@@ -127,17 +144,21 @@ Each row carries `direction` (`sent` or `received`) from your perspective.
 
 - Only between **active** CBPay accounts; internal system accounts cannot
   receive.
+- Always the **same currency on both sides**: there is no conversion
+  between balances (`USDT`→`USDT`, `GOLD`→`GOLD`, …).
 - You cannot transfer to yourself (`400 self_transfer`).
 - Requires `idempotency_key` (body or `Idempotency-Key` header); replays
   return `200` with `idempotency_hit: true`.
-- `amount` accepts up to 6 decimal places.
+- `amount` accepts up to the currency's decimals: 6 for `USDT`/`USDC`/
+  `GOLD`, 8 for `BTC`.
 
 ## Errors
 
 | HTTP | `error` | Cause |
 |---|---|---|
 | 400 | `recipient_required` | Missing `to_account_id` and `to_email` |
+| 400 | `invalid_amount` | Invalid amount, too many decimals or unsupported `asset` |
 | 400 | `self_transfer` | Source and destination are the same account |
-| 402 | `insufficient_funds` | Not enough available balance |
+| 402 | `insufficient_funds` | Not enough available balance in that currency |
 | 404 | `recipient_not_found` | The email/ID does not match a CBPay account |
 | 422 | `recipient_unavailable` | The destination account is blocked/closed |

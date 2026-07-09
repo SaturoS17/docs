@@ -1,19 +1,23 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.25'
+  version: '1.26'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
 
-    on-chain de USDT, y screening KYC — todo contra un único saldo
+    on-chain, y screening KYC. Cada cuenta mantiene cuatro saldos virtuales
 
-    denominado en USDT por cuenta.
+    independientes — USDT (la moneda operativa), USDC, BTC y GOLD (gramos de
+
+    oro fino) — que nunca se mezclan ni se convierten automáticamente.
 
 
-    Todos los montos son strings decimales. Los saldos se mantienen en USDT con 6
+    Todos los montos son strings decimales en la precisión de cada moneda (6
 
-    decimales. Los errores siempre devuelven `{"error": "<code>", "message": "<detail>"}`.
+    decimales para USDT/USDC/GOLD, 8 para BTC). Los errores siempre devuelven
+
+    `{"error": "<code>", "message": "<detail>"}`.
 
     '
 servers:
@@ -753,9 +757,12 @@ paths:
       - Saldos
       operationId: getBalances
       summary: Obtener saldos
+      description: Los cuatro saldos virtuales independientes de la cuenta que llama (USDT — la moneda
+        operativa —, USDC, BTC y GOLD en gramos de oro fino). Todos los activos soportados vienen siempre,
+        con ceros si la cuenta no ha usado esa moneda.
       responses:
         '200':
-          description: Saldos de la cuenta que llama.
+          description: Saldos de la cuenta que llama (uno por activo soportado).
           content:
             application/json:
               schema:
@@ -767,6 +774,16 @@ paths:
                   available: '125.430000'
                   held: '10.000000'
                   updated_at: '2026-07-07T12:00:00Z'
+                - asset: USDC
+                  available: '50.000000'
+                  held: '0.000000'
+                  updated_at: '2026-07-08T09:00:00Z'
+                - asset: BTC
+                  available: '0.00060000'
+                  held: '0.00000000'
+                - asset: GOLD
+                  available: '12.500000'
+                  held: '0.000000'
         '403':
           $ref: '#/components/responses/AccountRequired'
         '401':
@@ -783,8 +800,14 @@ paths:
       - $ref: '#/components/parameters/pageSize'
       - name: asset
         in: query
+        description: Filtra por moneda del saldo.
         schema:
           type: string
+          enum:
+          - USDT
+          - USDC
+          - BTC
+          - GOLD
           example: USDT
       - name: type
         in: query
@@ -865,9 +888,11 @@ paths:
         mismas tasas usadas cuando las operaciones se ejecutan (`local_amount / rate = USDT`) — más la
         configuración de comisiones de la cuenta, para que los clientes puedan calcular precios netos.
         `rate` es la punta de payouts (dispersiones) y `payin_rate` la de payins (depósitos).
+        `asset_prices` trae el precio USD referencial de cada saldo virtual (BTC por unidad, GOLD por
+        gramo; los stablecoins valen 1 por convención) — solo para valorizar, sin conversión ni spread.
       responses:
         '200':
-          description: Tasas y comisiones.
+          description: Tasas, precios de referencia por activo y comisiones.
           content:
             application/json:
               schema:
@@ -892,6 +917,22 @@ paths:
                           type: string
                           description: Tasa aplicada a los payins (depósitos/cobros fiat).
                           example: '955.10'
+                  asset_prices:
+                    type: object
+                    description: Precio USD referencial por activo del saldo virtual (solo display).
+                    additionalProperties:
+                      type: object
+                      properties:
+                        currency:
+                          type: string
+                          example: USD
+                        unit:
+                          type: string
+                          description: Unidad a la que refiere el precio (`btc`, `gram`, `usdt`, `usdc`).
+                          example: gram
+                        price:
+                          type: string
+                          example: '107.5341'
                   updated_at:
                     type: string
                   fees:
@@ -913,6 +954,23 @@ paths:
                     currency: PEN
                     rate: '3.72'
                     payin_rate: '3.75'
+                asset_prices:
+                  USDT:
+                    currency: USD
+                    unit: usdt
+                    price: '1'
+                  USDC:
+                    currency: USD
+                    unit: usdc
+                    price: '1'
+                  BTC:
+                    currency: USD
+                    unit: btc
+                    price: '109853.24'
+                  GOLD:
+                    currency: USD
+                    unit: gram
+                    price: '107.5341'
                 updated_at: '2026-07-07T12:00:00Z'
                 fees:
                 - id: 3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c
@@ -1717,10 +1775,11 @@ paths:
       - Transferencias
       operationId: createTransfer
       summary: Crear una transferencia interna
-      description: 'Mueve USDT entre dos cuentas CBPay, de forma atómica y siempre gratuita — funciona
+      description: 'Mueve saldo entre dos cuentas CBPay, de forma atómica y siempre gratuita — funciona
         cualquier combinación: persona a persona, persona a empresa, empresa a persona o empresa a empresa.
-        El destino se resuelve por `to_account_id` o `to_email`. Los suscriptores de webhooks del receptor
-        reciben `transfer_received`.'
+        Funciona con los cuatro saldos virtuales (`USDT` default, `USDC`, `BTC`, `GOLD`) y siempre entre
+        saldos de la **misma moneda** (sin conversión). El destino se resuelve por `to_account_id` o
+        `to_email`. Los suscriptores de webhooks del receptor reciben `transfer_received`.'
       parameters:
       - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:
@@ -1740,10 +1799,17 @@ paths:
                   format: email
                 asset:
                   type: string
+                  enum:
+                  - USDT
+                  - USDC
+                  - BTC
+                  - GOLD
                   default: USDT
+                  description: Moneda del saldo a mover; el destino recibe en esta misma moneda.
                 amount:
                   type: string
-                  description: String decimal positivo, hasta 6 decimales.
+                  description: String decimal positivo, hasta los decimales de la moneda (6 para USDT/USDC/GOLD,
+                    8 para BTC).
                   example: '10.500000'
                 description:
                   type: string
@@ -1771,6 +1837,14 @@ paths:
                   amount: '850.000000'
                   description: July salary
                   idempotency_key: payroll-2026-07-emp01
+              gold:
+                summary: En otra moneda (GOLD, gramos de oro)
+                value:
+                  to_email: carlos@example.com
+                  asset: GOLD
+                  amount: '2.500000'
+                  description: Gold gift
+                  idempotency_key: gold-2026-07-09-a
       responses:
         '201':
           description: Transferencia completada.
@@ -1887,15 +1961,10 @@ paths:
       - Crypto
       operationId: createCryptoWithdrawal
       summary: Crear un retiro on-chain
-      description: 'Envía USDT on-chain. `amount + comisión de retiro` se debita atómicamente
-
-        y queda retenido; el estado final llega vía el webhook
-
-        `crypto_withdrawal_status_changed`. `failed` reembolsa el débito
-
-        completo.
-
-        '
+      description: 'Envía USDT o USDC on-chain desde su propio saldo. Pares soportados: `tron`/`USDT`,
+        `eth`/`USDT`, `eth`/`USDC` (BTC y GOLD no tienen riel on-chain). `amount + comisión de retiro`
+        se debita atómicamente y queda retenido; el estado final llega vía el webhook
+        `crypto_withdrawal_status_changed`. `failed` reembolsa el débito completo.'
       parameters:
       - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:
@@ -1916,7 +1985,11 @@ paths:
                   default: tron
                 asset:
                   type: string
+                  enum:
+                  - USDT
+                  - USDC
                   default: USDT
+                  description: Activo a enviar (USDC solo por `eth`).
                 to_address:
                   type: string
                 amount:
@@ -1924,11 +1997,22 @@ paths:
                   description: String decimal positivo, hasta 6 decimales.
                 idempotency_key:
                   type: string
-            example:
-              chain: tron
-              to_address: TVJ6njG5Fyrq6XwYok3xPQx8kR7HQx6vXk
-              amount: '100.000000'
-              idempotency_key: withdrawal-2026-07-07-a
+            examples:
+              usdt_tron:
+                summary: USDT por TRON
+                value:
+                  chain: tron
+                  to_address: TVJ6njG5Fyrq6XwYok3xPQx8kR7HQx6vXk
+                  amount: '100.000000'
+                  idempotency_key: withdrawal-2026-07-07-a
+              usdc_eth:
+                summary: USDC por Ethereum
+                value:
+                  chain: eth
+                  asset: USDC
+                  to_address: '0x8f3Ba1c2De4567890aBcDeF1234567890aBcDeF1'
+                  amount: '50.000000'
+                  idempotency_key: withdrawal-usdc-2026-07-09-a
       responses:
         '202':
           description: Retiro aceptado y en transmisión.
@@ -2601,9 +2685,10 @@ paths:
       - Crypto
       operationId: createCryptoWallet
       summary: Crear una wallet
-      description: 'Crea una nueva wallet on-chain de USDT para la cuenta que llama. Las cuentas de persona
-        mantienen **una wallet por red**; las cuentas de empresa pueden crear wallets **ilimitadas** por
-        red (usa `label` para distinguirlas).
+      description: 'Crea una nueva wallet on-chain para la cuenta que llama. Pares soportados: `tron`/`usdt`,
+        `eth`/`usdt`, `eth`/`usdc` — cada depósito acredita el saldo del activo de su wallet. Las cuentas
+        de persona mantienen **una wallet por red+activo**; las cuentas de empresa pueden crear wallets
+        **ilimitadas** (usa `label` para distinguirlas).
 
 
         Cada creación cobra la comisión `wallet_creation` cuando CBPay la tiene configurada (fija por
@@ -2625,13 +2710,17 @@ paths:
                   - eth
                 asset:
                   type: string
-                  default: USDT
+                  enum:
+                  - usdt
+                  - usdc
+                  default: usdt
+                  description: Activo de la wallet (usdc solo por `eth`).
                 label:
                   type: string
                   description: Etiqueta descriptiva opcional.
             examples:
               person:
-                summary: Persona — una wallet por red
+                summary: Persona — una wallet por red+activo
                 value:
                   chain: tron
               company_labeled:
@@ -2644,6 +2733,12 @@ paths:
                 value:
                   chain: eth
                   label: E-commerce collections
+              usdc_wallet:
+                summary: Wallet USDC (solo Ethereum)
+                value:
+                  chain: eth
+                  asset: usdc
+                  label: USDC treasury
       responses:
         '201':
           description: Wallet creada.
@@ -4182,8 +4277,9 @@ paths:
       description: 'Consolida todos los movimientos del período — payouts, payins, depósitos y retiros
         crypto, transferencias internas y cargos por servicio — en una cartola auditable con cuadratura
         exacta: opening_balance + total_in − total_out = closing_balance, verificada contra el ledger
-        (`balanced`). Pide `format=pdf` o `format=xlsx` para descargar el archivo con branding CBPay (Content-Disposition:
-        attachment).'
+        (`balanced`). El resumen y los movimientos cubren el saldo operativo USDT; cada otro saldo virtual
+        (USDC, BTC, GOLD) con actividad concilia por separado dentro de `assets`. Pide `format=pdf` o
+        `format=xlsx` para descargar el archivo con branding CBPay (Content-Disposition: attachment).'
       parameters:
       - name: from
         in: query
@@ -4256,6 +4352,20 @@ paths:
                     payout: '15.300000'
                     funding: '897.550000'
                   total_fees: '912.850000'
+                assets:
+                - asset: GOLD
+                  opening_balance: '0.000000'
+                  total_in: '12.500000'
+                  total_out: '2.000000'
+                  net_change: '10.500000'
+                  closing_balance: '10.500000'
+                  balanced: true
+                  movements:
+                  - created_at: '2026-07-09T10:00:00Z'
+                    type: adjustment
+                    reference: adjustment gold-load-1
+                    amount: '12.500000'
+                    balance_after: '12.500000'
                 breakdown:
                   by_product:
                   - product: payouts
@@ -5914,7 +6024,8 @@ webhooks:
   crypto_deposit_credited:
     post:
       summary: Depósito crypto acreditado
-      description: 'Un depósito on-chain fue confirmado y acreditado (neto de la comisión de fondeo).
+      description: 'Un depósito on-chain fue confirmado y acreditado (neto de la comisión de fondeo) al
+        saldo del activo de la wallet (`USDT` o `USDC`).
 
 
         Cada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`

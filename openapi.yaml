@@ -1,19 +1,23 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.25'
+  version: '1.26'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
-    across Latin America, internal transfers, on-chain USDT funding and
+    across Latin America, internal transfers, on-chain funding and
 
-    withdrawals, and KYC screening — all against a single USDT-denominated
+    withdrawals, and KYC screening. Every account holds four independent
 
-    balance per account.
+    virtual balances — USDT (the operating currency), USDC, BTC and GOLD
+
+    (grams of fine gold) — that never mix or convert automatically.
 
 
-    All amounts are decimal strings. Balances are held in USDT with 6 decimal
+    All amounts are decimal strings in each currency''s precision (6 decimals
 
-    places. Errors always return `{"error": "<code>", "message": "<detail>"}`.
+    for USDT/USDC/GOLD, 8 for BTC). Errors always return
+
+    `{"error": "<code>", "message": "<detail>"}`.
 
     '
 servers:
@@ -751,9 +755,12 @@ paths:
       - Balances
       operationId: getBalances
       summary: Get balances
+      description: The four independent virtual balances of the calling account (USDT — the operating
+        currency —, USDC, BTC and GOLD in grams of fine gold). Every supported asset is always present,
+        with zeros if the account has not used that currency yet.
       responses:
         '200':
-          description: Balances of the calling account.
+          description: Balances of the calling account (one per supported asset).
           content:
             application/json:
               schema:
@@ -765,6 +772,16 @@ paths:
                   available: '125.430000'
                   held: '10.000000'
                   updated_at: '2026-07-07T12:00:00Z'
+                - asset: USDC
+                  available: '50.000000'
+                  held: '0.000000'
+                  updated_at: '2026-07-08T09:00:00Z'
+                - asset: BTC
+                  available: '0.00060000'
+                  held: '0.00000000'
+                - asset: GOLD
+                  available: '12.500000'
+                  held: '0.000000'
         '403':
           $ref: '#/components/responses/AccountRequired'
         '401':
@@ -781,8 +798,14 @@ paths:
       - $ref: '#/components/parameters/pageSize'
       - name: asset
         in: query
+        description: Filter by balance currency.
         schema:
           type: string
+          enum:
+          - USDT
+          - USDC
+          - BTC
+          - GOLD
           example: USDT
       - name: type
         in: query
@@ -862,10 +885,12 @@ paths:
       description: Returns the exchange rates that apply to the calling account for each country — the
         same rates used when operations execute (`local_amount / rate = USDT`) — plus the account's fee
         configuration so clients can compute net prices. `rate` is the payout (dispersal) side and
-        `payin_rate` the payin (deposit) side.
+        `payin_rate` the payin (deposit) side. `asset_prices` carries the display-only USD reference
+        price of each virtual balance asset (BTC per unit, GOLD per gram; stablecoins are 1 by
+        convention) — no conversion and no spread.
       responses:
         '200':
-          description: Rates and fees.
+          description: Rates, reference asset prices and fees.
           content:
             application/json:
               schema:
@@ -890,6 +915,22 @@ paths:
                           type: string
                           description: Rate applied to payins (fiat deposits/collections).
                           example: '955.10'
+                  asset_prices:
+                    type: object
+                    description: Display-only USD reference price per virtual balance asset.
+                    additionalProperties:
+                      type: object
+                      properties:
+                        currency:
+                          type: string
+                          example: USD
+                        unit:
+                          type: string
+                          description: Unit the price refers to (`btc`, `gram`, `usdt`, `usdc`).
+                          example: gram
+                        price:
+                          type: string
+                          example: '107.5341'
                   updated_at:
                     type: string
                   fees:
@@ -911,6 +952,23 @@ paths:
                     currency: PEN
                     rate: '3.72'
                     payin_rate: '3.75'
+                asset_prices:
+                  USDT:
+                    currency: USD
+                    unit: usdt
+                    price: '1'
+                  USDC:
+                    currency: USD
+                    unit: usdc
+                    price: '1'
+                  BTC:
+                    currency: USD
+                    unit: btc
+                    price: '109853.24'
+                  GOLD:
+                    currency: USD
+                    unit: gram
+                    price: '107.5341'
                 updated_at: '2026-07-07T12:00:00Z'
                 fees:
                 - id: 3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c
@@ -1715,10 +1773,11 @@ paths:
       - Transfers
       operationId: createTransfer
       summary: Create an internal transfer
-      description: 'Moves USDT between two CBPay accounts, atomically and always free of charge — any
+      description: 'Moves balance between two CBPay accounts, atomically and always free of charge — any
         combination works: person to person, person to company, company to person or company to company.
-        The destination is resolved by `to_account_id` or `to_email`. The recipient''s webhook subscribers
-        receive `transfer_received`.'
+        Works with the four virtual balances (`USDT` default, `USDC`, `BTC`, `GOLD`) and always between
+        balances of the **same currency** (no conversion). The destination is resolved by `to_account_id`
+        or `to_email`. The recipient''s webhook subscribers receive `transfer_received`.'
       parameters:
       - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:
@@ -1738,10 +1797,17 @@ paths:
                   format: email
                 asset:
                   type: string
+                  enum:
+                  - USDT
+                  - USDC
+                  - BTC
+                  - GOLD
                   default: USDT
+                  description: Balance currency to move; the destination receives in this same currency.
                 amount:
                   type: string
-                  description: Positive decimal string, up to 6 decimal places.
+                  description: Positive decimal string, up to the currency's decimals (6 for USDT/USDC/GOLD,
+                    8 for BTC).
                   example: '10.500000'
                 description:
                   type: string
@@ -1769,6 +1835,14 @@ paths:
                   amount: '850.000000'
                   description: July salary
                   idempotency_key: payroll-2026-07-emp01
+              gold:
+                summary: In another currency (GOLD, grams of gold)
+                value:
+                  to_email: carlos@example.com
+                  asset: GOLD
+                  amount: '2.500000'
+                  description: Gold gift
+                  idempotency_key: gold-2026-07-09-a
       responses:
         '201':
           description: Transfer completed.
@@ -1885,15 +1959,10 @@ paths:
       - Crypto
       operationId: createCryptoWithdrawal
       summary: Create an on-chain withdrawal
-      description: 'Sends USDT on-chain. `amount + withdrawal fee` is debited atomically
-
-        and held; final state arrives via the
-
-        `crypto_withdrawal_status_changed` webhook. `failed` refunds the full
-
-        debit.
-
-        '
+      description: 'Sends USDT or USDC on-chain from its own balance. Supported pairs: `tron`/`USDT`,
+        `eth`/`USDT`, `eth`/`USDC` (BTC and GOLD have no on-chain rail). `amount + withdrawal fee` is
+        debited atomically and held; final state arrives via the `crypto_withdrawal_status_changed`
+        webhook. `failed` refunds the full debit.'
       parameters:
       - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:
@@ -1914,7 +1983,11 @@ paths:
                   default: tron
                 asset:
                   type: string
+                  enum:
+                  - USDT
+                  - USDC
                   default: USDT
+                  description: Asset to send (USDC only over `eth`).
                 to_address:
                   type: string
                 amount:
@@ -1922,11 +1995,22 @@ paths:
                   description: Positive decimal string, up to 6 decimal places.
                 idempotency_key:
                   type: string
-            example:
-              chain: tron
-              to_address: TVJ6njG5Fyrq6XwYok3xPQx8kR7HQx6vXk
-              amount: '100.000000'
-              idempotency_key: withdrawal-2026-07-07-a
+            examples:
+              usdt_tron:
+                summary: USDT over TRON
+                value:
+                  chain: tron
+                  to_address: TVJ6njG5Fyrq6XwYok3xPQx8kR7HQx6vXk
+                  amount: '100.000000'
+                  idempotency_key: withdrawal-2026-07-07-a
+              usdc_eth:
+                summary: USDC over Ethereum
+                value:
+                  chain: eth
+                  asset: USDC
+                  to_address: '0x8f3Ba1c2De4567890aBcDeF1234567890aBcDeF1'
+                  amount: '50.000000'
+                  idempotency_key: withdrawal-usdc-2026-07-09-a
       responses:
         '202':
           description: Withdrawal accepted and broadcasting.
@@ -2599,9 +2683,10 @@ paths:
       - Crypto
       operationId: createCryptoWallet
       summary: Create a wallet
-      description: 'Creates a new on-chain USDT wallet for the calling account. Person accounts hold **one
-        wallet per network**; company accounts can create **unlimited** wallets per network (use `label`
-        to tell them apart).
+      description: 'Creates a new on-chain wallet for the calling account. Supported pairs: `tron`/`usdt`,
+        `eth`/`usdt`, `eth`/`usdc` — every deposit credits the wallet''s own asset balance. Person accounts
+        hold **one wallet per network+asset**; company accounts can create **unlimited** wallets (use
+        `label` to tell them apart).
 
 
         Every creation bills the `wallet_creation` fee when configured by CBPay (fixed per wallet; 0 =
@@ -2623,13 +2708,17 @@ paths:
                   - eth
                 asset:
                   type: string
-                  default: USDT
+                  enum:
+                  - usdt
+                  - usdc
+                  default: usdt
+                  description: Wallet asset (usdc only over `eth`).
                 label:
                   type: string
                   description: Optional descriptive label.
             examples:
               person:
-                summary: Person — one wallet per network
+                summary: Person — one wallet per network+asset
                 value:
                   chain: tron
               company_labeled:
@@ -2642,6 +2731,12 @@ paths:
                 value:
                   chain: eth
                   label: E-commerce collections
+              usdc_wallet:
+                summary: USDC wallet (Ethereum only)
+                value:
+                  chain: eth
+                  asset: usdc
+                  label: USDC treasury
       responses:
         '201':
           description: Wallet created.
@@ -4179,8 +4274,9 @@ paths:
       description: 'Consolidates every movement of the period — payouts, payins, crypto deposits and withdrawals,
         internal transfers and service charges — into one auditable statement with an exact reconciliation:
         opening_balance + total_in − total_out = closing_balance, verified against the ledger (`balanced`).
-        Request `format=pdf` or `format=xlsx` to download the CBPay-branded file (Content-Disposition:
-        attachment).'
+        The summary and movements cover the USDT operating balance; every other virtual balance (USDC,
+        BTC, GOLD) with activity reconciles independently inside `assets`. Request `format=pdf` or
+        `format=xlsx` to download the CBPay-branded file (Content-Disposition: attachment).'
       parameters:
       - name: from
         in: query
@@ -4253,6 +4349,20 @@ paths:
                     payout: '15.300000'
                     funding: '897.550000'
                   total_fees: '912.850000'
+                assets:
+                - asset: GOLD
+                  opening_balance: '0.000000'
+                  total_in: '12.500000'
+                  total_out: '2.000000'
+                  net_change: '10.500000'
+                  closing_balance: '10.500000'
+                  balanced: true
+                  movements:
+                  - created_at: '2026-07-09T10:00:00Z'
+                    type: adjustment
+                    reference: adjustment gold-load-1
+                    amount: '12.500000'
+                    balance_after: '12.500000'
                 breakdown:
                   by_product:
                   - product: payouts
@@ -5907,7 +6017,8 @@ webhooks:
   crypto_deposit_credited:
     post:
       summary: Crypto deposit credited
-      description: 'An on-chain deposit was confirmed and credited (net of the funding fee).
+      description: 'An on-chain deposit was confirmed and credited (net of the funding fee) to the balance
+        of the wallet''s asset (`USDT` or `USDC`).
 
 
         Every delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`

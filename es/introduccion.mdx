@@ -6,8 +6,10 @@ description: "Qué es CBPay y qué puedes construir con la API"
 
 <img className="rounded-2xl" src="/images/hero.svg" alt="CBPay — mueve tu dinero a la velocidad del mundo" noZoom />
 
-CBPay es una plataforma de pagos multi-moneda para Latinoamérica. Cada cuenta
-mantiene un saldo virtual en **USDT** y opera sobre él:
+CBPay es una plataforma de pagos multi-moneda para Latinoamérica. Cada
+cuenta mantiene **cuatro saldos virtuales independientes** — `USDT` (la
+moneda operativa), `USDC`, `BTC` y `GOLD` (gramos de oro) — y opera sobre
+ellos:
 
 <CardGroup cols={2}>
   <Card title="Payouts fiat" icon="money-bill-transfer" href="/es/guias/payouts">
@@ -49,8 +51,9 @@ Todos los eventos llegan a tus **webhooks firmados**
 
 ## Cómo funciona
 
-Todo gira alrededor de un único saldo USDT por cuenta — el dinero entra
-por un lado, se convierte, y sale por el otro:
+La operación fiat gira alrededor del saldo USDT (los saldos USDC, BTC y
+GOLD se mueven con transferencias internas, depósitos on-chain y abonos del
+operador) — el dinero entra por un lado, se convierte, y sale por el otro:
 
 ```mermaid
 flowchart LR
@@ -95,7 +98,8 @@ Todas las rutas de esta documentación son relativas a esa URL base.
 
 <Note>
 Los montos son siempre **strings decimales** (ej. `"10.500000"`), nunca
-números flotantes. Los saldos usan 6 decimales (precisión USDT).
+números flotantes. Cada moneda usa su precisión: 6 decimales para
+`USDT`/`USDC`/`GOLD` y 8 para `BTC`.
 </Note>
 
 ## Siguientes pasos

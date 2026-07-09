@@ -72,9 +72,21 @@ curl -OJ "https://api.qbank.cl/platform/v1/reports/statement?from=2026-01-01&to=
   },
   "payouts": [ { "created_at": "…", "payout_id": "…", "country": "BO", "beneficiary": "Juan Quispe", "local_amount": "90.00", "fx_rate": "6.91", "usdt_amount": "13.024600", "fee": "0.300000", "total_debit": "13.324600", "status": "completed" } ],
   "payins": [ { "…": "…" } ],
-  "crypto_deposits": [ { "chain": "tron", "tx_id": "…", "usdt_gross": "100.000000", "fee": "1.000000", "usdt_credited": "99.000000", "balance_after": "99.000000" } ],
+  "assets": [
+    {
+      "asset": "GOLD",
+      "opening_balance": "0.000000",
+      "total_in": "12.500000",
+      "total_out": "2.000000",
+      "net_change": "10.500000",
+      "closing_balance": "10.500000",
+      "balanced": true,
+      "movements": [ { "type": "adjustment", "amount": "12.500000", "balance_after": "12.500000", "created_at": "…" } ]
+    }
+  ],
+  "crypto_deposits": [ { "chain": "tron", "asset": "USDT", "tx_id": "…", "usdt_gross": "100.000000", "fee": "1.000000", "usdt_credited": "99.000000", "balance_after": "99.000000" } ],
   "crypto_withdrawals": [ { "…": "…" } ],
-  "transfers": [ { "direction": "sent", "counterparty": "Ana Pérez", "amount": "25.000000" } ],
+  "transfers": [ { "direction": "sent", "counterparty": "Ana Pérez", "asset": "USDT", "amount": "25.000000" } ],
   "service_charges": [ { "type": "banking_fee", "service": "banking_customer", "amount": "-0.500000", "balance_after": "98.500000" } ],
   "movements": [ { "type": "funding", "amount": "99.000000", "balance_after": "99.000000", "created_at": "…" } ]
 }
@@ -83,14 +95,21 @@ curl -OJ "https://api.qbank.cl/platform/v1/reports/statement?from=2026-01-01&to=
 Secciones:
 
 1. **`summary`** — saldo inicial, entradas, salidas, saldo final, comisiones
-   por servicio y el flag `balanced`.
-2. **`breakdown`** — por producto, por país (payouts y payins con monto
+   por servicio y el flag `balanced` del **saldo USDT** (la moneda
+   operativa).
+2. **`assets`** — una sección conciliada por cada saldo no-USDT con
+   actividad o saldo (USDC, BTC, GOLD): saldo inicial/final, entradas,
+   salidas, su propio flag `balanced` y sus movimientos, en la precisión de
+   cada moneda. Si solo operas USDT, viene vacía.
+3. **`breakdown`** — por producto, por país (payouts y payins con monto
    local y USDT), por moneda fiat y por mes.
-3. **Detalle por producto** — payouts (con beneficiario, tasa y débito),
-   payins (por modalidad), crypto (con `tx_id`), transferencias (con
-   contraparte) y cargos por servicio (con reembolsos).
-4. **`movements`** — el ledger crudo: cada movimiento con su
-   `balance_after`. Es la sección con la que un auditor cuadra todo.
+4. **Detalle por producto** — payouts (con beneficiario, tasa y débito),
+   payins (por modalidad), crypto (con `tx_id` y su `asset`),
+   transferencias (con contraparte y `asset`) y cargos por servicio (con
+   reembolsos).
+5. **`movements`** — el ledger crudo del saldo USDT: cada movimiento con su
+   `balance_after`. Es la sección con la que un auditor cuadra todo (los
+   movimientos de las otras monedas van dentro de su sección en `assets`).
 
 ## Cómo cuadrar la cartola (para tu contador)
 
@@ -100,7 +119,9 @@ La cartola cumple una identidad contable exacta, sin redondeos:
 saldo_inicial + total_entradas − total_salidas = saldo_final
 ```
 
-- `balanced: true` confirma que la identidad se cumple contra el ledger.
+- `balanced: true` confirma que la identidad se cumple contra el ledger —
+  tanto en el resumen USDT como en cada sección de `assets` (cada moneda
+  cuadra por separado; nunca se suman montos de monedas distintas).
 - Cada fila de `movements` trae el saldo resultante (`balance_after`):
   puedes seguir el saldo línea a línea desde el inicial hasta el final.
 - El saldo final de la cartola de un período empalma con el inicial del

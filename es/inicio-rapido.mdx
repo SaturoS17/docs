@@ -23,7 +23,7 @@ Antes de empezar, los datos que vas a necesitar en todos lados:
 | **URL base** | `https://api.qbank.cl/platform` |
 | **Autenticación** | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | **Slug de organización** | `cbpay` (para registro y login) |
-| **Moneda del saldo** | USDT, 6 decimales, siempre como string (`"52.618258"`) |
+| **Monedas del saldo** | 4 saldos independientes: USDT (operativa), USDC, BTC y GOLD — montos siempre como string (`"52.618258"`) |
 | **Ambiente** | Producción directa — no hay sandbox; prueba con montos pequeños |
 
 <Info>
@@ -107,7 +107,10 @@ curl https://api.qbank.cl/platform/v1/balances \
 {
   "account_id": "…",
   "balances": [
-    { "asset": "USDT", "available": "0.000000", "held": "0.000000" }
+    { "asset": "USDT", "available": "0.000000", "held": "0.000000" },
+    { "asset": "USDC", "available": "0.000000", "held": "0.000000" },
+    { "asset": "BTC", "available": "0.00000000", "held": "0.00000000" },
+    { "asset": "GOLD", "available": "0.000000", "held": "0.000000" }
   ]
 }
 ```

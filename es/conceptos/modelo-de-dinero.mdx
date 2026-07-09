@@ -1,28 +1,52 @@
 ---
 title: "Modelo de dinero"
 icon: "coins"
-description: "Saldos USDT, conversión FX, holds y el ledger inmutable"
+description: "Saldos virtuales por moneda, conversión FX, holds y el ledger inmutable"
 ---
 
-## Un solo saldo: USDT
+## Cuatro saldos virtuales independientes
 
-Cada cuenta tiene un saldo virtual en **USDT con 6 decimales**. Todas las
-operaciones — payouts en pesos chilenos, cobros en soles, retiros on-chain —
-se liquidan contra ese único saldo.
+Cada cuenta mantiene **cuatro saldos virtuales, uno por moneda**. Son
+totalmente independientes entre sí: nunca se mezclan ni se convierten
+automáticamente.
 
-Los montos viajan siempre como **strings decimales**:
+| Moneda | Qué es | Decimales | Cómo se fondea |
+|---|---|---|---|
+| `USDT` | Stablecoin USD — **la moneda operativa** | 6 | Payins fiat, depósitos on-chain (TRON/Ethereum), transferencias |
+| `USDC` | Stablecoin USD | 6 | Depósitos on-chain (Ethereum), transferencias |
+| `BTC` | Bitcoin | 8 (satoshis) | Abonos del operador y transferencias internas |
+| `GOLD` | **Gramos de oro fino** con respaldo en custodio | 6 | Abonos del operador y transferencias internas |
+
+`GET /v1/balances` devuelve siempre los cuatro (con ceros si no has operado
+esa moneda), como **strings decimales**:
 
 ```json
-{ "asset": "USDT", "available": "125.430000", "held": "10.000000" }
+{
+  "account_id": "…",
+  "balances": [
+    { "asset": "USDT", "available": "125.430000", "held": "10.000000" },
+    { "asset": "USDC", "available": "50.000000", "held": "0.000000" },
+    { "asset": "BTC", "available": "0.00060000", "held": "0.00000000" },
+    { "asset": "GOLD", "available": "12.500000", "held": "0.000000" }
+  ]
+}
 ```
 
 <Note>
-Internamente los montos se almacenan como enteros en micro-USDT
-(1 USDT = 1.000.000 unidades) y se calculan con aritmética racional exacta.
-Nunca hay floats ni errores de redondeo acumulados.
+Internamente cada monto se almacena como entero en la unidad mínima de su
+moneda (micro-USDT, satoshis, micro-gramos) y se calcula con aritmética
+racional exacta. Nunca hay floats ni errores de redondeo acumulados.
 </Note>
 
+**USDT es la moneda operativa**: los payouts y payins fiat, las tarjetas y
+todas las comisiones de servicios se liquidan siempre contra el saldo USDT.
+Los otros saldos se mueven con [transferencias
+internas](/es/guias/transferencias) (siempre entre saldos de la misma
+moneda), depósitos on-chain (USDC) o abonos de tu operador (BTC y GOLD).
+
 ## `available` y `held`
+
+Cada saldo tiene sus dos contadores:
 
 | Campo | Significado |
 |---|---|
@@ -60,17 +84,36 @@ usdt_credited = usdt_gross − fee
 
 La tasa usada queda registrada en el objeto (`fx_rate`) para auditoría.
 
+## Precios de referencia
+
+`GET /v1/rates` incluye un bloque `asset_prices` con el **precio USD de
+referencia** de cada moneda (BTC por unidad, GOLD por gramo; USDT y USDC
+valen 1 por convención). Es solo para valorizar tus saldos en pantalla — no
+implica conversión ni spread:
+
+```json
+{
+  "asset_prices": {
+    "USDT": { "currency": "USD", "unit": "usdt", "price": "1" },
+    "USDC": { "currency": "USD", "unit": "usdc", "price": "1" },
+    "BTC": { "currency": "USD", "unit": "btc", "price": "109853.24" },
+    "GOLD": { "currency": "USD", "unit": "gram", "price": "107.5341" }
+  }
+}
+```
+
 ## Ledger inmutable
 
 Cada movimiento genera una entrada inmutable con saldo resultante
-(`balance_after`). Tu historial completo está en `GET /v1/movements`:
+(`balance_after`) **en la moneda del movimiento**. Tu historial completo
+está en `GET /v1/movements` (filtra por moneda con `?asset=`):
 
 | `type` | Qué representa |
 |---|---|
 | `payin_credit` | Abono de un cobro fiat |
 | `payout_debit` / `payout_refund` | Débito de payout / reembolso si falló |
 | `transfer_in` / `transfer_out` | Transferencia interna recibida / enviada |
-| `funding` | Depósito USDT on-chain acreditado |
+| `funding` | Depósito on-chain acreditado (USDT o USDC, cada uno en su saldo) |
 | `withdrawal_debit` / `withdrawal_refund` | Retiro on-chain / reembolso si falló |
 | `compliance_fee` / `compliance_refund` | Cargo por servicio KYC/KYB / reembolso |
 | `wallet_creation_fee` / `wallet_creation_refund` | Cargo por creación de wallet / reembolso |
@@ -78,6 +121,10 @@ Cada movimiento genera una entrada inmutable con saldo resultante
 
 ```bash
 curl "https://api.qbank.cl/platform/v1/movements?type=payout_debit&from=2026-07-01&to=2026-07-07&page_size=20" \
+  -H "Authorization: Bearer <token>"
+
+# Solo los movimientos del saldo GOLD
+curl "https://api.qbank.cl/platform/v1/movements?asset=GOLD&from=2026-07-01&to=2026-07-07" \
   -H "Authorization: Bearer <token>"
 ```
 

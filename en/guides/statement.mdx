@@ -72,9 +72,21 @@ curl -OJ "https://api.qbank.cl/platform/v1/reports/statement?from=2026-01-01&to=
   },
   "payouts": [ { "created_at": "…", "payout_id": "…", "country": "BO", "beneficiary": "Juan Quispe", "local_amount": "90.00", "fx_rate": "6.91", "usdt_amount": "13.024600", "fee": "0.300000", "total_debit": "13.324600", "status": "completed" } ],
   "payins": [ { "…": "…" } ],
-  "crypto_deposits": [ { "chain": "tron", "tx_id": "…", "usdt_gross": "100.000000", "fee": "1.000000", "usdt_credited": "99.000000", "balance_after": "99.000000" } ],
+  "assets": [
+    {
+      "asset": "GOLD",
+      "opening_balance": "0.000000",
+      "total_in": "12.500000",
+      "total_out": "2.000000",
+      "net_change": "10.500000",
+      "closing_balance": "10.500000",
+      "balanced": true,
+      "movements": [ { "type": "adjustment", "amount": "12.500000", "balance_after": "12.500000", "created_at": "…" } ]
+    }
+  ],
+  "crypto_deposits": [ { "chain": "tron", "asset": "USDT", "tx_id": "…", "usdt_gross": "100.000000", "fee": "1.000000", "usdt_credited": "99.000000", "balance_after": "99.000000" } ],
   "crypto_withdrawals": [ { "…": "…" } ],
-  "transfers": [ { "direction": "sent", "counterparty": "Ana Perez", "amount": "25.000000" } ],
+  "transfers": [ { "direction": "sent", "counterparty": "Ana Perez", "asset": "USDT", "amount": "25.000000" } ],
   "service_charges": [ { "type": "banking_fee", "service": "banking_customer", "amount": "-0.500000", "balance_after": "98.500000" } ],
   "movements": [ { "type": "funding", "amount": "99.000000", "balance_after": "99.000000", "created_at": "…" } ]
 }
@@ -83,15 +95,20 @@ curl -OJ "https://api.qbank.cl/platform/v1/reports/statement?from=2026-01-01&to=
 Sections:
 
 1. **`summary`** — opening balance, inflows, outflows, closing balance,
-   fees by service and the `balanced` flag.
-2. **`breakdown`** — by product, by country (payouts and payins with local
+   fees by service and the `balanced` flag of the **USDT balance** (the
+   operating currency).
+2. **`assets`** — one reconciled section per non-USDT balance with activity
+   or balance (USDC, BTC, GOLD): opening/closing balance, inflows,
+   outflows, its own `balanced` flag and its movements, in each currency's
+   precision. Empty if you only operate USDT.
+3. **`breakdown`** — by product, by country (payouts and payins with local
    amount and USDT), by fiat currency and by month.
-3. **Per-product detail** — payouts (beneficiary, rate and debit), payins
-   (per mode), crypto (with `tx_id`), transfers (with counterparty) and
-   service charges (with refunds).
-4. **`movements`** — the raw ledger: every movement with its
+4. **Per-product detail** — payouts (beneficiary, rate and debit), payins
+   (per mode), crypto (with `tx_id` and its `asset`), transfers (with
+   counterparty and `asset`) and service charges (with refunds).
+5. **`movements`** — the raw USDT ledger: every movement with its
    `balance_after`. This is the section an auditor uses to tie everything
-   out.
+   out (other currencies' movements live inside their `assets` section).
 
 ## How to reconcile it (for your accountant)
 
@@ -101,7 +118,9 @@ The statement satisfies an exact accounting identity, with no rounding:
 opening_balance + total_in − total_out = closing_balance
 ```
 
-- `balanced: true` confirms the identity holds against the ledger.
+- `balanced: true` confirms the identity holds against the ledger — both
+  on the USDT summary and inside each `assets` section (every currency
+  reconciles separately; amounts of different currencies are never summed).
 - Every `movements` row carries the resulting balance (`balance_after`):
   you can follow the balance line by line from opening to closing.
 - The closing balance of one period matches the opening of the next.

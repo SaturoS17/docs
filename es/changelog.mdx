@@ -8,6 +8,35 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="9 de julio de 2026" description="v1.26">
+
+**Agregado — Saldos virtuales multi-moneda (USDT, USDC, BTC, GOLD)**
+
+- Cada cuenta ahora mantiene **cuatro saldos virtuales independientes**:
+  `USDT` (la moneda operativa), `USDC`, `BTC` (8 decimales, satoshis) y
+  `GOLD` (gramos de oro fino, 6 decimales, con respaldo en custodio).
+  Nunca se mezclan ni se convierten automáticamente. Detalle en
+  [modelo de dinero](/es/conceptos/modelo-de-dinero).
+- **`GET /v1/balances`** devuelve siempre los cuatro saldos (con ceros si
+  no has operado esa moneda) y `GET /v1/movements` filtra por moneda con
+  `?asset=`.
+- **Transferencias internas multi-moneda**: `POST /v1/transfers` acepta
+  `asset` (`USDT` default, `USDC`, `BTC`, `GOLD`) — siempre entre saldos de
+  la **misma moneda**, sin conversión y sin comisión.
+- **USDC on-chain**: crea wallets `eth`/`usdc`, deposita y retira USDC por
+  Ethereum. Cada depósito acredita el saldo de su propio activo. Guía en
+  [crypto](/es/guias/crypto).
+- **Precios de referencia**: `GET /v1/rates` incluye `asset_prices` con el
+  precio USD referencial de cada moneda (BTC por unidad, GOLD por gramo) —
+  solo para valorizar, sin conversión ni spread.
+- **Cartola multi-moneda**: nueva sección `assets` con la conciliación
+  independiente de cada saldo no-USDT (inicial/entradas/salidas/final y su
+  flag `balanced`), también en el PDF y el Excel.
+- Los payouts, payins, tarjetas y comisiones de servicios siguen operando
+  **exclusivamente contra el saldo USDT**.
+
+</Update>
+
 <Update label="8 de julio de 2026" description="v1.25">
 
 **Agregado — Login social (Google, Apple, Microsoft, Meta)**
