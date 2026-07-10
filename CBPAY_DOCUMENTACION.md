@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-10 02:34 UTC · versión `11123e4ea9a8`
+> **Documento actualizado:** 2026-07-10 04:31 UTC · versión `245d65389716`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.32 (9 de julio de 2026) |
+| Versión de la documentación | v1.33 (10 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -5496,9 +5496,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-10 02:34 UTC · 108 requests · versión `e48186f4b1a1`
+> **Colección actualizada:** 2026-07-10 04:31 UTC · 108 requests · versión `948ec1af541f`
 
-<PostmanFreshness iso="2026-07-10T02:34:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-10T04:31:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -5532,6 +5532,17 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.33 — 10 de julio de 2026
+
+**Corregido — Catálogo de bancos sin `method` en países con varios métodos**
+
+- `GET /v1/payouts/banks?country=VE` respondía `400` pidiendo `method`, y
+  `?country=BO` respondía `400 payout_corridor_unsupported`. Ahora el
+  catálogo **sin `method` devuelve la unión de los bancos de todos los
+  métodos del país** (deduplicada por código), como promete esta
+  documentación; con `method` se acota al canal específico (parámetro
+  documentado en la referencia).
 
 ### v1.32 — 9 de julio de 2026
 

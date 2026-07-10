@@ -7,6 +7,19 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 10, 2026" description="v1.33">
+
+**Fixed — Banks catalog without `method` in countries with several methods**
+
+- `GET /v1/payouts/banks?country=VE` answered `400` asking for `method`,
+  and `?country=BO` answered `400 payout_corridor_unsupported`. The catalog
+  **without `method` now returns the union of every payout method's banks
+  for the country** (deduplicated by code), as this documentation promises;
+  passing `method` scopes it to a single channel (parameter now documented
+  in the reference).
+
+</Update>
+
 <Update label="July 9, 2026" description="v1.32">
 
 **Added — Card purchases from BTC and GOLD (at-the-moment conversion)**

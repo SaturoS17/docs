@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.32'
+  version: '1.33'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -1556,12 +1556,22 @@ paths:
       - Payouts
       operationId: getPayoutBanks
       summary: List destination banks
+      description: Bank catalog for a country's payouts. Without `method` it returns the union of
+        every payout method's banks for the country (deduplicated by code); pass `method` to get a
+        single channel's catalog. Some methods have no bank catalog (e.g. QR) and contribute no
+        entries.
       parameters:
       - name: country
         in: query
         schema:
           type: string
           example: CL
+      - name: method
+        in: query
+        schema:
+          type: string
+          example: bank_transfer
+        description: Optional payout method to scope the catalog (see GET /v1/payouts/methods).
       responses:
         '200':
           description: Banks catalog for the country.
