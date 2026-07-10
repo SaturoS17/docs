@@ -7,6 +7,28 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 10, 2026" description="v1.38">
+
+**Added — Account summary (analytics) + third-party banking users**
+
+- **`GET /v1/analytics/summary`**: in a single call, every series and
+  statistic of your account to build your dashboard — gross volume
+  (in/out), transactions and new users per period (day/week/month, with
+  comparison vs the previous period), global per-country view, and a
+  section for EVERY service (payouts, payins, deposits, withdrawals,
+  transfers, swaps, cards, banking, KYC/KYB, AML, contacts) with their
+  dimensions (country, currency, method, status, chain, merchant). Plus
+  `spending` (what you consumed in fees per service) and USD-valued
+  `balances`. New guide: [Your account summary](/en/guides/analytics).
+- **Third-party banking users (companies only)**: `POST/GET
+  /v1/banking/third-parties` (+documents, submit, accounts, balance) to
+  register your end clients as separate banking users, with their own
+  identity/KYC and accounts in their name. Isolated per account.
+- **New limit**: person accounts can hold at most 1 bank account
+  (`409 banking_account_limit`).
+
+</Update>
+
 <Update label="July 10, 2026" description="v1.37">
 
 **Changed — Bolivia and Venezuela rates**

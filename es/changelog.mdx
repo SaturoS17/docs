@@ -8,6 +8,28 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="10 de julio de 2026" description="v1.38">
+
+**Agregado — Resumen de cuenta (analytics) + usuarios banking de terceros**
+
+- **`GET /v1/analytics/summary`**: en una sola llamada, todas las series y
+  estadísticas de tu cuenta para armar tu dashboard — volumen bruto
+  (in/out), transacciones y usuarios nuevos por período (día/semana/mes,
+  con comparativa vs el período anterior), vista global por país, y una
+  sección por CADA servicio (payouts, payins, depósitos, retiros,
+  transferencias, swaps, tarjetas, banking, KYC/KYB, AML, contactos) con
+  sus dimensiones (país, moneda, método, estado, chain, comercio). Además
+  `spending` (lo que consumiste en fees por servicio) y `balances`
+  valorizados en USD. Guía nueva: [Resumen de tu cuenta](/es/guias/analytics).
+- **Usuarios banking de terceros (solo empresas)**: `POST/GET
+  /v1/banking/third-parties` (+documentos, submit, cuentas, saldo) para dar
+  de alta a tus clientes finales como usuarios banking separados, con su
+  identidad/KYC y cuentas a su nombre. Aislados por cuenta.
+- **Límite nuevo**: las cuentas persona pueden tener máximo 1 cuenta
+  bancaria (`409 banking_account_limit`).
+
+</Update>
+
 <Update label="10 de julio de 2026" description="v1.37">
 
 **Cambiado — Tasas de Bolivia y Venezuela**

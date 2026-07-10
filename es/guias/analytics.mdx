@@ -1,0 +1,266 @@
+---
+title: "Resumen de tu cuenta (analytics)"
+icon: "chart-line"
+description: "Un solo endpoint con todas las series y estadísticas de tu cuenta para armar tu dashboard: volumen, transacciones, usuarios, secciones por servicio, países, consumo y saldos"
+---
+
+`GET /v1/analytics/summary` entrega en **una sola llamada** todo lo que
+necesita la página de resumen de tu cuenta (persona o empresa): series
+temporales listas para graficar, el detalle de cada servicio con todas sus
+dimensiones (país, moneda, método, estado, chain, comercio), lo que
+gastaste en servicios y tus saldos valorizados.
+
+```mermaid
+flowchart LR
+    front["Tu dashboard"] --> ep["GET /v1/analytics/summary"]
+    ep --> g1["Gross volume<br/>(in/out por período)"]
+    ep --> g2["Transacciones"]
+    ep --> g3["Usuarios nuevos<br/>(banking)"]
+    ep --> g4["Secciones por servicio<br/>payouts, payins, tarjetas, crypto..."]
+    ep --> g5["Consumo en servicios<br/>+ saldos valorizados"]
+```
+
+## Petición
+
+```bash
+curl "https://api.qbank.cl/platform/v1/analytics/summary?from=2026-07-01&to=2026-07-10&granularity=day" \
+  -H "Authorization: Bearer <token>"
+```
+
+| Parámetro | Requerido | Descripción |
+|---|---|---|
+| `from` / `to` | Sí | Rango `YYYY-MM-DD` en UTC, ambos inclusive; máximo 366 días |
+| `granularity` | No | `day` (default), `week` (semanas lunes-domingo) o `month` |
+
+Solo ves los datos de **tu propia cuenta**. Todos los montos van como
+strings decimales en USD; los buckets sin actividad vienen **rellenos con
+ceros** para graficar directo.
+
+## Bloques globales (los KPI del header y los 3 gráficos principales)
+
+```json
+{
+  "gross_volume": {
+    "in": "636936.87",
+    "out": "270118.87",
+    "total": "907055.74",
+    "series": [
+      { "date": "2026-07-01", "in": "51023.10", "out": "31210.44", "total": "82233.54" }
+    ],
+    "previous_period": { "in": "512300.00", "out": "241000.10", "total": "753300.10" },
+    "change_pct": "20.41",
+    "unpriced_assets": []
+  },
+  "transactions": {
+    "total": 92,
+    "series": [ { "date": "2026-07-01", "in": 3, "out": 5, "total": 8 } ],
+    "previous_period": { "total": 71 },
+    "change_pct": "29.58"
+  },
+  "new_users": {
+    "total": 11,
+    "series": [ { "date": "2026-07-01", "count": 1 } ],
+    "previous_period": { "total": 6 },
+    "change_pct": "83.33"
+  }
+}
+```
+
+- **`gross_volume`**: valor USD de todo lo que ENTRÓ (payins, depósitos
+  crypto, transferencias recibidas) y SALIÓ (payouts, retiros,
+  transferencias enviadas, compras con tarjeta). Los reembolsos se netean
+  contra su servicio — jamás inflan el volumen. Los swaps son conversión
+  interna y tienen su propia sección.
+- **`transactions`**: conteo de operaciones (sin fees ni reembolsos).
+- **`new_users`**: usuarios banking de terceros que tu empresa dio de alta
+  (para cuentas persona la serie va en cero).
+- **`change_pct`**: variación contra el período inmediatamente anterior del
+  mismo largo — para los deltas ▲▼ (es `null` si el período anterior fue 0).
+- Los saldos en `BTC`/`GOLD` se valorizan al precio referencial vigente; si
+  un precio no está disponible, el asset aparece en `unpriced_assets` y sus
+  montos quedan fuera del USD (nunca inventamos un precio).
+
+## `by_country` — vista global por país
+
+Payouts y payins combinados, ordenados por volumen — para el mapa o las
+barras por país:
+
+```json
+"by_country": [
+  {
+    "country": "BR",
+    "payouts": { "count": 18, "volume_usd": "3410.20" },
+    "payins":  { "count": 4,  "volume_usd": "820.00" },
+    "total_usd": "4230.20"
+  }
+]
+```
+
+## `sections` — el detalle de CADA servicio
+
+Cada sección trae totales, su serie por bucket y sus dimensiones propias:
+
+<AccordionGroup>
+<Accordion title="payouts — envíos fiat">
+
+```json
+"payouts": {
+  "count": 24, "volume_usd": "5120.40", "fees_usd": "7.20",
+  "series": [ { "date": "2026-07-01", "count": 3 } ],
+  "by_status": [ { "key": "completed", "count": 21, "volume_usd": "4980.10" } ],
+  "by_country": [
+    { "country": "BR", "count": 18, "volume_usd": "3410.20", "local_volume": { "BRL": "17550" } }
+  ],
+  "by_method": [ { "key": "pix", "count": 18, "volume_usd": "3410.20" } ]
+}
+```
+
+`by_status` te da el success rate; `by_country` incluye el volumen en
+moneda local por cada moneda; `by_method` separa pix, bank_transfer, yape,
+etc. Los fallidos quedan fuera del volumen (fueron reembolsados).
+
+</Accordion>
+<Accordion title="payins — cobros fiat">
+
+```json
+"payins": {
+  "count": 9, "volume_usd": "2210.00", "fees_usd": "0.00",
+  "series": [ { "date": "2026-07-02", "count": 2 } ],
+  "by_country": [ { "key": "BO", "count": 5, "volume_usd": "1400.00" } ],
+  "by_method": [ { "key": "qr", "count": 5, "volume_usd": "1400.00" } ],
+  "by_kind":   [ { "key": "qr", "count": 5, "volume_usd": "1400.00" } ]
+}
+```
+
+Solo cuentan los payins **acreditados**.
+
+</Accordion>
+<Accordion title="deposits / withdrawals — crypto on-chain">
+
+```json
+"deposits": {
+  "count": 3, "volume_usd": "1500.00",
+  "series": [ { "date": "2026-07-03", "count": 1 } ],
+  "by_chain": [ { "chain": "tron", "asset": "USDT", "count": 2, "amount": "1000.000000" } ]
+},
+"withdrawals": {
+  "count": 2, "volume_usd": "600.00",
+  "series": [ { "date": "2026-07-04", "count": 1 } ],
+  "by_chain": [ { "chain": "eth", "asset": "USDC", "count": 1, "status": "completed", "amount": "500.000000", "fees": "1.000000" } ]
+}
+```
+
+</Accordion>
+<Accordion title="transfers, swaps y cards">
+
+```json
+"transfers": {
+  "in":  { "count": 4, "volume_usd": "300.00" },
+  "out": { "count": 2, "volume_usd": "120.00" },
+  "series": [ { "date": "2026-07-01", "count": 1 } ]
+},
+"swaps": {
+  "count": 5, "volume_usd": "890.00",
+  "series": [ { "date": "2026-07-05", "count": 2 } ],
+  "by_pair": [ { "pair": "USDT/BTC", "count": 3, "volume_usd": "600.00" } ]
+},
+"cards": {
+  "count": 12, "volume_usd": "230.50", "fees_usd": "5.00", "active_cards": 1,
+  "series": [ { "date": "2026-07-06", "count": 4 } ],
+  "by_status": [ { "status": "settled", "count": 10, "volume_usd": "205.00" } ],
+  "top_merchants": [ { "merchant": "AMAZON", "count": 4, "volume_usd": "98.20" } ]
+}
+```
+
+</Accordion>
+<Accordion title="banking, verifications (KYC/KYB), aml y contacts">
+
+```json
+"banking": {
+  "new_third_parties": 11,
+  "third_parties_series": [ { "date": "2026-07-01", "count": 1 } ],
+  "new_accounts": 14,
+  "accounts_series": [ { "date": "2026-07-01", "count": 2 } ],
+  "operations": 6,
+  "fees_usd": "18.00",
+  "fees_by_service": { "banking_customer": { "count": 11, "fees_usd": "11.00" } }
+},
+"verifications": {
+  "submissions": [ { "kind": "kyc", "status": "approved", "count": 3 } ],
+  "links":       [ { "kind": "kyb", "status": "pending", "count": 1 } ],
+  "fees_usd": "9.00"
+},
+"aml": { "screenings": 4, "fees_usd": "2.00", "by_service": { "compliance_screening": { "count": 4, "fees_usd": "2.00" } } },
+"contacts": { "new_contacts": 7, "series": [ { "date": "2026-07-02", "count": 2 } ] }
+```
+
+`new_third_parties` es la misma métrica del gráfico "usuarios nuevos":
+los usuarios banking que tu empresa dio de alta.
+
+</Accordion>
+</AccordionGroup>
+
+## `spending` — lo que consumiste en servicios
+
+Todos los fees explícitos que pagaste en el período, con cuántas veces se
+cobró cada servicio:
+
+```json
+"spending": {
+  "total_usd": "34.50",
+  "by_service": {
+    "banking_customer": { "count": 11, "fees_usd": "11.00" },
+    "wallet_creation":  { "count": 2,  "fees_usd": "1.00" },
+    "verification_kyc": { "count": 3,  "fees_usd": "9.00" }
+  }
+}
+```
+
+## `balances` — tus saldos valorizados
+
+```json
+"balances": {
+  "items": [
+    { "asset": "USDT", "available": "1520.250000", "held": "0.000000", "usd_estimate": "1520.25" },
+    { "asset": "BTC",  "available": "0.00500000",  "held": "0.00000000", "usd_estimate": "313.68" }
+  ],
+  "net_worth_usd_estimate": "1833.93"
+}
+```
+
+## Errores
+
+| HTTP | `error` | Qué hacer |
+|---|---|---|
+| 400 | `invalid_range` | `from`/`to` son obligatorios (`YYYY-MM-DD`), y el rango máximo es 366 días |
+| 400 | `invalid_granularity` | Usa `day`, `week` o `month` |
+| 403 | `account_required` | El endpoint requiere credencial de cuenta |
+
+## FAQ
+
+<AccordionGroup>
+<Accordion title="¿En qué zona horaria están los buckets?">
+UTC, igual que los filtros `from`/`to` de toda la API. Si tu front muestra
+otra zona, convierte las etiquetas al renderizar.
+</Accordion>
+<Accordion title="¿Qué cuenta como volumen y qué no?">
+Entra todo lo que movió plata hacia/desde tu cuenta: payins, depósitos
+crypto y transferencias recibidas (in); payouts, retiros, transferencias
+enviadas y compras con tarjeta (out). Los reembolsos se netean, los fees se
+reportan aparte en `spending`, y los swaps (conversión entre tus propios
+saldos) tienen su sección propia.
+</Accordion>
+<Accordion title="¿Cómo se valorizan BTC y GOLD?">
+Al precio referencial vigente al momento de la consulta (el mismo de
+`GET /v1/rates`). Es una valorización de exhibición: si el precio no está
+disponible, el asset aparece en `unpriced_assets` y no se suma al USD.
+</Accordion>
+<Accordion title="¿Los totales cuadran con la cartola?">
+Sí: ambos salen del mismo ledger. La cartola (`GET /v1/reports/statement`)
+es el documento contable línea a línea; el analytics es la vista agregada
+para gráficos.
+</Accordion>
+<Accordion title="¿Cada cuánto se actualiza?">
+En tiempo real: cada operación acreditada aparece en la siguiente llamada.
+</Accordion>
+</AccordionGroup>

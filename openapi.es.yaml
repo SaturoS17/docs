@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.37'
+  version: '1.38'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -51,6 +51,7 @@ tags:
 - name: AML screening
   description: 'Verificación de identidad: KYC para personas, KYB para empresas, con screening AML, re-screening
     y monitoreo continuo.'
+- name: Analytics
 - name: Webhooks
   description: Suscripciones para recibir notificaciones de eventos firmadas.
 - name: Estado
@@ -7595,6 +7596,237 @@ paths:
                   retrieved: 1
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/analytics/summary:
+    get:
+      tags:
+      - Analytics
+      operationId: analyticsSummary
+      summary: Resumen de la cuenta para dashboards
+      description: >
+        Aggregated view of the whole account flow in a single call: gross
+        volume in/out, transaction counts, new banking users, per-service
+        sections (payouts, payins, deposits, withdrawals, transfers, swaps,
+        cards, banking, verifications, aml, contacts) with their dimensions
+        (country, currency, method, status, chain, merchant), service
+        spending and valued balances. Amounts are USD decimal strings;
+        empty buckets are zero-filled. Account credential only.
+      parameters:
+      - {name: from, in: query, required: true, schema: {type: string, format: date}}
+      - {name: to, in: query, required: true, schema: {type: string, format: date}}
+      - {name: granularity, in: query, schema: {type: string, enum: [day, week, month], default: day}}
+      responses:
+        '200':
+          description: Account analytics summary.
+          content:
+            application/json:
+              example:
+                account_id: ae8cf540-22a9-414d-82cc-8ac04732be4f
+                from: '2026-07-01'
+                to: '2026-07-10'
+                granularity: day
+                timezone: UTC
+                gross_volume:
+                  in: '636936.87'
+                  out: '270118.87'
+                  total: '907055.74'
+                  series:
+                  - {date: '2026-07-01', in: '51023.10', out: '31210.44', total: '82233.54'}
+                  previous_period: {in: '512300.00', out: '241000.10', total: '753300.10'}
+                  change_pct: '20.41'
+                  unpriced_assets: []
+                transactions:
+                  total: 92
+                  series:
+                  - {date: '2026-07-01', in: 3, out: 5, total: 8}
+                  previous_period: {total: 71}
+                  change_pct: '29.58'
+                new_users:
+                  total: 11
+                  series:
+                  - {date: '2026-07-01', count: 1}
+                  previous_period: {total: 6}
+                  change_pct: '83.33'
+                by_country:
+                - country: BR
+                  payouts: {count: 18, volume_usd: '3410.20'}
+                  payins: {count: 4, volume_usd: '820.00'}
+                  total_usd: '4230.20'
+                sections:
+                  payouts:
+                    count: 24
+                    volume_usd: '5120.40'
+                    fees_usd: '7.20'
+                    by_status: [{key: completed, count: 21, volume_usd: '4980.10'}]
+                    by_country: [{country: BR, count: 18, volume_usd: '3410.20', local_volume: {BRL: '17550'}}]
+                    by_method: [{key: pix, count: 18, volume_usd: '3410.20'}]
+                  cards:
+                    count: 12
+                    volume_usd: '230.50'
+                    active_cards: 1
+                    by_status: [{status: settled, count: 10, volume_usd: '205.00'}]
+                    top_merchants: [{merchant: AMAZON, count: 4, volume_usd: '98.20'}]
+                spending:
+                  total_usd: '34.50'
+                  by_service:
+                    banking_customer: {count: 11, fees_usd: '11.00'}
+                balances:
+                  items:
+                  - {asset: USDT, available: '1520.250000', held: '0.000000', usd_estimate: '1520.25'}
+                  net_worth_usd_estimate: '1833.93'
+        '400':
+          description: invalid_range / invalid_granularity
+        '403':
+          description: account_required
+  /v1/banking/third-parties:
+    post:
+      tags:
+      - Banking
+      operationId: createBankingThirdParty
+      summary: Da de alta un usuario banking de tercero (solo empresas)
+      description: >
+        Company accounts register end clients as separate banking users with
+        their own identity and KYC and accounts in their name. Charges the
+        banking profile fee (refunded if the core rejects). Person accounts
+        get 403 company_required.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, name]
+              properties:
+                type: {type: string, enum: [INDIVIDUAL, COMPANY]}
+                name: {type: string}
+                email: {type: string, format: email}
+                country: {type: string}
+            example: {type: INDIVIDUAL, name: Carlos Mendes, email: carlos@mail.com, country: BR}
+      responses:
+        '201':
+          description: Third-party banking user created.
+          content:
+            application/json:
+              example:
+                third_party_id: 7f2a1b3c-0000-1111-2222-333344445555
+                customer_id: cus_abc123
+                kind: third_party
+                status: pending
+                registered_at: '2026-07-10T15:00:00Z'
+                banking_fee: '1.000000'
+        '403':
+          description: company_required
+        '400':
+          description: invalid_type
+    get:
+      tags:
+      - Banking
+      operationId: listBankingThirdParties
+      summary: Lista los usuarios banking de terceros
+      parameters:
+      - {name: from, in: query, schema: {type: string, format: date}}
+      - {name: to, in: query, schema: {type: string, format: date}}
+      - {name: page, in: query, schema: {type: integer, default: 1}}
+      - {name: page_size, in: query, schema: {type: integer, default: 50, maximum: 200}}
+      responses:
+        '200':
+          description: Third parties owned by the calling account.
+          content:
+            application/json:
+              example:
+                page: 1
+                page_size: 50
+                third_parties:
+                - {id: 7f2a1b3c-0000-1111-2222-333344445555, customer_id: cus_abc123, kind: third_party, type: INDIVIDUAL, name: Carlos Mendes, created_at: '2026-07-10T15:00:00Z'}
+  /v1/banking/third-parties/{thirdPartyID}:
+    get:
+      tags:
+      - Banking
+      operationId: getBankingThirdParty
+      summary: Consulta un usuario banking de tercero (estado KYC en vivo)
+      parameters:
+      - {name: thirdPartyID, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Third party with live verification status.
+          content:
+            application/json:
+              example: {third_party_id: 7f2a1b3c-0000-1111-2222-333344445555, kind: third_party, status: approved}
+        '404':
+          description: not_found (does not exist or not owned by your account)
+  /v1/banking/third-parties/{thirdPartyID}/documents:
+    post:
+      tags:
+      - Banking
+      operationId: uploadBankingThirdPartyDocument
+      summary: Sube un documento KYC del tercero (gratis)
+      parameters:
+      - {name: thirdPartyID, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object}
+            example: {type: PASSPORT, file_base64: '...'}
+      responses:
+        '201':
+          description: Document uploaded.
+          content: {application/json: {example: {status: received}}}
+  /v1/banking/third-parties/{thirdPartyID}/submit:
+    post:
+      tags:
+      - Banking
+      operationId: submitBankingThirdParty
+      summary: Envia el tercero a verificacion (gratis)
+      parameters:
+      - {name: thirdPartyID, in: path, required: true, schema: {type: string}}
+      responses:
+        '202':
+          description: Submitted to verification.
+          content: {application/json: {example: {status: pending_review}}}
+  /v1/banking/third-parties/{thirdPartyID}/accounts:
+    post:
+      tags:
+      - Banking
+      operationId: createBankingThirdPartyAccount
+      summary: Abre una cuenta bancaria para el tercero
+      parameters:
+      - {name: thirdPartyID, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object}
+            example: {currency: USD, name: Carlos account}
+      responses:
+        '201':
+          description: Bank account created for the third party.
+          content: {application/json: {example: {account_id: c4d10000-aaaa-bbbb-cccc-ddddeeeeffff, status: active, banking_fee: '1.000000'}}}
+    get:
+      tags:
+      - Banking
+      operationId: listBankingThirdPartyAccounts
+      summary: Lista las cuentas bancarias del tercero
+      parameters:
+      - {name: thirdPartyID, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Bank accounts of the third party.
+          content: {application/json: {example: {items: [{id: c4d10000-aaaa-bbbb-cccc-ddddeeeeffff, currency: USD}]}}}
+  /v1/banking/third-parties/{thirdPartyID}/accounts/{bankAccountID}/balance:
+    get:
+      tags:
+      - Banking
+      operationId: getBankingThirdPartyAccountBalance
+      summary: Saldo de una cuenta bancaria del tercero
+      parameters:
+      - {name: thirdPartyID, in: path, required: true, schema: {type: string}}
+      - {name: bankAccountID, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Live balance.
+          content: {application/json: {example: {currency: USD, available: '0.00'}}}
+        '404':
+          description: not_found
 components:
   securitySchemes:
     bearerAuth:

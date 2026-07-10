@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — that never mix or convert automatically.\nPayouts and service fees can be paid from any of the four balances:\nset a default with `PUT /v1/settlement` or override per payout with\n`settlement_asset`.\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-10 13:28 UTC",
-    "_content_sha256": "e921dfab5f99ee72cb0fac27e46d23bc85bd82808907fca5399a47defe97b9d6"
+    "_generated_at": "2026-07-10 19:14 UTC",
+    "_content_sha256": "d850e0a3d32935656e30db4192c8c919b9b6f465ed36f3bb19fb4e41b49f19e4"
   },
   "auth": {
     "type": "bearer",
@@ -8585,6 +8585,590 @@
               "body": "{\n  \"operation_id\": \"7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c\",\n  \"provider_id\": \"BNK-OP-90213\",\n  \"status\": \"completed\",\n  \"idempotency_key\": \"platform:9b1deb4d:acme-payment-0071\",\n  \"data\": {\n    \"type\": \"WITHDRAW\",\n    \"paymentType\": \"SEPA_CT\"\n  }\n}"
             }
           ]
+        },
+        {
+          "name": "List third-party banking users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/third-parties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "third-parties"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 Third parties owned by the calling account.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/third-parties",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "third-parties"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Third parties owned by the calling account.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"third_parties\": [\n    {\n      \"id\": \"7f2a1b3c-0000-1111-2222-333344445555\",\n      \"customer_id\": \"cus_abc123\",\n      \"kind\": \"third_party\",\n      \"type\": \"INDIVIDUAL\",\n      \"name\": \"Carlos Mendes\",\n      \"created_at\": \"2026-07-10T15:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Register a third-party banking user (companies only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/third-parties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "third-parties"
+              ]
+            },
+            "description": "Company accounts register end clients as separate banking users with their own identity and KYC and accounts in their name. Charges the banking profile fee (refunded if the core rejects). Person accounts get 403 company_required.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"INDIVIDUAL\",\n  \"name\": \"Carlos Mendes\",\n  \"email\": \"carlos@mail.com\",\n  \"country\": \"BR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Third-party banking user created.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/third-parties",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "third-parties"
+                  ]
+                }
+              },
+              "status": "Third-party banking user created.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"third_party_id\": \"7f2a1b3c-0000-1111-2222-333344445555\",\n  \"customer_id\": \"cus_abc123\",\n  \"kind\": \"third_party\",\n  \"status\": \"pending\",\n  \"registered_at\": \"2026-07-10T15:00:00Z\",\n  \"banking_fee\": \"1.000000\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get a third-party banking user (live KYC status)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/third-parties/:thirdPartyID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "third-parties",
+                ":thirdPartyID"
+              ],
+              "variable": [
+                {
+                  "key": "thirdPartyID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 Third party with live verification status.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/third-parties/:thirdPartyID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "third-parties",
+                    ":thirdPartyID"
+                  ],
+                  "variable": [
+                    {
+                      "key": "thirdPartyID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Third party with live verification status.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"third_party_id\": \"7f2a1b3c-0000-1111-2222-333344445555\",\n  \"kind\": \"third_party\",\n  \"status\": \"approved\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Upload a KYC document for the third party (free)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/third-parties/:thirdPartyID/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "third-parties",
+                ":thirdPartyID",
+                "documents"
+              ],
+              "variable": [
+                {
+                  "key": "thirdPartyID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"PASSPORT\",\n  \"file_base64\": \"...\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Document uploaded.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/third-parties/:thirdPartyID/documents",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "third-parties",
+                    ":thirdPartyID",
+                    "documents"
+                  ],
+                  "variable": [
+                    {
+                      "key": "thirdPartyID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Document uploaded.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"received\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Submit the third party to verification (free)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/third-parties/:thirdPartyID/submit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "third-parties",
+                ":thirdPartyID",
+                "submit"
+              ],
+              "variable": [
+                {
+                  "key": "thirdPartyID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "202 Submitted to verification.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/third-parties/:thirdPartyID/submit",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "third-parties",
+                    ":thirdPartyID",
+                    "submit"
+                  ],
+                  "variable": [
+                    {
+                      "key": "thirdPartyID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Submitted to verification.",
+              "code": 202,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"pending_review\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List the third party's bank accounts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/third-parties/:thirdPartyID/accounts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "third-parties",
+                ":thirdPartyID",
+                "accounts"
+              ],
+              "variable": [
+                {
+                  "key": "thirdPartyID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 Bank accounts of the third party.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/third-parties/:thirdPartyID/accounts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "third-parties",
+                    ":thirdPartyID",
+                    "accounts"
+                  ],
+                  "variable": [
+                    {
+                      "key": "thirdPartyID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Bank accounts of the third party.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"items\": [\n    {\n      \"id\": \"c4d10000-aaaa-bbbb-cccc-ddddeeeeffff\",\n      \"currency\": \"USD\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Open a bank account for the third party",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/third-parties/:thirdPartyID/accounts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "third-parties",
+                ":thirdPartyID",
+                "accounts"
+              ],
+              "variable": [
+                {
+                  "key": "thirdPartyID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currency\": \"USD\",\n  \"name\": \"Carlos account\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Bank account created for the third party.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/third-parties/:thirdPartyID/accounts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "third-parties",
+                    ":thirdPartyID",
+                    "accounts"
+                  ],
+                  "variable": [
+                    {
+                      "key": "thirdPartyID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Bank account created for the third party.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"account_id\": \"c4d10000-aaaa-bbbb-cccc-ddddeeeeffff\",\n  \"status\": \"active\",\n  \"banking_fee\": \"1.000000\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Third party's bank account balance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/third-parties/:thirdPartyID/accounts/:bankAccountID/balance",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "third-parties",
+                ":thirdPartyID",
+                "accounts",
+                ":bankAccountID",
+                "balance"
+              ],
+              "variable": [
+                {
+                  "key": "thirdPartyID",
+                  "value": ""
+                },
+                {
+                  "key": "bankAccountID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 Live balance.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/banking/third-parties/:thirdPartyID/accounts/:bankAccountID/balance",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "banking",
+                    "third-parties",
+                    ":thirdPartyID",
+                    "accounts",
+                    ":bankAccountID",
+                    "balance"
+                  ],
+                  "variable": [
+                    {
+                      "key": "thirdPartyID",
+                      "value": ""
+                    },
+                    {
+                      "key": "bankAccountID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Live balance.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"currency\": \"USD\",\n  \"available\": \"0.00\"\n}"
+            }
+          ]
         }
       ]
     },
@@ -9851,6 +10435,99 @@
                 }
               ],
               "body": "{\n  \"challenge_id\": \"6f1c02aa-93a1-4f0e-a7d1-1f2e3c4b5a69\",\n  \"action\": \"payout\",\n  \"otp_token\": \"otp_Zk9uY2XIr1EYE0lq8xqlM3VayVZYX4aa11bb22cc33\",\n  \"expires_at\": \"2026-07-08T21:10:00Z\",\n  \"note\": \"single use: send it in the X-OTP-Token header of the protected action\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Account summary for dashboards",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/analytics/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "analytics",
+                "summary"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "granularity",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Aggregated view of the whole account flow in a single call: gross volume in/out, transaction counts, new banking users, per-service sections (payouts, payins, deposits, withdrawals, transfers, swaps, cards, banking, verifications, aml, contacts) with their dimensions (country, currency, method, status, chain, merchant), service spending and valued balances. Amounts are USD decimal strings; empty buckets are zero-filled. Account credential only."
+          },
+          "response": [
+            {
+              "name": "200 Account analytics summary.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/analytics/summary",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "analytics",
+                    "summary"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": false,
+                      "description": ""
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": false,
+                      "description": ""
+                    },
+                    {
+                      "key": "granularity",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Account analytics summary.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"account_id\": \"ae8cf540-22a9-414d-82cc-8ac04732be4f\",\n  \"from\": \"2026-07-01\",\n  \"to\": \"2026-07-10\",\n  \"granularity\": \"day\",\n  \"timezone\": \"UTC\",\n  \"gross_volume\": {\n    \"in\": \"636936.87\",\n    \"out\": \"270118.87\",\n    \"total\": \"907055.74\",\n    \"series\": [\n      {\n        \"date\": \"2026-07-01\",\n        \"in\": \"51023.10\",\n        \"out\": \"31210.44\",\n        \"total\": \"82233.54\"\n      }\n    ],\n    \"previous_period\": {\n      \"in\": \"512300.00\",\n      \"out\": \"241000.10\",\n      \"total\": \"753300.10\"\n    },\n    \"change_pct\": \"20.41\",\n    \"unpriced_assets\": []\n  },\n  \"transactions\": {\n    \"total\": 92,\n    \"series\": [\n      {\n        \"date\": \"2026-07-01\",\n        \"in\": 3,\n        \"out\": 5,\n        \"total\": 8\n      }\n    ],\n    \"previous_period\": {\n      \"total\": 71\n    },\n    \"change_pct\": \"29.58\"\n  },\n  \"new_users\": {\n    \"total\": 11,\n    \"series\": [\n      {\n        \"date\": \"2026-07-01\",\n        \"count\": 1\n      }\n    ],\n    \"previous_period\": {\n      \"total\": 6\n    },\n    \"change_pct\": \"83.33\"\n  },\n  \"by_country\": [\n    {\n      \"country\": \"BR\",\n      \"payouts\": {\n        \"count\": 18,\n        \"volume_usd\": \"3410.20\"\n      },\n      \"payins\": {\n        \"count\": 4,\n        \"volume_usd\": \"820.00\"\n      },\n      \"total_usd\": \"4230.20\"\n    }\n  ],\n  \"sections\": {\n    \"payouts\": {\n      \"count\": 24,\n      \"volume_usd\": \"5120.40\",\n      \"fees_usd\": \"7.20\",\n      \"by_status\": [\n        {\n          \"key\": \"completed\",\n          \"count\": 21,\n          \"volume_usd\": \"4980.10\"\n        }\n      ],\n      \"by_country\": [\n        {\n          \"country\": \"BR\",\n          \"count\": 18,\n          \"volume_usd\": \"3410.20\",\n          \"local_volume\": {\n            \"BRL\": \"17550\"\n          }\n        }\n      ],\n      \"by_method\": [\n        {\n          \"key\": \"pix\",\n          \"count\": 18,\n          \"volume_usd\": \"3410.20\"\n        }\n      ]\n    },\n    \"cards\": {\n      \"count\": 12,\n      \"volume_usd\": \"230.50\",\n      \"active_cards\": 1,\n      \"by_status\": [\n        {\n          \"status\": \"settled\",\n          \"count\": 10,\n          \"volume_usd\": \"205.00\"\n        }\n      ],\n      \"top_merchants\": [\n        {\n          \"merchant\": \"AMAZON\",\n          \"count\": 4,\n          \"volume_usd\": \"98.20\"\n        }\n      ]\n    }\n  },\n  \"spending\": {\n    \"total_usd\": \"34.50\",\n    \"by_service\": {\n      \"banking_customer\": {\n        \"count\": 11,\n        \"fees_usd\": \"11.00\"\n      }\n    }\n  },\n  \"balances\": {\n    \"items\": [\n      {\n        \"asset\": \"USDT\",\n        \"available\": \"1520.250000\",\n        \"held\": \"0.000000\",\n        \"usd_estimate\": \"1520.25\"\n      }\n    ],\n    \"net_worth_usd_estimate\": \"1833.93\"\n  }\n}"
             }
           ]
         }

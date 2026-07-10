@@ -152,6 +152,109 @@ curl https://api.qbank.cl/platform/v1/banking/accounts/c4d1…/balance \
   -H "Authorization: Bearer <token>"
 ```
 
+<Note>
+**Limit for person accounts**: a person account can hold **at most 1 bank
+account**. Attempting a second one returns `409 banking_account_limit`.
+Company accounts have no limit.
+</Note>
+
+## Third-party users (companies only)
+
+If your account is a **company**, besides your own accounts you can
+register **third-party banking users** — your end clients (persons or
+companies) — each with their own identity and verification and **bank
+accounts in their name**. No limit on third parties or accounts per third
+party.
+
+```mermaid
+flowchart LR
+    reg["1. POST third-parties<br/>(third party identity)"] --> docs["2. Documents + submit<br/>(third party KYC)"]
+    docs --> approved{"approved?"}
+    approved -->|"Yes"| accts["3. POST /accounts<br/>(accounts in their name)"]
+    approved -->|"No"| fix["Fix and resubmit"]
+```
+
+### Registering the third party
+
+The identity goes complete and explicit (`type` INDIVIDUAL or COMPANY is
+required — it is ANOTHER person, nothing is copied from your company). The
+banking profile fee is charged (refunded if the registration fails):
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/banking/third-parties \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "INDIVIDUAL",
+    "name": "Carlos Mendes",
+    "email": "carlos@mail.com",
+    "country": "BR"
+  }'
+```
+
+Response `201`:
+
+```json
+{
+  "third_party_id": "7f2a…",
+  "customer_id": "…",
+  "kind": "third_party",
+  "status": "pending",
+  "registered_at": "2026-07-10T15:00:00Z",
+  "banking_fee": "1.000000"
+}
+```
+
+Save the `third_party_id`: every third-party route uses it. List and fetch
+(the GET carries the live verification status):
+
+```bash
+curl "https://api.qbank.cl/platform/v1/banking/third-parties?page=1&page_size=50" \
+  -H "Authorization: Bearer <token>"
+
+curl https://api.qbank.cl/platform/v1/banking/third-parties/7f2a… \
+  -H "Authorization: Bearer <token>"
+```
+
+### Third-party verification (free)
+
+Same as your own profile, but on the third party:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/banking/third-parties/7f2a…/documents \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "type": "PASSPORT", "file_base64": "…" }'
+
+curl -X POST https://api.qbank.cl/platform/v1/banking/third-parties/7f2a…/submit \
+  -H "Authorization: Bearer <token>"
+```
+
+### Third-party accounts
+
+Once the third party is approved, open accounts for them (same
+`banking_account` fee) and operate just like your own:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/banking/third-parties/7f2a…/accounts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "currency": "USD", "name": "Carlos account" }'
+
+curl https://api.qbank.cl/platform/v1/banking/third-parties/7f2a…/accounts \
+  -H "Authorization: Bearer <token>"
+
+curl https://api.qbank.cl/platform/v1/banking/third-parties/7f2a…/accounts/{bankAccountID}/balance \
+  -H "Authorization: Bearer <token>"
+```
+
+- Each third party belongs to you and only you: another CBPay account can
+  never see or operate it (it gets `404`).
+- A **person** account attempting to create third parties receives
+  `403 company_required`.
+- Registered third parties feed the "new users" metric of your
+  [account summary](/en/guides/analytics).
+
 ## 4. Register beneficiaries
 
 To pay third parties, first register the beneficiary with their banking
@@ -306,4 +409,8 @@ curl "https://api.qbank.cl/platform/v1/banking/operations?from=2026-07-01&to=202
 | 403 | `account_blocked` | The account is not active; contact the CBPay team |
 | 409 | `banking_customer_exists` | Your account already has a banking profile (`GET /v1/banking/customer`) |
 | 409 | `no_banking_customer` | Create your profile first (`POST /v1/banking/customer`) |
+| 409 | `banking_account_limit` | Person accounts can hold at most 1 bank account |
+| 403 | `company_required` | Third-party users are available for company accounts only |
+| 400 | `invalid_type` | The third party `type` must be INDIVIDUAL or COMPANY |
+| 404 | `not_found` | The third party does not exist or does not belong to your account |
 | 502 | `banking_request_failed` | Banking corridor error; the fee was refunded — retry |

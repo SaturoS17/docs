@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-10 17:46 UTC · versión `8317f371f0a5`
+> **Documento actualizado:** 2026-07-10 19:14 UTC · versión `1f07498b3e02`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.37 (10 de julio de 2026) |
+| Versión de la documentación | v1.38 (10 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -50,6 +50,7 @@ solo saldo.
   - [Verificación KYC y KYB](#verificacion-kyc-y-kyb)
   - [AML screening](#aml-screening)
   - [Cartola (estado de cuenta)](#cartola-estado-de-cuenta)
+  - [Resumen de tu cuenta (analytics)](#resumen-de-tu-cuenta-analytics)
 - **Integración**
   - [Seguridad y 2FA (OTP)](#seguridad-y-2fa-otp)
   - [Webhooks](#webhooks)
@@ -4603,6 +4604,106 @@ curl https://api.qbank.cl/platform/v1/banking/accounts/c4d1…/balance \
   -H "Authorization: Bearer <token>"
 ```
 
+> **Nota**
+**Límite para cuentas persona**: una cuenta persona puede tener **máximo 1
+cuenta bancaria**. Al intentar la segunda recibirás `409
+banking_account_limit`. Las cuentas empresa no tienen límite.
+### Usuarios de terceros (solo empresas)
+
+Si tu cuenta es **empresa**, además de tus cuentas propias puedes dar de
+alta **usuarios banking de terceros** — tus clientes finales (personas o
+empresas) — cada uno con su identidad y verificación propias y **cuentas
+bancarias a su nombre**. Sin límite de terceros ni de cuentas por tercero.
+
+```mermaid
+flowchart LR
+    alta["1. POST third-parties<br/>(identidad del tercero)"] --> docs["2. Documentos + submit<br/>(KYC del tercero)"]
+    docs --> aprobado{"¿approved?"}
+    aprobado -->|"Sí"| cuentas["3. POST /accounts<br/>(cuentas a su nombre)"]
+    aprobado -->|"No"| corrige["Corrige y reenvía"]
+```
+
+#### Alta del tercero
+
+La identidad va completa y explícita (`type` INDIVIDUAL o COMPANY es
+obligatorio — es OTRA persona, nada se copia de tu empresa). Se cobra el
+fee de perfil bancario (se reembolsa si el alta falla):
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/banking/third-parties \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "INDIVIDUAL",
+    "name": "Carlos Mendes",
+    "email": "carlos@mail.com",
+    "country": "BR"
+  }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "third_party_id": "7f2a…",
+  "customer_id": "…",
+  "kind": "third_party",
+  "status": "pending",
+  "registered_at": "2026-07-10T15:00:00Z",
+  "banking_fee": "1.000000"
+}
+```
+
+Guarda el `third_party_id`: todas las rutas del tercero lo usan. Lista y
+consulta (el GET trae el estado de verificación en vivo):
+
+```bash
+curl "https://api.qbank.cl/platform/v1/banking/third-parties?page=1&page_size=50" \
+  -H "Authorization: Bearer <token>"
+
+curl https://api.qbank.cl/platform/v1/banking/third-parties/7f2a… \
+  -H "Authorization: Bearer <token>"
+```
+
+#### Verificación del tercero (gratis)
+
+Igual que tu propio perfil, pero sobre el tercero:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/banking/third-parties/7f2a…/documents \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "type": "PASSPORT", "file_base64": "…" }'
+
+curl -X POST https://api.qbank.cl/platform/v1/banking/third-parties/7f2a…/submit \
+  -H "Authorization: Bearer <token>"
+```
+
+#### Cuentas del tercero
+
+Con el tercero aprobado, ábrele cuentas (mismo fee `banking_account`) y
+opera igual que con las tuyas:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/banking/third-parties/7f2a…/accounts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "currency": "USD", "name": "Cuenta Carlos" }'
+
+curl https://api.qbank.cl/platform/v1/banking/third-parties/7f2a…/accounts \
+  -H "Authorization: Bearer <token>"
+
+curl https://api.qbank.cl/platform/v1/banking/third-parties/7f2a…/accounts/{bankAccountID}/balance \
+  -H "Authorization: Bearer <token>"
+```
+
+- Cada tercero es tuyo y solo tuyo: otra cuenta CBPay jamás puede verlo ni
+  operarlo (responde `404`).
+- Una cuenta **persona** que intente crear terceros recibe
+  `403 company_required`.
+- Los terceros dados de alta alimentan la métrica "usuarios nuevos" de tu
+  [resumen de cuenta](#resumen-de-tu-cuenta-analytics).
+
 ### 4. Registra beneficiarios
 
 Para pagar a terceros, primero registra al beneficiario con sus datos
@@ -4753,6 +4854,10 @@ curl "https://api.qbank.cl/platform/v1/banking/operations?from=2026-07-01&to=202
 | 403 | `account_blocked` | La cuenta no está activa; contacta al equipo de CBPay |
 | 409 | `banking_customer_exists` | Tu cuenta ya tiene perfil bancario (`GET /v1/banking/customer`) |
 | 409 | `no_banking_customer` | Crea primero tu perfil (`POST /v1/banking/customer`) |
+| 409 | `banking_account_limit` | Las cuentas persona tienen máximo 1 cuenta bancaria |
+| 403 | `company_required` | Los usuarios de terceros solo están disponibles para cuentas empresa |
+| 400 | `invalid_type` | El `type` del tercero debe ser INDIVIDUAL o COMPANY |
+| 404 | `not_found` | El tercero no existe o no pertenece a tu cuenta |
 | 502 | `banking_request_failed` | Error del corredor bancario; la comisión se reembolsó — reintenta |
 
 
@@ -5596,6 +5701,257 @@ curl "https://api.qbank.cl/platform/v1/accounts/{accountID}/reports/statement?fr
 | 400 | `invalid_range` | Fechas faltantes/invalidas, `to` anterior a `from`, o rango mayor a 400 días |
 | 400 | `invalid_format` | `format` distinto de `json`, `pdf`, `xlsx` |
 | 404 | `not_found` | La cuenta no existe (solo org admin) |
+
+
+## Resumen de tu cuenta (analytics)
+
+*Un solo endpoint con todas las series y estadísticas de tu cuenta para armar tu dashboard: volumen, transacciones, usuarios, secciones por servicio, países, consumo y saldos*
+
+`GET /v1/analytics/summary` entrega en **una sola llamada** todo lo que
+necesita la página de resumen de tu cuenta (persona o empresa): series
+temporales listas para graficar, el detalle de cada servicio con todas sus
+dimensiones (país, moneda, método, estado, chain, comercio), lo que
+gastaste en servicios y tus saldos valorizados.
+
+```mermaid
+flowchart LR
+    front["Tu dashboard"] --> ep["GET /v1/analytics/summary"]
+    ep --> g1["Gross volume<br/>(in/out por período)"]
+    ep --> g2["Transacciones"]
+    ep --> g3["Usuarios nuevos<br/>(banking)"]
+    ep --> g4["Secciones por servicio<br/>payouts, payins, tarjetas, crypto..."]
+    ep --> g5["Consumo en servicios<br/>+ saldos valorizados"]
+```
+
+### Petición
+
+```bash
+curl "https://api.qbank.cl/platform/v1/analytics/summary?from=2026-07-01&to=2026-07-10&granularity=day" \
+  -H "Authorization: Bearer <token>"
+```
+
+| Parámetro | Requerido | Descripción |
+|---|---|---|
+| `from` / `to` | Sí | Rango `YYYY-MM-DD` en UTC, ambos inclusive; máximo 366 días |
+| `granularity` | No | `day` (default), `week` (semanas lunes-domingo) o `month` |
+
+Solo ves los datos de **tu propia cuenta**. Todos los montos van como
+strings decimales en USD; los buckets sin actividad vienen **rellenos con
+ceros** para graficar directo.
+
+### Bloques globales (los KPI del header y los 3 gráficos principales)
+
+```json
+{
+  "gross_volume": {
+    "in": "636936.87",
+    "out": "270118.87",
+    "total": "907055.74",
+    "series": [
+      { "date": "2026-07-01", "in": "51023.10", "out": "31210.44", "total": "82233.54" }
+    ],
+    "previous_period": { "in": "512300.00", "out": "241000.10", "total": "753300.10" },
+    "change_pct": "20.41",
+    "unpriced_assets": []
+  },
+  "transactions": {
+    "total": 92,
+    "series": [ { "date": "2026-07-01", "in": 3, "out": 5, "total": 8 } ],
+    "previous_period": { "total": 71 },
+    "change_pct": "29.58"
+  },
+  "new_users": {
+    "total": 11,
+    "series": [ { "date": "2026-07-01", "count": 1 } ],
+    "previous_period": { "total": 6 },
+    "change_pct": "83.33"
+  }
+}
+```
+
+- **`gross_volume`**: valor USD de todo lo que ENTRÓ (payins, depósitos
+  crypto, transferencias recibidas) y SALIÓ (payouts, retiros,
+  transferencias enviadas, compras con tarjeta). Los reembolsos se netean
+  contra su servicio — jamás inflan el volumen. Los swaps son conversión
+  interna y tienen su propia sección.
+- **`transactions`**: conteo de operaciones (sin fees ni reembolsos).
+- **`new_users`**: usuarios banking de terceros que tu empresa dio de alta
+  (para cuentas persona la serie va en cero).
+- **`change_pct`**: variación contra el período inmediatamente anterior del
+  mismo largo — para los deltas ▲▼ (es `null` si el período anterior fue 0).
+- Los saldos en `BTC`/`GOLD` se valorizan al precio referencial vigente; si
+  un precio no está disponible, el asset aparece en `unpriced_assets` y sus
+  montos quedan fuera del USD (nunca inventamos un precio).
+
+### `by_country` — vista global por país
+
+Payouts y payins combinados, ordenados por volumen — para el mapa o las
+barras por país:
+
+```json
+"by_country": [
+  {
+    "country": "BR",
+    "payouts": { "count": 18, "volume_usd": "3410.20" },
+    "payins":  { "count": 4,  "volume_usd": "820.00" },
+    "total_usd": "4230.20"
+  }
+]
+```
+
+### `sections` — el detalle de CADA servicio
+
+Cada sección trae totales, su serie por bucket y sus dimensiones propias:
+
+#### payouts — envíos fiat
+
+```json
+"payouts": {
+  "count": 24, "volume_usd": "5120.40", "fees_usd": "7.20",
+  "series": [ { "date": "2026-07-01", "count": 3 } ],
+  "by_status": [ { "key": "completed", "count": 21, "volume_usd": "4980.10" } ],
+  "by_country": [
+    { "country": "BR", "count": 18, "volume_usd": "3410.20", "local_volume": { "BRL": "17550" } }
+  ],
+  "by_method": [ { "key": "pix", "count": 18, "volume_usd": "3410.20" } ]
+}
+```
+
+`by_status` te da el success rate; `by_country` incluye el volumen en
+moneda local por cada moneda; `by_method` separa pix, bank_transfer, yape,
+etc. Los fallidos quedan fuera del volumen (fueron reembolsados).
+
+#### payins — cobros fiat
+
+```json
+"payins": {
+  "count": 9, "volume_usd": "2210.00", "fees_usd": "0.00",
+  "series": [ { "date": "2026-07-02", "count": 2 } ],
+  "by_country": [ { "key": "BO", "count": 5, "volume_usd": "1400.00" } ],
+  "by_method": [ { "key": "qr", "count": 5, "volume_usd": "1400.00" } ],
+  "by_kind":   [ { "key": "qr", "count": 5, "volume_usd": "1400.00" } ]
+}
+```
+
+Solo cuentan los payins **acreditados**.
+
+#### deposits / withdrawals — crypto on-chain
+
+```json
+"deposits": {
+  "count": 3, "volume_usd": "1500.00",
+  "series": [ { "date": "2026-07-03", "count": 1 } ],
+  "by_chain": [ { "chain": "tron", "asset": "USDT", "count": 2, "amount": "1000.000000" } ]
+},
+"withdrawals": {
+  "count": 2, "volume_usd": "600.00",
+  "series": [ { "date": "2026-07-04", "count": 1 } ],
+  "by_chain": [ { "chain": "eth", "asset": "USDC", "count": 1, "status": "completed", "amount": "500.000000", "fees": "1.000000" } ]
+}
+```
+
+#### transfers, swaps y cards
+
+```json
+"transfers": {
+  "in":  { "count": 4, "volume_usd": "300.00" },
+  "out": { "count": 2, "volume_usd": "120.00" },
+  "series": [ { "date": "2026-07-01", "count": 1 } ]
+},
+"swaps": {
+  "count": 5, "volume_usd": "890.00",
+  "series": [ { "date": "2026-07-05", "count": 2 } ],
+  "by_pair": [ { "pair": "USDT/BTC", "count": 3, "volume_usd": "600.00" } ]
+},
+"cards": {
+  "count": 12, "volume_usd": "230.50", "fees_usd": "5.00", "active_cards": 1,
+  "series": [ { "date": "2026-07-06", "count": 4 } ],
+  "by_status": [ { "status": "settled", "count": 10, "volume_usd": "205.00" } ],
+  "top_merchants": [ { "merchant": "AMAZON", "count": 4, "volume_usd": "98.20" } ]
+}
+```
+
+#### banking, verifications (KYC/KYB), aml y contacts
+
+```json
+"banking": {
+  "new_third_parties": 11,
+  "third_parties_series": [ { "date": "2026-07-01", "count": 1 } ],
+  "new_accounts": 14,
+  "accounts_series": [ { "date": "2026-07-01", "count": 2 } ],
+  "operations": 6,
+  "fees_usd": "18.00",
+  "fees_by_service": { "banking_customer": { "count": 11, "fees_usd": "11.00" } }
+},
+"verifications": {
+  "submissions": [ { "kind": "kyc", "status": "approved", "count": 3 } ],
+  "links":       [ { "kind": "kyb", "status": "pending", "count": 1 } ],
+  "fees_usd": "9.00"
+},
+"aml": { "screenings": 4, "fees_usd": "2.00", "by_service": { "compliance_screening": { "count": 4, "fees_usd": "2.00" } } },
+"contacts": { "new_contacts": 7, "series": [ { "date": "2026-07-02", "count": 2 } ] }
+```
+
+`new_third_parties` es la misma métrica del gráfico "usuarios nuevos":
+los usuarios banking que tu empresa dio de alta.
+
+### `spending` — lo que consumiste en servicios
+
+Todos los fees explícitos que pagaste en el período, con cuántas veces se
+cobró cada servicio:
+
+```json
+"spending": {
+  "total_usd": "34.50",
+  "by_service": {
+    "banking_customer": { "count": 11, "fees_usd": "11.00" },
+    "wallet_creation":  { "count": 2,  "fees_usd": "1.00" },
+    "verification_kyc": { "count": 3,  "fees_usd": "9.00" }
+  }
+}
+```
+
+### `balances` — tus saldos valorizados
+
+```json
+"balances": {
+  "items": [
+    { "asset": "USDT", "available": "1520.250000", "held": "0.000000", "usd_estimate": "1520.25" },
+    { "asset": "BTC",  "available": "0.00500000",  "held": "0.00000000", "usd_estimate": "313.68" }
+  ],
+  "net_worth_usd_estimate": "1833.93"
+}
+```
+
+### Errores
+
+| HTTP | `error` | Qué hacer |
+|---|---|---|
+| 400 | `invalid_range` | `from`/`to` son obligatorios (`YYYY-MM-DD`), y el rango máximo es 366 días |
+| 400 | `invalid_granularity` | Usa `day`, `week` o `month` |
+| 403 | `account_required` | El endpoint requiere credencial de cuenta |
+
+### FAQ
+
+#### ¿En qué zona horaria están los buckets?
+UTC, igual que los filtros `from`/`to` de toda la API. Si tu front muestra
+otra zona, convierte las etiquetas al renderizar.
+#### ¿Qué cuenta como volumen y qué no?
+Entra todo lo que movió plata hacia/desde tu cuenta: payins, depósitos
+crypto y transferencias recibidas (in); payouts, retiros, transferencias
+enviadas y compras con tarjeta (out). Los reembolsos se netean, los fees se
+reportan aparte en `spending`, y los swaps (conversión entre tus propios
+saldos) tienen su sección propia.
+#### ¿Cómo se valorizan BTC y GOLD?
+Al precio referencial vigente al momento de la consulta (el mismo de
+`GET /v1/rates`). Es una valorización de exhibición: si el precio no está
+disponible, el asset aparece en `unpriced_assets` y no se suma al USD.
+#### ¿Los totales cuadran con la cartola?
+Sí: ambos salen del mismo ledger. La cartola (`GET /v1/reports/statement`)
+es el documento contable línea a línea; el analytics es la vista agregada
+para gráficos.
+#### ¿Cada cuánto se actualiza?
+En tiempo real: cada operación acreditada aparece en la siguiente llamada.
 
 
 # Integración
@@ -6474,9 +6830,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-10 13:28 UTC · 146 requests · versión `e921dfab5f99`
+> **Colección actualizada:** 2026-07-10 19:14 UTC · 155 requests · versión `d850e0a3d329`
 
-<PostmanFreshness iso="2026-07-10T13:28:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-10T19:14:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -6510,6 +6866,26 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.38 — 10 de julio de 2026
+
+**Agregado — Resumen de cuenta (analytics) + usuarios banking de terceros**
+
+- **`GET /v1/analytics/summary`**: en una sola llamada, todas las series y
+  estadísticas de tu cuenta para armar tu dashboard — volumen bruto
+  (in/out), transacciones y usuarios nuevos por período (día/semana/mes,
+  con comparativa vs el período anterior), vista global por país, y una
+  sección por CADA servicio (payouts, payins, depósitos, retiros,
+  transferencias, swaps, tarjetas, banking, KYC/KYB, AML, contactos) con
+  sus dimensiones (país, moneda, método, estado, chain, comercio). Además
+  `spending` (lo que consumiste en fees por servicio) y `balances`
+  valorizados en USD. Guía nueva: [Resumen de tu cuenta](#resumen-de-tu-cuenta-analytics).
+- **Usuarios banking de terceros (solo empresas)**: `POST/GET
+  /v1/banking/third-parties` (+documentos, submit, cuentas, saldo) para dar
+  de alta a tus clientes finales como usuarios banking separados, con su
+  identidad/KYC y cuentas a su nombre. Aislados por cuenta.
+- **Límite nuevo**: las cuentas persona pueden tener máximo 1 cuenta
+  bancaria (`409 banking_account_limit`).
 
 ### v1.37 — 10 de julio de 2026
 
@@ -7416,6 +7792,14 @@ está en la API Reference interactiva y en la colección Postman.
 | `GET` | `/v1/banking/operations` | Listar mis pagos bancarios |
 | `POST` | `/v1/banking/operations` | Enviar un pago bancario |
 | `GET` | `/v1/banking/operations/{operationID}` | Consultar un pago bancario |
+| `GET` | `/v1/banking/third-parties` | Lista los usuarios banking de terceros |
+| `POST` | `/v1/banking/third-parties` | Da de alta un usuario banking de tercero (solo empresas) |
+| `GET` | `/v1/banking/third-parties/{thirdPartyID}` | Consulta un usuario banking de tercero (estado KYC en vivo) |
+| `POST` | `/v1/banking/third-parties/{thirdPartyID}/documents` | Sube un documento KYC del tercero (gratis) |
+| `POST` | `/v1/banking/third-parties/{thirdPartyID}/submit` | Envia el tercero a verificacion (gratis) |
+| `GET` | `/v1/banking/third-parties/{thirdPartyID}/accounts` | Lista las cuentas bancarias del tercero |
+| `POST` | `/v1/banking/third-parties/{thirdPartyID}/accounts` | Abre una cuenta bancaria para el tercero |
+| `GET` | `/v1/banking/third-parties/{thirdPartyID}/accounts/{bankAccountID}/balance` | Saldo de una cuenta bancaria del tercero |
 
 
 ## Cards
@@ -7452,3 +7836,10 @@ está en la API Reference interactiva y en la colección Postman.
 | `GET` | `/v1/services` | Servicios habilitados |
 | `GET` | `/v1/settlement` | Obtener mi configuración de settlement |
 | `PUT` | `/v1/settlement` | Definir mi asset de settlement predeterminado |
+
+
+## Analytics
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/v1/analytics/summary` | Resumen de la cuenta para dashboards |

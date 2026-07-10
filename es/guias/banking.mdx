@@ -164,6 +164,108 @@ curl https://api.qbank.cl/platform/v1/banking/accounts/c4d1…/balance \
   -H "Authorization: Bearer <token>"
 ```
 
+<Note>
+**Límite para cuentas persona**: una cuenta persona puede tener **máximo 1
+cuenta bancaria**. Al intentar la segunda recibirás `409
+banking_account_limit`. Las cuentas empresa no tienen límite.
+</Note>
+
+## Usuarios de terceros (solo empresas)
+
+Si tu cuenta es **empresa**, además de tus cuentas propias puedes dar de
+alta **usuarios banking de terceros** — tus clientes finales (personas o
+empresas) — cada uno con su identidad y verificación propias y **cuentas
+bancarias a su nombre**. Sin límite de terceros ni de cuentas por tercero.
+
+```mermaid
+flowchart LR
+    alta["1. POST third-parties<br/>(identidad del tercero)"] --> docs["2. Documentos + submit<br/>(KYC del tercero)"]
+    docs --> aprobado{"¿approved?"}
+    aprobado -->|"Sí"| cuentas["3. POST /accounts<br/>(cuentas a su nombre)"]
+    aprobado -->|"No"| corrige["Corrige y reenvía"]
+```
+
+### Alta del tercero
+
+La identidad va completa y explícita (`type` INDIVIDUAL o COMPANY es
+obligatorio — es OTRA persona, nada se copia de tu empresa). Se cobra el
+fee de perfil bancario (se reembolsa si el alta falla):
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/banking/third-parties \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "INDIVIDUAL",
+    "name": "Carlos Mendes",
+    "email": "carlos@mail.com",
+    "country": "BR"
+  }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "third_party_id": "7f2a…",
+  "customer_id": "…",
+  "kind": "third_party",
+  "status": "pending",
+  "registered_at": "2026-07-10T15:00:00Z",
+  "banking_fee": "1.000000"
+}
+```
+
+Guarda el `third_party_id`: todas las rutas del tercero lo usan. Lista y
+consulta (el GET trae el estado de verificación en vivo):
+
+```bash
+curl "https://api.qbank.cl/platform/v1/banking/third-parties?page=1&page_size=50" \
+  -H "Authorization: Bearer <token>"
+
+curl https://api.qbank.cl/platform/v1/banking/third-parties/7f2a… \
+  -H "Authorization: Bearer <token>"
+```
+
+### Verificación del tercero (gratis)
+
+Igual que tu propio perfil, pero sobre el tercero:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/banking/third-parties/7f2a…/documents \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "type": "PASSPORT", "file_base64": "…" }'
+
+curl -X POST https://api.qbank.cl/platform/v1/banking/third-parties/7f2a…/submit \
+  -H "Authorization: Bearer <token>"
+```
+
+### Cuentas del tercero
+
+Con el tercero aprobado, ábrele cuentas (mismo fee `banking_account`) y
+opera igual que con las tuyas:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/banking/third-parties/7f2a…/accounts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "currency": "USD", "name": "Cuenta Carlos" }'
+
+curl https://api.qbank.cl/platform/v1/banking/third-parties/7f2a…/accounts \
+  -H "Authorization: Bearer <token>"
+
+curl https://api.qbank.cl/platform/v1/banking/third-parties/7f2a…/accounts/{bankAccountID}/balance \
+  -H "Authorization: Bearer <token>"
+```
+
+- Cada tercero es tuyo y solo tuyo: otra cuenta CBPay jamás puede verlo ni
+  operarlo (responde `404`).
+- Una cuenta **persona** que intente crear terceros recibe
+  `403 company_required`.
+- Los terceros dados de alta alimentan la métrica "usuarios nuevos" de tu
+  [resumen de cuenta](/es/guias/analytics).
+
 ## 4. Registra beneficiarios
 
 Para pagar a terceros, primero registra al beneficiario con sus datos
@@ -318,4 +420,8 @@ curl "https://api.qbank.cl/platform/v1/banking/operations?from=2026-07-01&to=202
 | 403 | `account_blocked` | La cuenta no está activa; contacta al equipo de CBPay |
 | 409 | `banking_customer_exists` | Tu cuenta ya tiene perfil bancario (`GET /v1/banking/customer`) |
 | 409 | `no_banking_customer` | Crea primero tu perfil (`POST /v1/banking/customer`) |
+| 409 | `banking_account_limit` | Las cuentas persona tienen máximo 1 cuenta bancaria |
+| 403 | `company_required` | Los usuarios de terceros solo están disponibles para cuentas empresa |
+| 400 | `invalid_type` | El `type` del tercero debe ser INDIVIDUAL o COMPANY |
+| 404 | `not_found` | El tercero no existe o no pertenece a tu cuenta |
 | 502 | `banking_request_failed` | Error del corredor bancario; la comisión se reembolsó — reintenta |
