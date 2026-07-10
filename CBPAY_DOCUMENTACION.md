@@ -8,7 +8,7 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-10 16:17 UTC · versión `21826c0f1115`
+> **Documento actualizado:** 2026-07-10 17:46 UTC · versión `8317f371f0a5`
 
 **Datos clave**
 
@@ -1871,7 +1871,7 @@ Corredores y métodos disponibles:
 | México | MXN | `bank_transfer` (SPEI: CLABE o tarjeta de débito) |
 | Venezuela | VES | `bank_transfer`, `pago_movil` |
 | Bolivia | BOB / USD | `bank_transfer`, `qr` (ver [Payout QR](#payout-qr)) |
-| Brasil | BRL | `pix` (por llave), `qr` (ver [Payout QR](#payout-qr)) |
+| Brasil | BRL | `pix` (por llave o a cuenta) |
 | Paraguay | PYG | `bank_transfer` |
 
 La disponibilidad puede variar; el catálogo (`GET /v1/payouts/methods`) es
@@ -2089,7 +2089,7 @@ las de tu cuenta en `GET /v1/rates`; el débito es `usdt_amount + fee`
 | VE | `pago_movil` | `phone`, `bank_code` (SUDEBAN), `document_value` |
 | VE | `bank_transfer` | `name`, `account_number` (20 dígitos), `document_value` |
 | BO | `bank_transfer` | `name`, `tax_id`, `bank_code`, `account_number` |
-| BR | `pix` | `name`, `tax_id`, `pix_key_type`, `pix_key` |
+| BR | `pix` | `name`, `tax_id` + (`pix_key` y `pix_key_type`) o (`bank_code` ISPB, `branch_code`, `account_number`) |
 | PY | `bank_transfer` | `name` (≤35), `tax_id`, `bank_code`, `account_number` |
 
 #### Chile
@@ -2392,6 +2392,38 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
 
 `pix_key_type`: `cpf`, `cnpj`, `phone`, `email` o `evp` (llave aleatoria).
 
+**PIX a cuenta (sin llave)** — si el beneficiario no tiene o no entrega su
+llave PIX, envía sus datos bancarios; llega igual de rápido (mismo riel
+PIX, 24/7):
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BR",
+    "currency": "BRL",
+    "method": "pix",
+    "amount": "350.00",
+    "beneficiary": {
+      "name": "Empresa Exemplo Ltda",
+      "tax_id": "19.385.062/0001-20",
+      "bank_code": "45678923",
+      "branch_code": "1",
+      "account_number": "765432",
+      "account_type": "CACC"
+    },
+    "idempotency_key": "br-pix-acct-3322"
+  }'
+```
+
+- `bank_code` es el **ISPB** del banco destino (8 dígitos), `branch_code`
+  la agencia y `account_type` el tipo de cuenta (`CACC` corriente —
+  default —, `SVGS` ahorro, `TRAN` cuenta de pago, `SLRY` salario).
+- El estado final llega por el webhook `payout_status_changed`
+  (conciliación continua contra el rail); consulta puntual con
+  `GET /v1/payouts/{id}`.
+
 #### Paraguay
 
 Transferencia bancaria en PYG:
@@ -2434,11 +2466,11 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
 
 ### Payout QR
 
-En Bolivia (QR interoperable local) y Brasil (QR PIX) también puedes
-**pagar a un QR de cobro** en dos pasos: escanear y confirmar. El escaneo
-es **gratis**; solo se cobra al confirmar, igual que un payout normal (tu
-tasa + fijo). Si no envías `country`/`currency`, se asume Bolivia (BOB);
-para Brasil envía `country: "BR"` y `currency: "BRL"`.
+En Bolivia (QR interoperable local) también puedes **pagar a un QR de
+cobro** en dos pasos: escanear y confirmar. El escaneo es **gratis**; solo
+se cobra al confirmar, igual que un payout normal (tu tasa + fijo). Si no
+envías `country`/`currency`, se asume Bolivia (BOB). El pago a QR PIX de
+Brasil llegará próximamente (mientras tanto usa `pix` por llave o cuenta).
 
 ```mermaid
 flowchart LR
@@ -2500,8 +2532,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
   (`completed` o `failed` con reembolso automático) — sin esperas.
 - Un mismo QR escaneado solo puede pagarse una vez; reintentos con la misma
   `idempotency_key` devuelven el payout original.
-- En Brasil, `qr_payload` acepta el contenido del QR o el código
-  "copia e cola" de PIX; el mismo flujo cubre QR estáticos y dinámicos.
+- Cuando el pago a QR PIX de Brasil esté disponible, `qr_payload` aceptará
+  el contenido del QR o el código "copia e cola" con este mismo flujo.
 
 ### Errores frecuentes
 
@@ -2556,7 +2588,7 @@ automático + webhook:
 flowchart LR
     qr["QR de cobro<br/>(BO, BR·PIX)"] --> pago["Tu cliente paga<br/>en moneda local"]
     hosted["Página de pago hosted<br/>(CL: fintoc)"] --> pago
-    anunciada["Transferencia anunciada<br/>(CL, PE, MX, PY, BR)"] --> pago
+    anunciada["Transferencia anunciada<br/>(CL, PE, MX, PY)"] --> pago
     pull["Cobro activo pull<br/>(VE: c2p, débito)"] --> pago
     clabe["Cuenta CLABE dedicada<br/>(MX)"] --> pago
     pago --> conv["Conversión FX a tu<br/>payin_rate − fee fijo"]
@@ -2599,7 +2631,7 @@ Corredores y modalidades de cobro:
 | Venezuela | VES | Cobro activo `c2p` y `debito_inmediato` (pull) |
 | Bolivia | BOB / USD | QR de cobro |
 | Paraguay | PYG | Transferencia anunciada |
-| Brasil | BRL | QR PIX dinámico, transferencia anunciada |
+| Brasil | BRL | QR PIX dinámico |
 
 La disponibilidad puede variar; el catálogo (`GET /v1/payins/methods`) es
 siempre la fuente de verdad. En todos los casos el abono llega igual: se
@@ -2934,34 +2966,13 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
 
 En la respuesta, `charge.qr_payload` es el código **"copia e cola"** de
 PIX, para que el pagador pueda pegarlo en su app bancaria si no escanea la
-imagen (`charge.qr_image`).
+imagen (`charge.qr_image`). El QR expira según `expires_in` (default 1
+hora); el pago se acredita automáticamente al confirmarse en el rail
+(conciliación continua — consulta puntual con `GET /v1/payins/{charge_id}`).
 
-También puedes usar la **transferencia anunciada** compartiendo la
-referencia en la descripción del PIX:
-
-```bash
-curl -X POST https://api.qbank.cl/platform/v1/payins \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "country": "BR",
-    "currency": "BRL",
-    "method": "bank_transfer",
-    "amount": "350.00"
-  }'
-```
-
-Respuesta `201`:
-
-```json
-{
-  "payin_id": "b1a7…",
-  "status": "pending",
-  "reference": "CBQ8H4X7N3R6",
-  "note": "include the reference in the transfer description so the deposit is credited automatically"
-}
-```
-
+> **Nota**
+En Brasil el cobro es únicamente por QR PIX dinámico (un QR = un pago, con
+monto exacto embebido). La transferencia anunciada llegará más adelante.
 ### 3. Recibe el abono
 
 Cuando el pago llega (por cualquiera de las modalidades), tu cuenta se

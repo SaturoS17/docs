@@ -16,7 +16,7 @@ webhook:
 flowchart LR
     qr["Collection QR<br/>(BO, BR·PIX)"] --> pay["Your customer pays<br/>in local currency"]
     hosted["Hosted payment page<br/>(CL: fintoc)"] --> pay
-    announced["Announced transfer<br/>(CL, PE, MX, PY, BR)"] --> pay
+    announced["Announced transfer<br/>(CL, PE, MX, PY)"] --> pay
     pull["Active pull collection<br/>(VE: c2p, debit)"] --> pay
     clabe["Dedicated CLABE account<br/>(MX)"] --> pay
     pay --> conv["FX conversion at your<br/>payin_rate − fixed fee"]
@@ -59,7 +59,7 @@ Collection corridors and modes:
 | Venezuela | VES | Active collection `c2p` and `debito_inmediato` (pull) |
 | Bolivia | BOB / USD | Collection QR |
 | Paraguay | PYG | Announced bank transfer |
-| Brazil | BRL | Dynamic PIX QR, announced bank transfer |
+| Brazil | BRL | Dynamic PIX QR |
 
 Availability may vary; the catalog (`GET /v1/payins/methods`) is always the
 source of truth. In every case the credit works the same way: converted to
@@ -408,33 +408,15 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
 
 In the response, `charge.qr_payload` is the PIX **"copia e cola"** code,
 so the payer can paste it into their banking app instead of scanning the
-image (`charge.qr_image`).
+image (`charge.qr_image`). The QR expires per `expires_in` (default 1
+hour); the payment is credited automatically once confirmed on the rail
+(continuous reconciliation — check on demand with
+`GET /v1/payins/{charge_id}`).
 
-You can also use the **announced bank transfer**, sharing the reference in
-the PIX description:
-
-```bash
-curl -X POST https://api.qbank.cl/platform/v1/payins \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "country": "BR",
-    "currency": "BRL",
-    "method": "bank_transfer",
-    "amount": "350.00"
-  }'
-```
-
-Response `201`:
-
-```json
-{
-  "payin_id": "b1a7…",
-  "status": "pending",
-  "reference": "CBQ8H4X7N3R6",
-  "note": "include the reference in the transfer description so the deposit is credited automatically"
-}
-```
+<Note>
+In Brazil collections work exclusively through dynamic PIX QR (one QR = one
+payment, exact amount embedded). Announced bank transfers will come later.
+</Note>
 
 </Tab>
 </Tabs>

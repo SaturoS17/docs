@@ -1125,9 +1125,11 @@ paths:
 
                     `GET /v1/payouts/banks`. Examples: RUT + bank in Chile, CLABE in
 
-                    Mexico, CCI in Peru, `pix_key` + `pix_key_type` (cpf, cnpj, phone,
+                    Mexico, CCI in Peru. Brazil PIX: `pix_key` + `pix_key_type` (cpf,
 
-                    email, evp) in Brazil.
+                    cnpj, phone, email, evp), or a bank account without key using
+
+                    `bank_code` (ISPB) + `branch_code` + `account_number` + `tax_id`.
 
                     '
                 beneficiary_contact_id:

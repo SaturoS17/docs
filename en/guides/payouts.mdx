@@ -64,7 +64,7 @@ Available corridors and methods:
 | Mexico | MXN | `bank_transfer` (SPEI: CLABE or debit card) |
 | Venezuela | VES | `bank_transfer`, `pago_movil` |
 | Bolivia | BOB / USD | `bank_transfer`, `qr` (see [QR payout](#qr-payout)) |
-| Brazil | BRL | `pix` (by key), `qr` (see [QR payout](#qr-payout)) |
+| Brazil | BRL | `pix` (by key or to account) |
 | Paraguay | PYG | `bank_transfer` |
 
 Availability may vary; the catalog (`GET /v1/payouts/methods`) is always
@@ -286,7 +286,7 @@ when configured; `0.30` here).
 | VE | `pago_movil` | `phone`, `bank_code` (SUDEBAN), `document_value` |
 | VE | `bank_transfer` | `name`, `account_number` (20 digits), `document_value` |
 | BO | `bank_transfer` | `name`, `tax_id`, `bank_code`, `account_number` |
-| BR | `pix` | `name`, `tax_id`, `pix_key_type`, `pix_key` |
+| BR | `pix` | `name`, `tax_id` + (`pix_key` and `pix_key_type`) or (`bank_code` ISPB, `branch_code`, `account_number`) |
 | PY | `bank_transfer` | `name` (max 35 chars), `tax_id`, `bank_code`, `account_number` |
 
 
@@ -606,6 +606,38 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
 
 `pix_key_type`: `cpf`, `cnpj`, `phone`, `email` or `evp` (random key).
 
+**PIX to account (no key)** — when the beneficiary does not have (or share)
+a PIX key, send their bank details; it arrives just as fast (same PIX rail,
+24/7):
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BR",
+    "currency": "BRL",
+    "method": "pix",
+    "amount": "350.00",
+    "beneficiary": {
+      "name": "Empresa Exemplo Ltda",
+      "tax_id": "19.385.062/0001-20",
+      "bank_code": "45678923",
+      "branch_code": "1",
+      "account_number": "765432",
+      "account_type": "CACC"
+    },
+    "idempotency_key": "br-pix-acct-3322"
+  }'
+```
+
+- `bank_code` is the destination bank's **ISPB** (8 digits), `branch_code`
+  the agency, and `account_type` the account type (`CACC` checking —
+  default —, `SVGS` savings, `TRAN` payment account, `SLRY` salary).
+- The final status arrives through the `payout_status_changed` webhook
+  (continuous reconciliation against the rail); check on demand with
+  `GET /v1/payouts/{id}`.
+
 </Tab>
 <Tab title="Paraguay">
 
@@ -652,11 +684,11 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
 
 ## QR payout
 
-In Bolivia (the local interoperable QR) and Brazil (PIX QR) you can also
-**pay a collection QR** in two steps: scan and confirm. Scanning is
-**free**; you are only charged on confirm, exactly like a regular payout
-(your rate + fixed fee). Without `country`/`currency` Bolivia (BOB) is
-assumed; for Brazil send `country: "BR"` and `currency: "BRL"`.
+In Bolivia (the local interoperable QR) you can also **pay a collection
+QR** in two steps: scan and confirm. Scanning is **free**; you are only
+charged on confirm, exactly like a regular payout (your rate + fixed fee).
+Without `country`/`currency` Bolivia (BOB) is assumed. Paying Brazilian
+PIX QRs is coming soon (meanwhile use `pix` by key or account).
 
 ```mermaid
 flowchart LR
@@ -717,7 +749,7 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
   state (`completed`, or `failed` with an automatic refund) — no waiting.
 - A scanned QR can only be paid once; retries with the same
   `idempotency_key` return the original payout.
-- In Brazil, `qr_payload` accepts the QR content or the PIX "copia e cola"
+- Once Brazilian PIX QR payouts are available, `qr_payload` will accept the QR content or the PIX "copia e cola"
   code; the same flow covers static and dynamic QRs.
 
 ## Common errors
