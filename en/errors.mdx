@@ -84,6 +84,8 @@ Full flow and details in [social login](/en/guides/social-login).
 | `invalid_payload` | Missing a required field (e.g. `enabled` on AML monitoring, `external_customer_id` on verifications) |
 | `liveness_already_completed` | That verification's liveness check already passed |
 | `invalid_event_type` / `weak_secret` / `invalid_callback_url` | Invalid webhook subscription |
+| `invalid_phone` | Phone not normalizable to E.164 (contacts and `to_phone`) |
+| `batch_too_large` | Contact import with more than 1,000 entries (paginate the upload) |
 | `invalid_status` / `invalid_kyc_status` / `invalid_direction` / `reason_required` / `account_id_required` / `invalid_service` / `invalid_fee` | Administration validations |
 
 ### Money and state (402 / 404 / 409 / 422)
@@ -103,6 +105,9 @@ Full flow and details in [social login](/en/guides/social-login).
 | 422 | `currency_not_supported` | No FX rate for that currency |
 | 422 | `core_rejected` | The processor rejected the operation |
 | 422 | `recipient_unavailable` | The destination account cannot receive |
+| 422 | `recipient_ambiguous` | More than one account shares the `to_phone` number (use `to_account_id` or `to_email`) |
+| 422 | `contact_not_linked` | The contact has no linked CBPay account to transfer to |
+| 422 | `no_saved_destination` | The contact has no saved destination for that corridor/chain |
 | 422 | `wallet_limit_reached` | A person account tried to create a second wallet on the same network |
 | 409 | `card_limit_reached` | A person account tried to create a second card of the same type |
 | 409 | `card_cancelled` | The card is already cancelled and cannot be updated |

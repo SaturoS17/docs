@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — that never mix or convert automatically.\nPayouts and service fees can be paid from any of the four balances:\nset a default with `PUT /v1/settlement` or override per payout with\n`settlement_asset`.\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-10 06:09 UTC",
-    "_content_sha256": "b90e507f11d24a030d149925c309b832e363f5706ace4a5b4bc561dfa593226d"
+    "_generated_at": "2026-07-10 12:31 UTC",
+    "_content_sha256": "7e0df086210464c051803e0f617dcc12c1292e2229f1042686b45f0a9c753f69"
   },
   "auth": {
     "type": "bearer",
@@ -3289,6 +3289,136 @@
           ]
         },
         {
+          "name": "Create an internal transfer — By verified phone",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/transfers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "transfers"
+              ]
+            },
+            "description": "Moves balance between two CBPay accounts, atomically and always free of charge — any combination works: person to person, person to company, company to person or company to company. Works with the four virtual balances (`USDT` default, `USDC`, `BTC`, `GOLD`) and always between balances of the **same currency** (no conversion). The destination is resolved by `to_account_id`, `to_email`, `to_phone` (OTP-verified phones only) or `to_contact_id`. Every transfer saves the recipient as a contact automatically (opt out with `save_contact: false`). The recipient's webhook subscribers receive `transfer_received`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"to_phone\": \"+56987654321\",\n  \"amount\": \"25.000000\",\n  \"description\": \"Lunch\",\n  \"idempotency_key\": \"lunch-2026-07-10-a\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Idempotency replay.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/transfers",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "transfers"
+                  ]
+                }
+              },
+              "status": "Idempotency replay.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"transfer_id\": \"2a7b9c1d-4e5f-6a70-8b9c-0d1e2f3a4b5c\",\n  \"from_account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"to_account_id\": \"5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b\",\n  \"asset\": \"USDT\",\n  \"amount\": \"25.000000\",\n  \"description\": \"Expense split\",\n  \"status\": \"completed\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"idempotency_hit\": true\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create an internal transfer — To a saved contact",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/transfers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "transfers"
+              ]
+            },
+            "description": "Moves balance between two CBPay accounts, atomically and always free of charge — any combination works: person to person, person to company, company to person or company to company. Works with the four virtual balances (`USDT` default, `USDC`, `BTC`, `GOLD`) and always between balances of the **same currency** (no conversion). The destination is resolved by `to_account_id`, `to_email`, `to_phone` (OTP-verified phones only) or `to_contact_id`. Every transfer saves the recipient as a contact automatically (opt out with `save_contact: false`). The recipient's webhook subscribers receive `transfer_received`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"to_contact_id\": \"3f8a1b2c-4d5e-6f70-8a9b-0c1d2e3f4a5b\",\n  \"amount\": \"10.000000\",\n  \"idempotency_key\": \"t-991\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Idempotency replay.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/transfers",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "transfers"
+                  ]
+                }
+              },
+              "status": "Idempotency replay.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"transfer_id\": \"2a7b9c1d-4e5f-6a70-8b9c-0d1e2f3a4b5c\",\n  \"from_account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"to_account_id\": \"5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b\",\n  \"asset\": \"USDT\",\n  \"amount\": \"25.000000\",\n  \"description\": \"Expense split\",\n  \"status\": \"completed\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"idempotency_hit\": true\n}"
+            }
+          ]
+        },
+        {
           "name": "Create an internal transfer — Person → person, by email",
           "request": {
             "method": "POST",
@@ -3313,7 +3443,7 @@
                 "transfers"
               ]
             },
-            "description": "Moves balance between two CBPay accounts, atomically and always free of charge — any combination works: person to person, person to company, company to person or company to company. Works with the four virtual balances (`USDT` default, `USDC`, `BTC`, `GOLD`) and always between balances of the **same currency** (no conversion). The destination is resolved by `to_account_id` or `to_email`. The recipient's webhook subscribers receive `transfer_received`.",
+            "description": "Moves balance between two CBPay accounts, atomically and always free of charge — any combination works: person to person, person to company, company to person or company to company. Works with the four virtual balances (`USDT` default, `USDC`, `BTC`, `GOLD`) and always between balances of the **same currency** (no conversion). The destination is resolved by `to_account_id`, `to_email`, `to_phone` (OTP-verified phones only) or `to_contact_id`. Every transfer saves the recipient as a contact automatically (opt out with `save_contact: false`). The recipient's webhook subscribers receive `transfer_received`.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"to_email\": \"carlos@example.com\",\n  \"amount\": \"25.000000\",\n  \"description\": \"Expense split\",\n  \"idempotency_key\": \"split-2026-07-06-a\"\n}",
@@ -3378,7 +3508,7 @@
                 "transfers"
               ]
             },
-            "description": "Moves balance between two CBPay accounts, atomically and always free of charge — any combination works: person to person, person to company, company to person or company to company. Works with the four virtual balances (`USDT` default, `USDC`, `BTC`, `GOLD`) and always between balances of the **same currency** (no conversion). The destination is resolved by `to_account_id` or `to_email`. The recipient's webhook subscribers receive `transfer_received`.",
+            "description": "Moves balance between two CBPay accounts, atomically and always free of charge — any combination works: person to person, person to company, company to person or company to company. Works with the four virtual balances (`USDT` default, `USDC`, `BTC`, `GOLD`) and always between balances of the **same currency** (no conversion). The destination is resolved by `to_account_id`, `to_email`, `to_phone` (OTP-verified phones only) or `to_contact_id`. Every transfer saves the recipient as a contact automatically (opt out with `save_contact: false`). The recipient's webhook subscribers receive `transfer_received`.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"to_account_id\": \"ae8cf540-22a9-414d-82cc-8ac04732be4f\",\n  \"amount\": \"120.500000\",\n  \"description\": \"Monthly service payment\",\n  \"idempotency_key\": \"serv-2026-07-a\"\n}",
@@ -3443,7 +3573,7 @@
                 "transfers"
               ]
             },
-            "description": "Moves balance between two CBPay accounts, atomically and always free of charge — any combination works: person to person, person to company, company to person or company to company. Works with the four virtual balances (`USDT` default, `USDC`, `BTC`, `GOLD`) and always between balances of the **same currency** (no conversion). The destination is resolved by `to_account_id` or `to_email`. The recipient's webhook subscribers receive `transfer_received`.",
+            "description": "Moves balance between two CBPay accounts, atomically and always free of charge — any combination works: person to person, person to company, company to person or company to company. Works with the four virtual balances (`USDT` default, `USDC`, `BTC`, `GOLD`) and always between balances of the **same currency** (no conversion). The destination is resolved by `to_account_id`, `to_email`, `to_phone` (OTP-verified phones only) or `to_contact_id`. Every transfer saves the recipient as a contact automatically (opt out with `save_contact: false`). The recipient's webhook subscribers receive `transfer_received`.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"to_email\": \"employee@example.com\",\n  \"amount\": \"850.000000\",\n  \"description\": \"July salary\",\n  \"idempotency_key\": \"payroll-2026-07-emp01\"\n}",
@@ -3508,7 +3638,7 @@
                 "transfers"
               ]
             },
-            "description": "Moves balance between two CBPay accounts, atomically and always free of charge — any combination works: person to person, person to company, company to person or company to company. Works with the four virtual balances (`USDT` default, `USDC`, `BTC`, `GOLD`) and always between balances of the **same currency** (no conversion). The destination is resolved by `to_account_id` or `to_email`. The recipient's webhook subscribers receive `transfer_received`.",
+            "description": "Moves balance between two CBPay accounts, atomically and always free of charge — any combination works: person to person, person to company, company to person or company to company. Works with the four virtual balances (`USDT` default, `USDC`, `BTC`, `GOLD`) and always between balances of the **same currency** (no conversion). The destination is resolved by `to_account_id`, `to_email`, `to_phone` (OTP-verified phones only) or `to_contact_id`. Every transfer saves the recipient as a contact automatically (opt out with `save_contact: false`). The recipient's webhook subscribers receive `transfer_received`.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"to_email\": \"carlos@example.com\",\n  \"asset\": \"GOLD\",\n  \"amount\": \"2.500000\",\n  \"description\": \"Gold gift\",\n  \"idempotency_key\": \"gold-2026-07-09-a\"\n}",
@@ -6254,6 +6384,581 @@
                 }
               ],
               "body": "{\n  \"url\": \"https://verify.example.com/on/liveness/tok_abc123\",\n  \"status\": \"pending\",\n  \"expires_at\": 1751234567\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Contacts",
+      "item": [
+        {
+          "name": "List contacts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "contacts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Search by name, alias, email or phone."
+                },
+                {
+                  "key": "has_cbpay",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Only contacts linked (or not) to a CBPay account."
+                },
+                {
+                  "key": "favorite",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Your account's private contact book, ordered by favorites and last use. Contacts are created automatically by every send (transfer, payout, crypto withdrawal), by manual CRUD or by importing the phone's address book."
+          },
+          "response": [
+            {
+              "name": "200 Paged contacts.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/contacts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "contacts"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "q",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Search by name, alias, email or phone."
+                    },
+                    {
+                      "key": "has_cbpay",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Only contacts linked (or not) to a CBPay account."
+                    },
+                    {
+                      "key": "favorite",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Paged contacts.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"contacts\": [\n    {\n      \"contact_id\": \"3f8a1b2c-4d5e-6f70-8a9b-0c1d2e3f4a5b\",\n      \"display_name\": \"Carlos Soto\",\n      \"alias\": \"Carlitos\",\n      \"phone\": \"+56987654321\",\n      \"email\": \"carlos@mail.com\",\n      \"has_cbpay\": true,\n      \"cbpay_account_id\": \"389d34a3-6c61-4782-b822-95ac173068dc\",\n      \"source\": \"import\",\n      \"favorite\": true,\n      \"created_at\": \"2026-07-07T12:00:00Z\",\n      \"updated_at\": \"2026-07-10T15:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a contact",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "contacts"
+              ]
+            },
+            "description": "Adds a contact manually. The phone is normalized to E.164 (local numbers use your account's country) and matched against accounts of your operator to fill `has_cbpay`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"display_name\": \"Carlos Soto\",\n  \"phone\": \"+56987654321\",\n  \"email\": \"carlos@mail.com\",\n  \"favorite\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Contact created.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/contacts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "contacts"
+                  ]
+                }
+              },
+              "status": "Contact created.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"contact_id\": \"3f8a1b2c-4d5e-6f70-8a9b-0c1d2e3f4a5b\",\n  \"display_name\": \"Carlos Soto\",\n  \"phone\": \"+56987654321\",\n  \"email\": \"carlos@mail.com\",\n  \"has_cbpay\": true,\n  \"cbpay_account_id\": \"389d34a3-6c61-4782-b822-95ac173068dc\",\n  \"source\": \"manual\",\n  \"favorite\": true,\n  \"created_at\": \"2026-07-10T15:00:00Z\",\n  \"updated_at\": \"2026-07-10T15:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Import the phone address book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/contacts/import",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "contacts",
+                "import"
+              ]
+            },
+            "description": "Uploads up to 1,000 contacts per request (paginate beyond that). Phones are normalized to E.164; existing contacts are never duplicated; `has_cbpay` tells you which contacts already have an active account of your same operator (match by phone).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contacts\": [\n    {\n      \"name\": \"Carlos Soto\",\n      \"phones\": [\n        \"+56 9 8765 4321\"\n      ]\n    },\n    {\n      \"name\": \"Ana Perez\",\n      \"phones\": [\n        \"912345678\"\n      ]\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Per-contact result.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/contacts/import",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "contacts",
+                    "import"
+                  ]
+                }
+              },
+              "status": "Per-contact result.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"imported\": 2,\n  \"matched\": 1,\n  \"total\": 2,\n  \"contacts\": [\n    {\n      \"name\": \"Carlos Soto\",\n      \"phone\": \"+56987654321\",\n      \"contact_id\": \"3f8a1b2c-4d5e-6f70-8a9b-0c1d2e3f4a5b\",\n      \"has_cbpay\": true\n    },\n    {\n      \"name\": \"Ana Perez\",\n      \"phone\": \"+56912345678\",\n      \"contact_id\": \"9c1d2e3f-4a5b-6c7d-8e9f-0a1b2c3d4e5f\",\n      \"has_cbpay\": false\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get a contact",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/contacts/:contactID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "contacts",
+                ":contactID"
+              ],
+              "variable": [
+                {
+                  "key": "contactID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "The contact plus its saved destinations (CBPay account, payout beneficiaries per corridor, on-chain addresses)."
+          },
+          "response": [
+            {
+              "name": "200 The contact with destinations.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/contacts/:contactID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "contacts",
+                    ":contactID"
+                  ],
+                  "variable": [
+                    {
+                      "key": "contactID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "The contact with destinations.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"contact_id\": \"3f8a1b2c-4d5e-6f70-8a9b-0c1d2e3f4a5b\",\n  \"display_name\": \"Carlos Soto\",\n  \"phone\": \"+56987654321\",\n  \"has_cbpay\": true,\n  \"cbpay_account_id\": \"389d34a3-6c61-4782-b822-95ac173068dc\",\n  \"source\": \"import\",\n  \"favorite\": true,\n  \"destinations\": [\n    {\n      \"destination_id\": \"bb22c3d4-5e6f-7a80-9b0c-1d2e3f4a5b6c\",\n      \"type\": \"payout\",\n      \"country\": \"CL\",\n      \"currency\": \"CLP\",\n      \"method\": \"bank_transfer\",\n      \"details\": {\n        \"name\": \"Carlos Soto\",\n        \"tax_id\": \"12.345.678-5\",\n        \"bank_code\": \"012\",\n        \"account_type\": \"checking\",\n        \"account_number\": \"123456789\"\n      },\n      \"last_used_at\": \"2026-07-09T18:30:00Z\",\n      \"created_at\": \"2026-07-09T18:30:00Z\"\n    }\n  ],\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-10T15:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update a contact",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/contacts/:contactID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "contacts",
+                ":contactID"
+              ],
+              "variable": [
+                {
+                  "key": "contactID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Partial update (name, alias, phone, email, favorite). Changing the phone re-runs the CBPay match.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"alias\": \"Carlitos\",\n  \"favorite\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Updated contact.",
+              "originalRequest": {
+                "method": "PATCH",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/contacts/:contactID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "contacts",
+                    ":contactID"
+                  ],
+                  "variable": [
+                    {
+                      "key": "contactID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Updated contact.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"contact_id\": \"3f8a1b2c-4d5e-6f70-8a9b-0c1d2e3f4a5b\",\n  \"display_name\": \"Carlos Soto\",\n  \"alias\": \"Carlitos\",\n  \"phone\": \"+56987654321\",\n  \"has_cbpay\": true,\n  \"source\": \"import\",\n  \"favorite\": true,\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-10T16:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete a contact",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/contacts/:contactID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "contacts",
+                ":contactID"
+              ],
+              "variable": [
+                {
+                  "key": "contactID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Deletes the contact and its saved destinations."
+          },
+          "response": [
+            {
+              "name": "200 Deleted.",
+              "originalRequest": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/contacts/:contactID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "contacts",
+                    ":contactID"
+                  ],
+                  "variable": [
+                    {
+                      "key": "contactID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Deleted.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"deleted\": true\n}"
+            }
+          ]
+        },
+        {
+          "name": "Add a destination to a contact",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/contacts/:contactID/destinations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "contacts",
+                ":contactID",
+                "destinations"
+              ],
+              "variable": [
+                {
+                  "key": "contactID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Saves a reusable destination manually: `payout` (country + method + beneficiary), `crypto` (chain + address) or `cbpay` (requires the contact to be linked). Destinations are deduplicated: repeating one refreshes its last use.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"payout\",\n  \"country\": \"CL\",\n  \"currency\": \"CLP\",\n  \"method\": \"bank_transfer\",\n  \"beneficiary\": {\n    \"name\": \"Carlos Soto\",\n    \"tax_id\": \"12.345.678-5\",\n    \"bank_code\": \"012\",\n    \"account_type\": \"checking\",\n    \"account_number\": \"123456789\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Destination saved.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/contacts/:contactID/destinations",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "contacts",
+                    ":contactID",
+                    "destinations"
+                  ],
+                  "variable": [
+                    {
+                      "key": "contactID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Destination saved.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"destination_id\": \"bb22c3d4-5e6f-7a80-9b0c-1d2e3f4a5b6c\",\n  \"type\": \"payout\",\n  \"country\": \"CL\",\n  \"currency\": \"CLP\",\n  \"method\": \"bank_transfer\",\n  \"details\": {\n    \"name\": \"Carlos Soto\",\n    \"tax_id\": \"12.345.678-5\",\n    \"bank_code\": \"012\",\n    \"account_type\": \"checking\",\n    \"account_number\": \"123456789\"\n  },\n  \"last_used_at\": \"2026-07-10T16:00:00Z\",\n  \"created_at\": \"2026-07-10T16:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete a saved destination",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/contacts/:contactID/destinations/:destinationID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "contacts",
+                ":contactID",
+                "destinations",
+                ":destinationID"
+              ],
+              "variable": [
+                {
+                  "key": "contactID",
+                  "value": ""
+                },
+                {
+                  "key": "destinationID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 Deleted.",
+              "originalRequest": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/contacts/:contactID/destinations/:destinationID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "contacts",
+                    ":contactID",
+                    "destinations",
+                    ":destinationID"
+                  ],
+                  "variable": [
+                    {
+                      "key": "contactID",
+                      "value": ""
+                    },
+                    {
+                      "key": "destinationID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Deleted.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"deleted\": true\n}"
             }
           ]
         }

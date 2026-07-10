@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.34'
+  version: '1.35'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -42,6 +42,7 @@ tags:
 - name: Payins
   description: Recargas fiat que se acreditan al saldo en USDT.
 - name: Transferencias
+- name: Contacts
   description: Transferencias internas gratuitas entre cuentas CBPay (persona o empresa, cualquier combinación).
 - name: Crypto
   description: Fondeo y retiros on-chain de USDT (TRON y Ethereum).
@@ -1101,7 +1102,6 @@ paths:
               - country
               - currency
               - amount
-              - beneficiary
               properties:
                 country:
                   type: string
@@ -1131,6 +1131,17 @@ paths:
                     email, evp) en Brasil.
 
                     '
+                beneficiary_contact_id:
+                  type: string
+                  format: uuid
+                  description: Usa el beneficiario guardado más reciente del contacto para este país
+                    (y método, si lo envías) en vez de tipear `beneficiary` de nuevo. Un
+                    `beneficiary` explícito siempre gana; 422 no_saved_destination si el contacto
+                    no tiene.
+                save_contact:
+                  type: boolean
+                  default: true
+                  description: El beneficiario se guarda como contacto automáticamente; envía false para no guardarlo.
                 description:
                   type: string
                 settlement_asset:
@@ -1917,8 +1928,10 @@ paths:
       description: 'Mueve saldo entre dos cuentas CBPay, de forma atómica y siempre gratuita — funciona
         cualquier combinación: persona a persona, persona a empresa, empresa a persona o empresa a empresa.
         Funciona con los cuatro saldos virtuales (`USDT` default, `USDC`, `BTC`, `GOLD`) y siempre entre
-        saldos de la **misma moneda** (sin conversión). El destino se resuelve por `to_account_id` o
-        `to_email`. Los suscriptores de webhooks del receptor reciben `transfer_received`.'
+        saldos de la **misma moneda** (sin conversión). El destino se resuelve por `to_account_id`,
+        `to_email`, `to_phone` (solo teléfonos verificados por OTP) o `to_contact_id`. Cada
+        transferencia guarda al destinatario como contacto automáticamente (desactívalo con
+        `save_contact: false`). Los suscriptores de webhooks del receptor reciben `transfer_received`.'
       parameters:
       - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:
@@ -1936,6 +1949,16 @@ paths:
                 to_email:
                   type: string
                   format: email
+                to_phone:
+                  type: string
+                  description: Teléfono E.164 de la cuenta destino. Solo resuelven cuentas con
+                    el teléfono verificado por OTP (si no, 404 recipient_not_found; 422
+                    recipient_ambiguous si más de una cuenta comparte el número).
+                to_contact_id:
+                  type: string
+                  format: uuid
+                  description: Envía directo a un contacto de tu libreta (usa su cuenta CBPay
+                    enlazada, o su teléfono verificado).
                 asset:
                   type: string
                   enum:
@@ -1954,7 +1977,24 @@ paths:
                   type: string
                 idempotency_key:
                   type: string
+                save_contact:
+                  type: boolean
+                  default: true
+                  description: El destino se guarda como contacto automáticamente; envía false para no guardarlo.
             examples:
+              by_phone:
+                summary: Por teléfono verificado
+                value:
+                  to_phone: '+56987654321'
+                  amount: '25.000000'
+                  description: Almuerzo
+                  idempotency_key: lunch-2026-07-10-a
+              by_contact:
+                summary: A un contacto guardado
+                value:
+                  to_contact_id: 3f8a1b2c-4d5e-6f70-8a9b-0c1d2e3f4a5b
+                  amount: '10.000000'
+                  idempotency_key: t-991
               by_email:
                 summary: Persona → persona, por email
                 value:
@@ -2113,7 +2153,6 @@ paths:
             schema:
               type: object
               required:
-              - to_address
               - amount
               properties:
                 chain:
@@ -2131,11 +2170,23 @@ paths:
                   description: Activo a enviar (USDC solo por `eth`).
                 to_address:
                   type: string
+                to_contact_id:
+                  type: string
+                  format: uuid
+                  description: Usa la dirección guardada del contacto para esta chain en vez de
+                    `to_address` (un `to_address` explícito siempre gana).
                 amount:
                   type: string
                   description: String decimal positivo, hasta 6 decimales.
                 idempotency_key:
                   type: string
+                contact_name:
+                  type: string
+                  description: Nombre del contacto que se auto-guarda con esta dirección.
+                save_contact:
+                  type: boolean
+                  default: true
+                  description: La dirección se guarda como contacto automáticamente; envía false para no guardarla.
             examples:
               usdt_tron:
                 summary: USDT por TRON
@@ -3831,6 +3882,469 @@ paths:
                   status: completed
                   outcome: PASS
                   passed: true
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/contacts:
+    get:
+      tags:
+      - Contacts
+      operationId: listContacts
+      summary: Listar contactos
+      description: La libreta privada de tu cuenta, ordenada por favoritos y último uso. Los
+        contactos se crean automáticamente con cada envío (transferencia, payout, retiro crypto),
+        por CRUD manual o importando la agenda del celular.
+      parameters:
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/pageSize'
+      - name: q
+        in: query
+        schema:
+          type: string
+        description: Busca por nombre, alias, email o teléfono.
+      - name: has_cbpay
+        in: query
+        schema:
+          type: boolean
+        description: Solo contactos enlazados (o no) a una cuenta CBPay.
+      - name: favorite
+        in: query
+        schema:
+          type: boolean
+      responses:
+        '200':
+          description: Contactos paginados.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  contacts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Contact'
+              example:
+                page: 1
+                page_size: 50
+                contacts:
+                - contact_id: 3f8a1b2c-4d5e-6f70-8a9b-0c1d2e3f4a5b
+                  display_name: Carlos Soto
+                  alias: Carlitos
+                  phone: '+56987654321'
+                  email: carlos@mail.com
+                  has_cbpay: true
+                  cbpay_account_id: 389d34a3-6c61-4782-b822-95ac173068dc
+                  source: import
+                  favorite: true
+                  created_at: '2026-07-07T12:00:00Z'
+                  updated_at: '2026-07-10T15:00:00Z'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+      - Contacts
+      operationId: createContact
+      summary: Crear un contacto
+      description: Agrega un contacto a mano. El teléfono se normaliza a E.164 (los números locales
+        usan el país de tu cuenta) y se matchea contra cuentas de tu operador para llenar `has_cbpay`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - display_name
+              properties:
+                display_name:
+                  type: string
+                alias:
+                  type: string
+                phone:
+                  type: string
+                email:
+                  type: string
+                favorite:
+                  type: boolean
+            example:
+              display_name: Carlos Soto
+              phone: '+56987654321'
+              email: carlos@mail.com
+              favorite: true
+      responses:
+        '201':
+          description: Contacto creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contact'
+              example:
+                contact_id: 3f8a1b2c-4d5e-6f70-8a9b-0c1d2e3f4a5b
+                display_name: Carlos Soto
+                phone: '+56987654321'
+                email: carlos@mail.com
+                has_cbpay: true
+                cbpay_account_id: 389d34a3-6c61-4782-b822-95ac173068dc
+                source: manual
+                favorite: true
+                created_at: '2026-07-10T15:00:00Z'
+                updated_at: '2026-07-10T15:00:00Z'
+        '400':
+          description: invalid_payload / invalid_phone
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_phone
+                message: phone could not be normalized to E.164 (send +<country><number>)
+        '409':
+          description: Ya existe un contacto con ese teléfono/email (duplicate).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: duplicate
+                message: duplicate
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/contacts/import:
+    post:
+      tags:
+      - Contacts
+      operationId: importContacts
+      summary: Importar la agenda del celular
+      description: Sube hasta 1.000 contactos por request (pagina si hay más). Los teléfonos se
+        normalizan a E.164; los contactos existentes no se duplican; `has_cbpay` te dice qué
+        contactos ya tienen una cuenta activa de tu mismo operador (match por teléfono).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - contacts
+              properties:
+                contacts:
+                  type: array
+                  maxItems: 1000
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      phones:
+                        type: array
+                        items:
+                          type: string
+                      email:
+                        type: string
+            example:
+              contacts:
+              - name: Carlos Soto
+                phones:
+                - '+56 9 8765 4321'
+              - name: Ana Perez
+                phones:
+                - '912345678'
+      responses:
+        '200':
+          description: Resultado por contacto.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imported:
+                    type: integer
+                  matched:
+                    type: integer
+                  total:
+                    type: integer
+                  contacts:
+                    type: array
+                    items:
+                      type: object
+              example:
+                imported: 2
+                matched: 1
+                total: 2
+                contacts:
+                - name: Carlos Soto
+                  phone: '+56987654321'
+                  contact_id: 3f8a1b2c-4d5e-6f70-8a9b-0c1d2e3f4a5b
+                  has_cbpay: true
+                - name: Ana Perez
+                  phone: '+56912345678'
+                  contact_id: 9c1d2e3f-4a5b-6c7d-8e9f-0a1b2c3d4e5f
+                  has_cbpay: false
+        '400':
+          description: invalid_payload / batch_too_large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: batch_too_large
+                message: send up to 1000 contacts per request (paginate the upload)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/contacts/{contactID}:
+    get:
+      tags:
+      - Contacts
+      operationId: getContact
+      summary: Consultar un contacto
+      description: El contacto más sus destinos guardados (cuenta CBPay, beneficiarios de payout
+        por corredor, direcciones on-chain).
+      parameters:
+      - name: contactID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: El contacto con sus destinos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contact'
+              example:
+                contact_id: 3f8a1b2c-4d5e-6f70-8a9b-0c1d2e3f4a5b
+                display_name: Carlos Soto
+                phone: '+56987654321'
+                has_cbpay: true
+                cbpay_account_id: 389d34a3-6c61-4782-b822-95ac173068dc
+                source: import
+                favorite: true
+                destinations:
+                - destination_id: bb22c3d4-5e6f-7a80-9b0c-1d2e3f4a5b6c
+                  type: payout
+                  country: CL
+                  currency: CLP
+                  method: bank_transfer
+                  details:
+                    name: Carlos Soto
+                    tax_id: 12.345.678-5
+                    bank_code: '012'
+                    account_type: checking
+                    account_number: '123456789'
+                  last_used_at: '2026-07-09T18:30:00Z'
+                  created_at: '2026-07-09T18:30:00Z'
+                created_at: '2026-07-07T12:00:00Z'
+                updated_at: '2026-07-10T15:00:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags:
+      - Contacts
+      operationId: updateContact
+      summary: Editar un contacto
+      description: Actualización parcial (nombre, alias, teléfono, email, favorito). Cambiar el
+        teléfono re-ejecuta el match CBPay.
+      parameters:
+      - name: contactID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                display_name:
+                  type: string
+                alias:
+                  type: string
+                phone:
+                  type: string
+                email:
+                  type: string
+                favorite:
+                  type: boolean
+            example:
+              alias: Carlitos
+              favorite: true
+      responses:
+        '200':
+          description: Contacto actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contact'
+              example:
+                contact_id: 3f8a1b2c-4d5e-6f70-8a9b-0c1d2e3f4a5b
+                display_name: Carlos Soto
+                alias: Carlitos
+                phone: '+56987654321'
+                has_cbpay: true
+                source: import
+                favorite: true
+                created_at: '2026-07-07T12:00:00Z'
+                updated_at: '2026-07-10T16:00:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      tags:
+      - Contacts
+      operationId: deleteContact
+      summary: Borrar un contacto
+      description: Borra el contacto y sus destinos guardados.
+      parameters:
+      - name: contactID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Borrado.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+              example:
+                deleted: true
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/contacts/{contactID}/destinations:
+    post:
+      tags:
+      - Contacts
+      operationId: addContactDestination
+      summary: Agregar un destino a un contacto
+      description: 'Guarda un destino reutilizable a mano: `payout` (país + método + beneficiario),
+        `crypto` (chain + dirección) o `cbpay` (requiere contacto enlazado). Los destinos se
+        deduplican: repetir uno refresca su último uso.'
+      parameters:
+      - name: contactID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - type
+              properties:
+                type:
+                  type: string
+                  enum: [payout, crypto, cbpay]
+                country:
+                  type: string
+                currency:
+                  type: string
+                method:
+                  type: string
+                chain:
+                  type: string
+                address:
+                  type: string
+                beneficiary:
+                  type: object
+                  additionalProperties:
+                    type: string
+                label:
+                  type: string
+            example:
+              type: payout
+              country: CL
+              currency: CLP
+              method: bank_transfer
+              beneficiary:
+                name: Carlos Soto
+                tax_id: 12.345.678-5
+                bank_code: '012'
+                account_type: checking
+                account_number: '123456789'
+      responses:
+        '201':
+          description: Destino guardado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactDestination'
+              example:
+                destination_id: bb22c3d4-5e6f-7a80-9b0c-1d2e3f4a5b6c
+                type: payout
+                country: CL
+                currency: CLP
+                method: bank_transfer
+                details:
+                  name: Carlos Soto
+                  tax_id: 12.345.678-5
+                  bank_code: '012'
+                  account_type: checking
+                  account_number: '123456789'
+                last_used_at: '2026-07-10T16:00:00Z'
+                created_at: '2026-07-10T16:00:00Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/contacts/{contactID}/destinations/{destinationID}:
+    delete:
+      tags:
+      - Contacts
+      operationId: deleteContactDestination
+      summary: Borrar un destino guardado
+      parameters:
+      - name: contactID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: destinationID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Borrado.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+              example:
+                deleted: true
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
@@ -7114,6 +7628,74 @@ components:
           type: string
         filename:
           type: string
+    Contact:
+      type: object
+      properties:
+        contact_id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        alias:
+          type: string
+        phone:
+          type: string
+          description: E.164.
+        email:
+          type: string
+        has_cbpay:
+          type: boolean
+          description: True cuando el teléfono corresponde a una cuenta activa de tu operador.
+        cbpay_account_id:
+          type: string
+          format: uuid
+          description: Cuenta enlazada (presente cuando has_cbpay es true).
+        source:
+          type: string
+          enum: [manual, import, transfer, payout, crypto]
+        favorite:
+          type: boolean
+        destinations:
+          type: array
+          description: Presente en el endpoint de detalle.
+          items:
+            $ref: '#/components/schemas/ContactDestination'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ContactDestination:
+      type: object
+      properties:
+        destination_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [cbpay, payout, crypto]
+        country:
+          type: string
+        currency:
+          type: string
+        method:
+          type: string
+        chain:
+          type: string
+        address:
+          type: string
+        details:
+          type: object
+          description: Beneficiario de payout completo en destinos payout.
+        label:
+          type: string
+        last_used_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
     Error:
       type: object
       properties:

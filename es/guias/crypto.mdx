@@ -236,6 +236,14 @@ Respuesta `202` — se debita `amount + fee` y la transacción se transmite:
 }
 ```
 
+<Note>
+Cada retiro guarda la dirección como [contacto](/es/guias/contactos)
+automáticamente — nómbralo con `"contact_name"` en el body, o desactívalo
+con `"save_contact": false`. Para repetir un envío, usa
+`"to_contact_id"` en vez de `to_address` (se usa la dirección guardada del
+contacto para esa `chain`).
+</Note>
+
 El estado final llega por el webhook `crypto_withdrawal_status_changed`:
 **`completed`** (el `tx_id` es tu comprobante) o **`failed`** (se reembolsa
 el débito completo).

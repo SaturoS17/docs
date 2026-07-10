@@ -32,9 +32,34 @@ Funcionan entre **cualquier combinación de cuentas**:
 
 ## Crear una transferencia
 
-El destino se identifica por `to_account_id` **o** por `to_email`:
+El destino se identifica por `to_account_id`, `to_email`, **`to_phone`**
+(teléfono verificado) o **`to_contact_id`** (un
+[contacto](/es/guias/contactos) de tu libreta):
 
 <CodeGroup>
+
+```bash Por teléfono (verificado)
+curl -X POST https://api.qbank.cl/platform/v1/transfers \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to_phone": "+56987654321",
+    "amount": "25.000000",
+    "description": "Almuerzo",
+    "idempotency_key": "alm-2026-07-10-a"
+  }'
+```
+
+```bash Por contacto
+curl -X POST https://api.qbank.cl/platform/v1/transfers \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to_contact_id": "3f8a1b2c-…",
+    "amount": "10.000000",
+    "idempotency_key": "t-991"
+  }'
+```
 
 ```bash Por email (persona → persona)
 curl -X POST https://api.qbank.cl/platform/v1/transfers \
@@ -122,6 +147,14 @@ original:
 El receptor puede enterarse por el webhook `transfer_received` y ambos ven
 el movimiento en su historial (`transfer_out` / `transfer_in`).
 
+<Note>
+Cada transferencia guarda al destinatario como [contacto](/es/guias/contactos)
+automáticamente (envía `"save_contact": false` para no guardarlo). Por
+seguridad, `to_phone` solo resuelve cuentas con el teléfono **verificado
+por OTP**; si más de una cuenta comparte el número responde
+`422 recipient_ambiguous`.
+</Note>
+
 ## Consultar transferencias
 
 Lista las transferencias de tu cuenta (enviadas y recibidas), con
@@ -157,9 +190,12 @@ Cada fila trae `direction` (`sent` o `received`) desde tu perspectiva.
 
 | HTTP | `error` | Causa |
 |---|---|---|
-| 400 | `recipient_required` | Falta `to_account_id` y `to_email` |
+| 400 | `recipient_required` | Falta `to_account_id`, `to_email`, `to_phone` y `to_contact_id` |
 | 400 | `invalid_amount` | Monto inválido, demasiados decimales o `asset` no soportado |
+| 400 | `invalid_phone` | `to_phone` no se pudo normalizar a E.164 |
 | 400 | `self_transfer` | Origen y destino son la misma cuenta |
 | 402 | `insufficient_funds` | Saldo disponible insuficiente en esa moneda |
-| 404 | `recipient_not_found` | El email/ID no corresponde a una cuenta CBPay |
+| 404 | `recipient_not_found` | El email/ID no corresponde a una cuenta CBPay, o ningún teléfono verificado coincide |
+| 422 | `recipient_ambiguous` | Más de una cuenta comparte ese teléfono (usa `to_account_id` o `to_email`) |
+| 422 | `contact_not_linked` | El contacto no tiene cuenta CBPay asociada |
 | 422 | `recipient_unavailable` | La cuenta destino está bloqueada/cerrada |

@@ -236,6 +236,14 @@ Response `202` — `amount + fee` is debited and the transaction broadcasts:
 }
 ```
 
+<Note>
+Every withdrawal saves the address as a [contact](/en/guides/contacts)
+automatically — name it with `"contact_name"` in the body, or disable it
+with `"save_contact": false`. To repeat a send, use `"to_contact_id"`
+instead of `to_address` (the contact's saved address for that `chain` is
+used).
+</Note>
+
 The final state arrives via the `crypto_withdrawal_status_changed` webhook:
 **`completed`** (the `tx_id` is your receipt) or **`failed`** (the full
 debit is refunded).

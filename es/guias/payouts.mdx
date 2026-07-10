@@ -117,6 +117,14 @@ llave PIX en Brasil, etc.). El catálogo de métodos documenta los campos de
 cada uno.
 </Warning>
 
+<Note>
+Cada payout guarda al beneficiario como [contacto](/es/guias/contactos)
+automáticamente (`"save_contact": false` para no guardarlo). Para repetirle
+un pago sin re-tipear sus datos, envía `"beneficiary_contact_id"` en vez de
+`beneficiary` — se usa su beneficiario guardado más reciente para ese país
+y método (`422 no_saved_destination` si no tiene).
+</Note>
+
 Respuesta `202 Accepted`:
 
 ```json

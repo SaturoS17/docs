@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-10 06:31 UTC · versión `50bad23e9ef0`
+> **Documento actualizado:** 2026-07-10 12:31 UTC · versión `cbacf7f8fbee`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.34 (10 de julio de 2026) |
+| Versión de la documentación | v1.35 (10 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -42,6 +42,7 @@ solo saldo.
   - [Payouts](#payouts)
   - [Payins](#payins)
   - [Transferencias internas](#transferencias-internas)
+  - [Contactos](#contactos)
   - [Crypto: wallets, depósitos y retiros](#crypto-wallets-depositos-y-retiros)
   - [Tarjetas: virtuales y físicas](#tarjetas-virtuales-y-fisicas)
   - [Banking](#banking)
@@ -1920,6 +1921,12 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
 dependen del corredor (RUT y banco en Chile, CLABE en México, CCI en Perú,
 llave PIX en Brasil, etc.). El catálogo de métodos documenta los campos de
 cada uno.
+> **Nota**
+Cada payout guarda al beneficiario como [contacto](#contactos)
+automáticamente (`"save_contact": false` para no guardarlo). Para repetirle
+un pago sin re-tipear sus datos, envía `"beneficiary_contact_id"` en vez de
+`beneficiary` — se usa su beneficiario guardado más reciente para ese país
+y método (`422 no_saved_destination` si no tiene).
 Respuesta `202 Accepted`:
 
 ```json
@@ -3066,7 +3073,32 @@ Funcionan entre **cualquier combinación de cuentas**:
 
 ### Crear una transferencia
 
-El destino se identifica por `to_account_id` **o** por `to_email`:
+El destino se identifica por `to_account_id`, `to_email`, **`to_phone`**
+(teléfono verificado) o **`to_contact_id`** (un
+[contacto](#contactos) de tu libreta):
+
+```bash Por teléfono (verificado)
+curl -X POST https://api.qbank.cl/platform/v1/transfers \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to_phone": "+56987654321",
+    "amount": "25.000000",
+    "description": "Almuerzo",
+    "idempotency_key": "alm-2026-07-10-a"
+  }'
+```
+
+```bash Por contacto
+curl -X POST https://api.qbank.cl/platform/v1/transfers \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to_contact_id": "3f8a1b2c-…",
+    "amount": "10.000000",
+    "idempotency_key": "t-991"
+  }'
+```
 
 ```bash Por email (persona → persona)
 curl -X POST https://api.qbank.cl/platform/v1/transfers \
@@ -3152,6 +3184,12 @@ original:
 El receptor puede enterarse por el webhook `transfer_received` y ambos ven
 el movimiento en su historial (`transfer_out` / `transfer_in`).
 
+> **Nota**
+Cada transferencia guarda al destinatario como [contacto](#contactos)
+automáticamente (envía `"save_contact": false` para no guardarlo). Por
+seguridad, `to_phone` solo resuelve cuentas con el teléfono **verificado
+por OTP**; si más de una cuenta comparte el número responde
+`422 recipient_ambiguous`.
 ### Consultar transferencias
 
 Lista las transferencias de tu cuenta (enviadas y recibidas), con
@@ -3187,12 +3225,243 @@ Cada fila trae `direction` (`sent` o `received`) desde tu perspectiva.
 
 | HTTP | `error` | Causa |
 |---|---|---|
-| 400 | `recipient_required` | Falta `to_account_id` y `to_email` |
+| 400 | `recipient_required` | Falta `to_account_id`, `to_email`, `to_phone` y `to_contact_id` |
 | 400 | `invalid_amount` | Monto inválido, demasiados decimales o `asset` no soportado |
+| 400 | `invalid_phone` | `to_phone` no se pudo normalizar a E.164 |
 | 400 | `self_transfer` | Origen y destino son la misma cuenta |
 | 402 | `insufficient_funds` | Saldo disponible insuficiente en esa moneda |
-| 404 | `recipient_not_found` | El email/ID no corresponde a una cuenta CBPay |
+| 404 | `recipient_not_found` | El email/ID no corresponde a una cuenta CBPay, o ningún teléfono verificado coincide |
+| 422 | `recipient_ambiguous` | Más de una cuenta comparte ese teléfono (usa `to_account_id` o `to_email`) |
+| 422 | `contact_not_linked` | El contacto no tiene cuenta CBPay asociada |
 | 422 | `recipient_unavailable` | La cuenta destino está bloqueada/cerrada |
+
+
+## Contactos
+
+*Libreta de contactos: se llena sola con cada envío, importa la agenda del celular, descubre quién tiene CBPay y permite enviar plata por teléfono*
+
+La **libreta de contactos** elimina el tipeo repetido de datos: cada envío
+(transferencia interna, payout fiat o retiro crypto) guarda el destino como
+contacto automáticamente, puedes **importar la agenda del celular** para
+descubrir quién de tus contactos tiene CBPay, y las transferencias aceptan
+directamente un **número de teléfono** o un `contact_id` como destino.
+
+```mermaid
+flowchart LR
+    envio["Cualquier envío<br/>(transfer / payout / crypto)"] -->|"auto-guardado"| contacto["Contacto + destinos<br/>reutilizables"]
+    agenda["POST /v1/contacts/import<br/>(agenda del celular)"] --> contacto
+    contacto -->|"has_cbpay: true"| cbpay["Tiene CBPay"]
+    contacto -->|"contact_id"| envio2["Envío rápido"]
+    fono["to_phone (verificado)"] --> envio2
+```
+
+### Los contactos se crean solos
+
+Cada envío guarda su destino en tu libreta (deduplicado: repetir el mismo
+destino no crea contactos duplicados, solo lo marca como usado):
+
+| Envío | Qué se guarda |
+|---|---|
+| Transferencia interna | La cuenta CBPay destino (nombre, email y su teléfono si está verificado) |
+| Payout fiat | El beneficiario completo (banco, cuenta, documento…) por país y método |
+| Retiro crypto | La dirección por red (nómbrala con `contact_name` en el retiro) |
+
+¿No quieres guardar un destino puntual? Agrega `"save_contact": false` al
+body del envío. El auto-guardado jamás afecta el envío: si algo falla, el
+envío sale igual.
+
+### Importar la agenda del celular
+
+Sube los contactos del teléfono (hasta **1.000 por request**; pagina si hay
+más) y CBPay te dice **quién ya tiene cuenta** — el match es por número de
+teléfono y solo contra cuentas del mismo operador:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/contacts/import \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "contacts": [
+      { "name": "Carlos Soto", "phones": ["+56 9 8765 4321"] },
+      { "name": "Ana Pérez", "phones": ["912345678"] },
+      { "name": "Tía Rosa", "phones": ["no-es-numero"] }
+    ]
+  }'
+```
+
+Respuesta `200`:
+
+```json
+{
+  "imported": 2,
+  "matched": 1,
+  "total": 3,
+  "contacts": [
+    { "name": "Carlos Soto", "phone": "+56987654321", "contact_id": "3f8a…", "has_cbpay": true },
+    { "name": "Ana Pérez", "phone": "+56912345678", "contact_id": "9c1d…", "has_cbpay": false },
+    { "name": "Tía Rosa", "skipped": true, "reason": "no_valid_phone" }
+  ]
+}
+```
+
+- Los números se normalizan a **E.164** solos: acepta `+…`, `00…` y números
+  locales (se les antepone el país de tu cuenta). Los inválidos se saltan.
+- Re-importar es seguro: los contactos existentes no se duplican.
+- `has_cbpay: true` significa que ese teléfono corresponde a una cuenta
+  activa del mismo operador — puedes transferirle al instante.
+
+### Enviar plata por teléfono
+
+Las transferencias internas aceptan `to_phone` (además de `to_account_id`,
+`to_email` y `to_contact_id`):
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/transfers \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to_phone": "+56987654321",
+    "amount": "25.000000",
+    "description": "Almuerzo",
+    "idempotency_key": "alm-2026-07-10"
+  }'
+```
+
+> **Importante**
+Por seguridad, `to_phone` solo resuelve cuentas con el teléfono
+**verificado por OTP** (jamás adivinamos un destino de dinero con un número
+sin verificar). Si el número no está verificado: `404 recipient_not_found`;
+si más de una cuenta comparte el número: `422 recipient_ambiguous` (usa
+`to_account_id` o `to_email`).
+### Enviar a un contacto
+
+Cualquier envío acepta el contacto directo:
+
+```bash Transferencia (contacto con CBPay)
+curl -X POST https://api.qbank.cl/platform/v1/transfers \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "to_contact_id": "3f8a…", "amount": "10.000000", "idempotency_key": "t-991" }'
+```
+
+```bash Payout (beneficiario guardado)
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "CL", "currency": "CLP", "amount": "45000",
+    "beneficiary_contact_id": "7b2c…",
+    "idempotency_key": "pago-arriendo-07"
+  }'
+```
+
+```bash Retiro crypto (dirección guardada)
+curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "chain": "tron", "to_contact_id": "5d4e…", "amount": "100.000000", "idempotency_key": "w-2211" }'
+```
+
+- **Payouts**: usa el beneficiario guardado más reciente del contacto para
+  ese país (y método si lo envías; si no, se usa el del destino guardado).
+  Un `beneficiary` explícito en el body siempre gana. Sin destino guardado
+  para ese corredor: `422 no_saved_destination`.
+- **Crypto**: usa la dirección guardada para esa `chain`; un `to_address`
+  explícito gana.
+- **Transfers**: usa la cuenta CBPay enlazada del contacto; si el contacto
+  solo tiene teléfono, se intenta por su número (verificado). Contacto sin
+  ninguno: `422 contact_not_linked`.
+
+### Administrar la libreta
+
+```bash
+# Listado con búsqueda y filtros
+curl "https://api.qbank.cl/platform/v1/contacts?q=carlos&has_cbpay=true&page=1&page_size=50" \
+  -H "Authorization: Bearer <token>"
+
+# Crear a mano
+curl -X POST https://api.qbank.cl/platform/v1/contacts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "display_name": "Carlos Soto", "phone": "+56987654321", "email": "carlos@mail.com", "favorite": true }'
+
+# Detalle (incluye los destinos guardados)
+curl https://api.qbank.cl/platform/v1/contacts/{contact_id} \
+  -H "Authorization: Bearer <token>"
+
+# Editar / borrar
+curl -X PATCH https://api.qbank.cl/platform/v1/contacts/{contact_id} \
+  -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+  -d '{ "alias": "Carlitos", "favorite": true }'
+curl -X DELETE https://api.qbank.cl/platform/v1/contacts/{contact_id} \
+  -H "Authorization: Bearer <token>"
+```
+
+Detalle de un contacto (`200`):
+
+```json
+{
+  "contact_id": "3f8a1b2c-…",
+  "display_name": "Carlos Soto",
+  "alias": "Carlitos",
+  "phone": "+56987654321",
+  "email": "carlos@mail.com",
+  "has_cbpay": true,
+  "cbpay_account_id": "389d34a3-…",
+  "source": "import",
+  "favorite": true,
+  "destinations": [
+    { "destination_id": "aa11…", "type": "cbpay", "last_used_at": "2026-07-10T15:00:00Z", "created_at": "2026-07-08T10:00:00Z" },
+    { "destination_id": "bb22…", "type": "payout", "country": "CL", "currency": "CLP", "method": "bank_transfer",
+      "details": { "name": "Carlos Soto", "tax_id": "12.345.678-5", "bank_code": "012", "account_type": "checking", "account_number": "123456789" },
+      "last_used_at": "2026-07-09T18:30:00Z", "created_at": "2026-07-09T18:30:00Z" },
+    { "destination_id": "cc33…", "type": "crypto", "chain": "tron", "address": "TVJ6njG5Fyrq6XwYok3xPQx8kR7HQx6vXk",
+      "last_used_at": "2026-07-07T12:00:00Z", "created_at": "2026-07-07T12:00:00Z" }
+  ],
+  "created_at": "2026-07-07T12:00:00Z",
+  "updated_at": "2026-07-10T15:00:00Z"
+}
+```
+
+También puedes agregar destinos a mano (`POST
+/v1/contacts/{id}/destinations` con `type: payout|crypto|cbpay` y sus
+campos) y borrarlos (`DELETE .../destinations/{destination_id}`).
+
+### Errores
+
+| HTTP | `error` | Causa | Solución |
+|---|---|---|---|
+| 400 | `invalid_phone` | El teléfono no se pudo normalizar a E.164 | Envíalo como `+<país><número>` |
+| 400 | `batch_too_large` | Import con más de 1.000 contactos | Pagina la subida |
+| 404 | `not_found` | El contacto/destino no existe o no es tuyo | Verifica el id |
+| 404 | `recipient_not_found` | Ningún teléfono verificado coincide | Pide al destinatario verificar su teléfono, o usa email/account_id |
+| 409 | `duplicate` | Ya tienes un contacto con ese teléfono/email | Edita el existente |
+| 422 | `recipient_ambiguous` | Más de una cuenta comparte el teléfono | Usa `to_account_id` o `to_email` |
+| 422 | `contact_not_linked` | El contacto no tiene cuenta CBPay asociada | Transfiérele por otro medio o hazle un payout |
+| 422 | `no_saved_destination` | El contacto no tiene destino guardado para ese corredor/chain | Envía el `beneficiary`/`to_address` explícito (quedará guardado) |
+
+### Preguntas frecuentes
+
+#### ¿El destinatario se entera de que lo tengo como contacto?
+No. La libreta es privada de tu cuenta: importar la agenda o guardar
+contactos no notifica a nadie ni comparte tus datos. Solo tú ves tu libreta.
+#### ¿Por qué un contacto que sé que tiene CBPay aparece has_cbpay: false?
+El match es por número de teléfono exacto (E.164) contra cuentas del mismo
+operador. Si esa persona registró otro número (o ninguno) en su cuenta, no
+hay match. En cuanto registre y verifique ese teléfono, un re-import lo
+detecta.
+#### ¿Puedo transferirle a un contacto con has_cbpay: false?
+No por transferencia interna (no hay cuenta a la cual abonar). Pero puedes
+hacerle un payout fiat a su cuenta bancaria o un envío crypto a su wallet —
+y esos destinos también quedan guardados en el contacto.
+#### ¿Qué pasa si dos personas de mi org tienen el mismo número?
+El envío por teléfono falla explícito con 422 recipient_ambiguous — nunca
+adivinamos un destino de dinero. Usa to_account_id o to_email en ese caso.
+#### ¿El import me puede servir para saber si un número cualquiera tiene CBPay?
+El match es solo contra cuentas de tu mismo operador, con un cap de 1.000
+contactos por request y bajo el rate limit global de la API. No expone
+datos de la cuenta matcheada más allá del hecho de existir (necesario para
+poder transferirle).
 
 
 ## Crypto: wallets, depósitos y retiros
@@ -3421,6 +3690,12 @@ Respuesta `202` — se debita `amount + fee` y la transacción se transmite:
 }
 ```
 
+> **Nota**
+Cada retiro guarda la dirección como [contacto](#contactos)
+automáticamente — nómbralo con `"contact_name"` en el body, o desactívalo
+con `"save_contact": false`. Para repetir un envío, usa
+`"to_contact_id"` en vez de `to_address` (se usa la dirección guardada del
+contacto para esa `chain`).
 El estado final llega por el webhook `crypto_withdrawal_status_changed`:
 **`completed`** (el `tx_id` es tu comprobante) o **`failed`** (se reembolsa
 el débito completo).
@@ -5760,6 +6035,8 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | `invalid_payload` | Falta un campo requerido (ej. `enabled` en monitoreo AML, `external_customer_id` en verificaciones) |
 | `liveness_already_completed` | La prueba de vida de esa verificación ya fue superada |
 | `invalid_event_type` / `weak_secret` / `invalid_callback_url` | Suscripción de webhook inválida |
+| `invalid_phone` | Teléfono no normalizable a E.164 (contactos y `to_phone`) |
+| `batch_too_large` | Import de contactos con más de 1.000 entradas (pagina la subida) |
 | `invalid_status` / `invalid_kyc_status` / `invalid_direction` / `reason_required` / `account_id_required` / `invalid_service` / `invalid_fee` | Validaciones de administración |
 
 #### Dinero y estado (402 / 404 / 409 / 422)
@@ -5779,6 +6056,9 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | 422 | `currency_not_supported` | Sin tasa FX para esa moneda |
 | 422 | `core_rejected` | El procesador rechazó la operación |
 | 422 | `recipient_unavailable` | La cuenta destino no puede recibir |
+| 422 | `recipient_ambiguous` | Más de una cuenta comparte el teléfono de `to_phone` (usa `to_account_id` o `to_email`) |
+| 422 | `contact_not_linked` | El contacto no tiene cuenta CBPay asociada para transferirle |
+| 422 | `no_saved_destination` | El contacto no tiene destino guardado para ese corredor/chain |
 | 422 | `wallet_limit_reached` | Una cuenta persona intentó crear una segunda wallet en la misma red |
 | 409 | `card_limit_reached` | Una cuenta persona intentó crear una segunda tarjeta del mismo tipo |
 | 409 | `card_cancelled` | La tarjeta ya está cancelada y no se puede modificar |
@@ -6002,9 +6282,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-10 06:09 UTC · 130 requests · versión `b90e507f11d2`
+> **Colección actualizada:** 2026-07-10 12:31 UTC · 140 requests · versión `7e0df0862104`
 
-<PostmanFreshness iso="2026-07-10T06:09:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-10T12:31:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -6038,6 +6318,26 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.35 — 10 de julio de 2026
+
+**Agregado — Contactos y envío por teléfono**
+
+- **Libreta de contactos** (`/v1/contacts`): CRUD completo con búsqueda y
+  favoritos. Cada envío (transferencia, payout, retiro crypto) **guarda su
+  destino como contacto automáticamente** — deduplicado; opt-out con
+  `"save_contact": false`.
+- **Import de la agenda del celular** (`POST /v1/contacts/import`, hasta
+  1.000 por request): normaliza los teléfonos a E.164 y te dice qué
+  contactos **ya tienen CBPay** (`has_cbpay`, match solo dentro de tu
+  operador).
+- **Transferir por teléfono**: `POST /v1/transfers` acepta `to_phone`
+  (solo cuentas con teléfono **verificado por OTP**; ambigüedad responde
+  `422 recipient_ambiguous`) y `to_contact_id`.
+- **Envío rápido a contactos**: `beneficiary_contact_id` en payouts (usa el
+  beneficiario guardado del contacto) y `to_contact_id` en retiros crypto
+  (usa su dirección guardada). Guía nueva:
+  [Contactos](#contactos).
 
 ### v1.34 — 10 de julio de 2026
 
@@ -6836,6 +7136,20 @@ está en la API Reference interactiva y en la colección Postman.
 | `POST` | `/v1/kyb/submissions/{submissionID}/documents/confirm` | Confirmar un documento KYB subido |
 | `GET` | `/v1/kyc/submissions/{submissionID}/liveness_link` | Consultar el liveness link y su estado |
 | `POST` | `/v1/kyc/submissions/{submissionID}/liveness_link` | Crear un liveness link |
+
+
+## Contacts
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/v1/contacts` | Listar contactos |
+| `POST` | `/v1/contacts` | Crear un contacto |
+| `POST` | `/v1/contacts/import` | Importar la agenda del celular |
+| `GET` | `/v1/contacts/{contactID}` | Consultar un contacto |
+| `PATCH` | `/v1/contacts/{contactID}` | Editar un contacto |
+| `DELETE` | `/v1/contacts/{contactID}` | Borrar un contacto |
+| `POST` | `/v1/contacts/{contactID}/destinations` | Agregar un destino a un contacto |
+| `DELETE` | `/v1/contacts/{contactID}/destinations/{destinationID}` | Borrar un destino guardado |
 
 
 ## Webhooks

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.34'
+  version: '1.35'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -42,6 +42,7 @@ tags:
 - name: Payins
   description: Fiat top-ups credited to the USDT balance.
 - name: Transfers
+- name: Contacts
   description: Free internal transfers between CBPay accounts (person or company, any combination).
 - name: Crypto
   description: On-chain USDT funding and withdrawals (TRON and Ethereum).
@@ -1099,7 +1100,6 @@ paths:
               - country
               - currency
               - amount
-              - beneficiary
               properties:
                 country:
                   type: string
@@ -1129,6 +1129,16 @@ paths:
                     email, evp) in Brazil.
 
                     '
+                beneficiary_contact_id:
+                  type: string
+                  format: uuid
+                  description: Use the contact's most recent saved beneficiary for this country (and
+                    method, when sent) instead of typing `beneficiary` again. An explicit
+                    `beneficiary` always wins; 422 no_saved_destination if the contact has none.
+                save_contact:
+                  type: boolean
+                  default: true
+                  description: The beneficiary is saved as a contact automatically; send false to skip it.
                 description:
                   type: string
                 settlement_asset:
@@ -1914,8 +1924,9 @@ paths:
       description: 'Moves balance between two CBPay accounts, atomically and always free of charge — any
         combination works: person to person, person to company, company to person or company to company.
         Works with the four virtual balances (`USDT` default, `USDC`, `BTC`, `GOLD`) and always between
-        balances of the **same currency** (no conversion). The destination is resolved by `to_account_id`
-        or `to_email`. The recipient''s webhook subscribers receive `transfer_received`.'
+        balances of the **same currency** (no conversion). The destination is resolved by `to_account_id`,
+        `to_email`, `to_phone` (OTP-verified phones only) or `to_contact_id`. Every transfer saves the
+        recipient as a contact automatically (opt out with `save_contact: false`). The recipient''s webhook subscribers receive `transfer_received`.'
       parameters:
       - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:
@@ -1933,6 +1944,16 @@ paths:
                 to_email:
                   type: string
                   format: email
+                to_phone:
+                  type: string
+                  description: E.164 phone of the destination account. Only accounts with an
+                    OTP-verified phone resolve (404 recipient_not_found otherwise; 422
+                    recipient_ambiguous if more than one account shares the number).
+                to_contact_id:
+                  type: string
+                  format: uuid
+                  description: Send straight to a contact from your book (uses its linked CBPay
+                    account, or its verified phone).
                 asset:
                   type: string
                   enum:
@@ -1951,7 +1972,24 @@ paths:
                   type: string
                 idempotency_key:
                   type: string
+                save_contact:
+                  type: boolean
+                  default: true
+                  description: The destination is saved as a contact automatically; send false to skip it.
             examples:
+              by_phone:
+                summary: By verified phone
+                value:
+                  to_phone: '+56987654321'
+                  amount: '25.000000'
+                  description: Lunch
+                  idempotency_key: lunch-2026-07-10-a
+              by_contact:
+                summary: To a saved contact
+                value:
+                  to_contact_id: 3f8a1b2c-4d5e-6f70-8a9b-0c1d2e3f4a5b
+                  amount: '10.000000'
+                  idempotency_key: t-991
               by_email:
                 summary: Person → person, by email
                 value:
@@ -2110,7 +2148,6 @@ paths:
             schema:
               type: object
               required:
-              - to_address
               - amount
               properties:
                 chain:
@@ -2128,11 +2165,23 @@ paths:
                   description: Asset to send (USDC only over `eth`).
                 to_address:
                   type: string
+                to_contact_id:
+                  type: string
+                  format: uuid
+                  description: Use the contact's saved address for this chain instead of `to_address`
+                    (an explicit `to_address` always wins).
                 amount:
                   type: string
                   description: Positive decimal string, up to 6 decimal places.
                 idempotency_key:
                   type: string
+                contact_name:
+                  type: string
+                  description: Name for the auto-saved contact holding this address.
+                save_contact:
+                  type: boolean
+                  default: true
+                  description: The address is saved as a contact automatically; send false to skip it.
             examples:
               usdt_tron:
                 summary: USDT over TRON
@@ -3826,6 +3875,469 @@ paths:
                   status: completed
                   outcome: PASS
                   passed: true
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/contacts:
+    get:
+      tags:
+      - Contacts
+      operationId: listContacts
+      summary: List contacts
+      description: Your account's private contact book, ordered by favorites and last use. Contacts
+        are created automatically by every send (transfer, payout, crypto withdrawal), by manual
+        CRUD or by importing the phone's address book.
+      parameters:
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/pageSize'
+      - name: q
+        in: query
+        schema:
+          type: string
+        description: Search by name, alias, email or phone.
+      - name: has_cbpay
+        in: query
+        schema:
+          type: boolean
+        description: Only contacts linked (or not) to a CBPay account.
+      - name: favorite
+        in: query
+        schema:
+          type: boolean
+      responses:
+        '200':
+          description: Paged contacts.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  contacts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Contact'
+              example:
+                page: 1
+                page_size: 50
+                contacts:
+                - contact_id: 3f8a1b2c-4d5e-6f70-8a9b-0c1d2e3f4a5b
+                  display_name: Carlos Soto
+                  alias: Carlitos
+                  phone: '+56987654321'
+                  email: carlos@mail.com
+                  has_cbpay: true
+                  cbpay_account_id: 389d34a3-6c61-4782-b822-95ac173068dc
+                  source: import
+                  favorite: true
+                  created_at: '2026-07-07T12:00:00Z'
+                  updated_at: '2026-07-10T15:00:00Z'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+      - Contacts
+      operationId: createContact
+      summary: Create a contact
+      description: Adds a contact manually. The phone is normalized to E.164 (local numbers use your
+        account's country) and matched against accounts of your operator to fill `has_cbpay`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - display_name
+              properties:
+                display_name:
+                  type: string
+                alias:
+                  type: string
+                phone:
+                  type: string
+                email:
+                  type: string
+                favorite:
+                  type: boolean
+            example:
+              display_name: Carlos Soto
+              phone: '+56987654321'
+              email: carlos@mail.com
+              favorite: true
+      responses:
+        '201':
+          description: Contact created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contact'
+              example:
+                contact_id: 3f8a1b2c-4d5e-6f70-8a9b-0c1d2e3f4a5b
+                display_name: Carlos Soto
+                phone: '+56987654321'
+                email: carlos@mail.com
+                has_cbpay: true
+                cbpay_account_id: 389d34a3-6c61-4782-b822-95ac173068dc
+                source: manual
+                favorite: true
+                created_at: '2026-07-10T15:00:00Z'
+                updated_at: '2026-07-10T15:00:00Z'
+        '400':
+          description: invalid_payload / invalid_phone
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_phone
+                message: phone could not be normalized to E.164 (send +<country><number>)
+        '409':
+          description: A contact with that phone/email already exists (duplicate).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: duplicate
+                message: duplicate
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/contacts/import:
+    post:
+      tags:
+      - Contacts
+      operationId: importContacts
+      summary: Import the phone address book
+      description: Uploads up to 1,000 contacts per request (paginate beyond that). Phones are
+        normalized to E.164; existing contacts are never duplicated; `has_cbpay` tells you which
+        contacts already have an active account of your same operator (match by phone).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - contacts
+              properties:
+                contacts:
+                  type: array
+                  maxItems: 1000
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      phones:
+                        type: array
+                        items:
+                          type: string
+                      email:
+                        type: string
+            example:
+              contacts:
+              - name: Carlos Soto
+                phones:
+                - '+56 9 8765 4321'
+              - name: Ana Perez
+                phones:
+                - '912345678'
+      responses:
+        '200':
+          description: Per-contact result.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imported:
+                    type: integer
+                  matched:
+                    type: integer
+                  total:
+                    type: integer
+                  contacts:
+                    type: array
+                    items:
+                      type: object
+              example:
+                imported: 2
+                matched: 1
+                total: 2
+                contacts:
+                - name: Carlos Soto
+                  phone: '+56987654321'
+                  contact_id: 3f8a1b2c-4d5e-6f70-8a9b-0c1d2e3f4a5b
+                  has_cbpay: true
+                - name: Ana Perez
+                  phone: '+56912345678'
+                  contact_id: 9c1d2e3f-4a5b-6c7d-8e9f-0a1b2c3d4e5f
+                  has_cbpay: false
+        '400':
+          description: invalid_payload / batch_too_large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: batch_too_large
+                message: send up to 1000 contacts per request (paginate the upload)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/contacts/{contactID}:
+    get:
+      tags:
+      - Contacts
+      operationId: getContact
+      summary: Get a contact
+      description: The contact plus its saved destinations (CBPay account, payout beneficiaries per
+        corridor, on-chain addresses).
+      parameters:
+      - name: contactID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: The contact with destinations.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contact'
+              example:
+                contact_id: 3f8a1b2c-4d5e-6f70-8a9b-0c1d2e3f4a5b
+                display_name: Carlos Soto
+                phone: '+56987654321'
+                has_cbpay: true
+                cbpay_account_id: 389d34a3-6c61-4782-b822-95ac173068dc
+                source: import
+                favorite: true
+                destinations:
+                - destination_id: bb22c3d4-5e6f-7a80-9b0c-1d2e3f4a5b6c
+                  type: payout
+                  country: CL
+                  currency: CLP
+                  method: bank_transfer
+                  details:
+                    name: Carlos Soto
+                    tax_id: 12.345.678-5
+                    bank_code: '012'
+                    account_type: checking
+                    account_number: '123456789'
+                  last_used_at: '2026-07-09T18:30:00Z'
+                  created_at: '2026-07-09T18:30:00Z'
+                created_at: '2026-07-07T12:00:00Z'
+                updated_at: '2026-07-10T15:00:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags:
+      - Contacts
+      operationId: updateContact
+      summary: Update a contact
+      description: Partial update (name, alias, phone, email, favorite). Changing the phone re-runs
+        the CBPay match.
+      parameters:
+      - name: contactID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                display_name:
+                  type: string
+                alias:
+                  type: string
+                phone:
+                  type: string
+                email:
+                  type: string
+                favorite:
+                  type: boolean
+            example:
+              alias: Carlitos
+              favorite: true
+      responses:
+        '200':
+          description: Updated contact.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contact'
+              example:
+                contact_id: 3f8a1b2c-4d5e-6f70-8a9b-0c1d2e3f4a5b
+                display_name: Carlos Soto
+                alias: Carlitos
+                phone: '+56987654321'
+                has_cbpay: true
+                source: import
+                favorite: true
+                created_at: '2026-07-07T12:00:00Z'
+                updated_at: '2026-07-10T16:00:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      tags:
+      - Contacts
+      operationId: deleteContact
+      summary: Delete a contact
+      description: Deletes the contact and its saved destinations.
+      parameters:
+      - name: contactID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+              example:
+                deleted: true
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/contacts/{contactID}/destinations:
+    post:
+      tags:
+      - Contacts
+      operationId: addContactDestination
+      summary: Add a destination to a contact
+      description: 'Saves a reusable destination manually: `payout` (country + method + beneficiary),
+        `crypto` (chain + address) or `cbpay` (requires the contact to be linked). Destinations are
+        deduplicated: repeating one refreshes its last use.'
+      parameters:
+      - name: contactID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - type
+              properties:
+                type:
+                  type: string
+                  enum: [payout, crypto, cbpay]
+                country:
+                  type: string
+                currency:
+                  type: string
+                method:
+                  type: string
+                chain:
+                  type: string
+                address:
+                  type: string
+                beneficiary:
+                  type: object
+                  additionalProperties:
+                    type: string
+                label:
+                  type: string
+            example:
+              type: payout
+              country: CL
+              currency: CLP
+              method: bank_transfer
+              beneficiary:
+                name: Carlos Soto
+                tax_id: 12.345.678-5
+                bank_code: '012'
+                account_type: checking
+                account_number: '123456789'
+      responses:
+        '201':
+          description: Destination saved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactDestination'
+              example:
+                destination_id: bb22c3d4-5e6f-7a80-9b0c-1d2e3f4a5b6c
+                type: payout
+                country: CL
+                currency: CLP
+                method: bank_transfer
+                details:
+                  name: Carlos Soto
+                  tax_id: 12.345.678-5
+                  bank_code: '012'
+                  account_type: checking
+                  account_number: '123456789'
+                last_used_at: '2026-07-10T16:00:00Z'
+                created_at: '2026-07-10T16:00:00Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/contacts/{contactID}/destinations/{destinationID}:
+    delete:
+      tags:
+      - Contacts
+      operationId: deleteContactDestination
+      summary: Delete a saved destination
+      parameters:
+      - name: contactID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: destinationID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+              example:
+                deleted: true
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
@@ -7104,6 +7616,74 @@ components:
           type: string
         filename:
           type: string
+    Contact:
+      type: object
+      properties:
+        contact_id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        alias:
+          type: string
+        phone:
+          type: string
+          description: E.164.
+        email:
+          type: string
+        has_cbpay:
+          type: boolean
+          description: True when the phone matches an active account of your operator.
+        cbpay_account_id:
+          type: string
+          format: uuid
+          description: Linked account (present when has_cbpay is true).
+        source:
+          type: string
+          enum: [manual, import, transfer, payout, crypto]
+        favorite:
+          type: boolean
+        destinations:
+          type: array
+          description: Present on the detail endpoint.
+          items:
+            $ref: '#/components/schemas/ContactDestination'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ContactDestination:
+      type: object
+      properties:
+        destination_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [cbpay, payout, crypto]
+        country:
+          type: string
+        currency:
+          type: string
+        method:
+          type: string
+        chain:
+          type: string
+        address:
+          type: string
+        details:
+          type: object
+          description: Full payout beneficiary for payout destinations.
+        label:
+          type: string
+        last_used_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
     Error:
       type: object
       properties:

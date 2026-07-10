@@ -8,6 +8,28 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="10 de julio de 2026" description="v1.35">
+
+**Agregado — Contactos y envío por teléfono**
+
+- **Libreta de contactos** (`/v1/contacts`): CRUD completo con búsqueda y
+  favoritos. Cada envío (transferencia, payout, retiro crypto) **guarda su
+  destino como contacto automáticamente** — deduplicado; opt-out con
+  `"save_contact": false`.
+- **Import de la agenda del celular** (`POST /v1/contacts/import`, hasta
+  1.000 por request): normaliza los teléfonos a E.164 y te dice qué
+  contactos **ya tienen CBPay** (`has_cbpay`, match solo dentro de tu
+  operador).
+- **Transferir por teléfono**: `POST /v1/transfers` acepta `to_phone`
+  (solo cuentas con teléfono **verificado por OTP**; ambigüedad responde
+  `422 recipient_ambiguous`) y `to_contact_id`.
+- **Envío rápido a contactos**: `beneficiary_contact_id` en payouts (usa el
+  beneficiario guardado del contacto) y `to_contact_id` en retiros crypto
+  (usa su dirección guardada). Guía nueva:
+  [Contactos](/es/guias/contactos).
+
+</Update>
+
 <Update label="10 de julio de 2026" description="v1.34">
 
 **Agregado — Verificación de identidad KYC/KYB (wizard hosteado, documentos con OCR y prueba de vida)**

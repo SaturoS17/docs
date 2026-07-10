@@ -117,6 +117,14 @@ corridor (RUT and bank in Chile, CLABE in Mexico, CCI in Peru, PIX key in
 Brazil, etc.). The methods catalog documents each one.
 </Warning>
 
+<Note>
+Every payout saves the beneficiary as a [contact](/en/guides/contacts)
+automatically (`"save_contact": false` to skip it). To pay them again
+without re-typing their data, send `"beneficiary_contact_id"` instead of
+`beneficiary` — their most recent saved beneficiary for that country and
+method is used (`422 no_saved_destination` if there is none).
+</Note>
+
 Response `202 Accepted`:
 
 ```json
