@@ -20,7 +20,9 @@ El tipo se define al crear la cuenta y no cambia. Lo ves en
 | **Wallets crypto** por red | **1** (`422 wallet_limit_reached` en la segunda) | **Ilimitadas** (usa `label` para distinguirlas) |
 | **Tarjetas** | **1 virtual + 1 física**, solo para sí misma | **Ilimitadas**, para la empresa o para **personas designadas** (empleados) |
 | **Miembros con login** (`POST /v1/members`) | No (`403 company_only`) | Sí — roles `owner` / `operator` / `viewer` |
-| **KYC** (`POST /v1/kyc`) | Screening de **persona** (`customer.person`), cobra `compliance_person` | Screening de **empresa/KYB** (`customer.company`), cobra `compliance_company` |
+| **Verificación de identidad** (`/v1/me/verification`) | Onboarding **KYC** (wizard con documentos + prueba de vida) | Onboarding **KYB** (wizard con documentos societarios) |
+| **Verificar a terceros** (`/v1/{kyc,kyb}/links` y submissions) | No (`403 company_account_required`) | Sí — links hosteados o datos por API, cobra `kyc_verification`/`kyb_verification` |
+| **AML screening** (`POST /v1/aml/screenings`) | Screening de **persona** (`customer.person`), cobra `compliance_person` | Screening de **empresa** (`customer.company`), cobra `compliance_company` |
 | Titular de tarjetas (primera emisión) | Datos personales + documentos de identidad | Datos societarios + documentos corporativos (o los de la persona designada) |
 | Registro | `type: "person"` | `type: "company"` (+ `tax_id` recomendado) |
 
@@ -34,8 +36,9 @@ límites de gasto por tarjeta, servicios habilitados — funciona idéntico.
 
 - Registro: `POST /v1/auth/register` con `type: "person"` (o la crea tu
   operador).
-- KYC: envía `customer.person` con tu identidad —
-  [guía](/es/guias/kyc).
+- Verificación: pide tu link KYC con `POST /v1/me/verification/link` y
+  completa el wizard — hasta aprobar solo puedes fondear
+  ([guía](/es/guias/kyc)).
 - Crypto: **una wallet por red** (TRON y ETH). ¿Necesitas más direcciones?
   Ese es un caso de cuenta empresa.
 - Tarjetas: hasta **1 virtual + 1 física**; la primera emisión lleva tus
@@ -46,8 +49,9 @@ límites de gasto por tarjeta, servicios habilitados — funciona idéntico.
 <Tab title="Cuenta empresa">
 
 - Registro: `type: "company"`, idealmente con `tax_id`.
-- KYB: envía `customer.company` con los datos societarios —
-  [guía](/es/guias/kyc).
+- Verificación: pide tu link KYB con `POST /v1/me/verification/link` y
+  completa el wizard con los datos societarios; aprobada, puedes además
+  verificar a tus propios clientes ([guía](/es/guias/kyc)).
 - Crypto: **wallets ilimitadas** por red (una por sucursal, por producto,
   por proveedor…), con `label` descriptivo.
 - Tarjetas: **ilimitadas** — corporativas (titular = la empresa, con

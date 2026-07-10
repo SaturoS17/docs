@@ -80,6 +80,11 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 | `banking_operation_status_changed` | Un pago bancario cambió de estado |
 | `card_transaction` | Una compra con tarjeta fue autorizada, anulada o ajustada |
 | `card_status_changed` | Una tarjeta cambió de estado (incluye congelamiento automático) |
+| `kyc_verification_status_changed` / `kyb_verification_status_changed` | Una verificación de identidad cambió de estado (incluye tu propio onboarding, con `self_onboarding: true`) |
+| `kyc_link_completed` / `kyb_link_completed` | Un link de verificación hosteado fue completado |
+| `kyc_document_validated` / `kyb_document_validated` | Terminó el OCR de un documento subido por API |
+| `kyc_liveness_completed` | Una prueba de vida fue completada desde un liveness link |
+| `aml_screening_updated` | Novedades del screening AML (resultado, casos, riesgo, transacción revisada) |
 
 ### Payload de cada evento
 
@@ -182,6 +187,64 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
   "card_id": "3c2b…",
   "status": "frozen",
   "reason": "monthly_fee_unpaid"
+}
+```
+
+```json kyc_verification_status_changed
+{
+  "account_id": "ae8c…",
+  "kind": "kyc",
+  "event": "approved",
+  "submission_id": "c3d4…",
+  "external_customer_id": "cust_789",
+  "status": "approved",
+  "risk_band": "low",
+  "decision": "approved"
+}
+```
+
+```json kyb_link_completed
+{
+  "account_id": "ae8c…",
+  "kind": "kyb",
+  "event": "link_completed",
+  "link_id": "b2c3…",
+  "submission_id": "d4e5…",
+  "external_customer_id": "cust_456",
+  "status": "completed"
+}
+```
+
+```json kyc_document_validated
+{
+  "account_id": "ae8c…",
+  "kind": "kyc",
+  "submission_id": "c3d4…",
+  "external_customer_id": "cust_789",
+  "category": "identity",
+  "outcome": "MATCH",
+  "score": 0.97,
+  "summary": "Document matches the submitted identity"
+}
+```
+
+```json kyc_liveness_completed
+{
+  "account_id": "ae8c…",
+  "kind": "kyc",
+  "submission_id": "c3d4…",
+  "external_customer_id": "cust_789",
+  "outcome": "PASS",
+  "passed": true
+}
+```
+
+```json aml_screening_updated
+{
+  "account_id": "ae8c…",
+  "screening_event": "compliance_risk_changed",
+  "customer_id": "cus_8f2e…",
+  "data": { "risk_level": "high" }
 }
 ```
 

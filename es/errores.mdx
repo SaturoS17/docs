@@ -81,7 +81,8 @@ Detalle y flujo completo en [login social](/es/guias/login-social).
 | `recipient_required` / `self_transfer` | Destino de transferencia inválido |
 | `invalid_chain` / `invalid_asset` | Red o activo no soportado |
 | `to_address_required` | Falta dirección destino del retiro |
-| `invalid_payload` | Falta `enabled` (monitoreo KYC/KYB) |
+| `invalid_payload` | Falta un campo requerido (ej. `enabled` en monitoreo AML, `external_customer_id` en verificaciones) |
+| `liveness_already_completed` | La prueba de vida de esa verificación ya fue superada |
 | `invalid_event_type` / `weak_secret` / `invalid_callback_url` | Suscripción de webhook inválida |
 | `invalid_status` / `invalid_kyc_status` / `invalid_direction` / `reason_required` / `account_id_required` / `invalid_service` / `invalid_fee` | Validaciones de administración |
 
@@ -93,7 +94,10 @@ Detalle y flujo completo en [login social](/es/guias/login-social).
 | 404 | `not_found` | Recurso inexistente (o de otra cuenta) |
 | 404 | `recipient_not_found` | Destino de transferencia inexistente |
 | 409 | `duplicate` | El recurso ya existe |
-| 409 | `no_kyc` | Rescreen/monitoreo sin KYC/KYB previo |
+| 403 | `verification_required` | Tu cuenta aún no aprobó su verificación de identidad (persona=KYC, empresa=KYB); hasta entonces solo puedes fondear — pide tu link en `POST /v1/me/verification/link` |
+| 403 | `company_account_required` | La verificación de terceros (links/submissions KYC-KYB) es solo para cuentas empresa |
+| 409 | `already_verified` | Pediste link de onboarding con la cuenta ya verificada |
+| 409 | `no_screening` | Rescreen/monitoreo AML sin un screening previo |
 | 409 | `no_banking_customer` | Operación banking sin perfil bancario creado (`POST /v1/banking/customer` primero) |
 | 409 | `banking_customer_exists` | La cuenta ya tiene perfil bancario (es uno por cuenta) |
 | 422 | `currency_not_supported` | Sin tasa FX para esa moneda |
@@ -118,7 +122,8 @@ Detalle y flujo completo en [login social](/es/guias/login-social).
 | 500 | `internal_error` | Error inesperado; reintenta con la misma clave de idempotencia |
 | 502 | `rates_unavailable` | Tasas FX temporalmente no disponibles |
 | 502 | `core_unavailable` | Procesador temporalmente no disponible |
-| 502 | `compliance_unavailable` | Screening temporalmente no disponible |
+| 502 | `compliance_unavailable` | Screening AML temporalmente no disponible |
+| 503 | `verifications_unavailable` | Verificación de identidad temporalmente no disponible (la comisión se reembolsó) |
 | 503 | `org_credential_missing` | Servicio en configuración; contacta al soporte de CBPay |
 | 503 | `withdrawals_unavailable` | Retiros on-chain no habilitados para el corredor |
 | 503 | `pricing_unavailable` | Precio de ejecución de BTC/GOLD no disponible o desactualizado; reintenta más tarde o liquida en USDT/USDC |

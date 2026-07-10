@@ -39,10 +39,12 @@ de las tasas de tu cuenta para ese país. Cotizado = cobrado, siempre.
 | `funding` | `%` sobre el depósito + fijo | Al acreditar el depósito on-chain |
 | `withdrawal` | `%` sobre el retiro + fijo | Al crear el retiro (incluido en `total_debit`) |
 | `wallet_creation` | Fijo por wallet | Al crear cada wallet (personas: 1 por red; empresas: ilimitadas). Consultar wallets existentes es siempre gratis |
-| `compliance_person` | Fijo por llamada | Al enviar el KYC de una persona |
-| `compliance_company` | Fijo por llamada | Al enviar el KYB de una empresa |
-| `compliance_rescreen` | Fijo por llamada | Al re-ejecutar un screening |
-| `compliance_monitoring` | Fijo por activación | Al activar monitoreo continuo (desactivar es gratis) |
+| `compliance_person` | Fijo por llamada | Al screenear una persona por AML (`POST /v1/aml/screenings`) |
+| `compliance_company` | Fijo por llamada | Al screenear una empresa por AML |
+| `compliance_rescreen` | Fijo por llamada | Al re-ejecutar un screening AML |
+| `compliance_monitoring` | Fijo por activación | Al activar monitoreo AML continuo (desactivar es gratis) |
+| `kyc_verification` | Fijo por verificación | Al crear un link o submission KYC de un tercero ([verificación](/es/guias/kyc)); tu propio onboarding es gratis |
+| `kyb_verification` | Fijo por verificación | Al crear un link o submission KYB de un tercero |
 | `banking_customer` | Fijo por perfil | Al crear tu perfil bancario ([banking](/es/guias/banking)) |
 | `banking_account` | Fijo por cuenta | Al abrir cada cuenta bancaria |
 | `banking_operation` | Fijo por pago | Al enviar cada pago bancario (cotizar con `prepare` es gratis) |
@@ -56,9 +58,10 @@ Para los servicios con `%`, la fórmula es
 micro-USDT).
 
 <Note>
-Los cargos fijos standalone (compliance, creación de wallets y banking) se
-reembolsan automáticamente si la operación falla aguas arriba
-(`compliance_refund` / `wallet_creation_refund` / `banking_fee_refund`).
+Los cargos fijos standalone (compliance, verificación KYC/KYB, creación de
+wallets y banking) se reembolsan automáticamente si la operación falla
+aguas arriba (`compliance_refund` / `verification_fee_refund` /
+`wallet_creation_refund` / `banking_fee_refund`).
 </Note>
 
 ## Transferencias internas: siempre gratis

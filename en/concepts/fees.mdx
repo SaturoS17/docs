@@ -39,10 +39,12 @@ depends on your account's rates for that country. Quoted = charged, always.
 | `funding` | `%` over the deposit + fixed | When the on-chain deposit is credited |
 | `withdrawal` | `%` over the withdrawal + fixed | At creation (included in `total_debit`) |
 | `wallet_creation` | Fixed per wallet | On every wallet creation (persons: 1 per network; companies: unlimited). Fetching existing wallets is always free |
-| `compliance_person` | Fixed per call | When submitting a person's KYC |
-| `compliance_company` | Fixed per call | When submitting a company's KYB |
-| `compliance_rescreen` | Fixed per call | When re-running a screening |
-| `compliance_monitoring` | Fixed per activation | When enabling continuous monitoring (disabling is free) |
+| `compliance_person` | Fixed per call | When AML-screening a person (`POST /v1/aml/screenings`) |
+| `compliance_company` | Fixed per call | When AML-screening a company |
+| `compliance_rescreen` | Fixed per call | When re-running an AML screening |
+| `compliance_monitoring` | Fixed per activation | When enabling continuous AML monitoring (disabling is free) |
+| `kyc_verification` | Fixed per verification | When creating a third-party KYC link or submission ([verification](/en/guides/kyc)); your own onboarding is free |
+| `kyb_verification` | Fixed per verification | When creating a third-party KYB link or submission |
 | `banking_customer` | Fixed per profile | When creating your banking profile ([banking](/en/guides/banking)) |
 | `banking_account` | Fixed per account | When opening each bank account |
 | `banking_operation` | Fixed per payment | When sending each bank payment (quoting with `prepare` is free) |
@@ -56,9 +58,10 @@ For `%`-based services the formula is
 micro-USDT).
 
 <Note>
-Standalone fixed charges (compliance, wallet creation and banking) are
-refunded automatically if the upstream operation fails
-(`compliance_refund` / `wallet_creation_refund` / `banking_fee_refund`).
+Standalone fixed charges (compliance, KYC/KYB verification, wallet creation
+and banking) are refunded automatically if the upstream operation fails
+(`compliance_refund` / `verification_fee_refund` / `wallet_creation_refund`
+/ `banking_fee_refund`).
 </Note>
 
 ## Internal transfers: always free

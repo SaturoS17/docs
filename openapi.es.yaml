@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.33'
+  version: '1.34'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -46,6 +46,7 @@ tags:
 - name: Crypto
   description: Fondeo y retiros on-chain de USDT (TRON y Ethereum).
 - name: KYC / KYB
+- name: AML screening
   description: 'Verificación de identidad: KYC para personas, KYB para empresas, con screening AML, re-screening
     y monitoreo continuo.'
 - name: Webhooks
@@ -2350,18 +2351,19 @@ paths:
           $ref: '#/components/responses/AccountRequired'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /v1/kyc:
+  /v1/aml/screenings:
     post:
       tags:
-      - KYC / KYB
-      operationId: submitKyc
-      summary: Enviar verificación KYC/KYB
-      description: Verifica la identidad de la cuenta que llama — KYC para personas, KYB para empresas
-        (detectado desde el payload) — contra el servicio de compliance. Todos los campos de identidad
+      - AML screening
+      operationId: submitAmlScreening
+      summary: Enviar un screening AML
+      description: Screenea una persona o empresa (detectado desde el payload) contra listas de
+        sanciones, PEP y prensa adversa vía el servicio de compliance. Es solo screening de listas —
+        la verificación de identidad con documentos y prueba de vida vive en /v1/kyc y /v1/kyb. Todos los campos de identidad
         son opcionales y se reenvían íntegros al motor de screening; mientras más datos envíes (fecha
         de nacimiento, países, documentos fuertes, alias), más preciso es el análisis. Si hay una comisión
         de compliance configurada, se debita antes de la llamada y se reembolsa si el screening falla.
-        La respuesta incluye el resultado del screening más `kyc_status`, `compliance_service` y `compliance_fee`.
+        La respuesta incluye el resultado del screening más `compliance_service` y `compliance_fee`.
       requestBody:
         required: true
         content:
@@ -2533,16 +2535,13 @@ paths:
                   monitor: false
       responses:
         '201':
-          description: Screening enviado; el estado KYC de la cuenta pasa a `pending`.
+          description: Screening enviado.
           content:
             application/json:
               schema:
                 type: object
                 description: Resultado del screening (pass-through) más los campos de cobro.
                 properties:
-                  kyc_status:
-                    type: string
-                    example: pending
                   compliance_service:
                     type: string
                     enum:
@@ -2558,7 +2557,6 @@ paths:
                 screening_result: no_hits
                 monitored: false
                 deduplicated: false
-                kyc_status: pending
                 compliance_service: compliance_person
                 compliance_fee: '2.000000'
         '402':
@@ -2576,11 +2574,11 @@ paths:
                 message: screening temporarily unavailable
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /v1/kyc/rescreen:
+  /v1/aml/rescreen:
     post:
       tags:
-      - KYC / KYB
-      operationId: rescreenKyc
+      - AML screening
+      operationId: rescreenAml
       summary: Reejecutar verificación KYC/KYB
       description: Reejecuta la verificación de la cuenta. Requiere un envío previo de KYC/KYB. Cobra
         la comisión `compliance_rescreen` si está configurada; se reembolsa ante una falla upstream.
@@ -2606,21 +2604,21 @@ paths:
         '402':
           $ref: '#/components/responses/InsufficientFunds'
         '409':
-          description: La cuenta no tiene un screening previo (`no_kyc`).
+          description: La cuenta no tiene un screening previo (`no_screening`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                error: no_kyc
+                error: no_screening
                 message: account has no compliance screening to rescreen
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /v1/kyc/monitoring:
+  /v1/aml/monitoring:
     patch:
       tags:
-      - KYC / KYB
-      operationId: setKycMonitoring
+      - AML screening
+      operationId: setAmlMonitoring
       summary: Habilitar o deshabilitar el monitoreo
       description: Activa o desactiva el monitoreo continuo de compliance para la identidad verificada
         de la cuenta. Habilitarlo cobra la comisión `compliance_monitoring` si está configurada; deshabilitarlo
@@ -2661,14 +2659,1180 @@ paths:
         '402':
           $ref: '#/components/responses/InsufficientFunds'
         '409':
-          description: La cuenta no tiene un screening previo (`no_kyc`).
+          description: La cuenta no tiene un screening previo (`no_screening`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                error: no_kyc
+                error: no_screening
                 message: account has no compliance screening to monitor
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/me/verification/link:
+    post:
+      tags:
+      - KYC / KYB
+      operationId: createMyVerificationLink
+      summary: Pedir mi link de verificación (onboarding)
+      description: 'Devuelve el link de verificación de identidad PROPIO de la cuenta (persona ⇒
+        link KYC, empresa ⇒ link KYB — derivado del tipo de cuenta). El wizard hosteado cubre el
+        flujo completo: formulario, documentos y prueba de vida en video. Gratis. Si ya hay un link
+        vigente se devuelve el mismo con 200; una cuenta ya aprobada recibe 409 already_verified.
+        Hasta aprobar la verificación, toda acción de dinero saliente responde 403
+        verification_required (el fondeo y las lecturas siguen disponibles).'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expires_in_days:
+                  type: integer
+                  description: Vencimiento opcional del link (1-30 días). Omitido, no vence.
+            example:
+              expires_in_days: 14
+      responses:
+        '201':
+          description: Link de onboarding creado (200 cuando se reutiliza uno vigente).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationLink'
+              example:
+                link_id: a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
+                kind: kyc
+                url: https://verify.example.com/on/usd/individual/new?invite=abc123
+                status: pending
+                label: Ana Perez
+                created_at: '2026-07-10T12:00:00Z'
+                updated_at: '2026-07-10T12:00:00Z'
+        '409':
+          description: La cuenta ya completó su verificación (already_verified).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: already_verified
+                message: this account already completed its identity verification
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/me/verification:
+    get:
+      tags:
+      - KYC / KYB
+      operationId: getMyVerification
+      summary: Mi estado de verificación (onboarding)
+      description: Estado efectivo de verificación de la cuenta que llama — `kyc_status`, el kind
+        requerido (kyc para personas, kyb para empresas) más el último link y submission propios.
+      responses:
+        '200':
+          description: Estado de onboarding.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  kyc_status:
+                    type: string
+                    enum: [none, pending, approved, rejected]
+                  required_kind:
+                    type: string
+                    enum: [kyc, kyb]
+                  verified:
+                    type: boolean
+                  link:
+                    $ref: '#/components/schemas/VerificationLink'
+                  submission:
+                    $ref: '#/components/schemas/VerificationSubmission'
+              example:
+                kyc_status: pending
+                required_kind: kyc
+                verified: false
+                link:
+                  link_id: a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
+                  kind: kyc
+                  url: https://verify.example.com/on/usd/individual/new?invite=abc123
+                  status: completed
+                  created_at: '2026-07-10T12:00:00Z'
+                  updated_at: '2026-07-10T12:30:00Z'
+                submission:
+                  submission_id: f0e1d2c3-b4a5-4968-8776-5a4b3c2d1e0f
+                  kind: kyc
+                  status: in_review
+                  liveness_pending: false
+                  created_at: '2026-07-10T12:30:00Z'
+                  updated_at: '2026-07-10T13:00:00Z'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/kyc/links:
+    post:
+      tags:
+      - KYC / KYB
+      operationId: createKycLink
+      summary: Crear un link KYC para un cliente
+      description: 'Solo cuentas empresa: genera un link KYC hosteado para uno de TUS clientes
+        finales. El wizard cubre formulario, documentos y prueba de vida en video. Cobra el fee fijo
+        `kyc_verification` cuando está configurado (se reembolsa si la creación falla);
+        `idempotency_key` es obligatoria — un retry con la misma clave devuelve el link original y
+        nunca cobra dos veces.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationLinkRequest'
+            example:
+              external_customer_id: cust_123
+              label: Ana Perez
+              expires_in_days: 14
+              idempotency_key: kyc-link-cust-123-1
+      responses:
+        '201':
+          description: Link KYC creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationLink'
+              example:
+                link_id: b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e
+                kind: kyc
+                external_customer_id: cust_123
+                url: https://verify.example.com/on/usd/individual/new?invite=def456
+                status: pending
+                label: Ana Perez
+                expires_at: 1721209600
+                verification_fee: '1.500000'
+                idempotency_key: kyc-link-cust-123-1
+                created_at: '2026-07-10T12:00:00Z'
+                updated_at: '2026-07-10T12:00:00Z'
+        '400':
+          description: idempotency_key_required / invalid_payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: idempotency_key_required
+                message: provide idempotency_key (body or Idempotency-Key header)
+        '402':
+          $ref: '#/components/responses/InsufficientFunds'
+        '403':
+          description: verification_required / company_account_required / service_disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: company_account_required
+                message: third-party KYC/KYB verification is available to company accounts only
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags:
+      - KYC / KYB
+      operationId: listKycLinks
+      summary: Listar links KYC
+      parameters:
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/pageSize'
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum: [pending, opened, completed, expired]
+      - name: from
+        in: query
+        schema:
+          type: string
+          format: date
+        description: Desde esta fecha (YYYY-MM-DD, UTC, inclusive).
+      - name: to
+        in: query
+        schema:
+          type: string
+          format: date
+        description: Hasta esta fecha (YYYY-MM-DD, UTC, inclusive).
+      responses:
+        '200':
+          description: Links KYC paginados.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  links:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VerificationLink'
+              example:
+                page: 1
+                page_size: 50
+                links:
+                - link_id: b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e
+                  kind: kyc
+                  external_customer_id: cust_123
+                  url: https://verify.example.com/on/usd/individual/new?invite=def456
+                  status: completed
+                  created_at: '2026-07-10T12:00:00Z'
+                  updated_at: '2026-07-11T09:00:00Z'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/kyc/links/{linkID}:
+    get:
+      tags:
+      - KYC / KYB
+      operationId: getKycLink
+      summary: Consultar un link KYC
+      parameters:
+      - name: linkID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: El link con su estado vivo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationLink'
+              example:
+                link_id: b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e
+                kind: kyc
+                external_customer_id: cust_123
+                url: https://verify.example.com/on/usd/individual/new?invite=def456
+                status: completed
+                submission_id: c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f
+                created_at: '2026-07-10T12:00:00Z'
+                updated_at: '2026-07-11T09:00:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/kyb/links:
+    post:
+      tags:
+      - KYC / KYB
+      operationId: createKybLink
+      summary: Crear un link KYB para un cliente
+      description: 'Solo cuentas empresa: genera un link KYB hosteado para uno de TUS clientes
+        finales (empresas). Cobra el fee fijo `kyb_verification` cuando está configurado (se
+        reembolsa si la creación falla); `idempotency_key` obligatoria. `country` elige el corredor
+        del wizard: us, cl, ve, br, mx, co, pe, bo, py, ar o generic (con `generic_country` ISO
+        alpha-2 y `currency` opcional).'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationLinkRequest'
+            example:
+              external_customer_id: cust_456
+              country: cl
+              label: Comercial Andina SpA
+              expires_in_days: 14
+              idempotency_key: kyb-link-cust-456-1
+      responses:
+        '201':
+          description: Link KYB creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationLink'
+              example:
+                link_id: d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f80
+                kind: kyb
+                external_customer_id: cust_456
+                url: https://verify.example.com/on/cl/business/new?invite=ghi789
+                status: pending
+                country: cl
+                label: Comercial Andina SpA
+                expires_at: 1721209600
+                verification_fee: '2.000000'
+                idempotency_key: kyb-link-cust-456-1
+                created_at: '2026-07-10T12:00:00Z'
+                updated_at: '2026-07-10T12:00:00Z'
+        '400':
+          description: idempotency_key_required / invalid_payload / invalid_country
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: idempotency_key_required
+                message: provide idempotency_key (body or Idempotency-Key header)
+        '402':
+          $ref: '#/components/responses/InsufficientFunds'
+        '403':
+          description: verification_required / company_account_required / service_disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: company_account_required
+                message: third-party KYC/KYB verification is available to company accounts only
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags:
+      - KYC / KYB
+      operationId: listKybLinks
+      summary: Listar links KYB
+      parameters:
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/pageSize'
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum: [pending, opened, completed, expired]
+      - name: from
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Links KYB paginados.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  links:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VerificationLink'
+              example:
+                page: 1
+                page_size: 50
+                links:
+                - link_id: d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f80
+                  kind: kyb
+                  external_customer_id: cust_456
+                  url: https://verify.example.com/on/cl/business/new?invite=ghi789
+                  status: pending
+                  country: cl
+                  created_at: '2026-07-10T12:00:00Z'
+                  updated_at: '2026-07-10T12:00:00Z'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/kyb/links/{linkID}:
+    get:
+      tags:
+      - KYC / KYB
+      operationId: getKybLink
+      summary: Consultar un link KYB
+      parameters:
+      - name: linkID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: El link con su estado vivo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationLink'
+              example:
+                link_id: d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f80
+                kind: kyb
+                external_customer_id: cust_456
+                url: https://verify.example.com/on/cl/business/new?invite=ghi789
+                status: opened
+                country: cl
+                created_at: '2026-07-10T12:00:00Z'
+                updated_at: '2026-07-10T15:00:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/kyc/submissions:
+    post:
+      tags:
+      - KYC / KYB
+      operationId: createKycSubmission
+      summary: Crear una submission KYC con datos por API
+      description: 'Solo cuentas empresa: verifica a uno de TUS clientes finales enviando los
+        datos directo (sin wizard). Países en ISO alpha-3, fechas YYYY-MM-DD, id_type passport |
+        id_card | drivers_license. Los documentos son opcionales al crear (súbelos con el flujo
+        presign); no se exige prueba de vida al crear — la submission queda con liveness_pending:
+        true y se cierra con un liveness link. Re-enviar con el mismo external_customer_id mientras
+        la submission siga abierta la actualiza sin cobrar de nuevo. Cobra el fee fijo
+        `kyc_verification`; `idempotency_key` obligatoria.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - external_customer_id
+              - idempotency_key
+              properties:
+                external_customer_id:
+                  type: string
+                  description: Tu referencia del cliente verificado.
+                idempotency_key:
+                  type: string
+                person:
+                  type: object
+                  description: Campos de la persona (first_name, last_name, email, phone,
+                    nationality, date_of_birth, tax_id, id_type, id_number, address,
+                    primary_purpose, most_recent_occupation, source_of_funds).
+                metadata:
+                  type: object
+            example:
+              external_customer_id: cust_789
+              idempotency_key: kyc-sub-cust-789-1
+              person:
+                first_name: Ana
+                last_name: Perez
+                email: ana@example.com
+                phone: '+56912345678'
+                nationality: CHL
+                date_of_birth: '1990-04-12'
+                tax_id: 12.345.678-5
+                id_type: id_card
+                id_number: '12345678'
+                address:
+                  line1: Av. Siempre Viva 123
+                  city: Santiago
+                  state: RM
+                  postal_code: '8320000'
+                  country: CHL
+                primary_purpose: personal_or_living_expenses
+                most_recent_occupation: Engineer
+                source_of_funds: salary
+      responses:
+        '201':
+          description: Submission creada (entra a la cola de revisión de compliance).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationSubmission'
+              example:
+                submission_id: c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f
+                kind: kyc
+                external_customer_id: cust_789
+                status: pending_review
+                liveness_pending: true
+                verification_fee: '1.500000'
+                idempotency_key: kyc-sub-cust-789-1
+                created_at: '2026-07-10T12:05:00Z'
+                updated_at: '2026-07-10T12:05:00Z'
+        '400':
+          description: idempotency_key_required / invalid_payload / missing_person
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_payload
+                message: external_customer_id is required (your reference for the customer being verified)
+        '402':
+          $ref: '#/components/responses/InsufficientFunds'
+        '403':
+          description: verification_required / company_account_required / service_disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: company_account_required
+                message: third-party KYC/KYB verification is available to company accounts only
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags:
+      - KYC / KYB
+      operationId: listKycSubmissions
+      summary: Listar submissions KYC
+      parameters:
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/pageSize'
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum: [pending_review, in_review, changes_requested, more_info_required, escalated, approved, approved_partial, rejected]
+      - name: from
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Submissions KYC paginadas.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  submissions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VerificationSubmission'
+              example:
+                page: 1
+                page_size: 50
+                submissions:
+                - submission_id: c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f
+                  kind: kyc
+                  external_customer_id: cust_789
+                  status: approved
+                  risk_band: low
+                  liveness_pending: false
+                  created_at: '2026-07-10T12:05:00Z'
+                  updated_at: '2026-07-12T10:00:00Z'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/kyc/submissions/{submissionID}:
+    get:
+      tags:
+      - KYC / KYB
+      operationId: getKycSubmission
+      summary: Consultar una submission KYC
+      description: 'Estado agregado sin datos sensibles internos: status, risk_band,
+        pending_documents (documentos que compliance pidió), rejection_reason,
+        changes_requested_comments, liveness_pending y documents_received.'
+      parameters:
+      - name: submissionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: La submission.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationSubmission'
+              example:
+                submission_id: c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f
+                kind: kyc
+                external_customer_id: cust_789
+                status: more_info_required
+                risk_band: medium
+                liveness_pending: false
+                pending_documents:
+                - proofOfResidence
+                created_at: '2026-07-10T12:05:00Z'
+                updated_at: '2026-07-11T16:00:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/kyb/submissions:
+    post:
+      tags:
+      - KYC / KYB
+      operationId: createKybSubmission
+      summary: Crear una submission KYB con datos por API
+      description: 'Solo cuentas empresa: verifica a uno de TUS clientes finales (una empresa)
+        enviando los datos directo. Body: external_customer_id, country?, business (los campos de la
+        empresa), ubos?, directors?, signers?, bank_info?, metadata?. Cobra el fee fijo
+        `kyb_verification`; `idempotency_key` obligatoria. Re-enviar mientras siga abierta actualiza
+        la misma submission sin cobrar de nuevo.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - external_customer_id
+              - idempotency_key
+              properties:
+                external_customer_id:
+                  type: string
+                idempotency_key:
+                  type: string
+                country:
+                  type: string
+                business:
+                  type: object
+                  description: Campos de la empresa (razón social, tax id, domicilio, giro...).
+                ubos:
+                  type: array
+                  items:
+                    type: object
+                directors:
+                  type: array
+                  items:
+                    type: object
+                metadata:
+                  type: object
+            example:
+              external_customer_id: cust_456
+              idempotency_key: kyb-sub-cust-456-1
+              country: cl
+              business:
+                legal_name: Comercial Andina SpA
+                tax_id: 76.543.210-8
+              ubos:
+              - first_name: Carlos
+                last_name: Soto
+                ownership_percent: 60
+      responses:
+        '201':
+          description: Submission creada (entra a la cola de revisión de compliance).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationSubmission'
+              example:
+                submission_id: e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8091
+                kind: kyb
+                external_customer_id: cust_456
+                status: pending_review
+                verification_fee: '2.000000'
+                idempotency_key: kyb-sub-cust-456-1
+                created_at: '2026-07-10T12:10:00Z'
+                updated_at: '2026-07-10T12:10:00Z'
+        '400':
+          description: idempotency_key_required / invalid_payload / invalid_country
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: idempotency_key_required
+                message: provide idempotency_key (body or Idempotency-Key header)
+        '402':
+          $ref: '#/components/responses/InsufficientFunds'
+        '403':
+          description: verification_required / company_account_required / service_disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: company_account_required
+                message: third-party KYC/KYB verification is available to company accounts only
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags:
+      - KYC / KYB
+      operationId: listKybSubmissions
+      summary: Listar submissions KYB
+      parameters:
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/pageSize'
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum: [pending_review, in_review, changes_requested, more_info_required, escalated, approved, approved_partial, rejected]
+      - name: from
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Submissions KYB paginadas.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  submissions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VerificationSubmission'
+              example:
+                page: 1
+                page_size: 50
+                submissions:
+                - submission_id: e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8091
+                  kind: kyb
+                  external_customer_id: cust_456
+                  status: in_review
+                  created_at: '2026-07-10T12:10:00Z'
+                  updated_at: '2026-07-10T14:00:00Z'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/kyb/submissions/{submissionID}:
+    get:
+      tags:
+      - KYC / KYB
+      operationId: getKybSubmission
+      summary: Consultar una submission KYB
+      description: 'Estado agregado: status, risk_band, pending_documents, rejection_reason,
+        changes_requested_comments y aml_decision.'
+      parameters:
+      - name: submissionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: La submission.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationSubmission'
+              example:
+                submission_id: e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8091
+                kind: kyb
+                external_customer_id: cust_456
+                status: approved
+                risk_band: low
+                aml_decision: approved
+                created_at: '2026-07-10T12:10:00Z'
+                updated_at: '2026-07-13T09:00:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/kyc/submissions/{submissionID}/documents:
+    post:
+      tags:
+      - KYC / KYB
+      operationId: presignKycDocument
+      summary: Presign de un documento KYC
+      description: 'Paso 1 del flujo de documentos: devuelve una URL de subida temporal. Luego PUT
+        del binario a upload_url con el mismo Content-Type (paso 2) y confirm (paso 3). Categorías:
+        identity, proofOfResidence. Tipos: application/pdf, image/png, image/jpeg; máximo 15 MB; la
+        URL vence en 15 minutos.'
+      parameters:
+      - name: submissionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationDocumentPresignRequest'
+            example:
+              category: identity
+              filename: cedula.jpg
+              content_type: image/jpeg
+              file_size: 482133
+      responses:
+        '200':
+          description: URL de subida temporal.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  upload_url:
+                    type: string
+                  key:
+                    type: string
+                  expires_in:
+                    type: integer
+              example:
+                upload_url: https://storage.example.com/presigned/abc
+                key: public-api/2026/07/10/cedula.jpg
+                expires_in: 900
+        '400':
+          description: invalid_category / invalid_payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_category
+                message: category must be one of identity, proofOfResidence
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags:
+      - KYC / KYB
+      operationId: listKycDocuments
+      summary: Resultados OCR de documentos KYC
+      parameters:
+      - name: submissionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Resultado OCR por documento subido.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VerificationDocumentValidation'
+              example:
+                items:
+                - category: identity
+                  status: completed
+                  outcome: MATCH
+                  score: 0.97
+                  summary: Document matches the submitted identity
+                  filename: cedula.jpg
+                meta:
+                  retrieved: 1
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/kyc/submissions/{submissionID}/documents/confirm:
+    post:
+      tags:
+      - KYC / KYB
+      operationId: confirmKycDocument
+      summary: Confirmar un documento KYC subido
+      description: Paso 3 del flujo de documentos. Adjunta el archivo subido a la submission y
+        encola su validación OCR; el resultado llega por el webhook kyc_document_validated.
+      parameters:
+      - name: submissionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationDocumentConfirmRequest'
+            example:
+              key: public-api/2026/07/10/cedula.jpg
+              category: identity
+              filename: cedula.jpg
+              content_type: image/jpeg
+      responses:
+        '200':
+          description: Documento recibido; OCR encolado.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  ocr:
+                    type: string
+              example:
+                status: received
+                ocr: queued
+        '400':
+          description: invalid_key / invalid_category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_key
+                message: the upload key does not match a presigned upload
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/kyb/submissions/{submissionID}/documents:
+    post:
+      tags:
+      - KYC / KYB
+      operationId: presignKybDocument
+      summary: Presign de un documento KYB
+      description: 'Mismo flujo de 3 pasos que los documentos KYC. Categorías: legalPresence,
+        ownershipStructure, controlStructure, companyDetails.'
+      parameters:
+      - name: submissionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationDocumentPresignRequest'
+            example:
+              category: legalPresence
+              filename: vigencia.pdf
+              content_type: application/pdf
+              file_size: 1204833
+      responses:
+        '200':
+          description: URL de subida temporal.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  upload_url:
+                    type: string
+                  key:
+                    type: string
+                  expires_in:
+                    type: integer
+              example:
+                upload_url: https://storage.example.com/presigned/def
+                key: public-api/2026/07/10/vigencia.pdf
+                expires_in: 900
+        '400':
+          description: invalid_category / invalid_payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_category
+                message: category must be one of legalPresence, ownershipStructure, controlStructure, companyDetails
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags:
+      - KYC / KYB
+      operationId: listKybDocuments
+      summary: Resultados OCR de documentos KYB
+      parameters:
+      - name: submissionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Resultado OCR por documento subido.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VerificationDocumentValidation'
+              example:
+                items:
+                - category: legalPresence
+                  status: completed
+                  outcome: REVIEW
+                  score: 0.72
+                  summary: Registry extract requires manual review
+                  filename: vigencia.pdf
+                meta:
+                  retrieved: 1
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/kyb/submissions/{submissionID}/documents/confirm:
+    post:
+      tags:
+      - KYC / KYB
+      operationId: confirmKybDocument
+      summary: Confirmar un documento KYB subido
+      parameters:
+      - name: submissionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationDocumentConfirmRequest'
+            example:
+              key: public-api/2026/07/10/vigencia.pdf
+              category: legalPresence
+              filename: vigencia.pdf
+              content_type: application/pdf
+      responses:
+        '200':
+          description: Documento recibido; OCR encolado.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  ocr:
+                    type: string
+              example:
+                status: received
+                ocr: queued
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/kyc/submissions/{submissionID}/liveness_link:
+    post:
+      tags:
+      - KYC / KYB
+      operationId: createKycLivenessLink
+      summary: Crear un liveness link
+      description: 'Página hosteada donde tu cliente completa SOLO la prueba de vida en video
+        (gestos frente a la cámara + face match server-side contra el documento de identidad
+        subido). Gratis — el servicio se cobró al crear la submission. Si hay un link vigente se
+        devuelve el mismo; si la prueba ya fue superada, 400 liveness_already_completed.'
+      parameters:
+      - name: submissionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expires_in_days:
+                  type: integer
+                  description: 1-30, default 7.
+            example:
+              expires_in_days: 7
+      responses:
+        '200':
+          description: Liveness link.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                  status:
+                    type: string
+                  expires_at:
+                    type: integer
+              example:
+                url: https://verify.example.com/on/liveness/tok_abc123
+                status: pending
+                expires_at: 1751234567
+        '400':
+          description: liveness_already_completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: liveness_already_completed
+                message: the liveness check already passed for this submission
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags:
+      - KYC / KYB
+      operationId: getKycLivenessLink
+      summary: Consultar el liveness link y su estado
+      parameters:
+      - name: submissionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Último link más el estado actual del check.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                  status:
+                    type: string
+                  liveness:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                      outcome:
+                        type: string
+                      passed:
+                        type: boolean
+              example:
+                url: https://verify.example.com/on/liveness/tok_abc123
+                status: completed
+                liveness:
+                  status: completed
+                  outcome: PASS
+                  passed: true
+        '404':
+          $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/webhooks/subscriptions:
@@ -2703,6 +3867,16 @@ paths:
                   - transfer_received
                   - crypto_deposit_credited
                   - crypto_withdrawal_status_changed
+                  - banking_customer_status_changed
+                  - banking_operation_status_changed
+                  - aml_screening_updated
+                  - kyc_verification_status_changed
+                  - kyb_verification_status_changed
+                  - kyc_link_completed
+                  - kyb_link_completed
+                  - kyc_document_validated
+                  - kyb_document_validated
+                  - kyc_liveness_completed
                   - '*'
                 callback_url:
                   type: string
@@ -5789,6 +6963,157 @@ components:
         updated_at:
           type: string
           format: date-time
+    VerificationLinkRequest:
+      type: object
+      required:
+      - external_customer_id
+      - idempotency_key
+      properties:
+        external_customer_id:
+          type: string
+          description: Tu referencia del cliente verificado (vuelve en cada webhook).
+        idempotency_key:
+          type: string
+        country:
+          type: string
+          description: Solo KYB. Corredor del wizard (us, cl, ve, br, mx, co, pe, bo, py, ar, generic).
+        generic_country:
+          type: string
+          description: ISO alpha-2 cuando country=generic.
+        currency:
+          type: string
+        label:
+          type: string
+        expires_in_days:
+          type: integer
+        metadata:
+          type: object
+    VerificationLink:
+      type: object
+      properties:
+        link_id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum: [kyc, kyb]
+        external_customer_id:
+          type: string
+        url:
+          type: string
+          description: URL del wizard hosteado para compartir con la persona/empresa verificada.
+        status:
+          type: string
+          enum: [pending, opened, completed, expired]
+        country:
+          type: string
+        label:
+          type: string
+        expires_at:
+          type: integer
+        submission_id:
+          type: string
+          description: Presente cuando el link se completa.
+        verification_fee:
+          type: string
+        idempotency_key:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    VerificationSubmission:
+      type: object
+      properties:
+        submission_id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum: [kyc, kyb]
+        external_customer_id:
+          type: string
+        status:
+          type: string
+          enum: [pending_review, in_review, changes_requested, more_info_required, escalated, approved, approved_partial, rejected]
+        risk_band:
+          type: string
+        liveness_pending:
+          type: boolean
+          description: Solo KYC. True hasta superar la prueba de vida en video.
+        pending_documents:
+          type: array
+          items:
+            type: string
+        rejection_reason:
+          type: string
+        aml_decision:
+          type: string
+          description: Solo KYB.
+        verification_fee:
+          type: string
+        idempotency_key:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    VerificationDocumentPresignRequest:
+      type: object
+      required:
+      - category
+      - filename
+      - content_type
+      properties:
+        category:
+          type: string
+          description: 'KYC: identity, proofOfResidence. KYB: legalPresence, ownershipStructure, controlStructure, companyDetails.'
+        filename:
+          type: string
+        content_type:
+          type: string
+          enum: [application/pdf, image/png, image/jpeg]
+        file_size:
+          type: integer
+          description: Bytes; máximo 15 MB.
+    VerificationDocumentConfirmRequest:
+      type: object
+      required:
+      - key
+      - category
+      - filename
+      - content_type
+      properties:
+        key:
+          type: string
+          description: La key devuelta por el paso presign.
+        category:
+          type: string
+        filename:
+          type: string
+        content_type:
+          type: string
+    VerificationDocumentValidation:
+      type: object
+      properties:
+        category:
+          type: string
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        outcome:
+          type: string
+          enum: [MATCH, REVIEW, NO_MATCH]
+        score:
+          type: number
+        summary:
+          type: string
+        filename:
+          type: string
     Error:
       type: object
       properties:
@@ -6496,3 +7821,151 @@ webhooks:
       responses:
         '200':
           description: Responde cualquier 2xx para confirmar.
+  kyc_verification_status_changed:
+    post:
+      summary: Cambió el estado de una verificación KYC
+      description: 'Se emite en cada cambio del ciclo de una submission KYC (submitted,
+        in_review, changes_requested, more_info_required, escalated, approved, approved_partial,
+        rejected). Tu propio onboarding llega con self_onboarding: true.'
+      requestBody:
+        content:
+          application/json:
+            example:
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              kind: kyc
+              event: approved
+              submission_id: c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f
+              external_customer_id: cust_789
+              status: approved
+              risk_band: low
+              decision: approved
+      responses:
+        '200':
+          description: Responde cualquier 2xx para confirmar la entrega.
+  kyb_verification_status_changed:
+    post:
+      summary: Cambió el estado de una verificación KYB
+      description: Se emite en cada cambio del ciclo de una submission KYB, incluidas las
+        señales AML/riesgo/reporte de la revisión.
+      requestBody:
+        content:
+          application/json:
+            example:
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              kind: kyb
+              event: approved
+              submission_id: e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8091
+              external_customer_id: cust_456
+              status: approved
+              risk_band: low
+      responses:
+        '200':
+          description: Responde cualquier 2xx para confirmar la entrega.
+  kyc_link_completed:
+    post:
+      summary: Link KYC completado
+      description: Se emite cuando tu cliente completa un link KYC hosteado; nace la submission.
+      requestBody:
+        content:
+          application/json:
+            example:
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              kind: kyc
+              event: link_completed
+              link_id: b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e
+              submission_id: c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f
+              external_customer_id: cust_123
+              status: completed
+      responses:
+        '200':
+          description: Responde cualquier 2xx para confirmar la entrega.
+  kyb_link_completed:
+    post:
+      summary: Link KYB completado
+      description: Se emite cuando tu cliente completa un link KYB hosteado; nace la submission.
+      requestBody:
+        content:
+          application/json:
+            example:
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              kind: kyb
+              event: link_completed
+              link_id: d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f80
+              submission_id: e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8091
+              external_customer_id: cust_456
+              status: completed
+      responses:
+        '200':
+          description: Responde cualquier 2xx para confirmar la entrega.
+  kyc_document_validated:
+    post:
+      summary: Terminó el OCR de un documento KYC
+      description: Se emite cuando termina la validación OCR de un documento subido por API.
+      requestBody:
+        content:
+          application/json:
+            example:
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              kind: kyc
+              submission_id: c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f
+              external_customer_id: cust_789
+              category: identity
+              outcome: MATCH
+              score: 0.97
+              summary: Document matches the submitted identity
+      responses:
+        '200':
+          description: Responde cualquier 2xx para confirmar la entrega.
+  kyb_document_validated:
+    post:
+      summary: Terminó el OCR de un documento KYB
+      description: Se emite cuando termina la validación OCR de un documento KYB.
+      requestBody:
+        content:
+          application/json:
+            example:
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              kind: kyb
+              submission_id: e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8091
+              external_customer_id: cust_456
+              category: legalPresence
+              outcome: REVIEW
+              score: 0.72
+              summary: Registry extract requires manual review
+      responses:
+        '200':
+          description: Responde cualquier 2xx para confirmar la entrega.
+  kyc_liveness_completed:
+    post:
+      summary: Prueba de vida completada
+      description: Se emite cuando la prueba de vida en video se completa desde un liveness link.
+      requestBody:
+        content:
+          application/json:
+            example:
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              kind: kyc
+              submission_id: c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f
+              external_customer_id: cust_789
+              outcome: PASS
+              passed: true
+      responses:
+        '200':
+          description: Responde cualquier 2xx para confirmar la entrega.
+  aml_screening_updated:
+    post:
+      summary: Novedades del AML screening
+      description: Se emite cuando el screening AML termina, un caso cambia, el riesgo cambia o
+        una transacción monitoreada es revisada.
+      requestBody:
+        content:
+          application/json:
+            example:
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              screening_event: compliance_risk_changed
+              customer_id: cus_8f2e1a3b4c5d
+              data:
+                risk_level: high
+      responses:
+        '200':
+          description: Responde cualquier 2xx para confirmar la entrega.

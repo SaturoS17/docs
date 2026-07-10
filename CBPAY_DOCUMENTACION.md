@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-10 04:31 UTC · versión `245d65389716`
+> **Documento actualizado:** 2026-07-10 06:09 UTC · versión `cdec7c56e569`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.33 (10 de julio de 2026) |
+| Versión de la documentación | v1.34 (10 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -45,7 +45,8 @@ solo saldo.
   - [Crypto: wallets, depósitos y retiros](#crypto-wallets-depositos-y-retiros)
   - [Tarjetas: virtuales y físicas](#tarjetas-virtuales-y-fisicas)
   - [Banking](#banking)
-  - [KYC/KYB y compliance](#kyckyb-y-compliance)
+  - [Verificación KYC y KYB](#verificacion-kyc-y-kyb)
+  - [AML screening](#aml-screening)
   - [Cartola (estado de cuenta)](#cartola-estado-de-cuenta)
 - **Integración**
   - [Seguridad y 2FA (OTP)](#seguridad-y-2fa-otp)
@@ -1134,10 +1135,12 @@ de las tasas de tu cuenta para ese país. Cotizado = cobrado, siempre.
 | `funding` | `%` sobre el depósito + fijo | Al acreditar el depósito on-chain |
 | `withdrawal` | `%` sobre el retiro + fijo | Al crear el retiro (incluido en `total_debit`) |
 | `wallet_creation` | Fijo por wallet | Al crear cada wallet (personas: 1 por red; empresas: ilimitadas). Consultar wallets existentes es siempre gratis |
-| `compliance_person` | Fijo por llamada | Al enviar el KYC de una persona |
-| `compliance_company` | Fijo por llamada | Al enviar el KYB de una empresa |
-| `compliance_rescreen` | Fijo por llamada | Al re-ejecutar un screening |
-| `compliance_monitoring` | Fijo por activación | Al activar monitoreo continuo (desactivar es gratis) |
+| `compliance_person` | Fijo por llamada | Al screenear una persona por AML (`POST /v1/aml/screenings`) |
+| `compliance_company` | Fijo por llamada | Al screenear una empresa por AML |
+| `compliance_rescreen` | Fijo por llamada | Al re-ejecutar un screening AML |
+| `compliance_monitoring` | Fijo por activación | Al activar monitoreo AML continuo (desactivar es gratis) |
+| `kyc_verification` | Fijo por verificación | Al crear un link o submission KYC de un tercero ([verificación](#verificacion-kyc-y-kyb)); tu propio onboarding es gratis |
+| `kyb_verification` | Fijo por verificación | Al crear un link o submission KYB de un tercero |
 | `banking_customer` | Fijo por perfil | Al crear tu perfil bancario ([banking](#banking)) |
 | `banking_account` | Fijo por cuenta | Al abrir cada cuenta bancaria |
 | `banking_operation` | Fijo por pago | Al enviar cada pago bancario (cotizar con `prepare` es gratis) |
@@ -1151,9 +1154,10 @@ Para los servicios con `%`, la fórmula es
 micro-USDT).
 
 > **Nota**
-Los cargos fijos standalone (compliance, creación de wallets y banking) se
-reembolsan automáticamente si la operación falla aguas arriba
-(`compliance_refund` / `wallet_creation_refund` / `banking_fee_refund`).
+Los cargos fijos standalone (compliance, verificación KYC/KYB, creación de
+wallets y banking) se reembolsan automáticamente si la operación falla
+aguas arriba (`compliance_refund` / `verification_fee_refund` /
+`wallet_creation_refund` / `banking_fee_refund`).
 ### Transferencias internas: siempre gratis
 
 Las transferencias entre cuentas CBPay (`POST /v1/transfers`) **no tienen
@@ -1329,7 +1333,9 @@ El tipo se define al crear la cuenta y no cambia. Lo ves en
 | **Wallets crypto** por red | **1** (`422 wallet_limit_reached` en la segunda) | **Ilimitadas** (usa `label` para distinguirlas) |
 | **Tarjetas** | **1 virtual + 1 física**, solo para sí misma | **Ilimitadas**, para la empresa o para **personas designadas** (empleados) |
 | **Miembros con login** (`POST /v1/members`) | No (`403 company_only`) | Sí — roles `owner` / `operator` / `viewer` |
-| **KYC** (`POST /v1/kyc`) | Screening de **persona** (`customer.person`), cobra `compliance_person` | Screening de **empresa/KYB** (`customer.company`), cobra `compliance_company` |
+| **Verificación de identidad** (`/v1/me/verification`) | Onboarding **KYC** (wizard con documentos + prueba de vida) | Onboarding **KYB** (wizard con documentos societarios) |
+| **Verificar a terceros** (`/v1/{kyc,kyb}/links` y submissions) | No (`403 company_account_required`) | Sí — links hosteados o datos por API, cobra `kyc_verification`/`kyb_verification` |
+| **AML screening** (`POST /v1/aml/screenings`) | Screening de **persona** (`customer.person`), cobra `compliance_person` | Screening de **empresa** (`customer.company`), cobra `compliance_company` |
 | Titular de tarjetas (primera emisión) | Datos personales + documentos de identidad | Datos societarios + documentos corporativos (o los de la persona designada) |
 | Registro | `type: "person"` | `type: "company"` (+ `tax_id` recomendado) |
 
@@ -1342,8 +1348,9 @@ límites de gasto por tarjeta, servicios habilitados — funciona idéntico.
 
 - Registro: `POST /v1/auth/register` con `type: "person"` (o la crea tu
   operador).
-- KYC: envía `customer.person` con tu identidad —
-  [guía](#kyckyb-y-compliance).
+- Verificación: pide tu link KYC con `POST /v1/me/verification/link` y
+  completa el wizard — hasta aprobar solo puedes fondear
+  ([guía](#verificacion-kyc-y-kyb)).
 - Crypto: **una wallet por red** (TRON y ETH). ¿Necesitas más direcciones?
   Ese es un caso de cuenta empresa.
 - Tarjetas: hasta **1 virtual + 1 física**; la primera emisión lleva tus
@@ -1353,8 +1360,9 @@ límites de gasto por tarjeta, servicios habilitados — funciona idéntico.
 #### Cuenta empresa
 
 - Registro: `type: "company"`, idealmente con `tax_id`.
-- KYB: envía `customer.company` con los datos societarios —
-  [guía](#kyckyb-y-compliance).
+- Verificación: pide tu link KYB con `POST /v1/me/verification/link` y
+  completa el wizard con los datos societarios; aprobada, puedes además
+  verificar a tus propios clientes ([guía](#verificacion-kyc-y-kyb)).
 - Crypto: **wallets ilimitadas** por red (una por sucursal, por producto,
   por proveedor…), con `label` descriptivo.
 - Tarjetas: **ilimitadas** — corporativas (titular = la empresa, con
@@ -1415,7 +1423,8 @@ curl https://api.qbank.cl/platform/v1/services \
 | `transfers` | Transferencias internas entre cuentas CBPay |
 | `crypto` | Wallets on-chain y retiros USDT |
 | `banking` | Cuentas bancarias internacionales (perfil, cuentas, pagos) |
-| `kyc` | Verificación KYC/KYB, rescreening y monitoreo |
+| `kyc` | Verificación de identidad KYC/KYB de terceros (links, submissions, documentos, liveness) |
+| `aml` | AML screening contra listas, rescreening y monitoreo |
 | `cards` | Emisión y operación de tarjetas |
 
 ### Qué pasa cuando un servicio está apagado
@@ -4283,39 +4292,485 @@ curl "https://api.qbank.cl/platform/v1/banking/operations?from=2026-07-01&to=202
 | 502 | `banking_request_failed` | Error del corredor bancario; la comisión se reembolsó — reintenta |
 
 
-## KYC/KYB y compliance
+## Verificación KYC y KYB
 
-*Verificación de personas (KYC) y empresas (KYB), rescreening y monitoreo continuo*
+*Verificación de identidad con wizard hosteado: formulario, documentos con OCR y prueba de vida en video — para tu cuenta y para tus clientes*
 
-CBPay integra la verificación de identidad como servicio — **KYC** para
-personas y **KYB** para empresas — con screening AML incluido: envías la
-identidad de la cuenta y recibes el resultado del análisis. El estado de
-verificación de la cuenta
-(`kyc_status`) lo resuelve CBPay tras revisar el resultado.
+La **verificación de identidad** comprueba que una persona (KYC) o empresa
+(KYB) es quien dice ser, con evidencia real: formulario completo, subida de
+documentos validados por OCR y **prueba de vida en video**. Tiene dos caras:
+
+1. **Tu propia verificación (onboarding)** — obligatoria: hasta aprobarla,
+   tu cuenta solo puede **fondear** (payins, depósitos crypto, recibir
+   transferencias) y consultar. Persona ⇒ KYC; empresa ⇒ KYB.
+2. **Verificación de tus clientes (solo cuentas empresa)** — generas links
+   hosteados o envías los datos por API para verificar a tus propios
+   clientes finales, con una comisión fija por verificación.
 
 ```mermaid
 flowchart LR
-    none["kyc_status: none"] -->|"POST /v1/kyc<br/>(cobra fee, screening AML)"| pending["kyc_status: pending"]
-    pending -->|"CBPay revisa<br/>el resultado"| decision{"Decisión"}
-    decision -->|"aprueba"| approved["kyc_status: approved"]
-    decision -->|"rechaza"| rejected["kyc_status: rejected"]
-    approved -.->|"POST /v1/kyc/rescreen<br/>(cambio de datos, política)"| pending
-    approved -.->|"PATCH monitoring<br/>(vigilancia continua)"| approved
+    crear["POST /v1/kyc/links o /v1/kyb/links<br/>(fee fijo)"] --> link["Link hosteado<br/>status: pending"]
+    link -->|"tu cliente lo abre"| abierto["opened"]
+    abierto -->|"formulario + documentos<br/>+ prueba de vida"| completado["completed<br/>(webhook link_completed)"]
+    completado --> revision["Submission<br/>pending_review → in_review"]
+    revision -->|"aprobada"| ok["approved (webhook)"]
+    revision -->|"faltan datos"| cambios["changes_requested /<br/>more_info_required"]
+    revision -->|"rechazada"| rechazo["rejected (webhook)"]
 ```
 
+### Tu propia verificación (onboarding)
+
+Al registrarte, tu cuenta nace sin verificar (`kyc_status: none`) y **solo
+puede fondear y leer**. Cualquier acción de dinero saliente (payouts,
+transferencias, retiros, banking, tarjetas) responde
+`403 verification_required` hasta que apruebes.
+
+### Pide tu link de verificación
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/me/verification/link \
+  -H "Authorization: Bearer <token>"
+```
+
+Respuesta `201` (si ya tienes un link vigente, se devuelve el mismo con
+`200`):
+
+```json
+{
+  "link_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+  "kind": "kyc",
+  "url": "https://…/on/usd/individual/new?invite=abc123…",
+  "status": "pending",
+  "label": "Ana Pérez",
+  "created_at": "2026-07-10T12:00:00Z",
+  "updated_at": "2026-07-10T12:00:00Z"
+}
+```
+
+El `kind` sale de tu tipo de cuenta: persona ⇒ `kyc`, empresa ⇒ `kyb`. El
+onboarding **no tiene costo** para ti.
+### Completa el wizard
+
+Abre la `url`: el wizard hosteado te guía por el formulario, la subida de
+documentos (identidad, comprobante de domicilio; societarios para
+empresas) y — en KYC — la prueba de vida en video frente a la cámara.
+### Espera la revisión
+
+Consulta tu estado cuando quieras:
+
+```bash
+curl https://api.qbank.cl/platform/v1/me/verification \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "kyc_status": "pending",
+  "required_kind": "kyc",
+  "verified": false,
+  "link": { "link_id": "a1b2c3d4-…", "kind": "kyc", "url": "https://…", "status": "completed" },
+  "submission": { "submission_id": "f0e1d2c3-…", "kind": "kyc", "status": "in_review", "liveness_pending": false }
+}
+```
+
+Cuando compliance aprueba, tu `kyc_status` pasa a `approved`
+**automáticamente** y todos los servicios se desbloquean (recibirás el
+webhook `kyc_verification_status_changed` con `self_onboarding: true`).
 > **Nota**
-Si CBPay configuró una comisión de compliance, se debita **antes** de
-la llamada (verás `compliance_fee` en la respuesta) y se **reembolsa
+Mientras esperas la aprobación puedes fondear con normalidad: payins en
+todos los métodos, depósitos crypto y transferencias entrantes funcionan
+desde el día uno. Si tu verificación es rechazada (`kyc_status: rejected`),
+contacta a tu operador — puede pedirte reintentar con un link nuevo.
+### Verificar a tus clientes (solo cuentas empresa)
+
+Una cuenta **empresa** verificada puede verificar a sus propios clientes
+finales. Cada verificación creada cobra la comisión fija configurada
+(`kyc_verification` / `kyb_verification`; 0 = gratis), que se **reembolsa
+automáticamente** si la creación falla. Las cuentas persona reciben
+`403 company_account_required`.
+
+#### Opción A — Links hosteados (recomendada)
+
+Tu cliente completa TODO en el wizard de marca blanca: formulario,
+documentos y prueba de vida. Tú solo generas el link y esperas el webhook.
+
+```bash Link KYC (persona)
+curl -X POST https://api.qbank.cl/platform/v1/kyc/links \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "external_customer_id": "cust_123",
+    "label": "Ana Pérez",
+    "expires_in_days": 14,
+    "idempotency_key": "kyc-link-cust-123-1"
+  }'
+```
+
+```bash Link KYB (empresa, con país)
+curl -X POST https://api.qbank.cl/platform/v1/kyb/links \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "external_customer_id": "cust_456",
+    "country": "cl",
+    "label": "Comercial Andina SpA",
+    "expires_in_days": 14,
+    "idempotency_key": "kyb-link-cust-456-1"
+  }'
+```
+
+- `external_customer_id` (obligatorio): TU referencia del cliente
+  verificado — la recibes de vuelta en cada webhook y consulta.
+- `idempotency_key` (obligatoria): un retry con la misma clave devuelve el
+  link original y **nunca cobra dos veces**.
+- `country` (solo KYB): `us`, `cl`, `ve`, `br`, `mx`, `co`, `pe`, `bo`,
+  `py`, `ar` o `generic` (con `generic_country` ISO alpha-2, ej. `"ES"`).
+  El KYC individual no lleva país.
+- `expires_in_days` (opcional, 1–30): sin enviarlo, el link no vence.
+
+Respuesta `201`:
+
+```json
+{
+  "link_id": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+  "kind": "kyb",
+  "external_customer_id": "cust_456",
+  "url": "https://…/on/cl/business/new?invite=abc123…",
+  "status": "pending",
+  "country": "cl",
+  "label": "Comercial Andina SpA",
+  "expires_at": 1721209600,
+  "verification_fee": "2.000000",
+  "created_at": "2026-07-10T12:00:00Z",
+  "updated_at": "2026-07-10T12:00:00Z"
+}
+```
+
+Consulta e historial (todo POST tiene su GET):
+
+```bash
+# Listado con filtros
+curl "https://api.qbank.cl/platform/v1/kyb/links?from=2026-07-01&to=2026-07-10&status=completed&page=1&page_size=50" \
+  -H "Authorization: Bearer <token>"
+
+# Detalle (estado vivo del link)
+curl https://api.qbank.cl/platform/v1/kyb/links/{link_id} \
+  -H "Authorization: Bearer <token>"
+```
+
+| Estado del link | Significado |
+|---|---|
+| `pending` | Creado, tu cliente aún no lo abre |
+| `opened` | Tu cliente abrió el wizard |
+| `completed` | Formulario enviado — nace la submission (webhook `kyb_link_completed` / `kyc_link_completed`) |
+| `expired` | Venció sin completarse |
+
+#### Opción B — Datos por API
+
+Si ya tienes los datos del cliente en tu sistema, créale la verificación
+directo (sin wizard). La submission entra al mismo queue de revisión:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/kyc/submissions \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "external_customer_id": "cust_789",
+    "idempotency_key": "kyc-sub-cust-789-1",
+    "person": {
+      "first_name": "Ana",
+      "last_name": "Pérez",
+      "email": "ana@ejemplo.com",
+      "phone": "+56912345678",
+      "nationality": "CHL",
+      "date_of_birth": "1990-04-12",
+      "tax_id": "12.345.678-5",
+      "id_type": "id_card",
+      "id_number": "12345678",
+      "address": {
+        "line1": "Av. Siempre Viva 123",
+        "city": "Santiago",
+        "state": "RM",
+        "postal_code": "8320000",
+        "country": "CHL"
+      },
+      "primary_purpose": "personal_or_living_expenses",
+      "most_recent_occupation": "Engineer",
+      "source_of_funds": "salary"
+    }
+  }'
+```
+
+Notas del modo datos:
+
+- Países en **ISO alpha-3** (`CHL`, `USA`, `VEN`…); fechas `YYYY-MM-DD`;
+  `id_type`: `passport | id_card | drivers_license`.
+- KYB: body `{ external_customer_id, country?, business: {…}, ubos?,
+  directors?, signers?, bank_info?, metadata? }` en
+  `POST /v1/kyb/submissions`.
+- **No se exige prueba de vida al crear**: la submission KYC queda con
+  `liveness_pending: true` y la cierras con un [liveness
+  link](#prueba-de-vida-liveness-link).
+- Re-enviar con el mismo `external_customer_id` mientras la submission
+  siga abierta (`pending_review`, `changes_requested`,
+  `more_info_required`) **actualiza** la misma submission y no cobra de
+  nuevo.
+
+Respuesta `201`:
+
+```json
+{
+  "submission_id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
+  "kind": "kyc",
+  "external_customer_id": "cust_789",
+  "status": "pending_review",
+  "liveness_pending": true,
+  "verification_fee": "1.500000",
+  "created_at": "2026-07-10T12:05:00Z",
+  "updated_at": "2026-07-10T12:05:00Z"
+}
+```
+
+Consulta e historial:
+
+```bash
+curl "https://api.qbank.cl/platform/v1/kyc/submissions?from=2026-07-01&to=2026-07-10&status=approved&page=1&page_size=50" \
+  -H "Authorization: Bearer <token>"
+
+curl https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id} \
+  -H "Authorization: Bearer <token>"
+```
+
+El detalle agrega lo que compliance pidió: `pending_documents`,
+`rejection_reason`, `changes_requested_comments`; en KYC además
+`liveness_pending` y `documents_received`; en KYB `aml_decision`.
+
+| Estado de la submission | Significado |
+|---|---|
+| `pending_review` | Recibida, en cola de compliance |
+| `in_review` | Compliance tomó el caso |
+| `changes_requested` | Hay que corregir datos y re-enviar |
+| `more_info_required` | Faltan documentos ([súbelos por API](#documentos-por-api)) |
+| `escalated` | Caso escalado a revisión senior |
+| `approved` / `approved_partial` | Aprobada (final) |
+| `rejected` | Rechazada (final) |
+
+#### Documentos por API
+
+Los documentos son opcionales al crear (si faltan, compliance los pedirá
+con `more_info_required`). Flujo de 3 pasos:
+
+### Presign
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id}/documents \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "category": "identity",
+    "filename": "cedula.jpg",
+    "content_type": "image/jpeg",
+    "file_size": 482133
+  }'
+```
+
+```json
+{ "upload_url": "https://storage…", "key": "public-api/…", "expires_in": 900 }
+```
+
+Categorías — KYC: `identity`, `proofOfResidence`; KYB: `legalPresence`,
+`ownershipStructure`, `controlStructure`, `companyDetails`. Tipos:
+`application/pdf`, `image/png`, `image/jpeg`; máximo 15 MB; la URL vence en
+15 minutos.
+### Upload
+
+`PUT` del binario directo a `upload_url` con el mismo `Content-Type`.
+### Confirm
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id}/documents/confirm \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "key": "public-api/…", "category": "identity", "filename": "cedula.jpg", "content_type": "image/jpeg" }'
+```
+
+```json
+{ "status": "received", "ocr": "queued" }
+```
+
+Al confirmar se dispara la validación OCR; el resultado llega por el
+webhook `kyc_document_validated` / `kyb_document_validated` y se consulta
+con GET:
+
+```bash
+curl https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id}/documents \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "items": [
+    { "category": "identity", "status": "completed", "outcome": "MATCH", "score": 0.97, "summary": "Document matches the submitted identity", "filename": "cedula.jpg" }
+  ],
+  "meta": { "retrieved": 1 }
+}
+```
+
+`outcome`: `MATCH` (coincide), `REVIEW` (revisión manual), `NO_MATCH`.
+#### Prueba de vida (liveness link)
+
+Las submissions KYC creadas por datos nacen con `liveness_pending: true`
+(la prueba de vida es un flujo de cámara en browser). Genera un link
+mínimo hosteado para que tu cliente la complete:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id}/liveness_link \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "expires_in_days": 7 }'
+```
+
+```json
+{ "url": "https://…/on/liveness/<token>", "status": "pending", "expires_at": 1751234567 }
+```
+
+- No cobra (el servicio se cobró al crear la submission). Si ya hay un
+  link vigente, el POST devuelve el mismo; si la prueba ya fue superada,
+  `400 liveness_already_completed`.
+- `GET .../liveness_link` devuelve el último link y el estado del check
+  (`{ "liveness": { "status", "outcome", "passed" } }`).
+- Al pasar (outcome `PASS` o `REVIEW`): la submission limpia
+  `liveness_pending` y llega el webhook `kyc_liveness_completed`.
+
+### Webhooks
+
+| Evento | Cuándo |
+|---|---|
+| `kyc_verification_status_changed` / `kyb_verification_status_changed` | La submission cambió de estado (todo el ciclo: recibida, en revisión, cambios pedidos, aprobada, rechazada…) |
+| `kyc_link_completed` / `kyb_link_completed` | Tu cliente completó un link hosteado |
+| `kyc_document_validated` / `kyb_document_validated` | Terminó el OCR de un documento subido por API |
+| `kyc_liveness_completed` | La prueba de vida fue completada desde un liveness link |
+
+Payload de ejemplo (`kyc_verification_status_changed`):
+
+```json
+{
+  "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "kind": "kyc",
+  "event": "approved",
+  "submission_id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
+  "external_customer_id": "cust_789",
+  "status": "approved",
+  "risk_band": "low",
+  "decision": "approved"
+}
+```
+
+Tu propio onboarding llega con `"self_onboarding": true` en vez de
+`external_customer_id`. Suscríbete igual que al resto de eventos (ver
+[Webhooks](#webhooks)).
+
+### Costos (configurados por tu operador, pueden ser 0)
+
+| Servicio | Cuándo se cobra |
+|---|---|
+| `kyc_verification` | Al crear un link o submission KYC de un tercero |
+| `kyb_verification` | Al crear un link o submission KYB de un tercero |
+
+El cargo sale de tu saldo de settlement predeterminado, se reembolsa si la
+creación falla, y **tu propio onboarding nunca cobra**. Re-envíos de una
+submission abierta y liveness links no cobran de nuevo.
+
+### Errores
+
+| HTTP | `error` | Causa | Solución |
+|---|---|---|---|
+| 400 | `idempotency_key_required` | POST de creación sin clave | Envía `idempotency_key` (body o header) |
+| 400 | `invalid_payload` | Falta `external_customer_id` u otro campo requerido | Revisa el body |
+| 400 | `liveness_already_completed` | La prueba de vida ya fue superada | Nada que hacer |
+| 402 | `insufficient_funds` | Saldo insuficiente para la comisión | Fondea la cuenta y reintenta |
+| 403 | `verification_required` | Tu cuenta aún no aprobó su propia verificación | Completa tu [onboarding](#tu-propia-verificacion-onboarding) |
+| 403 | `company_account_required` | Una cuenta persona intentó verificar terceros | Solo cuentas empresa |
+| 403 | `service_disabled` | El servicio `kyc` está deshabilitado para tu cuenta | Contacta a tu operador |
+| 404 | `not_found` | El link/submission no existe o no es tuyo | Verifica el id |
+| 409 | `already_verified` | Pediste link de onboarding con la cuenta ya aprobada | Nada que hacer |
+| 503 | `verifications_unavailable` | Servicio temporalmente no disponible (la comisión se reembolsó) | Reintenta más tarde |
+
+### Preguntas frecuentes
+
+#### ¿Por qué no puedo hacer payouts recién registrado?
+Toda cuenta debe aprobar su verificación de identidad antes de mover dinero
+hacia afuera (es un requisito regulatorio). Mientras tanto puedes fondear
+(payins, depósitos crypto, recibir transferencias) y explorar la API. Pide
+tu link con `POST /v1/me/verification/link` y complétalo — la aprobación
+desbloquea todo automáticamente.
+#### ¿Qué diferencia hay entre links hosteados y datos por API?
+Con links, tu cliente completa todo en el wizard (formulario + documentos +
+prueba de vida) y tú no manejas datos sensibles. Con datos por API tú envías
+los campos y subes documentos vía presign — útil si ya tienes tu propio
+formulario — pero la prueba de vida igual requiere un liveness link (es un
+flujo de cámara, no se puede hacer server-to-server).
+#### ¿Cuándo se cobra la comisión y cuándo no?
+Se cobra al CREAR un link o una submission de terceros (modo live). No
+cobran: tu propio onboarding, los re-envíos de una submission abierta (mismo
+external_customer_id), los liveness links, las consultas y los documentos.
+Si la creación falla, la comisión se reembolsa sola.
+#### ¿Por qué mi cuenta persona no puede crear links?
+La verificación de terceros es una herramienta B2B para integradores
+(cuentas empresa). Una cuenta persona solo necesita su propio onboarding,
+que es gratis y va por /v1/me/verification.
+#### Compliance pidió más documentos, ¿cómo los mando?
+Recibirás `more_info_required` con `pending_documents` en el detalle de la
+submission. Sube cada documento con el flujo presign → upload → confirm de
+esta página; al confirmarse, la submission vuelve a la cola de revisión.
+#### ¿Esto reemplaza al AML screening?
+No: son productos complementarios. La verificación comprueba la identidad
+con evidencia (documentos, video); el [AML screening](#aml-screening)
+contrasta la identidad contra listas de sanciones/PEP/prensa adversa y
+puede vigilarla de forma continua.
+
+
+## AML screening
+
+*Screening de personas y empresas contra listas de sanciones, PEP y prensa adversa, con rescreening y monitoreo continuo*
+
+El **AML screening** contrasta la identidad de una persona o empresa contra
+listas globales — sanciones, PEP, prensa adversa — y devuelve el resultado
+del análisis con su nivel de riesgo. Es un producto de compliance puro:
+**no** verifica la identidad con documentos ni prueba de vida (eso es la
+[verificación KYC/KYB](#verificacion-kyc-y-kyb)); analiza si la identidad presenta
+riesgo en listas.
+
+```mermaid
+flowchart LR
+    envio["POST /v1/aml/screenings<br/>(cobra fee)"] --> resultado{"Resultado"}
+    resultado -->|"no_match"| ok["Sin coincidencias"]
+    resultado -->|"potential_match / has_hits"| review["Coincidencias + risk_level<br/>(revisar matches)"]
+    ok -.->|"POST /v1/aml/rescreen<br/>(cambio de datos, política)"| envio
+    ok -.->|"PATCH /v1/aml/monitoring<br/>(vigilancia continua)"| monitor["Alertas por webhook<br/>aml_screening_updated"]
+```
+
+> **Importante**
+**Breaking change (v1.34)**: este producto vivía en `POST /v1/kyc`,
+`/v1/kyc/rescreen` y `PATCH /v1/kyc/monitoring`. Esas rutas se **eliminaron**
+y ahora son `POST /v1/aml/screenings`, `POST /v1/aml/rescreen` y
+`PATCH /v1/aml/monitoring` (misma semántica y mismas comisiones). Las rutas
+`/v1/kyc/...` ahora pertenecen a la
+[verificación de identidad](#verificacion-kyc-y-kyb), que es otro producto.
+> **Nota**
+Si CBPay configuró una comisión de compliance, se debita **antes** de la
+llamada (verás `compliance_fee` en la respuesta) y se **reembolsa
 automáticamente** si el screening falla. Con comisión 0 el servicio es
-gratuito para ti.
+gratuito para ti. Requiere tener tu propia
+[verificación de identidad aprobada](#verificacion-kyc-y-kyb).
 ### Enviar el screening
 
 Un solo endpoint para persona y empresa; el tipo se detecta del payload
 (las demás diferencias entre ambos tipos de cuenta están en
 [personas y empresas](#personas-y-empresas)):
 
-```bash Persona (KYC)
-curl -X POST https://api.qbank.cl/platform/v1/kyc \
+```bash Persona
+curl -X POST https://api.qbank.cl/platform/v1/aml/screenings \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -4334,8 +4789,8 @@ curl -X POST https://api.qbank.cl/platform/v1/kyc \
   }'
 ```
 
-```bash Empresa (KYB)
-curl -X POST https://api.qbank.cl/platform/v1/kyc \
+```bash Empresa
+curl -X POST https://api.qbank.cl/platform/v1/aml/screenings \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -4351,8 +4806,8 @@ curl -X POST https://api.qbank.cl/platform/v1/kyc \
   }'
 ```
 
-```bash Mínimo (autocompletado)
-curl -X POST https://api.qbank.cl/platform/v1/kyc \
+```bash Mínimo (autocompletado con tu cuenta)
+curl -X POST https://api.qbank.cl/platform/v1/aml/screenings \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{ "customer": {}, "monitor": false }'
@@ -4363,14 +4818,10 @@ tipo persona/empresa se toma del tipo de la cuenta).
 
 ### Envía toda la identidad que tengas (recomendado)
 
-Los ejemplos de arriba son el mínimo. El objeto `customer` acepta **muchos
-más campos, todos opcionales**, y se reenvían íntegros al motor de
-screening: **mientras más datos de identidad envíes, más preciso es el
-análisis** — la fecha de nacimiento, los países y los documentos fuertes
-descartan homónimos y reducen falsos positivos, así que conviene mandar
-todo lo que tengas del cliente.
-
-Campos de identidad que afinan el matching:
+El objeto `customer` acepta **muchos más campos, todos opcionales**, y se
+reenvían íntegros al motor de screening: **mientras más datos de identidad
+envíes, más preciso es el análisis** — la fecha de nacimiento, los países y
+los documentos fuertes descartan homónimos y reducen falsos positivos.
 
 | Campo (persona) | Qué es |
 |---|---|
@@ -4392,58 +4843,6 @@ Campos de identidad que afinan el matching:
 | `incorporation_date` | Fecha de constitución |
 | `address[]` | Domicilios, cada uno con `country` |
 
-Ejemplo de KYC de persona con identidad completa:
-
-```bash
-curl -X POST https://api.qbank.cl/platform/v1/kyc \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "customer": {
-      "person": {
-        "full_name": "Ana Pérez Rojas",
-        "date_of_birth": "1990-04-12",
-        "nationality": "CL",
-        "country_of_birth": "CL",
-        "residential_information": [
-          { "country_of_residence": "CL" }
-        ],
-        "personal_identification": [
-          { "type": "national_id", "issuing_country": "CL", "number": "12.345.678-5" },
-          { "type": "passport", "issuing_country": "CL", "number": "P0123456" }
-        ]
-      },
-      "email": "ana@ejemplo.com",
-      "country": "CL"
-    },
-    "monitor": false
-  }'
-```
-
-Y de KYB de empresa:
-
-```bash
-curl -X POST https://api.qbank.cl/platform/v1/kyc \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "customer": {
-      "company": {
-        "legal_name": "Comercial Andina SpA",
-        "alias": ["Andina Market"],
-        "tax_id": "76.543.210-8",
-        "registration_authority_identification": "76543210",
-        "place_of_registration": "CL",
-        "incorporation_date": "2015-08-01",
-        "address": [{ "country": "CL" }]
-      },
-      "email": "legal@andina.cl",
-      "country": "CL"
-    },
-    "monitor": true
-  }'
-```
-
 > **Nota**
 Una consulta con **exactamente los mismos datos de identidad** reutiliza el
 screening anterior (no se cobra uno nuevo). Agregar o cambiar campos de
@@ -4460,7 +4859,6 @@ con su comisión):
   "status": "screened",
   "risk_level": "low",
   "screening_result": "no_match",
-  "kyc_status": "pending",
   "compliance_service": "compliance_person",
   "compliance_fee": "0.500000"
 }
@@ -4472,14 +4870,10 @@ con su comisión):
   "status": "screened",
   "risk_level": "medium",
   "screening_result": "potential_match",
-  "kyc_status": "pending",
   "compliance_service": "compliance_company",
   "compliance_fee": "1.000000"
 }
 ```
-
-Tu cuenta queda con `kyc_status: pending` hasta que CBPay apruebe o rechace
-la verificación.
 
 ### Rescreening
 
@@ -4488,7 +4882,7 @@ datos o por política periódica). No lleva body — usa el `customer_id` de tu
 screening anterior:
 
 ```bash
-curl -X POST https://api.qbank.cl/platform/v1/kyc/rescreen \
+curl -X POST https://api.qbank.cl/platform/v1/aml/rescreen \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -4505,22 +4899,23 @@ Respuesta `200` (cobra `compliance_rescreen`, si está configurada):
 }
 ```
 
-Requiere haber enviado un KYC/KYB antes; si no, `409 no_kyc`.
+Requiere haber enviado un screening antes; si no, `409 no_screening`.
 
 ### Monitoreo continuo
 
 Activa (o desactiva) la vigilancia permanente de la identidad — cambios en
-listas, PEP, prensa adversa:
+listas, PEP, prensa adversa. Las novedades llegan por el webhook
+`aml_screening_updated`:
 
 ```bash Activar (cobra compliance_monitoring)
-curl -X PATCH https://api.qbank.cl/platform/v1/kyc/monitoring \
+curl -X PATCH https://api.qbank.cl/platform/v1/aml/monitoring \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{ "enabled": true }'
 ```
 
 ```bash Desactivar (siempre gratis)
-curl -X PATCH https://api.qbank.cl/platform/v1/kyc/monitoring \
+curl -X PATCH https://api.qbank.cl/platform/v1/aml/monitoring \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{ "enabled": false }'
@@ -4540,13 +4935,51 @@ Respuesta `200`:
 Al desactivar, `compliance_fee` vuelve `"0.000000"` — desactivar es
 siempre gratis.
 
+### Webhook
+
+| Evento | Cuándo |
+|---|---|
+| `aml_screening_updated` | El screening terminó, un caso cambió, el riesgo cambió o una transacción monitoreada fue revisada |
+
+Payload de ejemplo:
+
+```json
+{
+  "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "screening_event": "compliance_risk_changed",
+  "customer_id": "cus_8f2e1a…",
+  "data": { "risk_level": "high" }
+}
+```
+
+Suscríbete igual que al resto de eventos (ver [Webhooks](#webhooks)).
+
 ### Errores
 
-| HTTP | `error` | Causa |
-|---|---|---|
-| 402 | `insufficient_funds` | Saldo insuficiente para la comisión de compliance |
-| 409 | `no_kyc` | Rescreen/monitoreo sin un KYC/KYB previo |
-| 502 | `compliance_unavailable` | Servicio temporalmente no disponible (la comisión se reembolsó) |
+| HTTP | `error` | Causa | Solución |
+|---|---|---|---|
+| 402 | `insufficient_funds` | Saldo insuficiente para la comisión de compliance | Fondea la cuenta y reintenta |
+| 403 | `verification_required` | Tu cuenta aún no aprobó su verificación de identidad | Completa tu [onboarding](#verificacion-kyc-y-kyb) |
+| 403 | `service_disabled` | El servicio `aml` está deshabilitado para tu cuenta | Contacta a tu operador |
+| 409 | `no_screening` | Rescreen/monitoreo sin un screening previo | Envía primero `POST /v1/aml/screenings` |
+| 502 | `compliance_unavailable` | Servicio temporalmente no disponible (la comisión se reembolsó) | Reintenta más tarde |
+
+### Preguntas frecuentes
+
+#### ¿Cuál es la diferencia entre AML screening y la verificación KYC/KYB?
+El screening contrasta una identidad contra listas (sanciones, PEP, prensa
+adversa) — no pide documentos. La [verificación KYC/KYB](#verificacion-kyc-y-kyb)
+comprueba que la persona/empresa es quien dice ser, con formulario,
+documentos y prueba de vida en video. Se complementan: verifica la identidad
+con KYC/KYB y vigila su riesgo con AML.
+#### ¿Puedo screenear a mis propios clientes?
+Sí: el objeto `customer` acepta cualquier identidad, no solo la de tu
+cuenta. Cada screening cobra su comisión (persona o empresa según el
+payload).
+#### ¿El screening cambia el estado de verificación de mi cuenta?
+No. Desde v1.34 el `kyc_status` de tu cuenta lo maneja exclusivamente la
+verificación de identidad KYC/KYB (tu onboarding). El screening solo evalúa
+riesgo en listas.
 
 
 ## Cartola (estado de cuenta)
@@ -4999,6 +5432,11 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 | `banking_operation_status_changed` | Un pago bancario cambió de estado |
 | `card_transaction` | Una compra con tarjeta fue autorizada, anulada o ajustada |
 | `card_status_changed` | Una tarjeta cambió de estado (incluye congelamiento automático) |
+| `kyc_verification_status_changed` / `kyb_verification_status_changed` | Una verificación de identidad cambió de estado (incluye tu propio onboarding, con `self_onboarding: true`) |
+| `kyc_link_completed` / `kyb_link_completed` | Un link de verificación hosteado fue completado |
+| `kyc_document_validated` / `kyb_document_validated` | Terminó el OCR de un documento subido por API |
+| `kyc_liveness_completed` | Una prueba de vida fue completada desde un liveness link |
+| `aml_screening_updated` | Novedades del screening AML (resultado, casos, riesgo, transacción revisada) |
 
 #### Payload de cada evento
 
@@ -5099,6 +5537,64 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
   "card_id": "3c2b…",
   "status": "frozen",
   "reason": "monthly_fee_unpaid"
+}
+```
+
+```json kyc_verification_status_changed
+{
+  "account_id": "ae8c…",
+  "kind": "kyc",
+  "event": "approved",
+  "submission_id": "c3d4…",
+  "external_customer_id": "cust_789",
+  "status": "approved",
+  "risk_band": "low",
+  "decision": "approved"
+}
+```
+
+```json kyb_link_completed
+{
+  "account_id": "ae8c…",
+  "kind": "kyb",
+  "event": "link_completed",
+  "link_id": "b2c3…",
+  "submission_id": "d4e5…",
+  "external_customer_id": "cust_456",
+  "status": "completed"
+}
+```
+
+```json kyc_document_validated
+{
+  "account_id": "ae8c…",
+  "kind": "kyc",
+  "submission_id": "c3d4…",
+  "external_customer_id": "cust_789",
+  "category": "identity",
+  "outcome": "MATCH",
+  "score": 0.97,
+  "summary": "Document matches the submitted identity"
+}
+```
+
+```json kyc_liveness_completed
+{
+  "account_id": "ae8c…",
+  "kind": "kyc",
+  "submission_id": "c3d4…",
+  "external_customer_id": "cust_789",
+  "outcome": "PASS",
+  "passed": true
+}
+```
+
+```json aml_screening_updated
+{
+  "account_id": "ae8c…",
+  "screening_event": "compliance_risk_changed",
+  "customer_id": "cus_8f2e…",
+  "data": { "risk_level": "high" }
 }
 ```
 
@@ -5259,7 +5755,8 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | `recipient_required` / `self_transfer` | Destino de transferencia inválido |
 | `invalid_chain` / `invalid_asset` | Red o activo no soportado |
 | `to_address_required` | Falta dirección destino del retiro |
-| `invalid_payload` | Falta `enabled` (monitoreo KYC/KYB) |
+| `invalid_payload` | Falta un campo requerido (ej. `enabled` en monitoreo AML, `external_customer_id` en verificaciones) |
+| `liveness_already_completed` | La prueba de vida de esa verificación ya fue superada |
 | `invalid_event_type` / `weak_secret` / `invalid_callback_url` | Suscripción de webhook inválida |
 | `invalid_status` / `invalid_kyc_status` / `invalid_direction` / `reason_required` / `account_id_required` / `invalid_service` / `invalid_fee` | Validaciones de administración |
 
@@ -5271,7 +5768,10 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | 404 | `not_found` | Recurso inexistente (o de otra cuenta) |
 | 404 | `recipient_not_found` | Destino de transferencia inexistente |
 | 409 | `duplicate` | El recurso ya existe |
-| 409 | `no_kyc` | Rescreen/monitoreo sin KYC/KYB previo |
+| 403 | `verification_required` | Tu cuenta aún no aprobó su verificación de identidad (persona=KYC, empresa=KYB); hasta entonces solo puedes fondear — pide tu link en `POST /v1/me/verification/link` |
+| 403 | `company_account_required` | La verificación de terceros (links/submissions KYC-KYB) es solo para cuentas empresa |
+| 409 | `already_verified` | Pediste link de onboarding con la cuenta ya verificada |
+| 409 | `no_screening` | Rescreen/monitoreo AML sin un screening previo |
 | 409 | `no_banking_customer` | Operación banking sin perfil bancario creado (`POST /v1/banking/customer` primero) |
 | 409 | `banking_customer_exists` | La cuenta ya tiene perfil bancario (es uno por cuenta) |
 | 422 | `currency_not_supported` | Sin tasa FX para esa moneda |
@@ -5296,7 +5796,8 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | 500 | `internal_error` | Error inesperado; reintenta con la misma clave de idempotencia |
 | 502 | `rates_unavailable` | Tasas FX temporalmente no disponibles |
 | 502 | `core_unavailable` | Procesador temporalmente no disponible |
-| 502 | `compliance_unavailable` | Screening temporalmente no disponible |
+| 502 | `compliance_unavailable` | Screening AML temporalmente no disponible |
+| 503 | `verifications_unavailable` | Verificación de identidad temporalmente no disponible (la comisión se reembolsó) |
 | 503 | `org_credential_missing` | Servicio en configuración; contacta al soporte de CBPay |
 | 503 | `withdrawals_unavailable` | Retiros on-chain no habilitados para el corredor |
 | 503 | `pricing_unavailable` | Precio de ejecución de BTC/GOLD no disponible o desactualizado; reintenta más tarde o liquida en USDT/USDC |
@@ -5333,10 +5834,13 @@ Dos caminos: (1) **deposita USDT on-chain** — crea una wallet con
 anunciada, etc.). En ambos casos el saldo se acredita solo y te llega un
 webhook.
 #### ¿Necesito pasar KYC/KYB antes de operar?
-La API funciona con tu cuenta **activa**; la política de verificación la
-define el equipo de CBPay según tu caso (montos, país, tipo de cuenta). Si
-tu cuenta requiere verificación, envíala con `POST /v1/kyc` — y si alguna
-operación te responde `403 account_blocked`, contacta al equipo de CBPay.
+Sí: toda cuenta debe aprobar su verificación de identidad (persona = KYC,
+empresa = KYB) antes de mover dinero hacia afuera. Mientras tanto puedes
+**fondear** (payins, depósitos crypto, transferencias entrantes) y leer;
+las demás acciones responden `403 verification_required`. Pide tu link con
+`POST /v1/me/verification/link` y completa el wizard —
+[guía completa](#verificacion-kyc-y-kyb). Si algo te responde `403 account_blocked`,
+contacta al equipo de CBPay.
 #### ¿Por qué una operación me responde 403 service_disabled?
 Ese servicio no está habilitado para tu cuenta (los servicios se activan por
 cuenta según tu acuerdo comercial). Consulta `GET /v1/services` para ver el
@@ -5496,9 +6000,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-10 04:31 UTC · 108 requests · versión `948ec1af541f`
+> **Colección actualizada:** 2026-07-10 06:09 UTC · 130 requests · versión `b90e507f11d2`
 
-<PostmanFreshness iso="2026-07-10T04:31:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-10T06:09:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -5532,6 +6036,39 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.34 — 10 de julio de 2026
+
+**Agregado — Verificación de identidad KYC/KYB (wizard hosteado, documentos con OCR y prueba de vida)**
+
+- **Onboarding obligatorio**: toda cuenta nueva debe aprobar su verificación
+  de identidad (persona ⇒ KYC, empresa ⇒ KYB) antes de operar. Hasta
+  entonces solo puede **fondear** (payins, depósitos crypto, transferencias
+  entrantes) y leer; el resto responde `403 verification_required`. Pide tu
+  link con `POST /v1/me/verification/link` y consulta tu estado con
+  `GET /v1/me/verification` — la aprobación actualiza tu `kyc_status`
+  automáticamente. Las cuentas existentes quedaron aprobadas.
+- **Verificación de terceros (solo cuentas empresa)**: genera links
+  hosteados (`POST /v1/kyc/links`, `POST /v1/kyb/links`) o envía los datos
+  por API (`POST /v1/{kyc,kyb}/submissions`), sube documentos con presign +
+  OCR y cierra la prueba de vida con liveness links. Comisiones fijas
+  nuevas `kyc_verification` / `kyb_verification` cobradas al crear (con
+  `idempotency_key` obligatoria y reembolso automático si falla).
+- 7 webhooks nuevos: `kyc/kyb_verification_status_changed`,
+  `kyc/kyb_link_completed`, `kyc/kyb_document_validated`,
+  `kyc_liveness_completed`. Guía completa en
+  [Verificación KYC y KYB](#verificacion-kyc-y-kyb).
+
+**Cambiado (BREAKING) — El screening pasa a AML**
+
+- `POST /v1/kyc`, `POST /v1/kyc/rescreen` y `PATCH /v1/kyc/monitoring` se
+  **eliminaron**: el screening contra listas ahora vive en
+  `POST /v1/aml/screenings`, `POST /v1/aml/rescreen` y
+  `PATCH /v1/aml/monitoring` (misma semántica y comisiones `compliance_*`).
+  El error `no_kyc` pasa a `no_screening` y el screening ya no toca tu
+  `kyc_status`. Nuevo webhook `aml_screening_updated` y nuevo service flag
+  `aml` (el flag `kyc` ahora gatea la verificación de identidad). Guía:
+  [AML screening](#aml-screening).
 
 ### v1.33 — 10 de julio de 2026
 
@@ -5798,7 +6335,7 @@ con anticipación y quedan marcados como **Breaking**.
   mostraban los ejemplos (fecha de nacimiento, nacionalidades, documentos
   con país emisor, alias, domicilios, datos registrales de empresa…) y
   enviarlos hace el screening más preciso. La
-  [guía de KYC](#kyckyb-y-compliance) ahora documenta todos los campos, con
+  [guía de KYC](#verificacion-kyc-y-kyb) ahora documenta todos los campos, con
   ejemplos de identidad completa y la regla de deduplicación.
 
 ### v1.20 — 8 de julio de 2026
@@ -6262,13 +6799,41 @@ está en la API Reference interactiva y en la colección Postman.
 | `POST` | `/v1/crypto/wallets` | Crear una wallet |
 
 
+## AML screening
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `POST` | `/v1/aml/screenings` | Enviar un screening AML |
+| `POST` | `/v1/aml/rescreen` | Reejecutar verificación KYC/KYB |
+| `PATCH` | `/v1/aml/monitoring` | Habilitar o deshabilitar el monitoreo |
+
+
 ## KYC / KYB
 
 | Método | Ruta | Qué hace |
 |---|---|---|
-| `POST` | `/v1/kyc` | Enviar verificación KYC/KYB |
-| `POST` | `/v1/kyc/rescreen` | Reejecutar verificación KYC/KYB |
-| `PATCH` | `/v1/kyc/monitoring` | Habilitar o deshabilitar el monitoreo |
+| `POST` | `/v1/me/verification/link` | Pedir mi link de verificación (onboarding) |
+| `GET` | `/v1/me/verification` | Mi estado de verificación (onboarding) |
+| `GET` | `/v1/kyc/links` | Listar links KYC |
+| `POST` | `/v1/kyc/links` | Crear un link KYC para un cliente |
+| `GET` | `/v1/kyc/links/{linkID}` | Consultar un link KYC |
+| `GET` | `/v1/kyb/links` | Listar links KYB |
+| `POST` | `/v1/kyb/links` | Crear un link KYB para un cliente |
+| `GET` | `/v1/kyb/links/{linkID}` | Consultar un link KYB |
+| `GET` | `/v1/kyc/submissions` | Listar submissions KYC |
+| `POST` | `/v1/kyc/submissions` | Crear una submission KYC con datos por API |
+| `GET` | `/v1/kyc/submissions/{submissionID}` | Consultar una submission KYC |
+| `GET` | `/v1/kyb/submissions` | Listar submissions KYB |
+| `POST` | `/v1/kyb/submissions` | Crear una submission KYB con datos por API |
+| `GET` | `/v1/kyb/submissions/{submissionID}` | Consultar una submission KYB |
+| `GET` | `/v1/kyc/submissions/{submissionID}/documents` | Resultados OCR de documentos KYC |
+| `POST` | `/v1/kyc/submissions/{submissionID}/documents` | Presign de un documento KYC |
+| `POST` | `/v1/kyc/submissions/{submissionID}/documents/confirm` | Confirmar un documento KYC subido |
+| `GET` | `/v1/kyb/submissions/{submissionID}/documents` | Resultados OCR de documentos KYB |
+| `POST` | `/v1/kyb/submissions/{submissionID}/documents` | Presign de un documento KYB |
+| `POST` | `/v1/kyb/submissions/{submissionID}/documents/confirm` | Confirmar un documento KYB subido |
+| `GET` | `/v1/kyc/submissions/{submissionID}/liveness_link` | Consultar el liveness link y su estado |
+| `POST` | `/v1/kyc/submissions/{submissionID}/liveness_link` | Crear un liveness link |
 
 
 ## Webhooks

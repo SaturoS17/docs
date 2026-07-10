@@ -7,6 +7,41 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 10, 2026" description="v1.34">
+
+**Added — KYC/KYB identity verification (hosted wizard, OCR documents and video liveness)**
+
+- **Mandatory onboarding**: every new account must approve its identity
+  verification (person ⇒ KYC, company ⇒ KYB) before operating. Until then
+  it can only **fund** (payins, crypto deposits, incoming transfers) and
+  read; everything else answers `403 verification_required`. Request your
+  link with `POST /v1/me/verification/link` and check your state with
+  `GET /v1/me/verification` — approval updates your `kyc_status`
+  automatically. Existing accounts were grandfathered as approved.
+- **Third-party verification (company accounts only)**: generate hosted
+  links (`POST /v1/kyc/links`, `POST /v1/kyb/links`) or send data through
+  the API (`POST /v1/{kyc,kyb}/submissions`), upload documents with
+  presign + OCR and close the liveness check with liveness links. New
+  fixed fees `kyc_verification` / `kyb_verification` billed at creation
+  (mandatory `idempotency_key`, automatic refund on failure).
+- 7 new webhooks: `kyc/kyb_verification_status_changed`,
+  `kyc/kyb_link_completed`, `kyc/kyb_document_validated`,
+  `kyc_liveness_completed`. Full guide at
+  [KYC and KYB verification](/en/guides/kyc).
+
+**Changed (BREAKING) — Screening becomes AML**
+
+- `POST /v1/kyc`, `POST /v1/kyc/rescreen` and `PATCH /v1/kyc/monitoring`
+  were **removed**: list screening now lives at
+  `POST /v1/aml/screenings`, `POST /v1/aml/rescreen` and
+  `PATCH /v1/aml/monitoring` (same semantics, same `compliance_*` fees).
+  The `no_kyc` error becomes `no_screening` and screening no longer
+  touches your `kyc_status`. New `aml_screening_updated` webhook and new
+  `aml` service flag (the `kyc` flag now gates identity verification).
+  Guide: [AML screening](/en/guides/aml).
+
+</Update>
+
 <Update label="July 10, 2026" description="v1.33">
 
 **Fixed — Banks catalog without `method` in countries with several methods**

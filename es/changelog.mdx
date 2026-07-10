@@ -8,6 +8,41 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="10 de julio de 2026" description="v1.34">
+
+**Agregado — Verificación de identidad KYC/KYB (wizard hosteado, documentos con OCR y prueba de vida)**
+
+- **Onboarding obligatorio**: toda cuenta nueva debe aprobar su verificación
+  de identidad (persona ⇒ KYC, empresa ⇒ KYB) antes de operar. Hasta
+  entonces solo puede **fondear** (payins, depósitos crypto, transferencias
+  entrantes) y leer; el resto responde `403 verification_required`. Pide tu
+  link con `POST /v1/me/verification/link` y consulta tu estado con
+  `GET /v1/me/verification` — la aprobación actualiza tu `kyc_status`
+  automáticamente. Las cuentas existentes quedaron aprobadas.
+- **Verificación de terceros (solo cuentas empresa)**: genera links
+  hosteados (`POST /v1/kyc/links`, `POST /v1/kyb/links`) o envía los datos
+  por API (`POST /v1/{kyc,kyb}/submissions`), sube documentos con presign +
+  OCR y cierra la prueba de vida con liveness links. Comisiones fijas
+  nuevas `kyc_verification` / `kyb_verification` cobradas al crear (con
+  `idempotency_key` obligatoria y reembolso automático si falla).
+- 7 webhooks nuevos: `kyc/kyb_verification_status_changed`,
+  `kyc/kyb_link_completed`, `kyc/kyb_document_validated`,
+  `kyc_liveness_completed`. Guía completa en
+  [Verificación KYC y KYB](/es/guias/kyc).
+
+**Cambiado (BREAKING) — El screening pasa a AML**
+
+- `POST /v1/kyc`, `POST /v1/kyc/rescreen` y `PATCH /v1/kyc/monitoring` se
+  **eliminaron**: el screening contra listas ahora vive en
+  `POST /v1/aml/screenings`, `POST /v1/aml/rescreen` y
+  `PATCH /v1/aml/monitoring` (misma semántica y comisiones `compliance_*`).
+  El error `no_kyc` pasa a `no_screening` y el screening ya no toca tu
+  `kyc_status`. Nuevo webhook `aml_screening_updated` y nuevo service flag
+  `aml` (el flag `kyc` ahora gatea la verificación de identidad). Guía:
+  [AML screening](/es/guias/aml).
+
+</Update>
+
 <Update label="10 de julio de 2026" description="v1.33">
 
 **Corregido — Catálogo de bancos sin `method` en países con varios métodos**

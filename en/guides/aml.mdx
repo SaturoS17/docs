@@ -1,0 +1,273 @@
+---
+title: "AML screening"
+icon: "shield-halved"
+description: "Screen persons and companies against sanctions, PEP and adverse media lists, with rescreening and continuous monitoring"
+---
+
+**AML screening** checks a person's or company's identity against global
+lists — sanctions, PEP, adverse media — and returns the analysis result
+with its risk level. It is a pure compliance product: it does **not**
+verify identity with documents or a liveness check (that is
+[KYC/KYB verification](/en/guides/kyc)); it analyzes whether the identity
+carries list risk.
+
+```mermaid
+flowchart LR
+    submit["POST /v1/aml/screenings<br/>(bills fee)"] --> result{"Result"}
+    result -->|"no_match"| ok["No hits"]
+    result -->|"potential_match / has_hits"| review["Matches + risk_level<br/>(review the hits)"]
+    ok -.->|"POST /v1/aml/rescreen<br/>(data change, policy)"| submit
+    ok -.->|"PATCH /v1/aml/monitoring<br/>(continuous watch)"| monitor["Alerts via webhook<br/>aml_screening_updated"]
+```
+
+<Warning>
+**Breaking change (v1.34)**: this product used to live at `POST /v1/kyc`,
+`/v1/kyc/rescreen` and `PATCH /v1/kyc/monitoring`. Those routes were
+**removed** and are now `POST /v1/aml/screenings`, `POST /v1/aml/rescreen`
+and `PATCH /v1/aml/monitoring` (same semantics, same fees). The
+`/v1/kyc/...` routes now belong to
+[identity verification](/en/guides/kyc), a different product.
+</Warning>
+
+<Note>
+If CBPay configured a compliance fee, it is debited **before** the call
+(you will see `compliance_fee` in the response) and **automatically
+refunded** if the screening fails. With a fee of 0 the service is free for
+you. Requires your own
+[approved identity verification](/en/guides/kyc#your-own-verification-onboarding).
+</Note>
+
+## Submit a screening
+
+One endpoint for person and company; the type is detected from the payload
+(other differences between account types are summarized in
+[persons and companies](/en/concepts/persons-companies)):
+
+<CodeGroup>
+
+```bash Person
+curl -X POST https://api.qbank.cl/platform/v1/aml/screenings \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer": {
+      "person": {
+        "full_name": "Ana Pérez Rojas",
+        "date_of_birth": "1990-04-12",
+        "personal_identification": [
+          { "type": "national_id", "issuing_country": "CL", "number": "12.345.678-5" }
+        ]
+      },
+      "email": "ana@example.com",
+      "country": "CL"
+    },
+    "monitor": false
+  }'
+```
+
+```bash Company
+curl -X POST https://api.qbank.cl/platform/v1/aml/screenings \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer": {
+      "company": {
+        "legal_name": "Comercial Andina SpA",
+        "tax_id": "76.543.210-8"
+      },
+      "email": "legal@andina.cl",
+      "country": "CL"
+    },
+    "monitor": true
+  }'
+```
+
+```bash Minimal (autofilled from your account)
+curl -X POST https://api.qbank.cl/platform/v1/aml/screenings \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "customer": {}, "monitor": false }'
+```
+
+</CodeGroup>
+
+If you omit `person`/`company`, it is filled from your account data (the
+person/company type comes from your account type).
+
+## Send every identity field you have (recommended)
+
+The `customer` object accepts **many more fields, all optional**, forwarded
+verbatim to the screening engine: **the more identity data you send, the
+more precise the analysis** — date of birth, countries and strong documents
+rule out namesakes and reduce false positives.
+
+| Field (person) | What it is |
+|---|---|
+| `full_name` — or `first_name` / `middle_name` / `last_name` | Full or split name |
+| `date_of_birth` | `"YYYY-MM-DD"` or `{ "year": 1990, "month": 4, "day": 12 }` |
+| `nationality` / `nationalities` | Nationality(ies), ISO-3166 |
+| `country_of_birth` | Country of birth |
+| `residential_information[]` | Residences, each with `country_of_residence` |
+| `personal_identification[]` | Strong documents: `{ "type", "issuing_country", "number" }` (national id, passport…) |
+| `alias` / `aliases` | Other known names |
+
+| Field (company) | What it is |
+|---|---|
+| `legal_name` | Legal name |
+| `alias[]` | Trade names |
+| `tax_id` / `registration_number` | Tax/mercantile identifiers |
+| `registration_authority_identification` | Registry number |
+| `place_of_registration` / `country_of_incorporation` | Registration country |
+| `incorporation_date` | Incorporation date |
+| `address[]` | Addresses, each with `country` |
+
+<Note>
+A query with **exactly the same identity data** reuses the previous
+screening (no new charge). Adding or changing identity fields (name, date,
+country, document, alias) makes the search more specific and runs — and
+bills — a new screening. Cosmetic fields (email, phone, textual address) do
+not change the matching.
+</Note>
+
+`201` response — person and company share the same shape; only
+`compliance_service` changes (`compliance_person` vs `compliance_company`,
+each with its own fee):
+
+<CodeGroup>
+
+```json Person
+{
+  "customer_id": "cus_8f2e1a…",
+  "status": "screened",
+  "risk_level": "low",
+  "screening_result": "no_match",
+  "compliance_service": "compliance_person",
+  "compliance_fee": "0.500000"
+}
+```
+
+```json Company
+{
+  "customer_id": "cus_5b7c33…",
+  "status": "screened",
+  "risk_level": "medium",
+  "screening_result": "potential_match",
+  "compliance_service": "compliance_company",
+  "compliance_fee": "1.000000"
+}
+```
+
+</CodeGroup>
+
+## Rescreening
+
+Re-runs the analysis of the same identity (e.g. after a data change or on a
+periodic policy). No body — it uses the `customer_id` of your previous
+screening:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/aml/rescreen \
+  -H "Authorization: Bearer <token>"
+```
+
+`200` response (bills `compliance_rescreen`, when configured):
+
+```json
+{
+  "customer_id": "cus_8f2e1a…",
+  "status": "screened",
+  "risk_level": "low",
+  "screening_result": "no_match",
+  "compliance_service": "compliance_rescreen",
+  "compliance_fee": "0.250000"
+}
+```
+
+Requires a previous screening; otherwise `409 no_screening`.
+
+## Continuous monitoring
+
+Enables (or disables) permanent watch over the identity — list changes,
+PEP, adverse media. Updates arrive via the `aml_screening_updated` webhook:
+
+<CodeGroup>
+
+```bash Enable (bills compliance_monitoring)
+curl -X PATCH https://api.qbank.cl/platform/v1/aml/monitoring \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "enabled": true }'
+```
+
+```bash Disable (always free)
+curl -X PATCH https://api.qbank.cl/platform/v1/aml/monitoring \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "enabled": false }'
+```
+
+</CodeGroup>
+
+`200` response:
+
+```json
+{
+  "customer_id": "cus_8f2e1a…",
+  "monitoring": true,
+  "compliance_service": "compliance_monitoring",
+  "compliance_fee": "0.100000"
+}
+```
+
+When disabling, `compliance_fee` returns `"0.000000"` — disabling is
+always free.
+
+## Webhook
+
+| Event | When |
+|---|---|
+| `aml_screening_updated` | The screening finished, a case changed, the risk changed or a monitored transaction was reviewed |
+
+Example payload:
+
+```json
+{
+  "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "screening_event": "compliance_risk_changed",
+  "customer_id": "cus_8f2e1a…",
+  "data": { "risk_level": "high" }
+}
+```
+
+Subscribe the same way as every other event (see [Webhooks](/en/webhooks)).
+
+## Errors
+
+| HTTP | `error` | Cause | Solution |
+|---|---|---|---|
+| 402 | `insufficient_funds` | Balance cannot cover the compliance fee | Fund the account and retry |
+| 403 | `verification_required` | Your account has not approved its identity verification yet | Complete your [onboarding](/en/guides/kyc#your-own-verification-onboarding) |
+| 403 | `service_disabled` | The `aml` service is disabled for your account | Contact your operator |
+| 409 | `no_screening` | Rescreen/monitoring without a previous screening | Send `POST /v1/aml/screenings` first |
+| 502 | `compliance_unavailable` | Service temporarily unavailable (the fee was refunded) | Retry later |
+
+## FAQ
+
+<AccordionGroup>
+<Accordion title="What is the difference between AML screening and KYC/KYB verification?">
+Screening checks an identity against lists (sanctions, PEP, adverse media)
+— no documents involved. [KYC/KYB verification](/en/guides/kyc) proves the
+person/company is who they claim to be, with a form, documents and a video
+liveness check. They complement each other: verify identity with KYC/KYB
+and watch its risk with AML.
+</Accordion>
+<Accordion title="Can I screen my own customers?">
+Yes: the `customer` object accepts any identity, not only your account's.
+Each screening bills its fee (person or company depending on the payload).
+</Accordion>
+<Accordion title="Does screening change my account's verification state?">
+No. Since v1.34 your account's `kyc_status` is managed exclusively by the
+KYC/KYB identity verification (your onboarding). Screening only evaluates
+list risk.
+</Accordion>
+</AccordionGroup>

@@ -81,7 +81,8 @@ Full flow and details in [social login](/en/guides/social-login).
 | `recipient_required` / `self_transfer` | Invalid transfer destination |
 | `invalid_chain` / `invalid_asset` | Unsupported network or asset |
 | `to_address_required` | Missing withdrawal destination address |
-| `invalid_payload` | Missing `enabled` (KYC/KYB monitoring) |
+| `invalid_payload` | Missing a required field (e.g. `enabled` on AML monitoring, `external_customer_id` on verifications) |
+| `liveness_already_completed` | That verification's liveness check already passed |
 | `invalid_event_type` / `weak_secret` / `invalid_callback_url` | Invalid webhook subscription |
 | `invalid_status` / `invalid_kyc_status` / `invalid_direction` / `reason_required` / `account_id_required` / `invalid_service` / `invalid_fee` | Administration validations |
 
@@ -93,7 +94,10 @@ Full flow and details in [social login](/en/guides/social-login).
 | 404 | `not_found` | Resource does not exist (or belongs to another account) |
 | 404 | `recipient_not_found` | Transfer destination does not exist |
 | 409 | `duplicate` | The resource already exists |
-| 409 | `no_kyc` | Rescreen/monitoring without a prior KYC/KYB |
+| 403 | `verification_required` | Your account has not approved its identity verification yet (person=KYC, company=KYB); until then you can only fund — request your link at `POST /v1/me/verification/link` |
+| 403 | `company_account_required` | Third-party verification (KYC/KYB links/submissions) is for company accounts only |
+| 409 | `already_verified` | Onboarding link requested with an already-verified account |
+| 409 | `no_screening` | AML rescreen/monitoring without a prior screening |
 | 409 | `no_banking_customer` | Banking operation without a banking profile (`POST /v1/banking/customer` first) |
 | 409 | `banking_customer_exists` | The account already has a banking profile (one per account) |
 | 422 | `currency_not_supported` | No FX rate for that currency |
@@ -118,7 +122,8 @@ Full flow and details in [social login](/en/guides/social-login).
 | 500 | `internal_error` | Unexpected error; retry with the same idempotency key |
 | 502 | `rates_unavailable` | FX rates temporarily unavailable |
 | 502 | `core_unavailable` | Processor temporarily unavailable |
-| 502 | `compliance_unavailable` | Screening temporarily unavailable |
+| 502 | `compliance_unavailable` | AML screening temporarily unavailable |
+| 503 | `verifications_unavailable` | Identity verification temporarily unavailable (the fee was refunded) |
 | 503 | `org_credential_missing` | Service being configured; contact CBPay support |
 | 503 | `withdrawals_unavailable` | On-chain withdrawals not enabled for the corridor |
 | 503 | `pricing_unavailable` | BTC/GOLD execution price unavailable or stale; retry later or settle in USDT/USDC |

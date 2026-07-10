@@ -31,11 +31,13 @@ automatically and a webhook notifies you.
 </Accordion>
 
 <Accordion title="Do I need to pass KYC/KYB before operating?">
-The API works with your account **active**; the verification policy is
-defined by the CBPay team for your case (amounts, country, account type).
-If your account requires verification, submit it with `POST /v1/kyc` —
-and if any operation returns `403 account_blocked`, contact the CBPay
-team.
+Yes: every account must approve its identity verification (person = KYC,
+company = KYB) before moving money out. Meanwhile you can **fund** (payins,
+crypto deposits, incoming transfers) and read; other actions answer
+`403 verification_required`. Request your link with
+`POST /v1/me/verification/link` and complete the wizard —
+[full guide](/en/guides/kyc). If anything returns `403 account_blocked`,
+contact the CBPay team.
 </Accordion>
 
 <Accordion title="Why does an operation return 403 service_disabled?">

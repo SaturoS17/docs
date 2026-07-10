@@ -20,7 +20,9 @@ The type is set at account creation and does not change. You see it in
 | **Crypto wallets** per network | **1** (`422 wallet_limit_reached` on the second) | **Unlimited** (use `label` to tell them apart) |
 | **Cards** | **1 virtual + 1 physical**, for itself only | **Unlimited**, for the company or for **designated persons** (employees) |
 | **Members with login** (`POST /v1/members`) | No (`403 company_only`) | Yes — `owner` / `operator` / `viewer` roles |
-| **KYC** (`POST /v1/kyc`) | **Person** screening (`customer.person`), bills `compliance_person` | **Company/KYB** screening (`customer.company`), bills `compliance_company` |
+| **Identity verification** (`/v1/me/verification`) | **KYC** onboarding (wizard with documents + liveness) | **KYB** onboarding (wizard with corporate documents) |
+| **Verify third parties** (`/v1/{kyc,kyb}/links` and submissions) | No (`403 company_account_required`) | Yes — hosted links or API data, bills `kyc_verification`/`kyb_verification` |
+| **AML screening** (`POST /v1/aml/screenings`) | **Person** screening (`customer.person`), bills `compliance_person` | **Company** screening (`customer.company`), bills `compliance_company` |
 | Card holder (first issuance) | Personal data + identity documents | Corporate data + corporate documents (or the designated person's) |
 | Registration | `type: "person"` | `type: "company"` (+ `tax_id` recommended) |
 
@@ -34,8 +36,9 @@ per-card spending limits, enabled services — works identically.
 
 - Registration: `POST /v1/auth/register` with `type: "person"` (or your
   operator creates it).
-- KYC: submit `customer.person` with your identity —
-  [guide](/en/guides/kyc).
+- Verification: request your KYC link with `POST /v1/me/verification/link`
+  and complete the wizard — until approved you can only fund
+  ([guide](/en/guides/kyc)).
 - Crypto: **one wallet per network** (TRON and ETH). Need more addresses?
   That is a company-account use case.
 - Cards: up to **1 virtual + 1 physical**; the first issuance carries your
@@ -46,8 +49,9 @@ per-card spending limits, enabled services — works identically.
 <Tab title="Company account">
 
 - Registration: `type: "company"`, ideally with `tax_id`.
-- KYB: submit `customer.company` with the corporate data —
-  [guide](/en/guides/kyc).
+- Verification: request your KYB link with `POST /v1/me/verification/link`
+  and complete the wizard with the corporate data; once approved you can
+  also verify your own customers ([guide](/en/guides/kyc)).
 - Crypto: **unlimited wallets** per network (one per branch, per product,
   per vendor…), with a descriptive `label`.
 - Cards: **unlimited** — corporate (holder = the company, with corporate
