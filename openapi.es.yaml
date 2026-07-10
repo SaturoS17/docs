@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.35'
+  version: '1.36'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -43,6 +43,7 @@ tags:
   description: Recargas fiat que se acreditan al saldo en USDT.
 - name: Transferencias
 - name: Contacts
+- name: Swaps
   description: Transferencias internas gratuitas entre cuentas CBPay (persona o empresa, cualquier combinación).
 - name: Crypto
   description: Fondeo y retiros on-chain de USDT (TRON y Ethereum).
@@ -4349,6 +4350,309 @@ paths:
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/swaps/quote:
+    get:
+      tags:
+      - Swaps
+      operationId: quoteSwap
+      summary: Cotizar un swap
+      description: 'Cotización indicativa gratis para convertir entre tus saldos USDT, USDC, BTC y
+        GOLD (cualquier par, origen distinto del destino). La tasa que ves es la tasa de ejecución de
+        tu cuenta — cotizado = recibido, sin comisiones aparte. Indicativa: la ejecución usa el
+        precio del momento del POST (los pares entre stablecoins son estables).'
+      parameters:
+      - name: from_asset
+        in: query
+        required: true
+        schema:
+          type: string
+          enum: [USDT, USDC, BTC, GOLD]
+      - name: to_asset
+        in: query
+        required: true
+        schema:
+          type: string
+          enum: [USDT, USDC, BTC, GOLD]
+      - name: amount
+        in: query
+        required: true
+        schema:
+          type: string
+        description: Monto en la moneda de origen (hasta sus decimales).
+      responses:
+        '200':
+          description: Cotización indicativa.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  from_asset:
+                    type: string
+                  to_asset:
+                    type: string
+                  from_amount:
+                    type: string
+                  to_amount:
+                    type: string
+                  rate:
+                    type: string
+                    description: Unidades de destino por unidad de origen (tasa de ejecución marcada).
+                  indicative:
+                    type: boolean
+              example:
+                from_asset: USDT
+                to_asset: BTC
+                from_amount: '1000.000000'
+                to_amount: '0.01568419'
+                rate: '0.00001568'
+                indicative: true
+        '400':
+          description: invalid_asset / invalid_pair / invalid_amount / amount_too_small / swap_asset_disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_pair
+                message: from_asset and to_asset must differ
+        '503':
+          description: Precio de ejecución no disponible o desactualizado (pricing_unavailable).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: pricing_unavailable
+                message: execution price is unavailable or stale; retry later
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/swaps:
+    post:
+      tags:
+      - Swaps
+      operationId: createSwap
+      summary: Crear un swap
+      description: 'Convierte saldo entre dos de tus monedas, de forma síncrona y atómica — tu
+        saldo cambia al instante y la plata nunca sale de tu cuenta (sin OTP). Los pares volátiles
+        (BTC/GOLD) comparten los límites por operación y de volumen 24h con payouts y compras con
+        tarjeta. Requiere clave de idempotencia: el replay devuelve el swap original y jamás
+        re-ejecuta.'
+      parameters:
+      - $ref: '#/components/parameters/idempotencyKeyHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - from_asset
+              - to_asset
+              - amount
+              properties:
+                from_asset:
+                  type: string
+                  enum: [USDT, USDC, BTC, GOLD]
+                to_asset:
+                  type: string
+                  enum: [USDT, USDC, BTC, GOLD]
+                amount:
+                  type: string
+                  description: Monto en la moneda de origen (6 decimales para USDT/USDC/GOLD, 8 para BTC).
+                idempotency_key:
+                  type: string
+            examples:
+              usdt_btc:
+                summary: USDT a BTC
+                value:
+                  from_asset: USDT
+                  to_asset: BTC
+                  amount: '1000'
+                  idempotency_key: swap-2026-07-10-a
+              cross:
+                summary: BTC a GOLD directo
+                value:
+                  from_asset: BTC
+                  to_asset: GOLD
+                  amount: '0.01'
+                  idempotency_key: swap-2026-07-10-b
+              stables:
+                summary: USDT a USDC
+                value:
+                  from_asset: USDT
+                  to_asset: USDC
+                  amount: '500'
+                  idempotency_key: swap-2026-07-10-c
+      responses:
+        '201':
+          description: Swap ejecutado (síncrono).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Swap'
+              example:
+                swap_id: 8a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+                from_asset: USDT
+                to_asset: BTC
+                from_amount: '1000.000000'
+                to_amount: '0.01568419'
+                rate: '0.00001568'
+                status: completed
+                idempotency_key: swap-2026-07-10-a
+                created_at: '2026-07-10T15:00:00Z'
+        '200':
+          description: Replay de idempotencia (swap original, jamás re-ejecutado).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Swap'
+              example:
+                swap_id: 8a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+                from_asset: USDT
+                to_asset: BTC
+                from_amount: '1000.000000'
+                to_amount: '0.01568419'
+                rate: '0.00001568'
+                status: completed
+                idempotency_key: swap-2026-07-10-a
+                created_at: '2026-07-10T15:00:00Z'
+                idempotency_hit: true
+        '400':
+          description: invalid_asset / invalid_pair / invalid_amount / amount_too_small /
+            swap_asset_disabled / idempotency_key_required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: amount_too_small
+                message: amount is too small to convert at the current rate
+        '402':
+          $ref: '#/components/responses/InsufficientFunds'
+        '403':
+          description: verification_required / service_disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: service_disabled
+                message: this service is not enabled for your account
+        '422':
+          description: settlement_limit_exceeded / settlement_daily_limit_exceeded (topes volátiles
+            compartidos con payouts y tarjetas).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: settlement_daily_limit_exceeded
+                message: the account exceeded its 24h volume for volatile assets; retry later or use smaller amounts
+        '503':
+          description: Precio de ejecución no disponible o desactualizado (pricing_unavailable).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: pricing_unavailable
+                message: execution price is unavailable or stale; retry later
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags:
+      - Swaps
+      operationId: listSwaps
+      summary: Listar swaps
+      parameters:
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/pageSize'
+      - name: asset
+        in: query
+        schema:
+          type: string
+          enum: [USDT, USDC, BTC, GOLD]
+        description: Matchea cualquiera de las dos puntas de la conversión.
+      - name: from
+        in: query
+        schema:
+          type: string
+          format: date
+        description: Desde esta fecha (YYYY-MM-DD, UTC, inclusive).
+      - name: to
+        in: query
+        schema:
+          type: string
+          format: date
+        description: Hasta esta fecha (YYYY-MM-DD, UTC, inclusive).
+      responses:
+        '200':
+          description: Swaps paginados.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  swaps:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Swap'
+              example:
+                page: 1
+                page_size: 50
+                swaps:
+                - swap_id: 8a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+                  from_asset: USDT
+                  to_asset: BTC
+                  from_amount: '1000.000000'
+                  to_amount: '0.01568419'
+                  rate: '0.00001568'
+                  status: completed
+                  idempotency_key: swap-2026-07-10-a
+                  created_at: '2026-07-10T15:00:00Z'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/swaps/{swapID}:
+    get:
+      tags:
+      - Swaps
+      operationId: getSwap
+      summary: Consultar un swap
+      parameters:
+      - name: swapID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: El swap.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Swap'
+              example:
+                swap_id: 8a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+                from_asset: BTC
+                to_asset: GOLD
+                from_amount: '0.01000000'
+                to_amount: '4.900990'
+                rate: '490.09900990'
+                status: completed
+                idempotency_key: swap-2026-07-10-b
+                created_at: '2026-07-10T15:05:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/webhooks/subscriptions:
     post:
       tags:
@@ -7696,6 +8000,36 @@ components:
         created_at:
           type: string
           format: date-time
+    Swap:
+      type: object
+      properties:
+        swap_id:
+          type: string
+          format: uuid
+        from_asset:
+          type: string
+          enum: [USDT, USDC, BTC, GOLD]
+        to_asset:
+          type: string
+          enum: [USDT, USDC, BTC, GOLD]
+        from_amount:
+          type: string
+        to_amount:
+          type: string
+        rate:
+          type: string
+          description: Unidades de destino por unidad de origen (tasa de ejecución marcada).
+        status:
+          type: string
+          example: completed
+        idempotency_key:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        idempotency_hit:
+          type: boolean
+          description: Presente en replays.
     Error:
       type: object
       properties:

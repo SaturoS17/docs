@@ -7,6 +7,24 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 10, 2026" description="v1.36">
+
+**Added — Swaps: convert between your balances**
+
+- New `swaps` product: convert between `USDT`, `USDC`, `BTC` and `GOLD`
+  instantly, without the money leaving your account — any pair, including
+  direct `BTC` ↔ `GOLD`. `POST /v1/swaps` (synchronous, with
+  `idempotency_key`), `GET /v1/swaps/quote` (free indicative quote) and
+  `GET /v1/swaps` (+`/{id}`) for history.
+- The quoted rate is your account's execution rate: quoted = received, no
+  separate fees. Live BTC/GOLD prices (if the price is not fresh the swap
+  is rejected with `503 pricing_unavailable`).
+- Conversions touching BTC/GOLD share the per-operation and 24h volume
+  limits with payouts and card purchases (`GET /v1/settlement`). New
+  guide: [Swaps](/en/guides/swaps).
+
+</Update>
+
 <Update label="July 10, 2026" description="v1.35">
 
 **Added — Contacts and sending by phone number**

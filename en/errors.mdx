@@ -119,6 +119,9 @@ Full flow and details in [social login](/en/guides/social-login).
 | 400 | `settlement_asset_disabled` | Your organization disabled that asset as settlement source |
 | 422 | `settlement_limit_exceeded` | The operation exceeds the per-operation limit for volatile assets (BTC/GOLD); use USDT/USDC or split the operation |
 | 422 | `settlement_daily_limit_exceeded` | The account exceeded its 24h volume for volatile assets (BTC/GOLD); use USDT/USDC or retry later |
+| 400 | `invalid_pair` | Swap with the same source and destination currency |
+| 400 | `amount_too_small` | The swap amount does not reach the destination currency's minimum unit |
+| 400 | `swap_asset_disabled` | One of the swap currencies is disabled for your organization |
 
 ### Service (5xx)
 

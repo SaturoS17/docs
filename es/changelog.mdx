@@ -8,6 +8,24 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="10 de julio de 2026" description="v1.36">
+
+**Agregado — Swaps: conversión entre tus saldos**
+
+- Nuevo producto `swaps`: convierte entre `USDT`, `USDC`, `BTC` y `GOLD`
+  al instante y sin que la plata salga de tu cuenta — cualquier par,
+  incluido `BTC` ↔ `GOLD` directo. `POST /v1/swaps` (síncrono, con
+  `idempotency_key`), `GET /v1/swaps/quote` (cotización indicativa gratis)
+  y `GET /v1/swaps` (+`/{id}`) para el historial.
+- La tasa cotizada es la tasa de ejecución de tu cuenta: cotizado =
+  recibido, sin comisiones aparte. Precios de BTC/GOLD en vivo (si el
+  precio no está fresco, el swap se rechaza con `503 pricing_unavailable`).
+- Las conversiones que tocan BTC/GOLD comparten los límites por operación
+  y de volumen 24 h con payouts y compras con tarjeta
+  (`GET /v1/settlement`). Guía nueva: [Swaps](/es/guias/swaps).
+
+</Update>
+
 <Update label="10 de julio de 2026" description="v1.35">
 
 **Agregado — Contactos y envío por teléfono**
