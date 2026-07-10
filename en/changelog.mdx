@@ -7,6 +7,49 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 9, 2026" description="v1.32">
+
+**Added — Card purchases from BTC and GOLD (at-the-moment conversion)**
+
+- `spending_asset` now also accepts **BTC and GOLD**: purchases convert at
+  the **effective price of the moment of each event** (the same one in the
+  `settlement` block of `GET /v1/rates`).
+- **Authorization**: the equivalent is reserved plus a small cushion (not a
+  charge; returned at settlement). If the execution price is unavailable,
+  the purchase is declined with `pricing_unavailable` — your balance is
+  never converted with an untrustworthy price.
+- **Settlement**: the final amount is re-quoted at the capture moment's
+  price and the cushion's excess returns automatically. **Reversal** of an
+  authorization: exact amount returned, no conversion.
+  **Refunds/adjustments** after capture: re-converted at the price of the
+  event's moment (your balance takes the price variation).
+- BTC/GOLD purchases share the account's volatile-asset limits with
+  payouts: per operation (`settlement_limit_exceeded`) and 24h volume
+  (`settlement_daily_limit_exceeded`).
+
+</Update>
+
+<Update label="July 9, 2026" description="v1.31">
+
+**Added — Choose which balance your cards spend from (USDT or USDC)**
+
+- Each card now has a **spending asset** (`spending_asset`): its purchases
+  debit the account's USDT or USDC balance, 1:1 with the USD and with no
+  conversion fee. USDT by default (identical to the historical behavior).
+- Set it when creating the card (`spending_asset` in `POST /v1/cards`) or
+  change it any time with `PATCH /v1/cards/{cardID}`. The change only
+  applies to future purchases: in-flight authorizations keep (and refund
+  to) the asset they debited.
+- Card transactions now expose `spend_asset` and `spend_amount` (the
+  balance and amount actually debited); `amount_usd` / `amount_usdt`
+  remain the USD reference value. Per-card limits are still measured in
+  USD.
+- New errors: `400 spending_asset_unavailable` (BTC/GOLD are not available
+  for card purchases) and `spending_asset_disabled` authorization declines
+  if your operator disables the asset.
+
+</Update>
+
 <Update label="July 9, 2026" description="v1.30">
 
 **Changed — Multi-asset settlement hardening**

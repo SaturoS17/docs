@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.30'
+  version: '1.32'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -4610,8 +4610,10 @@ paths:
       - Cards
       operationId: createCard
       summary: Crear una tarjeta
-      description: 'Emite una tarjeta (virtual o física) que gasta Just-In-Time del saldo USDT central
-        de la cuenta — sin prefondeo: cada compra se autoriza en tiempo real contra el saldo
+      description: 'Emite una tarjeta (virtual o física) que gasta Just-In-Time del saldo central de
+        la cuenta en el asset de gasto de la tarjeta (`spending_asset`: USDT/USDC 1:1 con el USD, o
+        BTC/GOLD convertidos al precio del momento de cada evento; USDT por defecto) — sin
+        prefondeo: cada compra se autoriza en tiempo real contra el saldo
         disponible y los límites propios de la tarjeta. Las cuentas persona pueden tener **1 virtual +
         1 física**; las cuentas empresa crean tarjetas **ilimitadas**, para la empresa o para personas
         designadas (ej. empleados, pasando sus documentos de identidad). La emisión cobra el fee
@@ -4634,9 +4636,21 @@ paths:
                   type: string
                   description: Obligatoria (también como header Idempotency-Key). Un retry con la
                     misma clave devuelve la tarjeta original y nunca cobra dos veces el fee de emisión.
+                spending_asset:
+                  type: string
+                  enum:
+                  - USDT
+                  - USDC
+                  - BTC
+                  - GOLD
+                  default: USDT
+                  description: Saldo desde el que gasta la tarjeta. USDT/USDC van a la par del USD
+                    (1:1 exacto, sin comisión de conversión). BTC/GOLD se convierten al precio
+                    efectivo del momento de cada evento, con colchón de reserva en la autorización
+                    (pricing fail-closed y límites de assets volátiles compartidos con payouts).
                 limits:
                   type: object
-                  description: Límites de gasto opcionales en USDT (se aplican al autorizar; 0 u
+                  description: Límites de gasto opcionales en USD (se aplican al autorizar; 0 u
                     omitido = sin límite).
                   properties:
                     per_transaction:
@@ -4682,6 +4696,7 @@ paths:
                 value:
                   physical: true
                   idempotency_key: card-f-ops-1
+                  spending_asset: USDC
                   limits:
                     per_transaction: '500.00'
                     monthly: '5000.00'
@@ -4722,6 +4737,7 @@ paths:
                 cardholder_kind: account
                 cardholder_name: Client X SpA
                 status: active
+                spending_asset: USDT
                 limits:
                   monthly: '5000.000000'
                 created_at: '2026-07-08T12:00:00Z'
@@ -4814,6 +4830,7 @@ paths:
                   physical: false
                   cardholder_kind: account
                   status: active
+                  spending_asset: USDT
                   limits: {}
                   created_at: '2026-07-08T12:00:00Z'
                   updated_at: '2026-07-08T12:00:00Z'
@@ -4842,6 +4859,7 @@ paths:
                 physical: false
                 cardholder_kind: account
                 status: active
+                spending_asset: USDT
                 limits:
                   monthly: '5000.000000'
                 created_at: '2026-07-08T12:00:00Z'
@@ -4854,9 +4872,10 @@ paths:
       tags:
       - Cards
       operationId: updateCard
-      summary: Actualizar límites o congelar/descongelar
-      description: Actualiza los límites de gasto (envía "0" para quitar un límite) y congela o
-        descongela la tarjeta. Una tarjeta congelada rechaza toda autorización al instante.
+      summary: Actualizar límites, asset de gasto o congelar/descongelar
+      description: Actualiza los límites de gasto (envía "0" para quitar un límite), cambia el saldo
+        desde el que gasta (`spending_asset`, solo compras futuras) y congela o descongela la
+        tarjeta. Una tarjeta congelada rechaza toda autorización al instante.
       parameters:
       - $ref: '#/components/parameters/cardID'
       requestBody:
@@ -4868,6 +4887,15 @@ paths:
               properties:
                 frozen:
                   type: boolean
+                spending_asset:
+                  type: string
+                  enum:
+                  - USDT
+                  - USDC
+                  - BTC
+                  - GOLD
+                  description: Nuevo saldo de gasto. Solo afecta compras futuras; las autorizaciones
+                    en vuelo conservan (y devuelven a) el asset con el que debitaron.
                 limits:
                   type: object
                   properties:
@@ -4882,6 +4910,10 @@ paths:
                 summary: Congelar la tarjeta
                 value:
                   frozen: true
+              set_spending_asset:
+                summary: Gastar desde el saldo USDC
+                value:
+                  spending_asset: USDC
               set_limits:
                 summary: Actualizar límites
                 value:
@@ -4901,19 +4933,26 @@ paths:
                 physical: false
                 cardholder_kind: account
                 status: frozen
+                spending_asset: USDC
                 limits:
                   per_transaction: '200.000000'
                 created_at: '2026-07-08T12:00:00Z'
                 updated_at: '2026-07-08T13:00:00Z'
         '400':
-          description: invalid_amount
+          description: invalid_amount / spending_asset_unavailable / settlement_asset_disabled
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-              example:
-                error: invalid_amount
-                message: limits must be positive decimal strings (or "0" to remove)
+              examples:
+                invalid_amount:
+                  value:
+                    error: invalid_amount
+                    message: limits must be positive decimal strings (or "0" to remove)
+                spending_asset_unavailable:
+                  value:
+                    error: spending_asset_unavailable
+                    message: this asset is not available for card purchases
         '409':
           description: card_cancelled
           content:
@@ -5034,8 +5073,10 @@ paths:
       operationId: listCardTransactions
       summary: Listar transacciones de la tarjeta
       description: 'Compras y su ciclo de vida: `authorized` (hold en tiempo real), `settled`
-        (confirmada en la liquidación), `reversed` (anulada, fondos devueltos) y `declined` (con la
-        razón: insufficient_funds, card_limit_exceeded, card_frozen...).'
+        (confirmada en la liquidación), `reversed` (anulada, fondos devueltos al mismo saldo) y
+        `declined` (con la razón: insufficient_funds, card_limit_exceeded, card_frozen...).
+        `spend_asset` / `spend_amount` indican desde qué saldo se debitó la compra y cuánto en ese
+        asset; `amount_usd` / `amount_usdt` siguen siendo el valor USD de referencia.'
       parameters:
       - $ref: '#/components/parameters/cardID'
       - $ref: '#/components/parameters/page'
@@ -5086,6 +5127,8 @@ paths:
                   mcc: '5999'
                   amount_usd: '16.17'
                   amount_usdt: '16.170000'
+                  spend_asset: USDC
+                  spend_amount: '16.170000'
                   status: settled
                   auth_number: '040031'
                   created_at: '2026-07-08T15:00:00Z'
@@ -5706,8 +5749,19 @@ components:
           - active
           - frozen
           - cancelled
+        spending_asset:
+          type: string
+          enum:
+          - USDT
+          - USDC
+          - BTC
+          - GOLD
+          description: Saldo desde el que gastan las compras de la tarjeta. USDT/USDC 1:1 con el
+            USD; BTC/GOLD convertidos al precio del momento de cada evento. USDT por defecto.
+            Cambiarlo solo afecta compras futuras.
         limits:
           type: object
+          description: Límites de gasto, siempre medidos en USD, independientes del asset de gasto.
           properties:
             per_transaction:
               type: string

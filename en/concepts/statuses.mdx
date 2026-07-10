@@ -81,7 +81,8 @@ If the withdrawal fails before broadcasting, the full debit is refunded
 
 - `pending_activation` — a physical card was issued and ships inactive; it
   activates with `POST /v1/cards/{id}/activate`.
-- `active` — authorizes purchases in real time against the USDT balance.
+- `active` — authorizes purchases in real time against the card's spending
+  asset balance (`spending_asset`: USDT, USDC, BTC or GOLD).
 - `frozen` — frozen (manually or for an unpaid monthly fee); purchases are
   declined with `unfunded_card_frozen`. It unfreezes by settling the
   pending charge.

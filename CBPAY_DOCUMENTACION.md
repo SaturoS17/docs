@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-09 23:59 UTC · versión `1aedf2c93477`
+> **Documento actualizado:** 2026-07-10 02:34 UTC · versión `11123e4ea9a8`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.30 (9 de julio de 2026) |
+| Versión de la documentación | v1.32 (9 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -73,7 +73,7 @@ ellos:
 - **Payins fiat** — Cobra en moneda local (QR, transferencias, página de pago y cobro pull) y recibe el abono automáticamente en USDT.
 - **Transferencias internas** — Mueve saldo a cualquier otra cuenta CBPay, al instante y sin comisión.
 - **Crypto on-chain** — Fondea con USDT por TRON o Ethereum y retira on-chain a cualquier dirección.
-- **Tarjetas** — Emite tarjetas virtuales y físicas que gastan directo del saldo USDT de la cuenta, con autorización en tiempo real.
+- **Tarjetas** — Emite tarjetas virtuales y físicas que gastan directo de cualquier saldo de la cuenta (USDT, USDC, BTC o GOLD), en tiempo real.
 - **Banking** — Cuentas bancarias reales a tu nombre: recibe, mantén y envía dinero por rieles internacionales (SEPA, SWIFT, ACH).
 - **KYC/KYB** — Verificación de personas y empresas con screening AML, rescreening y monitoreo continuo.
 - **Cartola** — Estado de cuenta completo por período en JSON, PDF o Excel, con cuadratura contable garantizada.
@@ -1542,7 +1542,8 @@ Si el retiro falla antes de transmitirse, el débito completo se reembolsa
 
 - `pending_activation` — física emitida, viaja inactiva; se activa con
   `POST /v1/cards/{id}/activate`.
-- `active` — autoriza compras en tiempo real contra el saldo USDT.
+- `active` — autoriza compras en tiempo real contra el saldo del asset de
+  gasto de la tarjeta (`spending_asset`: USDT, USDC, BTC o GOLD).
 - `frozen` — congelada (manual o por mensualidad impaga); las compras se
   rechazan con `unfunded_card_frozen`. Se descongela pagando lo pendiente.
 - `cancelled` — final; no se puede revertir.
@@ -3510,22 +3511,25 @@ las wallets son puertas de entrada, el saldo por moneda es uno solo.
 
 ## Tarjetas: virtuales y físicas
 
-*Emite tarjetas que gastan directo del saldo USDT de la cuenta, con límites por tarjeta*
+*Emite tarjetas que gastan directo de cualquier saldo de la cuenta (USDT, USDC, BTC o GOLD), con límites por tarjeta*
 
-Las tarjetas CBPay gastan **Just-In-Time del saldo USDT central de la
-cuenta**: no hay que prefondearlas ni moverles saldo. Cada compra se autoriza
-en tiempo real contra el saldo disponible y los límites propios de la
-tarjeta, y el débito queda de inmediato en el historial de movimientos.
+Las tarjetas CBPay gastan **Just-In-Time del saldo central de la cuenta**:
+no hay que prefondearlas ni moverles saldo. Cada tarjeta elige desde qué
+saldo gasta (`spending_asset`: **USDT, USDC, BTC o GOLD**). USDT/USDC van
+1:1 con el USD; BTC y GOLD se convierten **al precio del momento de cada
+evento**. Cada compra se autoriza en tiempo real contra el saldo disponible
+de ese asset y los límites propios de la tarjeta, y el débito queda de
+inmediato en el historial de movimientos.
 
 ```mermaid
 flowchart LR
     compra["Compra en comercio<br/>(POS / e-commerce / ATM)"] --> red["Red de tarjetas"]
     red --> jit{"Autorización JIT<br/>en tiempo real"}
-    jit -->|"saldo y límites OK"| debito["Débito USDT<br/>+ hold"]
-    jit -->|"insuficiente / límite /<br/>congelada"| rechazo["Compra rechazada<br/>(razón auditada)"]
+    jit -->|"saldo y límites OK"| debito["Débito en el saldo elegido<br/>+ hold"]
+    jit -->|"insuficiente / límite /<br/>congelada / sin precio"| rechazo["Compra rechazada<br/>(razón auditada)"]
     debito --> liquidacion{"Liquidación<br/>(1-2 días)"}
-    liquidacion -->|"confirmada"| settle["Hold consumido"]
-    liquidacion -->|"anulada"| refund["Fondos devueltos<br/>al saldo"]
+    liquidacion -->|"confirmada"| settle["Hold consumido<br/>(BTC/GOLD: re-cotizado al momento)"]
+    liquidacion -->|"anulada"| refund["Fondos devueltos<br/>al mismo saldo"]
 ```
 
 ### Cuántas tarjetas puedes tener
@@ -3535,10 +3539,66 @@ flowchart LR
 | Persona | **1** | **1** | No |
 | Empresa | **Ilimitadas** | **Ilimitadas** | Sí: personas designadas (ej. empleados) |
 
-Todas las tarjetas de una cuenta gastan del **mismo saldo USDT**. El control
-fino es por límites de gasto de cada tarjeta (por transacción, diario,
-mensual), que puedes cambiar en cualquier momento.
+Cada tarjeta gasta del **saldo central de la cuenta en el asset que tenga
+configurado** (`spending_asset`, USDT por defecto). El control fino es por
+límites de gasto de cada tarjeta (por transacción, diario, mensual), que
+siempre se miden en **USD** y puedes cambiar en cualquier momento.
 
+### Elegir el saldo de gasto (USDT, USDC, BTC o GOLD)
+
+Define `spending_asset` al crear la tarjeta o cámbialo después con `PATCH`.
+Solo afecta compras futuras: las autorizaciones en vuelo conservan el asset
+con el que se debitaron (y su anulación devuelve ese mismo asset).
+
+```bash
+curl -X PATCH https://api.qbank.cl/platform/v1/cards/{card_id} \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "spending_asset": "BTC" }'
+```
+
+**USDT y USDC** valen 1 USD, así que la conversión es exacta 1:1 y sin
+comisión de cambio: una compra de 25.00 USD debita 25.000000 del asset
+elegido.
+
+**BTC y GOLD** se convierten con el precio efectivo del momento de cada
+evento (el mismo precio de settlement que ves en `GET /v1/rates`, bloque
+`settlement`):
+
+- **Autorización**: se reserva el equivalente de la compra en tu asset
+  **más un pequeño colchón** (no es un cobro: cubre la variación del precio
+  hasta la liquidación y se devuelve al capturar). Si el precio de
+  ejecución no está disponible en ese momento, la compra se **declina**
+  (`pricing_unavailable`) — nunca se convierte con un precio no confiable.
+- **Liquidación (captura)**: el monto final se re-convierte al precio del
+  momento de la captura; el sobrante del colchón vuelve a tu saldo (o se
+  debita la diferencia si el precio se movió más que el colchón).
+- **Anulación de una autorización**: se devuelve el monto EXACTO reservado,
+  sin conversión.
+- **Devoluciones y ajustes posteriores a la captura**: se re-convierten al
+  precio del momento del evento. Entre la compra y la devolución el precio
+  puede variar — recibes el equivalente en tu asset al precio de ese
+  momento, no la cantidad original.
+- Las compras BTC/GOLD comparten los **límites de assets volátiles** de tu
+  cuenta (por operación y volumen 24 h, visibles en `GET /v1/settlement`).
+
+| Error / rechazo | Dónde | Causa | Solución |
+|---|---|---|---|
+| `spending_asset_unavailable` | 400 en PATCH / rechazo de compra | El asset no existe o no está habilitado para compras | Usa `USDT`, `USDC`, `BTC` o `GOLD` |
+| `settlement_asset_disabled` | 400 en PATCH | Tu operador deshabilitó ese asset | Consulta `GET /v1/settlement` (`enabled_assets`) |
+| `pricing_unavailable` | Rechazo de compra (BTC/GOLD) | Precio de ejecución no disponible al autorizar | Reintenta la compra; si persiste, cambia a USDT/USDC |
+| `settlement_limit_exceeded` | Rechazo de compra (BTC/GOLD) | La compra excede el límite por operación de assets volátiles | Compra menor o gasta desde USDT/USDC |
+| `settlement_daily_limit_exceeded` | Rechazo de compra (BTC/GOLD) | Se alcanzó el volumen 24 h de assets volátiles de la cuenta | Espera o gasta desde USDT/USDC |
+
+> **Nota**
+Si el saldo del asset elegido no alcanza, la compra se rechaza con
+`insufficient_funds` — no hay fallback automático a otro saldo.
+> **Importante**
+Con BTC/GOLD tu saldo queda expuesto a la variación del precio entre los
+eventos de una compra (autorización, captura, devolución). Cada conversión
+usa el precio efectivo del momento — CBPay nunca re-cotiza montos hacia
+atrás ni te descuenta "por si acaso": el colchón de la autorización se
+devuelve siempre al liquidar.
 ### Costos (configurados por tu operador, pueden ser 0)
 
 | Servicio | Cuándo se cobra |
@@ -3704,12 +3764,16 @@ Respuesta (misma forma en todos los casos):
   "physical": false,
   "cardholder_kind": "account",
   "status": "active",
+  "spending_asset": "USDT",
   "limits": { "monthly": "5000.000000" },
   "created_at": "2026-07-08T12:00:00Z",
   "updated_at": "2026-07-08T12:00:00Z",
   "creation_fee": "3.000000"
 }
 ```
+
+Puedes fijar el saldo de gasto desde el inicio agregando
+`"spending_asset": "USDC"` al body de creación (USDT si no lo mandas).
 
 > **Importante**
 Los documentos **se validan de verdad** por el emisor: las URLs deben
@@ -3800,12 +3864,42 @@ curl "https://api.qbank.cl/platform/v1/cards/{card_id}/transactions?from=2026-07
   -H "Authorization: Bearer <token>"
 ```
 
+```json
+{
+  "page": 1,
+  "page_size": 50,
+  "transactions": [
+    {
+      "transaction_id": "7a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9",
+      "card_id": "3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c",
+      "kind": "purchase",
+      "merchant": "MERPAGO*SUPERMERCADO",
+      "mcc": "5411",
+      "amount_usd": "25.00",
+      "amount_usdt": "25.000000",
+      "spend_asset": "USDC",
+      "spend_amount": "25.000000",
+      "status": "settled",
+      "decline_reason": "",
+      "auth_number": "123456",
+      "created_at": "2026-07-09T15:04:05Z",
+      "updated_at": "2026-07-10T09:00:00Z"
+    }
+  ]
+}
+```
+
+`spend_asset` / `spend_amount` indican desde qué saldo se debitó realmente
+la compra y cuánto en ese asset (`amount_usd` / `amount_usdt` siguen siendo
+el valor USD de referencia). En BTC/GOLD, `spend_amount` de una transacción
+autorizada incluye el colchón de reserva; al liquidar queda el monto final.
+
 | Estado | Significado |
 |---|---|
-| `authorized` | Compra aprobada en tiempo real: el monto salió del disponible y quedó en hold |
-| `settled` | Confirmada en la liquidación de la red (el hold se consume) |
-| `reversed` | Anulada: los fondos volvieron completos al saldo |
-| `declined` | Rechazada, con la razón: `insufficient_funds`, `card_limit_exceeded`, `card_frozen`, `account_blocked` |
+| `authorized` | Compra aprobada en tiempo real: el monto salió del disponible del saldo elegido y quedó en hold |
+| `settled` | Confirmada en la liquidación de la red (el hold se consume; BTC/GOLD re-cotizado al momento de la captura) |
+| `reversed` | Anulada: los fondos volvieron al mismo saldo (monto exacto si no se liquidó; re-convertido al precio del momento si ya se había liquidado) |
+| `declined` | Rechazada, con la razón: `insufficient_funds`, `card_limit_exceeded`, `card_frozen`, `account_blocked`, `spending_asset_unavailable`, `spending_asset_disabled`, `pricing_unavailable`, `settlement_limit_exceeded`, `settlement_daily_limit_exceeded` |
 
 Si la liquidación llega por un monto distinto al autorizado (propinas,
 conversión del comercio), el ajuste se aplica automáticamente: positivo
@@ -3833,15 +3927,41 @@ Suscríbete igual que al resto de eventos (ver [Webhooks](#webhooks)).
 
 #### ¿Tengo que prefondear las tarjetas?
 No. Las tarjetas no tienen saldo propio: cada compra se autoriza en tiempo
-real contra el saldo USDT de la cuenta. Si hay saldo y la compra respeta los
-límites, se aprueba.
+real contra el saldo de la cuenta (en el asset de gasto de la tarjeta). Si
+hay saldo y la compra respeta los límites, se aprueba.
 #### ¿Qué pasa si varias tarjetas de mi empresa compran a la vez?
-Todas gastan del mismo saldo central. Cada autorización debita de forma
-atómica: nunca se aprueba más que el saldo disponible, sin importar cuántas
-tarjetas operen en paralelo.
+Todas gastan de los saldos centrales de la cuenta. Cada autorización debita
+de forma atómica: nunca se aprueba más que el saldo disponible del asset,
+sin importar cuántas tarjetas operen en paralelo.
 #### ¿En qué moneda se debita?
-Las compras se procesan en USD y se debitan 1:1 en USDT (1 USD = 1 USDT),
-con precisión de 6 decimales.
+Las compras se procesan en USD y se debitan del saldo que la tarjeta tenga
+configurado (`spending_asset`). USDT/USDC van 1:1 con el dólar, sin
+comisión de conversión; BTC y GOLD se convierten con el precio efectivo del
+momento de cada evento (el mismo del bloque `settlement` de
+`GET /v1/rates`).
+#### ¿Puedo tener tarjetas gastando de saldos distintos?
+Sí: `spending_asset` es por tarjeta. Una empresa puede tener, por ejemplo,
+tarjetas corporativas gastando USDT, las de empleados gastando USDC y una
+personal gastando BTC. El cambio con `PATCH` aplica solo a compras futuras.
+#### ¿Qué es el colchón que veo reservado en compras BTC/GOLD?
+La liquidación de una compra llega 1-2 días después de la autorización, y
+el precio de BTC/oro puede moverse entre medio. Por eso la autorización
+reserva el equivalente de la compra más un pequeño porcentaje. No es un
+cobro: al liquidar, la compra se re-convierte al precio de ese momento y
+todo lo reservado de más vuelve a tu saldo automáticamente.
+#### ¿Qué pasa si el precio de BTC/oro no está disponible cuando compro?
+La compra se declina (`pricing_unavailable`) — CBPay nunca convierte tu
+saldo con un precio no confiable. Es una condición transitoria (feed de
+precios degradado): reintenta en unos minutos o cambia la tarjeta a
+USDT/USDC. Los eventos que no se pueden rechazar (la liquidación de una
+compra ya aprobada, una devolución) nunca se bloquean: se procesan con el
+último precio conocido más un margen prudencial, auditado en el movimiento.
+#### Me devolvieron una compra pagada con BTC, ¿por qué recibí una cantidad distinta?
+Las devoluciones se convierten al precio del momento de la devolución, no
+al de la compra: recibes el equivalente en tu asset del monto USD devuelto.
+Si BTC subió desde la compra, recibes menos BTC (mismo valor USD); si bajó,
+más. Tu saldo BTC/GOLD siempre está expuesto al precio — es la naturaleza
+de gastar desde un asset volátil.
 #### ¿Qué pasa si no hay saldo para la mensualidad?
 La tarjeta se congela automáticamente (evento `card_status_changed` con
 `reason: monthly_fee_unpaid`). No se genera deuda; al regularizar el saldo,
@@ -5376,9 +5496,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-09 23:59 UTC · 107 requests · versión `9b4dfdd1dba3`
+> **Colección actualizada:** 2026-07-10 02:34 UTC · 108 requests · versión `e48186f4b1a1`
 
-<PostmanFreshness iso="2026-07-09T23:59:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-10T02:34:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -5412,6 +5532,46 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.32 — 9 de julio de 2026
+
+**Agregado — Compras con tarjeta desde BTC y GOLD (conversión al momento)**
+
+- `spending_asset` ahora acepta también **BTC y GOLD**: las compras se
+  convierten con el **precio efectivo del momento de cada evento** (el
+  mismo del bloque `settlement` de `GET /v1/rates`).
+- **Autorización**: se reserva el equivalente más un pequeño colchón (no es
+  un cobro; se devuelve al liquidar). Si el precio de ejecución no está
+  disponible, la compra se declina con `pricing_unavailable` — nunca se
+  convierte con un precio no confiable.
+- **Liquidación**: el monto final se re-cotiza al precio del momento de la
+  captura y el sobrante del colchón vuelve solo. **Anulación** de una
+  autorización: devolución del monto exacto, sin conversión.
+  **Devoluciones/ajustes** posteriores: re-convertidos al precio del
+  momento del evento (tu saldo asume la variación del precio).
+- Las compras BTC/GOLD comparten los límites de assets volátiles de la
+  cuenta con los payouts: por operación (`settlement_limit_exceeded`) y
+  volumen 24 h (`settlement_daily_limit_exceeded`).
+
+### v1.31 — 9 de julio de 2026
+
+**Agregado — Elige desde qué saldo gastan tus tarjetas (USDT o USDC)**
+
+- Cada tarjeta ahora tiene un **asset de gasto** (`spending_asset`): sus
+  compras se debitan del saldo USDT o USDC de la cuenta, 1:1 con el USD y
+  sin comisión de conversión. USDT por defecto (comportamiento idéntico al
+  histórico).
+- Defínelo al crear la tarjeta (`spending_asset` en `POST /v1/cards`) o
+  cámbialo cuando quieras con `PATCH /v1/cards/{cardID}`. El cambio aplica
+  solo a compras futuras: las autorizaciones en vuelo conservan (y
+  devuelven a) el asset con el que debitaron.
+- Las transacciones de tarjeta ahora exponen `spend_asset` y
+  `spend_amount` (el saldo y monto realmente debitados); `amount_usd` /
+  `amount_usdt` siguen siendo el valor USD de referencia. Los límites por
+  tarjeta siguen midiéndose en USD.
+- Errores nuevos: `400 spending_asset_unavailable` (BTC/GOLD no están
+  disponibles para compras con tarjeta) y rechazos de autorización
+  `spending_asset_disabled` si tu operador deshabilita el asset.
 
 ### v1.30 — 9 de julio de 2026
 
@@ -6142,7 +6302,7 @@ está en la API Reference interactiva y en la colección Postman.
 | `GET` | `/v1/cards` | Listar tarjetas |
 | `POST` | `/v1/cards` | Crear una tarjeta |
 | `GET` | `/v1/cards/{cardID}` | Consultar una tarjeta |
-| `PATCH` | `/v1/cards/{cardID}` | Actualizar límites o congelar/descongelar |
+| `PATCH` | `/v1/cards/{cardID}` | Actualizar límites, asset de gasto o congelar/descongelar |
 | `POST` | `/v1/cards/{cardID}/activate` | Activar una tarjeta física |
 | `POST` | `/v1/cards/{cardID}/cancel` | Cancelar una tarjeta |
 | `POST` | `/v1/cards/{cardID}/reveal` | Revelar PAN y CVV |

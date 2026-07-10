@@ -8,6 +8,50 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="9 de julio de 2026" description="v1.32">
+
+**Agregado — Compras con tarjeta desde BTC y GOLD (conversión al momento)**
+
+- `spending_asset` ahora acepta también **BTC y GOLD**: las compras se
+  convierten con el **precio efectivo del momento de cada evento** (el
+  mismo del bloque `settlement` de `GET /v1/rates`).
+- **Autorización**: se reserva el equivalente más un pequeño colchón (no es
+  un cobro; se devuelve al liquidar). Si el precio de ejecución no está
+  disponible, la compra se declina con `pricing_unavailable` — nunca se
+  convierte con un precio no confiable.
+- **Liquidación**: el monto final se re-cotiza al precio del momento de la
+  captura y el sobrante del colchón vuelve solo. **Anulación** de una
+  autorización: devolución del monto exacto, sin conversión.
+  **Devoluciones/ajustes** posteriores: re-convertidos al precio del
+  momento del evento (tu saldo asume la variación del precio).
+- Las compras BTC/GOLD comparten los límites de assets volátiles de la
+  cuenta con los payouts: por operación (`settlement_limit_exceeded`) y
+  volumen 24 h (`settlement_daily_limit_exceeded`).
+
+</Update>
+
+<Update label="9 de julio de 2026" description="v1.31">
+
+**Agregado — Elige desde qué saldo gastan tus tarjetas (USDT o USDC)**
+
+- Cada tarjeta ahora tiene un **asset de gasto** (`spending_asset`): sus
+  compras se debitan del saldo USDT o USDC de la cuenta, 1:1 con el USD y
+  sin comisión de conversión. USDT por defecto (comportamiento idéntico al
+  histórico).
+- Defínelo al crear la tarjeta (`spending_asset` en `POST /v1/cards`) o
+  cámbialo cuando quieras con `PATCH /v1/cards/{cardID}`. El cambio aplica
+  solo a compras futuras: las autorizaciones en vuelo conservan (y
+  devuelven a) el asset con el que debitaron.
+- Las transacciones de tarjeta ahora exponen `spend_asset` y
+  `spend_amount` (el saldo y monto realmente debitados); `amount_usd` /
+  `amount_usdt` siguen siendo el valor USD de referencia. Los límites por
+  tarjeta siguen midiéndose en USD.
+- Errores nuevos: `400 spending_asset_unavailable` (BTC/GOLD no están
+  disponibles para compras con tarjeta) y rechazos de autorización
+  `spending_asset_disabled` si tu operador deshabilita el asset.
+
+</Update>
+
 <Update label="9 de julio de 2026" description="v1.30">
 
 **Cambiado — Endurecimiento del settlement multi-asset**
