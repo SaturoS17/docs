@@ -97,6 +97,10 @@ Full flow and details in [social login](/en/guides/social-login).
 | 404 | `recipient_not_found` | Transfer destination does not exist |
 | 409 | `duplicate` | The resource already exists |
 | 403 | `verification_required` | Your account has not approved its identity verification yet (person=KYC, company=KYB); until then you can only fund — request your link at `POST /v1/me/verification/link` |
+| 422 | `verification_required` | The operation requires the `verification_id` of an approved third-party verification (third-party banking registration, designated card) |
+| 422 | `verification_not_approved` | The referenced verification is not approved yet |
+| 422 | `verification_kind_mismatch` | The verification kind does not match the product (KYC ⇒ person/INDIVIDUAL, KYB ⇒ company/COMPANY) |
+| 422 | `verification_invalid` | You referenced an own-onboarding verification where a third-party one is required |
 | 403 | `company_account_required` | Third-party verification (KYC/KYB links/submissions) is for company accounts only |
 | 409 | `already_verified` | Onboarding link requested with an already-verified account |
 | 409 | `no_screening` | AML rescreen/monitoring without a prior screening |

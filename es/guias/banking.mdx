@@ -179,27 +179,27 @@ bancarias a su nombre**. Sin límite de terceros ni de cuentas por tercero.
 
 ```mermaid
 flowchart LR
-    alta["1. POST third-parties<br/>(identidad del tercero)"] --> docs["2. Documentos + submit<br/>(KYC del tercero)"]
-    docs --> aprobado{"¿approved?"}
-    aprobado -->|"Sí"| cuentas["3. POST /accounts<br/>(cuentas a su nombre)"]
-    aprobado -->|"No"| corrige["Corrige y reenvía"]
+    verif["1. Verificación KYC/KYB<br/>del tercero (approved)"] --> alta["2. POST third-parties<br/>(verification_id)"]
+    alta --> docs["Datos + documentos<br/>se completan solos"]
+    docs --> cuentas["3. POST /accounts<br/>(cuentas a su nombre)"]
 ```
 
 ### Alta del tercero
 
-La identidad va completa y explícita (`type` INDIVIDUAL o COMPANY es
-obligatorio — es OTRA persona, nada se copia de tu empresa). Se cobra el
-fee de perfil bancario (se reembolsa si el alta falla):
+El alta exige el `verification_id` de una [verificación KYC/KYB
+**aprobada**](/es/guias/kyc) del tercero — su identidad única en CBPay. El
+tipo sale del kind de la verificación (KYC ⇒ `INDIVIDUAL`, KYB ⇒
+`COMPANY`), los datos (nombre, email, dirección) se completan solos desde
+el perfil verificado (lo que envíes explícito gana) y los **documentos ya
+validados se re-entregan automáticamente** al proveedor bancario. Se cobra
+el fee de perfil bancario (se reembolsa si el alta falla):
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/banking/third-parties \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
-    "type": "INDIVIDUAL",
-    "name": "Carlos Mendes",
-    "email": "carlos@mail.com",
-    "country": "BR"
+    "verification_id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f"
   }'
 ```
 
@@ -211,10 +211,19 @@ Respuesta `201`:
   "customer_id": "…",
   "kind": "third_party",
   "status": "pending",
+  "verification_id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
+  "documents_synced": 2,
   "registered_at": "2026-07-10T15:00:00Z",
   "banking_fee": "1.000000"
 }
 ```
+
+<Note>
+`documents_synced` cuenta los documentos de la verificación que quedaron
+cargados automáticamente en el perfil bancario del tercero. Si alguno no se
+pudo sincronizar (o el banco pide categorías adicionales), súbelo por el
+flujo manual de documentos de más abajo y luego haz `submit`.
+</Note>
 
 Guarda el `third_party_id`: todas las rutas del tercero lo usan. Lista y
 consulta (el GET trae el estado de verificación en vivo):
@@ -263,6 +272,11 @@ curl https://api.qbank.cl/platform/v1/banking/third-parties/7f2a…/accounts/{ba
   operarlo (responde `404`).
 - Una cuenta **persona** que intente crear terceros recibe
   `403 company_required`.
+- Sin `verification_id` (o con una verificación no aprobada) el alta
+  responde `422 verification_required` / `422 verification_not_approved`.
+  Si envías un `type` que no calza con el kind de la verificación,
+  `422 verification_kind_mismatch`. Los terceros creados antes de esta
+  regla siguen operando con normalidad.
 - Los terceros dados de alta alimentan la métrica "usuarios nuevos" de tu
   [resumen de cuenta](/es/guias/analytics).
 
@@ -422,6 +436,9 @@ curl "https://api.qbank.cl/platform/v1/banking/operations?from=2026-07-01&to=202
 | 409 | `no_banking_customer` | Crea primero tu perfil (`POST /v1/banking/customer`) |
 | 409 | `banking_account_limit` | Las cuentas persona tienen máximo 1 cuenta bancaria |
 | 403 | `company_required` | Los usuarios de terceros solo están disponibles para cuentas empresa |
-| 400 | `invalid_type` | El `type` del tercero debe ser INDIVIDUAL o COMPANY |
-| 404 | `not_found` | El tercero no existe o no pertenece a tu cuenta |
+| 422 | `verification_required` | El alta de terceros exige `verification_id` de una verificación aprobada ([verifica primero](/es/guias/kyc)) |
+| 422 | `verification_not_approved` | La verificación referenciada aún no está aprobada; espera la aprobación |
+| 422 | `verification_kind_mismatch` | El `type` enviado no calza con el kind de la verificación (KYC ⇒ INDIVIDUAL, KYB ⇒ COMPANY) |
+| 422 | `verification_invalid` | Referenciaste tu verificación de onboarding; el tercero necesita la suya propia |
+| 404 | `not_found` | El tercero (o la verificación) no existe o no pertenece a tu cuenta |
 | 502 | `banking_request_failed` | Error del corredor bancario; la comisión se reembolsó — reintenta |

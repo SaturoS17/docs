@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.38'
+  version: '1.39'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -3890,6 +3890,34 @@ paths:
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/kyb/submissions/{submissionID}/report:
+    get:
+      tags:
+      - KYC / KYB
+      operationId: getKybComplianceReport
+      summary: Descargar el informe de compliance firmado (PDF)
+      description: Informe de compliance firmado de una verificación KYB — evidencia para tus propios
+        auditores. Gratis (el servicio se cobró al crear la verificación).
+      parameters:
+      - name: submissionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Informe de compliance firmado.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+              example: '%PDF-1.7 (contenido binario del informe)'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/contacts:
     get:
       tags:
@@ -6666,36 +6694,29 @@ paths:
                       type: string
                 cardholder:
                   type: object
-                  description: 'Datos del titular. OBLIGATORIO en la PRIMERA emisión de la cuenta
-                    (crea y verifica al titular en el emisor: datos personales, código de ocupación
-                    del catálogo y documentos de identidad por URL — id_front_url, id_back_url,
-                    residence_proof_url; las cuentas empresa que emiten para sí mismas envían datos y
-                    documentos societarios en su lugar). Omítelo en las tarjetas siguientes: se
-                    reutiliza el titular ya verificado. Las cuentas empresa también pueden usar kind
-                    "person" para emitir a una persona designada (datos completos + documentos en
-                    cada designación).'
+                  description: 'Datos del titular. En la PRIMERA emisión de la cuenta el titular se
+                    crea en el emisor: la identidad y los documentos se COMPLETAN SOLOS desde la
+                    verificación de identidad aprobada de la cuenta (los campos explícitos ganan);
+                    solo agregas los campos propios del emisor (código de ocupación del catálogo,
+                    salary_usd). Omítelo en las tarjetas siguientes: se reutiliza el titular ya
+                    verificado. Las cuentas empresa también pueden usar kind "person" más el
+                    verification_id del KYC APROBADO de ESA persona para emitir a una persona
+                    designada (su identidad y documentos salen de la verificación).'
+                  properties:
+                    verification_id:
+                      type: string
+                      format: uuid
+                      description: 'OBLIGATORIO para personas designadas (kind "person" en cuentas
+                        empresa): submission_id del KYC de terceros APROBADO de la persona.'
             examples:
               person_first_card:
-                summary: Persona — PRIMERA tarjeta (datos completos del titular)
+                summary: Persona — PRIMERA tarjeta (la identidad se completa desde la verificación)
                 value:
                   physical: false
                   idempotency_key: card-v-1
                   cardholder:
-                    first_name: Ana
-                    last_name: Perez
-                    email: ana@example.com
-                    phone: '+56912345678'
                     occupation: '52201'
                     salary_usd: 1800
-                    id_front_url: https://files.example.com/kyc/ap-front.jpg
-                    id_back_url: https://files.example.com/kyc/ap-back.jpg
-                    residence_proof_url: https://files.example.com/kyc/ap-address.pdf
-                    address:
-                      line1: Av. Providencia 123
-                      city: Santiago
-                      region: RM
-                      postal_code: '7500000'
-                      country: CL
               subsequent_card:
                 summary: Tarjeta siguiente — titular ya verificado (sin datos)
                 value:
@@ -6706,7 +6727,7 @@ paths:
                     per_transaction: '500.00'
                     monthly: '5000.00'
               company_for_employee:
-                summary: Empresa — tarjeta para una persona designada
+                summary: Empresa — tarjeta para una persona designada (exige KYC aprobado)
                 value:
                   physical: false
                   idempotency_key: card-emp-77
@@ -6714,20 +6735,9 @@ paths:
                     monthly: '1500.00'
                   cardholder:
                     kind: person
-                    first_name: Maria
-                    last_name: Perez
-                    email: maria@empresa.com
+                    verification_id: c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f
                     occupation: '52201'
                     salary_usd: 1800
-                    id_front_url: https://files.example.com/kyc/mp-front.jpg
-                    id_back_url: https://files.example.com/kyc/mp-back.jpg
-                    residence_proof_url: https://files.example.com/kyc/mp-address.pdf
-                    address:
-                      line1: Av. Providencia 123
-                      city: Santiago
-                      region: RM
-                      postal_code: '7500000'
-                      country: CL
       responses:
         '201':
           description: Tarjeta creada.
@@ -6775,6 +6785,16 @@ paths:
               example:
                 error: card_limit_reached
                 message: person accounts can hold at most 1 virtual card (cancel the existing one first)
+        '422':
+          description: verification_required / verification_not_approved / verification_kind_mismatch
+            (las personas designadas necesitan el verification_id de un KYC de terceros aprobado).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: verification_required
+                message: 'an approved identity verification of the third party is required: pass verification_id'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -7684,23 +7704,32 @@ paths:
       operationId: createBankingThirdParty
       summary: Da de alta un usuario banking de tercero (solo empresas)
       description: >
-        Company accounts register end clients as separate banking users with
-        their own identity and KYC and accounts in their name. Charges the
-        banking profile fee (refunded if the core rejects). Person accounts
-        get 403 company_required.
+        Las cuentas empresa dan de alta a sus clientes finales como usuarios
+        banking separados, con cuentas a su nombre. Exige el verification_id
+        de una verificación KYC/KYB APROBADA del tercero: el tipo sale del
+        kind de la verificación (KYC = INDIVIDUAL, KYB = COMPANY), la
+        identidad se completa sola desde el perfil verificado (los campos
+        explícitos ganan) y los documentos ya validados se re-entregan
+        automáticamente al proveedor bancario (documents_synced). Cobra el
+        fee de perfil bancario (se reembolsa si el core rechaza). Las cuentas
+        persona reciben 403 company_required.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [type, name]
+              required: [verification_id]
               properties:
-                type: {type: string, enum: [INDIVIDUAL, COMPANY]}
-                name: {type: string}
-                email: {type: string, format: email}
+                verification_id:
+                  type: string
+                  format: uuid
+                  description: submission_id de una verificación KYC/KYB de terceros APROBADA.
+                type: {type: string, enum: [INDIVIDUAL, COMPANY], description: 'Opcional: debe calzar con el kind de la verificación.'}
+                name: {type: string, description: 'Opcional: se completa desde el perfil verificado.'}
+                email: {type: string, format: email, description: 'Opcional: se completa desde el perfil verificado.'}
                 country: {type: string}
-            example: {type: INDIVIDUAL, name: Carlos Mendes, email: carlos@mail.com, country: BR}
+            example: {verification_id: c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f}
       responses:
         '201':
           description: Third-party banking user created.
@@ -7711,12 +7740,14 @@ paths:
                 customer_id: cus_abc123
                 kind: third_party
                 status: pending
+                verification_id: c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f
+                documents_synced: 2
                 registered_at: '2026-07-10T15:00:00Z'
                 banking_fee: '1.000000'
         '403':
           description: company_required
-        '400':
-          description: invalid_type
+        '422':
+          description: verification_required / verification_not_approved / verification_kind_mismatch / verification_invalid
     get:
       tags:
       - Banking

@@ -7,6 +7,36 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 10, 2026" description="v1.39">
+
+**Added — Reusable verified identity (unified KYC/KYB)**
+
+- A customer's approved KYC/KYB verification becomes their **single
+  identity** inside CBPay: their data and documents are reused across the
+  other products without re-typing or re-uploading. Guide:
+  [reusable identity](/en/guides/kyc#one-verification-for-everything-reusable-identity).
+- **Cards**: your account's first issuance auto-fills the cardholder's
+  identity and documents **from your approved verification** — you only
+  send `occupation` and `salary_usd`. Explicit fields still win.
+- **Compliance report (KYB)**: `GET /v1/kyb/submissions/{id}/report`
+  downloads the verification's signed compliance report (PDF).
+
+**Changed — Breaking**
+
+- **`POST /v1/banking/third-parties`** now requires the `verification_id`
+  of an **approved** verification of the third party. The `type` comes
+  from the kind (KYC ⇒ INDIVIDUAL, KYB ⇒ COMPANY), identity auto-fills and
+  the already-validated documents are re-delivered to the banking provider
+  (`documents_synced`). Existing third parties keep operating.
+- **`POST /v1/cards`** for designated persons (company accounts) now
+  requires `cardholder.verification_id` of that person's **approved** KYC;
+  their identity and documents come from the verification.
+- New errors: `422 verification_required`,
+  `422 verification_not_approved`, `422 verification_kind_mismatch`,
+  `422 verification_invalid`.
+
+</Update>
+
 <Update label="July 10, 2026" description="v1.38">
 
 **Added — Account summary (analytics) + third-party banking users**

@@ -120,8 +120,11 @@ la misma clave devuelve la tarjeta original y nunca cobra dos veces).
 Una cuenta persona emite tarjetas **para sí misma** (máximo 1 virtual +
 1 física).
 
-**Tu primera tarjeta** crea y verifica tu titular en el emisor, así que
-lleva tus datos completos y documentos de identidad por URL:
+**Tu primera tarjeta** crea y verifica tu titular en el emisor. Como tu
+cuenta ya aprobó su [verificación de identidad](/es/guias/kyc), tus datos y
+documentos se **completan solos desde tu verificación** — solo agregas los
+campos propios del emisor (`occupation`, `salary_usd`); cualquier campo que
+envíes explícito gana sobre el autofill:
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/cards \
@@ -131,29 +134,18 @@ curl -X POST https://api.qbank.cl/platform/v1/cards \
     "physical": false,
     "idempotency_key": "card-v-1",
     "cardholder": {
-      "first_name": "Ana",
-      "last_name": "Perez",
-      "email": "ana@ejemplo.com",
-      "phone": "+56912345678",
       "occupation": "52201",
-      "salary_usd": 1800,
-      "id_front_url": "https://files.example.com/kyc/ap-front.jpg",
-      "id_back_url": "https://files.example.com/kyc/ap-back.jpg",
-      "residence_proof_url": "https://files.example.com/kyc/ap-address.pdf",
-      "address": {
-        "line1": "Av. Providencia 123",
-        "city": "Santiago",
-        "region": "RM",
-        "postal_code": "7500000",
-        "country": "CL"
-      }
+      "salary_usd": 1800
     }
   }'
 ```
 
 `occupation` es un **código del catálogo**
 ([ver abajo](#ocupacion-y-giro-codigos-de-catalogo)) y `salary_usd` va en
-dólares enteros.
+dólares enteros. Si tu verificación se hizo por wizard sin algún dato o
+documento que el emisor exige, agrégalo explícito al `cardholder`
+(`first_name`, `email`, `address`, `id_front_url`…, mismo formato de
+siempre).
 
 **Tu segunda tarjeta** (por ejemplo la física) ya no pide ningún dato —
 tu titular quedó verificado:
@@ -220,9 +212,9 @@ curl -X POST https://api.qbank.cl/platform/v1/cards \
 </CodeGroup>
 
 **B. Para una persona designada** (ej. un empleado): agrega
-`cardholder.kind: "person"` con los datos completos de ESA persona — cada
-designación es un titular nuevo, así que sus datos y documentos van
-**siempre**, en cada tarjeta para una persona distinta:
+`cardholder.kind: "person"` con el `verification_id` del [KYC
+**aprobado**](/es/guias/kyc) de ESA persona — su identidad y documentos
+salen de la verificación; tú solo agregas los campos del emisor:
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/cards \
@@ -234,27 +226,22 @@ curl -X POST https://api.qbank.cl/platform/v1/cards \
     "limits": { "monthly": "1500.00" },
     "cardholder": {
       "kind": "person",
-      "first_name": "Maria",
-      "last_name": "Perez",
-      "email": "maria@empresa.com",
+      "verification_id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
       "occupation": "52201",
-      "salary_usd": 1800,
-      "id_front_url": "https://files.example.com/kyc/mp-front.jpg",
-      "id_back_url": "https://files.example.com/kyc/mp-back.jpg",
-      "residence_proof_url": "https://files.example.com/kyc/mp-address.pdf",
-      "address": {
-        "line1": "Av. Providencia 123",
-        "city": "Santiago",
-        "region": "RM",
-        "postal_code": "7500000",
-        "country": "CL"
-      }
+      "salary_usd": 1800
     }
   }'
 ```
 
-El nombre impreso usa `first_name` + `last_name` (máximo 22 caracteres
-combinados) y la respuesta llega con `cardholder_kind: "person"`.
+- Sin `verification_id` (o con una verificación no aprobada):
+  `422 verification_required` / `422 verification_not_approved`. La
+  verificación debe ser KYC (persona); una KYB responde
+  `422 verification_kind_mismatch`.
+- Los campos explícitos del `cardholder` ganan sobre el autofill (útil si
+  el emisor exige un documento que la verificación no tiene).
+- El nombre impreso usa `first_name` + `last_name` (máximo 22 caracteres
+  combinados) y la respuesta llega con `cardholder_kind: "person"` y el
+  `verification_id` usado.
 
 </Tab>
 </Tabs>
@@ -487,8 +474,10 @@ La tarjeta se congela automáticamente (evento `card_status_changed` con
 pide descongelarla con `PATCH { "frozen": false }`.
 </Accordion>
 <Accordion title="¿Puedo emitir una tarjeta para alguien que no es de mi empresa?">
-Las cuentas empresa pueden emitir para cualquier persona designada pasando
-sus datos y documentos de identidad. La tarjeta gasta siempre del saldo de la
-cuenta empresa que la emitió.
+Las cuentas empresa pueden emitir para cualquier persona designada. Esa
+persona debe tener su [verificación KYC aprobada](/es/guias/kyc) — pasas su
+`verification_id` en el `cardholder` y sus datos y documentos se completan
+solos. La tarjeta gasta siempre del saldo de la cuenta empresa que la
+emitió.
 </Accordion>
 </AccordionGroup>

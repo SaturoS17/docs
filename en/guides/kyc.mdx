@@ -366,6 +366,57 @@ curl -X POST https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id}/li
 - On pass (outcome `PASS` or `REVIEW`): the submission clears
   `liveness_pending` and the `kyc_liveness_completed` webhook fires.
 
+## One verification for everything (reusable identity)
+
+A customer's approved verification is their **single identity** inside
+CBPay: you never re-type their data or re-upload their documents in any
+other product.
+
+```mermaid
+flowchart LR
+    verif["Approved verification<br/>(submission_id)"] -->|"verification_id"| banking["Third-party banking user<br/>POST /v1/banking/third-parties"]
+    verif -->|"cardholder.verification_id"| card["Card for a designated person<br/>POST /v1/cards"]
+    verif -.->|"same pattern"| future["Upcoming products"]
+```
+
+- **Third-party banking**: `POST /v1/banking/third-parties` requires the
+  `verification_id` of an **approved** verification of the third party.
+  The type (`INDIVIDUAL`/`COMPANY`) comes from the kind (KYC ⇒ person,
+  KYB ⇒ company), the data (name, email, address) auto-fills from the
+  verified profile, and the already-validated documents are re-delivered
+  automatically to the banking provider (`documents_synced` in the
+  response). Details in
+  [Banking](/en/guides/banking#third-party-banking-users-companies-only).
+- **Cards for designated persons**: `POST /v1/cards` with a person
+  `cardholder` requires `cardholder.verification_id` of that person's
+  **approved KYC**. The cardholder's identity and documents come from the
+  verification; you only add the issuer-specific fields (`occupation`,
+  `salary_usd`). Details in [Cards](/en/guides/cards).
+- **Your own account**: your approved onboarding is reused too — when
+  creating your banking customer or your first card, missing data and
+  documents auto-fill from your verification.
+
+Explicit fields in your request **always win** over the autofill.
+
+<Warning>
+Without an approved verification of the third party, the banking
+registration and designated card issuance answer
+`422 verification_required`. Verify first (hosted links or API data) and
+use the approved `submission_id` as `verification_id`.
+</Warning>
+
+## Compliance report (KYB only)
+
+For every KYB verification you can download the **signed compliance
+report** (PDF, evidence for your own auditors):
+
+```bash
+curl -o report.pdf https://api.qbank.cl/platform/v1/kyb/submissions/{submission_id}/report \
+  -H "Authorization: Bearer <token>"
+```
+
+It is free (the service was billed when the verification was created).
+
 ## Webhooks
 
 | Event | When |
@@ -457,5 +508,12 @@ confirm flow; on confirmation the submission returns to the review queue.
 No: they complement each other. Verification proves identity with evidence
 (documents, video); [AML screening](/en/guides/aml) checks the identity
 against sanctions/PEP/adverse-media lists and can watch it continuously.
+</Accordion>
+<Accordion title="Can I reuse a customer's verification in other products?">
+Yes — that is the design: an approved verification works as the single
+identity. Pass its `submission_id` as `verification_id` when registering a
+third-party banking user or issuing a card for a designated person: data
+and documents auto-fill. See
+[reusable identity](#one-verification-for-everything-reusable-identity).
 </Accordion>
 </AccordionGroup>

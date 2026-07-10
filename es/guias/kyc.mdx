@@ -367,6 +367,56 @@ curl -X POST https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id}/li
 - Al pasar (outcome `PASS` o `REVIEW`): la submission limpia
   `liveness_pending` y llega el webhook `kyc_liveness_completed`.
 
+## Una sola verificación para todo (identidad reutilizable)
+
+La verificación aprobada de un cliente es su **identidad única** dentro de
+CBPay: no vuelves a tipear sus datos ni a subir sus documentos en ningún
+otro producto.
+
+```mermaid
+flowchart LR
+    verif["Verificación aprobada<br/>(submission_id)"] -->|"verification_id"| banking["Alta banking de terceros<br/>POST /v1/banking/third-parties"]
+    verif -->|"cardholder.verification_id"| card["Tarjeta para persona designada<br/>POST /v1/cards"]
+    verif -.->|"mismo patrón"| futuro["Próximos productos"]
+```
+
+- **Banking para terceros**: `POST /v1/banking/third-parties` exige el
+  `verification_id` de una verificación **aprobada** del tercero. El tipo
+  (`INDIVIDUAL`/`COMPANY`) sale del kind (KYC ⇒ persona, KYB ⇒ empresa),
+  los datos (nombre, email, dirección) se completan solos desde el perfil
+  verificado, y los documentos ya validados se re-entregan automáticamente
+  al proveedor bancario (`documents_synced` en la respuesta). Detalle en
+  [Banking](/es/guias/banking#usuarios-banking-de-terceros-solo-empresas).
+- **Tarjetas para personas designadas**: `POST /v1/cards` con un
+  `cardholder` de persona exige `cardholder.verification_id` de un **KYC
+  aprobado** de esa persona. Identidad y documentos del titular salen de la
+  verificación; solo agregas los campos propios del emisor (`occupation`,
+  `salary_usd`). Detalle en [Tarjetas](/es/guias/tarjetas).
+- **Tu propia cuenta**: tu onboarding aprobado también se reutiliza — al
+  crear tu banking customer o tu primera tarjeta, los datos y documentos
+  faltantes se completan desde tu verificación.
+
+Los campos explícitos de tu request **siempre ganan** sobre el autofill.
+
+<Warning>
+Sin una verificación aprobada del tercero, el alta banking y la emisión de
+tarjetas designadas responden `422 verification_required`. Verifica primero
+(links hosteados o datos por API) y usa el `submission_id` aprobado como
+`verification_id`.
+</Warning>
+
+## Informe de compliance (solo KYB)
+
+Para cada verificación KYB puedes descargar el **informe de compliance
+firmado** (PDF, evidencia para tus propios auditores):
+
+```bash
+curl -o report.pdf https://api.qbank.cl/platform/v1/kyb/submissions/{submission_id}/report \
+  -H "Authorization: Bearer <token>"
+```
+
+Es gratuito (el servicio se cobró al crear la verificación).
+
 ## Webhooks
 
 | Evento | Cuándo |
@@ -459,5 +509,12 @@ No: son productos complementarios. La verificación comprueba la identidad
 con evidencia (documentos, video); el [AML screening](/es/guias/aml)
 contrasta la identidad contra listas de sanciones/PEP/prensa adversa y
 puede vigilarla de forma continua.
+</Accordion>
+<Accordion title="¿Puedo reusar la verificación de un cliente en otros productos?">
+Sí — ese es el diseño: una verificación aprobada sirve como identidad única.
+Pasa su `submission_id` como `verification_id` al dar de alta un usuario
+banking de tercero o al emitir una tarjeta para una persona designada: los
+datos y documentos se completan solos. Ver
+[identidad reutilizable](#una-sola-verificacion-para-todo-identidad-reutilizable).
 </Accordion>
 </AccordionGroup>

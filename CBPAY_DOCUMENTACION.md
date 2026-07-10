@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-10 19:14 UTC · versión `1f07498b3e02`
+> **Documento actualizado:** 2026-07-10 21:55 UTC · versión `1e3815f2427e`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.38 (10 de julio de 2026) |
+| Versión de la documentación | v1.39 (10 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -4098,8 +4098,11 @@ la misma clave devuelve la tarjeta original y nunca cobra dos veces).
 Una cuenta persona emite tarjetas **para sí misma** (máximo 1 virtual +
 1 física).
 
-**Tu primera tarjeta** crea y verifica tu titular en el emisor, así que
-lleva tus datos completos y documentos de identidad por URL:
+**Tu primera tarjeta** crea y verifica tu titular en el emisor. Como tu
+cuenta ya aprobó su [verificación de identidad](#verificacion-kyc-y-kyb), tus datos y
+documentos se **completan solos desde tu verificación** — solo agregas los
+campos propios del emisor (`occupation`, `salary_usd`); cualquier campo que
+envíes explícito gana sobre el autofill:
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/cards \
@@ -4109,29 +4112,18 @@ curl -X POST https://api.qbank.cl/platform/v1/cards \
     "physical": false,
     "idempotency_key": "card-v-1",
     "cardholder": {
-      "first_name": "Ana",
-      "last_name": "Perez",
-      "email": "ana@ejemplo.com",
-      "phone": "+56912345678",
       "occupation": "52201",
-      "salary_usd": 1800,
-      "id_front_url": "https://files.example.com/kyc/ap-front.jpg",
-      "id_back_url": "https://files.example.com/kyc/ap-back.jpg",
-      "residence_proof_url": "https://files.example.com/kyc/ap-address.pdf",
-      "address": {
-        "line1": "Av. Providencia 123",
-        "city": "Santiago",
-        "region": "RM",
-        "postal_code": "7500000",
-        "country": "CL"
-      }
+      "salary_usd": 1800
     }
   }'
 ```
 
 `occupation` es un **código del catálogo**
 ([ver abajo](#ocupacion-y-giro-codigos-de-catalogo)) y `salary_usd` va en
-dólares enteros.
+dólares enteros. Si tu verificación se hizo por wizard sin algún dato o
+documento que el emisor exige, agrégalo explícito al `cardholder`
+(`first_name`, `email`, `address`, `id_front_url`…, mismo formato de
+siempre).
 
 **Tu segunda tarjeta** (por ejemplo la física) ya no pide ningún dato —
 tu titular quedó verificado:
@@ -4193,9 +4185,9 @@ curl -X POST https://api.qbank.cl/platform/v1/cards \
 ```
 
 **B. Para una persona designada** (ej. un empleado): agrega
-`cardholder.kind: "person"` con los datos completos de ESA persona — cada
-designación es un titular nuevo, así que sus datos y documentos van
-**siempre**, en cada tarjeta para una persona distinta:
+`cardholder.kind: "person"` con el `verification_id` del [KYC
+**aprobado**](#verificacion-kyc-y-kyb) de ESA persona — su identidad y documentos
+salen de la verificación; tú solo agregas los campos del emisor:
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/cards \
@@ -4207,27 +4199,22 @@ curl -X POST https://api.qbank.cl/platform/v1/cards \
     "limits": { "monthly": "1500.00" },
     "cardholder": {
       "kind": "person",
-      "first_name": "Maria",
-      "last_name": "Perez",
-      "email": "maria@empresa.com",
+      "verification_id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
       "occupation": "52201",
-      "salary_usd": 1800,
-      "id_front_url": "https://files.example.com/kyc/mp-front.jpg",
-      "id_back_url": "https://files.example.com/kyc/mp-back.jpg",
-      "residence_proof_url": "https://files.example.com/kyc/mp-address.pdf",
-      "address": {
-        "line1": "Av. Providencia 123",
-        "city": "Santiago",
-        "region": "RM",
-        "postal_code": "7500000",
-        "country": "CL"
-      }
+      "salary_usd": 1800
     }
   }'
 ```
 
-El nombre impreso usa `first_name` + `last_name` (máximo 22 caracteres
-combinados) y la respuesta llega con `cardholder_kind: "person"`.
+- Sin `verification_id` (o con una verificación no aprobada):
+  `422 verification_required` / `422 verification_not_approved`. La
+  verificación debe ser KYC (persona); una KYB responde
+  `422 verification_kind_mismatch`.
+- Los campos explícitos del `cardholder` ganan sobre el autofill (útil si
+  el emisor exige un documento que la verificación no tiene).
+- El nombre impreso usa `first_name` + `last_name` (máximo 22 caracteres
+  combinados) y la respuesta llega con `cardholder_kind: "person"` y el
+  `verification_id` usado.
 
 Respuesta (misma forma en todos los casos):
 
@@ -4441,9 +4428,11 @@ La tarjeta se congela automáticamente (evento `card_status_changed` con
 `reason: monthly_fee_unpaid`). No se genera deuda; al regularizar el saldo,
 pide descongelarla con `PATCH { "frozen": false }`.
 #### ¿Puedo emitir una tarjeta para alguien que no es de mi empresa?
-Las cuentas empresa pueden emitir para cualquier persona designada pasando
-sus datos y documentos de identidad. La tarjeta gasta siempre del saldo de la
-cuenta empresa que la emitió.
+Las cuentas empresa pueden emitir para cualquier persona designada. Esa
+persona debe tener su [verificación KYC aprobada](#verificacion-kyc-y-kyb) — pasas su
+`verification_id` en el `cardholder` y sus datos y documentos se completan
+solos. La tarjeta gasta siempre del saldo de la cuenta empresa que la
+emitió.
 
 
 ## Banking
@@ -4617,27 +4606,27 @@ bancarias a su nombre**. Sin límite de terceros ni de cuentas por tercero.
 
 ```mermaid
 flowchart LR
-    alta["1. POST third-parties<br/>(identidad del tercero)"] --> docs["2. Documentos + submit<br/>(KYC del tercero)"]
-    docs --> aprobado{"¿approved?"}
-    aprobado -->|"Sí"| cuentas["3. POST /accounts<br/>(cuentas a su nombre)"]
-    aprobado -->|"No"| corrige["Corrige y reenvía"]
+    verif["1. Verificación KYC/KYB<br/>del tercero (approved)"] --> alta["2. POST third-parties<br/>(verification_id)"]
+    alta --> docs["Datos + documentos<br/>se completan solos"]
+    docs --> cuentas["3. POST /accounts<br/>(cuentas a su nombre)"]
 ```
 
 #### Alta del tercero
 
-La identidad va completa y explícita (`type` INDIVIDUAL o COMPANY es
-obligatorio — es OTRA persona, nada se copia de tu empresa). Se cobra el
-fee de perfil bancario (se reembolsa si el alta falla):
+El alta exige el `verification_id` de una [verificación KYC/KYB
+**aprobada**](#verificacion-kyc-y-kyb) del tercero — su identidad única en CBPay. El
+tipo sale del kind de la verificación (KYC ⇒ `INDIVIDUAL`, KYB ⇒
+`COMPANY`), los datos (nombre, email, dirección) se completan solos desde
+el perfil verificado (lo que envíes explícito gana) y los **documentos ya
+validados se re-entregan automáticamente** al proveedor bancario. Se cobra
+el fee de perfil bancario (se reembolsa si el alta falla):
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/banking/third-parties \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
-    "type": "INDIVIDUAL",
-    "name": "Carlos Mendes",
-    "email": "carlos@mail.com",
-    "country": "BR"
+    "verification_id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f"
   }'
 ```
 
@@ -4649,11 +4638,18 @@ Respuesta `201`:
   "customer_id": "…",
   "kind": "third_party",
   "status": "pending",
+  "verification_id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
+  "documents_synced": 2,
   "registered_at": "2026-07-10T15:00:00Z",
   "banking_fee": "1.000000"
 }
 ```
 
+> **Nota**
+`documents_synced` cuenta los documentos de la verificación que quedaron
+cargados automáticamente en el perfil bancario del tercero. Si alguno no se
+pudo sincronizar (o el banco pide categorías adicionales), súbelo por el
+flujo manual de documentos de más abajo y luego haz `submit`.
 Guarda el `third_party_id`: todas las rutas del tercero lo usan. Lista y
 consulta (el GET trae el estado de verificación en vivo):
 
@@ -4701,6 +4697,11 @@ curl https://api.qbank.cl/platform/v1/banking/third-parties/7f2a…/accounts/{ba
   operarlo (responde `404`).
 - Una cuenta **persona** que intente crear terceros recibe
   `403 company_required`.
+- Sin `verification_id` (o con una verificación no aprobada) el alta
+  responde `422 verification_required` / `422 verification_not_approved`.
+  Si envías un `type` que no calza con el kind de la verificación,
+  `422 verification_kind_mismatch`. Los terceros creados antes de esta
+  regla siguen operando con normalidad.
 - Los terceros dados de alta alimentan la métrica "usuarios nuevos" de tu
   [resumen de cuenta](#resumen-de-tu-cuenta-analytics).
 
@@ -4856,8 +4857,11 @@ curl "https://api.qbank.cl/platform/v1/banking/operations?from=2026-07-01&to=202
 | 409 | `no_banking_customer` | Crea primero tu perfil (`POST /v1/banking/customer`) |
 | 409 | `banking_account_limit` | Las cuentas persona tienen máximo 1 cuenta bancaria |
 | 403 | `company_required` | Los usuarios de terceros solo están disponibles para cuentas empresa |
-| 400 | `invalid_type` | El `type` del tercero debe ser INDIVIDUAL o COMPANY |
-| 404 | `not_found` | El tercero no existe o no pertenece a tu cuenta |
+| 422 | `verification_required` | El alta de terceros exige `verification_id` de una verificación aprobada ([verifica primero](#verificacion-kyc-y-kyb)) |
+| 422 | `verification_not_approved` | La verificación referenciada aún no está aprobada; espera la aprobación |
+| 422 | `verification_kind_mismatch` | El `type` enviado no calza con el kind de la verificación (KYC ⇒ INDIVIDUAL, KYB ⇒ COMPANY) |
+| 422 | `verification_invalid` | Referenciaste tu verificación de onboarding; el tercero necesita la suya propia |
+| 404 | `not_found` | El tercero (o la verificación) no existe o no pertenece a tu cuenta |
 | 502 | `banking_request_failed` | Error del corredor bancario; la comisión se reembolsó — reintenta |
 
 
@@ -5213,6 +5217,54 @@ curl -X POST https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id}/li
 - Al pasar (outcome `PASS` o `REVIEW`): la submission limpia
   `liveness_pending` y llega el webhook `kyc_liveness_completed`.
 
+### Una sola verificación para todo (identidad reutilizable)
+
+La verificación aprobada de un cliente es su **identidad única** dentro de
+CBPay: no vuelves a tipear sus datos ni a subir sus documentos en ningún
+otro producto.
+
+```mermaid
+flowchart LR
+    verif["Verificación aprobada<br/>(submission_id)"] -->|"verification_id"| banking["Alta banking de terceros<br/>POST /v1/banking/third-parties"]
+    verif -->|"cardholder.verification_id"| card["Tarjeta para persona designada<br/>POST /v1/cards"]
+    verif -.->|"mismo patrón"| futuro["Próximos productos"]
+```
+
+- **Banking para terceros**: `POST /v1/banking/third-parties` exige el
+  `verification_id` de una verificación **aprobada** del tercero. El tipo
+  (`INDIVIDUAL`/`COMPANY`) sale del kind (KYC ⇒ persona, KYB ⇒ empresa),
+  los datos (nombre, email, dirección) se completan solos desde el perfil
+  verificado, y los documentos ya validados se re-entregan automáticamente
+  al proveedor bancario (`documents_synced` en la respuesta). Detalle en
+  [Banking](#banking).
+- **Tarjetas para personas designadas**: `POST /v1/cards` con un
+  `cardholder` de persona exige `cardholder.verification_id` de un **KYC
+  aprobado** de esa persona. Identidad y documentos del titular salen de la
+  verificación; solo agregas los campos propios del emisor (`occupation`,
+  `salary_usd`). Detalle en [Tarjetas](#tarjetas-virtuales-y-fisicas).
+- **Tu propia cuenta**: tu onboarding aprobado también se reutiliza — al
+  crear tu banking customer o tu primera tarjeta, los datos y documentos
+  faltantes se completan desde tu verificación.
+
+Los campos explícitos de tu request **siempre ganan** sobre el autofill.
+
+> **Importante**
+Sin una verificación aprobada del tercero, el alta banking y la emisión de
+tarjetas designadas responden `422 verification_required`. Verifica primero
+(links hosteados o datos por API) y usa el `submission_id` aprobado como
+`verification_id`.
+### Informe de compliance (solo KYB)
+
+Para cada verificación KYB puedes descargar el **informe de compliance
+firmado** (PDF, evidencia para tus propios auditores):
+
+```bash
+curl -o report.pdf https://api.qbank.cl/platform/v1/kyb/submissions/{submission_id}/report \
+  -H "Authorization: Bearer <token>"
+```
+
+Es gratuito (el servicio se cobró al crear la verificación).
+
 ### Webhooks
 
 | Evento | Cuándo |
@@ -5299,6 +5351,12 @@ No: son productos complementarios. La verificación comprueba la identidad
 con evidencia (documentos, video); el [AML screening](#aml-screening)
 contrasta la identidad contra listas de sanciones/PEP/prensa adversa y
 puede vigilarla de forma continua.
+#### ¿Puedo reusar la verificación de un cliente en otros productos?
+Sí — ese es el diseño: una verificación aprobada sirve como identidad única.
+Pasa su `submission_id` como `verification_id` al dar de alta un usuario
+banking de tercero o al emitir una tarjeta para una persona designada: los
+datos y documentos se completan solos. Ver
+[identidad reutilizable](#una-sola-verificacion-para-todo-identidad-reutilizable).
 
 
 ## AML screening
@@ -6593,6 +6651,10 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | 404 | `recipient_not_found` | Destino de transferencia inexistente |
 | 409 | `duplicate` | El recurso ya existe |
 | 403 | `verification_required` | Tu cuenta aún no aprobó su verificación de identidad (persona=KYC, empresa=KYB); hasta entonces solo puedes fondear — pide tu link en `POST /v1/me/verification/link` |
+| 422 | `verification_required` | La operación exige el `verification_id` de una verificación aprobada del tercero (alta banking de terceros, tarjeta designada) |
+| 422 | `verification_not_approved` | La verificación referenciada aún no está aprobada |
+| 422 | `verification_kind_mismatch` | El kind de la verificación no calza con el producto (KYC ⇒ persona/INDIVIDUAL, KYB ⇒ empresa/COMPANY) |
+| 422 | `verification_invalid` | Referenciaste una verificación de onboarding propio donde se exige la de un tercero |
 | 403 | `company_account_required` | La verificación de terceros (links/submissions KYC-KYB) es solo para cuentas empresa |
 | 409 | `already_verified` | Pediste link de onboarding con la cuenta ya verificada |
 | 409 | `no_screening` | Rescreen/monitoreo AML sin un screening previo |
@@ -6830,9 +6892,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-10 19:14 UTC · 155 requests · versión `d850e0a3d329`
+> **Colección actualizada:** 2026-07-10 21:55 UTC · 156 requests · versión `df8c254fbd7b`
 
-<PostmanFreshness iso="2026-07-10T19:14:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-10T21:55:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -6866,6 +6928,34 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.39 — 10 de julio de 2026
+
+**Agregado — Identidad verificada reutilizable (KYC/KYB unificado)**
+
+- La verificación KYC/KYB aprobada de un cliente pasa a ser su **identidad
+  única** dentro de CBPay: sus datos y documentos se reutilizan en los
+  demás productos sin volver a tipearlos ni re-subirlos. Guía:
+  [identidad reutilizable](#verificacion-kyc-y-kyb).
+- **Tarjetas**: la primera emisión de tu cuenta completa la identidad y los
+  documentos del titular **desde tu verificación aprobada** — solo envías
+  `occupation` y `salary_usd`. Los campos explícitos siguen ganando.
+- **Informe de compliance (KYB)**: `GET /v1/kyb/submissions/{id}/report`
+  descarga el informe de compliance firmado (PDF) de la verificación.
+
+**Cambiado — Breaking**
+
+- **`POST /v1/banking/third-parties`** ahora exige `verification_id` de una
+  verificación **aprobada** del tercero. El `type` sale del kind (KYC ⇒
+  INDIVIDUAL, KYB ⇒ COMPANY), la identidad se completa sola y los
+  documentos ya validados se re-entregan al proveedor bancario
+  (`documents_synced`). Los terceros existentes siguen operando.
+- **`POST /v1/cards`** para personas designadas (cuentas empresa) ahora
+  exige `cardholder.verification_id` del KYC **aprobado** de esa persona;
+  su identidad y documentos salen de la verificación.
+- Errores nuevos: `422 verification_required`,
+  `422 verification_not_approved`, `422 verification_kind_mismatch`,
+  `422 verification_invalid`.
 
 ### v1.38 — 10 de julio de 2026
 
@@ -7733,6 +7823,7 @@ está en la API Reference interactiva y en la colección Postman.
 | `POST` | `/v1/kyb/submissions/{submissionID}/documents/confirm` | Confirmar un documento KYB subido |
 | `GET` | `/v1/kyc/submissions/{submissionID}/liveness_link` | Consultar el liveness link y su estado |
 | `POST` | `/v1/kyc/submissions/{submissionID}/liveness_link` | Crear un liveness link |
+| `GET` | `/v1/kyb/submissions/{submissionID}/report` | Descargar el informe de compliance firmado (PDF) |
 
 
 ## Contacts

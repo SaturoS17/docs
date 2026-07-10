@@ -8,6 +8,36 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="10 de julio de 2026" description="v1.39">
+
+**Agregado — Identidad verificada reutilizable (KYC/KYB unificado)**
+
+- La verificación KYC/KYB aprobada de un cliente pasa a ser su **identidad
+  única** dentro de CBPay: sus datos y documentos se reutilizan en los
+  demás productos sin volver a tipearlos ni re-subirlos. Guía:
+  [identidad reutilizable](/es/guias/kyc#una-sola-verificacion-para-todo-identidad-reutilizable).
+- **Tarjetas**: la primera emisión de tu cuenta completa la identidad y los
+  documentos del titular **desde tu verificación aprobada** — solo envías
+  `occupation` y `salary_usd`. Los campos explícitos siguen ganando.
+- **Informe de compliance (KYB)**: `GET /v1/kyb/submissions/{id}/report`
+  descarga el informe de compliance firmado (PDF) de la verificación.
+
+**Cambiado — Breaking**
+
+- **`POST /v1/banking/third-parties`** ahora exige `verification_id` de una
+  verificación **aprobada** del tercero. El `type` sale del kind (KYC ⇒
+  INDIVIDUAL, KYB ⇒ COMPANY), la identidad se completa sola y los
+  documentos ya validados se re-entregan al proveedor bancario
+  (`documents_synced`). Los terceros existentes siguen operando.
+- **`POST /v1/cards`** para personas designadas (cuentas empresa) ahora
+  exige `cardholder.verification_id` del KYC **aprobado** de esa persona;
+  su identidad y documentos salen de la verificación.
+- Errores nuevos: `422 verification_required`,
+  `422 verification_not_approved`, `422 verification_kind_mismatch`,
+  `422 verification_invalid`.
+
+</Update>
+
 <Update label="10 de julio de 2026" description="v1.38">
 
 **Agregado — Resumen de cuenta (analytics) + usuarios banking de terceros**

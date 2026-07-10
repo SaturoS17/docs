@@ -168,27 +168,28 @@ party.
 
 ```mermaid
 flowchart LR
-    reg["1. POST third-parties<br/>(third party identity)"] --> docs["2. Documents + submit<br/>(third party KYC)"]
-    docs --> approved{"approved?"}
-    approved -->|"Yes"| accts["3. POST /accounts<br/>(accounts in their name)"]
-    approved -->|"No"| fix["Fix and resubmit"]
+    verif["1. Third party KYC/KYB<br/>verification (approved)"] --> reg["2. POST third-parties<br/>(verification_id)"]
+    reg --> docs["Data + documents<br/>auto-fill"]
+    docs --> accts["3. POST /accounts<br/>(accounts in their name)"]
 ```
 
 ### Registering the third party
 
-The identity goes complete and explicit (`type` INDIVIDUAL or COMPANY is
-required — it is ANOTHER person, nothing is copied from your company). The
-banking profile fee is charged (refunded if the registration fails):
+Registration requires the `verification_id` of an [**approved** KYC/KYB
+verification](/en/guides/kyc) of the third party — their single identity
+inside CBPay. The type comes from the verification kind (KYC ⇒
+`INDIVIDUAL`, KYB ⇒ `COMPANY`), the data (name, email, address) auto-fills
+from the verified profile (whatever you send explicitly wins), and the
+**already-validated documents are re-delivered automatically** to the
+banking provider. The banking profile fee is charged (refunded if the
+registration fails):
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/banking/third-parties \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
-    "type": "INDIVIDUAL",
-    "name": "Carlos Mendes",
-    "email": "carlos@mail.com",
-    "country": "BR"
+    "verification_id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f"
   }'
 ```
 
@@ -200,10 +201,19 @@ Response `201`:
   "customer_id": "…",
   "kind": "third_party",
   "status": "pending",
+  "verification_id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
+  "documents_synced": 2,
   "registered_at": "2026-07-10T15:00:00Z",
   "banking_fee": "1.000000"
 }
 ```
+
+<Note>
+`documents_synced` counts the verification documents that were loaded
+automatically into the third party's banking profile. If one could not be
+synced (or the bank requests additional categories), upload it through the
+manual document flow below and then `submit`.
+</Note>
 
 Save the `third_party_id`: every third-party route uses it. List and fetch
 (the GET carries the live verification status):
@@ -252,6 +262,11 @@ curl https://api.qbank.cl/platform/v1/banking/third-parties/7f2a…/accounts/{ba
   never see or operate it (it gets `404`).
 - A **person** account attempting to create third parties receives
   `403 company_required`.
+- Without `verification_id` (or with a non-approved verification) the
+  registration answers `422 verification_required` /
+  `422 verification_not_approved`. If you send a `type` that does not match
+  the verification kind, `422 verification_kind_mismatch`. Third parties
+  created before this rule keep operating normally.
 - Registered third parties feed the "new users" metric of your
   [account summary](/en/guides/analytics).
 
@@ -411,6 +426,9 @@ curl "https://api.qbank.cl/platform/v1/banking/operations?from=2026-07-01&to=202
 | 409 | `no_banking_customer` | Create your profile first (`POST /v1/banking/customer`) |
 | 409 | `banking_account_limit` | Person accounts can hold at most 1 bank account |
 | 403 | `company_required` | Third-party users are available for company accounts only |
-| 400 | `invalid_type` | The third party `type` must be INDIVIDUAL or COMPANY |
-| 404 | `not_found` | The third party does not exist or does not belong to your account |
+| 422 | `verification_required` | Third-party registration requires the `verification_id` of an approved verification ([verify first](/en/guides/kyc)) |
+| 422 | `verification_not_approved` | The referenced verification is not approved yet; wait for approval |
+| 422 | `verification_kind_mismatch` | The `type` sent does not match the verification kind (KYC ⇒ INDIVIDUAL, KYB ⇒ COMPANY) |
+| 422 | `verification_invalid` | You referenced your onboarding verification; the third party needs their own |
+| 404 | `not_found` | The third party (or the verification) does not exist or does not belong to your account |
 | 502 | `banking_request_failed` | Banking corridor error; the fee was refunded — retry |

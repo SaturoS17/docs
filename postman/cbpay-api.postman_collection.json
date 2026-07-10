@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — that never mix or convert automatically.\nPayouts and service fees can be paid from any of the four balances:\nset a default with `PUT /v1/settlement` or override per payout with\n`settlement_asset`.\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-10 19:14 UTC",
-    "_content_sha256": "d850e0a3d32935656e30db4192c8c919b9b6f465ed36f3bb19fb4e41b49f19e4"
+    "_generated_at": "2026-07-10 21:55 UTC",
+    "_content_sha256": "df8c254fbd7b574d5278aa6cc56b776a9dafbdc03786475457c51f8ba9fd75c3"
   },
   "auth": {
     "type": "bearer",
@@ -6386,6 +6386,33 @@
               "body": "{\n  \"url\": \"https://verify.example.com/on/liveness/tok_abc123\",\n  \"status\": \"pending\",\n  \"expires_at\": 1751234567\n}"
             }
           ]
+        },
+        {
+          "name": "Download the signed compliance report (PDF)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyb/submissions/:submissionID/report",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyb",
+                "submissions",
+                ":submissionID",
+                "report"
+              ],
+              "variable": [
+                {
+                  "key": "submissionID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Signed compliance report of a KYB verification — evidence for your own auditors. Free (the service was billed when the verification was created)."
+          }
         }
       ]
     },
@@ -8707,10 +8734,10 @@
                 "third-parties"
               ]
             },
-            "description": "Company accounts register end clients as separate banking users with their own identity and KYC and accounts in their name. Charges the banking profile fee (refunded if the core rejects). Person accounts get 403 company_required.",
+            "description": "Company accounts register end clients as separate banking users with accounts in their name. Requires the verification_id of an APPROVED KYC/KYB verification of the third party: the type comes from the verification kind (KYC = INDIVIDUAL, KYB = COMPANY), identity data auto-fills from the verified profile (explicit fields win) and the already-validated documents are re-delivered automatically to the banking provider (documents_synced). Charges the banking profile fee (refunded if the core rejects). Person accounts get 403 company_required.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"type\": \"INDIVIDUAL\",\n  \"name\": \"Carlos Mendes\",\n  \"email\": \"carlos@mail.com\",\n  \"country\": \"BR\"\n}",
+              "raw": "{\n  \"verification_id\": \"c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -8744,7 +8771,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"third_party_id\": \"7f2a1b3c-0000-1111-2222-333344445555\",\n  \"customer_id\": \"cus_abc123\",\n  \"kind\": \"third_party\",\n  \"status\": \"pending\",\n  \"registered_at\": \"2026-07-10T15:00:00Z\",\n  \"banking_fee\": \"1.000000\"\n}"
+              "body": "{\n  \"third_party_id\": \"7f2a1b3c-0000-1111-2222-333344445555\",\n  \"customer_id\": \"cus_abc123\",\n  \"kind\": \"third_party\",\n  \"status\": \"pending\",\n  \"verification_id\": \"c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f\",\n  \"documents_synced\": 2,\n  \"registered_at\": \"2026-07-10T15:00:00Z\",\n  \"banking_fee\": \"1.000000\"\n}"
             }
           ]
         },
@@ -9282,7 +9309,7 @@
           ]
         },
         {
-          "name": "Create a card — Person — FIRST card (full cardholder data)",
+          "name": "Create a card — Person — FIRST card (identity auto-fills from the verification)",
           "request": {
             "method": "POST",
             "header": [
@@ -9304,7 +9331,7 @@
             "description": "Issues a card (virtual or physical) that spends Just-In-Time from the account's central balance in the card's spending asset (`spending_asset`: USDT/USDC 1:1 with the USD, or BTC/GOLD converted at the price of the moment of each event; USDT by default) — no prefunding: every purchase is authorized in real time against the available balance and the card's own limits. Person accounts can hold **1 virtual + 1 physical** card; company accounts can create **unlimited** cards, for the company itself or for designated persons (e.g. employees, passing their identity documents). Issuance bills the `card_creation_virtual` / `card_creation_physical` fee when configured (0 = free); the charge is refunded automatically if issuance fails. Physical cards are born `pending_activation` until the holder confirms reception.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"physical\": false,\n  \"idempotency_key\": \"card-v-1\",\n  \"cardholder\": {\n    \"first_name\": \"Ana\",\n    \"last_name\": \"Perez\",\n    \"email\": \"ana@example.com\",\n    \"phone\": \"+56912345678\",\n    \"occupation\": \"52201\",\n    \"salary_usd\": 1800,\n    \"id_front_url\": \"https://files.example.com/kyc/ap-front.jpg\",\n    \"id_back_url\": \"https://files.example.com/kyc/ap-back.jpg\",\n    \"residence_proof_url\": \"https://files.example.com/kyc/ap-address.pdf\",\n    \"address\": {\n      \"line1\": \"Av. Providencia 123\",\n      \"city\": \"Santiago\",\n      \"region\": \"RM\",\n      \"postal_code\": \"7500000\",\n      \"country\": \"CL\"\n    }\n  }\n}",
+              "raw": "{\n  \"physical\": false,\n  \"idempotency_key\": \"card-v-1\",\n  \"cardholder\": {\n    \"occupation\": \"52201\",\n    \"salary_usd\": 1800\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -9402,7 +9429,7 @@
           ]
         },
         {
-          "name": "Create a card — Company — card for a designated person",
+          "name": "Create a card — Company — card for a designated person (approved KYC required)",
           "request": {
             "method": "POST",
             "header": [
@@ -9424,7 +9451,7 @@
             "description": "Issues a card (virtual or physical) that spends Just-In-Time from the account's central balance in the card's spending asset (`spending_asset`: USDT/USDC 1:1 with the USD, or BTC/GOLD converted at the price of the moment of each event; USDT by default) — no prefunding: every purchase is authorized in real time against the available balance and the card's own limits. Person accounts can hold **1 virtual + 1 physical** card; company accounts can create **unlimited** cards, for the company itself or for designated persons (e.g. employees, passing their identity documents). Issuance bills the `card_creation_virtual` / `card_creation_physical` fee when configured (0 = free); the charge is refunded automatically if issuance fails. Physical cards are born `pending_activation` until the holder confirms reception.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"physical\": false,\n  \"idempotency_key\": \"card-emp-77\",\n  \"limits\": {\n    \"monthly\": \"1500.00\"\n  },\n  \"cardholder\": {\n    \"kind\": \"person\",\n    \"first_name\": \"Maria\",\n    \"last_name\": \"Perez\",\n    \"email\": \"maria@empresa.com\",\n    \"occupation\": \"52201\",\n    \"salary_usd\": 1800,\n    \"id_front_url\": \"https://files.example.com/kyc/mp-front.jpg\",\n    \"id_back_url\": \"https://files.example.com/kyc/mp-back.jpg\",\n    \"residence_proof_url\": \"https://files.example.com/kyc/mp-address.pdf\",\n    \"address\": {\n      \"line1\": \"Av. Providencia 123\",\n      \"city\": \"Santiago\",\n      \"region\": \"RM\",\n      \"postal_code\": \"7500000\",\n      \"country\": \"CL\"\n    }\n  }\n}",
+              "raw": "{\n  \"physical\": false,\n  \"idempotency_key\": \"card-emp-77\",\n  \"limits\": {\n    \"monthly\": \"1500.00\"\n  },\n  \"cardholder\": {\n    \"kind\": \"person\",\n    \"verification_id\": \"c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f\",\n    \"occupation\": \"52201\",\n    \"salary_usd\": 1800\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"

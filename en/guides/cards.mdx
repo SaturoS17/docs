@@ -119,8 +119,12 @@ the original card and never double-charges).
 A person account issues cards **for itself** (at most 1 virtual +
 1 physical).
 
-**Your first card** creates and verifies your holder at the issuer, so it
-carries your full data and identity documents by URL:
+**Your first card** creates and verifies your holder at the issuer. Since
+your account already approved its
+[identity verification](/en/guides/kyc), your data and documents
+**auto-fill from your verification** — you only add the issuer-specific
+fields (`occupation`, `salary_usd`); any field you send explicitly wins
+over the autofill:
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/cards \
@@ -130,29 +134,18 @@ curl -X POST https://api.qbank.cl/platform/v1/cards \
     "physical": false,
     "idempotency_key": "card-v-1",
     "cardholder": {
-      "first_name": "Ana",
-      "last_name": "Perez",
-      "email": "ana@example.com",
-      "phone": "+56912345678",
       "occupation": "52201",
-      "salary_usd": 1800,
-      "id_front_url": "https://files.example.com/kyc/ap-front.jpg",
-      "id_back_url": "https://files.example.com/kyc/ap-back.jpg",
-      "residence_proof_url": "https://files.example.com/kyc/ap-address.pdf",
-      "address": {
-        "line1": "Av. Providencia 123",
-        "city": "Santiago",
-        "region": "RM",
-        "postal_code": "7500000",
-        "country": "CL"
-      }
+      "salary_usd": 1800
     }
   }'
 ```
 
 `occupation` is a **catalog code**
 ([see below](#occupation-and-business-activity-catalog-codes)) and
-`salary_usd` is whole US dollars.
+`salary_usd` is whole US dollars. If your verification was done through
+the wizard without some data or document the issuer requires, add it
+explicitly to the `cardholder` (`first_name`, `email`, `address`,
+`id_front_url`…, same format as always).
 
 **Your second card** (the physical one, for example) asks for no data —
 your holder is already verified:
@@ -218,9 +211,9 @@ curl -X POST https://api.qbank.cl/platform/v1/cards \
 </CodeGroup>
 
 **B. For a designated person** (e.g. an employee): add
-`cardholder.kind: "person"` with THAT person's full data — every
-designation is a new holder, so their data and documents go **every
-time**, on each card for a different person:
+`cardholder.kind: "person"` with the `verification_id` of THAT person's
+[**approved** KYC](/en/guides/kyc) — their identity and documents come
+from the verification; you only add the issuer fields:
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/cards \
@@ -232,27 +225,22 @@ curl -X POST https://api.qbank.cl/platform/v1/cards \
     "limits": { "monthly": "1500.00" },
     "cardholder": {
       "kind": "person",
-      "first_name": "Maria",
-      "last_name": "Perez",
-      "email": "maria@empresa.com",
+      "verification_id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
       "occupation": "52201",
-      "salary_usd": 1800,
-      "id_front_url": "https://files.example.com/kyc/mp-front.jpg",
-      "id_back_url": "https://files.example.com/kyc/mp-back.jpg",
-      "residence_proof_url": "https://files.example.com/kyc/mp-address.pdf",
-      "address": {
-        "line1": "Av. Providencia 123",
-        "city": "Santiago",
-        "region": "RM",
-        "postal_code": "7500000",
-        "country": "CL"
-      }
+      "salary_usd": 1800
     }
   }'
 ```
 
-The printed name uses `first_name` + `last_name` (22 characters combined
-max) and the response carries `cardholder_kind: "person"`.
+- Without `verification_id` (or with a non-approved verification):
+  `422 verification_required` / `422 verification_not_approved`. The
+  verification must be KYC (person); a KYB answers
+  `422 verification_kind_mismatch`.
+- Explicit `cardholder` fields win over the autofill (useful when the
+  issuer requires a document the verification does not have).
+- The printed name uses `first_name` + `last_name` (22 characters combined
+  max) and the response carries `cardholder_kind: "person"` plus the
+  `verification_id` used.
 
 </Tab>
 </Tabs>
@@ -487,8 +475,10 @@ The card is frozen automatically (`card_status_changed` event with
 up, unfreeze it with `PATCH { "frozen": false }`.
 </Accordion>
 <Accordion title="Can I issue a card for someone outside my company?">
-Company accounts can issue for any designated person by passing their data
-and identity documents. The card always spends from the balance of the
-issuing company account.
+Company accounts can issue for any designated person. That person must
+have an [approved KYC verification](/en/guides/kyc) — you pass their
+`verification_id` in the `cardholder` and their data and documents
+auto-fill. The card always spends from the balance of the issuing company
+account.
 </Accordion>
 </AccordionGroup>

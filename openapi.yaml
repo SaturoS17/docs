@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.38'
+  version: '1.39'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -3883,6 +3883,34 @@ paths:
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/kyb/submissions/{submissionID}/report:
+    get:
+      tags:
+      - KYC / KYB
+      operationId: getKybComplianceReport
+      summary: Download the signed compliance report (PDF)
+      description: Signed compliance report of a KYB verification — evidence for your own auditors.
+        Free (the service was billed when the verification was created).
+      parameters:
+      - name: submissionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Signed compliance report.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+              example: '%PDF-1.7 (binary report content)'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/contacts:
     get:
       tags:
@@ -6658,35 +6686,28 @@ paths:
                       type: string
                 cardholder:
                   type: object
-                  description: 'Cardholder data. REQUIRED on the account''s FIRST issuance (it creates
-                    and verifies the holder at the issuer: personal data, occupation catalog code and
-                    identity documents by URL — id_front_url, id_back_url, residence_proof_url; company
-                    accounts issuing for themselves send corporate data and documents instead). Omit it
-                    on subsequent cards: the verified holder is reused. Company accounts can also set
-                    kind "person" to issue for a designated person (full data + documents required on
-                    every designation).'
+                  description: 'Cardholder data. On the account''s FIRST issuance the holder is created
+                    at the issuer: identity data and documents AUTO-FILL from the account''s approved
+                    identity verification (explicit fields win); you only add the issuer-specific
+                    fields (occupation catalog code, salary_usd). Omit it on subsequent cards: the
+                    verified holder is reused. Company accounts can also set kind "person" plus the
+                    verification_id of THAT person''s APPROVED KYC to issue for a designated person
+                    (their identity and documents come from the verification).'
+                  properties:
+                    verification_id:
+                      type: string
+                      format: uuid
+                      description: 'REQUIRED for designated persons (kind "person" on company accounts):
+                        submission_id of the person''s APPROVED third-party KYC verification.'
             examples:
               person_first_card:
-                summary: Person — FIRST card (full cardholder data)
+                summary: Person — FIRST card (identity auto-fills from the verification)
                 value:
                   physical: false
                   idempotency_key: card-v-1
                   cardholder:
-                    first_name: Ana
-                    last_name: Perez
-                    email: ana@example.com
-                    phone: '+56912345678'
                     occupation: '52201'
                     salary_usd: 1800
-                    id_front_url: https://files.example.com/kyc/ap-front.jpg
-                    id_back_url: https://files.example.com/kyc/ap-back.jpg
-                    residence_proof_url: https://files.example.com/kyc/ap-address.pdf
-                    address:
-                      line1: Av. Providencia 123
-                      city: Santiago
-                      region: RM
-                      postal_code: '7500000'
-                      country: CL
               subsequent_card:
                 summary: Subsequent card — holder already verified (no data needed)
                 value:
@@ -6697,7 +6718,7 @@ paths:
                     per_transaction: '500.00'
                     monthly: '5000.00'
               company_for_employee:
-                summary: Company — card for a designated person
+                summary: Company — card for a designated person (approved KYC required)
                 value:
                   physical: false
                   idempotency_key: card-emp-77
@@ -6705,20 +6726,9 @@ paths:
                     monthly: '1500.00'
                   cardholder:
                     kind: person
-                    first_name: Maria
-                    last_name: Perez
-                    email: maria@empresa.com
+                    verification_id: c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f
                     occupation: '52201'
                     salary_usd: 1800
-                    id_front_url: https://files.example.com/kyc/mp-front.jpg
-                    id_back_url: https://files.example.com/kyc/mp-back.jpg
-                    residence_proof_url: https://files.example.com/kyc/mp-address.pdf
-                    address:
-                      line1: Av. Providencia 123
-                      city: Santiago
-                      region: RM
-                      postal_code: '7500000'
-                      country: CL
       responses:
         '201':
           description: Card created.
@@ -6766,6 +6776,16 @@ paths:
               example:
                 error: card_limit_reached
                 message: person accounts can hold at most 1 virtual card (cancel the existing one first)
+        '422':
+          description: verification_required / verification_not_approved / verification_kind_mismatch
+            (designated persons need an approved third-party KYC verification_id).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: verification_required
+                message: 'an approved identity verification of the third party is required: pass verification_id'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -7673,22 +7693,31 @@ paths:
       summary: Register a third-party banking user (companies only)
       description: >
         Company accounts register end clients as separate banking users with
-        their own identity and KYC and accounts in their name. Charges the
-        banking profile fee (refunded if the core rejects). Person accounts
-        get 403 company_required.
+        accounts in their name. Requires the verification_id of an APPROVED
+        KYC/KYB verification of the third party: the type comes from the
+        verification kind (KYC = INDIVIDUAL, KYB = COMPANY), identity data
+        auto-fills from the verified profile (explicit fields win) and the
+        already-validated documents are re-delivered automatically to the
+        banking provider (documents_synced). Charges the banking profile fee
+        (refunded if the core rejects). Person accounts get 403
+        company_required.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [type, name]
+              required: [verification_id]
               properties:
-                type: {type: string, enum: [INDIVIDUAL, COMPANY]}
-                name: {type: string}
-                email: {type: string, format: email}
+                verification_id:
+                  type: string
+                  format: uuid
+                  description: submission_id of an APPROVED third-party KYC/KYB verification.
+                type: {type: string, enum: [INDIVIDUAL, COMPANY], description: 'Optional: must match the verification kind.'}
+                name: {type: string, description: 'Optional: auto-fills from the verified profile.'}
+                email: {type: string, format: email, description: 'Optional: auto-fills from the verified profile.'}
                 country: {type: string}
-            example: {type: INDIVIDUAL, name: Carlos Mendes, email: carlos@mail.com, country: BR}
+            example: {verification_id: c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f}
       responses:
         '201':
           description: Third-party banking user created.
@@ -7699,12 +7728,14 @@ paths:
                 customer_id: cus_abc123
                 kind: third_party
                 status: pending
+                verification_id: c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f
+                documents_synced: 2
                 registered_at: '2026-07-10T15:00:00Z'
                 banking_fee: '1.000000'
         '403':
           description: company_required
-        '400':
-          description: invalid_type
+        '422':
+          description: verification_required / verification_not_approved / verification_kind_mismatch / verification_invalid
     get:
       tags:
       - Banking

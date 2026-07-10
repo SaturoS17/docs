@@ -97,6 +97,10 @@ Detalle y flujo completo en [login social](/es/guias/login-social).
 | 404 | `recipient_not_found` | Destino de transferencia inexistente |
 | 409 | `duplicate` | El recurso ya existe |
 | 403 | `verification_required` | Tu cuenta aún no aprobó su verificación de identidad (persona=KYC, empresa=KYB); hasta entonces solo puedes fondear — pide tu link en `POST /v1/me/verification/link` |
+| 422 | `verification_required` | La operación exige el `verification_id` de una verificación aprobada del tercero (alta banking de terceros, tarjeta designada) |
+| 422 | `verification_not_approved` | La verificación referenciada aún no está aprobada |
+| 422 | `verification_kind_mismatch` | El kind de la verificación no calza con el producto (KYC ⇒ persona/INDIVIDUAL, KYB ⇒ empresa/COMPANY) |
+| 422 | `verification_invalid` | Referenciaste una verificación de onboarding propio donde se exige la de un tercero |
 | 403 | `company_account_required` | La verificación de terceros (links/submissions KYC-KYB) es solo para cuentas empresa |
 | 409 | `already_verified` | Pediste link de onboarding con la cuenta ya verificada |
 | 409 | `no_screening` | Rescreen/monitoreo AML sin un screening previo |
