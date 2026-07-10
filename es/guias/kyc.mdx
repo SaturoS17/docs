@@ -138,7 +138,9 @@ curl -X POST https://api.qbank.cl/platform/v1/kyb/links \
 </CodeGroup>
 
 - `external_customer_id` (obligatorio): TU referencia del cliente
-  verificado — la recibes de vuelta en cada webhook y consulta.
+  verificado — la recibes de vuelta en cada webhook y consulta. Los valores
+  `self` o terminados en `:self` están reservados para el onboarding de la
+  cuenta y se rechazan con `400 invalid_payload`.
 - `idempotency_key` (obligatoria): un retry con la misma clave devuelve el
   link original y **nunca cobra dos veces**.
 - `country` (solo KYB): `us`, `cl`, `ve`, `br`, `mx`, `co`, `pe`, `bo`,

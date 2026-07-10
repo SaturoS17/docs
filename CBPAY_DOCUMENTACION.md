@@ -8,7 +8,7 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-10 06:09 UTC · versión `cdec7c56e569`
+> **Documento actualizado:** 2026-07-10 06:31 UTC · versión `50bad23e9ef0`
 
 **Datos clave**
 
@@ -4420,7 +4420,9 @@ curl -X POST https://api.qbank.cl/platform/v1/kyb/links \
 ```
 
 - `external_customer_id` (obligatorio): TU referencia del cliente
-  verificado — la recibes de vuelta en cada webhook y consulta.
+  verificado — la recibes de vuelta en cada webhook y consulta. Los valores
+  `self` o terminados en `:self` están reservados para el onboarding de la
+  cuenta y se rechazan con `400 invalid_payload`.
 - `idempotency_key` (obligatoria): un retry con la misma clave devuelve el
   link original y **nunca cobra dos veces**.
 - `country` (solo KYB): `us`, `cl`, `ve`, `br`, `mx`, `co`, `pe`, `bo`,
