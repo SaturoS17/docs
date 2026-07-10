@@ -109,6 +109,7 @@ Full flow and details in [social login](/en/guides/social-login).
 | 400 | `invalid_settlement_asset` | `settlement_asset` is not USDT, USDC, BTC or GOLD |
 | 400 | `settlement_asset_disabled` | Your organization disabled that asset as settlement source |
 | 422 | `settlement_limit_exceeded` | The operation exceeds the per-operation limit for volatile assets (BTC/GOLD); use USDT/USDC or split the operation |
+| 422 | `settlement_daily_limit_exceeded` | The account exceeded its 24h volume for volatile assets (BTC/GOLD); use USDT/USDC or retry later |
 
 ### Service (5xx)
 

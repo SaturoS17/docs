@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-09 22:01 UTC · versión `524c20f250fe`
+> **Documento actualizado:** 2026-07-09 23:59 UTC · versión `1aedf2c93477`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.29 (9 de julio de 2026) |
+| Versión de la documentación | v1.30 (9 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -964,6 +964,7 @@ Reglas del settlement multi-asset:
 | Débito, hold y reembolso | Los tres viven en el asset elegido. Si el payout falla, se reembolsa el `settlement_amount` **exacto** — jamás se re-cotiza. |
 | Idempotencia | El replay con la misma llave devuelve el monto original; el precio no se recalcula. |
 | Límite por operación | Los assets volátiles (BTC/GOLD) tienen un límite por operación (equivalente USDT, visible en `GET /v1/settlement`); si lo superas: `422 settlement_limit_exceeded`. |
+| Límite diario por cuenta | Los assets volátiles también tienen un tope de volumen en 24 h móviles (`volatile_daily_limit_usdt` en `GET /v1/settlement`); al superarlo: `422 settlement_daily_limit_exceeded`. Paga en USDT/USDC o reintenta más tarde. |
 | USDT | Sigue siendo el camino por defecto y no cambia en nada para quien no toca esta configuración. |
 
 El bloque `settlement` de `GET /v1/rates` muestra el precio efectivo por
@@ -5166,6 +5167,7 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | 400 | `invalid_settlement_asset` | `settlement_asset` no es USDT, USDC, BTC ni GOLD |
 | 400 | `settlement_asset_disabled` | Tu organización tiene deshabilitado ese asset como origen de settlement |
 | 422 | `settlement_limit_exceeded` | La operación supera el límite por operación de los assets volátiles (BTC/GOLD); usa USDT/USDC o divide la operación |
+| 422 | `settlement_daily_limit_exceeded` | La cuenta superó su volumen de 24 h en assets volátiles (BTC/GOLD); usa USDT/USDC o reintenta más tarde |
 
 #### Servicio (5xx)
 
@@ -5374,9 +5376,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-09 22:01 UTC · 107 requests · versión `621e2d5e419a`
+> **Colección actualizada:** 2026-07-09 23:59 UTC · 107 requests · versión `9b4dfdd1dba3`
 
-<PostmanFreshness iso="2026-07-09T22:01:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-09T23:59:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -5410,6 +5412,19 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.30 — 9 de julio de 2026
+
+**Cambiado — Endurecimiento del settlement multi-asset**
+
+- Los pagos desde BTC/GOLD ahora tienen, además del límite por operación,
+  un **tope de volumen en 24 h móviles por cuenta** (`422
+  settlement_daily_limit_exceeded`). Lo ves en `GET /v1/settlement` como
+  `volatile_daily_limit_usdt`.
+- Las comisiones de **tarjetas** (emisión, cancelación y mensualidad) ahora
+  también se debitan desde tu saldo de settlement predeterminado, igual que
+  el resto de los servicios. Las **compras** con tarjeta siguen liquidando
+  en USDT.
 
 ### v1.29 — 9 de julio de 2026
 

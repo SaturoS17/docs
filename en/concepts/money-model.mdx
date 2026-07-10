@@ -76,6 +76,7 @@ Multi-asset settlement rules:
 | Debit, hold and refund | All three live in the chosen asset. If the payout fails, the **exact** `settlement_amount` is refunded — never re-quoted. |
 | Idempotency | Replaying with the same key returns the original amount; the price is never recomputed. |
 | Per-operation limit | Volatile assets (BTC/GOLD) have a per-operation limit (USDT equivalent, visible in `GET /v1/settlement`); exceeding it returns `422 settlement_limit_exceeded`. |
+| Per-account daily limit | Volatile assets also have a rolling 24h volume cap (`volatile_daily_limit_usdt` in `GET /v1/settlement`); exceeding it returns `422 settlement_daily_limit_exceeded`. Settle in USDT/USDC or retry later. |
 | USDT | Remains the default path and changes nothing for anyone who never touches this setting. |
 
 The `settlement` block of `GET /v1/rates` shows the effective per-asset

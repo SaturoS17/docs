@@ -78,6 +78,7 @@ Reglas del settlement multi-asset:
 | Débito, hold y reembolso | Los tres viven en el asset elegido. Si el payout falla, se reembolsa el `settlement_amount` **exacto** — jamás se re-cotiza. |
 | Idempotencia | El replay con la misma llave devuelve el monto original; el precio no se recalcula. |
 | Límite por operación | Los assets volátiles (BTC/GOLD) tienen un límite por operación (equivalente USDT, visible en `GET /v1/settlement`); si lo superas: `422 settlement_limit_exceeded`. |
+| Límite diario por cuenta | Los assets volátiles también tienen un tope de volumen en 24 h móviles (`volatile_daily_limit_usdt` en `GET /v1/settlement`); al superarlo: `422 settlement_daily_limit_exceeded`. Paga en USDT/USDC o reintenta más tarde. |
 | USDT | Sigue siendo el camino por defecto y no cambia en nada para quien no toca esta configuración. |
 
 El bloque `settlement` de `GET /v1/rates` muestra el precio efectivo por

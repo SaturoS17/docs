@@ -7,6 +7,20 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 9, 2026" description="v1.30">
+
+**Changed — Multi-asset settlement hardening**
+
+- Payments from BTC/GOLD now have, on top of the per-operation limit, a
+  **rolling 24h per-account volume cap** (`422
+  settlement_daily_limit_exceeded`). It shows in `GET /v1/settlement` as
+  `volatile_daily_limit_usdt`.
+- **Card** fees (issuance, cancellation and the monthly fee) are now also
+  debited from your default settlement balance, like every other service.
+  Card **purchases** still settle in USDT.
+
+</Update>
+
 <Update label="July 9, 2026" description="v1.29">
 
 **Added — Pay payouts and services from any balance (multi-asset settlement)**

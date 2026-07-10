@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.29'
+  version: '1.30'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -5430,6 +5430,7 @@ paths:
                 - BTC
                 - GOLD
                 volatile_op_limit_usdt: '10000.000000'
+                volatile_daily_limit_usdt: '50000.000000'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -5476,6 +5477,7 @@ paths:
                 - BTC
                 - GOLD
                 volatile_op_limit_usdt: '10000.000000'
+                volatile_daily_limit_usdt: '50000.000000'
         '400':
           description: Asset inválido o deshabilitado (`invalid_settlement_asset`, `settlement_asset_disabled`).
           content:
@@ -5937,6 +5939,9 @@ components:
         volatile_op_limit_usdt:
           type: string
           description: Límite por operación (equivalente en USDT) para los assets volátiles (BTC/GOLD).
+        volatile_daily_limit_usdt:
+          type: string
+          description: Tope de volumen 24h (equivalente en USDT) por cuenta para los assets volátiles (BTC/GOLD).
       example:
         default_settlement_asset: USDT
         enabled_assets:
@@ -5945,6 +5950,7 @@ components:
         - BTC
         - GOLD
         volatile_op_limit_usdt: '10000.000000'
+        volatile_daily_limit_usdt: '50000.000000'
     Payout:
       type: object
       properties:

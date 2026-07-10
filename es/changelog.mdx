@@ -8,6 +8,21 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="9 de julio de 2026" description="v1.30">
+
+**Cambiado — Endurecimiento del settlement multi-asset**
+
+- Los pagos desde BTC/GOLD ahora tienen, además del límite por operación,
+  un **tope de volumen en 24 h móviles por cuenta** (`422
+  settlement_daily_limit_exceeded`). Lo ves en `GET /v1/settlement` como
+  `volatile_daily_limit_usdt`.
+- Las comisiones de **tarjetas** (emisión, cancelación y mensualidad) ahora
+  también se debitan desde tu saldo de settlement predeterminado, igual que
+  el resto de los servicios. Las **compras** con tarjeta siguen liquidando
+  en USDT.
+
+</Update>
+
 <Update label="9 de julio de 2026" description="v1.29">
 
 **Agregado — Paga payouts y servicios desde cualquier saldo (settlement multi-asset)**
