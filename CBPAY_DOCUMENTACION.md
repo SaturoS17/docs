@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-10 13:28 UTC · versión `7aeca3350248`
+> **Documento actualizado:** 2026-07-10 16:17 UTC · versión `21826c0f1115`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.36 (10 de julio de 2026) |
+| Versión de la documentación | v1.37 (10 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -6499,6 +6499,19 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.37 — 10 de julio de 2026
+
+**Cambiado — Tasas de Bolivia y Venezuela**
+
+- Las tasas USD→BOB y USD→VES de `GET /v1/rates` ahora reflejan el mercado
+  con el que realmente operamos tus pagos (antes se publicaba una tasa de
+  referencia que no correspondía al valor aplicado).
+- Si en algún momento una de esas tasas no está disponible, el país no
+  aparece en `GET /v1/rates` y las operaciones en esa moneda responden
+  `422 currency_not_supported` hasta que vuelva — nunca cotizamos con una
+  tasa incorrecta. Te recomendamos consultar `GET /v1/rates` (o suscribirte
+  al webhook de tasas) antes de cotizar pagos en `BOB` o `VES`.
 
 ### v1.36 — 10 de julio de 2026
 
