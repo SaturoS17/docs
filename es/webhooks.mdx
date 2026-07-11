@@ -85,6 +85,9 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 | `kyc_document_validated` / `kyb_document_validated` | Terminó el OCR de un documento subido por API |
 | `kyc_liveness_completed` | Una prueba de vida fue completada desde un liveness link |
 | `aml_screening_updated` | Novedades del screening AML (resultado, casos, riesgo, transacción revisada) |
+| `wallet_deposit_received` | Llegó un depósito on-chain a una [wallet segregada](/es/guias/wallets-segregadas) (no toca el ledger) |
+| `wallet_send_status_changed` | Un envío desde una wallet segregada cambió de estado |
+| `wallet_key_exported` | Se exportó la llave privada de una wallet segregada (alerta de seguridad) |
 
 ### Payload de cada evento
 
@@ -245,6 +248,41 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
   "screening_event": "compliance_risk_changed",
   "customer_id": "cus_8f2e…",
   "data": { "risk_level": "high" }
+}
+```
+
+```json wallet_deposit_received
+{
+  "wallet_id": "b7e3…",
+  "account_id": "ae8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "tx_id": "b1946ac9…",
+  "amount_raw": "125000000",
+  "from_address": "TDonor…"
+}
+```
+
+```json wallet_send_status_changed
+{
+  "send_id": "9c8b…",
+  "wallet_id": "b7e3…",
+  "account_id": "ae8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "tx_id": "b1946ac9…",
+  "status": "completed",
+  "amount_raw": "25500000"
+}
+```
+
+```json wallet_key_exported
+{
+  "wallet_id": "b7e3…",
+  "account_id": "ae8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "address": "TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd"
 }
 ```
 

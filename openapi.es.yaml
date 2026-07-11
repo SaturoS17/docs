@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.40'
+  version: '1.41'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -47,6 +47,8 @@ tags:
   description: Transferencias internas gratuitas entre cuentas CBPay (persona o empresa, cualquier combinación).
 - name: Crypto
   description: Fondeo y retiros on-chain de USDT (TRON y Ethereum).
+- name: Wallets segregadas
+  description: Wallets on-chain con saldo propio (solo cuentas empresa) — crear, importar, enviar, exportar la llave privada y auto-forward. El saldo vive on-chain, nunca en el ledger.
 - name: KYC / KYB
 - name: AML screening
   description: 'Verificación de identidad: KYC para personas, KYB para empresas, con screening AML, re-screening
@@ -4731,6 +4733,9 @@ paths:
                   - kyc_document_validated
                   - kyb_document_validated
                   - kyc_liveness_completed
+                  - wallet_deposit_received
+                  - wallet_send_status_changed
+                  - wallet_key_exported
                   - '*'
                 callback_url:
                   type: string
@@ -4982,6 +4987,662 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/AccountRequired'
+  /v1/wallets:
+    post:
+      tags:
+      - Wallets segregadas
+      operationId: createSegregatedWallet
+      summary: Crear una wallet segregada
+      description: 'Crea una wallet on-chain nueva de la cuenta **empresa** que llama. Su saldo vive
+        on-chain (nunca en el ledger) y queda exenta del barrido de tesorería. Pares soportados:
+        `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`. Solo cuentas empresa (las personas reciben
+        `403 company_required`). Un `Idempotency-Key` opcional (o `idempotency_key` en el body) hace
+        el reintento seguro: una repetición devuelve la misma wallet sin crear otra. Puede cobrar el fee
+        `wallet_creation` (reembolsado si la creación falla).'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - chain
+              properties:
+                chain:
+                  type: string
+                  enum: [tron, eth]
+                asset:
+                  type: string
+                  enum: [usdt, usdc]
+                  default: usdt
+                label:
+                  type: string
+                idempotency_key:
+                  type: string
+            examples:
+              tron_usdt:
+                summary: TRON USDT
+                value:
+                  chain: tron
+                  asset: usdt
+                  label: Acme Client
+                  idempotency_key: wallet-client-001
+              eth_usdc:
+                summary: Ethereum USDC
+                value:
+                  chain: eth
+                  asset: usdc
+                  label: Project X
+                  idempotency_key: wallet-project-x
+      responses:
+        '201':
+          description: Wallet creada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SegregatedWallet'
+              example:
+                wallet_id: b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d
+                chain: tron
+                asset: USDT
+                address: TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd
+                label: Acme Client
+                origin: created
+                exported: false
+                created_at: '2026-07-11T12:00:00Z'
+        '400':
+          description: invalid_chain / invalid_asset
+          content:
+            application/json:
+              schema: &id_segw
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_asset
+                message: 'unsupported chain/asset pair (supported: tron/usdt, eth/usdt, eth/usdc)'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Se requiere cuenta empresa o el servicio está deshabilitado.
+          content:
+            application/json:
+              schema: *id_segw
+              example:
+                error: company_required
+                message: segregated wallets are available for company accounts only
+        '409':
+          description: Ya hay una wallet con esta idempotency key en aprovisionamiento.
+          content:
+            application/json:
+              schema: *id_segw
+              example:
+                error: idempotency_conflict
+                message: a wallet with this idempotency key is still being provisioned; retry with the same key
+    get:
+      tags:
+      - Wallets segregadas
+      operationId: listSegregatedWallets
+      summary: Listar mis wallets segregadas
+      description: Lista las wallets segregadas de la cuenta, de la más nueva a la más antigua.
+      parameters:
+      - name: from
+        in: query
+        schema: { type: string, format: date }
+        description: Fecha inicial (YYYY-MM-DD, UTC, inclusive).
+      - name: to
+        in: query
+        schema: { type: string, format: date }
+        description: Fecha final (YYYY-MM-DD, UTC, inclusive).
+      - name: page
+        in: query
+        schema: { type: integer, default: 1 }
+      - name: page_size
+        in: query
+        schema: { type: integer, default: 50, maximum: 200 }
+      responses:
+        '200':
+          description: Las wallets segregadas de la cuenta.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page: { type: integer }
+                  page_size: { type: integer }
+                  wallets:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SegregatedWallet'
+              example:
+                page: 1
+                page_size: 50
+                wallets:
+                - wallet_id: b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d
+                  chain: tron
+                  asset: USDT
+                  address: TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd
+                  label: Acme Client
+                  origin: created
+                  exported: false
+                  created_at: '2026-07-11T12:00:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/wallets/import:
+    post:
+      tags:
+      - Wallets segregadas
+      operationId: importSegregatedWallet
+      summary: Importar una wallet externa
+      description: 'Importa una wallet que ya controlas entregando su `private_key_hex`. La llave viaja
+        solo al custodio y **jamás se guarda ni se registra** en la plataforma. Exige sesión de usuario
+        con 2FA (las API keys se rechazan con `human_session_required`), cuenta verificada y OTP. Cobra
+        el fee `wallet_import` (reembolsado si el core rechaza).'
+      parameters:
+      - name: X-OTP-Token
+        in: header
+        schema: { type: string }
+        description: Token de un solo uso del desafío OTP (sesiones de usuario).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [chain, private_key_hex]
+              properties:
+                chain: { type: string, enum: [tron, eth] }
+                asset: { type: string, enum: [usdt, usdc], default: usdt }
+                private_key_hex: { type: string, description: Llave privada hex de 32 bytes (64 chars, prefijo 0x opcional). }
+                label: { type: string }
+                idempotency_key: { type: string }
+            examples:
+              tron:
+                summary: Importar una wallet TRON USDT
+                value:
+                  chain: tron
+                  asset: usdt
+                  private_key_hex: <64 hex>
+                  label: Migrated wallet
+                  idempotency_key: import-001
+      responses:
+        '201':
+          description: Wallet importada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SegregatedWallet'
+              example:
+                wallet_id: c8f4b2d3-1a2b-4c3d-9e8f-7a6b5c4d3e2f
+                chain: tron
+                asset: USDT
+                address: TXimportedAddr00000000000000000000
+                label: Migrated wallet
+                origin: imported
+                exported: false
+                created_at: '2026-07-11T12:02:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Se requiere cuenta empresa, verificación, sesión de usuario u OTP.
+          content:
+            application/json:
+              schema: *id_segw
+              example:
+                error: human_session_required
+                message: this operation handles private key material and requires a signed-in user session with 2FA; API keys are not allowed
+  /v1/wallets/{walletID}:
+    get:
+      tags:
+      - Wallets segregadas
+      operationId: getSegregatedWallet
+      summary: Obtener una wallet segregada
+      parameters:
+      - name: walletID
+        in: path
+        required: true
+        schema: { type: string }
+      responses:
+        '200':
+          description: La wallet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SegregatedWallet'
+              example:
+                wallet_id: b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d
+                chain: tron
+                asset: USDT
+                address: TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd
+                label: Acme Client
+                origin: created
+                exported: false
+                created_at: '2026-07-11T12:00:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/wallets/{walletID}/balance:
+    get:
+      tags:
+      - Wallets segregadas
+      operationId: getSegregatedWalletBalance
+      summary: Obtener el saldo on-chain en vivo
+      description: Devuelve el saldo on-chain en vivo de la wallet, incluyendo el gas nativo (TRX/ETH)
+        para que sepas si puede pagar un fee de red.
+      parameters:
+      - name: walletID
+        in: path
+        required: true
+        schema: { type: string }
+      responses:
+        '200':
+          description: Saldo en vivo.
+          content:
+            application/json:
+              schema: { type: object }
+              example:
+                wallet_id: b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d
+                balances:
+                  usdt: { amount_raw: '125000000', amount_formatted: '125.000000' }
+                  trx: { amount_sun: '30000000', amount_formatted: '30.000000' }
+                fee_policy: { min_fee_trx: '5.000000', has_sufficient_fee_balance: true }
+                updated_at: '2026-07-11T12:03:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/wallets/{walletID}/deposits:
+    get:
+      tags:
+      - Wallets segregadas
+      operationId: listSegregatedWalletDeposits
+      summary: Listar depósitos on-chain
+      parameters:
+      - name: walletID
+        in: path
+        required: true
+        schema: { type: string }
+      - name: from
+        in: query
+        schema: { type: string, format: date }
+        description: Fecha inicial (YYYY-MM-DD, UTC, inclusive).
+      - name: to
+        in: query
+        schema: { type: string, format: date }
+        description: Fecha final (YYYY-MM-DD, UTC, inclusive).
+      - name: page
+        in: query
+        schema: { type: integer, default: 1 }
+      - name: page_size
+        in: query
+        schema: { type: integer, default: 50, maximum: 200 }
+      responses:
+        '200':
+          description: Depósitos recibidos por la wallet.
+          content:
+            application/json:
+              schema: { type: object }
+              example:
+                wallet_id: b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d
+                deposits:
+                - tx_id: b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b
+                  amount_raw: '125000000'
+                  from_address: TDonor00000000000000000000000000000
+                  status: completed
+                  created_at: '2026-07-11T12:01:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/wallets/{walletID}/transactions:
+    get:
+      tags:
+      - Wallets segregadas
+      operationId: listSegregatedWalletTransactions
+      summary: Listar actividad on-chain
+      description: Actividad on-chain completa (depósitos y envíos) de la wallet.
+      parameters:
+      - name: walletID
+        in: path
+        required: true
+        schema: { type: string }
+      - name: from
+        in: query
+        schema: { type: string, format: date }
+        description: Fecha inicial (YYYY-MM-DD, UTC, inclusive).
+      - name: to
+        in: query
+        schema: { type: string, format: date }
+        description: Fecha final (YYYY-MM-DD, UTC, inclusive).
+      - name: page
+        in: query
+        schema: { type: integer, default: 1 }
+      - name: page_size
+        in: query
+        schema: { type: integer, default: 50, maximum: 200 }
+      responses:
+        '200':
+          description: Las transacciones on-chain de la wallet.
+          content:
+            application/json:
+              schema: { type: object }
+              example:
+                wallet_id: b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d
+                transactions:
+                - tx_id: b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b
+                  direction: in
+                  amount_raw: '125000000'
+                  status: completed
+                  event_time: '2026-07-11T12:01:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/wallets/{walletID}/sends:
+    post:
+      tags:
+      - Wallets segregadas
+      operationId: createSegregatedWalletSend
+      summary: Enviar crypto desde la wallet
+      description: 'Envía crypto **desde la wallet misma** (dirección de origen real, firmado por el
+        custodio). `idempotency_key` es obligatoria. El gas corre por el cliente: si la wallet no tiene
+        gas nativo, el envío se rechaza con `422 insufficient_gas` antes de cualquier cobro. Puede cobrar
+        el fee `wallet_send` (del saldo de settlement de la cuenta en el ledger, nunca los fondos on-chain
+        de la wallet; reembolsado si el core rechaza). Exige cuenta verificada y OTP. Ante una falla
+        ambigua el envío queda `pending` — reintenta con la misma clave, jamás se re-envía.'
+      parameters:
+      - name: walletID
+        in: path
+        required: true
+        schema: { type: string }
+      - name: X-OTP-Token
+        in: header
+        schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [to_address, idempotency_key]
+              properties:
+                asset: { type: string, enum: [usdt, usdc, eth] }
+                to_address: { type: string }
+                amount: { type: string, description: Monto decimal en la unidad del asset (usa este o amount_raw). }
+                amount_raw: { type: string, description: Monto en unidades mínimas on-chain. }
+                idempotency_key: { type: string }
+            examples:
+              by_amount:
+                summary: Por monto decimal
+                value:
+                  asset: usdt
+                  to_address: TXYZdestination00000000000000000000
+                  amount: '25.50'
+                  idempotency_key: send-2026-07-11-a
+              by_raw:
+                summary: Por unidades mínimas
+                value:
+                  asset: usdt
+                  to_address: TXYZdestination00000000000000000000
+                  amount_raw: '25500000'
+                  idempotency_key: send-2026-07-11-b
+      responses:
+        '202':
+          description: Envío transmitido (asíncrono; estado final por webhook).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SegregatedWalletSend'
+              example:
+                send_id: 9c8b7a6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d
+                wallet_id: b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d
+                chain: tron
+                asset: USDT
+                to_address: TXYZdestination00000000000000000000
+                amount_raw: '25500000'
+                fee: '0.000000'
+                fee_asset: USDT
+                status: processing
+                tx_id: b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b
+                idempotency_key: send-2026-07-11-a
+                created_at: '2026-07-11T12:05:00Z'
+        '200':
+          description: Replay idempotente de un envío previo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SegregatedWalletSend'
+              example:
+                send_id: 9c8b7a6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d
+                status: processing
+                idempotency_key: send-2026-07-11-a
+                idempotency_hit: true
+        '422':
+          description: Falta gas en la wallet, o el core rechazó el envío.
+          content:
+            application/json:
+              schema: *id_segw
+              example:
+                error: insufficient_gas
+                message: the wallet does not hold enough TRX to pay the network fee (minimum 5.000000 TRX); fund the wallet address with TRX and retry
+    get:
+      tags:
+      - Wallets segregadas
+      operationId: listSegregatedWalletSends
+      summary: Listar envíos de la wallet
+      parameters:
+      - name: walletID
+        in: path
+        required: true
+        schema: { type: string }
+      - name: from
+        in: query
+        schema: { type: string, format: date }
+        description: Fecha inicial (YYYY-MM-DD, UTC, inclusive).
+      - name: to
+        in: query
+        schema: { type: string, format: date }
+        description: Fecha final (YYYY-MM-DD, UTC, inclusive).
+      - name: page
+        in: query
+        schema: { type: integer, default: 1 }
+      - name: page_size
+        in: query
+        schema: { type: integer, default: 50, maximum: 200 }
+      responses:
+        '200':
+          description: Los envíos de la wallet.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page: { type: integer }
+                  page_size: { type: integer }
+                  sends:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SegregatedWalletSend'
+              example:
+                page: 1
+                page_size: 50
+                sends:
+                - send_id: 9c8b7a6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d
+                  wallet_id: b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d
+                  chain: tron
+                  asset: USDT
+                  to_address: TXYZdestination00000000000000000000
+                  amount_raw: '25500000'
+                  status: completed
+                  tx_id: b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b
+                  created_at: '2026-07-11T12:05:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/wallets/{walletID}/sends/{sendID}:
+    get:
+      tags:
+      - Wallets segregadas
+      operationId: getSegregatedWalletSend
+      summary: Obtener un envío
+      parameters:
+      - name: walletID
+        in: path
+        required: true
+        schema: { type: string }
+      - name: sendID
+        in: path
+        required: true
+        schema: { type: string }
+      responses:
+        '200':
+          description: El envío.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SegregatedWalletSend'
+              example:
+                send_id: 9c8b7a6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d
+                wallet_id: b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d
+                chain: tron
+                asset: USDT
+                to_address: TXYZdestination00000000000000000000
+                amount_raw: '25500000'
+                status: completed
+                tx_id: b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b
+                created_at: '2026-07-11T12:05:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/wallets/{walletID}/export:
+    post:
+      tags:
+      - Wallets segregadas
+      operationId: exportSegregatedWalletKey
+      summary: Exportar la llave privada
+      description: 'Devuelve la llave privada de la wallet (custodia compartida: la wallet sigue operativa
+        en la plataforma tras exportar). La operación más sensible del producto: exige sesión de usuario
+        con 2FA (API keys rechazadas), cuenta verificada y un `reason` de al menos 20 caracteres que queda
+        en la auditoría. Cada export dispara el webhook `wallet_key_exported`. Cobra el fee
+        `wallet_export`.'
+      parameters:
+      - name: walletID
+        in: path
+        required: true
+        schema: { type: string }
+      - name: X-OTP-Token
+        in: header
+        schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, description: Al menos 20 caracteres; queda en la auditoría. }
+            example:
+              reason: Custody migration to the client cold wallet
+      responses:
+        '200':
+          description: La llave privada (guárdala de forma segura).
+          content:
+            application/json:
+              schema: { type: object }
+              example:
+                wallet:
+                  wallet_id: b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d
+                  chain: tron
+                  asset: USDT
+                  address: TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd
+                  exported: true
+                  exported_at: '2026-07-11T12:10:00Z'
+                private_key_hex: <64 hex>
+                export:
+                  custody: shared
+                  warning: anyone holding this private key controls the wallet funds; the wallet remains operational in the platform
+        '403':
+          description: Se requiere sesión de usuario, verificación u OTP.
+          content:
+            application/json:
+              schema: *id_segw
+              example:
+                error: human_session_required
+                message: this operation handles private key material and requires a signed-in user session with 2FA; API keys are not allowed
+        '503':
+          description: El export de llaves no está habilitado en este entorno.
+          content:
+            application/json:
+              schema: *id_segw
+              example:
+                error: export_unavailable
+                message: private key export is not enabled on this environment
+  /v1/wallets/{walletID}/auto-forward:
+    get:
+      tags:
+      - Wallets segregadas
+      operationId: getSegregatedWalletAutoForward
+      summary: Obtener la regla de auto-forward
+      parameters:
+      - name: walletID
+        in: path
+        required: true
+        schema: { type: string }
+      responses:
+        '200':
+          description: La regla de auto-forward actual.
+          content:
+            application/json:
+              schema: { type: object }
+              example:
+                wallet_id: b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d
+                configured: true
+                auto_forward: { enabled: true, linked_address: TColdWallet00000000000000000000000 }
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+      - Wallets segregadas
+      operationId: upsertSegregatedWalletAutoForward
+      summary: Configurar auto-forward
+      description: 'Reenvía a una dirección tuya todo lo que llegue a la wallet. Redirige fondos futuros,
+        así que exige cuenta verificada y OTP.'
+      parameters:
+      - name: walletID
+        in: path
+        required: true
+        schema: { type: string }
+      - name: X-OTP-Token
+        in: header
+        schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                linked_address: { type: string, description: Dirección destino (requerida para activar). }
+                enabled: { type: boolean, default: true }
+            examples:
+              enable:
+                summary: Activar
+                value:
+                  linked_address: TColdWallet00000000000000000000000
+                  enabled: true
+              disable:
+                summary: Desactivar
+                value:
+                  enabled: false
+      responses:
+        '200':
+          description: La regla actualizada.
+          content:
+            application/json:
+              schema: { type: object }
+              example:
+                wallet_id: b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d
+                auto_forward: { enabled: true, linked_address: TColdWallet00000000000000000000000 }
+        '403':
+          description: Se requiere verificación u OTP.
+          content:
+            application/json:
+              schema: *id_segw
+              example:
+                error: verification_required
+                message: identity verification is required before using this service
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/payouts/qr/scan:
     post:
       tags:
@@ -9312,6 +9973,44 @@ components:
         created_at:
           type: string
           format: date-time
+    SegregatedWallet:
+      type: object
+      properties:
+        wallet_id: { type: string, format: uuid }
+        chain: { type: string, enum: [tron, eth] }
+        asset: { type: string, example: USDT }
+        address: { type: string }
+        label: { type: string }
+        origin:
+          type: string
+          enum: [created, imported]
+          description: Cómo entró la wallet a la plataforma.
+        exported:
+          type: boolean
+          description: Si la llave privada se exportó alguna vez (custodia compartida).
+        exported_at: { type: string, format: date-time }
+        created_at: { type: string, format: date-time }
+    SegregatedWalletSend:
+      type: object
+      properties:
+        send_id: { type: string, format: uuid }
+        wallet_id: { type: string, format: uuid }
+        account_id: { type: string, format: uuid }
+        chain: { type: string, enum: [tron, eth] }
+        asset: { type: string, example: USDT }
+        to_address: { type: string }
+        amount_raw: { type: string, description: Monto en unidades mínimas on-chain. }
+        fee: { type: string, description: Fee de servicio cobrado del saldo de settlement del ledger. }
+        fee_asset: { type: string, example: USDT }
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        status_code: { type: string }
+        status_message: { type: string }
+        tx_id: { type: string }
+        idempotency_key: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
     DepositInstrument:
       type: object
       properties:
@@ -9724,6 +10423,65 @@ webhooks:
               customer_id: cus_8f2e1a3b4c5d
               data:
                 risk_level: high
+      responses:
+        '200':
+          description: Responde cualquier 2xx para confirmar la entrega.
+  wallet_deposit_received:
+    post:
+      summary: Depósito recibido en wallet segregada
+      description: 'Se confirmó un depósito on-chain en una wallet segregada. **No** toca el ledger
+        (el saldo vive on-chain en la wallet).
+
+
+        Cada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
+        y `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`. Responde 2xx.'
+      requestBody:
+        content:
+          application/json:
+            example:
+              wallet_id: b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              chain: tron
+              asset: USDT
+              tx_id: b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b
+              amount_raw: '125000000'
+              from_address: TDonor00000000000000000000000000000
+      responses:
+        '200':
+          description: Responde cualquier 2xx para confirmar la entrega.
+  wallet_send_status_changed:
+    post:
+      summary: Cambió el estado de un envío de wallet segregada
+      description: Un envío desde una wallet segregada alcanzó un nuevo estado (processing, completed o failed).
+      requestBody:
+        content:
+          application/json:
+            example:
+              send_id: 9c8b7a6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d
+              wallet_id: b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              chain: tron
+              asset: USDT
+              tx_id: b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b
+              status: completed
+              amount_raw: '25500000'
+      responses:
+        '200':
+          description: Responde cualquier 2xx para confirmar la entrega.
+  wallet_key_exported:
+    post:
+      summary: Se exportó la llave de una wallet segregada
+      description: 'Alerta de seguridad: se exportó la llave privada de una wallet segregada (custodia
+        compartida). El payload nunca incluye la llave.'
+      requestBody:
+        content:
+          application/json:
+            example:
+              wallet_id: b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              chain: tron
+              asset: USDT
+              address: TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd
       responses:
         '200':
           description: Responde cualquier 2xx para confirmar la entrega.

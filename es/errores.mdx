@@ -31,6 +31,8 @@ Todos los errores comparten el mismo formato:
 | 403 | `service_disabled` | El servicio no está habilitado para tu cuenta (consulta `GET /v1/services`) |
 | 403 | `org_suspended` | El servicio está suspendido; contacta al equipo de CBPay |
 | 403 | `company_only` | Función solo para cuentas empresa |
+| 403 | `company_required` | Función solo para cuentas empresa (ej. [wallets segregadas](/es/guias/wallets-segregadas)) |
+| 403 | `human_session_required` | La operación maneja llave privada (import/export de wallet segregada) y exige sesión de usuario con 2FA — las API keys no se permiten |
 
 ### OTP / 2FA
 
@@ -113,6 +115,8 @@ Detalle y flujo completo en [login social](/es/guias/login-social).
 | 422 | `contact_not_linked` | El contacto no tiene cuenta CBPay asociada para transferirle |
 | 422 | `no_saved_destination` | El contacto no tiene destino guardado para ese corredor/chain |
 | 422 | `wallet_limit_reached` | Una cuenta persona intentó crear una segunda wallet en la misma red |
+| 422 | `insufficient_gas` | La [wallet segregada](/es/guias/wallets-segregadas) no tiene gas nativo (TRX/ETH) para el fee de red; fondea la dirección y reintenta |
+| 409 | `idempotency_conflict` | Otra creación/envío de wallet con la misma clave sigue en curso; reintenta con la misma clave |
 | 409 | `card_limit_reached` | Una cuenta persona intentó crear una segunda tarjeta del mismo tipo |
 | 409 | `card_cancelled` | La tarjeta ya está cancelada y no se puede modificar |
 | 409 | `card_not_pending` | Solo tarjetas en `pending_activation` se pueden activar |
@@ -139,6 +143,7 @@ Detalle y flujo completo en [login social](/es/guias/login-social).
 | 503 | `org_credential_missing` | Servicio en configuración; contacta al soporte de CBPay |
 | 503 | `withdrawals_unavailable` | Retiros on-chain no habilitados para el corredor |
 | 503 | `pricing_unavailable` | Precio de ejecución de BTC/GOLD no disponible o desactualizado; reintenta más tarde o liquida en USDT/USDC |
+| 503 | `export_unavailable` | El export de llaves privadas de wallets segregadas no está habilitado en este entorno |
 
 ## Cómo manejarlos
 

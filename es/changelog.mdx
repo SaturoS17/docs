@@ -8,6 +8,30 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="11 de julio de 2026" description="v1.41">
+
+**Agregado — Wallets segregadas (solo cuentas empresa)**
+
+- Wallets on-chain con **saldo propio** (fuera del ledger): crear
+  (`POST /v1/wallets`), listar y ver detalle, **importar** una wallet externa
+  con su llave (`POST /v1/wallets/import`), **exportar** la llave privada
+  (`POST /v1/wallets/{id}/export`, custodia compartida) y **enviar** crypto
+  directo desde la wallet (`POST /v1/wallets/{id}/sends`).
+- Consulta on-chain en vivo: `GET .../balance` (incluye gas), `.../deposits`
+  y `.../transactions`; **auto-forward** configurable (`GET`/`POST
+  .../auto-forward`).
+- El **gas** de los envíos corre por el cliente: sin gas el envío responde
+  `422 insufficient_gas`. Import y export exigen sesión de usuario con 2FA.
+- Fees nuevos: `wallet_import`, `wallet_export`, `wallet_send`.
+- Webhooks nuevos: `wallet_deposit_received`, `wallet_send_status_changed`,
+  `wallet_key_exported`. Service flag nuevo: `wallets`.
+- La [cartola](/es/guias/cartola) y el [dashboard](/es/guias/analytics)
+  incluyen una sección de wallets segregadas.
+
+Guía completa en [wallets segregadas](/es/guias/wallets-segregadas).
+
+</Update>
+
 <Update label="11 de julio de 2026" description="v1.40">
 
 **Agregado — Perfil, credenciales y seguridad de la cuenta**

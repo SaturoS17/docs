@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-11 05:09 UTC · versión `e8fdf23a426c`
+> **Documento actualizado:** 2026-07-11 07:21 UTC · versión `da9ff55a8969`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.40 (11 de julio de 2026) |
+| Versión de la documentación | v1.41 (11 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -46,6 +46,7 @@ solo saldo.
   - [Contactos](#contactos)
   - [Perfil y seguridad](#perfil-y-seguridad)
   - [Crypto: wallets, depósitos y retiros](#crypto-wallets-depositos-y-retiros)
+  - [Wallets segregadas](#wallets-segregadas)
   - [Tarjetas: virtuales y físicas](#tarjetas-virtuales-y-fisicas)
   - [Banking](#banking)
   - [Verificación KYC y KYB](#verificacion-kyc-y-kyb)
@@ -1139,6 +1140,9 @@ de las tasas de tu cuenta para ese país. Cotizado = cobrado, siempre.
 | `funding` | `%` sobre el depósito + fijo | Al acreditar el depósito on-chain |
 | `withdrawal` | `%` sobre el retiro + fijo | Al crear el retiro (incluido en `total_debit`) |
 | `wallet_creation` | Fijo por wallet | Al crear cada wallet (personas: 1 por red; empresas: ilimitadas). Consultar wallets existentes es siempre gratis |
+| `wallet_import` | Fijo por importación | Al importar una wallet externa a una [wallet segregada](#wallets-segregadas) (`POST /v1/wallets/import`) |
+| `wallet_export` | Fijo por exportación | Al exportar la llave privada de una wallet segregada (`POST /v1/wallets/{id}/export`) |
+| `wallet_send` | Fijo por envío | Al enviar on-chain desde una wallet segregada (`POST /v1/wallets/{id}/sends`); el gas de red lo pone el cliente |
 | `compliance_person` | Fijo por llamada | Al screenear una persona por AML (`POST /v1/aml/screenings`) |
 | `compliance_company` | Fijo por llamada | Al screenear una empresa por AML |
 | `compliance_rescreen` | Fijo por llamada | Al re-ejecutar un screening AML |
@@ -1161,7 +1165,7 @@ micro-USDT).
 Los cargos fijos standalone (compliance, verificación KYC/KYB, creación de
 wallets y banking) se reembolsan automáticamente si la operación falla
 aguas arriba (`compliance_refund` / `verification_fee_refund` /
-`wallet_creation_refund` / `banking_fee_refund`).
+`wallet_creation_refund` / `wallet_service_refund` / `banking_fee_refund`).
 ### Transferencias internas: siempre gratis
 
 Las transferencias entre cuentas CBPay (`POST /v1/transfers`) **no tienen
@@ -1431,6 +1435,7 @@ curl https://api.qbank.cl/platform/v1/services \
 | `aml` | AML screening contra listas, rescreening y monitoreo |
 | `cards` | Emisión y operación de tarjetas |
 | `swaps` | Conversión entre saldos (USDT/USDC/BTC/GOLD) |
+| `wallets` | [Wallets segregadas](#wallets-segregadas) con saldo on-chain propio (solo empresas) |
 
 ### Qué pasa cuando un servicio está apagado
 
@@ -4164,6 +4169,333 @@ las wallets son puertas de entrada, el saldo por moneda es uno solo.
 | 503 | `withdrawals_unavailable` | Retiros no habilitados aún para este corredor |
 
 
+## Wallets segregadas
+
+*Wallets on-chain con saldo propio para empresas: crear, importar, recibir, enviar, exportar la llave y reenviar automáticamente — el saldo vive en la blockchain, nunca en el ledger*
+
+Las **wallets segregadas** son wallets on-chain **propias** de tu cuenta
+empresa: su saldo **es** el saldo on-chain de la dirección, no un saldo
+virtual en el ledger de CBPay. Puedes crear cuantas quieras, recibir y
+**enviar crypto directamente desde cada wallet**, **importar** wallets
+externas con su llave privada y **exportar** la llave cuando quieras
+(custodia compartida). Son ideales para segregar fondos por cliente, por
+proyecto o por unidad de negocio, con control total de las llaves.
+
+> **Nota**
+Solo cuentas **empresa**. Una cuenta persona recibe `403 company_required`.
+> **Importante**
+No las confundas con el producto [crypto](#crypto-wallets-depositos-y-retiros): ahí los
+depósitos **acreditan tu saldo USDT/USDC del ledger** y los retiros salen de
+una hot wallet. En las wallets segregadas el saldo **vive on-chain en la
+wallet** y los envíos salen **de esa misma wallet**. El **gas** (TRX en TRON,
+ETH en Ethereum) corre por tu cuenta: cada wallet debe tener gas para poder
+enviar.
+```mermaid
+flowchart LR
+    crear["POST /v1/wallets"] --> wallet["Wallet on-chain<br/>(saldo propio)"]
+    deposito["Depósito on-chain"] --> wallet
+    wallet --> whIn["webhook<br/>wallet_deposit_received"]
+    wallet --> envio["POST /v1/wallets/{id}/sends"]
+    envio --> whOut["webhook<br/>wallet_send_status_changed"]
+    wallet --> export["POST /v1/wallets/{id}/export<br/>(llave privada)"]
+```
+
+### Pares soportados
+
+| Chain | Asset | Gas de red |
+|---|---|---|
+| `tron` | `usdt` | TRX |
+| `eth` | `usdt` | ETH |
+| `eth` | `usdc` | ETH |
+
+El `eth` nativo puede enviarse desde cualquier wallet de una chain `eth`
+(es el gas de la red).
+
+### 1. Crea una wallet
+
+```bash TRON USDT
+curl -X POST https://api.qbank.cl/platform/v1/wallets \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: wallet-cliente-001" \
+  -d '{ "chain": "tron", "asset": "usdt", "label": "Cliente Acme" }'
+```
+
+```bash ETH USDC
+curl -X POST https://api.qbank.cl/platform/v1/wallets \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: wallet-proyecto-x" \
+  -d '{ "chain": "eth", "asset": "usdc", "label": "Proyecto X" }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "wallet_id": "b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d",
+  "chain": "tron",
+  "asset": "USDT",
+  "address": "TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd",
+  "label": "Cliente Acme",
+  "origin": "created",
+  "exported": false,
+  "created_at": "2026-07-11T12:00:00Z"
+}
+```
+
+La `Idempotency-Key` (o `idempotency_key` en el body) hace el reintento
+seguro: una repetición devuelve la MISMA wallet con `idempotency_hit: true`
+y **jamás** crea una segunda. Crear una wallet puede cobrar el fee
+`wallet_creation` (fijo; 0 = gratis, el default).
+
+### 2. Importa una wallet externa
+
+Trae una wallet que ya controlas entregando su llave privada. La llave
+**viaja cifrada en tránsito hacia el custodio y jamás se guarda ni se
+registra en la plataforma**.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/wallets/import \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -H "X-OTP-Token: <token-otp>" \
+  -d '{
+    "chain": "tron",
+    "asset": "usdt",
+    "private_key_hex": "<64 hex>",
+    "label": "Wallet migrada",
+    "idempotency_key": "import-001"
+  }'
+```
+
+Respuesta `201` con el mismo shape que crear (`origin: "imported"`). Cobra
+el fee `wallet_import`.
+
+> **Importante**
+Importar y exportar manejan material de llave privada: **exigen una sesión
+de usuario con 2FA** (no se permiten API keys) y OTP. Si el par
+chain/dirección ya existe, el core responde `core_rejected`.
+### 3. Consulta saldo, depósitos y transacciones
+
+El balance viene **en vivo de la blockchain** e incluye el gas de la red
+(así ves si a la wallet le falta TRX/ETH para enviar).
+
+```bash
+# Saldo on-chain en vivo (incluye gas)
+curl https://api.qbank.cl/platform/v1/wallets/{walletID}/balance \
+  -H "Authorization: Bearer <token>"
+
+# Depósitos recibidos (con paginación y fechas)
+curl "https://api.qbank.cl/platform/v1/wallets/{walletID}/deposits?from=2026-07-01&to=2026-07-11&page=1&page_size=50" \
+  -H "Authorization: Bearer <token>"
+
+# Actividad on-chain completa (depósitos + envíos)
+curl "https://api.qbank.cl/platform/v1/wallets/{walletID}/transactions?from=2026-07-01&to=2026-07-11" \
+  -H "Authorization: Bearer <token>"
+```
+
+Cuando llega un depósito confirmado, CBPay emite el webhook
+[`wallet_deposit_received`](#webhooks) — **sin tocar tu ledger**, porque
+el saldo ya está en la wallet.
+
+### 4. Envía crypto desde la wallet
+
+El envío sale **de la wallet misma** (dirección de origen real), firmado por
+el custodio. `idempotency_key` es obligatoria.
+
+```bash Por monto
+curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/sends \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -H "X-OTP-Token: <token-otp>" \
+  -d '{
+    "asset": "usdt",
+    "to_address": "TXYZ...destino",
+    "amount": "25.50",
+    "idempotency_key": "send-2026-07-11-a"
+  }'
+```
+
+```bash Por unidades mínimas
+curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/sends \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -H "X-OTP-Token: <token-otp>" \
+  -d '{
+    "asset": "usdt",
+    "to_address": "TXYZ...destino",
+    "amount_raw": "25500000",
+    "idempotency_key": "send-2026-07-11-b"
+  }'
+```
+
+Respuesta `202` (el envío es asíncrono; el estado final llega por webhook):
+
+```json
+{
+  "send_id": "9c8b7a6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d",
+  "wallet_id": "b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d",
+  "chain": "tron",
+  "asset": "USDT",
+  "to_address": "TXYZ...destino",
+  "amount_raw": "25500000",
+  "fee": "0.000000",
+  "fee_asset": "USDT",
+  "status": "processing",
+  "tx_id": "b1946ac92492d2347c6235b4d2611184...",
+  "idempotency_key": "send-2026-07-11-a",
+  "created_at": "2026-07-11T12:05:00Z"
+}
+```
+
+Antes de enviar, CBPay verifica que la wallet tenga **gas** suficiente; si no,
+responde `422 insufficient_gas` con el mínimo requerido — sin cobrar nada.
+El envío puede cobrar el fee `wallet_send` (del saldo de settlement de tu
+cuenta en el ledger; **la plata on-chain de la wallet no se toca**), que se
+reembolsa si el envío es rechazado por el custodio.
+
+Replay con la misma `idempotency_key` → `200` con el envío original y
+`idempotency_hit: true` — **jamás se re-envía**. Ante una falla ambigua
+(timeout/red) el envío queda `pending`: reintenta con la **misma** clave; el
+dedupe garantiza que no se duplique.
+
+Consulta el historial:
+
+```bash
+curl "https://api.qbank.cl/platform/v1/wallets/{walletID}/sends?from=2026-07-01&to=2026-07-11" \
+  -H "Authorization: Bearer <token>"
+
+curl https://api.qbank.cl/platform/v1/wallets/{walletID}/sends/{sendID} \
+  -H "Authorization: Bearer <token>"
+```
+
+### 5. Exporta la llave privada
+
+Recupera la llave privada de la wallet. Es **custodia compartida**: tras
+exportar, la wallet **sigue 100% operativa** en CBPay (puede recibir y
+enviar), pero tú también controlas los fondos con la llave.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/export \
+  -H "Authorization: Bearer <token>" \
+  -H "X-OTP-Token: <token-otp>" \
+  -H "Content-Type: application/json" \
+  -d '{ "reason": "Migración de custodia a billetera fría del cliente" }'
+```
+
+Respuesta `200`:
+
+```json
+{
+  "wallet": {
+    "wallet_id": "b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d",
+    "chain": "tron",
+    "asset": "USDT",
+    "address": "TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd",
+    "exported": true,
+    "exported_at": "2026-07-11T12:10:00Z"
+  },
+  "private_key_hex": "<64 hex>",
+  "export": {
+    "custody": "shared",
+    "warning": "anyone holding this private key controls the wallet funds; the wallet remains operational in the platform"
+  }
+}
+```
+
+> **Importante**
+Es la operación más sensible del producto. Exige **sesión de usuario con
+2FA** (no API keys), **cuenta verificada**, y un `reason` de al menos 20
+caracteres que queda en la auditoría. Cada export dispara el webhook
+`wallet_key_exported` a tu organización. Cobra el fee `wallet_export`.
+Quien tenga la llave privada controla los fondos: guárdala de forma segura.
+### 6. Auto-forward (reenvío automático)
+
+Reenvía automáticamente a una dirección tuya todo lo que llegue a la wallet
+(útil para consolidar en frío). Como redirige fondos futuros, exige
+verificación y OTP.
+
+```bash
+# Consultar la regla actual
+curl https://api.qbank.cl/platform/v1/wallets/{walletID}/auto-forward \
+  -H "Authorization: Bearer <token>"
+
+# Activar / actualizar
+curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/auto-forward \
+  -H "Authorization: Bearer <token>" \
+  -H "X-OTP-Token: <token-otp>" \
+  -H "Content-Type: application/json" \
+  -d '{ "linked_address": "TColdWallet...destino", "enabled": true }'
+
+# Desactivar
+curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/auto-forward \
+  -H "Authorization: Bearer <token>" \
+  -H "X-OTP-Token: <token-otp>" \
+  -H "Content-Type: application/json" \
+  -d '{ "enabled": false }'
+```
+
+### Estados de un envío
+
+| `status` | Tipo | Qué significa / qué hacer |
+|---|---|---|
+| `processing` | Transitorio | Transmitido on-chain; espera la confirmación por webhook |
+| `pending` | Transitorio | Falla ambigua del dispatch; reintenta con la **misma** `idempotency_key` |
+| `completed` | Final | Confirmado on-chain |
+| `failed` | Final | Rechazado; no movió fondos |
+
+### Errores propios
+
+| HTTP | `error` | Solución |
+|---|---|---|
+| 403 | `company_required` | Las wallets segregadas son solo para cuentas empresa |
+| 403 | `human_session_required` | Import y export exigen sesión de usuario con 2FA (no API keys) |
+| 403 | `verification_required` | Completa el onboarding de tu cuenta ([verificación](#verificacion-kyc-y-kyb)) |
+| 403 | `service_disabled` | El servicio `wallets` no está habilitado; contacta a tu operador |
+| 400 | `idempotency_key_required` | Envía `idempotency_key` (body o header `Idempotency-Key`) |
+| 400 | `invalid_asset` / `invalid_chain` | Revisa el par chain/asset soportado |
+| 422 | `insufficient_gas` | La wallet no tiene gas (TRX/ETH) para el fee de red; fondéala y reintenta |
+| 409 | `idempotency_conflict` | Otra request con la misma clave sigue en curso; reintenta con la misma clave |
+| 503 | `export_unavailable` | El export de llaves no está habilitado en este entorno |
+
+### Webhooks asociados
+
+| Evento | Cuándo |
+|---|---|
+| `wallet_deposit_received` | Llegó un depósito on-chain a una wallet segregada (no toca el ledger) |
+| `wallet_send_status_changed` | Un envío desde la wallet cambió de estado |
+| `wallet_key_exported` | Se exportó la llave privada de una wallet (alerta de seguridad) |
+
+Los payloads de ejemplo están en la [página de webhooks](#webhooks).
+
+### Preguntas frecuentes
+
+#### ¿En qué se diferencian de las wallets del producto crypto?
+En el producto [crypto](#crypto-wallets-depositos-y-retiros), los depósitos acreditan tu saldo
+virtual USDT/USDC del ledger y los retiros salen de una hot wallet — CBPay
+custodia y consolida los fondos. En las wallets segregadas el saldo vive
+on-chain en cada wallet, los envíos salen de esa misma dirección, y puedes
+exportar la llave. Nada de su saldo pasa por el ledger ni se consolida a
+tesorería.
+#### ¿Por qué mi envío falló con insufficient_gas?
+Enviar on-chain requiere gas EN la wallet (TRX en TRON, ETH en Ethereum). A
+diferencia del producto crypto, aquí el gas corre por tu cuenta. Fondea la
+dirección de la wallet con un poco de la moneda nativa y reintenta. El
+`GET .../balance` te muestra el gas disponible y el mínimo requerido.
+#### ¿La wallet deja de funcionar después de exportar la llave?
+No. Es custodia compartida: la wallet sigue operativa en CBPay (recibe y
+envía normalmente) y queda marcada `exported`. Simplemente ahora tú también
+tienes la llave, así que resguárdala bien.
+#### ¿Tesorería puede mover el saldo de mis wallets segregadas?
+Nunca. Estas wallets se crean exentas del barrido de tesorería: su saldo
+on-chain es exclusivamente tuyo. Solo se mueve cuando tú envías o cuando
+configuras auto-forward.
+#### ¿Cuántas wallets puedo crear?
+Sin límite. Es lo típico para segregar por cliente, proyecto o unidad de
+negocio. Cada wallet puede llevar un `label` para distinguirlas.
+
+
 ## Tarjetas: virtuales y físicas
 
 *Emite tarjetas que gastan directo de cualquier saldo de la cuenta (USDT, USDC, BTC o GOLD), con límites por tarjeta*
@@ -6498,6 +6830,9 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 | `kyc_document_validated` / `kyb_document_validated` | Terminó el OCR de un documento subido por API |
 | `kyc_liveness_completed` | Una prueba de vida fue completada desde un liveness link |
 | `aml_screening_updated` | Novedades del screening AML (resultado, casos, riesgo, transacción revisada) |
+| `wallet_deposit_received` | Llegó un depósito on-chain a una [wallet segregada](#wallets-segregadas) (no toca el ledger) |
+| `wallet_send_status_changed` | Un envío desde una wallet segregada cambió de estado |
+| `wallet_key_exported` | Se exportó la llave privada de una wallet segregada (alerta de seguridad) |
 
 #### Payload de cada evento
 
@@ -6659,6 +6994,41 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 }
 ```
 
+```json wallet_deposit_received
+{
+  "wallet_id": "b7e3…",
+  "account_id": "ae8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "tx_id": "b1946ac9…",
+  "amount_raw": "125000000",
+  "from_address": "TDonor…"
+}
+```
+
+```json wallet_send_status_changed
+{
+  "send_id": "9c8b…",
+  "wallet_id": "b7e3…",
+  "account_id": "ae8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "tx_id": "b1946ac9…",
+  "status": "completed",
+  "amount_raw": "25500000"
+}
+```
+
+```json wallet_key_exported
+{
+  "wallet_id": "b7e3…",
+  "account_id": "ae8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "address": "TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd"
+}
+```
+
 En `payout_status_changed` y `crypto_withdrawal_status_changed`, `status`
 puede ser `completed` o `failed` (con `failed` el débito ya fue
 reembolsado cuando recibes el evento).
@@ -6766,6 +7136,8 @@ Todos los errores comparten el mismo formato:
 | 403 | `service_disabled` | El servicio no está habilitado para tu cuenta (consulta `GET /v1/services`) |
 | 403 | `org_suspended` | El servicio está suspendido; contacta al equipo de CBPay |
 | 403 | `company_only` | Función solo para cuentas empresa |
+| 403 | `company_required` | Función solo para cuentas empresa (ej. [wallets segregadas](#wallets-segregadas)) |
+| 403 | `human_session_required` | La operación maneja llave privada (import/export de wallet segregada) y exige sesión de usuario con 2FA — las API keys no se permiten |
 
 #### OTP / 2FA
 
@@ -6848,6 +7220,8 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | 422 | `contact_not_linked` | El contacto no tiene cuenta CBPay asociada para transferirle |
 | 422 | `no_saved_destination` | El contacto no tiene destino guardado para ese corredor/chain |
 | 422 | `wallet_limit_reached` | Una cuenta persona intentó crear una segunda wallet en la misma red |
+| 422 | `insufficient_gas` | La [wallet segregada](#wallets-segregadas) no tiene gas nativo (TRX/ETH) para el fee de red; fondea la dirección y reintenta |
+| 409 | `idempotency_conflict` | Otra creación/envío de wallet con la misma clave sigue en curso; reintenta con la misma clave |
 | 409 | `card_limit_reached` | Una cuenta persona intentó crear una segunda tarjeta del mismo tipo |
 | 409 | `card_cancelled` | La tarjeta ya está cancelada y no se puede modificar |
 | 409 | `card_not_pending` | Solo tarjetas en `pending_activation` se pueden activar |
@@ -6874,6 +7248,7 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | 503 | `org_credential_missing` | Servicio en configuración; contacta al soporte de CBPay |
 | 503 | `withdrawals_unavailable` | Retiros on-chain no habilitados para el corredor |
 | 503 | `pricing_unavailable` | Precio de ejecución de BTC/GOLD no disponible o desactualizado; reintenta más tarde o liquida en USDT/USDC |
+| 503 | `export_unavailable` | El export de llaves privadas de wallets segregadas no está habilitado en este entorno |
 
 ### Cómo manejarlos
 
@@ -7073,9 +7448,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-11 05:09 UTC · 185 requests · versión `2c5da02cc933`
+> **Colección actualizada:** 2026-07-11 07:21 UTC · 201 requests · versión `6a2328cfe916`
 
-<PostmanFreshness iso="2026-07-11T05:09:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-11T07:21:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -7109,6 +7484,28 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.41 — 11 de julio de 2026
+
+**Agregado — Wallets segregadas (solo cuentas empresa)**
+
+- Wallets on-chain con **saldo propio** (fuera del ledger): crear
+  (`POST /v1/wallets`), listar y ver detalle, **importar** una wallet externa
+  con su llave (`POST /v1/wallets/import`), **exportar** la llave privada
+  (`POST /v1/wallets/{id}/export`, custodia compartida) y **enviar** crypto
+  directo desde la wallet (`POST /v1/wallets/{id}/sends`).
+- Consulta on-chain en vivo: `GET .../balance` (incluye gas), `.../deposits`
+  y `.../transactions`; **auto-forward** configurable (`GET`/`POST
+  .../auto-forward`).
+- El **gas** de los envíos corre por el cliente: sin gas el envío responde
+  `422 insufficient_gas`. Import y export exigen sesión de usuario con 2FA.
+- Fees nuevos: `wallet_import`, `wallet_export`, `wallet_send`.
+- Webhooks nuevos: `wallet_deposit_received`, `wallet_send_status_changed`,
+  `wallet_key_exported`. Service flag nuevo: `wallets`.
+- La [cartola](#cartola-estado-de-cuenta) y el [dashboard](#resumen-de-tu-cuenta-analytics)
+  incluyen una sección de wallets segregadas.
+
+Guía completa en [wallets segregadas](#wallets-segregadas).
 
 ### v1.40 — 11 de julio de 2026
 
@@ -8093,6 +8490,25 @@ está en la API Reference interactiva y en la colección Postman.
 | Método | Ruta | Qué hace |
 |---|---|---|
 | `GET` | `/healthz` | Salud del servicio |
+
+
+## Wallets segregadas
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/v1/wallets` | Listar mis wallets segregadas |
+| `POST` | `/v1/wallets` | Crear una wallet segregada |
+| `POST` | `/v1/wallets/import` | Importar una wallet externa |
+| `GET` | `/v1/wallets/{walletID}` | Obtener una wallet segregada |
+| `GET` | `/v1/wallets/{walletID}/balance` | Obtener el saldo on-chain en vivo |
+| `GET` | `/v1/wallets/{walletID}/deposits` | Listar depósitos on-chain |
+| `GET` | `/v1/wallets/{walletID}/transactions` | Listar actividad on-chain |
+| `GET` | `/v1/wallets/{walletID}/sends` | Listar envíos de la wallet |
+| `POST` | `/v1/wallets/{walletID}/sends` | Enviar crypto desde la wallet |
+| `GET` | `/v1/wallets/{walletID}/sends/{sendID}` | Obtener un envío |
+| `POST` | `/v1/wallets/{walletID}/export` | Exportar la llave privada |
+| `GET` | `/v1/wallets/{walletID}/auto-forward` | Obtener la regla de auto-forward |
+| `POST` | `/v1/wallets/{walletID}/auto-forward` | Configurar auto-forward |
 
 
 ## Banking

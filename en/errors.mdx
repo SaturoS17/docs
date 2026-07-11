@@ -31,6 +31,8 @@ All errors share the same shape:
 | 403 | `service_disabled` | The service is not enabled for your account (check `GET /v1/services`) |
 | 403 | `org_suspended` | Service suspended; contact the CBPay team |
 | 403 | `company_only` | Feature only for company accounts |
+| 403 | `company_required` | Feature only for company accounts (e.g. [segregated wallets](/en/guides/segregated-wallets)) |
+| 403 | `human_session_required` | The operation handles a private key (segregated wallet import/export) and requires a signed-in user session with 2FA — API keys are not allowed |
 
 ### OTP / 2FA
 
@@ -113,6 +115,8 @@ Full flow and details in [social login](/en/guides/social-login).
 | 422 | `contact_not_linked` | The contact has no linked CBPay account to transfer to |
 | 422 | `no_saved_destination` | The contact has no saved destination for that corridor/chain |
 | 422 | `wallet_limit_reached` | A person account tried to create a second wallet on the same network |
+| 422 | `insufficient_gas` | The [segregated wallet](/en/guides/segregated-wallets) has no native gas (TRX/ETH) for the network fee; fund the address and retry |
+| 409 | `idempotency_conflict` | Another wallet creation/send with the same key is still in flight; retry with the same key |
 | 409 | `card_limit_reached` | A person account tried to create a second card of the same type |
 | 409 | `card_cancelled` | The card is already cancelled and cannot be updated |
 | 409 | `card_not_pending` | Only cards in `pending_activation` can be activated |
@@ -139,6 +143,7 @@ Full flow and details in [social login](/en/guides/social-login).
 | 503 | `org_credential_missing` | Service being configured; contact CBPay support |
 | 503 | `withdrawals_unavailable` | On-chain withdrawals not enabled for the corridor |
 | 503 | `pricing_unavailable` | BTC/GOLD execution price unavailable or stale; retry later or settle in USDT/USDC |
+| 503 | `export_unavailable` | Segregated wallet private key export is not enabled on this environment |
 
 ## How to handle them
 
