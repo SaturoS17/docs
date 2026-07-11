@@ -30,8 +30,13 @@ con anticipación y quedan marcados como **Breaking**.
   fuera, esperable en custodia `client`) y
   `wallet_key_compromise_suspected` (alarma crítica).
 - **Analytics**: `sections.banking.volume` (dinero movido por tus cuentas
-  bancarias, que también suma al `gross_volume`) y
-  `sections.verifications.fees_by_kind` (gasto KYC vs KYB por separado).
+  bancarias, que también suma al `gross_volume`),
+  `sections.verifications.fees_by_kind` (gasto KYC vs KYB por separado),
+  `sections.adjustments` y `deposits.wallet_fees_usd`.
+- **Contabilidad garantizada por wallet** (custodia `cbpay`): cuadratura de
+  vida completa en la cartola y `funding_sources` (atribución FIFO
+  depósito→envío) en el detalle de cada envío. Los saldos espejo `BANK_*`
+  también aparecen en `GET /v1/balances` con `custody: "banking"`.
 
 Guías: [cartola](/es/guias/cartola), [banking](/es/guias/banking),
 [wallets segregadas](/es/guias/wallets-segregadas),

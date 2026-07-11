@@ -29,8 +29,13 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   under `client` custody) and `wallet_key_compromise_suspected` (critical
   alarm).
 - **Analytics**: `sections.banking.volume` (money moved through your bank
-  accounts, which also adds to `gross_volume`) and
-  `sections.verifications.fees_by_kind` (KYC vs KYB spending, separately).
+  accounts, which also adds to `gross_volume`),
+  `sections.verifications.fees_by_kind` (KYC vs KYB spending, separately),
+  `sections.adjustments` and `deposits.wallet_fees_usd`.
+- **Guaranteed per-wallet accounting** (`cbpay` custody): lifetime
+  reconciliation in the statement and `funding_sources` (deposit→send FIFO
+  attribution) on each send's detail. `BANK_*` mirror balances also show up
+  in `GET /v1/balances` with `custody: "banking"`.
 
 Guides: [statement](/en/guides/statement), [banking](/en/guides/banking),
 [segregated wallets](/en/guides/segregated-wallets),

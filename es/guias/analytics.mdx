@@ -201,8 +201,14 @@ Solo cuentan los payins **acreditados**.
   }
 },
 "aml": { "screenings": 4, "fees_usd": "2.00", "by_service": { "compliance_screening": { "count": 4, "fees_usd": "2.00" } } },
-"contacts": { "new_contacts": 7, "series": [ { "date": "2026-07-02", "count": 2 } ] }
+"contacts": { "new_contacts": 7, "series": [ { "date": "2026-07-02", "count": 2 } ] },
+"adjustments": { "count": 2, "volume_usd": "2000.00", "series": [ { "date": "2026-03-14", "count": 1 } ] }
 ```
+
+La sección `deposits` incluye además `wallet_fees_usd` (los fees de
+creación de wallets del producto crypto), y en `balances.items` los saldos
+espejo de banking llevan `custody: "banking"` (el saldo autoritativo vive
+en el banco).
 
 `new_third_parties` es la misma métrica del gráfico "usuarios nuevos":
 los usuarios banking que tu empresa dio de alta.

@@ -94,6 +94,13 @@ Under `client` custody the platform syncs the wallet's complete on-chain
 activity — including movements signed outside — and flags them as external,
 so your records and statement stay complete.
 
+Under `cbpay` custody the wallet's accounting is **guaranteed**: the
+statement shows its lifetime reconciliation (`lifetime_in` −
+`lifetime_out` = `computed_balance`) and each send's detail
+(`GET /v1/wallets/{walletID}/sends/{sendID}`) includes `funding_sources`:
+the FIFO attribution of which deposits funded that send, with `tx_id`,
+origin address and per-tranche amount.
+
 The `Idempotency-Key` (or `idempotency_key` in the body) makes retries safe:
 a repeat returns the SAME wallet with `idempotency_hit: true` and **never**
 creates a second one. Creating a wallet may charge the `wallet_creation` fee

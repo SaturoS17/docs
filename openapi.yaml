@@ -1100,7 +1100,10 @@ paths:
       summary: Get balances
       description: The four independent virtual balances of the calling account (USDT — the operating
         currency —, USDC, BTC and GOLD in grams of fine gold). Every supported asset is always present,
-        with zeros if the account has not used that currency yet.
+        with zeros if the account has not used that currency yet. If the account uses Banking, its
+        BANK_USD/BANK_EUR mirror balances are also listed with the `custody` marker set to `banking`
+        (the authoritative balance lives at the bank; these balances are not spendable inside the
+        platform).
       responses:
         '200':
           description: Balances of the calling account (one per supported asset).
@@ -1125,6 +1128,11 @@ paths:
                 - asset: GOLD
                   available: '12.500000'
                   held: '0.000000'
+                - asset: BANK_USD
+                  available: '7500.00'
+                  held: '0.00'
+                  custody: banking
+                  updated_at: '2026-07-08T09:00:00Z'
         '403':
           $ref: '#/components/responses/AccountRequired'
         '401':
@@ -9141,6 +9149,9 @@ paths:
                     fees_by_kind:
                       kyc_verification: {count: 3, fees_usd: '6.00'}
                       kyb_verification: {count: 1, fees_usd: '3.00'}
+                  adjustments:
+                    count: 2
+                    volume_usd: '2000.00'
                 spending:
                   total_usd: '34.50'
                   by_service:

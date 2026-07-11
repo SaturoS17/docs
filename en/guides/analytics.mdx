@@ -201,8 +201,14 @@ Only **credited** payins count.
   }
 },
 "aml": { "screenings": 4, "fees_usd": "2.00", "by_service": { "compliance_screening": { "count": 4, "fees_usd": "2.00" } } },
-"contacts": { "new_contacts": 7, "series": [ { "date": "2026-07-02", "count": 2 } ] }
+"contacts": { "new_contacts": 7, "series": [ { "date": "2026-07-02", "count": 2 } ] },
+"adjustments": { "count": 2, "volume_usd": "2000.00", "series": [ { "date": "2026-03-14", "count": 1 } ] }
 ```
+
+The `deposits` section also includes `wallet_fees_usd` (the wallet creation
+fees of the crypto product), and inside `balances.items` the banking mirror
+balances carry `custody: "banking"` (the authoritative balance lives at the
+bank).
 
 `new_third_parties` is the same metric as the "new users" chart: the
 banking users your company registered.

@@ -95,6 +95,13 @@ Con custodia `client` la plataforma sincroniza la actividad on-chain
 completa de la wallet — incluidos los movimientos firmados por fuera — y
 los marca como externos, para que tu registro y tu cartola sigan completos.
 
+Con custodia `cbpay` la contabilidad de la wallet es **garantizada**: la
+cartola muestra su cuadratura de vida completa (`lifetime_in` −
+`lifetime_out` = `computed_balance`) y el detalle de cada envío
+(`GET /v1/wallets/{walletID}/sends/{sendID}`) incluye `funding_sources`:
+la atribución FIFO de qué depósitos fondearon ese envío, con `tx_id`,
+dirección de origen y monto por tramo.
+
 La `Idempotency-Key` (o `idempotency_key` en el body) hace el reintento
 seguro: una repetición devuelve la MISMA wallet con `idempotency_hit: true`
 y **jamás** crea una segunda. Crear una wallet puede cobrar el fee

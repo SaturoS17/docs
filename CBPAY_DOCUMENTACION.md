@@ -8,7 +8,7 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-11 18:57 UTC · versión `7cca8b56fa44`
+> **Documento actualizado:** 2026-07-11 23:07 UTC · versión `c9d4728b73ed`
 
 **Datos clave**
 
@@ -4257,6 +4257,13 @@ Con custodia `client` la plataforma sincroniza la actividad on-chain
 completa de la wallet — incluidos los movimientos firmados por fuera — y
 los marca como externos, para que tu registro y tu cartola sigan completos.
 
+Con custodia `cbpay` la contabilidad de la wallet es **garantizada**: la
+cartola muestra su cuadratura de vida completa (`lifetime_in` −
+`lifetime_out` = `computed_balance`) y el detalle de cada envío
+(`GET /v1/wallets/{walletID}/sends/{sendID}`) incluye `funding_sources`:
+la atribución FIFO de qué depósitos fondearon ese envío, con `tx_id`,
+dirección de origen y monto por tramo.
+
 La `Idempotency-Key` (o `idempotency_key` en el body) hace el reintento
 seguro: una repetición devuelve la MISMA wallet con `idempotency_hit: true`
 y **jamás** crea una segunda. Crear una wallet puede cobrar el fee
@@ -6696,8 +6703,14 @@ Solo cuentan los payins **acreditados**.
   }
 },
 "aml": { "screenings": 4, "fees_usd": "2.00", "by_service": { "compliance_screening": { "count": 4, "fees_usd": "2.00" } } },
-"contacts": { "new_contacts": 7, "series": [ { "date": "2026-07-02", "count": 2 } ] }
+"contacts": { "new_contacts": 7, "series": [ { "date": "2026-07-02", "count": 2 } ] },
+"adjustments": { "count": 2, "volume_usd": "2000.00", "series": [ { "date": "2026-03-14", "count": 1 } ] }
 ```
+
+La sección `deposits` incluye además `wallet_fees_usd` (los fees de
+creación de wallets del producto crypto), y en `balances.items` los saldos
+espejo de banking llevan `custody: "banking"` (el saldo autoritativo vive
+en el banco).
 
 `new_third_parties` es la misma métrica del gráfico "usuarios nuevos":
 los usuarios banking que tu empresa dio de alta.
@@ -7868,9 +7881,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-11 18:57 UTC · 215 requests · versión `fff3b02e6c59`
+> **Colección actualizada:** 2026-07-11 23:07 UTC · 215 requests · versión `5a9c13cfd6c7`
 
-<PostmanFreshness iso="2026-07-11T18:57:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-11T23:07:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -7927,8 +7940,13 @@ con anticipación y quedan marcados como **Breaking**.
   fuera, esperable en custodia `client`) y
   `wallet_key_compromise_suspected` (alarma crítica).
 - **Analytics**: `sections.banking.volume` (dinero movido por tus cuentas
-  bancarias, que también suma al `gross_volume`) y
-  `sections.verifications.fees_by_kind` (gasto KYC vs KYB por separado).
+  bancarias, que también suma al `gross_volume`),
+  `sections.verifications.fees_by_kind` (gasto KYC vs KYB por separado),
+  `sections.adjustments` y `deposits.wallet_fees_usd`.
+- **Contabilidad garantizada por wallet** (custodia `cbpay`): cuadratura de
+  vida completa en la cartola y `funding_sources` (atribución FIFO
+  depósito→envío) en el detalle de cada envío. Los saldos espejo `BANK_*`
+  también aparecen en `GET /v1/balances` con `custody: "banking"`.
 
 Guías: [cartola](#cartola-estado-de-cuenta), [banking](#banking),
 [wallets segregadas](#wallets-segregadas),
