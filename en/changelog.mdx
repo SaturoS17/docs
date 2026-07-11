@@ -7,6 +7,42 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 11, 2026" description="v1.42">
+
+**Added — PDF receipts with authenticity verification**
+
+- Every transactional product has its **branded PDF receipt**:
+  `GET .../receipt` on payouts, payins, transfers, crypto withdrawals and
+  deposits (new `deposit_id` in `GET /v1/crypto/transactions`), swaps and
+  card purchases. Languages `?lang=es|en`.
+- **`receipt_url`** on every response of those products and on final-state
+  webhooks: the front end never builds the URL by hand.
+- **Public authenticity verification**: every PDF carries a signed code with
+  a QR that opens `GET /verify/receipts/{code}` (no credentials) — JSON for
+  APIs and a branded web page for browsers, always showing the **real,
+  current** status and amount, never the beneficiary's personal data.
+- Receipts of **non-completed** operations carry a diagonal watermark
+  ("PROCESSING" / "FAILED"): an in-flight PDF can never pass as proof of
+  payment.
+- **Automatic email** with the PDF attached when the operation reaches a
+  final state, with per-account opt-out (`PATCH /v1/me` with
+  `receipt_emails: false`).
+
+**Added — Branding**
+
+- `GET /v1/branding`: the platform's effective branding (logo, colors,
+  name) so a white-label front end can theme itself from the API.
+
+**Changed**
+
+- The PDF [statement](/en/guides/statement) now renders with the brand's
+  **real logo** and the Inter typeface (previously a typographic wordmark),
+  and the Excel includes the logo on the summary sheet.
+
+Full guide in [receipts](/en/guides/receipts).
+
+</Update>
+
 <Update label="July 11, 2026" description="v1.41">
 
 **Added — Segregated wallets (company accounts only)**

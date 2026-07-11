@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.41'
+  version: '1.42'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -31,6 +31,9 @@ servers:
 security:
 - bearerAuth: []
 tags:
+- name: Receipts
+  description: Branded PDF receipt per operation, with a public signed-QR authenticity check,
+    receipt_url on every response/webhook and automatic email delivery on final states.
 - name: Authentication
   description: Register and log in account members. Sessions last 24 hours.
 - name: Account
@@ -76,6 +79,247 @@ tags:
     and Facebook via token exchange. The front end obtains the provider
     credential; the API verifies it and issues the CBPay session.
 paths:
+  /v1/payouts/{payoutID}/receipt:
+    get:
+      tags:
+      - Receipts
+      operationId: getPayoutReceipt
+      summary: Download the payout receipt (PDF)
+      description: Branded PDF receipt of the payout, with the beneficiary data, amounts, status
+        badge and the signed verification QR. Non-final states carry a diagonal watermark. Only the
+        payout's owner (or the org admin) can download it.
+      parameters:
+      - name: payoutID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/receiptLang'
+      responses:
+        '200':
+          $ref: '#/components/responses/ReceiptPDF'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/payins/{payinID}/receipt:
+    get:
+      tags:
+      - Receipts
+      operationId: getPayinReceipt
+      summary: Download the payin receipt (PDF)
+      description: Branded PDF receipt of the collection, with the reference, amounts, status badge
+        and the signed verification QR. Non-final states carry a diagonal watermark.
+      parameters:
+      - name: payinID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/receiptLang'
+      responses:
+        '200':
+          $ref: '#/components/responses/ReceiptPDF'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/transfers/{transferID}/receipt:
+    get:
+      tags:
+      - Receipts
+      operationId: getTransferReceipt
+      summary: Download the transfer receipt (PDF)
+      description: Branded PDF receipt of the internal transfer (both parties can download it; the
+        counterparty is shown by display name).
+      parameters:
+      - name: transferID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/receiptLang'
+      responses:
+        '200':
+          $ref: '#/components/responses/ReceiptPDF'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/crypto/withdrawals/{withdrawalID}/receipt:
+    get:
+      tags:
+      - Receipts
+      operationId: getCryptoWithdrawalReceipt
+      summary: Download the crypto withdrawal receipt (PDF)
+      description: Branded PDF receipt of the on-chain withdrawal, with the network, destination
+        address, tx hash and the signed verification QR.
+      parameters:
+      - name: withdrawalID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/receiptLang'
+      responses:
+        '200':
+          $ref: '#/components/responses/ReceiptPDF'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/crypto/deposits/{depositID}/receipt:
+    get:
+      tags:
+      - Receipts
+      operationId: getCryptoDepositReceipt
+      summary: Download the crypto deposit receipt (PDF)
+      description: Branded PDF receipt of a credited on-chain deposit. The `depositID` is the
+        `deposit_id` field returned by `GET /v1/crypto/transactions`.
+      parameters:
+      - name: depositID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/receiptLang'
+      responses:
+        '200':
+          $ref: '#/components/responses/ReceiptPDF'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/swaps/{swapID}/receipt:
+    get:
+      tags:
+      - Receipts
+      operationId: getSwapReceipt
+      summary: Download the swap receipt (PDF)
+      description: Branded PDF receipt of the balance conversion, with both legs, the applied rate
+        and the signed verification QR.
+      parameters:
+      - name: swapID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/receiptLang'
+      responses:
+        '200':
+          $ref: '#/components/responses/ReceiptPDF'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/cards/{cardID}/transactions/{transactionID}/receipt:
+    get:
+      tags:
+      - Receipts
+      operationId: getCardTransactionReceipt
+      summary: Download the card purchase receipt (PDF)
+      description: Branded PDF receipt of a card transaction, with the merchant, USD amount, debited
+        balance and the signed verification QR.
+      parameters:
+      - name: cardID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: transactionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/receiptLang'
+      responses:
+        '200':
+          $ref: '#/components/responses/ReceiptPDF'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /verify/receipts/{code}:
+    get:
+      security: []
+      tags:
+      - Receipts
+      operationId: verifyReceipt
+      summary: Verify a receipt's authenticity (public)
+      description: 'Public endpoint (no credentials) behind the QR printed on every receipt. The
+        code is cryptographically signed: a tampered or made-up one answers 404 with `valid: false`.
+        The response shows the operation''s REAL current status and amount — never the beneficiary''s
+        personal data. Browsers get a branded HTML page; API clients get JSON. Rate limited per IP.'
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Verification code printed on the receipt (also embedded in the QR URL).
+      responses:
+        '200':
+          description: The receipt is authentic; current facts of the operation.
+          content:
+            application/json:
+              example:
+                valid: true
+                type: payout
+                status: ok
+                raw_status: completed
+                amount: 800.00 VES
+                detail: "Venezuela — Pago Móvil"
+                date: 2026-07-11 15:29 UTC
+                issued_by: CBPay
+        '404':
+          description: Invalid, tampered or unknown verification code.
+          content:
+            application/json:
+              example:
+                valid: false
+                message: this verification code does not correspond to any receipt issued by this platform
+        '429':
+          description: Too many verification attempts from this IP.
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many verification attempts; wait a moment and retry
+  /v1/branding:
+    get:
+      tags:
+      - Account
+      operationId: getBranding
+      summary: Get the platform branding
+      description: Effective branding of the platform you operate on (name, colors, logos in
+        base64) so a white-label front end can theme itself from the API instead of hardcoding
+        assets. Read-only, no PII.
+      responses:
+        '200':
+          description: Effective branding.
+          content:
+            application/json:
+              example:
+                brand_name: CBPay
+                website: www.cbpayapp.com
+                footer_address: "Miami: 25 SW 9th STREET, Suite 406, Miami, FL 33130"
+                support_email: ''
+                colors:
+                  primary: '#FBC140'
+                  header: '#2E2E2E'
+                  accent: '#A16207'
+                logo_png_base64: iVBORw0KGgoAAAANSUhEUg...
+                symbol_png_base64: iVBORw0KGgoAAAANSUhEUg...
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/auth/register:
     post:
       tags:
@@ -9093,6 +9337,14 @@ components:
 
         '
   parameters:
+    receiptLang:
+      name: lang
+      in: query
+      schema:
+        type: string
+        enum: [es, en]
+        default: es
+      description: Language of the PDF receipt.
     cardID:
       name: cardID
       in: path
@@ -9121,6 +9373,14 @@ components:
       schema:
         type: string
   responses:
+    ReceiptPDF:
+      description: Branded PDF receipt with the signed verification QR.
+      content:
+        application/pdf:
+          schema:
+            type: string
+            format: binary
+          example: '%PDF-1.7 (binary receipt content)'
     BadRequest:
       description: Invalid request (see `error` code for the specific validation).
       content:

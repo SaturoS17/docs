@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-11 07:21 UTC · versión `da9ff55a8969`
+> **Documento actualizado:** 2026-07-11 15:47 UTC · versión `9b1fad63149f`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.41 (11 de julio de 2026) |
+| Versión de la documentación | v1.42 (11 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -52,6 +52,7 @@ solo saldo.
   - [Verificación KYC y KYB](#verificacion-kyc-y-kyb)
   - [AML screening](#aml-screening)
   - [Cartola (estado de cuenta)](#cartola-estado-de-cuenta)
+  - [Comprobantes](#comprobantes)
   - [Resumen de tu cuenta (analytics)](#resumen-de-tu-cuenta-analytics)
 - **Integración**
   - [Seguridad y 2FA (OTP)](#seguridad-y-2fa-otp)
@@ -6274,6 +6275,186 @@ curl "https://api.qbank.cl/platform/v1/accounts/{accountID}/reports/statement?fr
 | 404 | `not_found` | La cuenta no existe (solo org admin) |
 
 
+## Comprobantes
+
+*PDF brandeado por operación, con QR de verificación de autenticidad, receipt_url en cada respuesta y envío automático por email*
+
+Cada operación de tu cuenta — payouts, payins, transferencias, depósitos y
+retiros crypto, conversiones y compras con tarjeta — tiene un **comprobante
+PDF descargable** con la marca de la plataforma: logo, colores, estado de la
+operación y un **código de verificación firmado con QR** que cualquier
+persona puede consultar públicamente para confirmar que el documento es
+auténtico.
+
+No necesitas construir nada: toda respuesta y webhook de una operación
+incluye su `receipt_url` listo para descargar, y al llegar a estado final el
+comprobante también se envía **automáticamente por email** al dueño de la
+cuenta (con opt-out).
+
+```mermaid
+sequenceDiagram
+    participant C as Tu integración
+    participant API as CBPay API
+    participant T as Tercero (quien recibe el comprobante)
+    C->>API: POST /v1/payouts
+    API-->>C: 201 con receipt_url
+    Note over API: La operación llega a estado final
+    API-->>C: Webhook payout_status_changed (incluye receipt_url)
+    API-->>C: Email al dueño de la cuenta con el PDF adjunto
+    C->>API: GET /v1/payouts/{id}/receipt
+    API-->>C: PDF brandeado con QR de verificación
+    C->>T: Comparte el PDF
+    T->>API: Escanea el QR → GET /verify/receipts/{code}
+    API-->>T: Página con el estado y monto REALES de la operación
+```
+
+### Descargar un comprobante
+
+Todo recurso transaccional con `GET /{id}` tiene su `GET .../receipt`. El
+PDF sale en español por defecto; agrega `?lang=en` para inglés.
+
+| Operación | Endpoint |
+|---|---|
+| Payout | `GET /v1/payouts/{payoutID}/receipt` |
+| Payin | `GET /v1/payins/{payinID}/receipt` |
+| Transferencia interna | `GET /v1/transfers/{transferID}/receipt` |
+| Retiro crypto | `GET /v1/crypto/withdrawals/{withdrawalID}/receipt` |
+| Depósito crypto | `GET /v1/crypto/deposits/{depositID}/receipt` |
+| Conversión (swap) | `GET /v1/swaps/{swapID}/receipt` |
+| Compra con tarjeta | `GET /v1/cards/{cardID}/transactions/{transactionID}/receipt` |
+
+```bash
+curl "https://api.qbank.cl/platform/v1/payouts/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d/receipt?lang=es" \
+  -H "Authorization: Bearer $CBPAY_TOKEN" \
+  -o comprobante.pdf
+```
+
+El `depositID` de los depósitos crypto viene en `GET /v1/crypto/transactions`
+(campo `deposit_id` de cada depósito, junto a su `receipt_url`).
+
+> **Nota**
+Solo el dueño de la operación (o el admin de la organización) puede
+descargar el comprobante: un ID ajeno responde `404 not_found`. El PDF
+muestra los datos del beneficiario tal como los enviaste.
+### `receipt_url` en respuestas y webhooks
+
+No construyas las URLs a mano: toda respuesta de payout, payin,
+transferencia, retiro, depósito, swap y transacción de tarjeta incluye
+`receipt_url`, y los webhooks de estados finales
+(`payout_status_changed`, `payin_credited`, `transfer_received`,
+`crypto_deposit_credited`, `crypto_withdrawal_status_changed`,
+`card_transaction`) también lo llevan en el payload.
+
+```json
+{
+  "payout_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "status": "completed",
+  "local_amount": "800.00",
+  "currency": "VES",
+  "receipt_url": "https://api.qbank.cl/platform/v1/payouts/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d/receipt"
+}
+```
+
+### Estados y marca de agua
+
+El comprobante refleja el estado de la operación **al momento de la
+descarga**:
+
+| Estado de la operación | Badge | Marca de agua |
+|---|---|---|
+| `completed` / `credited` / `confirmed` | Verde "Completada" | No |
+| `pending` / `processing` | Ámbar "En proceso" | Sí — "EN PROCESO" diagonal |
+| `failed` / `declined` / `reversed` | Rojo "Fallida" | Sí — "FALLIDA" diagonal |
+
+> **Importante**
+Un comprobante con marca de agua **no es prueba de pago**: la operación aún
+no se completó (o falló). Vuelve a descargarlo cuando llegue el webhook de
+estado final y saldrá limpio.
+### Verificación de autenticidad (QR)
+
+Cada PDF lleva impreso un **código de verificación firmado** y su QR. El QR
+abre una URL pública — sin credenciales — que responde con los datos
+**reales y actuales** de la operación:
+
+```bash
+curl "https://api.qbank.cl/platform/verify/receipts/P9b1deb4d3b7d4bad9bdd2b0d7b3dcb6d16827185..."
+```
+
+```json
+{
+  "valid": true,
+  "type": "payout",
+  "status": "ok",
+  "raw_status": "completed",
+  "amount": "800.00 VES",
+  "detail": "Venezuela — Pago Móvil",
+  "date": "2026-07-11 15:29 UTC",
+  "issued_by": "CBPay"
+}
+```
+
+Si la misma URL se abre en un **navegador** (por ejemplo al escanear el QR
+con el teléfono), responde una página web brandeada con el resultado.
+
+- La respuesta **nunca** incluye datos personales del beneficiario, cuentas
+  ni direcciones: solo tipo, estado, monto y fecha.
+- El código está firmado criptográficamente: uno adulterado o inventado
+  responde `404` con `"valid": false`.
+- La verificación muestra los datos **vigentes**: si alguien edita el PDF
+  para inflar el monto, el QR lo delata al instante.
+
+### Email automático con el comprobante
+
+Cuando una operación llega a estado final (completada o fallida), el dueño
+de la cuenta recibe un email con el PDF adjunto y el link de verificación.
+Aplica a payouts, payins, transferencias enviadas, depósitos y retiros
+crypto y conversiones (las compras con tarjeta no envían email, para no
+saturar tu bandeja).
+
+Para desactivarlo (o reactivarlo) por cuenta:
+
+```bash
+curl -X PATCH "https://api.qbank.cl/platform/v1/me" \
+  -H "Authorization: Bearer $CBPAY_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"receipt_emails": false}'
+```
+
+### Errores propios
+
+| HTTP | Código | Causa y solución |
+|---|---|---|
+| 404 | `not_found` | El ID no existe o no pertenece a tu cuenta. Verifica el ID en el listado del producto. |
+| 429 | `too_many_attempts` | Demasiadas verificaciones públicas desde tu IP. Espera un momento y reintenta. |
+| 500 | `receipt_render_failed` | Error transitorio generando el PDF. Reintenta la descarga. |
+
+### FAQ
+
+#### ¿El comprobante se genera una sola vez o puedo descargarlo cuando quiera?
+    Cuantas veces quieras: se genera al vuelo con los datos vigentes de la
+    operación. Por eso un comprobante descargado en `pending` sale con marca
+    de agua y el mismo endpoint, después del webhook final, entrega la
+    versión limpia.
+#### ¿Puedo compartir el comprobante con el beneficiario o con un auditor?
+    Sí — para eso existe. Quien lo reciba puede escanear el QR y confirmar
+    contra la plataforma que el documento es auténtico y que el estado y el
+    monto son los reales, sin necesidad de credenciales.
+#### ¿Qué pasa si alguien edita el PDF?
+    El PDF es solo la representación: la verdad vive en la plataforma. El QR
+    y el código llevan una firma criptográfica ligada a la operación real; al
+    consultarlos se muestran el monto y estado verdaderos, por lo que
+    cualquier adulteración queda en evidencia.
+#### ¿En qué idiomas está el comprobante?
+    Español (`?lang=es`, default) e inglés (`?lang=en`). El email usa
+    español.
+#### ¿Con qué marca sale el comprobante?
+    Con el branding de la plataforma donde operas (logo, colores y datos de
+    contacto del operador). La cartola PDF/Excel usa la misma identidad.
+#### ¿El QR expira?
+    No. El código verifica mientras exista la operación, y siempre responde
+    su estado vigente.
+
+
 ## Resumen de tu cuenta (analytics)
 
 *Un solo endpoint con todas las series y estadísticas de tu cuenta para armar tu dashboard: volumen, transacciones, usuarios, secciones por servicio, países, consumo y saldos*
@@ -7448,9 +7629,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-11 07:21 UTC · 201 requests · versión `6a2328cfe916`
+> **Colección actualizada:** 2026-07-11 15:47 UTC · 210 requests · versión `e6d273155b89`
 
-<PostmanFreshness iso="2026-07-11T07:21:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-11T15:47:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -7484,6 +7665,39 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.42 — 11 de julio de 2026
+
+**Agregado — Comprobantes PDF con verificación de autenticidad**
+
+- Todo producto transaccional tiene su **comprobante PDF brandeado**:
+  `GET .../receipt` en payouts, payins, transferencias, retiros y depósitos
+  crypto (`deposit_id` nuevo en `GET /v1/crypto/transactions`), swaps y
+  compras con tarjeta. Idiomas `?lang=es|en`.
+- **`receipt_url`** en toda respuesta de esos productos y en los webhooks de
+  estados finales: el front nunca construye la URL a mano.
+- **Verificación pública de autenticidad**: cada PDF lleva un código firmado
+  con QR que abre `GET /verify/receipts/{code}` (sin credenciales) — JSON
+  para APIs y página web brandeada para navegadores, siempre con el estado y
+  monto **reales y vigentes**, sin datos personales del beneficiario.
+- Los comprobantes de operaciones **no completadas** llevan marca de agua
+  diagonal ("EN PROCESO" / "FALLIDA"): un PDF en tránsito jamás pasa por
+  prueba de pago.
+- **Email automático** con el PDF adjunto al llegar la operación a estado
+  final, con opt-out por cuenta (`PATCH /v1/me` con `receipt_emails: false`).
+
+**Agregado — Branding**
+
+- `GET /v1/branding`: el branding efectivo de la plataforma (logo, colores,
+  nombre) para que el front white-label se auto-tematice desde la API.
+
+**Cambiado**
+
+- La [cartola](#cartola-estado-de-cuenta) PDF ahora sale con el **logo real** de la
+  marca y tipografía Inter (antes wordmark tipográfico), y el Excel incluye
+  el logo en la hoja resumen.
+
+Guía completa en [comprobantes](#comprobantes).
 
 ### v1.41 — 11 de julio de 2026
 
@@ -8311,6 +8525,30 @@ cada uno (parámetros, cuerpos, respuestas y ejemplos por caso de uso)
 está en la API Reference interactiva y en la colección Postman.
 
 
+## Comprobantes
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/v1/payouts/{payoutID}/receipt` | Descargar el comprobante del payout (PDF) |
+| `GET` | `/v1/payins/{payinID}/receipt` | Descargar el comprobante del payin (PDF) |
+| `GET` | `/v1/transfers/{transferID}/receipt` | Descargar el comprobante de la transferencia (PDF) |
+| `GET` | `/v1/crypto/withdrawals/{withdrawalID}/receipt` | Descargar el comprobante del retiro crypto (PDF) |
+| `GET` | `/v1/crypto/deposits/{depositID}/receipt` | Descargar el comprobante del depósito crypto (PDF) |
+| `GET` | `/v1/swaps/{swapID}/receipt` | Descargar el comprobante del swap (PDF) |
+| `GET` | `/v1/cards/{cardID}/transactions/{transactionID}/receipt` | Descargar el comprobante de la compra con tarjeta (PDF) |
+| `GET` | `/verify/receipts/{code}` | Verificar la autenticidad de un comprobante (público) |
+
+
+## Account
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/v1/branding` | Obtener el branding de la plataforma |
+| `GET` | `/v1/services` | Servicios habilitados |
+| `GET` | `/v1/settlement` | Obtener mi configuración de settlement |
+| `PUT` | `/v1/settlement` | Definir mi asset de settlement predeterminado |
+
+
 ## Autenticación
 
 | Método | Ruta | Qué hace |
@@ -8566,15 +8804,6 @@ está en la API Reference interactiva y en la colección Postman.
 | `POST` | `/v1/otp/challenges/{challengeID}/verify` | Verificar el código |
 | `GET` | `/v1/otp/preferences` | Mis preferencias de 2FA |
 | `PUT` | `/v1/otp/preferences` | Actualizar mis preferencias de 2FA |
-
-
-## Account
-
-| Método | Ruta | Qué hace |
-|---|---|---|
-| `GET` | `/v1/services` | Servicios habilitados |
-| `GET` | `/v1/settlement` | Obtener mi configuración de settlement |
-| `PUT` | `/v1/settlement` | Definir mi asset de settlement predeterminado |
 
 
 ## Analytics

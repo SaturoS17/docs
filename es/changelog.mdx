@@ -8,6 +8,41 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="11 de julio de 2026" description="v1.42">
+
+**Agregado — Comprobantes PDF con verificación de autenticidad**
+
+- Todo producto transaccional tiene su **comprobante PDF brandeado**:
+  `GET .../receipt` en payouts, payins, transferencias, retiros y depósitos
+  crypto (`deposit_id` nuevo en `GET /v1/crypto/transactions`), swaps y
+  compras con tarjeta. Idiomas `?lang=es|en`.
+- **`receipt_url`** en toda respuesta de esos productos y en los webhooks de
+  estados finales: el front nunca construye la URL a mano.
+- **Verificación pública de autenticidad**: cada PDF lleva un código firmado
+  con QR que abre `GET /verify/receipts/{code}` (sin credenciales) — JSON
+  para APIs y página web brandeada para navegadores, siempre con el estado y
+  monto **reales y vigentes**, sin datos personales del beneficiario.
+- Los comprobantes de operaciones **no completadas** llevan marca de agua
+  diagonal ("EN PROCESO" / "FALLIDA"): un PDF en tránsito jamás pasa por
+  prueba de pago.
+- **Email automático** con el PDF adjunto al llegar la operación a estado
+  final, con opt-out por cuenta (`PATCH /v1/me` con `receipt_emails: false`).
+
+**Agregado — Branding**
+
+- `GET /v1/branding`: el branding efectivo de la plataforma (logo, colores,
+  nombre) para que el front white-label se auto-tematice desde la API.
+
+**Cambiado**
+
+- La [cartola](/es/guias/cartola) PDF ahora sale con el **logo real** de la
+  marca y tipografía Inter (antes wordmark tipográfico), y el Excel incluye
+  el logo en la hoja resumen.
+
+Guía completa en [comprobantes](/es/guias/comprobantes).
+
+</Update>
+
 <Update label="11 de julio de 2026" description="v1.41">
 
 **Agregado — Wallets segregadas (solo cuentas empresa)**

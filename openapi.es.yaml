@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.41'
+  version: '1.42'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -31,6 +31,10 @@ servers:
 security:
 - bearerAuth: []
 tags:
+- name: Comprobantes
+  description: Comprobante PDF brandeado por operacion, con verificacion publica de autenticidad
+    (QR firmado), receipt_url en cada respuesta/webhook y envio automatico por email en estados
+    finales.
 - name: Autenticación
   description: Registra e inicia sesión de los miembros de la cuenta. Las sesiones duran 24 horas.
 - name: Cuenta
@@ -77,6 +81,248 @@ tags:
     Microsoft y Facebook vía token exchange. El front obtiene la credencial
     del proveedor; la API la verifica y emite la sesión CBPay.
 paths:
+  /v1/payouts/{payoutID}/receipt:
+    get:
+      tags:
+      - Comprobantes
+      operationId: getPayoutReceipt
+      summary: Descargar el comprobante del payout (PDF)
+      description: Comprobante PDF brandeado del payout, con los datos del beneficiario, montos,
+        badge de estado y el QR de verificación firmado. Los estados no finales llevan marca de agua
+        diagonal. Solo el dueño del payout (o el admin de la org) puede descargarlo.
+      parameters:
+      - name: payoutID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/receiptLang'
+      responses:
+        '200':
+          $ref: '#/components/responses/ReceiptPDF'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/payins/{payinID}/receipt:
+    get:
+      tags:
+      - Comprobantes
+      operationId: getPayinReceipt
+      summary: Descargar el comprobante del payin (PDF)
+      description: Comprobante PDF brandeado del cobro, con la referencia, montos, badge de estado
+        y el QR de verificación firmado. Los estados no finales llevan marca de agua diagonal.
+      parameters:
+      - name: payinID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/receiptLang'
+      responses:
+        '200':
+          $ref: '#/components/responses/ReceiptPDF'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/transfers/{transferID}/receipt:
+    get:
+      tags:
+      - Comprobantes
+      operationId: getTransferReceipt
+      summary: Descargar el comprobante de la transferencia (PDF)
+      description: Comprobante PDF brandeado de la transferencia interna (las dos partes pueden
+        descargarlo; la contraparte se muestra por display name).
+      parameters:
+      - name: transferID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/receiptLang'
+      responses:
+        '200':
+          $ref: '#/components/responses/ReceiptPDF'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/crypto/withdrawals/{withdrawalID}/receipt:
+    get:
+      tags:
+      - Comprobantes
+      operationId: getCryptoWithdrawalReceipt
+      summary: Descargar el comprobante del retiro crypto (PDF)
+      description: Comprobante PDF brandeado del retiro on-chain, con la red, dirección de destino,
+        tx hash y el QR de verificación firmado.
+      parameters:
+      - name: withdrawalID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/receiptLang'
+      responses:
+        '200':
+          $ref: '#/components/responses/ReceiptPDF'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/crypto/deposits/{depositID}/receipt:
+    get:
+      tags:
+      - Comprobantes
+      operationId: getCryptoDepositReceipt
+      summary: Descargar el comprobante del depósito crypto (PDF)
+      description: Comprobante PDF brandeado de un depósito on-chain acreditado. El `depositID` es
+        el campo `deposit_id` que devuelve `GET /v1/crypto/transactions`.
+      parameters:
+      - name: depositID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/receiptLang'
+      responses:
+        '200':
+          $ref: '#/components/responses/ReceiptPDF'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/swaps/{swapID}/receipt:
+    get:
+      tags:
+      - Comprobantes
+      operationId: getSwapReceipt
+      summary: Descargar el comprobante del swap (PDF)
+      description: Comprobante PDF brandeado de la conversión de saldos, con las dos puntas, la
+        tasa aplicada y el QR de verificación firmado.
+      parameters:
+      - name: swapID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/receiptLang'
+      responses:
+        '200':
+          $ref: '#/components/responses/ReceiptPDF'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/cards/{cardID}/transactions/{transactionID}/receipt:
+    get:
+      tags:
+      - Comprobantes
+      operationId: getCardTransactionReceipt
+      summary: Descargar el comprobante de la compra con tarjeta (PDF)
+      description: Comprobante PDF brandeado de una transacción de tarjeta, con el comercio, monto
+        USD, saldo debitado y el QR de verificación firmado.
+      parameters:
+      - name: cardID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: transactionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/receiptLang'
+      responses:
+        '200':
+          $ref: '#/components/responses/ReceiptPDF'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /verify/receipts/{code}:
+    get:
+      security: []
+      tags:
+      - Comprobantes
+      operationId: verifyReceipt
+      summary: Verificar la autenticidad de un comprobante (público)
+      description: 'Endpoint PÚBLICO (sin credenciales) detrás del QR impreso en cada comprobante.
+        El código viene firmado criptográficamente: uno adulterado o inventado responde 404 con
+        `valid: false`. La respuesta muestra el estado y monto REALES y vigentes de la operación —
+        jamás datos personales del beneficiario. Los navegadores reciben una página HTML brandeada;
+        los clientes API reciben JSON. Rate-limited por IP.'
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Código de verificación impreso en el comprobante (también embebido en la URL del QR).
+      responses:
+        '200':
+          description: El comprobante es auténtico; datos vigentes de la operación.
+          content:
+            application/json:
+              example:
+                valid: true
+                type: payout
+                status: ok
+                raw_status: completed
+                amount: 800.00 VES
+                detail: "Venezuela — Pago Móvil"
+                date: 2026-07-11 15:29 UTC
+                issued_by: CBPay
+        '404':
+          description: Código de verificación inválido, adulterado o desconocido.
+          content:
+            application/json:
+              example:
+                valid: false
+                message: this verification code does not correspond to any receipt issued by this platform
+        '429':
+          description: Demasiados intentos de verificación desde esta IP.
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many verification attempts; wait a moment and retry
+  /v1/branding:
+    get:
+      tags:
+      - Account
+      operationId: getBranding
+      summary: Obtener el branding de la plataforma
+      description: Branding efectivo de la plataforma donde operas (nombre, colores, logos en
+        base64) para que un front white-label se auto-tematice desde la API en vez de hardcodear
+        assets. Solo lectura, sin PII.
+      responses:
+        '200':
+          description: Branding efectivo.
+          content:
+            application/json:
+              example:
+                brand_name: CBPay
+                website: www.cbpayapp.com
+                footer_address: "Miami: 25 SW 9th STREET, Suite 406, Miami, FL 33130"
+                support_email: ''
+                colors:
+                  primary: '#FBC140'
+                  header: '#2E2E2E'
+                  accent: '#A16207'
+                logo_png_base64: iVBORw0KGgoAAAANSUhEUg...
+                symbol_png_base64: iVBORw0KGgoAAAANSUhEUg...
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/auth/register:
     post:
       tags:
@@ -9107,6 +9353,14 @@ components:
 
         '
   parameters:
+    receiptLang:
+      name: lang
+      in: query
+      schema:
+        type: string
+        enum: [es, en]
+        default: es
+      description: Idioma del comprobante PDF.
     cardID:
       name: cardID
       in: path
@@ -9135,6 +9389,14 @@ components:
       schema:
         type: string
   responses:
+    ReceiptPDF:
+      description: Comprobante PDF brandeado con el QR de verificacion firmado.
+      content:
+        application/pdf:
+          schema:
+            type: string
+            format: binary
+          example: '%PDF-1.7 (binary receipt content)'
     BadRequest:
       description: Solicitud inválida (ver el código `error` para la validación específica).
       content:
