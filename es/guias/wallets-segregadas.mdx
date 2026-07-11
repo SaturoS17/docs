@@ -78,10 +78,22 @@ Respuesta `201`:
   "address": "TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd",
   "label": "Cliente Acme",
   "origin": "created",
+  "custody": "cbpay",
   "exported": false,
   "created_at": "2026-07-11T12:00:00Z"
 }
 ```
+
+El campo `custody` refleja el régimen de custodia de la llave:
+
+| `custody` | Significado |
+|---|---|
+| `cbpay` | Creada por la plataforma y llave nunca exportada: solo tus operaciones vía API pueden mover el saldo |
+| `client` | Importada, o cuya llave fue exportada: también puedes firmar por fuera de la plataforma |
+
+Con custodia `client` la plataforma sincroniza la actividad on-chain
+completa de la wallet — incluidos los movimientos firmados por fuera — y
+los marca como externos, para que tu registro y tu cartola sigan completos.
 
 La `Idempotency-Key` (o `idempotency_key` en el body) hace el reintento
 seguro: una repetición devuelve la MISMA wallet con `idempotency_hit: true`
@@ -313,6 +325,8 @@ curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/auto-forward \
 | `wallet_deposit_received` | Llegó un depósito on-chain a una wallet segregada (no toca el ledger) |
 | `wallet_send_status_changed` | Un envío desde la wallet cambió de estado |
 | `wallet_key_exported` | Se exportó la llave privada de una wallet (alerta de seguridad) |
+| `wallet_external_movement` | El sync detectó un movimiento on-chain que no pasó por la plataforma (esperable en custodia `client`) |
+| `wallet_key_compromise_suspected` | **Alarma crítica**: salió plata de una wallet con custodia `cbpay` sin pasar por la plataforma — trata la llave como comprometida y contacta soporte de inmediato |
 
 Los payloads de ejemplo están en la [página de webhooks](/es/webhooks).
 

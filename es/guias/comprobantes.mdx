@@ -47,6 +47,9 @@ PDF sale en español por defecto; agrega `?lang=en` para inglés.
 | Depósito crypto | `GET /v1/crypto/deposits/{depositID}/receipt` |
 | Conversión (swap) | `GET /v1/swaps/{swapID}/receipt` |
 | Compra con tarjeta | `GET /v1/cards/{cardID}/transactions/{transactionID}/receipt` |
+| Operación bancaria | `GET /v1/banking/operations/{operationID}/receipt` |
+| Envío desde wallet segregada | `GET /v1/wallets/{walletID}/sends/{sendID}/receipt` |
+| Depósito en wallet segregada | `GET /v1/wallets/{walletID}/deposits/{depositID}/receipt` |
 
 ```bash
 curl "https://api.qbank.cl/platform/v1/payouts/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d/receipt?lang=es" \

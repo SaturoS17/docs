@@ -5,9 +5,9 @@ description: "The consolidated statement: JSON for your web, downloadable PDF an
 ---
 
 The statement consolidates **every** movement of an account in a period —
-payouts, payins, crypto deposits and withdrawals, internal transfers and
-service charges — into one auditable document. A single endpoint serves it
-in three formats:
+payouts, payins, crypto deposits and withdrawals, internal transfers, card
+purchases, balance conversions, banking operations and service charges —
+into one auditable document. A single endpoint serves it in three formats:
 
 | Format | What for | How to request it |
 |---|---|---|
@@ -70,8 +70,11 @@ curl -OJ "https://api.qbank.cl/platform/v1/reports/statement?from=2026-01-01&to=
     "by_currency": [ { "currency": "BOB", "payout_local": "28748.58", "payin_local": "700.00" } ],
     "by_month": [ { "month": "2026-01", "usdt_in": "985633.540000", "usdt_out": "35100.000000" } ]
   },
-  "payouts": [ { "created_at": "…", "payout_id": "…", "country": "BO", "beneficiary": "Juan Quispe", "local_amount": "90.00", "fx_rate": "6.91", "usdt_amount": "13.024600", "fee": "0.300000", "total_debit": "13.324600", "status": "completed" } ],
+  "payouts": [ { "created_at": "…", "payout_id": "…", "country": "BO", "beneficiary": "Juan Quispe", "local_amount": "90.00", "fx_rate": "6.91", "usdt_amount": "13.024600", "fee": "0.300000", "fee_percent": "0.200000", "fee_fixed": "0.100000", "total_debit": "13.324600", "status": "completed" } ],
   "payins": [ { "…": "…" } ],
+  "card_transactions": [ { "created_at": "…", "transaction_id": "…", "card_id": "…", "kind": "purchase", "merchant": "AMAZON.COM", "amount_usd": "25.00", "spend_asset": "USDT", "spend_amount": "25.000000", "status": "settled" } ],
+  "swaps": [ { "created_at": "…", "swap_id": "…", "from_asset": "USDT", "to_asset": "BTC", "from_amount": "10.000000", "to_amount": "0.00015433", "rate": "0.00001543", "status": "completed" } ],
+  "banking_operations": [ { "created_at": "…", "operation_id": "…", "direction": "out", "type": "wire", "currency": "USD", "amount": "150.00", "counterparty": "Acme Inc", "status": "completed" } ],
   "assets": [
     {
       "asset": "GOLD",
@@ -87,7 +90,7 @@ curl -OJ "https://api.qbank.cl/platform/v1/reports/statement?from=2026-01-01&to=
   "crypto_deposits": [ { "chain": "tron", "asset": "USDT", "tx_id": "…", "usdt_gross": "100.000000", "fee": "1.000000", "usdt_credited": "99.000000", "balance_after": "99.000000" } ],
   "crypto_withdrawals": [ { "…": "…" } ],
   "transfers": [ { "direction": "sent", "counterparty": "Ana Perez", "asset": "USDT", "amount": "25.000000" } ],
-  "service_charges": [ { "type": "banking_fee", "service": "banking_customer", "amount": "-0.500000", "balance_after": "98.500000" } ],
+  "service_charges": [ { "type": "banking_fee", "service": "banking_customer", "fee_model": "fixed", "amount": "-0.500000", "balance_after": "98.500000" } ],
   "movements": [ { "type": "funding", "amount": "99.000000", "balance_after": "99.000000", "created_at": "…" } ]
 }
 ```
@@ -98,17 +101,30 @@ Sections:
    fees by service and the `balanced` flag of the **USDT balance** (the
    operating currency).
 2. **`assets`** — one reconciled section per non-USDT balance with activity
-   or balance (USDC, BTC, GOLD): opening/closing balance, inflows,
-   outflows, its own `balanced` flag and its movements, in each currency's
-   precision. Empty if you only operate USDT.
+   or balance (USDC, BTC, GOLD and, if you use Banking, the
+   `BANK_USD`/`BANK_EUR` mirrors of your bank accounts): opening/closing
+   balance, inflows, outflows, its own `balanced` flag and its movements,
+   in each currency's precision. Empty if you only operate USDT.
 3. **`breakdown`** — by product, by country (payouts and payins with local
    amount and USDT), by fiat currency and by month.
 4. **Per-product detail** — payouts (beneficiary, rate and debit), payins
    (per mode), crypto (with `tx_id` and its `asset`), transfers (with
-   counterparty and `asset`) and service charges (with refunds).
+   counterparty and `asset`), card purchases (`card_transactions`, with
+   merchant and spending balance), balance conversions (`swaps`), banking
+   operations (`banking_operations`) and service charges (with refunds).
 5. **`movements`** — the raw USDT ledger: every movement with its
    `balance_after`. This is the section an auditor uses to tie everything
    out (other currencies' movements live inside their `assets` section).
+
+<Note>
+**Transparent fees.** On payouts, payins and crypto withdrawals, when the
+fee combines a percentage and a fixed component, the statement splits them
+into `fee_percent` and `fee_fixed` (they add up exactly to `fee`).
+Standalone charges (compliance, wallets, banking, verifications, cards) are
+always fixed-amount and carry `fee_model: "fixed"` — the PDF/Excel labels
+them **Fixed Com**. Historical operations predating this field only show the
+combined `fee`.
+</Note>
 
 ## How to reconcile it (for your accountant)
 
@@ -137,6 +153,9 @@ The CBPay team can generate any of its accounts' statements:
 curl "https://api.qbank.cl/platform/v1/accounts/{accountID}/reports/statement?from=2026-01-01&to=2026-07-07&format=pdf" \
   -H "X-API-Key: <pk_org_admin>"
 ```
+
+The administrator view also includes additional operational information for
+the period (detailed in the administration documentation).
 
 ## Errors
 

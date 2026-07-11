@@ -182,13 +182,23 @@ Solo cuentan los payins **acreditados**.
   "new_accounts": 14,
   "accounts_series": [ { "date": "2026-07-01", "count": 2 } ],
   "operations": 6,
+  "volume": {
+    "in":  { "count": 4, "volume_usd": "1200.00" },
+    "out": { "count": 9, "volume_usd": "3450.00" },
+    "series": [ { "date": "2026-07-01", "count": 2 } ],
+    "volume_usd": "4650.00"
+  },
   "fees_usd": "18.00",
   "fees_by_service": { "banking_customer": { "count": 11, "fees_usd": "11.00" } }
 },
 "verifications": {
   "submissions": [ { "kind": "kyc", "status": "approved", "count": 3 } ],
   "links":       [ { "kind": "kyb", "status": "pending", "count": 1 } ],
-  "fees_usd": "9.00"
+  "fees_usd": "9.00",
+  "fees_by_kind": {
+    "kyc_verification": { "count": 3, "fees_usd": "6.00" },
+    "kyb_verification": { "count": 1, "fees_usd": "3.00" }
+  }
 },
 "aml": { "screenings": 4, "fees_usd": "2.00", "by_service": { "compliance_screening": { "count": 4, "fees_usd": "2.00" } } },
 "contacts": { "new_contacts": 7, "series": [ { "date": "2026-07-02", "count": 2 } ] }
@@ -196,6 +206,11 @@ Solo cuentan los payins **acreditados**.
 
 `new_third_parties` es la misma métrica del gráfico "usuarios nuevos":
 los usuarios banking que tu empresa dio de alta.
+
+`banking.volume` es el dinero movido por tus cuentas bancarias (entrante y
+saliente, valorizado a USD): también suma al `gross_volume` global de la
+cuenta, y su detalle cuadra en las secciones `BANK_USD`/`BANK_EUR` de la
+[cartola](/es/guias/cartola).
 
 </Accordion>
 </AccordionGroup>

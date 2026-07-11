@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-11 17:22 UTC · versión `a78f52f48d55`
+> **Documento actualizado:** 2026-07-11 18:57 UTC · versión `7cca8b56fa44`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.43 (11 de julio de 2026) |
+| Versión de la documentación | v1.44 (11 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -4240,10 +4240,22 @@ Respuesta `201`:
   "address": "TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd",
   "label": "Cliente Acme",
   "origin": "created",
+  "custody": "cbpay",
   "exported": false,
   "created_at": "2026-07-11T12:00:00Z"
 }
 ```
+
+El campo `custody` refleja el régimen de custodia de la llave:
+
+| `custody` | Significado |
+|---|---|
+| `cbpay` | Creada por la plataforma y llave nunca exportada: solo tus operaciones vía API pueden mover el saldo |
+| `client` | Importada, o cuya llave fue exportada: también puedes firmar por fuera de la plataforma |
+
+Con custodia `client` la plataforma sincroniza la actividad on-chain
+completa de la wallet — incluidos los movimientos firmados por fuera — y
+los marca como externos, para que tu registro y tu cartola sigan completos.
 
 La `Idempotency-Key` (o `idempotency_key` en el body) hace el reintento
 seguro: una repetición devuelve la MISMA wallet con `idempotency_hit: true`
@@ -4467,6 +4479,8 @@ curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/auto-forward \
 | `wallet_deposit_received` | Llegó un depósito on-chain a una wallet segregada (no toca el ledger) |
 | `wallet_send_status_changed` | Un envío desde la wallet cambió de estado |
 | `wallet_key_exported` | Se exportó la llave privada de una wallet (alerta de seguridad) |
+| `wallet_external_movement` | El sync detectó un movimiento on-chain que no pasó por la plataforma (esperable en custodia `client`) |
+| `wallet_key_compromise_suspected` | **Alarma crítica**: salió plata de una wallet con custodia `cbpay` sin pasar por la plataforma — trata la llave como comprometida y contacta soporte de inmediato |
 
 Los payloads de ejemplo están en la [página de webhooks](#webhooks).
 
@@ -5326,10 +5340,20 @@ Respuesta `202`:
 
 - El estado final llega por el webhook `banking_operation_status_changed`
   (`completed` / `failed`); también puedes consultar
-  `GET /v1/banking/operations/{id}`.
+  `GET /v1/banking/operations/{id}`. Cuando la operación queda en estado
+  final, el webhook incluye su `receipt_url` y puedes descargar el
+  comprobante PDF con `GET /v1/banking/operations/{id}/receipt`
+  ([comprobantes](#comprobantes)).
 - Reintentos con la misma `Idempotency-Key` devuelven la operación original
   (`idempotency_hit: true`) **sin volver a cobrar** la comisión.
 
+> **Nota**
+**Trazabilidad completa.** Cada operación bancaria queda registrada en tu
+cuenta: aparece en la sección `banking_operations` de la
+[cartola](#cartola-estado-de-cuenta), su dinero cuadra en los saldos espejo
+`BANK_USD`/`BANK_EUR` (sección `assets`), y su volumen suma al
+`gross_volume` de [analytics](#resumen-de-tu-cuenta-analytics). El saldo autoritativo
+sigue siendo el del banco: el espejo se reconcilia periódicamente.
 El historial completo, con filtros:
 
 ```bash
@@ -6130,7 +6154,8 @@ riesgo en listas.
 *El estado de cuenta consolidado: JSON para tu web, PDF y Excel descargables, listos para tu contador*
 
 La cartola consolida **todos** los movimientos de una cuenta en un período —
-payouts, payins, depósitos y retiros crypto, transferencias internas y
+payouts, payins, depósitos y retiros crypto, transferencias internas,
+compras con tarjeta, conversiones de saldo, operaciones bancarias y
 cargos por servicio — en un solo documento auditable. Un mismo endpoint la
 entrega en tres formatos:
 
@@ -6195,8 +6220,11 @@ curl -OJ "https://api.qbank.cl/platform/v1/reports/statement?from=2026-01-01&to=
     "by_currency": [ { "currency": "BOB", "payout_local": "28748.58", "payin_local": "700.00" } ],
     "by_month": [ { "month": "2026-01", "usdt_in": "985633.540000", "usdt_out": "35100.000000" } ]
   },
-  "payouts": [ { "created_at": "…", "payout_id": "…", "country": "BO", "beneficiary": "Juan Quispe", "local_amount": "90.00", "fx_rate": "6.91", "usdt_amount": "13.024600", "fee": "0.300000", "total_debit": "13.324600", "status": "completed" } ],
+  "payouts": [ { "created_at": "…", "payout_id": "…", "country": "BO", "beneficiary": "Juan Quispe", "local_amount": "90.00", "fx_rate": "6.91", "usdt_amount": "13.024600", "fee": "0.300000", "fee_percent": "0.200000", "fee_fixed": "0.100000", "total_debit": "13.324600", "status": "completed" } ],
   "payins": [ { "…": "…" } ],
+  "card_transactions": [ { "created_at": "…", "transaction_id": "…", "card_id": "…", "kind": "purchase", "merchant": "AMAZON.COM", "amount_usd": "25.00", "spend_asset": "USDT", "spend_amount": "25.000000", "status": "settled" } ],
+  "swaps": [ { "created_at": "…", "swap_id": "…", "from_asset": "USDT", "to_asset": "BTC", "from_amount": "10.000000", "to_amount": "0.00015433", "rate": "0.00001543", "status": "completed" } ],
+  "banking_operations": [ { "created_at": "…", "operation_id": "…", "direction": "out", "type": "wire", "currency": "USD", "amount": "150.00", "counterparty": "Acme Inc", "status": "completed" } ],
   "assets": [
     {
       "asset": "GOLD",
@@ -6212,7 +6240,7 @@ curl -OJ "https://api.qbank.cl/platform/v1/reports/statement?from=2026-01-01&to=
   "crypto_deposits": [ { "chain": "tron", "asset": "USDT", "tx_id": "…", "usdt_gross": "100.000000", "fee": "1.000000", "usdt_credited": "99.000000", "balance_after": "99.000000" } ],
   "crypto_withdrawals": [ { "…": "…" } ],
   "transfers": [ { "direction": "sent", "counterparty": "Ana Pérez", "asset": "USDT", "amount": "25.000000" } ],
-  "service_charges": [ { "type": "banking_fee", "service": "banking_customer", "amount": "-0.500000", "balance_after": "98.500000" } ],
+  "service_charges": [ { "type": "banking_fee", "service": "banking_customer", "fee_model": "fixed", "amount": "-0.500000", "balance_after": "98.500000" } ],
   "movements": [ { "type": "funding", "amount": "99.000000", "balance_after": "99.000000", "created_at": "…" } ]
 }
 ```
@@ -6223,19 +6251,30 @@ Secciones:
    por servicio y el flag `balanced` del **saldo USDT** (la moneda
    operativa).
 2. **`assets`** — una sección conciliada por cada saldo no-USDT con
-   actividad o saldo (USDC, BTC, GOLD): saldo inicial/final, entradas,
-   salidas, su propio flag `balanced` y sus movimientos, en la precisión de
-   cada moneda. Si solo operas USDT, viene vacía.
+   actividad o saldo (USDC, BTC, GOLD y, si usas Banking, los espejos
+   `BANK_USD`/`BANK_EUR` de tus cuentas bancarias): saldo inicial/final,
+   entradas, salidas, su propio flag `balanced` y sus movimientos, en la
+   precisión de cada moneda. Si solo operas USDT, viene vacía.
 3. **`breakdown`** — por producto, por país (payouts y payins con monto
    local y USDT), por moneda fiat y por mes.
 4. **Detalle por producto** — payouts (con beneficiario, tasa y débito),
    payins (por modalidad), crypto (con `tx_id` y su `asset`),
-   transferencias (con contraparte y `asset`) y cargos por servicio (con
-   reembolsos).
+   transferencias (con contraparte y `asset`), compras con tarjeta
+   (`card_transactions`, con comercio y saldo de gasto), conversiones de
+   saldo (`swaps`), operaciones bancarias (`banking_operations`) y cargos
+   por servicio (con reembolsos).
 5. **`movements`** — el ledger crudo del saldo USDT: cada movimiento con su
    `balance_after`. Es la sección con la que un auditor cuadra todo (los
    movimientos de las otras monedas van dentro de su sección en `assets`).
 
+> **Nota**
+**Comisiones transparentes.** En payouts, payins y retiros crypto, cuando la
+comisión combina un componente porcentual y uno fijo, la cartola los separa
+en `fee_percent` y `fee_fixed` (suman exacto el `fee`). Los cargos
+standalone (compliance, wallets, banking, verificaciones, tarjetas) son
+siempre de monto fijo y llevan `fee_model: "fixed"` — en el PDF/Excel se
+etiquetan como **Fixed Com**. Operaciones históricas anteriores a este campo
+muestran solo el `fee` combinado.
 ### Cómo cuadrar la cartola (para tu contador)
 
 La cartola cumple una identidad contable exacta, sin redondeos:
@@ -6265,6 +6304,9 @@ El equipo de CBPay puede generar la cartola de cualquiera de sus cuentas:
 curl "https://api.qbank.cl/platform/v1/accounts/{accountID}/reports/statement?from=2026-01-01&to=2026-07-07&format=pdf" \
   -H "X-API-Key: <pk_org_admin>"
 ```
+
+La vista del administrador incluye información operativa adicional del
+período (detallada en la documentación de administración).
 
 ### Errores
 
@@ -6322,6 +6364,9 @@ PDF sale en español por defecto; agrega `?lang=en` para inglés.
 | Depósito crypto | `GET /v1/crypto/deposits/{depositID}/receipt` |
 | Conversión (swap) | `GET /v1/swaps/{swapID}/receipt` |
 | Compra con tarjeta | `GET /v1/cards/{cardID}/transactions/{transactionID}/receipt` |
+| Operación bancaria | `GET /v1/banking/operations/{operationID}/receipt` |
+| Envío desde wallet segregada | `GET /v1/wallets/{walletID}/sends/{sendID}/receipt` |
+| Depósito en wallet segregada | `GET /v1/wallets/{walletID}/deposits/{depositID}/receipt` |
 
 ```bash
 curl "https://api.qbank.cl/platform/v1/payouts/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d/receipt?lang=es" \
@@ -6632,13 +6677,23 @@ Solo cuentan los payins **acreditados**.
   "new_accounts": 14,
   "accounts_series": [ { "date": "2026-07-01", "count": 2 } ],
   "operations": 6,
+  "volume": {
+    "in":  { "count": 4, "volume_usd": "1200.00" },
+    "out": { "count": 9, "volume_usd": "3450.00" },
+    "series": [ { "date": "2026-07-01", "count": 2 } ],
+    "volume_usd": "4650.00"
+  },
   "fees_usd": "18.00",
   "fees_by_service": { "banking_customer": { "count": 11, "fees_usd": "11.00" } }
 },
 "verifications": {
   "submissions": [ { "kind": "kyc", "status": "approved", "count": 3 } ],
   "links":       [ { "kind": "kyb", "status": "pending", "count": 1 } ],
-  "fees_usd": "9.00"
+  "fees_usd": "9.00",
+  "fees_by_kind": {
+    "kyc_verification": { "count": 3, "fees_usd": "6.00" },
+    "kyb_verification": { "count": 1, "fees_usd": "3.00" }
+  }
 },
 "aml": { "screenings": 4, "fees_usd": "2.00", "by_service": { "compliance_screening": { "count": 4, "fees_usd": "2.00" } } },
 "contacts": { "new_contacts": 7, "series": [ { "date": "2026-07-02", "count": 2 } ] }
@@ -6646,6 +6701,11 @@ Solo cuentan los payins **acreditados**.
 
 `new_third_parties` es la misma métrica del gráfico "usuarios nuevos":
 los usuarios banking que tu empresa dio de alta.
+
+`banking.volume` es el dinero movido por tus cuentas bancarias (entrante y
+saliente, valorizado a USD): también suma al `gross_volume` global de la
+cuenta, y su detalle cuadra en las secciones `BANK_USD`/`BANK_EUR` de la
+[cartola](#cartola-estado-de-cuenta).
 
 ### `spending` — lo que consumiste en servicios
 
@@ -7165,6 +7225,8 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 | `wallet_deposit_received` | Llegó un depósito on-chain a una [wallet segregada](#wallets-segregadas) (no toca el ledger) |
 | `wallet_send_status_changed` | Un envío desde una wallet segregada cambió de estado |
 | `wallet_key_exported` | Se exportó la llave privada de una wallet segregada (alerta de seguridad) |
+| `wallet_external_movement` | Movimiento on-chain de una wallet segregada que no pasó por la plataforma (esperable en custodia `client`) |
+| `wallet_key_compromise_suspected` | **Alarma crítica**: salida externa desde una wallet con custodia `cbpay` — posible llave comprometida |
 
 #### Payload de cada evento
 
@@ -7358,6 +7420,32 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
   "chain": "tron",
   "asset": "USDT",
   "address": "TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd"
+}
+```
+
+```json wallet_external_movement
+{
+  "wallet_id": "b7e3…",
+  "account_id": "ae8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "direction": "out",
+  "tx_id": "9a3c1e5f…",
+  "amount_raw": "25000000",
+  "custody": "client"
+}
+```
+
+```json wallet_key_compromise_suspected
+{
+  "wallet_id": "b7e3…",
+  "account_id": "ae8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "direction": "out",
+  "tx_id": "9a3c1e5f…",
+  "amount_raw": "25000000",
+  "custody": "cbpay"
 }
 ```
 
@@ -7780,9 +7868,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-11 17:22 UTC · 212 requests · versión `bdf338d24575`
+> **Colección actualizada:** 2026-07-11 18:57 UTC · 215 requests · versión `fff3b02e6c59`
 
-<PostmanFreshness iso="2026-07-11T17:22:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-11T18:57:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -7816,6 +7904,35 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.44 — 11 de julio de 2026
+
+**Agregado — Trazabilidad total: banking en la cartola, comisiones desglosadas y custodia de wallets**
+
+- **Cartola más completa**: nuevas secciones `card_transactions` (compras
+  con tarjeta), `swaps` (conversiones de saldo) y `banking_operations`
+  (operaciones bancarias). Si usas Banking, tus cuentas bancarias cuadran
+  como saldos espejo `BANK_USD`/`BANK_EUR` en la sección `assets`.
+- **Comisiones desglosadas**: payouts, payins y retiros crypto ahora
+  separan la comisión en `fee_percent` y `fee_fixed` (suman exacto el
+  `fee`); los cargos standalone llevan `fee_model: "fixed"` y se etiquetan
+  **Fixed Com** en el PDF/Excel.
+- **Comprobantes nuevos**: `GET /v1/banking/operations/{id}/receipt`,
+  `GET /v1/wallets/{walletID}/sends/{sendID}/receipt` y
+  `GET /v1/wallets/{walletID}/deposits/{depositID}/receipt`. El webhook
+  `banking_operation_status_changed` ahora incluye `receipt_url`.
+- **Custodia de wallets segregadas**: campo `custody` (`cbpay` | `client`)
+  en cada wallet; la plataforma sincroniza la actividad on-chain completa y
+  emite los webhooks `wallet_external_movement` (movimiento firmado por
+  fuera, esperable en custodia `client`) y
+  `wallet_key_compromise_suspected` (alarma crítica).
+- **Analytics**: `sections.banking.volume` (dinero movido por tus cuentas
+  bancarias, que también suma al `gross_volume`) y
+  `sections.verifications.fees_by_kind` (gasto KYC vs KYB por separado).
+
+Guías: [cartola](#cartola-estado-de-cuenta), [banking](#banking),
+[wallets segregadas](#wallets-segregadas),
+[comprobantes](#comprobantes) y [analytics](#resumen-de-tu-cuenta-analytics).
 
 ### v1.43 — 11 de julio de 2026
 
@@ -8706,6 +8823,9 @@ está en la API Reference interactiva y en la colección Postman.
 | `GET` | `/v1/crypto/deposits/{depositID}/receipt` | Descargar el comprobante del depósito crypto (PDF) |
 | `GET` | `/v1/swaps/{swapID}/receipt` | Descargar el comprobante del swap (PDF) |
 | `GET` | `/v1/cards/{cardID}/transactions/{transactionID}/receipt` | Descargar el comprobante de la compra con tarjeta (PDF) |
+| `GET` | `/v1/banking/operations/{operationID}/receipt` | Descargar el comprobante de la operación bancaria (PDF) |
+| `GET` | `/v1/wallets/{walletID}/sends/{sendID}/receipt` | Descargar el comprobante del envío desde wallet segregada (PDF) |
+| `GET` | `/v1/wallets/{walletID}/deposits/{depositID}/receipt` | Descargar el comprobante del depósito en wallet segregada (PDF) |
 | `GET` | `/verify/receipts/{code}` | Verificar la autenticidad de un comprobante (público) |
 
 

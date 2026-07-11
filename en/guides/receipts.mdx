@@ -46,6 +46,9 @@ The PDF defaults to Spanish; add `?lang=en` for English.
 | Crypto deposit | `GET /v1/crypto/deposits/{depositID}/receipt` |
 | Swap | `GET /v1/swaps/{swapID}/receipt` |
 | Card purchase | `GET /v1/cards/{cardID}/transactions/{transactionID}/receipt` |
+| Banking operation | `GET /v1/banking/operations/{operationID}/receipt` |
+| Segregated wallet send | `GET /v1/wallets/{walletID}/sends/{sendID}/receipt` |
+| Segregated wallet deposit | `GET /v1/wallets/{walletID}/deposits/{depositID}/receipt` |
 
 ```bash
 curl "https://api.qbank.cl/platform/v1/payouts/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d/receipt?lang=en" \

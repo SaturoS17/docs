@@ -8,6 +8,37 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="11 de julio de 2026" description="v1.44">
+
+**Agregado — Trazabilidad total: banking en la cartola, comisiones desglosadas y custodia de wallets**
+
+- **Cartola más completa**: nuevas secciones `card_transactions` (compras
+  con tarjeta), `swaps` (conversiones de saldo) y `banking_operations`
+  (operaciones bancarias). Si usas Banking, tus cuentas bancarias cuadran
+  como saldos espejo `BANK_USD`/`BANK_EUR` en la sección `assets`.
+- **Comisiones desglosadas**: payouts, payins y retiros crypto ahora
+  separan la comisión en `fee_percent` y `fee_fixed` (suman exacto el
+  `fee`); los cargos standalone llevan `fee_model: "fixed"` y se etiquetan
+  **Fixed Com** en el PDF/Excel.
+- **Comprobantes nuevos**: `GET /v1/banking/operations/{id}/receipt`,
+  `GET /v1/wallets/{walletID}/sends/{sendID}/receipt` y
+  `GET /v1/wallets/{walletID}/deposits/{depositID}/receipt`. El webhook
+  `banking_operation_status_changed` ahora incluye `receipt_url`.
+- **Custodia de wallets segregadas**: campo `custody` (`cbpay` | `client`)
+  en cada wallet; la plataforma sincroniza la actividad on-chain completa y
+  emite los webhooks `wallet_external_movement` (movimiento firmado por
+  fuera, esperable en custodia `client`) y
+  `wallet_key_compromise_suspected` (alarma crítica).
+- **Analytics**: `sections.banking.volume` (dinero movido por tus cuentas
+  bancarias, que también suma al `gross_volume`) y
+  `sections.verifications.fees_by_kind` (gasto KYC vs KYB por separado).
+
+Guías: [cartola](/es/guias/cartola), [banking](/es/guias/banking),
+[wallets segregadas](/es/guias/wallets-segregadas),
+[comprobantes](/es/guias/comprobantes) y [analytics](/es/guias/analytics).
+
+</Update>
+
 <Update label="11 de julio de 2026" description="v1.43">
 
 **Agregado — Series históricas para tu dashboard**

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.43'
+  version: '1.44'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -236,6 +236,89 @@ paths:
           type: string
           format: uuid
       - name: transactionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/receiptLang'
+      responses:
+        '200':
+          $ref: '#/components/responses/ReceiptPDF'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/banking/operations/{operationID}/receipt:
+    get:
+      tags:
+      - Comprobantes
+      operationId: getBankingOperationReceipt
+      summary: Descargar el comprobante de la operación bancaria (PDF)
+      description: Comprobante PDF brandeado de una operación bancaria (monto, moneda,
+        contraparte, estado) con el QR de verificación firmado. Disponible para operaciones
+        creadas desde que el espejo de trazabilidad quedó activo.
+      parameters:
+      - name: operationID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/receiptLang'
+      responses:
+        '200':
+          $ref: '#/components/responses/ReceiptPDF'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/wallets/{walletID}/sends/{sendID}/receipt:
+    get:
+      tags:
+      - Comprobantes
+      operationId: getWalletSendReceipt
+      summary: Descargar el comprobante del envío desde wallet segregada (PDF)
+      description: Comprobante PDF brandeado de un envío on-chain desde una wallet segregada,
+        con la red, dirección destino, hash de la transacción y el QR de verificación firmado.
+      parameters:
+      - name: walletID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: sendID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/receiptLang'
+      responses:
+        '200':
+          $ref: '#/components/responses/ReceiptPDF'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/wallets/{walletID}/deposits/{depositID}/receipt:
+    get:
+      tags:
+      - Comprobantes
+      operationId: getWalletDepositReceipt
+      summary: Descargar el comprobante del depósito en wallet segregada (PDF)
+      description: Comprobante PDF brandeado de un depósito on-chain recibido en una wallet
+        segregada, con la red, dirección de origen, hash de la transacción y el QR de
+        verificación firmado.
+      parameters:
+      - name: walletID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: depositID
         in: path
         required: true
         schema:
@@ -5715,6 +5798,7 @@ paths:
                 address: TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd
                 label: Acme Client
                 origin: created
+                custody: cbpay
                 exported: false
                 created_at: '2026-07-11T12:00:00Z'
         '400':
@@ -5789,6 +5873,7 @@ paths:
                   address: TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd
                   label: Acme Client
                   origin: created
+                  custody: cbpay
                   exported: false
                   created_at: '2026-07-11T12:00:00Z'
         '401':
@@ -5844,6 +5929,7 @@ paths:
                 address: TXimportedAddr00000000000000000000
                 label: Migrated wallet
                 origin: imported
+                custody: client
                 exported: false
                 created_at: '2026-07-11T12:02:00Z'
         '401':
@@ -5881,6 +5967,7 @@ paths:
                 address: TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd
                 label: Acme Client
                 origin: created
+                custody: cbpay
                 exported: false
                 created_at: '2026-07-11T12:00:00Z'
         '404':
@@ -7913,13 +8000,50 @@ paths:
                   fx_rate: '6.91'
                   usdt_amount: '13.024600'
                   fee: '0.300000'
+                  fee_percent: '0.200000'
+                  fee_fixed: '0.100000'
                   total_debit: '13.324600'
                   status: completed
                 payins: []
                 crypto_deposits: []
                 crypto_withdrawals: []
                 transfers: []
-                service_charges: []
+                card_transactions:
+                - created_at: '2026-03-20T10:12:00Z'
+                  transaction_id: 5f6a7b8c-9d0e-1f2a-3b4c-5d6e7f8a9b0c
+                  card_id: c0de0791-0000-0000-0000-000000000003
+                  kind: purchase
+                  merchant: AMAZON.COM
+                  amount_usd: '25.00'
+                  spend_asset: USDT
+                  spend_amount: '25.000000'
+                  status: settled
+                swaps:
+                - created_at: '2026-03-21T09:00:00Z'
+                  swap_id: 1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d
+                  from_asset: USDT
+                  to_asset: BTC
+                  from_amount: '10.000000'
+                  to_amount: '0.00015433'
+                  rate: '0.00001543'
+                  status: completed
+                banking_operations:
+                - created_at: '2026-03-22T14:30:00Z'
+                  operation_id: 2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e
+                  direction: out
+                  type: wire
+                  currency: USD
+                  amount: '150.00'
+                  counterparty: Acme Inc
+                  status: completed
+                service_charges:
+                - created_at: '2026-03-23T08:00:00Z'
+                  type: banking_fee
+                  service: banking_customer
+                  fee_model: fixed
+                  reference: cust-001
+                  amount: '-0.500000'
+                  balance_after: '139.100000'
                 movements:
                 - created_at: '2026-03-19T22:57:00Z'
                   type: payout_debit
@@ -9018,6 +9142,21 @@ paths:
                     active_cards: 1
                     by_status: [{status: settled, count: 10, volume_usd: '205.00'}]
                     top_merchants: [{merchant: AMAZON, count: 4, volume_usd: '98.20'}]
+                  banking:
+                    new_third_parties: 11
+                    new_accounts: 14
+                    operations: 6
+                    volume:
+                      in: {count: 4, volume_usd: '1200.00'}
+                      out: {count: 9, volume_usd: '3450.00'}
+                      volume_usd: '4650.00'
+                    fees_usd: '18.00'
+                  verifications:
+                    submissions: [{kind: kyc, status: approved, count: 3}]
+                    fees_usd: '9.00'
+                    fees_by_kind:
+                      kyc_verification: {count: 3, fees_usd: '6.00'}
+                      kyb_verification: {count: 1, fees_usd: '3.00'}
                 spending:
                   total_usd: '34.50'
                   by_service:
@@ -11165,6 +11304,49 @@ webhooks:
               chain: tron
               asset: USDT
               address: TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd
+      responses:
+        '200':
+          description: Responde cualquier 2xx para confirmar la entrega.
+  wallet_external_movement:
+    post:
+      summary: Movimiento externo en una wallet segregada
+      description: El sync de actividad detectó un movimiento on-chain de una wallet segregada
+        que no pasó por la plataforma (esperable en custodia del cliente, p. ej. tras importar o
+        exportar la llave). El registro de actividad de la wallet queda completo igual.
+      requestBody:
+        content:
+          application/json:
+            example:
+              wallet_id: b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              chain: tron
+              asset: USDT
+              direction: out
+              tx_id: 9a3c1e5f7b2d4a6c8e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d
+              amount_raw: '25000000'
+              custody: client
+      responses:
+        '200':
+          description: Responde cualquier 2xx para confirmar la entrega.
+  wallet_key_compromise_suspected:
+    post:
+      summary: Sospecha de llave comprometida (alarma crítica)
+      description: 'CRÍTICO: salió plata de una wallet segregada con custodia de la plataforma
+        sin pasar por la plataforma. Por diseño es imposible salvo que la llave privada se haya
+        filtrado. Trata la llave como comprometida, mueve los fondos restantes a una wallet nueva
+        y contacta soporte de inmediato.'
+      requestBody:
+        content:
+          application/json:
+            example:
+              wallet_id: b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              chain: tron
+              asset: USDT
+              direction: out
+              tx_id: 9a3c1e5f7b2d4a6c8e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d
+              amount_raw: '25000000'
+              custody: cbpay
       responses:
         '200':
           description: Responde cualquier 2xx para confirmar la entrega.

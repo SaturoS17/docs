@@ -391,9 +391,21 @@ Respuesta `202`:
 
 - El estado final llega por el webhook `banking_operation_status_changed`
   (`completed` / `failed`); también puedes consultar
-  `GET /v1/banking/operations/{id}`.
+  `GET /v1/banking/operations/{id}`. Cuando la operación queda en estado
+  final, el webhook incluye su `receipt_url` y puedes descargar el
+  comprobante PDF con `GET /v1/banking/operations/{id}/receipt`
+  ([comprobantes](/es/guias/comprobantes)).
 - Reintentos con la misma `Idempotency-Key` devuelven la operación original
   (`idempotency_hit: true`) **sin volver a cobrar** la comisión.
+
+<Note>
+**Trazabilidad completa.** Cada operación bancaria queda registrada en tu
+cuenta: aparece en la sección `banking_operations` de la
+[cartola](/es/guias/cartola), su dinero cuadra en los saldos espejo
+`BANK_USD`/`BANK_EUR` (sección `assets`), y su volumen suma al
+`gross_volume` de [analytics](/es/guias/analytics). El saldo autoritativo
+sigue siendo el del banco: el espejo se reconcilia periódicamente.
+</Note>
 
 El historial completo, con filtros:
 

@@ -77,10 +77,22 @@ Response `201`:
   "address": "TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd",
   "label": "Acme Client",
   "origin": "created",
+  "custody": "cbpay",
   "exported": false,
   "created_at": "2026-07-11T12:00:00Z"
 }
 ```
+
+The `custody` field reflects the key custody regime:
+
+| `custody` | Meaning |
+|---|---|
+| `cbpay` | Created by the platform and key never exported: only your API operations can move the balance |
+| `client` | Imported, or whose key was exported: you can also sign outside the platform |
+
+Under `client` custody the platform syncs the wallet's complete on-chain
+activity — including movements signed outside — and flags them as external,
+so your records and statement stay complete.
 
 The `Idempotency-Key` (or `idempotency_key` in the body) makes retries safe:
 a repeat returns the SAME wallet with `idempotency_hit: true` and **never**
@@ -314,6 +326,8 @@ curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/auto-forward \
 | `wallet_deposit_received` | An on-chain deposit arrived at a segregated wallet (does not touch the ledger) |
 | `wallet_send_status_changed` | A send from the wallet changed status |
 | `wallet_key_exported` | A wallet's private key was exported (security alert) |
+| `wallet_external_movement` | The sync detected an on-chain movement that did not go through the platform (expected under `client` custody) |
+| `wallet_key_compromise_suspected` | **Critical alarm**: funds left a `cbpay`-custody wallet without going through the platform — treat the key as compromised and contact support immediately |
 
 Example payloads are on the [webhooks page](/en/webhooks).
 

@@ -7,6 +7,37 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 11, 2026" description="v1.44">
+
+**Added — Full traceability: banking in the statement, itemized fees and wallet custody**
+
+- **Richer statement**: new `card_transactions` (card purchases), `swaps`
+  (balance conversions) and `banking_operations` sections. If you use
+  Banking, your bank accounts reconcile as `BANK_USD`/`BANK_EUR` mirror
+  balances inside the `assets` section.
+- **Itemized fees**: payouts, payins and crypto withdrawals now split the
+  fee into `fee_percent` and `fee_fixed` (they add up exactly to `fee`);
+  standalone charges carry `fee_model: "fixed"` and are labeled
+  **Fixed Com** in the PDF/Excel.
+- **New receipts**: `GET /v1/banking/operations/{id}/receipt`,
+  `GET /v1/wallets/{walletID}/sends/{sendID}/receipt` and
+  `GET /v1/wallets/{walletID}/deposits/{depositID}/receipt`. The
+  `banking_operation_status_changed` webhook now includes `receipt_url`.
+- **Segregated wallet custody**: `custody` field (`cbpay` | `client`) on
+  every wallet; the platform syncs the complete on-chain activity and emits
+  the `wallet_external_movement` webhook (movement signed outside, expected
+  under `client` custody) and `wallet_key_compromise_suspected` (critical
+  alarm).
+- **Analytics**: `sections.banking.volume` (money moved through your bank
+  accounts, which also adds to `gross_volume`) and
+  `sections.verifications.fees_by_kind` (KYC vs KYB spending, separately).
+
+Guides: [statement](/en/guides/statement), [banking](/en/guides/banking),
+[segregated wallets](/en/guides/segregated-wallets),
+[receipts](/en/guides/receipts) and [analytics](/en/guides/analytics).
+
+</Update>
+
 <Update label="July 11, 2026" description="v1.43">
 
 **Added — Historical series for your dashboard**

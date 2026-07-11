@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — that never mix or convert automatically.\nPayouts and service fees can be paid from any of the four balances:\nset a default with `PUT /v1/settlement` or override per payout with\n`settlement_asset`.\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-11 17:22 UTC",
-    "_content_sha256": "bdf338d245752c78c41315646c39d0f476140f50b484592305ec0a1fe7cd26ee"
+    "_generated_at": "2026-07-11 18:57 UTC",
+    "_content_sha256": "fff3b02e6c59af009187c109161c66fec8f5c7def8e75759be59321e63d2c9aa"
   },
   "auth": {
     "type": "bearer",
@@ -218,6 +218,97 @@
               ]
             },
             "description": "Branded PDF receipt of a card transaction, with the merchant, USD amount, debited balance and the signed verification QR."
+          }
+        },
+        {
+          "name": "Download the banking operation receipt (PDF)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/banking/operations/:operationID/receipt",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "banking",
+                "operations",
+                ":operationID",
+                "receipt"
+              ],
+              "variable": [
+                {
+                  "key": "operationID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Branded PDF receipt of a banking operation (amount, currency, counterparty, status) with the signed verification QR. Available for operations created after the traceability mirror went live."
+          }
+        },
+        {
+          "name": "Download the segregated wallet send receipt (PDF)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/wallets/:walletID/sends/:sendID/receipt",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "wallets",
+                ":walletID",
+                "sends",
+                ":sendID",
+                "receipt"
+              ],
+              "variable": [
+                {
+                  "key": "walletID",
+                  "value": ""
+                },
+                {
+                  "key": "sendID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Branded PDF receipt of an on-chain send from a segregated wallet, with the network, destination address, tx hash and the signed verification QR."
+          }
+        },
+        {
+          "name": "Download the segregated wallet deposit receipt (PDF)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/wallets/:walletID/deposits/:depositID/receipt",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "wallets",
+                ":walletID",
+                "deposits",
+                ":depositID",
+                "receipt"
+              ],
+              "variable": [
+                {
+                  "key": "walletID",
+                  "value": ""
+                },
+                {
+                  "key": "depositID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Branded PDF receipt of an on-chain deposit received by a segregated wallet, with the network, origin address, tx hash and the signed verification QR."
           }
         },
         {
@@ -2703,7 +2794,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"account\": {\n    \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n    \"display_name\": \"Example Company SpA\",\n    \"email\": \"ops@example.com\",\n    \"type\": \"company\"\n  },\n  \"period\": {\n    \"from\": \"2026-01-01\",\n    \"to\": \"2026-07-07\",\n    \"timezone\": \"UTC\"\n  },\n  \"generated_at\": \"2026-07-07T15:00:00Z\",\n  \"summary\": {\n    \"opening_balance\": \"0.000000\",\n    \"total_in\": \"985633.540000\",\n    \"total_out\": \"38099.870000\",\n    \"net_change\": \"947533.670000\",\n    \"closing_balance\": \"947533.670000\",\n    \"balanced\": true,\n    \"counts\": {\n      \"payouts\": 51,\n      \"payins\": 12,\n      \"crypto_deposits\": 18,\n      \"crypto_withdrawals\": 3,\n      \"transfers\": 4,\n      \"service_charges\": 2,\n      \"movements\": 771\n    },\n    \"fees_by_service\": {\n      \"payout\": \"15.300000\",\n      \"funding\": \"897.550000\"\n    },\n    \"total_fees\": \"912.850000\"\n  },\n  \"assets\": [\n    {\n      \"asset\": \"GOLD\",\n      \"opening_balance\": \"0.000000\",\n      \"total_in\": \"12.500000\",\n      \"total_out\": \"2.000000\",\n      \"net_change\": \"10.500000\",\n      \"closing_balance\": \"10.500000\",\n      \"balanced\": true,\n      \"movements\": [\n        {\n          \"created_at\": \"2026-07-09T10:00:00Z\",\n          \"type\": \"adjustment\",\n          \"reference\": \"adjustment gold-load-1\",\n          \"amount\": \"12.500000\",\n          \"balance_after\": \"12.500000\"\n        }\n      ]\n    }\n  ],\n  \"breakdown\": {\n    \"by_product\": [\n      {\n        \"product\": \"payouts\",\n        \"count\": 51,\n        \"usdt_in\": \"0.000000\",\n        \"usdt_out\": \"38099.870000\",\n        \"fees\": \"15.300000\"\n      }\n    ],\n    \"by_country\": [\n      {\n        \"flow\": \"payouts\",\n        \"country\": \"BO\",\n        \"currency\": \"BOB\",\n        \"count\": 14,\n        \"local_amount\": \"28748.58\",\n        \"usdt_amount\": \"2902.210000\"\n      }\n    ],\n    \"by_currency\": [\n      {\n        \"currency\": \"BOB\",\n        \"payout_local\": \"28748.58\",\n        \"payin_local\": \"700.00\"\n      }\n    ],\n    \"by_month\": [\n      {\n        \"month\": \"2026-01\",\n        \"usdt_in\": \"985633.540000\",\n        \"usdt_out\": \"35100.000000\"\n      }\n    ]\n  },\n  \"payouts\": [\n    {\n      \"created_at\": \"2026-03-19T22:57:00Z\",\n      \"payout_id\": \"0d4f2a10-1b2c-3d4e-5f60-718293a4b5c6\",\n      \"idempotency_key\": \"bo-90\",\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"method\": \"bank_transfer\",\n      \"beneficiary\": \"Juan Quispe\",\n      \"detail\": \"1234567890\",\n      \"local_amount\": \"90.00\",\n      \"fx_rate\": \"6.91\",\n      \"usdt_amount\": \"13.024600\",\n      \"fee\": \"0.300000\",\n      \"total_debit\": \"13.324600\",\n      \"status\": \"completed\"\n    }\n  ],\n  \"payins\": [],\n  \"crypto_deposits\": [],\n  \"crypto_withdrawals\": [],\n  \"transfers\": [],\n  \"service_charges\": [],\n  \"movements\": [\n    {\n      \"created_at\": \"2026-03-19T22:57:00Z\",\n      \"type\": \"payout_debit\",\n      \"reference\": \"payout 0d4f2a10-1b2c-3d4e-5f60-718293a4b5c6\",\n      \"amount\": \"-13.324600\",\n      \"balance_after\": \"139.600000\"\n    }\n  ]\n}"
+              "body": "{\n  \"account\": {\n    \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n    \"display_name\": \"Example Company SpA\",\n    \"email\": \"ops@example.com\",\n    \"type\": \"company\"\n  },\n  \"period\": {\n    \"from\": \"2026-01-01\",\n    \"to\": \"2026-07-07\",\n    \"timezone\": \"UTC\"\n  },\n  \"generated_at\": \"2026-07-07T15:00:00Z\",\n  \"summary\": {\n    \"opening_balance\": \"0.000000\",\n    \"total_in\": \"985633.540000\",\n    \"total_out\": \"38099.870000\",\n    \"net_change\": \"947533.670000\",\n    \"closing_balance\": \"947533.670000\",\n    \"balanced\": true,\n    \"counts\": {\n      \"payouts\": 51,\n      \"payins\": 12,\n      \"crypto_deposits\": 18,\n      \"crypto_withdrawals\": 3,\n      \"transfers\": 4,\n      \"service_charges\": 2,\n      \"movements\": 771\n    },\n    \"fees_by_service\": {\n      \"payout\": \"15.300000\",\n      \"funding\": \"897.550000\"\n    },\n    \"total_fees\": \"912.850000\"\n  },\n  \"assets\": [\n    {\n      \"asset\": \"GOLD\",\n      \"opening_balance\": \"0.000000\",\n      \"total_in\": \"12.500000\",\n      \"total_out\": \"2.000000\",\n      \"net_change\": \"10.500000\",\n      \"closing_balance\": \"10.500000\",\n      \"balanced\": true,\n      \"movements\": [\n        {\n          \"created_at\": \"2026-07-09T10:00:00Z\",\n          \"type\": \"adjustment\",\n          \"reference\": \"adjustment gold-load-1\",\n          \"amount\": \"12.500000\",\n          \"balance_after\": \"12.500000\"\n        }\n      ]\n    }\n  ],\n  \"breakdown\": {\n    \"by_product\": [\n      {\n        \"product\": \"payouts\",\n        \"count\": 51,\n        \"usdt_in\": \"0.000000\",\n        \"usdt_out\": \"38099.870000\",\n        \"fees\": \"15.300000\"\n      }\n    ],\n    \"by_country\": [\n      {\n        \"flow\": \"payouts\",\n        \"country\": \"BO\",\n        \"currency\": \"BOB\",\n        \"count\": 14,\n        \"local_amount\": \"28748.58\",\n        \"usdt_amount\": \"2902.210000\"\n      }\n    ],\n    \"by_currency\": [\n      {\n        \"currency\": \"BOB\",\n        \"payout_local\": \"28748.58\",\n        \"payin_local\": \"700.00\"\n      }\n    ],\n    \"by_month\": [\n      {\n        \"month\": \"2026-01\",\n        \"usdt_in\": \"985633.540000\",\n        \"usdt_out\": \"35100.000000\"\n      }\n    ]\n  },\n  \"payouts\": [\n    {\n      \"created_at\": \"2026-03-19T22:57:00Z\",\n      \"payout_id\": \"0d4f2a10-1b2c-3d4e-5f60-718293a4b5c6\",\n      \"idempotency_key\": \"bo-90\",\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"method\": \"bank_transfer\",\n      \"beneficiary\": \"Juan Quispe\",\n      \"detail\": \"1234567890\",\n      \"local_amount\": \"90.00\",\n      \"fx_rate\": \"6.91\",\n      \"usdt_amount\": \"13.024600\",\n      \"fee\": \"0.300000\",\n      \"fee_percent\": \"0.200000\",\n      \"fee_fixed\": \"0.100000\",\n      \"total_debit\": \"13.324600\",\n      \"status\": \"completed\"\n    }\n  ],\n  \"payins\": [],\n  \"crypto_deposits\": [],\n  \"crypto_withdrawals\": [],\n  \"transfers\": [],\n  \"card_transactions\": [\n    {\n      \"created_at\": \"2026-03-20T10:12:00Z\",\n      \"transaction_id\": \"5f6a7b8c-9d0e-1f2a-3b4c-5d6e7f8a9b0c\",\n      \"card_id\": \"c0de0791-0000-0000-0000-000000000003\",\n      \"kind\": \"purchase\",\n      \"merchant\": \"AMAZON.COM\",\n      \"amount_usd\": \"25.00\",\n      \"spend_asset\": \"USDT\",\n      \"spend_amount\": \"25.000000\",\n      \"status\": \"settled\"\n    }\n  ],\n  \"swaps\": [\n    {\n      \"created_at\": \"2026-03-21T09:00:00Z\",\n      \"swap_id\": \"1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"from_asset\": \"USDT\",\n      \"to_asset\": \"BTC\",\n      \"from_amount\": \"10.000000\",\n      \"to_amount\": \"0.00015433\",\n      \"rate\": \"0.00001543\",\n      \"status\": \"completed\"\n    }\n  ],\n  \"banking_operations\": [\n    {\n      \"created_at\": \"2026-03-22T14:30:00Z\",\n      \"operation_id\": \"2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e\",\n      \"direction\": \"out\",\n      \"type\": \"wire\",\n      \"currency\": \"USD\",\n      \"amount\": \"150.00\",\n      \"counterparty\": \"Acme Inc\",\n      \"status\": \"completed\"\n    }\n  ],\n  \"service_charges\": [\n    {\n      \"created_at\": \"2026-03-23T08:00:00Z\",\n      \"type\": \"banking_fee\",\n      \"service\": \"banking_customer\",\n      \"fee_model\": \"fixed\",\n      \"reference\": \"cust-001\",\n      \"amount\": \"-0.500000\",\n      \"balance_after\": \"139.100000\"\n    }\n  ],\n  \"movements\": [\n    {\n      \"created_at\": \"2026-03-19T22:57:00Z\",\n      \"type\": \"payout_debit\",\n      \"reference\": \"payout 0d4f2a10-1b2c-3d4e-5f60-718293a4b5c6\",\n      \"amount\": \"-13.324600\",\n      \"balance_after\": \"139.600000\"\n    }\n  ]\n}"
             }
           ]
         }
@@ -9162,7 +9253,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"wallets\": [\n    {\n      \"wallet_id\": \"b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d\",\n      \"chain\": \"tron\",\n      \"asset\": \"USDT\",\n      \"address\": \"TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd\",\n      \"label\": \"Acme Client\",\n      \"origin\": \"created\",\n      \"exported\": false,\n      \"created_at\": \"2026-07-11T12:00:00Z\"\n    }\n  ]\n}"
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"wallets\": [\n    {\n      \"wallet_id\": \"b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d\",\n      \"chain\": \"tron\",\n      \"asset\": \"USDT\",\n      \"address\": \"TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd\",\n      \"label\": \"Acme Client\",\n      \"origin\": \"created\",\n      \"custody\": \"cbpay\",\n      \"exported\": false,\n      \"created_at\": \"2026-07-11T12:00:00Z\"\n    }\n  ]\n}"
             }
           ]
         },
@@ -9222,7 +9313,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"wallet_id\": \"b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd\",\n  \"label\": \"Acme Client\",\n  \"origin\": \"created\",\n  \"exported\": false,\n  \"created_at\": \"2026-07-11T12:00:00Z\"\n}"
+              "body": "{\n  \"wallet_id\": \"b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd\",\n  \"label\": \"Acme Client\",\n  \"origin\": \"created\",\n  \"custody\": \"cbpay\",\n  \"exported\": false,\n  \"created_at\": \"2026-07-11T12:00:00Z\"\n}"
             }
           ]
         },
@@ -9282,7 +9373,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"wallet_id\": \"b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd\",\n  \"label\": \"Acme Client\",\n  \"origin\": \"created\",\n  \"exported\": false,\n  \"created_at\": \"2026-07-11T12:00:00Z\"\n}"
+              "body": "{\n  \"wallet_id\": \"b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd\",\n  \"label\": \"Acme Client\",\n  \"origin\": \"created\",\n  \"custody\": \"cbpay\",\n  \"exported\": false,\n  \"created_at\": \"2026-07-11T12:00:00Z\"\n}"
             }
           ]
         },
@@ -9349,7 +9440,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"wallet_id\": \"c8f4b2d3-1a2b-4c3d-9e8f-7a6b5c4d3e2f\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TXimportedAddr00000000000000000000\",\n  \"label\": \"Migrated wallet\",\n  \"origin\": \"imported\",\n  \"exported\": false,\n  \"created_at\": \"2026-07-11T12:02:00Z\"\n}"
+              "body": "{\n  \"wallet_id\": \"c8f4b2d3-1a2b-4c3d-9e8f-7a6b5c4d3e2f\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TXimportedAddr00000000000000000000\",\n  \"label\": \"Migrated wallet\",\n  \"origin\": \"imported\",\n  \"custody\": \"client\",\n  \"exported\": false,\n  \"created_at\": \"2026-07-11T12:02:00Z\"\n}"
             }
           ]
         },
@@ -9409,7 +9500,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"wallet_id\": \"b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd\",\n  \"label\": \"Acme Client\",\n  \"origin\": \"created\",\n  \"exported\": false,\n  \"created_at\": \"2026-07-11T12:00:00Z\"\n}"
+              "body": "{\n  \"wallet_id\": \"b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd\",\n  \"label\": \"Acme Client\",\n  \"origin\": \"created\",\n  \"custody\": \"cbpay\",\n  \"exported\": false,\n  \"created_at\": \"2026-07-11T12:00:00Z\"\n}"
             }
           ]
         },
@@ -13387,7 +13478,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"account_id\": \"ae8cf540-22a9-414d-82cc-8ac04732be4f\",\n  \"from\": \"2026-07-01\",\n  \"to\": \"2026-07-10\",\n  \"granularity\": \"day\",\n  \"timezone\": \"UTC\",\n  \"gross_volume\": {\n    \"in\": \"636936.87\",\n    \"out\": \"270118.87\",\n    \"total\": \"907055.74\",\n    \"series\": [\n      {\n        \"date\": \"2026-07-01\",\n        \"in\": \"51023.10\",\n        \"out\": \"31210.44\",\n        \"total\": \"82233.54\"\n      }\n    ],\n    \"previous_period\": {\n      \"in\": \"512300.00\",\n      \"out\": \"241000.10\",\n      \"total\": \"753300.10\"\n    },\n    \"change_pct\": \"20.41\",\n    \"unpriced_assets\": []\n  },\n  \"transactions\": {\n    \"total\": 92,\n    \"series\": [\n      {\n        \"date\": \"2026-07-01\",\n        \"in\": 3,\n        \"out\": 5,\n        \"total\": 8\n      }\n    ],\n    \"previous_period\": {\n      \"total\": 71\n    },\n    \"change_pct\": \"29.58\"\n  },\n  \"new_users\": {\n    \"total\": 11,\n    \"series\": [\n      {\n        \"date\": \"2026-07-01\",\n        \"count\": 1\n      }\n    ],\n    \"previous_period\": {\n      \"total\": 6\n    },\n    \"change_pct\": \"83.33\"\n  },\n  \"by_country\": [\n    {\n      \"country\": \"BR\",\n      \"payouts\": {\n        \"count\": 18,\n        \"volume_usd\": \"3410.20\"\n      },\n      \"payins\": {\n        \"count\": 4,\n        \"volume_usd\": \"820.00\"\n      },\n      \"total_usd\": \"4230.20\"\n    }\n  ],\n  \"sections\": {\n    \"payouts\": {\n      \"count\": 24,\n      \"volume_usd\": \"5120.40\",\n      \"fees_usd\": \"7.20\",\n      \"by_status\": [\n        {\n          \"key\": \"completed\",\n          \"count\": 21,\n          \"volume_usd\": \"4980.10\"\n        }\n      ],\n      \"by_country\": [\n        {\n          \"country\": \"BR\",\n          \"count\": 18,\n          \"volume_usd\": \"3410.20\",\n          \"local_volume\": {\n            \"BRL\": \"17550\"\n          }\n        }\n      ],\n      \"by_method\": [\n        {\n          \"key\": \"pix\",\n          \"count\": 18,\n          \"volume_usd\": \"3410.20\"\n        }\n      ]\n    },\n    \"cards\": {\n      \"count\": 12,\n      \"volume_usd\": \"230.50\",\n      \"active_cards\": 1,\n      \"by_status\": [\n        {\n          \"status\": \"settled\",\n          \"count\": 10,\n          \"volume_usd\": \"205.00\"\n        }\n      ],\n      \"top_merchants\": [\n        {\n          \"merchant\": \"AMAZON\",\n          \"count\": 4,\n          \"volume_usd\": \"98.20\"\n        }\n      ]\n    }\n  },\n  \"spending\": {\n    \"total_usd\": \"34.50\",\n    \"by_service\": {\n      \"banking_customer\": {\n        \"count\": 11,\n        \"fees_usd\": \"11.00\"\n      }\n    }\n  },\n  \"balances\": {\n    \"items\": [\n      {\n        \"asset\": \"USDT\",\n        \"available\": \"1520.250000\",\n        \"held\": \"0.000000\",\n        \"usd_estimate\": \"1520.25\"\n      }\n    ],\n    \"net_worth_usd_estimate\": \"1833.93\"\n  }\n}"
+              "body": "{\n  \"account_id\": \"ae8cf540-22a9-414d-82cc-8ac04732be4f\",\n  \"from\": \"2026-07-01\",\n  \"to\": \"2026-07-10\",\n  \"granularity\": \"day\",\n  \"timezone\": \"UTC\",\n  \"gross_volume\": {\n    \"in\": \"636936.87\",\n    \"out\": \"270118.87\",\n    \"total\": \"907055.74\",\n    \"series\": [\n      {\n        \"date\": \"2026-07-01\",\n        \"in\": \"51023.10\",\n        \"out\": \"31210.44\",\n        \"total\": \"82233.54\"\n      }\n    ],\n    \"previous_period\": {\n      \"in\": \"512300.00\",\n      \"out\": \"241000.10\",\n      \"total\": \"753300.10\"\n    },\n    \"change_pct\": \"20.41\",\n    \"unpriced_assets\": []\n  },\n  \"transactions\": {\n    \"total\": 92,\n    \"series\": [\n      {\n        \"date\": \"2026-07-01\",\n        \"in\": 3,\n        \"out\": 5,\n        \"total\": 8\n      }\n    ],\n    \"previous_period\": {\n      \"total\": 71\n    },\n    \"change_pct\": \"29.58\"\n  },\n  \"new_users\": {\n    \"total\": 11,\n    \"series\": [\n      {\n        \"date\": \"2026-07-01\",\n        \"count\": 1\n      }\n    ],\n    \"previous_period\": {\n      \"total\": 6\n    },\n    \"change_pct\": \"83.33\"\n  },\n  \"by_country\": [\n    {\n      \"country\": \"BR\",\n      \"payouts\": {\n        \"count\": 18,\n        \"volume_usd\": \"3410.20\"\n      },\n      \"payins\": {\n        \"count\": 4,\n        \"volume_usd\": \"820.00\"\n      },\n      \"total_usd\": \"4230.20\"\n    }\n  ],\n  \"sections\": {\n    \"payouts\": {\n      \"count\": 24,\n      \"volume_usd\": \"5120.40\",\n      \"fees_usd\": \"7.20\",\n      \"by_status\": [\n        {\n          \"key\": \"completed\",\n          \"count\": 21,\n          \"volume_usd\": \"4980.10\"\n        }\n      ],\n      \"by_country\": [\n        {\n          \"country\": \"BR\",\n          \"count\": 18,\n          \"volume_usd\": \"3410.20\",\n          \"local_volume\": {\n            \"BRL\": \"17550\"\n          }\n        }\n      ],\n      \"by_method\": [\n        {\n          \"key\": \"pix\",\n          \"count\": 18,\n          \"volume_usd\": \"3410.20\"\n        }\n      ]\n    },\n    \"cards\": {\n      \"count\": 12,\n      \"volume_usd\": \"230.50\",\n      \"active_cards\": 1,\n      \"by_status\": [\n        {\n          \"status\": \"settled\",\n          \"count\": 10,\n          \"volume_usd\": \"205.00\"\n        }\n      ],\n      \"top_merchants\": [\n        {\n          \"merchant\": \"AMAZON\",\n          \"count\": 4,\n          \"volume_usd\": \"98.20\"\n        }\n      ]\n    },\n    \"banking\": {\n      \"new_third_parties\": 11,\n      \"new_accounts\": 14,\n      \"operations\": 6,\n      \"volume\": {\n        \"in\": {\n          \"count\": 4,\n          \"volume_usd\": \"1200.00\"\n        },\n        \"out\": {\n          \"count\": 9,\n          \"volume_usd\": \"3450.00\"\n        },\n        \"volume_usd\": \"4650.00\"\n      },\n      \"fees_usd\": \"18.00\"\n    },\n    \"verifications\": {\n      \"submissions\": [\n        {\n          \"kind\": \"kyc\",\n          \"status\": \"approved\",\n          \"count\": 3\n        }\n      ],\n      \"fees_usd\": \"9.00\",\n      \"fees_by_kind\": {\n        \"kyc_verification\": {\n          \"count\": 3,\n          \"fees_usd\": \"6.00\"\n        },\n        \"kyb_verification\": {\n          \"count\": 1,\n          \"fees_usd\": \"3.00\"\n        }\n      }\n    }\n  },\n  \"spending\": {\n    \"total_usd\": \"34.50\",\n    \"by_service\": {\n      \"banking_customer\": {\n        \"count\": 11,\n        \"fees_usd\": \"11.00\"\n      }\n    }\n  },\n  \"balances\": {\n    \"items\": [\n      {\n        \"asset\": \"USDT\",\n        \"available\": \"1520.250000\",\n        \"held\": \"0.000000\",\n        \"usd_estimate\": \"1520.25\"\n      }\n    ],\n    \"net_worth_usd_estimate\": \"1833.93\"\n  }\n}"
             }
           ]
         }

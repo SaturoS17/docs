@@ -381,9 +381,22 @@ Response `202`:
 
 - The final state arrives through the `banking_operation_status_changed`
   webhook (`completed` / `failed`); you can also poll
-  `GET /v1/banking/operations/{id}`.
+  `GET /v1/banking/operations/{id}`. Once the operation reaches a final
+  state, the webhook includes its `receipt_url` and you can download the
+  PDF receipt with `GET /v1/banking/operations/{id}/receipt`
+  ([receipts](/en/guides/receipts)).
 - Retries with the same `Idempotency-Key` return the original operation
   (`idempotency_hit: true`) **without charging the fee again**.
+
+<Note>
+**Complete traceability.** Every banking operation is recorded on your
+account: it shows up in the `banking_operations` section of the
+[statement](/en/guides/statement), its money reconciles in the
+`BANK_USD`/`BANK_EUR` mirror balances (`assets` section), and its volume
+adds to the `gross_volume` in [analytics](/en/guides/analytics). The
+authoritative balance remains the bank's: the mirror is reconciled
+periodically.
+</Note>
 
 The full history, with filters:
 
