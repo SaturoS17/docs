@@ -8,6 +8,29 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="11 de julio de 2026" description="v1.45">
+
+**Agregado — Toda cuenta nace con sus wallets de depósito**
+
+- Al crear una cuenta (persona o empresa) se aprovisionan automáticamente y
+  **sin costo** sus tres wallets de depósito crypto: `tron`/`usdt`,
+  `eth`/`usdt` y `eth`/`usdc`. Apenas registrada, `GET /v1/crypto/wallets`
+  ya devuelve las tres direcciones (la provisión corre en segundo plano;
+  si consultas en el mismo segundo puede tardar unos instantes).
+- `POST /v1/crypto/wallets` queda para wallets **adicionales** (empresas);
+  las personas ya tienen ocupado el cupo de cada combinación desde el
+  registro. Las cuentas creadas antes de este cambio fueron completadas con
+  las wallets que les faltaban.
+
+**Cambiado**
+
+- El registro público de cuentas ahora tiene límite de velocidad por IP
+  (`429 too_many_attempts`).
+
+Guía: [crypto](/es/guias/crypto).
+
+</Update>
+
 <Update label="11 de julio de 2026" description="v1.44">
 
 **Agregado — Trazabilidad total: banking en la cartola, comisiones desglosadas y custodia de wallets**

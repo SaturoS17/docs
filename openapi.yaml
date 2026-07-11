@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.44'
+  version: '1.45'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -5602,16 +5602,19 @@ paths:
       tags:
       - Crypto
       operationId: createCryptoWallet
-      summary: Create a wallet
-      description: 'Creates a new on-chain wallet for the calling account. Supported pairs: `tron`/`usdt`,
-        `eth`/`usdt`, `eth`/`usdc` — every deposit credits the wallet''s own asset balance. Person accounts
-        hold **one wallet per network+asset**; company accounts can create **unlimited** wallets (use
-        `label` to tell them apart).
+      summary: Create an additional wallet
+      description: 'Creates an **additional** on-chain wallet for the calling account. Every account is
+        born with one free wallet per supported pair (`tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc` —
+        provisioned automatically in the background on registration), so this endpoint is for extra
+        wallets. Every deposit credits the wallet''s own asset balance. Person accounts hold **one wallet
+        per network+asset** (the birth wallets already take each slot, so a manual creation responds `422
+        wallet_limit_reached`); company accounts can create **unlimited** wallets (use `label` to tell
+        them apart).
 
 
-        Every creation bills the `wallet_creation` fee when configured by CBPay (fixed per wallet; 0 =
-        free, the default; configurable per account). The charge is refunded automatically if creation
-        fails.'
+        Every additional creation bills the `wallet_creation` fee when configured by CBPay (fixed per
+        wallet; 0 = free, the default; configurable per account); birth wallets are always free. The
+        charge is refunded automatically if creation fails.'
       requestBody:
         required: true
         content:

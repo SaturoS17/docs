@@ -7,6 +7,30 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 11, 2026" description="v1.45">
+
+**Added — Every account is born with its deposit wallets**
+
+- When an account is created (person or company), its three crypto deposit
+  wallets are provisioned automatically and **free of charge**:
+  `tron`/`usdt`, `eth`/`usdt` and `eth`/`usdc`. Right after registration,
+  `GET /v1/crypto/wallets` already returns the three addresses
+  (provisioning runs in the background; querying at the very second of
+  registration may take a few moments).
+- `POST /v1/crypto/wallets` is now for **additional** wallets (companies);
+  persons already hold each combination's slot since registration.
+  Accounts created before this change were backfilled with any missing
+  wallets.
+
+**Changed**
+
+- Public account registration is now rate limited per IP
+  (`429 too_many_attempts`).
+
+Guide: [crypto](/en/guides/crypto).
+
+</Update>
+
 <Update label="July 11, 2026" description="v1.44">
 
 **Added — Full traceability: banking in the statement, itemized fees and wallet custody**

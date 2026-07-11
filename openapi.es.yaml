@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.44'
+  version: '1.45'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -5612,16 +5612,19 @@ paths:
       tags:
       - Crypto
       operationId: createCryptoWallet
-      summary: Crear una wallet
-      description: 'Crea una nueva wallet on-chain para la cuenta que llama. Pares soportados: `tron`/`usdt`,
-        `eth`/`usdt`, `eth`/`usdc` — cada depósito acredita el saldo del activo de su wallet. Las cuentas
-        de persona mantienen **una wallet por red+activo**; las cuentas de empresa pueden crear wallets
+      summary: Crear una wallet adicional
+      description: 'Crea una wallet on-chain **adicional** para la cuenta que llama. Toda cuenta nace con
+        una wallet gratis por cada par soportado (`tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc` — se
+        aprovisionan automáticamente en segundo plano al registrarse), así que este endpoint es para
+        wallets extra. Cada depósito acredita el saldo del activo de su wallet. Las cuentas de persona
+        mantienen **una wallet por red+activo** (las de nacimiento ya ocupan cada cupo, por lo que una
+        creación manual responde `422 wallet_limit_reached`); las cuentas de empresa pueden crear wallets
         **ilimitadas** (usa `label` para distinguirlas).
 
 
-        Cada creación cobra la comisión `wallet_creation` cuando CBPay la tiene configurada (fija por
-        wallet; 0 = gratis, el valor por defecto; configurable por cuenta). El cargo se reembolsa automáticamente
-        si la creación falla.'
+        Cada creación adicional cobra la comisión `wallet_creation` cuando CBPay la tiene configurada
+        (fija por wallet; 0 = gratis, el valor por defecto; configurable por cuenta); las wallets de
+        nacimiento son siempre gratis. El cargo se reembolsa automáticamente si la creación falla.'
       requestBody:
         required: true
         content:

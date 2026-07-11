@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-11 23:07 UTC · versión `c9d4728b73ed`
+> **Documento actualizado:** 2026-07-11 23:47 UTC · versión `bc3e8ee45679`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.44 (11 de julio de 2026) |
+| Versión de la documentación | v1.45 (11 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -3873,22 +3873,49 @@ flowchart LR
     end
 ```
 
+### Tu cuenta nace con sus wallets
+
+Toda cuenta — persona y empresa — se crea con **una wallet de depósito por
+cada combinación soportada** (`tron`/`usdt`, `eth`/`usdt` y `eth`/`usdc`),
+**sin costo** y de forma automática: apenas te registras ya tienes tus tres
+direcciones listas para recibir fondos.
+
+```bash
+# Recién creada la cuenta, tus direcciones ya existen:
+curl https://api.qbank.cl/platform/v1/crypto/wallets \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "page": 1,
+  "page_size": 50,
+  "wallets": [
+    { "wallet_id": "9d68…", "chain": "tron", "asset": "USDT", "address": "TXMD…", "label": "", "created_at": "2026-07-11T23:33:20Z" },
+    { "wallet_id": "a83d…", "chain": "eth", "asset": "USDT", "address": "0xefe0…", "label": "", "created_at": "2026-07-11T23:33:20Z" },
+    { "wallet_id": "fb88…", "chain": "eth", "asset": "USDC", "address": "0xa072…", "label": "", "created_at": "2026-07-11T23:33:20Z" }
+  ]
+}
+```
+
+> **Nota**
+La provisión corre en segundo plano al crear la cuenta: si consultas en el
+mismo segundo del registro puede faltar alguna dirección — reintenta a los
+pocos segundos.
 Las wallets son **puertas de entrada**: puedes tener varias (empresas), pero
 el saldo de la cuenta es uno solo.
 
 | Tipo de cuenta | Wallets por red |
 |---|---|
-| Persona | **1** |
+| Persona | **1** (las de nacimiento ya ocupan el cupo de cada combinación) |
 | Empresa | **Ilimitadas** (usa `label` para distinguirlas) |
 
-### Crear una wallet
+### Crear wallets adicionales
 
-```bash Persona (1 por red)
-curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{ "chain": "tron" }'
-```
+`POST /v1/crypto/wallets` queda para wallets **adicionales**: las empresas
+pueden crear tantas como necesiten (una por proveedor, por sucursal, por
+producto…). Las personas ya tienen su wallet de cada combinación desde el
+registro, así que una creación manual responde `422 wallet_limit_reached`.
 
 ```bash Empresa (con label, ilimitadas)
 curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
@@ -3948,14 +3975,14 @@ Si una persona intenta una segunda wallet en la misma red — `422`:
 }
 ```
 
-- Cada creación tiene un **costo fijo** (`wallet_creation`) configurado por
+- Las wallets **de nacimiento son siempre gratis**. Las creaciones
+  adicionales tienen un **costo fijo** (`wallet_creation`) configurado por
   CBPay — puede diferenciarse para personas y empresas, e incluso por
   cuenta. Con comisión 0 (el default) es gratis. Si la creación falla, el
   cargo se reembolsa automáticamente.
 - Una **persona** que ya tiene wallet en esa red recibe
   `422 wallet_limit_reached`; las **empresas** pueden crear tantas como
-  necesiten (una por proveedor, por sucursal, por producto…). Todas las
-  diferencias persona/empresa están en
+  necesiten. Todas las diferencias persona/empresa están en
   [personas y empresas](#personas-y-empresas).
 - `label` es opcional y solo descriptivo.
 
@@ -7881,9 +7908,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-11 23:07 UTC · 215 requests · versión `5a9c13cfd6c7`
+> **Colección actualizada:** 2026-07-11 23:47 UTC · 215 requests · versión `efe4e34aaf11`
 
-<PostmanFreshness iso="2026-07-11T23:07:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-11T23:47:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -7917,6 +7944,27 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.45 — 11 de julio de 2026
+
+**Agregado — Toda cuenta nace con sus wallets de depósito**
+
+- Al crear una cuenta (persona o empresa) se aprovisionan automáticamente y
+  **sin costo** sus tres wallets de depósito crypto: `tron`/`usdt`,
+  `eth`/`usdt` y `eth`/`usdc`. Apenas registrada, `GET /v1/crypto/wallets`
+  ya devuelve las tres direcciones (la provisión corre en segundo plano;
+  si consultas en el mismo segundo puede tardar unos instantes).
+- `POST /v1/crypto/wallets` queda para wallets **adicionales** (empresas);
+  las personas ya tienen ocupado el cupo de cada combinación desde el
+  registro. Las cuentas creadas antes de este cambio fueron completadas con
+  las wallets que les faltaban.
+
+**Cambiado**
+
+- El registro público de cuentas ahora tiene límite de velocidad por IP
+  (`429 too_many_attempts`).
+
+Guía: [crypto](#crypto-wallets-depositos-y-retiros).
 
 ### v1.44 — 11 de julio de 2026
 
@@ -8960,7 +9008,7 @@ está en la API Reference interactiva y en la colección Postman.
 | `GET` | `/v1/crypto/withdrawals/{withdrawalID}` | Obtener un retiro |
 | `GET` | `/v1/crypto/transactions` | Listar actividad on-chain |
 | `GET` | `/v1/crypto/wallets` | Listar mis wallets |
-| `POST` | `/v1/crypto/wallets` | Crear una wallet |
+| `POST` | `/v1/crypto/wallets` | Crear una wallet adicional |
 
 
 ## AML screening

@@ -32,24 +32,53 @@ flowchart LR
     end
 ```
 
+## Your account is born with its wallets
+
+Every account — person and company — is created with **one deposit wallet
+per supported combination** (`tron`/`usdt`, `eth`/`usdt` and `eth`/`usdc`),
+**free of charge** and automatically: as soon as you register, your three
+addresses are ready to receive funds.
+
+```bash
+# Right after creating the account, your addresses already exist:
+curl https://api.qbank.cl/platform/v1/crypto/wallets \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "page": 1,
+  "page_size": 50,
+  "wallets": [
+    { "wallet_id": "9d68…", "chain": "tron", "asset": "USDT", "address": "TXMD…", "label": "", "created_at": "2026-07-11T23:33:20Z" },
+    { "wallet_id": "a83d…", "chain": "eth", "asset": "USDT", "address": "0xefe0…", "label": "", "created_at": "2026-07-11T23:33:20Z" },
+    { "wallet_id": "fb88…", "chain": "eth", "asset": "USDC", "address": "0xa072…", "label": "", "created_at": "2026-07-11T23:33:20Z" }
+  ]
+}
+```
+
+<Note>
+Provisioning runs in the background when the account is created: if you
+query at the very second of registration an address may still be missing —
+retry a few seconds later.
+</Note>
+
 Wallets are **entry doors**: you can hold several (companies), but the
 account balance is a single one.
 
 | Account type | Wallets per network |
 |---|---|
-| Person | **1** |
+| Person | **1** (the birth wallets already take each combination's slot) |
 | Company | **Unlimited** (use `label` to tell them apart) |
 
-## Create a wallet
+## Create additional wallets
+
+`POST /v1/crypto/wallets` is for **additional** wallets: companies can
+create as many as they need (one per supplier, per branch, per product…).
+Persons already hold their wallet for each combination since registration,
+so a manual creation responds `422 wallet_limit_reached`.
 
 <CodeGroup>
-
-```bash Person (1 per network)
-curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{ "chain": "tron" }'
-```
 
 ```bash Company (with label, unlimited)
 curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
@@ -111,14 +140,13 @@ If a person attempts a second wallet on the same network — `422`:
 }
 ```
 
-- Every creation carries a **fixed cost** (`wallet_creation`) configured by
-  CBPay — it can differ for persons and companies, and even per account.
-  With a fee of 0 (the default) it is free. If creation fails, the charge is
-  refunded automatically.
+- Birth wallets are **always free**. Additional creations carry a **fixed
+  cost** (`wallet_creation`) configured by CBPay — it can differ for persons
+  and companies, and even per account. With a fee of 0 (the default) it is
+  free. If creation fails, the charge is refunded automatically.
 - A **person** who already holds a wallet on that network receives
-  `422 wallet_limit_reached`; **companies** can create as many as they need
-  (one per supplier, per branch, per product…). All person/company
-  differences live in
+  `422 wallet_limit_reached`; **companies** can create as many as they
+  need. All person/company differences live in
   [persons and companies](/en/concepts/persons-companies).
 - `label` is optional and descriptive only.
 
