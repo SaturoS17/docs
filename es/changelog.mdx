@@ -8,6 +8,27 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="11 de julio de 2026" description="v1.43">
+
+**Agregado — Series históricas para tu dashboard**
+
+- **`GET /v1/rates/history`**: la evolución de las tasas de cambio de tu
+  cuenta (punta payout y payin por punto), con granularidad `day` u `hour`,
+  y `change_pct` con signo por moneda — listo para el gráfico de tasas con
+  su badge "+3.4% / −3.0%". Incluye las series de referencia USD de BTC y
+  GOLD.
+- **`GET /v1/balances/history`**: la evolución diaria de tus saldos — una
+  serie por asset con el saldo de cierre de cada día (sin huecos), la serie
+  agregada en USD valorizada al precio histórico de cada día, las
+  entradas/salidas del período y el snapshot actual — todo lo necesario
+  para la tarjeta de saldo con gráfico.
+- El historial de tasas nace con un backfill de ~90 días de tasas diarias y
+  se registra continuamente hacia adelante.
+
+Ejemplos completos en [analytics](/es/guias/analytics).
+
+</Update>
+
 <Update label="11 de julio de 2026" description="v1.42">
 
 **Agregado — Comprobantes PDF con verificación de autenticidad**

@@ -228,13 +228,151 @@ was billed:
 }
 ```
 
+## Balance evolution — `GET /v1/balances/history`
+
+For the balance card with a chart (the "last 30 days balance" with its ▲▼):
+a **daily** series per asset with each day's closing balance, plus the
+aggregated USD series and the period's inflows/outflows.
+
+```bash
+curl "https://api.qbank.cl/platform/v1/balances/history?from=2026-06-12&to=2026-07-11" \
+  -H "Authorization: Bearer <token>"
+```
+
+| Parameter | Required | Description |
+|---|---|---|
+| `from` / `to` | Yes | `YYYY-MM-DD` range in UTC, both inclusive; max 366 days |
+
+```json
+{
+  "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "from": "2026-06-12",
+  "to": "2026-07-11",
+  "granularity": "day",
+  "timezone": "UTC",
+  "assets": {
+    "USDT": {
+      "series": [
+        { "date": "2026-06-12", "balance": "100.000000" },
+        { "date": "2026-06-13", "balance": "100.000000" },
+        { "date": "2026-07-11", "balance": "125.430000" }
+      ],
+      "first": "100.000000",
+      "last": "125.430000",
+      "change_pct": "25.43"
+    },
+    "BTC": {
+      "series": [
+        { "date": "2026-06-12", "balance": "0.00060000" },
+        { "date": "2026-07-11", "balance": "0.00060000" }
+      ],
+      "first": "0.00060000",
+      "last": "0.00060000",
+      "change_pct": "0.00"
+    }
+  },
+  "total_usd": {
+    "series": [
+      { "date": "2026-06-12", "balance_usd": "163.73" },
+      { "date": "2026-07-11", "balance_usd": "191.34" }
+    ],
+    "first": "163.73",
+    "last": "191.34",
+    "change_pct": "16.86",
+    "spot_priced_dates": [],
+    "unpriced_assets": []
+  },
+  "period": { "in_usd": "280.20", "out_usd": "254.77", "net_usd": "25.43" },
+  "current": {
+    "items": [
+      { "asset": "USDT", "available": "125.430000", "held": "10.000000", "usd_estimate": "135.43" },
+      { "asset": "BTC", "available": "0.00060000", "held": "0.00000000", "usd_estimate": "65.91" }
+    ],
+    "net_worth_usd_estimate": "201.34"
+  }
+}
+```
+
+- Each point is the **available balance at that day's close** (UTC); days
+  without movements carry the previous day's balance forward, so the
+  series has no gaps and charts directly.
+- `total_usd` values BTC/GOLD at **each day's historical price**. When a
+  day has no historical price yet, today's spot is used and that day is
+  disclosed in `spot_priced_dates` (values are never invented).
+- `period.in_usd`/`out_usd` are the range's total inflows and outflows
+  (same classification as `gross_volume`) — the "↗ $280.2K ↘ −$254.8K" of
+  the card.
+- `current` is today's snapshot with both `available` **and** `held` (the
+  historical series only tracks the available balance: holds have no
+  history).
+
+## Your rates over time — `GET /v1/rates/history`
+
+The time series of **your account's** FX rates (the same rates as
+`GET /v1/rates`, with your configuration already applied), for the rate
+evolution chart with its "+3.4% / −3.0%" badge:
+
+```bash
+curl "https://api.qbank.cl/platform/v1/rates/history?from=2026-06-12&to=2026-07-11&granularity=day" \
+  -H "Authorization: Bearer <token>"
+```
+
+| Parameter | Required | Description |
+|---|---|---|
+| `from` / `to` | Yes | `YYYY-MM-DD` range in UTC, both inclusive |
+| `granularity` | No | `day` (default, max 366 days) or `hour` (max 31 days) |
+| `currency` | No | Filter one currency (e.g. `CLP`) |
+
+```json
+{
+  "base": "USD",
+  "from": "2026-06-12",
+  "to": "2026-07-11",
+  "granularity": "day",
+  "rates": {
+    "chile": {
+      "currency": "CLP",
+      "series": [
+        { "date": "2026-06-12", "rate": "939.068965", "payin_rate": "967.452325" },
+        { "date": "2026-07-11", "rate": "910.896551", "payin_rate": "938.428400" }
+      ],
+      "first": "939.068965",
+      "last": "910.896551",
+      "change_pct": "-3.00"
+    }
+  },
+  "asset_prices": {
+    "BTC": {
+      "currency": "USD",
+      "unit": "btc",
+      "series": [
+        { "date": "2026-06-12", "price": "106214.55" },
+        { "date": "2026-07-11", "price": "109853.24" }
+      ],
+      "first": "106214.55",
+      "last": "109853.24",
+      "change_pct": "3.43"
+    }
+  },
+  "retrieved_at": "2026-07-11T15:00:00Z"
+}
+```
+
+- `rate` is the payout side and `payin_rate` the deposit side — the same
+  two rates as the current snapshot, point by point.
+- `change_pct` comes signed (`"3.43"` up, `"-3.00"` down): use it directly
+  to color the badge green/red.
+- Buckets without data carry the last known value forward; days before
+  history started are simply absent.
+
 ## Errors
 
 | HTTP | `error` | What to do |
 |---|---|---|
 | 400 | `invalid_range` | `from`/`to` are required (`YYYY-MM-DD`) and the range max is 366 days |
-| 400 | `invalid_granularity` | Use `day`, `week` or `month` |
+| 400 | `invalid_granularity` | Use `day`, `week` or `month` (histories: `day` or `hour`) |
 | 403 | `account_required` | The endpoint requires an account credential |
+| 502 | `rates_unavailable` | Rate history temporarily unavailable; retry in a few seconds |
 
 ## FAQ
 
@@ -262,5 +400,22 @@ analytics endpoint is the aggregated view for charts.
 </Accordion>
 <Accordion title="How fresh is the data?">
 Real time: every credited operation appears in the next call.
+</Accordion>
+<Accordion title="Since when is rate history available?">
+Rate history is recorded continuously (every time the rate changes) and
+includes an initial backfill of ~90 days of daily rates. If you request a
+range before history started, those days are simply absent from the
+series — values are never invented.
+</Accordion>
+<Accordion title="Does the balance history include holds?">
+No: the series tracks the available balance at each day's close. Holds
+(in-flight payouts, card holds) have no history; today's `held` comes in
+the `current` block.
+</Accordion>
+<Accordion title="Why would my rate's change differ from the market's?">
+It doesn't: your rate derives from the market rate through your commercial
+configuration, which is a constant factor — the percentage change is the
+same. What you see charted is exactly what you would have gotten operating
+each day.
 </Accordion>
 </AccordionGroup>

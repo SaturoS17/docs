@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — that never mix or convert automatically.\nPayouts and service fees can be paid from any of the four balances:\nset a default with `PUT /v1/settlement` or override per payout with\n`settlement_asset`.\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-11 15:47 UTC",
-    "_content_sha256": "e6d273155b8934101631f70d90113f943c8c095fdc4756bf1ecde1cc305c49ca"
+    "_generated_at": "2026-07-11 17:22 UTC",
+    "_content_sha256": "bdf338d245752c78c41315646c39d0f476140f50b484592305ec0a1fe7cd26ee"
   },
   "auth": {
     "type": "bearer",
@@ -2268,6 +2268,82 @@
           ]
         },
         {
+          "name": "Get balance history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/balances/history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "balances",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": false,
+                  "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": false,
+                  "description": "End date (YYYY-MM-DD, UTC, inclusive). Max range 366 days."
+                }
+              ]
+            },
+            "description": "Daily evolution of the account's balances for dashboard charts: one series per asset (the closing available balance of each day, carried forward on days without movements) plus an aggregated USD series that values BTC/GOLD at each day's historical reference price. Includes the period's total inflows/outflows and the current snapshot (available + held), so a front can render a Mercury-style balance card with its percentage change. The series tracks the **available** balance (holds have no history); `current` carries today's `held` per asset. Days valued with today's spot price (before historical prices exist) are disclosed in `spot_priced_dates` — values are never invented."
+          },
+          "response": [
+            {
+              "name": "200 Daily balance series per asset plus USD aggregate.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/balances/history",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "balances",
+                    "history"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": false,
+                      "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": false,
+                      "description": "End date (YYYY-MM-DD, UTC, inclusive). Max range 366 days."
+                    }
+                  ]
+                }
+              },
+              "status": "Daily balance series per asset plus USD aggregate.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"from\": \"2026-06-12\",\n  \"to\": \"2026-07-11\",\n  \"granularity\": \"day\",\n  \"timezone\": \"UTC\",\n  \"assets\": {\n    \"USDT\": {\n      \"series\": [\n        {\n          \"date\": \"2026-06-12\",\n          \"balance\": \"100.000000\"\n        },\n        {\n          \"date\": \"2026-06-13\",\n          \"balance\": \"100.000000\"\n        },\n        {\n          \"date\": \"2026-07-11\",\n          \"balance\": \"125.430000\"\n        }\n      ],\n      \"first\": \"100.000000\",\n      \"last\": \"125.430000\",\n      \"change_pct\": \"25.43\"\n    },\n    \"BTC\": {\n      \"series\": [\n        {\n          \"date\": \"2026-06-12\",\n          \"balance\": \"0.00060000\"\n        },\n        {\n          \"date\": \"2026-07-11\",\n          \"balance\": \"0.00060000\"\n        }\n      ],\n      \"first\": \"0.00060000\",\n      \"last\": \"0.00060000\",\n      \"change_pct\": \"0.00\"\n    }\n  },\n  \"total_usd\": {\n    \"series\": [\n      {\n        \"date\": \"2026-06-12\",\n        \"balance_usd\": \"163.73\"\n      },\n      {\n        \"date\": \"2026-07-11\",\n        \"balance_usd\": \"191.34\"\n      }\n    ],\n    \"first\": \"163.73\",\n    \"last\": \"191.34\",\n    \"change_pct\": \"16.86\",\n    \"spot_priced_dates\": [],\n    \"unpriced_assets\": []\n  },\n  \"period\": {\n    \"in_usd\": \"280.20\",\n    \"out_usd\": \"254.77\",\n    \"net_usd\": \"25.43\"\n  },\n  \"current\": {\n    \"items\": [\n      {\n        \"asset\": \"USDT\",\n        \"available\": \"125.430000\",\n        \"held\": \"10.000000\",\n        \"usd_estimate\": \"135.43\"\n      },\n      {\n        \"asset\": \"USDC\",\n        \"available\": \"0.000000\",\n        \"held\": \"0.000000\",\n        \"usd_estimate\": \"0.00\"\n      },\n      {\n        \"asset\": \"BTC\",\n        \"available\": \"0.00060000\",\n        \"held\": \"0.00000000\",\n        \"usd_estimate\": \"65.91\"\n      },\n      {\n        \"asset\": \"GOLD\",\n        \"available\": \"0.000000\",\n        \"held\": \"0.000000\",\n        \"usd_estimate\": \"0.00\"\n      }\n    ],\n    \"net_worth_usd_estimate\": \"201.34\"\n  }\n}"
+            }
+          ]
+        },
+        {
           "name": "List movements",
           "request": {
             "method": "GET",
@@ -2428,6 +2504,106 @@
                 }
               ],
               "body": "{\n  \"base\": \"USD\",\n  \"rates\": {\n    \"chile\": {\n      \"currency\": \"CLP\",\n      \"rate\": \"950.25\",\n      \"payin_rate\": \"955.10\"\n    },\n    \"mexico\": {\n      \"currency\": \"MXN\",\n      \"rate\": \"17.50\",\n      \"payin_rate\": \"17.62\"\n    },\n    \"peru\": {\n      \"currency\": \"PEN\",\n      \"rate\": \"3.72\",\n      \"payin_rate\": \"3.75\"\n    }\n  },\n  \"asset_prices\": {\n    \"USDT\": {\n      \"currency\": \"USD\",\n      \"unit\": \"usdt\",\n      \"price\": \"1\"\n    },\n    \"USDC\": {\n      \"currency\": \"USD\",\n      \"unit\": \"usdc\",\n      \"price\": \"1\"\n    },\n    \"BTC\": {\n      \"currency\": \"USD\",\n      \"unit\": \"btc\",\n      \"price\": \"109853.24\",\n      \"source\": \"chainlink\",\n      \"updated_at\": \"2026-07-07T11:59:41Z\",\n      \"settlement_grade\": true\n    },\n    \"GOLD\": {\n      \"currency\": \"USD\",\n      \"unit\": \"gram\",\n      \"price\": \"107.5341\",\n      \"source\": \"chainlink\",\n      \"updated_at\": \"2026-07-07T09:12:05Z\",\n      \"settlement_grade\": true\n    }\n  },\n  \"settlement\": {\n    \"default_asset\": \"USDT\",\n    \"assets\": [\n      {\n        \"asset\": \"USDT\",\n        \"available\": true,\n        \"settlement_rate\": \"1\"\n      },\n      {\n        \"asset\": \"USDC\",\n        \"available\": true,\n        \"settlement_rate\": \"0.99900000\"\n      },\n      {\n        \"asset\": \"BTC\",\n        \"available\": true,\n        \"settlement_rate\": \"109029.34070000\"\n      },\n      {\n        \"asset\": \"GOLD\",\n        \"available\": true,\n        \"settlement_rate\": \"106.99642950\"\n      }\n    ]\n  },\n  \"updated_at\": \"2026-07-07T12:00:00Z\",\n  \"fees\": [\n    {\n      \"id\": \"3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c\",\n      \"org_id\": \"1c9e7a2b-5f6d-4e3a-8c1b-2a9d8e7f6a5b\",\n      \"account_id\": \"\",\n      \"service\": \"payout\",\n      \"country\": \"CL\",\n      \"asset\": \"USDT\",\n      \"percent\": \"0\",\n      \"fixed_amount\": \"0.30\",\n      \"status\": \"active\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get FX rate history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/rates/history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "rates",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": false,
+                  "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": false,
+                  "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                },
+                {
+                  "key": "granularity",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Bucket size. Max range is 366 days for `day` and 31 days for `hour`."
+                },
+                {
+                  "key": "currency",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Optional local currency filter (e.g. CLP)."
+                }
+              ]
+            },
+            "description": "Time series of the FX rates that apply to the calling account, for rate-evolution charts. Each point carries the same rates you would get operating at that time — `rate` (payout side) and `payin_rate` (deposit side) — and every country block includes `first`, `last` and the signed `change_pct` between them, ready for a \"+3.4% / -3.0%\" badge. `asset_prices` carries the USD reference series for BTC and GOLD. Buckets without data carry the previous value forward; days before history started are omitted (never invented)."
+          },
+          "response": [
+            {
+              "name": "200 Rate series per country plus asset price series.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/rates/history",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "rates",
+                    "history"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": false,
+                      "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": false,
+                      "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                    },
+                    {
+                      "key": "granularity",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Bucket size. Max range is 366 days for `day` and 31 days for `hour`."
+                    },
+                    {
+                      "key": "currency",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Optional local currency filter (e.g. CLP)."
+                    }
+                  ]
+                }
+              },
+              "status": "Rate series per country plus asset price series.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"base\": \"USD\",\n  \"from\": \"2026-06-12\",\n  \"to\": \"2026-07-11\",\n  \"granularity\": \"day\",\n  \"rates\": {\n    \"chile\": {\n      \"currency\": \"CLP\",\n      \"series\": [\n        {\n          \"date\": \"2026-06-12\",\n          \"rate\": \"939.068965\",\n          \"payin_rate\": \"967.452325\"\n        },\n        {\n          \"date\": \"2026-06-13\",\n          \"rate\": \"940.886699\",\n          \"payin_rate\": \"969.325000\"\n        },\n        {\n          \"date\": \"2026-07-11\",\n          \"rate\": \"910.896551\",\n          \"payin_rate\": \"938.428400\"\n        }\n      ],\n      \"first\": \"939.068965\",\n      \"last\": \"910.896551\",\n      \"change_pct\": \"-3.00\"\n    },\n    \"mexico\": {\n      \"currency\": \"MXN\",\n      \"series\": [\n        {\n          \"date\": \"2026-06-12\",\n          \"rate\": \"17.241379\",\n          \"payin_rate\": \"17.762500\"\n        },\n        {\n          \"date\": \"2026-07-11\",\n          \"rate\": \"17.832512\",\n          \"payin_rate\": \"18.371500\"\n        }\n      ],\n      \"first\": \"17.241379\",\n      \"last\": \"17.832512\",\n      \"change_pct\": \"3.43\"\n    }\n  },\n  \"asset_prices\": {\n    \"BTC\": {\n      \"currency\": \"USD\",\n      \"unit\": \"btc\",\n      \"series\": [\n        {\n          \"date\": \"2026-06-12\",\n          \"price\": \"106214.55\"\n        },\n        {\n          \"date\": \"2026-07-11\",\n          \"price\": \"109853.24\"\n        }\n      ],\n      \"first\": \"106214.55\",\n      \"last\": \"109853.24\",\n      \"change_pct\": \"3.43\"\n    },\n    \"GOLD\": {\n      \"currency\": \"USD\",\n      \"unit\": \"gram\",\n      \"series\": [\n        {\n          \"date\": \"2026-06-12\",\n          \"price\": \"106.8812\"\n        },\n        {\n          \"date\": \"2026-07-11\",\n          \"price\": \"107.5341\"\n        }\n      ],\n      \"first\": \"106.8812\",\n      \"last\": \"107.5341\",\n      \"change_pct\": \"0.61\"\n    }\n  },\n  \"retrieved_at\": \"2026-07-11T15:00:00Z\"\n}"
             }
           ]
         },

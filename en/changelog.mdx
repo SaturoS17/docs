@@ -7,6 +7,27 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 11, 2026" description="v1.43">
+
+**Added — Historical series for your dashboard**
+
+- **`GET /v1/rates/history`**: the evolution of your account's FX rates
+  (payout and payin side per point), with `day` or `hour` granularity and
+  a signed `change_pct` per currency — ready for the rate chart with its
+  "+3.4% / −3.0%" badge. Includes the USD reference series for BTC and
+  GOLD.
+- **`GET /v1/balances/history`**: the daily evolution of your balances —
+  one series per asset with each day's closing balance (no gaps), the
+  aggregated USD series valued at each day's historical price, the
+  period's inflows/outflows and the current snapshot — everything needed
+  for the balance card with a chart.
+- Rate history starts with a ~90-day backfill of daily rates and is
+  recorded continuously going forward.
+
+Full examples in [analytics](/en/guides/analytics).
+
+</Update>
+
 <Update label="July 11, 2026" description="v1.42">
 
 **Added — PDF receipts with authenticity verification**

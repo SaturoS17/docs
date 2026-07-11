@@ -228,13 +228,150 @@ cobró cada servicio:
 }
 ```
 
+## Evolución del saldo — `GET /v1/balances/history`
+
+Para la tarjeta de saldo con gráfico (el "balance de los últimos 30 días"
+con su ▲▼): una serie **diaria** por asset con el saldo de cierre de cada
+día, más la serie agregada en USD y las entradas/salidas del período.
+
+```bash
+curl "https://api.qbank.cl/platform/v1/balances/history?from=2026-06-12&to=2026-07-11" \
+  -H "Authorization: Bearer <token>"
+```
+
+| Parámetro | Requerido | Descripción |
+|---|---|---|
+| `from` / `to` | Sí | Rango `YYYY-MM-DD` en UTC, ambos inclusive; máximo 366 días |
+
+```json
+{
+  "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "from": "2026-06-12",
+  "to": "2026-07-11",
+  "granularity": "day",
+  "timezone": "UTC",
+  "assets": {
+    "USDT": {
+      "series": [
+        { "date": "2026-06-12", "balance": "100.000000" },
+        { "date": "2026-06-13", "balance": "100.000000" },
+        { "date": "2026-07-11", "balance": "125.430000" }
+      ],
+      "first": "100.000000",
+      "last": "125.430000",
+      "change_pct": "25.43"
+    },
+    "BTC": {
+      "series": [
+        { "date": "2026-06-12", "balance": "0.00060000" },
+        { "date": "2026-07-11", "balance": "0.00060000" }
+      ],
+      "first": "0.00060000",
+      "last": "0.00060000",
+      "change_pct": "0.00"
+    }
+  },
+  "total_usd": {
+    "series": [
+      { "date": "2026-06-12", "balance_usd": "163.73" },
+      { "date": "2026-07-11", "balance_usd": "191.34" }
+    ],
+    "first": "163.73",
+    "last": "191.34",
+    "change_pct": "16.86",
+    "spot_priced_dates": [],
+    "unpriced_assets": []
+  },
+  "period": { "in_usd": "280.20", "out_usd": "254.77", "net_usd": "25.43" },
+  "current": {
+    "items": [
+      { "asset": "USDT", "available": "125.430000", "held": "10.000000", "usd_estimate": "135.43" },
+      { "asset": "BTC", "available": "0.00060000", "held": "0.00000000", "usd_estimate": "65.91" }
+    ],
+    "net_worth_usd_estimate": "201.34"
+  }
+}
+```
+
+- Cada punto es el **saldo disponible al cierre del día** (UTC); los días
+  sin movimientos arrastran el saldo del día anterior, así la serie queda
+  lista para graficar sin huecos.
+- `total_usd` valoriza BTC/GOLD al **precio histórico de cada día**. Si un
+  día aún no tiene precio histórico se usa el spot de hoy y ese día se
+  declara en `spot_priced_dates` (jamás inventamos valores).
+- `period.in_usd`/`out_usd` son las entradas y salidas totales del rango
+  (misma clasificación que `gross_volume`) — el "↗ $280.2K ↘ −$254.8K" de
+  la tarjeta.
+- `current` es el snapshot de hoy con `available` **y** `held` (la serie
+  histórica solo refleja el disponible: las retenciones no tienen historia).
+
+## Evolución de tus tasas — `GET /v1/rates/history`
+
+La serie temporal de las tasas de cambio de **tu cuenta** (las mismas de
+`GET /v1/rates`, con tu configuración ya aplicada) para el gráfico de
+evolución con su "+3.4% / −3.0%":
+
+```bash
+curl "https://api.qbank.cl/platform/v1/rates/history?from=2026-06-12&to=2026-07-11&granularity=day" \
+  -H "Authorization: Bearer <token>"
+```
+
+| Parámetro | Requerido | Descripción |
+|---|---|---|
+| `from` / `to` | Sí | Rango `YYYY-MM-DD` en UTC, ambos inclusive |
+| `granularity` | No | `day` (default, máx 366 días) o `hour` (máx 31 días) |
+| `currency` | No | Filtra una moneda (ej. `CLP`) |
+
+```json
+{
+  "base": "USD",
+  "from": "2026-06-12",
+  "to": "2026-07-11",
+  "granularity": "day",
+  "rates": {
+    "chile": {
+      "currency": "CLP",
+      "series": [
+        { "date": "2026-06-12", "rate": "939.068965", "payin_rate": "967.452325" },
+        { "date": "2026-07-11", "rate": "910.896551", "payin_rate": "938.428400" }
+      ],
+      "first": "939.068965",
+      "last": "910.896551",
+      "change_pct": "-3.00"
+    }
+  },
+  "asset_prices": {
+    "BTC": {
+      "currency": "USD",
+      "unit": "btc",
+      "series": [
+        { "date": "2026-06-12", "price": "106214.55" },
+        { "date": "2026-07-11", "price": "109853.24" }
+      ],
+      "first": "106214.55",
+      "last": "109853.24",
+      "change_pct": "3.43"
+    }
+  },
+  "retrieved_at": "2026-07-11T15:00:00Z"
+}
+```
+
+- `rate` es la punta de payouts y `payin_rate` la de depósitos — las
+  mismas dos tasas del snapshot actual, punto por punto.
+- `change_pct` viene con signo (`"3.43"` sube, `"-3.00"` baja): úsalo
+  directo para colorear el badge verde/rojo.
+- Los buckets sin datos arrastran el último valor conocido; los días
+  previos al inicio del historial simplemente no aparecen.
+
 ## Errores
 
 | HTTP | `error` | Qué hacer |
 |---|---|---|
 | 400 | `invalid_range` | `from`/`to` son obligatorios (`YYYY-MM-DD`), y el rango máximo es 366 días |
-| 400 | `invalid_granularity` | Usa `day`, `week` o `month` |
+| 400 | `invalid_granularity` | Usa `day`, `week` o `month` (en los historiales: `day` o `hour`) |
 | 403 | `account_required` | El endpoint requiere credencial de cuenta |
+| 502 | `rates_unavailable` | Historial de tasas temporalmente no disponible; reintenta en unos segundos |
 
 ## FAQ
 
@@ -262,5 +399,22 @@ para gráficos.
 </Accordion>
 <Accordion title="¿Cada cuánto se actualiza?">
 En tiempo real: cada operación acreditada aparece en la siguiente llamada.
+</Accordion>
+<Accordion title="¿Desde cuándo hay historial de tasas?">
+El historial de tasas se registra continuamente (cada vez que la tasa
+cambia) e incluye un backfill inicial de ~90 días de tasas diarias. Si
+pides un rango anterior al inicio del historial, esos días simplemente no
+aparecen en la serie — nunca se inventan valores.
+</Accordion>
+<Accordion title="¿El historial de saldo incluye las retenciones (held)?">
+No: la serie refleja el saldo disponible al cierre de cada día. Las
+retenciones (payouts en vuelo, holds de tarjeta) no tienen historia; el
+`held` vigente viene en el bloque `current`.
+</Accordion>
+<Accordion title="¿Por qué la variación de mi tasa difiere de la del mercado?">
+No difiere: tu tasa se deriva de la de mercado con tu configuración
+comercial, que es un factor constante — la variación porcentual es la
+misma. Lo que ves graficado es exactamente lo que habrías obtenido
+operando cada día.
 </Accordion>
 </AccordionGroup>

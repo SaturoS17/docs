@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.42'
+  version: '1.43'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -1051,6 +1051,220 @@ paths:
           $ref: '#/components/responses/AccountRequired'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/balances/history:
+    get:
+      tags:
+      - Saldos
+      operationId: getBalancesHistory
+      summary: Obtener historial de saldos
+      description: >
+        Evolución diaria de los saldos de la cuenta para gráficos de
+        dashboard: una serie por asset (el saldo disponible de cierre de
+        cada día, arrastrado en días sin movimientos) más una serie agregada
+        en USD que valoriza BTC/GOLD al precio de referencia histórico de
+        cada día. Incluye las entradas/salidas totales del período y el
+        snapshot actual (available + held), para que el front arme una
+        tarjeta de saldo estilo dashboard con su variación porcentual. La
+        serie refleja el saldo **disponible** (los holds no tienen
+        historia); `current` trae el `held` de hoy por asset. Los días
+        valorizados con el precio spot de hoy (antes de que exista precio
+        histórico) se declaran en `spot_priced_dates` — los valores jamás
+        se inventan.
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: Fecha inicial (YYYY-MM-DD, UTC, inclusive).
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: Fecha final (YYYY-MM-DD, UTC, inclusive). Rango máximo 366 días.
+      responses:
+        '200':
+          description: Serie diaria de saldo por asset más el agregado USD.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  account_id:
+                    type: string
+                  from:
+                    type: string
+                  to:
+                    type: string
+                  granularity:
+                    type: string
+                    example: day
+                  timezone:
+                    type: string
+                    example: UTC
+                  assets:
+                    type: object
+                    description: Una serie de saldo de cierre diario por asset.
+                    additionalProperties:
+                      type: object
+                      properties:
+                        series:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              date:
+                                type: string
+                                example: '2026-07-10'
+                              balance:
+                                type: string
+                                example: '125.430000'
+                        first:
+                          type: string
+                        last:
+                          type: string
+                        change_pct:
+                          type: string
+                          nullable: true
+                          description: Variación porcentual con signo primero→último (null cuando la serie parte en cero).
+                  total_usd:
+                    type: object
+                    description: Valor agregado en USD de todos los saldos por día.
+                    properties:
+                      series:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            date:
+                              type: string
+                            balance_usd:
+                              type: string
+                      first:
+                        type: string
+                      last:
+                        type: string
+                      change_pct:
+                        type: string
+                        nullable: true
+                      spot_priced_dates:
+                        type: array
+                        items:
+                          type: string
+                        description: Días valorizados con el precio spot de hoy porque no existía precio histórico.
+                      unpriced_assets:
+                        type: array
+                        items:
+                          type: string
+                        description: Assets excluidos del agregado USD por falta de precio.
+                  period:
+                    type: object
+                    description: Entradas/salidas totales del período en USD.
+                    properties:
+                      in_usd:
+                        type: string
+                      out_usd:
+                        type: string
+                      net_usd:
+                        type: string
+                  current:
+                    type: object
+                    description: Snapshot actual (available + held, valorizado a spot).
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            asset:
+                              type: string
+                            available:
+                              type: string
+                            held:
+                              type: string
+                            usd_estimate:
+                              type: string
+                              nullable: true
+                      net_worth_usd_estimate:
+                        type: string
+                        nullable: true
+              example:
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                from: '2026-06-12'
+                to: '2026-07-11'
+                granularity: day
+                timezone: UTC
+                assets:
+                  USDT:
+                    series:
+                    - date: '2026-06-12'
+                      balance: '100.000000'
+                    - date: '2026-06-13'
+                      balance: '100.000000'
+                    - date: '2026-07-11'
+                      balance: '125.430000'
+                    first: '100.000000'
+                    last: '125.430000'
+                    change_pct: '25.43'
+                  BTC:
+                    series:
+                    - date: '2026-06-12'
+                      balance: '0.00060000'
+                    - date: '2026-07-11'
+                      balance: '0.00060000'
+                    first: '0.00060000'
+                    last: '0.00060000'
+                    change_pct: '0.00'
+                total_usd:
+                  series:
+                  - date: '2026-06-12'
+                    balance_usd: '163.73'
+                  - date: '2026-07-11'
+                    balance_usd: '191.34'
+                  first: '163.73'
+                  last: '191.34'
+                  change_pct: '16.86'
+                  spot_priced_dates: []
+                  unpriced_assets: []
+                period:
+                  in_usd: '280.20'
+                  out_usd: '254.77'
+                  net_usd: '25.43'
+                current:
+                  items:
+                  - asset: USDT
+                    available: '125.430000'
+                    held: '10.000000'
+                    usd_estimate: '135.43'
+                  - asset: USDC
+                    available: '0.000000'
+                    held: '0.000000'
+                    usd_estimate: '0.00'
+                  - asset: BTC
+                    available: '0.00060000'
+                    held: '0.00000000'
+                    usd_estimate: '65.91'
+                  - asset: GOLD
+                    available: '0.000000'
+                    held: '0.000000'
+                    usd_estimate: '0.00'
+                  net_worth_usd_estimate: '201.34'
+        '400':
+          description: Rango de fechas faltante o inválido (`invalid_range`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_range
+                message: from and to are required (YYYY-MM-DD)
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/movements:
     get:
       tags:
@@ -1319,6 +1533,213 @@ paths:
               example:
                 error: rates_unavailable
                 message: could not fetch fx rates
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/rates/history:
+    get:
+      tags:
+      - Saldos
+      operationId: getRatesHistory
+      summary: Obtener historial de tasas de cambio
+      description: >
+        Serie temporal de las tasas de cambio que aplican a la cuenta que
+        llama, para gráficos de evolución. Cada punto trae las mismas tasas
+        que obtendrías operando en ese momento — `rate` (punta de payouts)
+        y `payin_rate` (punta de depósitos) — y cada país incluye `first`,
+        `last` y el `change_pct` con signo entre ambos, listo para el badge
+        "+3.4% / -3.0%". `asset_prices` trae la serie de referencia USD de
+        BTC y GOLD. Los buckets sin datos arrastran el valor anterior; los
+        días previos al inicio del historial se omiten (jamás se inventan).
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: Fecha inicial (YYYY-MM-DD, UTC, inclusive).
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: Fecha final (YYYY-MM-DD, UTC, inclusive).
+      - name: granularity
+        in: query
+        schema:
+          type: string
+          enum: [day, hour]
+          default: day
+        description: Tamaño del bucket. Rango máximo 366 días para `day` y 31 días para `hour`.
+      - name: currency
+        in: query
+        schema:
+          type: string
+        description: Filtro opcional por moneda local (ej. CLP).
+      responses:
+        '200':
+          description: Serie de tasas por país más series de precios de assets.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  account_id:
+                    type: string
+                  base:
+                    type: string
+                    example: USD
+                  from:
+                    type: string
+                  to:
+                    type: string
+                  granularity:
+                    type: string
+                    example: day
+                  rates:
+                    type: object
+                    description: Una serie por país (mismas llaves que `GET /v1/rates`).
+                    additionalProperties:
+                      type: object
+                      properties:
+                        currency:
+                          type: string
+                          example: CLP
+                        series:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              date:
+                                type: string
+                                example: '2026-07-10'
+                              rate:
+                                type: string
+                                description: Tasa punta payout en ese bucket.
+                                example: '950.123456'
+                              payin_rate:
+                                type: string
+                                description: Tasa punta payin en ese bucket.
+                                example: '978.912345'
+                        first:
+                          type: string
+                          description: Primera tasa (punta payout) del rango.
+                        last:
+                          type: string
+                          description: Última tasa (punta payout) del rango.
+                        change_pct:
+                          type: string
+                          nullable: true
+                          description: Variación porcentual con signo primero→último (píntala verde/roja en el front).
+                  asset_prices:
+                    type: object
+                    description: Series de precio USD de referencia de BTC y GOLD (solo display).
+                    additionalProperties:
+                      type: object
+                      properties:
+                        currency:
+                          type: string
+                          example: USD
+                        unit:
+                          type: string
+                          example: gram
+                        series:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              date:
+                                type: string
+                              price:
+                                type: string
+                        first:
+                          type: string
+                        last:
+                          type: string
+                        change_pct:
+                          type: string
+                          nullable: true
+                  retrieved_at:
+                    type: string
+              example:
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                base: USD
+                from: '2026-06-12'
+                to: '2026-07-11'
+                granularity: day
+                rates:
+                  chile:
+                    currency: CLP
+                    series:
+                    - date: '2026-06-12'
+                      rate: '939.068965'
+                      payin_rate: '967.452325'
+                    - date: '2026-06-13'
+                      rate: '940.886699'
+                      payin_rate: '969.325000'
+                    - date: '2026-07-11'
+                      rate: '910.896551'
+                      payin_rate: '938.428400'
+                    first: '939.068965'
+                    last: '910.896551'
+                    change_pct: '-3.00'
+                  mexico:
+                    currency: MXN
+                    series:
+                    - date: '2026-06-12'
+                      rate: '17.241379'
+                      payin_rate: '17.762500'
+                    - date: '2026-07-11'
+                      rate: '17.832512'
+                      payin_rate: '18.371500'
+                    first: '17.241379'
+                    last: '17.832512'
+                    change_pct: '3.43'
+                asset_prices:
+                  BTC:
+                    currency: USD
+                    unit: btc
+                    series:
+                    - date: '2026-06-12'
+                      price: '106214.55'
+                    - date: '2026-07-11'
+                      price: '109853.24'
+                    first: '106214.55'
+                    last: '109853.24'
+                    change_pct: '3.43'
+                  GOLD:
+                    currency: USD
+                    unit: gram
+                    series:
+                    - date: '2026-06-12'
+                      price: '106.8812'
+                    - date: '2026-07-11'
+                      price: '107.5341'
+                    first: '106.8812'
+                    last: '107.5341'
+                    change_pct: '0.61'
+                retrieved_at: '2026-07-11T15:00:00Z'
+        '400':
+          description: Rango de fechas o granularidad faltante/inválida (`invalid_range`, `invalid_granularity`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_range
+                message: from and to are required (YYYY-MM-DD)
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+        '502':
+          description: Historial de tasas temporalmente no disponible (`rates_unavailable`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: rates_unavailable
+                message: could not fetch fx rate history
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/payouts:
