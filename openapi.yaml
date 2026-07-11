@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.39'
+  version: '1.40'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -62,8 +62,13 @@ tags:
   description: 'Virtual and physical cards that spend Just-In-Time from the account''s USDT balance,
     with per-card spending limits.'
 - name: Security (OTP)
-  description: One-time verification codes over SMS/WhatsApp protecting
-    sensitive actions. Applies to user sessions only — API keys are exempt.
+  description: One-time verification codes over SMS/WhatsApp/email protecting
+    sensitive actions, plus self-service 2FA preferences. Applies to user
+    sessions only — API keys are exempt.
+- name: Passkeys
+  description: Passwordless sign-in with the device's biometrics (Face ID,
+    Touch ID, Windows Hello, security keys) via WebAuthn, authenticator apps
+    (TOTP) with backup codes, and session/device management.
 - name: Social login
   description: Passwordless sign up and sign in with Google, Apple, Microsoft
     and Facebook via token exchange. The front end obtains the provider
@@ -7846,6 +7851,576 @@ paths:
           content: {application/json: {example: {currency: USD, available: '0.00'}}}
         '404':
           description: not_found
+  /v1/auth/password/forgot:
+    post:
+      tags: [Authentication]
+      operationId: forgotPassword
+      summary: Request a password reset code
+      description: Sends a reset code to the member's email (default) or to
+        their verified phone (`channel:"sms"`). Always returns 200 with the
+        same body regardless of whether the account exists — this prevents
+        account enumeration. Complete the reset with `POST
+        /v1/auth/password/reset`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [org, email]
+              properties:
+                org: {type: string}
+                email: {type: string, format: email}
+                channel: {type: string, enum: [email, sms, whatsapp], default: email}
+            example: {org: cbpay, email: taylor@example.com}
+      responses:
+        '200':
+          description: Generic acknowledgement (never reveals if the account exists).
+          content:
+            application/json:
+              example: {status: ok, note: 'if an account matches, a verification code was sent; complete the reset with POST /v1/auth/password/reset'}
+  /v1/auth/password/reset:
+    post:
+      tags: [Authentication]
+      operationId: resetPassword
+      summary: Reset the password with a code
+      description: Validates the code sent by `forgot` and sets a new password.
+        All existing sessions are revoked. A single generic error
+        (`invalid_code`) covers unknown org/member/code so nothing about
+        account existence leaks.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [org, email, code, new_password]
+              properties:
+                org: {type: string}
+                email: {type: string, format: email}
+                code: {type: string}
+                new_password: {type: string, minLength: 8}
+                channel: {type: string, enum: [email, sms, whatsapp], default: email}
+            example: {org: cbpay, email: taylor@example.com, code: '123456', new_password: 'my-new-strong-pass'}
+      responses:
+        '200':
+          description: Password reset; all sessions revoked.
+          content:
+            application/json:
+              example: {status: password_reset, note: 'all sessions were revoked; log in with the new password'}
+        '401':
+          description: Invalid or expired code, or no matching account (`invalid_code`).
+          content: {application/json: {schema: {$ref: '#/components/schemas/Error'}, example: {error: invalid_code, message: the code is invalid or expired, or no account matches}}}
+  /v1/auth/passkey/login/begin:
+    post:
+      tags: [Passkeys]
+      operationId: passkeyLoginBegin
+      summary: Begin passwordless passkey login
+      description: Starts a WebAuthn discoverable login ceremony. Pass the
+        returned `options.publicKey` to `navigator.credentials.get()` and send
+        the result to `finish`. The challenge is single-use and expires in 2
+        minutes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [org], properties: {org: {type: string}}}
+            example: {org: cbpay}
+      responses:
+        '200':
+          description: WebAuthn assertion options + challenge id.
+          content:
+            application/json:
+              example: {challenge_id: 5f1c02aa-93a1-4f0e-a7d1-1f2e3c4b5a69, options: {publicKey: {challenge: 'base64url…', rpId: cbpayapp.com}}, expires_at: '2026-07-11T00:02:00Z'}
+        '503':
+          description: Passkeys not configured for the org (`passkeys_unavailable`).
+  /v1/auth/passkey/login/finish:
+    post:
+      tags: [Passkeys]
+      operationId: passkeyLoginFinish
+      summary: Finish passwordless passkey login
+      description: Validates the authenticator assertion and issues a session.
+        A passkey is already two factors (device + biometrics), so this login
+        does not go through the login OTP.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [org, challenge_id, credential]
+              properties:
+                org: {type: string}
+                challenge_id: {type: string}
+                credential: {type: object, description: 'The PublicKeyCredential JSON from navigator.credentials.get().'}
+            example: {org: cbpay, challenge_id: 5f1c02aa-93a1-4f0e-a7d1-1f2e3c4b5a69, credential: {id: 'AaBb…', type: public-key, response: {}}}
+      responses:
+        '200':
+          description: Session issued.
+          content: {application/json: {example: {access_token: 'eyJ…', expires_at: '2026-07-12T00:00:00Z', account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, role: owner}}}
+        '401':
+          description: The passkey could not be verified (`invalid_credential`).
+  /v1/me/password:
+    post:
+      tags: [Account]
+      operationId: changePassword
+      summary: Change my password
+      description: Changes the calling member's password. Requires the current
+        password (members created via social login without a password set their
+        first one here, leaving `current_password` empty) and, when the OTP
+        policy requires it, an `X-OTP-Token` for the `password_change` action.
+        All other sessions are revoked and a fresh session is returned.
+      parameters:
+      - {name: X-OTP-Token, in: header, required: false, schema: {type: string}, description: 'Single-use OTP token when the password_change action requires it.'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [new_password]
+              properties:
+                current_password: {type: string}
+                new_password: {type: string, minLength: 8}
+            example: {current_password: old-pass, new_password: my-new-strong-pass}
+      responses:
+        '200':
+          description: Password changed; previous sessions revoked; new session returned.
+          content: {application/json: {example: {status: password_changed, access_token: 'eyJ…', expires_at: '2026-07-12T00:00:00Z', note: all previous sessions were revoked}}}
+        '403':
+          description: Wrong current password (`invalid_password`) or OTP required (`otp_required`).
+  /v1/me/email/change:
+    post:
+      tags: [Account]
+      operationId: changeEmail
+      summary: Change my login email
+      description: Starts a login-email change. A verification code is sent to
+        the NEW email; confirm with `POST /v1/me/email/confirm`. When the OTP
+        policy requires it, an `X-OTP-Token` for the `email_change` action is
+        also required. Verifying the new email is mandatory — it prevents an
+        attacker from pointing the login at a mailbox they do not control.
+      parameters:
+      - {name: X-OTP-Token, in: header, required: false, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [new_email], properties: {new_email: {type: string, format: email}}}
+            example: {new_email: taylor.new@example.com}
+      responses:
+        '200':
+          description: Code sent to the new email.
+          content: {application/json: {example: {status: code_sent, email: 't***@***.com', expires_at: '2026-07-11T00:30:00Z', note: 'confirm the change with POST /v1/me/email/confirm using the code sent to the new email'}}}
+        '409':
+          description: The new email is already in use (`email_in_use`).
+  /v1/me/email/verify:
+    post:
+      tags: [Account]
+      operationId: verifyEmail
+      summary: Verify my current email
+      description: Sends a code to the member's CURRENT email to mark it
+        verified (required to use the email OTP channel for money actions).
+        Confirm with `POST /v1/me/email/confirm`.
+      responses:
+        '200':
+          description: Code sent (or already verified).
+          content: {application/json: {example: {status: code_sent, email: 't***@***.com', note: 'confirm with POST /v1/me/email/confirm using the code sent to your email'}}}
+  /v1/me/email/confirm:
+    post:
+      tags: [Account]
+      operationId: confirmEmail
+      summary: Confirm an email change or verification
+      description: Confirms a pending email change (or verification) with the
+        code received. On a change, the login email — and, for owners, the
+        account contact email — are updated and the old email is notified.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [code], properties: {code: {type: string}}}
+            example: {code: '123456'}
+      responses:
+        '200':
+          description: Email confirmed.
+          content: {application/json: {example: {status: email_confirmed, email: taylor.new@example.com}}}
+        '409':
+          description: No pending email change (`no_pending_email`).
+  /v1/me/alias:
+    put:
+      tags: [Account]
+      operationId: setMyAlias
+      summary: Set my permanent alias
+      description: 'Sets the account''s public alias ONCE. The alias is
+        permanent and cannot be changed. Format: 4-20 chars (a-z, 0-9, dot,
+        underscore, hyphen), starting and ending alphanumeric; reserved words
+        are rejected. Others can send you money by alias.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [alias], properties: {alias: {type: string}}}
+            example: {alias: taylor.code}
+      responses:
+        '200':
+          description: Alias set (permanently).
+          content: {application/json: {example: {alias: taylor.code, note: the alias is permanent and cannot be changed}}}
+        '409':
+          description: Already set (`alias_already_set`) or taken (`alias_taken`).
+  /v1/me/qr:
+    get:
+      tags: [Account]
+      operationId: getMyQR
+      summary: My profile QR code
+      description: Returns the account's immutable QR token, its payload URI
+        (`cbpay:pay?to=<token>`) and a ready-to-render PNG. The QR only lets
+        others SEND money to you; it never changes.
+      responses:
+        '200':
+          description: QR token, payload and PNG.
+          content: {application/json: {example: {qr_token: 9f8c7b6a5d4e3f2a1b0c9d8e7f6a5b4c, payload: 'cbpay:pay?to=9f8c7b6a5d4e3f2a1b0c9d8e7f6a5b4c', png_base64: 'iVBORw0KGgo…', alias: taylor.code, note: 'the QR identifies your account to RECEIVE transfers; it never changes'}}}
+  /v1/me/avatar:
+    put:
+      tags: [Account]
+      operationId: putMyAvatar
+      summary: Upload my profile photo
+      description: Uploads (or replaces) the account avatar. Body is the raw
+        image bytes (JPEG, PNG or WebP), max 512 KB. The content type is
+        detected from the file's magic bytes, never the header.
+      requestBody:
+        required: true
+        content:
+          image/jpeg: {schema: {type: string, format: binary}}
+          image/png: {schema: {type: string, format: binary}}
+          image/webp: {schema: {type: string, format: binary}}
+      responses:
+        '200':
+          description: Avatar updated.
+          content: {application/json: {example: {status: avatar_updated, content_type: image/png, size_bytes: 20481, avatar_url: /v1/avatars/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d}}}
+        '413':
+          description: The avatar exceeds 512 KB (`image_too_large`).
+        '415':
+          description: Unsupported image type (`unsupported_image`).
+    delete:
+      tags: [Account]
+      operationId: deleteMyAvatar
+      summary: Delete my profile photo
+      responses:
+        '200':
+          description: Avatar deleted.
+          content: {application/json: {example: {status: avatar_deleted}}}
+  /v1/avatars/{accountID}:
+    get:
+      tags: [Account]
+      operationId: getAvatar
+      summary: Get an account's avatar
+      description: Serves the avatar image of an account in the same
+        organization (used for the recipient preview in transfers and
+        contacts).
+      parameters:
+      - {name: accountID, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: The image bytes (Content-Type is the stored image type).
+          content: {image/png: {schema: {type: string, format: binary}}}
+        '404':
+          description: No avatar for that account (`not_found`).
+  /v1/resolve:
+    get:
+      tags: [Account]
+      operationId: resolveRecipient
+      summary: Resolve a recipient by alias or QR
+      description: Returns a minimal preview (alias, display name, type,
+        avatar) of an account in the same organization, to confirm before
+        sending. Provide `alias` or `qr` (the raw token or the full
+        `cbpay:pay?to=…` payload). Returns a uniform 404 and is rate-limited to
+        prevent enumeration.
+      parameters:
+      - {name: alias, in: query, required: false, schema: {type: string}}
+      - {name: qr, in: query, required: false, schema: {type: string}}
+      responses:
+        '200':
+          description: Recipient preview.
+          content: {application/json: {example: {account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, display_name: Taylor Code, type: person, alias: taylor.code, avatar_url: /v1/avatars/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d}}}
+        '404':
+          description: No account matches (`not_found`).
+        '429':
+          description: Too many lookups (`too_many_attempts`).
+  /v1/otp/preferences:
+    get:
+      tags: [Security (OTP)]
+      operationId: getOTPPreferences
+      summary: My 2FA preferences
+      description: Shows the effective 2FA policy for the account with, per
+        action, whether it is locked by the organization (the org policy is the
+        floor the account cannot go below).
+      responses:
+        '200':
+          description: Effective preferences.
+          content:
+            application/json:
+              example:
+                enabled: true
+                totp_enrolled: true
+                actions:
+                - {action: login, required: true, channel: totp, source: account, locked_by_org: false}
+                - {action: payout, required: true, channel: sms, source: org_default, locked_by_org: true}
+    put:
+      tags: [Security (OTP)]
+      operationId: putOTPPreferences
+      summary: Update my 2FA preferences
+      description: 'Lets the account owner configure its own 2FA. You can always
+        harden (enable actions, move to a stronger channel: totp > email >
+        sms/whatsapp) but never go below the organization floor. Weakening
+        (disabling an active action or lowering the channel) requires an
+        `X-OTP-Token` for the `security_settings` action. Choosing `channel:totp`
+        requires the authenticator app already enrolled.'
+      parameters:
+      - {name: X-OTP-Token, in: header, required: false, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, required]
+              properties:
+                action: {type: string, enum: [login, payout, crypto_withdrawal, transfer, banking_operation, card_reveal, api_key_create, member_add, phone_change, password_change, email_change, security_settings]}
+                required: {type: boolean}
+                channel: {type: string, enum: [sms, whatsapp, email, totp], default: sms}
+            example: {action: payout, required: true, channel: totp}
+      responses:
+        '200':
+          description: Updated effective policy.
+          content: {application/json: {example: {enabled: true, actions: [{action: payout, required: true, channel: totp, source: account}]}}}
+        '403':
+          description: Locked by org (`policy_locked_by_org` / `channel_locked_by_org`) or OTP required to weaken (`otp_required`).
+  /v1/me/totp:
+    get:
+      tags: [Passkeys]
+      operationId: getMyTOTP
+      summary: My authenticator app status
+      description: Whether an authenticator app (TOTP) is active and how many
+        backup codes remain.
+      responses:
+        '200':
+          description: TOTP status.
+          content: {application/json: {example: {enrolled: true, recovery_codes_remaining: 8}}}
+    delete:
+      tags: [Passkeys]
+      operationId: disableMyTOTP
+      summary: Remove my authenticator app
+      description: Disables TOTP. Requires a valid authenticator (or backup)
+        code and respects the org floor — if the organization mandates the
+        authenticator app it cannot be removed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [code], properties: {code: {type: string}}}
+            example: {code: '123456'}
+      responses:
+        '200':
+          description: TOTP disabled.
+          content: {application/json: {example: {enrolled: false, status: disabled}}}
+        '403':
+          description: Invalid code (`otp_invalid`) or required by org (`policy_locked_by_org`).
+  /v1/me/totp/enroll:
+    post:
+      tags: [Passkeys]
+      operationId: enrollMyTOTP
+      summary: Start authenticator app enrollment
+      description: Generates a TOTP secret and returns the `otpauth://` URI plus
+        a QR PNG to scan in Google Authenticator / Authy. Requires the current
+        password (if the member has one). Confirm with `POST
+        /v1/me/totp/confirm`.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {type: object, properties: {password: {type: string}}}
+            example: {password: my-strong-pass}
+      responses:
+        '200':
+          description: Secret + otpauth URI + QR PNG.
+          content: {application/json: {example: {totp_secret: JBSWY3DPEHPK3PXP, otpauth_uri: 'otpauth://totp/CBPay:taylor@example.com?secret=JBSWY3DPEHPK3PXP&issuer=CBPay', qr_png_base64: 'iVBORw0KGgo…', note: 'scan the QR (or type the secret) in your authenticator app, then confirm with POST /v1/me/totp/confirm'}}}
+        '409':
+          description: An authenticator app is already active (`totp_already_enrolled`).
+  /v1/me/totp/confirm:
+    post:
+      tags: [Passkeys]
+      operationId: confirmMyTOTP
+      summary: Confirm and activate the authenticator app
+      description: Activates TOTP with the first valid code and returns 10
+        one-time backup codes (shown only once).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [code], properties: {code: {type: string}}}
+            example: {code: '123456'}
+      responses:
+        '200':
+          description: TOTP active; backup codes returned once.
+          content: {application/json: {example: {enrolled: true, recovery_codes: ['ABCD-EFGH', 'JKLM-NPQR'], note: 'store these recovery codes now: they are shown only once and each works a single time'}}}
+        '403':
+          description: Invalid code (`otp_invalid`).
+  /v1/me/totp/recovery-codes:
+    post:
+      tags: [Passkeys]
+      operationId: regenerateRecoveryCodes
+      summary: Regenerate backup codes
+      description: Issues a fresh set of backup codes and invalidates the
+        previous ones. Requires a valid authenticator or backup code.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [code], properties: {code: {type: string}}}
+            example: {code: '123456'}
+      responses:
+        '200':
+          description: New backup codes (previous ones are void).
+          content: {application/json: {example: {recovery_codes: ['WXYZ-2345', '6789-ABCD'], note: previous recovery codes are no longer valid}}}
+  /v1/me/passkeys:
+    get:
+      tags: [Passkeys]
+      operationId: listMyPasskeys
+      summary: List my passkeys
+      responses:
+        '200':
+          description: The account's registered passkeys.
+          content: {application/json: {example: {passkeys: [{passkey_id: 3b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, name: MacBook de Taylor, created_at: '2026-07-11T00:00:00Z', last_used_at: '2026-07-11T00:05:00Z'}]}}}
+  /v1/me/passkeys/register/begin:
+    post:
+      tags: [Passkeys]
+      operationId: passkeyRegisterBegin
+      summary: Begin passkey registration
+      description: Starts a WebAuthn registration ceremony. Requires the current
+        password (if the member has one) — a new sign-in factor is never added
+        from a stolen session. Pass `options.publicKey` to
+        `navigator.credentials.create()`.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {type: object, properties: {password: {type: string}}}
+            example: {password: my-strong-pass}
+      responses:
+        '200':
+          description: WebAuthn creation options + challenge id.
+          content: {application/json: {example: {challenge_id: 7b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, options: {publicKey: {challenge: 'base64url…', rp: {id: cbpayapp.com}}}, expires_at: '2026-07-11T00:02:00Z'}}}
+        '503':
+          description: Passkeys not configured for the org (`passkeys_unavailable`).
+  /v1/me/passkeys/register/finish:
+    post:
+      tags: [Passkeys]
+      operationId: passkeyRegisterFinish
+      summary: Finish passkey registration
+      description: Validates the attestation and stores the passkey under a
+        friendly name.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [challenge_id, credential]
+              properties:
+                challenge_id: {type: string}
+                name: {type: string, description: 'Friendly device name, e.g. "MacBook de Taylor".'}
+                credential: {type: object, description: 'The PublicKeyCredential JSON from navigator.credentials.create().'}
+            example: {challenge_id: 7b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, name: MacBook de Taylor, credential: {id: 'AaBb…', type: public-key, response: {}}}
+      responses:
+        '201':
+          description: Passkey registered.
+          content: {application/json: {example: {passkey_id: 3b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, name: MacBook de Taylor, created_at: '2026-07-11T00:00:00Z'}}}
+        '409':
+          description: This device credential is already registered (`passkey_exists`).
+  /v1/me/passkeys/{passkeyID}:
+    delete:
+      tags: [Passkeys]
+      operationId: deleteMyPasskey
+      summary: Remove a passkey
+      description: Removes a passkey. Requires the current password (if the
+        member has one) and is blocked if it is the only sign-in method left.
+      parameters:
+      - {name: passkeyID, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {type: object, properties: {password: {type: string}}}
+            example: {password: my-strong-pass}
+      responses:
+        '200':
+          description: Passkey removed.
+          content: {application/json: {example: {passkey_id: 3b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, status: deleted}}}
+        '409':
+          description: Cannot remove the only sign-in method (`last_login_method`).
+  /v1/me/sessions:
+    get:
+      tags: [Account]
+      operationId: listMySessions
+      summary: List my active sessions
+      description: Lists the member's sessions (devices) with IP, user agent,
+        login method and whether each is the current one.
+      responses:
+        '200':
+          description: The member's sessions.
+          content:
+            application/json:
+              example:
+                page: 1
+                page_size: 50
+                sessions:
+                - {session_id: 8b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, created_at: '2026-07-11T00:00:00Z', expires_at: '2026-07-12T00:00:00Z', login_method: password, current: true, active: true, ip: 200.1.2.3, user_agent: 'Mozilla/5.0'}
+  /v1/me/sessions/{sessionID}:
+    delete:
+      tags: [Account]
+      operationId: revokeMySession
+      summary: Revoke one of my sessions
+      description: Signs out a specific device.
+      parameters:
+      - {name: sessionID, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Session revoked.
+          content: {application/json: {example: {session_id: 8b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, status: revoked}}}
+  /v1/me/sessions/revoke-all:
+    post:
+      tags: [Account]
+      operationId: revokeAllMySessions
+      summary: Revoke all my other sessions
+      description: Signs out every session except the current one.
+      responses:
+        '200':
+          description: Other sessions revoked.
+          content: {application/json: {example: {status: revoked, sessions_revoked: 3}}}
+  /v1/me/security/events:
+    get:
+      tags: [Account]
+      operationId: listMySecurityEvents
+      summary: My security activity
+      description: Append-only history of security events for the account
+        (logins, credential changes, factors added/removed). Requires
+        `from`/`to` date filters.
+      parameters:
+      - {name: from, in: query, required: true, schema: {type: string, format: date}}
+      - {name: to, in: query, required: true, schema: {type: string, format: date}}
+      - {name: page, in: query, required: false, schema: {type: integer}}
+      - {name: page_size, in: query, required: false, schema: {type: integer}}
+      responses:
+        '200':
+          description: Security events.
+          content:
+            application/json:
+              example:
+                page: 1
+                page_size: 50
+                events:
+                - {event_id: a1b2c3d4-3b7d-4bad-9bdd-2b0d7b3dcb6d, member_id: 1c2d3e4f-3b7d-4bad-9bdd-2b0d7b3dcb6d, event: password_changed, created_at: '2026-07-11T00:00:00Z', ip: 200.1.2.3}
+        '400':
+          $ref: '#/components/responses/InvalidRange'
 components:
   securitySchemes:
     bearerAuth:

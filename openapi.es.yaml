@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.39'
+  version: '1.40'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -62,9 +62,14 @@ tags:
   description: 'Tarjetas virtuales y físicas que gastan Just-In-Time del saldo USDT de la cuenta,
     con límites de gasto por tarjeta.'
 - name: Seguridad (OTP)
-  description: Códigos de verificación de un solo uso por SMS/WhatsApp que
-    protegen acciones sensibles. Aplican solo a sesiones de usuario — las API
-    keys quedan exentas.
+  description: Códigos de verificación de un solo uso por SMS/WhatsApp/email que
+    protegen acciones sensibles, más las preferencias de 2FA self-service.
+    Aplican solo a sesiones de usuario — las API keys quedan exentas.
+- name: Passkeys
+  description: Inicio de sesión sin contraseña con la biometría del dispositivo
+    (Face ID, Touch ID, Windows Hello, llaves de seguridad) vía WebAuthn,
+    apps autenticadoras (TOTP) con códigos de respaldo, y gestión de
+    sesiones/dispositivos.
 - name: Login social
   description: Registro e inicio de sesión sin contraseña con Google, Apple,
     Microsoft y Facebook vía token exchange. El front obtiene la credencial
@@ -7858,6 +7863,578 @@ paths:
           content: {application/json: {example: {currency: USD, available: '0.00'}}}
         '404':
           description: not_found
+  /v1/auth/password/forgot:
+    post:
+      tags: [Autenticación]
+      operationId: forgotPassword
+      summary: Solicitar un código para recuperar la contraseña
+      description: Envía un código de recuperación al email del miembro (por
+        defecto) o a su teléfono verificado (`channel:"sms"`). SIEMPRE responde
+        200 con el mismo cuerpo exista o no la cuenta — así se evita la
+        enumeración de cuentas. Completa el reset con `POST
+        /v1/auth/password/reset`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [org, email]
+              properties:
+                org: {type: string}
+                email: {type: string, format: email}
+                channel: {type: string, enum: [email, sms, whatsapp], default: email}
+            example: {org: cbpay, email: taylor@example.com}
+      responses:
+        '200':
+          description: Acuse genérico (nunca revela si la cuenta existe).
+          content:
+            application/json:
+              example: {status: ok, note: 'if an account matches, a verification code was sent; complete the reset with POST /v1/auth/password/reset'}
+  /v1/auth/password/reset:
+    post:
+      tags: [Autenticación]
+      operationId: resetPassword
+      summary: Restablecer la contraseña con un código
+      description: Valida el código enviado por `forgot` y fija una contraseña
+        nueva. Todas las sesiones se revocan. Un único error genérico
+        (`invalid_code`) cubre org/miembro/código inválidos para no filtrar
+        existencia de cuentas.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [org, email, code, new_password]
+              properties:
+                org: {type: string}
+                email: {type: string, format: email}
+                code: {type: string}
+                new_password: {type: string, minLength: 8}
+                channel: {type: string, enum: [email, sms, whatsapp], default: email}
+            example: {org: cbpay, email: taylor@example.com, code: '123456', new_password: 'mi-nueva-clave-fuerte'}
+      responses:
+        '200':
+          description: Contraseña restablecida; todas las sesiones revocadas.
+          content:
+            application/json:
+              example: {status: password_reset, note: 'all sessions were revoked; log in with the new password'}
+        '401':
+          description: Código inválido o expirado, o ninguna cuenta coincide (`invalid_code`).
+          content: {application/json: {schema: {$ref: '#/components/schemas/Error'}, example: {error: invalid_code, message: the code is invalid or expired, or no account matches}}}
+  /v1/auth/passkey/login/begin:
+    post:
+      tags: [Passkeys]
+      operationId: passkeyLoginBegin
+      summary: Iniciar login con passkey (sin contraseña)
+      description: Inicia una ceremonia WebAuthn de login discoverable. Pasa el
+        `options.publicKey` devuelto a `navigator.credentials.get()` y envía el
+        resultado a `finish`. El challenge es de un solo uso y expira en 2
+        minutos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [org], properties: {org: {type: string}}}
+            example: {org: cbpay}
+      responses:
+        '200':
+          description: Opciones de assertion WebAuthn + id del challenge.
+          content:
+            application/json:
+              example: {challenge_id: 5f1c02aa-93a1-4f0e-a7d1-1f2e3c4b5a69, options: {publicKey: {challenge: 'base64url…', rpId: cbpayapp.com}}, expires_at: '2026-07-11T00:02:00Z'}
+        '503':
+          description: Passkeys no configuradas para la org (`passkeys_unavailable`).
+  /v1/auth/passkey/login/finish:
+    post:
+      tags: [Passkeys]
+      operationId: passkeyLoginFinish
+      summary: Completar login con passkey (sin contraseña)
+      description: Valida la assertion del autenticador y emite la sesión. Un
+        passkey ya son dos factores (dispositivo + biometría), por eso este
+        login no pasa por el OTP de login.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [org, challenge_id, credential]
+              properties:
+                org: {type: string}
+                challenge_id: {type: string}
+                credential: {type: object, description: 'El PublicKeyCredential JSON de navigator.credentials.get().'}
+            example: {org: cbpay, challenge_id: 5f1c02aa-93a1-4f0e-a7d1-1f2e3c4b5a69, credential: {id: 'AaBb…', type: public-key, response: {}}}
+      responses:
+        '200':
+          description: Sesión emitida.
+          content: {application/json: {example: {access_token: 'eyJ…', expires_at: '2026-07-12T00:00:00Z', account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, role: owner}}}
+        '401':
+          description: No se pudo verificar la passkey (`invalid_credential`).
+  /v1/me/password:
+    post:
+      tags: [Cuenta]
+      operationId: changePassword
+      summary: Cambiar mi contraseña
+      description: Cambia la contraseña del miembro que llama. Exige la
+        contraseña actual (los miembros creados por login social sin contraseña
+        fijan la primera aquí, dejando `current_password` vacío) y, cuando la
+        política OTP lo pide, un `X-OTP-Token` de la acción `password_change`.
+        Todas las demás sesiones se revocan y se devuelve una sesión nueva.
+      parameters:
+      - {name: X-OTP-Token, in: header, required: false, schema: {type: string}, description: 'Token OTP de un solo uso cuando la acción password_change lo exige.'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [new_password]
+              properties:
+                current_password: {type: string}
+                new_password: {type: string, minLength: 8}
+            example: {current_password: clave-vieja, new_password: mi-nueva-clave-fuerte}
+      responses:
+        '200':
+          description: Contraseña cambiada; sesiones anteriores revocadas; nueva sesión devuelta.
+          content: {application/json: {example: {status: password_changed, access_token: 'eyJ…', expires_at: '2026-07-12T00:00:00Z', note: all previous sessions were revoked}}}
+        '403':
+          description: Contraseña actual incorrecta (`invalid_password`) u OTP requerido (`otp_required`).
+  /v1/me/email/change:
+    post:
+      tags: [Cuenta]
+      operationId: changeEmail
+      summary: Cambiar mi email de login
+      description: Inicia el cambio del email de login. Se envía un código al
+        email NUEVO; confirma con `POST /v1/me/email/confirm`. Cuando la
+        política OTP lo pide, también se exige un `X-OTP-Token` de la acción
+        `email_change`. Verificar el email nuevo es obligatorio — evita que un
+        atacante apunte el login a un buzón que no controla.
+      parameters:
+      - {name: X-OTP-Token, in: header, required: false, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [new_email], properties: {new_email: {type: string, format: email}}}
+            example: {new_email: taylor.new@example.com}
+      responses:
+        '200':
+          description: Código enviado al email nuevo.
+          content: {application/json: {example: {status: code_sent, email: 't***@***.com', expires_at: '2026-07-11T00:30:00Z', note: 'confirm the change with POST /v1/me/email/confirm using the code sent to the new email'}}}
+        '409':
+          description: El email nuevo ya está en uso (`email_in_use`).
+  /v1/me/email/verify:
+    post:
+      tags: [Cuenta]
+      operationId: verifyEmail
+      summary: Verificar mi email actual
+      description: Envía un código al email ACTUAL del miembro para marcarlo
+        verificado (requisito para usar el canal OTP de email en acciones de
+        dinero). Confirma con `POST /v1/me/email/confirm`.
+      responses:
+        '200':
+          description: Código enviado (o ya verificado).
+          content: {application/json: {example: {status: code_sent, email: 't***@***.com', note: 'confirm with POST /v1/me/email/confirm using the code sent to your email'}}}
+  /v1/me/email/confirm:
+    post:
+      tags: [Cuenta]
+      operationId: confirmEmail
+      summary: Confirmar un cambio o verificación de email
+      description: Confirma un cambio de email pendiente (o su verificación) con
+        el código recibido. En un cambio, el email de login — y, para owners, el
+        email de contacto de la cuenta — se actualizan y se avisa al email
+        anterior.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [code], properties: {code: {type: string}}}
+            example: {code: '123456'}
+      responses:
+        '200':
+          description: Email confirmado.
+          content: {application/json: {example: {status: email_confirmed, email: taylor.new@example.com}}}
+        '409':
+          description: No hay cambio de email pendiente (`no_pending_email`).
+  /v1/me/alias:
+    put:
+      tags: [Cuenta]
+      operationId: setMyAlias
+      summary: Fijar mi alias permanente
+      description: 'Fija el alias público de la cuenta UNA vez. El alias es
+        permanente y no se puede cambiar. Formato: 4-20 caracteres (a-z, 0-9,
+        punto, guion bajo, guion), empieza y termina en alfanumérico; las
+        palabras reservadas se rechazan. Otros pueden enviarte dinero por
+        alias.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [alias], properties: {alias: {type: string}}}
+            example: {alias: taylor.code}
+      responses:
+        '200':
+          description: Alias fijado (de forma permanente).
+          content: {application/json: {example: {alias: taylor.code, note: the alias is permanent and cannot be changed}}}
+        '409':
+          description: Ya fijado (`alias_already_set`) o tomado (`alias_taken`).
+  /v1/me/qr:
+    get:
+      tags: [Cuenta]
+      operationId: getMyQR
+      summary: El QR de mi perfil
+      description: Devuelve el token QR inmutable de la cuenta, su payload URI
+        (`cbpay:pay?to=<token>`) y un PNG listo para mostrar. El QR solo permite
+        que otros te ENVÍEN dinero; nunca cambia.
+      responses:
+        '200':
+          description: Token QR, payload y PNG.
+          content: {application/json: {example: {qr_token: 9f8c7b6a5d4e3f2a1b0c9d8e7f6a5b4c, payload: 'cbpay:pay?to=9f8c7b6a5d4e3f2a1b0c9d8e7f6a5b4c', png_base64: 'iVBORw0KGgo…', alias: taylor.code, note: 'the QR identifies your account to RECEIVE transfers; it never changes'}}}
+  /v1/me/avatar:
+    put:
+      tags: [Cuenta]
+      operationId: putMyAvatar
+      summary: Subir mi foto de perfil
+      description: Sube (o reemplaza) el avatar de la cuenta. El cuerpo son los
+        bytes crudos de la imagen (JPEG, PNG o WebP), máx 512 KB. El tipo se
+        detecta por los magic bytes del archivo, nunca por el header.
+      requestBody:
+        required: true
+        content:
+          image/jpeg: {schema: {type: string, format: binary}}
+          image/png: {schema: {type: string, format: binary}}
+          image/webp: {schema: {type: string, format: binary}}
+      responses:
+        '200':
+          description: Avatar actualizado.
+          content: {application/json: {example: {status: avatar_updated, content_type: image/png, size_bytes: 20481, avatar_url: /v1/avatars/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d}}}
+        '413':
+          description: El avatar supera 512 KB (`image_too_large`).
+        '415':
+          description: Tipo de imagen no soportado (`unsupported_image`).
+    delete:
+      tags: [Cuenta]
+      operationId: deleteMyAvatar
+      summary: Eliminar mi foto de perfil
+      responses:
+        '200':
+          description: Avatar eliminado.
+          content: {application/json: {example: {status: avatar_deleted}}}
+  /v1/avatars/{accountID}:
+    get:
+      tags: [Cuenta]
+      operationId: getAvatar
+      summary: Obtener el avatar de una cuenta
+      description: Sirve la imagen de avatar de una cuenta de la misma
+        organización (se usa en la vista previa del destinatario en
+        transferencias y contactos).
+      parameters:
+      - {name: accountID, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Los bytes de la imagen (Content-Type = tipo de la imagen guardada).
+          content: {image/png: {schema: {type: string, format: binary}}}
+        '404':
+          description: La cuenta no tiene avatar (`not_found`).
+  /v1/resolve:
+    get:
+      tags: [Cuenta]
+      operationId: resolveRecipient
+      summary: Resolver un destinatario por alias o QR
+      description: Devuelve una vista previa mínima (alias, nombre, tipo,
+        avatar) de una cuenta de la misma organización, para confirmar antes de
+        enviar. Provee `alias` o `qr` (el token crudo o el payload completo
+        `cbpay:pay?to=…`). Responde un 404 uniforme y tiene rate limit para
+        evitar enumeración.
+      parameters:
+      - {name: alias, in: query, required: false, schema: {type: string}}
+      - {name: qr, in: query, required: false, schema: {type: string}}
+      responses:
+        '200':
+          description: Vista previa del destinatario.
+          content: {application/json: {example: {account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, display_name: Taylor Code, type: person, alias: taylor.code, avatar_url: /v1/avatars/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d}}}
+        '404':
+          description: Ninguna cuenta coincide (`not_found`).
+        '429':
+          description: Demasiadas consultas (`too_many_attempts`).
+  /v1/otp/preferences:
+    get:
+      tags: [Seguridad (OTP)]
+      operationId: getOTPPreferences
+      summary: Mis preferencias de 2FA
+      description: Muestra la política 2FA efectiva de la cuenta con, por
+        acción, si está bloqueada por la organización (la política de la org es
+        el piso que la cuenta no puede bajar).
+      responses:
+        '200':
+          description: Preferencias efectivas.
+          content:
+            application/json:
+              example:
+                enabled: true
+                totp_enrolled: true
+                actions:
+                - {action: login, required: true, channel: totp, source: account, locked_by_org: false}
+                - {action: payout, required: true, channel: sms, source: org_default, locked_by_org: true}
+    put:
+      tags: [Seguridad (OTP)]
+      operationId: putOTPPreferences
+      summary: Actualizar mis preferencias de 2FA
+      description: 'Permite al owner de la cuenta configurar su propio 2FA.
+        Siempre puedes endurecer (activar acciones, subir a un canal más fuerte:
+        totp > email > sms/whatsapp) pero nunca bajar del piso de la
+        organización. Relajar (desactivar una acción activa o bajar de canal)
+        exige un `X-OTP-Token` de la acción `security_settings`. Elegir
+        `channel:totp` exige la app autenticadora ya enrolada.'
+      parameters:
+      - {name: X-OTP-Token, in: header, required: false, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, required]
+              properties:
+                action: {type: string, enum: [login, payout, crypto_withdrawal, transfer, banking_operation, card_reveal, api_key_create, member_add, phone_change, password_change, email_change, security_settings]}
+                required: {type: boolean}
+                channel: {type: string, enum: [sms, whatsapp, email, totp], default: sms}
+            example: {action: payout, required: true, channel: totp}
+      responses:
+        '200':
+          description: Política efectiva actualizada.
+          content: {application/json: {example: {enabled: true, actions: [{action: payout, required: true, channel: totp, source: account}]}}}
+        '403':
+          description: Bloqueado por la org (`policy_locked_by_org` / `channel_locked_by_org`) u OTP requerido para relajar (`otp_required`).
+  /v1/me/totp:
+    get:
+      tags: [Passkeys]
+      operationId: getMyTOTP
+      summary: Estado de mi app autenticadora
+      description: Si una app autenticadora (TOTP) está activa y cuántos códigos
+        de respaldo quedan.
+      responses:
+        '200':
+          description: Estado TOTP.
+          content: {application/json: {example: {enrolled: true, recovery_codes_remaining: 8}}}
+    delete:
+      tags: [Passkeys]
+      operationId: disableMyTOTP
+      summary: Quitar mi app autenticadora
+      description: Desactiva TOTP. Exige un código autenticador (o de respaldo)
+        válido y respeta el piso de la org — si la organización exige la app
+        autenticadora, no se puede quitar.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [code], properties: {code: {type: string}}}
+            example: {code: '123456'}
+      responses:
+        '200':
+          description: TOTP desactivado.
+          content: {application/json: {example: {enrolled: false, status: disabled}}}
+        '403':
+          description: Código inválido (`otp_invalid`) o requerido por la org (`policy_locked_by_org`).
+  /v1/me/totp/enroll:
+    post:
+      tags: [Passkeys]
+      operationId: enrollMyTOTP
+      summary: Iniciar el enrolamiento de la app autenticadora
+      description: Genera un secreto TOTP y devuelve el `otpauth://` más un PNG
+        de QR para escanear en Google Authenticator / Authy. Exige la contraseña
+        actual (si el miembro tiene una). Confirma con `POST
+        /v1/me/totp/confirm`.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {type: object, properties: {password: {type: string}}}
+            example: {password: mi-clave-fuerte}
+      responses:
+        '200':
+          description: Secreto + otpauth URI + PNG del QR.
+          content: {application/json: {example: {totp_secret: JBSWY3DPEHPK3PXP, otpauth_uri: 'otpauth://totp/CBPay:taylor@example.com?secret=JBSWY3DPEHPK3PXP&issuer=CBPay', qr_png_base64: 'iVBORw0KGgo…', note: 'scan the QR (or type the secret) in your authenticator app, then confirm with POST /v1/me/totp/confirm'}}}
+        '409':
+          description: Ya hay una app autenticadora activa (`totp_already_enrolled`).
+  /v1/me/totp/confirm:
+    post:
+      tags: [Passkeys]
+      operationId: confirmMyTOTP
+      summary: Confirmar y activar la app autenticadora
+      description: Activa TOTP con el primer código válido y devuelve 10 códigos
+        de respaldo de un solo uso (se muestran una sola vez).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [code], properties: {code: {type: string}}}
+            example: {code: '123456'}
+      responses:
+        '200':
+          description: TOTP activo; códigos de respaldo devueltos una vez.
+          content: {application/json: {example: {enrolled: true, recovery_codes: ['ABCD-EFGH', 'JKLM-NPQR'], note: 'store these recovery codes now: they are shown only once and each works a single time'}}}
+        '403':
+          description: Código inválido (`otp_invalid`).
+  /v1/me/totp/recovery-codes:
+    post:
+      tags: [Passkeys]
+      operationId: regenerateRecoveryCodes
+      summary: Regenerar códigos de respaldo
+      description: Emite un set nuevo de códigos de respaldo e invalida los
+        anteriores. Exige un código autenticador o de respaldo válido.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [code], properties: {code: {type: string}}}
+            example: {code: '123456'}
+      responses:
+        '200':
+          description: Nuevos códigos de respaldo (los anteriores quedan anulados).
+          content: {application/json: {example: {recovery_codes: ['WXYZ-2345', '6789-ABCD'], note: previous recovery codes are no longer valid}}}
+  /v1/me/passkeys:
+    get:
+      tags: [Passkeys]
+      operationId: listMyPasskeys
+      summary: Listar mis passkeys
+      responses:
+        '200':
+          description: Las passkeys registradas de la cuenta.
+          content: {application/json: {example: {passkeys: [{passkey_id: 3b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, name: MacBook de Taylor, created_at: '2026-07-11T00:00:00Z', last_used_at: '2026-07-11T00:05:00Z'}]}}}
+  /v1/me/passkeys/register/begin:
+    post:
+      tags: [Passkeys]
+      operationId: passkeyRegisterBegin
+      summary: Iniciar el registro de una passkey
+      description: Inicia una ceremonia WebAuthn de registro. Exige la
+        contraseña actual (si el miembro tiene una) — un factor de acceso nuevo
+        nunca se agrega desde una sesión robada. Pasa `options.publicKey` a
+        `navigator.credentials.create()`.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {type: object, properties: {password: {type: string}}}
+            example: {password: mi-clave-fuerte}
+      responses:
+        '200':
+          description: Opciones de creación WebAuthn + id del challenge.
+          content: {application/json: {example: {challenge_id: 7b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, options: {publicKey: {challenge: 'base64url…', rp: {id: cbpayapp.com}}}, expires_at: '2026-07-11T00:02:00Z'}}}
+        '503':
+          description: Passkeys no configuradas para la org (`passkeys_unavailable`).
+  /v1/me/passkeys/register/finish:
+    post:
+      tags: [Passkeys]
+      operationId: passkeyRegisterFinish
+      summary: Completar el registro de una passkey
+      description: Valida la attestation y guarda la passkey bajo un nombre
+        amigable.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [challenge_id, credential]
+              properties:
+                challenge_id: {type: string}
+                name: {type: string, description: 'Nombre amigable del dispositivo, ej. "MacBook de Taylor".'}
+                credential: {type: object, description: 'El PublicKeyCredential JSON de navigator.credentials.create().'}
+            example: {challenge_id: 7b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, name: MacBook de Taylor, credential: {id: 'AaBb…', type: public-key, response: {}}}
+      responses:
+        '201':
+          description: Passkey registrada.
+          content: {application/json: {example: {passkey_id: 3b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, name: MacBook de Taylor, created_at: '2026-07-11T00:00:00Z'}}}
+        '409':
+          description: Esta credencial del dispositivo ya está registrada (`passkey_exists`).
+  /v1/me/passkeys/{passkeyID}:
+    delete:
+      tags: [Passkeys]
+      operationId: deleteMyPasskey
+      summary: Quitar una passkey
+      description: Quita una passkey. Exige la contraseña actual (si el miembro
+        tiene una) y se bloquea si es el único método de acceso que queda.
+      parameters:
+      - {name: passkeyID, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {type: object, properties: {password: {type: string}}}
+            example: {password: mi-clave-fuerte}
+      responses:
+        '200':
+          description: Passkey eliminada.
+          content: {application/json: {example: {passkey_id: 3b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, status: deleted}}}
+        '409':
+          description: No se puede quitar el único método de acceso (`last_login_method`).
+  /v1/me/sessions:
+    get:
+      tags: [Cuenta]
+      operationId: listMySessions
+      summary: Listar mis sesiones activas
+      description: Lista las sesiones (dispositivos) del miembro con IP, user
+        agent, método de login y si cada una es la actual.
+      responses:
+        '200':
+          description: Las sesiones del miembro.
+          content:
+            application/json:
+              example:
+                page: 1
+                page_size: 50
+                sessions:
+                - {session_id: 8b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, created_at: '2026-07-11T00:00:00Z', expires_at: '2026-07-12T00:00:00Z', login_method: password, current: true, active: true, ip: 200.1.2.3, user_agent: 'Mozilla/5.0'}
+  /v1/me/sessions/{sessionID}:
+    delete:
+      tags: [Cuenta]
+      operationId: revokeMySession
+      summary: Revocar una de mis sesiones
+      description: Cierra un dispositivo específico.
+      parameters:
+      - {name: sessionID, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Sesión revocada.
+          content: {application/json: {example: {session_id: 8b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, status: revoked}}}
+  /v1/me/sessions/revoke-all:
+    post:
+      tags: [Cuenta]
+      operationId: revokeAllMySessions
+      summary: Revocar todas mis otras sesiones
+      description: Cierra todas las sesiones salvo la actual.
+      responses:
+        '200':
+          description: Otras sesiones revocadas.
+          content: {application/json: {example: {status: revoked, sessions_revoked: 3}}}
+  /v1/me/security/events:
+    get:
+      tags: [Cuenta]
+      operationId: listMySecurityEvents
+      summary: Mi actividad de seguridad
+      description: Historial append-only de eventos de seguridad de la cuenta
+        (logins, cambios de credenciales, factores agregados/quitados). Exige
+        filtros de fecha `from`/`to`.
+      parameters:
+      - {name: from, in: query, required: true, schema: {type: string, format: date}}
+      - {name: to, in: query, required: true, schema: {type: string, format: date}}
+      - {name: page, in: query, required: false, schema: {type: integer}}
+      - {name: page_size, in: query, required: false, schema: {type: integer}}
+      responses:
+        '200':
+          description: Eventos de seguridad.
+          content:
+            application/json:
+              example:
+                page: 1
+                page_size: 50
+                events:
+                - {event_id: a1b2c3d4-3b7d-4bad-9bdd-2b0d7b3dcb6d, member_id: 1c2d3e4f-3b7d-4bad-9bdd-2b0d7b3dcb6d, event: password_changed, created_at: '2026-07-11T00:00:00Z', ip: 200.1.2.3}
+        '400':
+          $ref: '#/components/responses/InvalidRange'
 components:
   securitySchemes:
     bearerAuth:

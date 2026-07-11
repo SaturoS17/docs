@@ -7,6 +7,39 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 11, 2026" description="v1.40">
+
+**Added — Account profile, credentials and security**
+
+- **Password**: self-service change (`POST /v1/me/password`, revokes all
+  other sessions) and code-based recovery (`POST /v1/auth/password/forgot` →
+  `POST /v1/auth/password/reset`) via email or verified phone. Forgot always
+  returns 200 (never reveals whether the account exists).
+- **Login email**: verified change (`POST /v1/me/email/change` → `confirm`
+  with the code sent to the **new** email) and verification of the current
+  one (`POST /v1/me/email/verify`).
+- **Permanent alias** (`PUT /v1/me/alias`) and **profile QR**
+  (`GET /v1/me/qr`): identify your account to **receive** transfers.
+  Transfers accept `to_alias` and `to_qr_token`; `GET /v1/resolve` previews
+  the recipient before sending.
+- **Profile photo**: `PUT`/`DELETE /v1/me/avatar` and `GET /v1/avatars/{id}`.
+- **Self-service 2FA** (`GET`/`PUT /v1/otp/preferences`): enable and pick the
+  channel per action — now also **email** and **authenticator app (TOTP)** in
+  addition to SMS/WhatsApp. Harden freely; weakening requires verification.
+- **Authenticator app (TOTP)**: `POST /v1/me/totp/enroll` (QR) → `confirm`
+  (returns 10 one-time backup codes), `DELETE`, and
+  `POST /v1/me/totp/recovery-codes` to regenerate them.
+- **Passkeys (WebAuthn)**: passwordless sign-in with the device's biometrics
+  (Face ID, Touch ID, Windows Hello, security keys). Registration
+  (`/v1/me/passkeys/register/begin|finish`), management (`GET`, `DELETE`) and
+  login (`/v1/auth/passkey/login/begin|finish`).
+- **Sessions and activity**: `GET /v1/me/sessions` + revoke one or all, and
+  `GET /v1/me/security/events` (account security history).
+- Email alerts on sensitive events (password or email change, factor
+  added/removed).
+
+</Update>
+
 <Update label="July 10, 2026" description="v1.39">
 
 **Added — Reusable verified identity (unified KYC/KYB)**

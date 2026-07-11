@@ -8,6 +8,41 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="11 de julio de 2026" description="v1.40">
+
+**Agregado — Perfil, credenciales y seguridad de la cuenta**
+
+- **Contraseña**: cambio self-service (`POST /v1/me/password`, revoca las
+  demás sesiones) y recuperación por código
+  (`POST /v1/auth/password/forgot` → `POST /v1/auth/password/reset`) al email
+  o al teléfono verificado. Forgot siempre responde 200 (no revela si la
+  cuenta existe).
+- **Email de login**: cambio verificado (`POST /v1/me/email/change` →
+  `confirm` con el código enviado al email **nuevo**) y verificación del
+  actual (`POST /v1/me/email/verify`).
+- **Alias permanente** (`PUT /v1/me/alias`) y **QR de perfil**
+  (`GET /v1/me/qr`): identifican tu cuenta para **recibir** transferencias.
+  Las transferencias aceptan `to_alias` y `to_qr_token`; `GET /v1/resolve`
+  muestra una vista previa del destinatario antes de enviar.
+- **Foto de perfil**: `PUT`/`DELETE /v1/me/avatar` y `GET /v1/avatars/{id}`.
+- **2FA self-service** (`GET`/`PUT /v1/otp/preferences`): activa y elige el
+  canal por acción — ahora también **email** y **app autenticadora (TOTP)**
+  además de SMS/WhatsApp. Puedes endurecer libremente; relajar exige
+  verificación.
+- **App autenticadora (TOTP)**: `POST /v1/me/totp/enroll` (QR) →
+  `confirm` (entrega 10 códigos de respaldo de un solo uso), `DELETE`, y
+  `POST /v1/me/totp/recovery-codes` para regenerarlos.
+- **Passkeys (WebAuthn)**: inicio de sesión sin contraseña con la biometría
+  del dispositivo (Face ID, Touch ID, Windows Hello, llaves). Registro
+  (`/v1/me/passkeys/register/begin|finish`), gestión (`GET`, `DELETE`) y
+  login (`/v1/auth/passkey/login/begin|finish`).
+- **Sesiones y actividad**: `GET /v1/me/sessions` + revocar una o todas, y
+  `GET /v1/me/security/events` (historial de seguridad de la cuenta).
+- Avisos por email ante eventos sensibles (cambio de contraseña o email,
+  alta/baja de un factor).
+
+</Update>
+
 <Update label="10 de julio de 2026" description="v1.39">
 
 **Agregado — Identidad verificada reutilizable (KYC/KYB unificado)**

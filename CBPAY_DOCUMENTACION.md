@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-10 21:55 UTC · versión `1e3815f2427e`
+> **Documento actualizado:** 2026-07-11 05:09 UTC · versión `e8fdf23a426c`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.39 (10 de julio de 2026) |
+| Versión de la documentación | v1.40 (11 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -44,6 +44,7 @@ solo saldo.
   - [Transferencias internas](#transferencias-internas)
   - [Swaps](#swaps)
   - [Contactos](#contactos)
+  - [Perfil y seguridad](#perfil-y-seguridad)
   - [Crypto: wallets, depósitos y retiros](#crypto-wallets-depositos-y-retiros)
   - [Tarjetas: virtuales y físicas](#tarjetas-virtuales-y-fisicas)
   - [Banking](#banking)
@@ -3654,6 +3655,186 @@ datos de la cuenta matcheada más allá del hecho de existir (necesario para
 poder transferirle).
 
 
+## Perfil y seguridad
+
+*Contraseña, email verificado, alias y QR para recibir, foto de perfil, 2FA (SMS/WhatsApp/email/app), passkeys, y gestión de sesiones y actividad de seguridad*
+
+Todo lo que un usuario final gestiona sobre **su propia cuenta**: credenciales
+(contraseña y email), su identidad pública para recibir dinero (alias, QR y
+foto), los factores de doble autenticación (2FA) y el control de sus sesiones
+y actividad de seguridad. Todo vive bajo `/v1/me/*` y `/v1/auth/*`, y requiere
+una **sesión de usuario** (JWT); las API keys no aplican.
+
+```mermaid
+flowchart LR
+    cred["Credenciales<br/>contraseña · email"] --> cuenta["Mi cuenta"]
+    pub["Identidad pública<br/>alias · QR · foto"] --> cuenta
+    factores["Factores 2FA<br/>SMS · WhatsApp · email · app · passkey"] --> cuenta
+    sesiones["Sesiones y actividad"] --> cuenta
+```
+
+### Contraseña
+
+### Cambiarla (con sesión)
+
+`POST /v1/me/password` con `current_password` y `new_password`. Si tu cuenta
+se creó por login social y aún no tiene contraseña, dejas `current_password`
+vacío para fijar la primera. Al cambiarla se **revocan todas las demás
+sesiones** y la respuesta trae una sesión nueva.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/me/password \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"current_password":"clave-vieja","new_password":"mi-nueva-clave-fuerte"}'
+```
+### Recuperarla (sin sesión)
+
+`POST /v1/auth/password/forgot` con `org` y `email`. **Siempre** responde 200
+con el mismo cuerpo, exista o no la cuenta (no filtra si el email está
+registrado). El código llega al email; con `channel:"sms"` llega al teléfono
+verificado.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/auth/password/forgot \
+  -d '{"org":"cbpay","email":"taylor@example.com"}'
+```
+
+Luego `POST /v1/auth/password/reset` con `code` y `new_password`. Revoca todas
+las sesiones.
+### Email de login
+
+El email se puede cambiar, pero **siempre se verifica el email nuevo**: el
+código llega a la dirección nueva y solo al confirmarlo se aplica el cambio.
+Esto evita que alguien apunte el login a un buzón que no controla.
+
+### Iniciar el cambio
+
+`POST /v1/me/email/change` con `new_email`. Si la política 2FA lo exige, envía
+también el header `X-OTP-Token` de la acción `email_change`.
+### Confirmar con el código
+
+`POST /v1/me/email/confirm` con el `code` recibido en el email nuevo. Se avisa
+al email anterior del cambio.
+> **Nota**
+Cambiar tu email **no rompe** tus inicios de sesión sociales ya vinculados
+(Google, Apple, etc.): se identifican por el proveedor, no por el email.
+### Alias y QR para recibir
+
+Cada cuenta tiene dos identificadores públicos **permanentes** para que te
+envíen dinero entre cuentas CBPay:
+
+- **Alias** — lo eliges una sola vez con `PUT /v1/me/alias` (4-20 caracteres
+  `a-z 0-9 . _ -`, sin palabras reservadas). No se puede cambiar.
+- **QR de perfil** — `GET /v1/me/qr` devuelve el `qr_token`, el payload
+  `cbpay:pay?to=<token>` y un PNG listo para mostrar. Solo sirve para
+  **recibir**, por eso no cambia nunca.
+
+Quien te va a enviar puede confirmar tu identidad antes con
+`GET /v1/resolve?alias=taylor.code` (o `?qr=<token>`), que devuelve tu nombre,
+tipo y avatar. Y las transferencias aceptan el destino directo:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/transfers \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"to_alias":"taylor.code","amount":"10.00","idempotency_key":"t-001"}'
+```
+
+`to_qr_token` funciona igual (acepta el token o el payload `cbpay:pay?to=…`).
+
+### Foto de perfil
+
+`PUT /v1/me/avatar` con los bytes de la imagen (JPEG, PNG o WebP, máx 512 KB;
+el tipo se detecta del contenido). `DELETE /v1/me/avatar` la quita y
+`GET /v1/avatars/{accountID}` la sirve para las vistas previas.
+
+### Doble autenticación (2FA)
+
+CBPay protege acciones sensibles con un código de un solo uso. Tú eliges, por
+acción, si se exige y por **qué canal**:
+
+| Canal | Cómo llega el código | Notas |
+|---|---|---|
+| `sms` / `whatsapp` | Mensaje al teléfono | Sujeto a disponibilidad del canal |
+| `email` | Correo al email verificado | Requiere el email verificado |
+| `totp` | App autenticadora (Google Authenticator, Authy) | Inmune a SIM swap; no envía nada |
+
+Con `GET /v1/otp/preferences` ves tu política efectiva (y qué exige tu
+organización, que es el **piso**: puedes endurecer, no bajar de ahí). Con
+`PUT /v1/otp/preferences` la ajustas. **Relajar** tu 2FA (desactivar una acción
+o bajar de canal) pide primero verificar tu factor actual.
+
+#### App autenticadora (TOTP)
+
+### Enrolar
+
+`POST /v1/me/totp/enroll` devuelve el `otpauth://` y un QR. Escanéalo en tu app.
+### Confirmar
+
+`POST /v1/me/totp/confirm` con el primer código. Te entrega **10 códigos de
+respaldo** de un solo uso — guárdalos, se muestran una sola vez.
+Regenera los códigos con `POST /v1/me/totp/recovery-codes` o quita la app con
+`DELETE /v1/me/totp` (ambos piden un código vigente).
+
+#### Passkeys
+
+Los **passkeys** te dejan entrar sin contraseña usando la biometría del
+dispositivo (Face ID, Touch ID, Windows Hello, o una llave de seguridad).
+
+### Registrar
+
+`POST /v1/me/passkeys/register/begin` → pasa `options.publicKey` a
+`navigator.credentials.create()` → `POST /v1/me/passkeys/register/finish` con
+el resultado y un nombre ("MacBook de Taylor").
+### Iniciar sesión
+
+`POST /v1/auth/passkey/login/begin` con `org` → `navigator.credentials.get()`
+→ `POST /v1/auth/passkey/login/finish`. Como el passkey ya son dos factores
+(dispositivo + biometría), este login no pide un segundo código.
+Lista y quita tus passkeys con `GET`/`DELETE /v1/me/passkeys`. No puedes quitar
+tu **único** método de acceso.
+
+> **Nota**
+Los passkeys y el registro de passkeys dependen de que tu organización tenga
+configurado su dominio; si no, responden `passkeys_unavailable`.
+### Sesiones y actividad
+
+- `GET /v1/me/sessions` lista tus sesiones activas (dispositivo, IP, método de
+  login, cuál es la actual). `DELETE /v1/me/sessions/{id}` cierra una;
+  `POST /v1/me/sessions/revoke-all` cierra todas menos la actual.
+- `GET /v1/me/security/events?from=&to=` es el historial de seguridad de tu
+  cuenta: logins, cambios de contraseña o email, factores agregados o
+  quitados.
+
+Además, CBPay te **avisa por email** cuando cambia tu contraseña o email o se
+agrega/quita un factor — tu red de seguridad ante un acceso no autorizado.
+
+### Errores frecuentes
+
+| Código | HTTP | Qué hacer |
+|---|---|---|
+| `invalid_password` | 403 | La contraseña actual no coincide |
+| `alias_already_set` | 409 | El alias ya se fijó; es permanente |
+| `alias_taken` | 409 | Ese alias ya está en uso; elige otro |
+| `email_in_use` | 409 | Otro login ya usa ese email |
+| `no_pending_email` | 409 | No hay cambio de email pendiente; inícialo de nuevo |
+| `policy_locked_by_org` | 403 | Tu organización exige esa acción/canal; no se puede relajar |
+| `totp_enrollment_required` | 409 | Enrola la app antes de exigir el canal `totp` |
+| `last_login_method` | 409 | No puedes quitar tu único método de acceso |
+| `passkeys_unavailable` | 503 | Tu organización no tiene passkeys configuradas |
+| `image_too_large` / `unsupported_image` | 413 / 415 | Avatar máx 512 KB, JPEG/PNG/WebP |
+
+#### ¿Puedo cambiar mi alias o mi QR más adelante?
+No. Ambos son permanentes por diseño: son tu identidad estable para recibir
+dinero. El QR solo permite recibir, así que compartirlo no es un riesgo.
+#### Perdí el teléfono con mi app autenticadora
+Usa uno de tus **códigos de respaldo** (los que recibiste al confirmar TOTP)
+en cualquier verificación o login. Si no los tienes, recupera el acceso con
+otro factor (passkey o contraseña + otro canal) y regenera todo.
+#### ¿Cambiar el email me desconecta de Google/Apple?
+No. Los inicios de sesión sociales se identifican por el proveedor, no por el
+email, así que siguen funcionando.
+
+
 ## Crypto: wallets, depósitos y retiros
 
 *Crea wallets on-chain, deposita, transfiere y consulta movimientos*
@@ -6892,9 +7073,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-10 21:55 UTC · 156 requests · versión `df8c254fbd7b`
+> **Colección actualizada:** 2026-07-11 05:09 UTC · 185 requests · versión `2c5da02cc933`
 
-<PostmanFreshness iso="2026-07-10T21:55:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-11T05:09:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -6928,6 +7109,39 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.40 — 11 de julio de 2026
+
+**Agregado — Perfil, credenciales y seguridad de la cuenta**
+
+- **Contraseña**: cambio self-service (`POST /v1/me/password`, revoca las
+  demás sesiones) y recuperación por código
+  (`POST /v1/auth/password/forgot` → `POST /v1/auth/password/reset`) al email
+  o al teléfono verificado. Forgot siempre responde 200 (no revela si la
+  cuenta existe).
+- **Email de login**: cambio verificado (`POST /v1/me/email/change` →
+  `confirm` con el código enviado al email **nuevo**) y verificación del
+  actual (`POST /v1/me/email/verify`).
+- **Alias permanente** (`PUT /v1/me/alias`) y **QR de perfil**
+  (`GET /v1/me/qr`): identifican tu cuenta para **recibir** transferencias.
+  Las transferencias aceptan `to_alias` y `to_qr_token`; `GET /v1/resolve`
+  muestra una vista previa del destinatario antes de enviar.
+- **Foto de perfil**: `PUT`/`DELETE /v1/me/avatar` y `GET /v1/avatars/{id}`.
+- **2FA self-service** (`GET`/`PUT /v1/otp/preferences`): activa y elige el
+  canal por acción — ahora también **email** y **app autenticadora (TOTP)**
+  además de SMS/WhatsApp. Puedes endurecer libremente; relajar exige
+  verificación.
+- **App autenticadora (TOTP)**: `POST /v1/me/totp/enroll` (QR) →
+  `confirm` (entrega 10 códigos de respaldo de un solo uso), `DELETE`, y
+  `POST /v1/me/totp/recovery-codes` para regenerarlos.
+- **Passkeys (WebAuthn)**: inicio de sesión sin contraseña con la biometría
+  del dispositivo (Face ID, Touch ID, Windows Hello, llaves). Registro
+  (`/v1/me/passkeys/register/begin|finish`), gestión (`GET`, `DELETE`) y
+  login (`/v1/auth/passkey/login/begin|finish`).
+- **Sesiones y actividad**: `GET /v1/me/sessions` + revocar una o todas, y
+  `GET /v1/me/security/events` (historial de seguridad de la cuenta).
+- Avisos por email ante eventos sensibles (cambio de contraseña o email,
+  alta/baja de un factor).
 
 ### v1.39 — 10 de julio de 2026
 
@@ -7707,6 +7921,8 @@ está en la API Reference interactiva y en la colección Postman.
 | `POST` | `/v1/auth/register` | Registrar una cuenta |
 | `POST` | `/v1/auth/login` | Iniciar sesión |
 | `POST` | `/v1/auth/login/otp` | Completar el login en dos pasos |
+| `POST` | `/v1/auth/password/forgot` | Solicitar un código para recuperar la contraseña |
+| `POST` | `/v1/auth/password/reset` | Restablecer la contraseña con un código |
 
 
 ## Login social
@@ -7729,6 +7945,20 @@ está en la API Reference interactiva y en la colección Postman.
 | `GET` | `/v1/members` | Listar miembros |
 | `POST` | `/v1/members` | Agregar un miembro |
 | `POST` | `/v1/api-keys` | Crear una llave de API |
+| `POST` | `/v1/me/password` | Cambiar mi contraseña |
+| `POST` | `/v1/me/email/change` | Cambiar mi email de login |
+| `POST` | `/v1/me/email/verify` | Verificar mi email actual |
+| `POST` | `/v1/me/email/confirm` | Confirmar un cambio o verificación de email |
+| `PUT` | `/v1/me/alias` | Fijar mi alias permanente |
+| `GET` | `/v1/me/qr` | El QR de mi perfil |
+| `PUT` | `/v1/me/avatar` | Subir mi foto de perfil |
+| `DELETE` | `/v1/me/avatar` | Eliminar mi foto de perfil |
+| `GET` | `/v1/avatars/{accountID}` | Obtener el avatar de una cuenta |
+| `GET` | `/v1/resolve` | Resolver un destinatario por alias o QR |
+| `GET` | `/v1/me/sessions` | Listar mis sesiones activas |
+| `DELETE` | `/v1/me/sessions/{sessionID}` | Revocar una de mis sesiones |
+| `POST` | `/v1/me/sessions/revoke-all` | Revocar todas mis otras sesiones |
+| `GET` | `/v1/me/security/events` | Mi actividad de seguridad |
 
 
 ## Saldos
@@ -7918,6 +8148,8 @@ está en la API Reference interactiva y en la colección Postman.
 | `POST` | `/v1/otp/challenges` | Pedir un código OTP |
 | `GET` | `/v1/otp/challenges/{challengeID}` | Consultar un desafío OTP |
 | `POST` | `/v1/otp/challenges/{challengeID}/verify` | Verificar el código |
+| `GET` | `/v1/otp/preferences` | Mis preferencias de 2FA |
+| `PUT` | `/v1/otp/preferences` | Actualizar mis preferencias de 2FA |
 
 
 ## Account
@@ -7934,3 +8166,20 @@ está en la API Reference interactiva y en la colección Postman.
 | Método | Ruta | Qué hace |
 |---|---|---|
 | `GET` | `/v1/analytics/summary` | Resumen de la cuenta para dashboards |
+
+
+## Passkeys
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `POST` | `/v1/auth/passkey/login/begin` | Iniciar login con passkey (sin contraseña) |
+| `POST` | `/v1/auth/passkey/login/finish` | Completar login con passkey (sin contraseña) |
+| `GET` | `/v1/me/totp` | Estado de mi app autenticadora |
+| `DELETE` | `/v1/me/totp` | Quitar mi app autenticadora |
+| `POST` | `/v1/me/totp/enroll` | Iniciar el enrolamiento de la app autenticadora |
+| `POST` | `/v1/me/totp/confirm` | Confirmar y activar la app autenticadora |
+| `POST` | `/v1/me/totp/recovery-codes` | Regenerar códigos de respaldo |
+| `GET` | `/v1/me/passkeys` | Listar mis passkeys |
+| `POST` | `/v1/me/passkeys/register/begin` | Iniciar el registro de una passkey |
+| `POST` | `/v1/me/passkeys/register/finish` | Completar el registro de una passkey |
+| `DELETE` | `/v1/me/passkeys/{passkeyID}` | Quitar una passkey |
