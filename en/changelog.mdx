@@ -7,6 +7,21 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 12, 2026" description="v1.50">
+
+**Added — Continuous transaction monitoring (compliance controls)**
+
+- The platform now monitors every operation in real time with bank-grade
+  compliance controls. For the vast majority of clients this is invisible:
+  no flow changes and no perceptible latency.
+- New error codes documented in [errors](/en/errors): `403 compliance_hold`
+  (operation held by compliance), `403 geo_restricted` (unsupported
+  jurisdiction) and `503 compliance_check_unavailable` (check temporarily
+  unavailable — the operation did not go out; retry with the same
+  idempotency key).
+
+</Update>
+
 <Update label="July 12, 2026" description="v1.49">
 
 **Added — Documentation in 3 languages (English by default)**

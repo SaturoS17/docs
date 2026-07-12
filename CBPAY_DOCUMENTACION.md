@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-12 14:48 UTC · versión `b755aee1c00c`
+> **Documento actualizado:** 2026-07-12 16:20 UTC · versión `8d7262c2bc15`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.49 (12 de julio de 2026) |
+| Versión de la documentación | v1.50 (12 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -8030,6 +8030,14 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | 400 | `amount_too_small` | El monto del swap no alcanza la unidad mínima de la moneda destino |
 | 400 | `swap_asset_disabled` | Una de las monedas del swap está deshabilitada para tu organización |
 
+#### Cumplimiento (403 / 503)
+
+| HTTP | `error` | Significado |
+|---|---|---|
+| 403 | `compliance_hold` | La operación fue retenida por los controles de cumplimiento de la plataforma. No es un error de tu request: contacta a soporte con el timestamp — por política no se informa la razón exacta |
+| 403 | `geo_restricted` | El servicio o la operación no están disponibles para la jurisdicción de origen o de la contraparte |
+| 503 | `compliance_check_unavailable` | La verificación de cumplimiento no se pudo evaluar; la operación NO salió — reintenta con la **misma** clave de idempotencia |
+
 #### Servicio (5xx)
 
 | HTTP | `error` | Significado |
@@ -8278,6 +8286,20 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.50 — 12 de julio de 2026
+
+**Agregado — Monitoreo transaccional continuo (controles de cumplimiento)**
+
+- La plataforma ahora monitorea todas las operaciones en tiempo real con
+  controles de cumplimiento de estándar bancario. Para la gran mayoría de
+  los clientes esto es invisible: no cambia ningún flujo ni agrega latencia
+  perceptible.
+- Códigos de error nuevos documentados en [errores](#errores): `403
+  compliance_hold` (operación retenida por cumplimiento), `403
+  geo_restricted` (jurisdicción no soportada) y `503
+  compliance_check_unavailable` (verificación temporalmente no disponible —
+  la operación no salió; reintenta con la misma clave de idempotencia).
 
 ### v1.49 — 12 de julio de 2026
 

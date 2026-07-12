@@ -8,6 +8,22 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="12 de julio de 2026" description="v1.50">
+
+**Agregado — Monitoreo transaccional continuo (controles de cumplimiento)**
+
+- La plataforma ahora monitorea todas las operaciones en tiempo real con
+  controles de cumplimiento de estándar bancario. Para la gran mayoría de
+  los clientes esto es invisible: no cambia ningún flujo ni agrega latencia
+  perceptible.
+- Códigos de error nuevos documentados en [errores](/es/errores): `403
+  compliance_hold` (operación retenida por cumplimiento), `403
+  geo_restricted` (jurisdicción no soportada) y `503
+  compliance_check_unavailable` (verificación temporalmente no disponible —
+  la operación no salió; reintenta con la misma clave de idempotencia).
+
+</Update>
+
 <Update label="12 de julio de 2026" description="v1.49">
 
 **Agregado — Documentación en 3 idiomas (inglés por defecto)**

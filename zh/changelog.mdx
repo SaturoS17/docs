@@ -7,6 +7,19 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月12日" description="v1.50">
+
+**新增 — 持续交易监控（合规控制）**
+
+- 平台现已通过银行级合规控制实时监控每一笔操作。对绝大多数客户而言这是
+  无感的：不改变任何流程，也不会增加可感知的延迟。
+- 新增错误码已记录在[错误](/zh/errors)页面：`403 compliance_hold`
+  （操作被合规拦截）、`403 geo_restricted`（不支持的司法辖区）和
+  `503 compliance_check_unavailable`（合规检查暂时不可用 — 操作未发出；
+  请使用相同的幂等键重试）。
+
+</Update>
+
 <Update label="2026年7月12日" description="v1.49">
 
 **新增 — 文档支持 3 种语言（默认英语）**
