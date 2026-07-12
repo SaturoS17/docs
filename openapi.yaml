@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.46'
+  version: '1.47'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -383,7 +383,8 @@ paths:
       summary: Get the platform branding
       description: Effective branding of the platform you operate on (name, colors, logos in
         base64) so a white-label front end can theme itself from the API instead of hardcoding
-        assets. Read-only, no PII.
+        assets. `logo_url`/`symbol_url` are public CDN URLs for the same logos —
+        prefer them over the base64 payloads. Read-only, no PII.
       responses:
         '200':
           description: Effective branding.
@@ -400,6 +401,8 @@ paths:
                   accent: '#A16207'
                 logo_png_base64: iVBORw0KGgoAAAANSUhEUg...
                 symbol_png_base64: iVBORw0KGgoAAAANSUhEUg...
+                logo_url: https://cdn.cbpayapp.com/public/branding/default/logo.png
+                symbol_url: https://cdn.cbpayapp.com/public/branding/default/symbol.png
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/auth/register:
@@ -2491,6 +2494,7 @@ paths:
                       charge_id: c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4
                       our_reference: QR-778812
                       qr_image: data:image/png;base64,iVBORw0KGgo…
+                      qr_image_url: https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png
                 bank_transfer:
                   summary: 'Announced deposit (method: bank_transfer)'
                   value:
@@ -9681,7 +9685,10 @@ paths:
       summary: Upload my profile photo
       description: Uploads (or replaces) the account avatar. Body is the raw
         image bytes (JPEG, PNG or WebP), max 512 KB. The content type is
-        detected from the file's magic bytes, never the header.
+        detected from the file's magic bytes, never the header. When the image
+        is published to the public CDN, `avatar_url` is an absolute URL that
+        loads without authentication; otherwise it is the authenticated API
+        path.
       requestBody:
         required: true
         content:
@@ -9691,7 +9698,7 @@ paths:
       responses:
         '200':
           description: Avatar updated.
-          content: {application/json: {example: {status: avatar_updated, content_type: image/png, size_bytes: 20481, avatar_url: /v1/avatars/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d}}}
+          content: {application/json: {example: {status: avatar_updated, content_type: image/png, size_bytes: 20481, avatar_url: https://cdn.cbpayapp.com/public/avatars/1fa63bd1-0000-4000-8000-000000000001/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d}}}
         '413':
           description: The avatar exceeds 512 KB (`image_too_large`).
         '415':
@@ -9711,10 +9718,13 @@ paths:
       summary: Get an account's avatar
       description: Serves the avatar image of an account in the same
         organization (used for the recipient preview in transfers and
-        contacts).
+        contacts). Avatars published to the public CDN answer with a `302`
+        redirect to the CDN URL; legacy avatars are served directly.
       parameters:
       - {name: accountID, in: path, required: true, schema: {type: string}}
       responses:
+        '302':
+          description: Redirect to the public CDN URL of the avatar.
         '200':
           description: The image bytes (Content-Type is the stored image type).
           content: {image/png: {schema: {type: string, format: binary}}}
@@ -9736,7 +9746,7 @@ paths:
       responses:
         '200':
           description: Recipient preview.
-          content: {application/json: {example: {account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, display_name: Taylor Code, type: person, alias: taylor.code, avatar_url: /v1/avatars/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d}}}
+          content: {application/json: {example: {account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, display_name: Taylor Code, type: person, alias: taylor.code, avatar_url: https://cdn.cbpayapp.com/public/avatars/1fa63bd1-0000-4000-8000-000000000001/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d}}}
         '404':
           description: No account matches (`not_found`).
         '429':

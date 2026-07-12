@@ -338,6 +338,7 @@ Respuesta `201`:
   "charge": {
     "charge_id": "…",
     "qr_image": "<base64>",
+    "qr_image_url": "https://cdn.cbpayapp.com/public/payin-qr/<charge_id>.png",
     "qr_payload": "<contenido del QR>",
     "our_reference": "482915073",
     "status": "pending"
@@ -345,8 +346,10 @@ Respuesta `201`:
 }
 ```
 
-Muestra `qr_image` a tu cliente; cuando paga, tu cuenta se acredita
-automáticamente. También funciona en USD (`currency: "USD"`).
+Muestra el QR a tu cliente — `qr_image_url` es una URL pública de CDN lista
+para un `<img>` (prefiérela por sobre el base64 `qr_image`); cuando paga, tu
+cuenta se acredita automáticamente. También funciona en USD
+(`currency: "USD"`).
 
 </Tab>
 <Tab title="Paraguay">
@@ -409,7 +412,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
 
 En la respuesta, `charge.qr_payload` es el código **"copia e cola"** de
 PIX, para que el pagador pueda pegarlo en su app bancaria si no escanea la
-imagen (`charge.qr_image`). El QR expira según `expires_in` (default 1
+imagen (`charge.qr_image` base64 o `charge.qr_image_url`, la URL pública de
+CDN). El QR expira según `expires_in` (default 1
 hora); el pago se acredita automáticamente al confirmarse en el rail
 (conciliación continua — consulta puntual con `GET /v1/payins/{charge_id}`).
 

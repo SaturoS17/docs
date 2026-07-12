@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-12 02:48 UTC · versión `a25d323863e9`
+> **Documento actualizado:** 2026-07-12 06:05 UTC · versión `b7fa367fd00b`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.46 (11 de julio de 2026) |
+| Versión de la documentación | v1.47 (12 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -2907,6 +2907,7 @@ Respuesta `201`:
   "charge": {
     "charge_id": "…",
     "qr_image": "<base64>",
+    "qr_image_url": "https://cdn.cbpayapp.com/public/payin-qr/<charge_id>.png",
     "qr_payload": "<contenido del QR>",
     "our_reference": "482915073",
     "status": "pending"
@@ -2914,8 +2915,10 @@ Respuesta `201`:
 }
 ```
 
-Muestra `qr_image` a tu cliente; cuando paga, tu cuenta se acredita
-automáticamente. También funciona en USD (`currency: "USD"`).
+Muestra el QR a tu cliente — `qr_image_url` es una URL pública de CDN lista
+para un `` (prefiérela por sobre el base64 `qr_image`); cuando paga, tu
+cuenta se acredita automáticamente. También funciona en USD
+(`currency: "USD"`).
 
 #### Paraguay
 
@@ -2974,7 +2977,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
 
 En la respuesta, `charge.qr_payload` es el código **"copia e cola"** de
 PIX, para que el pagador pueda pegarlo en su app bancaria si no escanea la
-imagen (`charge.qr_image`). El QR expira según `expires_in` (default 1
+imagen (`charge.qr_image` base64 o `charge.qr_image_url`, la URL pública de
+CDN). El QR expira según `expires_in` (default 1
 hora); el pago se acredita automáticamente al confirmarse en el rail
 (conciliación continua — consulta puntual con `GET /v1/payins/{charge_id}`).
 
@@ -3752,6 +3756,20 @@ curl -X POST https://api.qbank.cl/platform/v1/transfers \
 `PUT /v1/me/avatar` con los bytes de la imagen (JPEG, PNG o WebP, máx 512 KB;
 el tipo se detecta del contenido). `DELETE /v1/me/avatar` la quita y
 `GET /v1/avatars/{accountID}` la sirve para las vistas previas.
+
+La respuesta trae `avatar_url`: cuando la imagen queda publicada en el CDN
+público es una **URL absoluta que carga sin autenticación** (ideal para el
+front — úsala directo en un ``); `GET /v1/avatars/{accountID}` responde
+en ese caso con un `302` hacia la misma URL.
+
+```json
+{
+  "status": "avatar_updated",
+  "content_type": "image/png",
+  "size_bytes": 20481,
+  "avatar_url": "https://cdn.cbpayapp.com/public/avatars/1fa63bd1-…/9b1deb4d-…"
+}
+```
 
 ### Doble autenticación (2FA)
 
@@ -7940,9 +7958,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-12 02:48 UTC · 216 requests · versión `ba9d6228656a`
+> **Colección actualizada:** 2026-07-12 06:04 UTC · 216 requests · versión `9a341dd34e1b`
 
-<PostmanFreshness iso="2026-07-12T02:48:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-12T06:04:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -7976,6 +7994,25 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.47 — 12 de julio de 2026
+
+**Agregado — Assets públicos por CDN (avatares, branding, QR de cobro)**
+
+- **Avatares por CDN**: `avatar_url` (en `PUT /v1/me/avatar`, `GET /v1/resolve`
+  y contactos) ahora es una **URL pública absoluta** que carga sin
+  autenticación cuando la imagen está publicada en el CDN;
+  `GET /v1/avatars/{accountID}` responde con un `302` hacia esa URL (los
+  avatares legados se siguen sirviendo directo).
+- **Branding con URLs**: `GET /v1/branding` suma `logo_url` y `symbol_url` —
+  URLs públicas de CDN de los logos, para tematizar el front sin decodificar
+  base64 (los campos `*_png_base64` se mantienen).
+- **QR de payins**: los cobros QR (`POST /v1/payins`, método `qr`) exponen
+  `qr_image_url`, el PNG del QR publicado en el CDN, además del base64
+  `qr_image` de siempre. Ideal para mostrarlo con un `` directo.
+
+Nada se rompe: todos los campos existentes se conservan; las URLs son
+aditivas. Guías: [Perfil](#perfil-y-seguridad) y [Payins](#payins).
 
 ### v1.46 — 11 de julio de 2026
 

@@ -336,6 +336,7 @@ Response `201`:
   "charge": {
     "charge_id": "…",
     "qr_image": "<base64>",
+    "qr_image_url": "https://cdn.cbpayapp.com/public/payin-qr/<charge_id>.png",
     "qr_payload": "<QR content>",
     "our_reference": "482915073",
     "status": "pending"
@@ -343,8 +344,10 @@ Response `201`:
 }
 ```
 
-Display `qr_image` to your customer; when they pay, your account is
-credited automatically. It also works in USD (`currency: "USD"`).
+Display the QR to your customer — `qr_image_url` is a public CDN URL ready
+for an `<img>` tag (prefer it over the base64 `qr_image`); when they pay,
+your account is credited automatically. It also works in USD
+(`currency: "USD"`).
 
 </Tab>
 <Tab title="Paraguay">
@@ -408,7 +411,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
 
 In the response, `charge.qr_payload` is the PIX **"copia e cola"** code,
 so the payer can paste it into their banking app instead of scanning the
-image (`charge.qr_image`). The QR expires per `expires_in` (default 1
+image (`charge.qr_image` base64 or `charge.qr_image_url`, the public CDN
+URL). The QR expires per `expires_in` (default 1
 hour); the payment is credited automatically once confirmed on the rail
 (continuous reconciliation — check on demand with
 `GET /v1/payins/{charge_id}`).

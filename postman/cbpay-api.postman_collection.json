@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — that never mix or convert automatically.\nPayouts and service fees can be paid from any of the four balances:\nset a default with `PUT /v1/settlement` or override per payout with\n`settlement_asset`.\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-12 02:48 UTC",
-    "_content_sha256": "ba9d6228656a72c9ca641d86f5f043cbb1a6f761a6da3394c428f431c7752eb2"
+    "_generated_at": "2026-07-12 06:04 UTC",
+    "_content_sha256": "9a341dd34e1b7fe3cc116aa4675037ee9909aa678b2807303164edd183935b2e"
   },
   "auth": {
     "type": "bearer",
@@ -394,7 +394,7 @@
                 "branding"
               ]
             },
-            "description": "Effective branding of the platform you operate on (name, colors, logos in base64) so a white-label front end can theme itself from the API instead of hardcoding assets. Read-only, no PII."
+            "description": "Effective branding of the platform you operate on (name, colors, logos in base64) so a white-label front end can theme itself from the API instead of hardcoding assets. `logo_url`/`symbol_url` are public CDN URLs for the same logos — prefer them over the base64 payloads. Read-only, no PII."
           },
           "response": [
             {
@@ -421,7 +421,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"brand_name\": \"CBPay\",\n  \"website\": \"www.cbpayapp.com\",\n  \"footer_address\": \"Miami: 25 SW 9th STREET, Suite 406, Miami, FL 33130\",\n  \"support_email\": \"\",\n  \"colors\": {\n    \"primary\": \"#FBC140\",\n    \"header\": \"#2E2E2E\",\n    \"accent\": \"#A16207\"\n  },\n  \"logo_png_base64\": \"iVBORw0KGgoAAAANSUhEUg...\",\n  \"symbol_png_base64\": \"iVBORw0KGgoAAAANSUhEUg...\"\n}"
+              "body": "{\n  \"brand_name\": \"CBPay\",\n  \"website\": \"www.cbpayapp.com\",\n  \"footer_address\": \"Miami: 25 SW 9th STREET, Suite 406, Miami, FL 33130\",\n  \"support_email\": \"\",\n  \"colors\": {\n    \"primary\": \"#FBC140\",\n    \"header\": \"#2E2E2E\",\n    \"accent\": \"#A16207\"\n  },\n  \"logo_png_base64\": \"iVBORw0KGgoAAAANSUhEUg...\",\n  \"symbol_png_base64\": \"iVBORw0KGgoAAAANSUhEUg...\",\n  \"logo_url\": \"https://cdn.cbpayapp.com/public/branding/default/logo.png\",\n  \"symbol_url\": \"https://cdn.cbpayapp.com/public/branding/default/symbol.png\"\n}"
             }
           ]
         },
@@ -1225,7 +1225,7 @@
                 "avatar"
               ]
             },
-            "description": "Uploads (or replaces) the account avatar. Body is the raw image bytes (JPEG, PNG or WebP), max 512 KB. The content type is detected from the file's magic bytes, never the header."
+            "description": "Uploads (or replaces) the account avatar. Body is the raw image bytes (JPEG, PNG or WebP), max 512 KB. The content type is detected from the file's magic bytes, never the header. When the image is published to the public CDN, `avatar_url` is an absolute URL that loads without authentication; otherwise it is the authenticated API path."
           },
           "response": [
             {
@@ -1253,7 +1253,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"status\": \"avatar_updated\",\n  \"content_type\": \"image/png\",\n  \"size_bytes\": 20481,\n  \"avatar_url\": \"/v1/avatars/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\"\n}"
+              "body": "{\n  \"status\": \"avatar_updated\",\n  \"content_type\": \"image/png\",\n  \"size_bytes\": 20481,\n  \"avatar_url\": \"https://cdn.cbpayapp.com/public/avatars/1fa63bd1-0000-4000-8000-000000000001/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\"\n}"
             }
           ]
         },
@@ -1327,7 +1327,7 @@
                 }
               ]
             },
-            "description": "Serves the avatar image of an account in the same organization (used for the recipient preview in transfers and contacts)."
+            "description": "Serves the avatar image of an account in the same organization (used for the recipient preview in transfers and contacts). Avatars published to the public CDN answer with a `302` redirect to the CDN URL; legacy avatars are served directly."
           }
         },
         {
@@ -1400,7 +1400,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"display_name\": \"Taylor Code\",\n  \"type\": \"person\",\n  \"alias\": \"taylor.code\",\n  \"avatar_url\": \"/v1/avatars/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\"\n}"
+              "body": "{\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"display_name\": \"Taylor Code\",\n  \"type\": \"person\",\n  \"alias\": \"taylor.code\",\n  \"avatar_url\": \"https://cdn.cbpayapp.com/public/avatars/1fa63bd1-0000-4000-8000-000000000001/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\"\n}"
             }
           ]
         },
@@ -4108,7 +4108,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\"\n  }\n}"
+              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
             }
           ]
         },
@@ -4168,7 +4168,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\"\n  }\n}"
+              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
             }
           ]
         },
@@ -4228,7 +4228,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\"\n  }\n}"
+              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
             }
           ]
         },
@@ -4288,7 +4288,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\"\n  }\n}"
+              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
             }
           ]
         },
@@ -4348,7 +4348,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\"\n  }\n}"
+              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
             }
           ]
         },

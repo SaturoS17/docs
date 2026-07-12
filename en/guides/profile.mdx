@@ -101,6 +101,20 @@ payload).
 type is detected from the content). `DELETE /v1/me/avatar` removes it and
 `GET /v1/avatars/{accountID}` serves it for previews.
 
+The response includes `avatar_url`: when the image is published to the public
+CDN it is an **absolute URL that loads without authentication** (ideal for the
+front end — use it directly in an `<img>`); in that case
+`GET /v1/avatars/{accountID}` answers with a `302` redirect to the same URL.
+
+```json
+{
+  "status": "avatar_updated",
+  "content_type": "image/png",
+  "size_bytes": 20481,
+  "avatar_url": "https://cdn.cbpayapp.com/public/avatars/1fa63bd1-…/9b1deb4d-…"
+}
+```
+
 ## Two-factor authentication (2FA)
 
 CBPay protects sensitive actions with a one-time code. You choose, per action,

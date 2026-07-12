@@ -8,6 +8,27 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="12 de julio de 2026" description="v1.47">
+
+**Agregado — Assets públicos por CDN (avatares, branding, QR de cobro)**
+
+- **Avatares por CDN**: `avatar_url` (en `PUT /v1/me/avatar`, `GET /v1/resolve`
+  y contactos) ahora es una **URL pública absoluta** que carga sin
+  autenticación cuando la imagen está publicada en el CDN;
+  `GET /v1/avatars/{accountID}` responde con un `302` hacia esa URL (los
+  avatares legados se siguen sirviendo directo).
+- **Branding con URLs**: `GET /v1/branding` suma `logo_url` y `symbol_url` —
+  URLs públicas de CDN de los logos, para tematizar el front sin decodificar
+  base64 (los campos `*_png_base64` se mantienen).
+- **QR de payins**: los cobros QR (`POST /v1/payins`, método `qr`) exponen
+  `qr_image_url`, el PNG del QR publicado en el CDN, además del base64
+  `qr_image` de siempre. Ideal para mostrarlo con un `<img>` directo.
+
+Nada se rompe: todos los campos existentes se conservan; las URLs son
+aditivas. Guías: [Perfil](/es/guias/perfil) y [Payins](/es/guias/payins).
+
+</Update>
+
 <Update label="11 de julio de 2026" description="v1.46">
 
 **Agregado — Catálogos de compliance**

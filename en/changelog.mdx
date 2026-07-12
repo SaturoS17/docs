@@ -7,6 +7,27 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 12, 2026" description="v1.47">
+
+**Added — Public assets over CDN (avatars, branding, charge QR codes)**
+
+- **Avatars over CDN**: `avatar_url` (in `PUT /v1/me/avatar`,
+  `GET /v1/resolve` and contacts) is now an **absolute public URL** that
+  loads without authentication once the image is published to the CDN;
+  `GET /v1/avatars/{accountID}` answers with a `302` redirect to that URL
+  (legacy avatars are still served directly).
+- **Branding URLs**: `GET /v1/branding` adds `logo_url` and `symbol_url` —
+  public CDN URLs for the logos, so the front end can theme itself without
+  decoding base64 (the `*_png_base64` fields remain).
+- **Payin QR codes**: QR charges (`POST /v1/payins`, method `qr`) expose
+  `qr_image_url`, the QR PNG published to the CDN, alongside the usual
+  base64 `qr_image`. Perfect for a direct `<img>` tag.
+
+Nothing breaks: every existing field is preserved; the URLs are additive.
+Guides: [Profile](/en/guides/profile) and [Payins](/en/guides/payins).
+
+</Update>
+
 <Update label="July 11, 2026" description="v1.46">
 
 **Added — Compliance catalogs**

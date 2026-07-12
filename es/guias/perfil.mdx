@@ -100,6 +100,20 @@ curl -X POST https://api.qbank.cl/platform/v1/transfers \
 el tipo se detecta del contenido). `DELETE /v1/me/avatar` la quita y
 `GET /v1/avatars/{accountID}` la sirve para las vistas previas.
 
+La respuesta trae `avatar_url`: cuando la imagen queda publicada en el CDN
+público es una **URL absoluta que carga sin autenticación** (ideal para el
+front — úsala directo en un `<img>`); `GET /v1/avatars/{accountID}` responde
+en ese caso con un `302` hacia la misma URL.
+
+```json
+{
+  "status": "avatar_updated",
+  "content_type": "image/png",
+  "size_bytes": 20481,
+  "avatar_url": "https://cdn.cbpayapp.com/public/avatars/1fa63bd1-…/9b1deb4d-…"
+}
+```
+
 ## Doble autenticación (2FA)
 
 CBPay protege acciones sensibles con un código de un solo uso. Tú eliges, por
