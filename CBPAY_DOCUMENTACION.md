@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-12 18:15 UTC · versión `c72b98d7f420`
+> **Documento actualizado:** 2026-07-12 20:17 UTC · versión `3d990a3edf8d`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.51 (12 de julio de 2026) |
+| Versión de la documentación | v1.52 (12 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -2053,8 +2053,8 @@ Cada payout se puede leer individualmente y el listado acepta filtros:
 curl https://api.qbank.cl/platform/v1/payouts/0d4f… \
   -H "Authorization: Bearer <token>"
 
-# Historial con filtros: fechas, estado y paginación
-curl "https://api.qbank.cl/platform/v1/payouts?from=2026-07-01&to=2026-07-08&status=failed&page=1&page_size=50" \
+# Historial con filtros: fechas, estado, país y paginación
+curl "https://api.qbank.cl/platform/v1/payouts?from=2026-07-01&to=2026-07-08&status=failed&country=MX&page=1&page_size=50" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -3054,7 +3054,7 @@ curl https://api.qbank.cl/platform/v1/payins/9c2a… \
   -H "Authorization: Bearer <token>"
 
 # Historial con filtros
-curl "https://api.qbank.cl/platform/v1/payins?from=2026-07-01&to=2026-07-08&status=credited&page_size=50" \
+curl "https://api.qbank.cl/platform/v1/payins?from=2026-07-01&to=2026-07-08&status=credited&country=BO&page_size=50" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -8225,9 +8225,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-12 18:15 UTC · 217 requests · versión `a8832f3736e8`
+> **Colección actualizada:** 2026-07-12 20:17 UTC · 217 requests · versión `f4347b6c23e7`
 
-<PostmanFreshness iso="2026-07-12T18:15:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-12T20:17:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -8261,6 +8261,15 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.52 — 12 de julio de 2026
+
+**Agregado — Filtro por país en envíos y depósitos**
+
+- `GET /v1/payouts` y `GET /v1/payins` aceptan el filtro `country`
+  (ISO 3166-1 alfa-2, ej. `?country=MX`), combinable con `status`,
+  `from`/`to` y la paginación. Guías de [payouts](#payouts) y
+  [payins](#payins) actualizadas.
 
 ### v1.51 — 12 de julio de 2026
 

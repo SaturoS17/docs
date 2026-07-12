@@ -7,6 +7,17 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月12日" description="v1.52">
+
+**新增 — 付款与收款列表的国家筛选**
+
+- `GET /v1/payouts` 和 `GET /v1/payins` 支持 `country` 筛选
+  （ISO 3166-1 alpha-2，例如 `?country=MX`），可与 `status`、
+  `from`/`to` 及分页组合使用。[付款](/zh/guides/payouts)与
+  [收款](/zh/guides/payins)指南已更新。
+
+</Update>
+
 <Update label="2026年7月12日" description="v1.51">
 
 **变更 — 按账户类型的钱包限额**

@@ -7,6 +7,17 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 12, 2026" description="v1.52">
+
+**Added — Country filter on payouts and payins**
+
+- `GET /v1/payouts` and `GET /v1/payins` accept the `country` filter
+  (ISO 3166-1 alpha-2, e.g. `?country=MX`), combinable with `status`,
+  `from`/`to` and pagination. [Payouts](/en/guides/payouts) and
+  [payins](/en/guides/payins) guides updated.
+
+</Update>
+
 <Update label="July 12, 2026" description="v1.51">
 
 **Changed — Wallet limits per account type**

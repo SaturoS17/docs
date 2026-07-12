@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.51'
+  version: '1.52'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -2194,6 +2194,11 @@ paths:
           - processing
           - completed
           - failed
+      - name: country
+        in: query
+        schema:
+          type: string
+        description: Filtra por pais de destino (ISO 3166-1 alfa-2, ej. CL, PE, MX).
       - name: from
         in: query
         schema:
@@ -2565,6 +2570,11 @@ paths:
           - unassigned
           - expired
           - failed
+      - name: country
+        in: query
+        schema:
+          type: string
+        description: Filtra por pais de origen (ISO 3166-1 alfa-2, ej. BO, MX, VE).
       - name: from
         in: query
         schema:
