@@ -63,93 +63,47 @@ mismo segundo del registro puede faltar alguna dirección — reintenta a los
 pocos segundos.
 </Note>
 
-Las wallets son **puertas de entrada**: puedes tener varias (empresas), pero
-el saldo de la cuenta es uno solo.
+Las wallets de depósito son **puertas de entrada**, no billeteras
+operativas: solo sirven para **recibir** crypto que se abona a tu saldo
+virtual. No envían fondos, no se exportan ni se importan (para eso están
+las [wallets segregadas](/es/guias/wallets-segregadas)).
 
-| Tipo de cuenta | Wallets por red |
+| Tipo de cuenta | Wallets de depósito por combinación red+activo |
 |---|---|
-| Persona | **1** (las de nacimiento ya ocupan el cupo de cada combinación) |
-| Empresa | **Ilimitadas** (usa `label` para distinguirlas) |
+| Persona | **1** (las de nacimiento ya ocupan el cupo) |
+| Empresa | **1** (las de nacimiento ya ocupan el cupo) |
 
-## Crear wallets adicionales
+## ¿Puedo crear más wallets de depósito?
 
-`POST /v1/crypto/wallets` queda para wallets **adicionales**: las empresas
-pueden crear tantas como necesiten (una por proveedor, por sucursal, por
-producto…). Las personas ya tienen su wallet de cada combinación desde el
-registro, así que una creación manual responde `422 wallet_limit_reached`.
+No. Toda cuenta — persona y empresa — tiene exactamente **una wallet de
+depósito por combinación** red+activo, y nacen todas con la cuenta.
+`POST /v1/crypto/wallets` existe solo para reponer un par que falte (caso
+excepcional): con las tres wallets ya provisionadas responde
+`422 wallet_limit_reached`.
 
-<CodeGroup>
-
-```bash Empresa (con label, ilimitadas)
+```bash
 curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{
-    "chain": "tron",
-    "label": "Tesorería principal"
-  }'
+  -d '{ "chain": "eth", "asset": "usdc" }'
 ```
 
-```bash Empresa, red Ethereum
-curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "chain": "eth",
-    "label": "Cobros e-commerce"
-  }'
-```
-
-```bash Wallet USDC (solo Ethereum)
-curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "chain": "eth",
-    "asset": "usdc",
-    "label": "Tesorería USDC"
-  }'
-```
-
-</CodeGroup>
-
-`asset` es opcional y por defecto `usdt`. El límite de una wallet por red
-para personas es por combinación red+activo: una persona puede tener su
-wallet `eth`/`usdt` **y** su wallet `eth`/`usdc`.
-
-Respuesta `201`:
-
-```json
-{
-  "wallet_id": "b7e3…",
-  "chain": "tron",
-  "asset": "USDT",
-  "address": "TQmZ…",
-  "label": "Tesorería principal",
-  "created_at": "2026-07-07T12:00:00Z",
-  "creation_fee": "1.000000"
-}
-```
-
-Si una persona intenta una segunda wallet en la misma red — `422`:
+Con el par ya provisionado — `422`:
 
 ```json
 {
   "error": "wallet_limit_reached",
-  "message": "person accounts can hold one wallet per network"
+  "message": "accounts hold one deposit wallet per network/asset pair (created automatically with the account); use segregated wallets for additional wallets"
 }
 ```
 
-- Las wallets **de nacimiento son siempre gratis**. Las creaciones
-  adicionales tienen un **costo fijo** (`wallet_creation`) configurado por
-  CBPay — puede diferenciarse para personas y empresas, e incluso por
-  cuenta. Con comisión 0 (el default) es gratis. Si la creación falla, el
-  cargo se reembolsa automáticamente.
-- Una **persona** que ya tiene wallet en esa red recibe
-  `422 wallet_limit_reached`; las **empresas** pueden crear tantas como
-  necesiten. Todas las diferencias persona/empresa están en
-  [personas y empresas](/es/conceptos/personas-y-empresas).
-- `label` es opcional y solo descriptivo.
+- Las wallets **de nacimiento son siempre gratis**; el fee `wallet_creation`
+  solo aplicaría a una reposición manual (con comisión 0, el default, es
+  gratis; si la creación falla, el cargo se reembolsa automáticamente).
+- ¿Necesitas **varias wallets** con saldo propio (por cliente, por
+  proyecto, por unidad de negocio)? Ese es el producto
+  [wallets segregadas](/es/guias/wallets-segregadas): empresas sin límite,
+  personas 1 por combinación red+activo.
 
 ## Ver mis wallets
 
@@ -166,7 +120,7 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
       "chain": "tron",
       "asset": "USDT",
       "address": "TQmZ…",
-      "label": "Tesorería principal",
+      "label": "",
       "created_at": "2026-07-07T12:00:00Z"
     },
     {
@@ -174,8 +128,16 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
       "chain": "eth",
       "asset": "USDT",
       "address": "0x8f3B…",
-      "label": "Cobros e-commerce",
-      "created_at": "2026-07-07T12:05:00Z"
+      "label": "",
+      "created_at": "2026-07-07T12:00:00Z"
+    },
+    {
+      "wallet_id": "fb88…",
+      "chain": "eth",
+      "asset": "USDC",
+      "address": "0xa072…",
+      "label": "",
+      "created_at": "2026-07-07T12:00:00Z"
     }
   ]
 }
@@ -367,6 +329,6 @@ las wallets son puertas de entrada, el saldo por moneda es uno solo.
 | 400 | `invalid_asset` | Combinación red/activo sin riel on-chain (soportadas: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc` — `BTC` y `GOLD` no operan on-chain) |
 | 400 | `to_address_required` | Falta la dirección destino del retiro |
 | 402 | `insufficient_funds` | Saldo insuficiente en ese activo (para el retiro o la comisión de creación) |
-| 422 | `wallet_limit_reached` | Una persona intentó crear una segunda wallet para la misma red+activo |
+| 422 | `wallet_limit_reached` | La cuenta ya tiene su wallet de depósito de esa combinación red+activo (aplica a personas y empresas) |
 | 422 | (retiro con `status: failed`) | Rechazado al transmitir; débito reembolsado |
 | 503 | `withdrawals_unavailable` | Retiros no habilitados aún para este corredor |

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.50'
+  version: '1.51'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC 和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
     payout 和服务费可从四个余额中的任意一个支付:
@@ -40,7 +40,7 @@ tags:
 - name: 加密货币
   description: 链上 USDT 充值与提现(TRON 和 Ethereum)。
 - name: 隔离钱包
-  description: 拥有自身余额的链上钱包(仅企业账户)——创建、导入、发送、导出私钥与自动转发。余额存在于链上,从不进入账本。
+  description: 拥有自身余额的链上钱包(企业不限数量;个人每个网络+资产组合 1 个)——创建、导入、发送、导出私钥与自动转发。余额存在于链上,从不进入账本。
 - name: KYC / KYB
 - name: AML 筛查
   description: 身份验证:个人 KYC、企业 KYB,含 AML 筛查、重新筛查与持续监控。
@@ -5794,11 +5794,11 @@ paths:
       tags:
       - 加密货币
       operationId: createCryptoWallet
-      summary: 创建额外钱包
-      description: '为调用账户创建一个**额外的**链上钱包。每个账户出生即拥有每个受支持组合的一个免费钱包(`tron`/`usdt`、`eth`/`usdt`、`eth`/`usdc`——注册时在后台自动开通),因此本端点用于额外钱包。每笔充值入账到钱包自身资产的余额。个人账户每个网络+资产只能持有**一个钱包**(出生钱包已占用每个槽位,手动创建会返回 `422 wallet_limit_reached`);企业账户可创建**不限数量**的钱包(用 `label` 区分)。
+      summary: 补齐缺失的充值钱包
+      description: '每个账户——个人和企业——每个受支持组合都恰好持有**一个充值钱包**(`tron`/`usdt`、`eth`/`usdt`、`eth`/`usdc`),注册时自动免费开通。充值钱包只用于**接收**加密货币并计入账户的虚拟余额:不能发送,也不能导出或导入(那是隔离钱包的功能)。本端点仅用于补齐缺失的组合(例外情况):组合已存在时对所有账户类型都返回 `422 wallet_limit_reached`。
 
 
-        每次额外创建在 CBPay 配置了 `wallet_creation` 费用时计费(每个钱包固定;0 = 免费,即默认值;可按账户配置);出生钱包始终免费。创建失败时自动退款。'
+        手动补齐在 CBPay 配置了 `wallet_creation` 费用时计费(每个钱包固定;0 = 免费,即默认值);出生钱包始终免费。创建失败时自动退款。'
       requestBody:
         required: true
         content:
@@ -5824,26 +5824,15 @@ paths:
                   type: string
                   description: 可选的描述性标签。
             examples:
-              person:
-                summary: 个人 — 每个网络+资产一个钱包
+              tron_usdt:
+                summary: 补齐 TRON USDT 组合
                 value:
                   chain: tron
-              company_labeled:
-                summary: 企业 — 带标签的钱包(不限数量)
-                value:
-                  chain: tron
-                  label: Main treasury
-              company_eth:
-                summary: 企业 — Ethereum 网络
-                value:
-                  chain: eth
-                  label: E-commerce collections
               usdc_wallet:
-                summary: USDC 钱包(仅 Ethereum)
+                summary: 补齐 USDC 组合(仅 Ethereum)
                 value:
                   chain: eth
                   asset: usdc
-                  label: USDC treasury
       responses:
         '201':
           description: 钱包已创建。
@@ -5878,13 +5867,13 @@ paths:
         '402':
           $ref: '#/components/responses/InsufficientFunds'
         '422':
-          description: 个人账户在该网络已持有钱包。
+          description: 该账户在此组合下已持有充值钱包(适用于所有账户类型)。
           content:
             application/json:
               schema: *id008
               example:
                 error: wallet_limit_reached
-                message: person accounts hold one wallet per network; company accounts can create more
+                message: accounts hold one deposit wallet per network/asset pair (created automatically with the account); use segregated wallets for additional wallets
     get:
       tags:
       - 加密货币
@@ -5909,14 +5898,20 @@ paths:
                   chain: tron
                   asset: USDT
                   address: TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT
-                  label: Main treasury
+                  label: ''
                   created_at: '2026-07-07T12:00:00Z'
                 - wallet_id: a1c9d8e7-2b3c-4d5e-6f70-8a9b0c1d2e3f
                   chain: eth
                   asset: USDT
                   address: '0x8f3Bc55D9F4a2E71c06b9a3D2e1F0A9B8C7D6E5F'
-                  label: E-commerce collections
-                  created_at: '2026-07-07T12:05:00Z'
+                  label: ''
+                  created_at: '2026-07-07T12:00:00Z'
+                - wallet_id: fb88c2d1-7a4e-4b0c-8d3f-1e2a3b4c5d6e
+                  chain: eth
+                  asset: USDC
+                  address: '0xa072E48Bc55D9F4a2E71c06b9a3D2e1F0A9B8C7D'
+                  label: ''
+                  created_at: '2026-07-07T12:00:00Z'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -5927,7 +5922,7 @@ paths:
       - 隔离钱包
       operationId: createSegregatedWallet
       summary: 创建隔离钱包
-      description: 创建一个由调用方**企业**账户拥有的链上新钱包。其余额存在于链上(从不进入账本),并豁免于资金归集(treasury sweep)。支持的组合:`tron`/`usdt`、`eth`/`usdt`、`eth`/`usdc`。仅限企业账户(个人账户返回 `403 company_required`)。可选的 `Idempotency-Key`(或请求体中的 `idempotency_key`)让重试安全:重复请求返回同一钱包,不会创建第二个。可能收取 `wallet_creation` 费用(创建失败退款)。
+      description: 创建一个由调用方账户拥有的链上新钱包。其余额存在于链上(从不进入账本),并豁免于资金归集(treasury sweep)。支持的组合:`tron`/`usdt`、`eth`/`usdt`、`eth`/`usdc`。企业账户可创建不限数量的钱包;个人账户每个网络+资产组合限 **1 个**(创建第二个会返回 `422 wallet_limit_reached`)。可选的 `Idempotency-Key`(或请求体中的 `idempotency_key`)让重试安全:重复请求返回同一钱包,不会创建第二个。可能收取 `wallet_creation` 费用(创建失败退款)。
       requestBody:
         required: true
         content:
@@ -5996,13 +5991,13 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
-          description: 需要企业账户或服务已停用。
+          description: 该账户的服务已停用。
           content:
             application/json:
               schema: *id009
               example:
-                error: company_required
-                message: segregated wallets are available for company accounts only
+                error: service_disabled
+                message: this service is not enabled for the account
         '409':
           description: 使用此幂等键的钱包仍在开通中。
           content:
@@ -6011,6 +6006,14 @@ paths:
               example:
                 error: idempotency_conflict
                 message: a wallet with this idempotency key is still being provisioned; retry with the same key
+        '422':
+          description: 个人账户在该组合下已持有隔离钱包。
+          content:
+            application/json:
+              schema: *id009
+              example:
+                error: wallet_limit_reached
+                message: person accounts hold one segregated wallet per network/asset pair; company accounts have no limit
     get:
       tags:
       - 隔离钱包
@@ -6143,13 +6146,21 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
-          description: 需要企业账户、验证、真人会话或 OTP。
+          description: 需要验证、真人会话或 OTP。
           content:
             application/json:
               schema: *id009
               example:
                 error: human_session_required
                 message: this operation handles private key material and requires a signed-in user session with 2FA; API keys are not allowed
+        '422':
+          description: 个人账户在该组合下已持有隔离钱包。
+          content:
+            application/json:
+              schema: *id009
+              example:
+                error: wallet_limit_reached
+                message: person accounts hold one segregated wallet per network/asset pair; company accounts have no limit
   /v1/wallets/{walletID}:
     get:
       tags:

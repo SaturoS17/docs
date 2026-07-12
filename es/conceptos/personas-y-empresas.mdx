@@ -17,7 +17,8 @@ El tipo se define al crear la cuenta y no cambia. Lo ves en
 | Capacidad | Persona | Empresa |
 |---|---|---|
 | Saldo USDT, payouts, payins, transferencias, banking, cartola | Igual | Igual |
-| **Wallets crypto** por red | **1** (`422 wallet_limit_reached` en la segunda) | **Ilimitadas** (usa `label` para distinguirlas) |
+| **Wallets de depósito** ([crypto](/es/guias/crypto)) por red+activo | **1** (nacen con la cuenta; solo reciben) | **1** (nacen con la cuenta; solo reciben) |
+| **Wallets segregadas** ([saldo propio on-chain](/es/guias/wallets-segregadas)) | **1 por red+activo** | **Ilimitadas** (usa `label` para distinguirlas) |
 | **Tarjetas** | **1 virtual + 1 física**, solo para sí misma | **Ilimitadas**, para la empresa o para **personas designadas** (empleados) |
 | **Miembros con login** (`POST /v1/members`) | No (`403 company_only`) | Sí — roles `owner` / `operator` / `viewer` |
 | **Verificación de identidad** (`/v1/me/verification`) | Onboarding **KYC** (wizard con documentos + prueba de vida) | Onboarding **KYB** (wizard con documentos societarios) |
@@ -39,8 +40,9 @@ límites de gasto por tarjeta, servicios habilitados — funciona idéntico.
 - Verificación: pide tu link KYC con `POST /v1/me/verification/link` y
   completa el wizard — hasta aprobar solo puedes fondear
   ([guía](/es/guias/kyc)).
-- Crypto: **una wallet por red** (TRON y ETH). ¿Necesitas más direcciones?
-  Ese es un caso de cuenta empresa.
+- Crypto: tus **wallets de depósito nacen con la cuenta** (una por
+  red+activo; solo reciben). ¿Necesitas una wallet con saldo propio?
+  Puedes tener **1 wallet segregada por red+activo**.
 - Tarjetas: hasta **1 virtual + 1 física**; la primera emisión lleva tus
   datos y documentos — [guía](/es/guias/tarjetas).
 - Sin miembros: tu login y tus API keys operan la cuenta.
@@ -52,8 +54,10 @@ límites de gasto por tarjeta, servicios habilitados — funciona idéntico.
 - Verificación: pide tu link KYB con `POST /v1/me/verification/link` y
   completa el wizard con los datos societarios; aprobada, puedes además
   verificar a tus propios clientes ([guía](/es/guias/kyc)).
-- Crypto: **wallets ilimitadas** por red (una por sucursal, por producto,
-  por proveedor…), con `label` descriptivo.
+- Crypto: tus **wallets de depósito nacen con la cuenta** (una por
+  red+activo; solo reciben). Para saldos separados on-chain crea
+  **wallets segregadas ilimitadas** (una por sucursal, por producto, por
+  proveedor…), con `label` descriptivo.
 - Tarjetas: **ilimitadas** — corporativas (titular = la empresa, con
   documentos societarios en la primera) o para **empleados** (persona
   designada con sus datos en cada designación) —
@@ -69,7 +73,7 @@ límites de gasto por tarjeta, servicios habilitados — funciona idéntico.
 | `error` | Qué significa |
 |---|---|
 | `403 company_only` | Intentaste una función de empresa (miembros) desde una cuenta persona |
-| `422 wallet_limit_reached` | Una persona intentó su segunda wallet en la misma red |
+| `422 wallet_limit_reached` | La cuenta ya tiene su wallet de esa combinación (depósito: todos; segregada: personas) |
 | `409 card_limit_reached` | Una persona intentó su segunda tarjeta del mismo tipo |
 
 <Note>

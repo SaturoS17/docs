@@ -7,6 +7,23 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月12日" description="v1.51">
+
+**变更 — 按账户类型的钱包限额**
+
+- **充值钱包**：每个账户——个人和企业——每个受支持组合（`tron`/`usdt`、
+  `eth`/`usdt`、`eth`/`usdc`）都恰好持有**一个充值钱包**，注册时自动免费
+  开通。`POST /v1/crypto/wallets` 现在仅用于补齐缺失的组合；组合已存在时
+  对所有账户类型都返回 `422 wallet_limit_reached`（此前企业可创建更多）。
+- **隔离钱包**：现在个人账户也可使用，每个网络+资产组合限 **1 个**
+  （第二次尝试返回 `422 wallet_limit_reached`）。企业账户仍不限数量。
+  `403 company_required` 错误不再适用于隔离钱包。
+- [加密货币](/zh/guides/crypto)与[隔离钱包](/zh/guides/segregated-wallets)
+  指南、[个人与企业](/zh/concepts/persons-companies)页面及
+  [错误](/zh/errors)页面已更新。
+
+</Update>
+
 <Update label="2026年7月12日" description="v1.50">
 
 **新增 — 持续交易监控（合规控制）**

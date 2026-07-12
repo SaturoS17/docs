@@ -8,6 +8,27 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="12 de julio de 2026" description="v1.51">
+
+**Cambiado — Límites de wallets por tipo de cuenta**
+
+- **Wallets de depósito**: toda cuenta — persona y empresa — mantiene
+  exactamente **una wallet de depósito por par** soportado (`tron`/`usdt`,
+  `eth`/`usdt`, `eth`/`usdc`), creadas gratis al registrarse. `POST
+  /v1/crypto/wallets` queda solo para restaurar un par faltante; con el par
+  ya creado responde `422 wallet_limit_reached` para cualquier tipo de
+  cuenta (antes las empresas podían crear más).
+- **Wallets segregadas**: ahora también disponibles para cuentas persona,
+  con límite de **1 por par** red/activo (la segunda responde `422
+  wallet_limit_reached`). Las empresas siguen sin límite. El error `403
+  company_required` ya no aplica a wallets segregadas.
+- Guías de [crypto](/es/guias/crypto) y [wallets
+  segregadas](/es/guias/wallets-segregadas), página de [personas y
+  empresas](/es/conceptos/personas-y-empresas) y
+  [errores](/es/errores) actualizadas.
+
+</Update>
+
 <Update label="12 de julio de 2026" description="v1.50">
 
 **Agregado — Monitoreo transaccional continuo (controles de cumplimiento)**

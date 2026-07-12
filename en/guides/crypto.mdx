@@ -63,92 +63,47 @@ query at the very second of registration an address may still be missing —
 retry a few seconds later.
 </Note>
 
-Wallets are **entry doors**: you can hold several (companies), but the
-account balance is a single one.
+Deposit wallets are **entry doors**, not operating wallets: they only
+**receive** crypto that credits your virtual balance. They cannot send
+funds, and cannot be exported or imported (that is what
+[segregated wallets](/en/guides/segregated-wallets) are for).
 
-| Account type | Wallets per network |
+| Account type | Deposit wallets per network+asset pair |
 |---|---|
-| Person | **1** (the birth wallets already take each combination's slot) |
-| Company | **Unlimited** (use `label` to tell them apart) |
+| Person | **1** (the birth wallets already take the slot) |
+| Company | **1** (the birth wallets already take the slot) |
 
-## Create additional wallets
+## Can I create more deposit wallets?
 
-`POST /v1/crypto/wallets` is for **additional** wallets: companies can
-create as many as they need (one per supplier, per branch, per product…).
-Persons already hold their wallet for each combination since registration,
-so a manual creation responds `422 wallet_limit_reached`.
+No. Every account — person and company — holds exactly **one deposit
+wallet per network+asset pair**, and all of them are born with the account.
+`POST /v1/crypto/wallets` exists only to restore a missing pair (an
+exceptional case): with the three wallets already provisioned it responds
+`422 wallet_limit_reached`.
 
-<CodeGroup>
-
-```bash Company (with label, unlimited)
+```bash
 curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{
-    "chain": "tron",
-    "label": "Main treasury"
-  }'
+  -d '{ "chain": "eth", "asset": "usdc" }'
 ```
 
-```bash Company, Ethereum network
-curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "chain": "eth",
-    "label": "E-commerce collections"
-  }'
-```
-
-```bash USDC wallet (Ethereum only)
-curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "chain": "eth",
-    "asset": "usdc",
-    "label": "USDC treasury"
-  }'
-```
-
-</CodeGroup>
-
-`asset` is optional and defaults to `usdt`. The one-wallet-per-network
-limit for persons applies per network+asset combination: a person can hold
-their `eth`/`usdt` wallet **and** their `eth`/`usdc` wallet.
-
-Response `201`:
-
-```json
-{
-  "wallet_id": "b7e3…",
-  "chain": "tron",
-  "asset": "USDT",
-  "address": "TQmZ…",
-  "label": "Main treasury",
-  "created_at": "2026-07-07T12:00:00Z",
-  "creation_fee": "1.000000"
-}
-```
-
-If a person attempts a second wallet on the same network — `422`:
+With the pair already provisioned — `422`:
 
 ```json
 {
   "error": "wallet_limit_reached",
-  "message": "person accounts can hold one wallet per network"
+  "message": "accounts hold one deposit wallet per network/asset pair (created automatically with the account); use segregated wallets for additional wallets"
 }
 ```
 
-- Birth wallets are **always free**. Additional creations carry a **fixed
-  cost** (`wallet_creation`) configured by CBPay — it can differ for persons
-  and companies, and even per account. With a fee of 0 (the default) it is
-  free. If creation fails, the charge is refunded automatically.
-- A **person** who already holds a wallet on that network receives
-  `422 wallet_limit_reached`; **companies** can create as many as they
-  need. All person/company differences live in
-  [persons and companies](/en/concepts/persons-companies).
-- `label` is optional and descriptive only.
+- Birth wallets are **always free**; the `wallet_creation` fee would only
+  apply to a manual restoration (with a fee of 0, the default, it is free;
+  if creation fails, the charge is refunded automatically).
+- Need **several wallets** with their own balance (per client, per
+  project, per business unit)? That is the
+  [segregated wallets](/en/guides/segregated-wallets) product: companies
+  have no limit, persons hold 1 per network+asset pair.
 
 ## View my wallets
 
@@ -165,7 +120,7 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
       "chain": "tron",
       "asset": "USDT",
       "address": "TQmZ…",
-      "label": "Main treasury",
+      "label": "",
       "created_at": "2026-07-07T12:00:00Z"
     },
     {
@@ -173,8 +128,16 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
       "chain": "eth",
       "asset": "USDT",
       "address": "0x8f3B…",
-      "label": "E-commerce collections",
-      "created_at": "2026-07-07T12:05:00Z"
+      "label": "",
+      "created_at": "2026-07-07T12:00:00Z"
+    },
+    {
+      "wallet_id": "fb88…",
+      "chain": "eth",
+      "asset": "USDC",
+      "address": "0xa072…",
+      "label": "",
+      "created_at": "2026-07-07T12:00:00Z"
     }
   ]
 }
@@ -365,6 +328,6 @@ USDC); wallets are entry points, each currency has a single balance.
 | 400 | `invalid_asset` | Network/asset pair without an on-chain rail (supported: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc` — `BTC` and `GOLD` do not operate on-chain) |
 | 400 | `to_address_required` | Missing withdrawal destination address |
 | 402 | `insufficient_funds` | Not enough balance in that asset (for the withdrawal or the creation fee) |
-| 422 | `wallet_limit_reached` | A person tried to create a second wallet for the same network+asset |
+| 422 | `wallet_limit_reached` | The account already holds its deposit wallet for that network+asset pair (applies to persons and companies) |
 | 422 | (withdrawal with `status: failed`) | Rejected at broadcast; debit refunded |
 | 503 | `withdrawals_unavailable` | Withdrawals not enabled for this corridor yet |

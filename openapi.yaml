@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.50'
+  version: '1.51'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -51,7 +51,7 @@ tags:
 - name: Crypto
   description: On-chain USDT funding and withdrawals (TRON and Ethereum).
 - name: Segregated wallets
-  description: On-chain wallets with their own balance (company accounts only) — create, import, send, export the private key and auto-forward. The balance lives on-chain, never in the ledger.
+  description: On-chain wallets with their own balance (companies unlimited; persons 1 per network+asset pair) — create, import, send, export the private key and auto-forward. The balance lives on-chain, never in the ledger.
 - name: KYC / KYB
 - name: AML screening
   description: 'Identity verification: KYC for persons, KYB for companies, with AML screening, rescreening
@@ -5953,19 +5953,18 @@ paths:
       tags:
       - Crypto
       operationId: createCryptoWallet
-      summary: Create an additional wallet
-      description: 'Creates an **additional** on-chain wallet for the calling account. Every account is
-        born with one free wallet per supported pair (`tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc` —
-        provisioned automatically in the background on registration), so this endpoint is for extra
-        wallets. Every deposit credits the wallet''s own asset balance. Person accounts hold **one wallet
-        per network+asset** (the birth wallets already take each slot, so a manual creation responds `422
-        wallet_limit_reached`); company accounts can create **unlimited** wallets (use `label` to tell
-        them apart).
+      summary: Restore a missing deposit wallet
+      description: 'Every account — person and company — holds exactly **one deposit wallet per supported
+        pair** (`tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`), provisioned automatically and free of charge
+        on registration. Deposit wallets only **receive** crypto that credits the account''s virtual
+        balance: they cannot send, and cannot be exported or imported (use segregated wallets for that).
+        This endpoint exists only to restore a missing pair (an exceptional case): with the pair already
+        provisioned it responds `422 wallet_limit_reached` for every account type.
 
 
-        Every additional creation bills the `wallet_creation` fee when configured by CBPay (fixed per
-        wallet; 0 = free, the default; configurable per account); birth wallets are always free. The
-        charge is refunded automatically if creation fails.'
+        A manual restoration bills the `wallet_creation` fee when configured by CBPay (fixed per wallet;
+        0 = free, the default); birth wallets are always free. The charge is refunded automatically if
+        creation fails.'
       requestBody:
         required: true
         content:
@@ -5991,26 +5990,15 @@ paths:
                   type: string
                   description: Optional descriptive label.
             examples:
-              person:
-                summary: Person — one wallet per network+asset
+              tron_usdt:
+                summary: Restore the TRON USDT pair
                 value:
                   chain: tron
-              company_labeled:
-                summary: Company — labeled wallet (unlimited)
-                value:
-                  chain: tron
-                  label: Main treasury
-              company_eth:
-                summary: Company — Ethereum network
-                value:
-                  chain: eth
-                  label: E-commerce collections
               usdc_wallet:
-                summary: USDC wallet (Ethereum only)
+                summary: Restore the USDC pair (Ethereum only)
                 value:
                   chain: eth
                   asset: usdc
-                  label: USDC treasury
       responses:
         '201':
           description: Wallet created.
@@ -6045,13 +6033,13 @@ paths:
         '402':
           $ref: '#/components/responses/InsufficientFunds'
         '422':
-          description: Person account already holds a wallet on that network.
+          description: The account already holds its deposit wallet for that pair (applies to every account type).
           content:
             application/json:
               schema: *id008
               example:
                 error: wallet_limit_reached
-                message: person accounts hold one wallet per network; company accounts can create more
+                message: accounts hold one deposit wallet per network/asset pair (created automatically with the account); use segregated wallets for additional wallets
     get:
       tags:
       - Crypto
@@ -6076,14 +6064,20 @@ paths:
                   chain: tron
                   asset: USDT
                   address: TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT
-                  label: Main treasury
+                  label: ''
                   created_at: '2026-07-07T12:00:00Z'
                 - wallet_id: a1c9d8e7-2b3c-4d5e-6f70-8a9b0c1d2e3f
                   chain: eth
                   asset: USDT
                   address: '0x8f3Bc55D9F4a2E71c06b9a3D2e1F0A9B8C7D6E5F'
-                  label: E-commerce collections
-                  created_at: '2026-07-07T12:05:00Z'
+                  label: ''
+                  created_at: '2026-07-07T12:00:00Z'
+                - wallet_id: fb88c2d1-7a4e-4b0c-8d3f-1e2a3b4c5d6e
+                  chain: eth
+                  asset: USDC
+                  address: '0xa072E48Bc55D9F4a2E71c06b9a3D2e1F0A9B8C7D'
+                  label: ''
+                  created_at: '2026-07-07T12:00:00Z'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -6094,9 +6088,10 @@ paths:
       - Segregated wallets
       operationId: createSegregatedWallet
       summary: Create a segregated wallet
-      description: 'Creates a new on-chain wallet owned by the calling **company** account. Its balance
+      description: 'Creates a new on-chain wallet owned by the calling account. Its balance
         lives on-chain (never in the ledger) and it is exempt from the treasury sweep. Supported pairs:
-        `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`. Company accounts only (persons get `403 company_required`).
+        `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`. Company accounts can create unlimited wallets; person
+        accounts hold **1 per network+asset pair** (a second one responds `422 wallet_limit_reached`).
         An optional `Idempotency-Key` (or `idempotency_key` in the body) makes retries safe: a repeat
         returns the same wallet without creating a second one. May bill the `wallet_creation` fee
         (refunded if creation fails).'
@@ -6164,13 +6159,13 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
-          description: Company account required or service disabled.
+          description: Service disabled for the account.
           content:
             application/json:
               schema: *id_segw
               example:
-                error: company_required
-                message: segregated wallets are available for company accounts only
+                error: service_disabled
+                message: this service is not enabled for the account
         '409':
           description: A wallet with this idempotency key is still being provisioned.
           content:
@@ -6179,6 +6174,14 @@ paths:
               example:
                 error: idempotency_conflict
                 message: a wallet with this idempotency key is still being provisioned; retry with the same key
+        '422':
+          description: A person account already holds its segregated wallet for that pair.
+          content:
+            application/json:
+              schema: *id_segw
+              example:
+                error: wallet_limit_reached
+                message: person accounts hold one segregated wallet per network/asset pair; company accounts have no limit
     get:
       tags:
       - Segregated wallets
@@ -6286,13 +6289,21 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
-          description: Company account, verification, human session or OTP required.
+          description: Verification, human session or OTP required.
           content:
             application/json:
               schema: *id_segw
               example:
                 error: human_session_required
                 message: this operation handles private key material and requires a signed-in user session with 2FA; API keys are not allowed
+        '422':
+          description: A person account already holds its segregated wallet for that pair.
+          content:
+            application/json:
+              schema: *id_segw
+              example:
+                error: wallet_limit_reached
+                message: person accounts hold one segregated wallet per network/asset pair; company accounts have no limit
   /v1/wallets/{walletID}:
     get:
       tags:

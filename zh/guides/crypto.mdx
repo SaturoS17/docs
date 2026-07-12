@@ -60,90 +60,43 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
 尚未生成——请几秒后重试。
 </Note>
 
-钱包是**入金入口**：您可以持有多个钱包（企业），但账户余额只有
-一个。
+充值钱包是**入金入口**，而非操作型钱包：它们只用于**接收**加密
+货币并计入您的虚拟余额。它们不能发送资金，也不能导出或导入（那是
+[隔离钱包](/zh/guides/segregated-wallets)的功能）。
 
-| 账户类型 | 每个网络的钱包数 |
+| 账户类型 | 每个网络+资产组合的充值钱包数 |
 |---|---|
-| 个人 | **1**（初始钱包已占用每种组合的名额） |
-| 企业 | **不限**（使用 `label` 加以区分） |
+| 个人 | **1**（初始钱包已占用名额） |
+| 企业 | **1**（初始钱包已占用名额） |
 
-## 创建额外钱包
+## 可以创建更多充值钱包吗？
 
-`POST /v1/crypto/wallets` 用于创建**额外**钱包：企业可按需创建
-任意数量（每个供应商、每个分支机构、每个产品各一个……）。个人在
-注册时已持有每种组合的钱包，因此手动创建会返回
-`422 wallet_limit_reached`。
+不可以。每个账户——个人和企业——每个网络+资产组合都恰好持有
+**一个充值钱包**，且全部随账户创建自动生成。
+`POST /v1/crypto/wallets` 仅用于补齐缺失的组合（例外情况）：三个
+钱包均已就位时会返回 `422 wallet_limit_reached`。
 
-<CodeGroup>
-
-```bash 企业（带 label，不限数量）
+```bash
 curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{
-    "chain": "tron",
-    "label": "Main treasury"
-  }'
+  -d '{ "chain": "eth", "asset": "usdc" }'
 ```
 
-```bash 企业，Ethereum 网络
-curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "chain": "eth",
-    "label": "E-commerce collections"
-  }'
-```
-
-```bash USDC 钱包（仅限 Ethereum）
-curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "chain": "eth",
-    "asset": "usdc",
-    "label": "USDC treasury"
-  }'
-```
-
-</CodeGroup>
-
-`asset` 为可选，默认为 `usdt`。个人账户"每个网络一个钱包"的限制
-按网络+资产组合计算：个人可以同时持有 `eth`/`usdt` 钱包**和**
-`eth`/`usdc` 钱包。
-
-响应 `201`：
-
-```json
-{
-  "wallet_id": "b7e3…",
-  "chain": "tron",
-  "asset": "USDT",
-  "address": "TQmZ…",
-  "label": "Main treasury",
-  "created_at": "2026-07-07T12:00:00Z",
-  "creation_fee": "1.000000"
-}
-```
-
-若个人尝试在同一网络创建第二个钱包——`422`：
+若该组合已存在——`422`：
 
 ```json
 {
   "error": "wallet_limit_reached",
-  "message": "person accounts can hold one wallet per network"
+  "message": "accounts hold one deposit wallet per network/asset pair (created automatically with the account); use segregated wallets for additional wallets"
 }
 ```
 
-- 初始钱包**始终免费**。额外创建收取由 CBPay 配置的**固定费用**
-  （`wallet_creation`）——个人和企业的费用可以不同，甚至可按账户
-  区分。费用为 0（默认值）时即免费。若创建失败，费用会自动退回。
-- 已在该网络持有钱包的**个人**会收到 `422 wallet_limit_reached`；
-  **企业**可按需创建任意数量。个人/企业的全部差异见
-  [个人与企业](/zh/concepts/persons-companies)。
-- `label` 为可选项，仅用于描述。
+- 初始钱包**始终免费**；`wallet_creation` 费用仅适用于手动补齐的
+  情况（费用为 0——默认值——时即免费；若创建失败，费用会自动退回）。
+- 需要**多个拥有独立余额的钱包**（按客户、按项目、按业务单元）？
+  那是[隔离钱包](/zh/guides/segregated-wallets)产品：企业不限数量，
+  个人每个网络+资产组合限 1 个。
 
 ## 查看我的钱包
 
@@ -160,7 +113,7 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
       "chain": "tron",
       "asset": "USDT",
       "address": "TQmZ…",
-      "label": "Main treasury",
+      "label": "",
       "created_at": "2026-07-07T12:00:00Z"
     },
     {
@@ -168,8 +121,16 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
       "chain": "eth",
       "asset": "USDT",
       "address": "0x8f3B…",
-      "label": "E-commerce collections",
-      "created_at": "2026-07-07T12:05:00Z"
+      "label": "",
+      "created_at": "2026-07-07T12:00:00Z"
+    },
+    {
+      "wallet_id": "fb88…",
+      "chain": "eth",
+      "asset": "USDC",
+      "address": "0xa072…",
+      "label": "",
+      "created_at": "2026-07-07T12:00:00Z"
     }
   ]
 }
@@ -357,6 +318,6 @@ curl "https://api.qbank.cl/platform/v1/movements?type=funding&from=2026-07-01&to
 | 400 | `invalid_asset` | 该网络/资产组合没有链上通道（支持：`tron`/`usdt`、`eth`/`usdt`、`eth`/`usdc` —— `BTC` 和 `GOLD` 不支持链上操作） |
 | 400 | `to_address_required` | 缺少提现目标地址 |
 | 402 | `insufficient_funds` | 该资产余额不足（不足以支付提现或创建费用） |
-| 422 | `wallet_limit_reached` | 个人尝试为同一网络+资产组合创建第二个钱包 |
+| 422 | `wallet_limit_reached` | 该账户在此网络+资产组合下已持有充值钱包（个人和企业均适用） |
 | 422 | （提现返回 `status: failed`） | 广播时被拒绝；扣款已退回 |
 | 503 | `withdrawals_unavailable` | 该通道的提现尚未启用 |

@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — that never mix or convert automatically.\nPayouts and service fees can be paid from any of the four balances:\nset a default with `PUT /v1/settlement` or override per payout with\n`settlement_asset`.\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-12 07:28 UTC",
-    "_content_sha256": "447ae2684ce9a87a7eaa0747541604976f232c0510963ed17db647b0a9745e4b"
+    "_generated_at": "2026-07-12 18:15 UTC",
+    "_content_sha256": "a8832f3736e8136bec6a4ea9ac03db07d4ccbe45ad11d4e4f3efb027bc31d454"
   },
   "auth": {
     "type": "bearer",
@@ -5595,12 +5595,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"wallets\": [\n    {\n      \"wallet_id\": \"b7e3a940-6f1d-4c2b-9a8e-5d4c3b2a1f0e\",\n      \"chain\": \"tron\",\n      \"asset\": \"USDT\",\n      \"address\": \"TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT\",\n      \"label\": \"Main treasury\",\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    },\n    {\n      \"wallet_id\": \"a1c9d8e7-2b3c-4d5e-6f70-8a9b0c1d2e3f\",\n      \"chain\": \"eth\",\n      \"asset\": \"USDT\",\n      \"address\": \"0x8f3Bc55D9F4a2E71c06b9a3D2e1F0A9B8C7D6E5F\",\n      \"label\": \"E-commerce collections\",\n      \"created_at\": \"2026-07-07T12:05:00Z\"\n    }\n  ]\n}"
+              "body": "{\n  \"wallets\": [\n    {\n      \"wallet_id\": \"b7e3a940-6f1d-4c2b-9a8e-5d4c3b2a1f0e\",\n      \"chain\": \"tron\",\n      \"asset\": \"USDT\",\n      \"address\": \"TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT\",\n      \"label\": \"\",\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    },\n    {\n      \"wallet_id\": \"a1c9d8e7-2b3c-4d5e-6f70-8a9b0c1d2e3f\",\n      \"chain\": \"eth\",\n      \"asset\": \"USDT\",\n      \"address\": \"0x8f3Bc55D9F4a2E71c06b9a3D2e1F0A9B8C7D6E5F\",\n      \"label\": \"\",\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    },\n    {\n      \"wallet_id\": \"fb88c2d1-7a4e-4b0c-8d3f-1e2a3b4c5d6e\",\n      \"chain\": \"eth\",\n      \"asset\": \"USDC\",\n      \"address\": \"0xa072E48Bc55D9F4a2E71c06b9a3D2e1F0A9B8C7D\",\n      \"label\": \"\",\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
             }
           ]
         },
         {
-          "name": "Create an additional wallet — Person — one wallet per network+asset",
+          "name": "Restore a missing deposit wallet — Restore the TRON USDT pair",
           "request": {
             "method": "POST",
             "header": [
@@ -5620,7 +5620,7 @@
                 "wallets"
               ]
             },
-            "description": "Creates an **additional** on-chain wallet for the calling account. Every account is born with one free wallet per supported pair (`tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc` — provisioned automatically in the background on registration), so this endpoint is for extra wallets. Every deposit credits the wallet's own asset balance. Person accounts hold **one wallet per network+asset** (the birth wallets already take each slot, so a manual creation responds `422 wallet_limit_reached`); company accounts can create **unlimited** wallets (use `label` to tell them apart).\n\nEvery additional creation bills the `wallet_creation` fee when configured by CBPay (fixed per wallet; 0 = free, the default; configurable per account); birth wallets are always free. The charge is refunded automatically if creation fails.",
+            "description": "Every account — person and company — holds exactly **one deposit wallet per supported pair** (`tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`), provisioned automatically and free of charge on registration. Deposit wallets only **receive** crypto that credits the account's virtual balance: they cannot send, and cannot be exported or imported (use segregated wallets for that). This endpoint exists only to restore a missing pair (an exceptional case): with the pair already provisioned it responds `422 wallet_limit_reached` for every account type.\n\nA manual restoration bills the `wallet_creation` fee when configured by CBPay (fixed per wallet; 0 = free, the default); birth wallets are always free. The charge is refunded automatically if creation fails.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"chain\": \"tron\"\n}",
@@ -5662,7 +5662,7 @@
           ]
         },
         {
-          "name": "Create an additional wallet — Company — labeled wallet (unlimited)",
+          "name": "Restore a missing deposit wallet — Restore the USDC pair (Ethereum only)",
           "request": {
             "method": "POST",
             "header": [
@@ -5682,134 +5682,10 @@
                 "wallets"
               ]
             },
-            "description": "Creates an **additional** on-chain wallet for the calling account. Every account is born with one free wallet per supported pair (`tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc` — provisioned automatically in the background on registration), so this endpoint is for extra wallets. Every deposit credits the wallet's own asset balance. Person accounts hold **one wallet per network+asset** (the birth wallets already take each slot, so a manual creation responds `422 wallet_limit_reached`); company accounts can create **unlimited** wallets (use `label` to tell them apart).\n\nEvery additional creation bills the `wallet_creation` fee when configured by CBPay (fixed per wallet; 0 = free, the default; configurable per account); birth wallets are always free. The charge is refunded automatically if creation fails.",
+            "description": "Every account — person and company — holds exactly **one deposit wallet per supported pair** (`tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`), provisioned automatically and free of charge on registration. Deposit wallets only **receive** crypto that credits the account's virtual balance: they cannot send, and cannot be exported or imported (use segregated wallets for that). This endpoint exists only to restore a missing pair (an exceptional case): with the pair already provisioned it responds `422 wallet_limit_reached` for every account type.\n\nA manual restoration bills the `wallet_creation` fee when configured by CBPay (fixed per wallet; 0 = free, the default); birth wallets are always free. The charge is refunded automatically if creation fails.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"chain\": \"tron\",\n  \"label\": \"Main treasury\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "201 Wallet created.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/crypto/wallets",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "crypto",
-                    "wallets"
-                  ]
-                }
-              },
-              "status": "Wallet created.",
-              "code": 201,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"wallet_id\": \"b7e3a940-6f1d-4c2b-9a8e-5d4c3b2a1f0e\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT\",\n  \"label\": \"Main treasury\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"creation_fee\": \"1.000000\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "Create an additional wallet — Company — Ethereum network",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/crypto/wallets",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "crypto",
-                "wallets"
-              ]
-            },
-            "description": "Creates an **additional** on-chain wallet for the calling account. Every account is born with one free wallet per supported pair (`tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc` — provisioned automatically in the background on registration), so this endpoint is for extra wallets. Every deposit credits the wallet's own asset balance. Person accounts hold **one wallet per network+asset** (the birth wallets already take each slot, so a manual creation responds `422 wallet_limit_reached`); company accounts can create **unlimited** wallets (use `label` to tell them apart).\n\nEvery additional creation bills the `wallet_creation` fee when configured by CBPay (fixed per wallet; 0 = free, the default; configurable per account); birth wallets are always free. The charge is refunded automatically if creation fails.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"chain\": \"eth\",\n  \"label\": \"E-commerce collections\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "201 Wallet created.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/crypto/wallets",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "crypto",
-                    "wallets"
-                  ]
-                }
-              },
-              "status": "Wallet created.",
-              "code": 201,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"wallet_id\": \"b7e3a940-6f1d-4c2b-9a8e-5d4c3b2a1f0e\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT\",\n  \"label\": \"Main treasury\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"creation_fee\": \"1.000000\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "Create an additional wallet — USDC wallet (Ethereum only)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/crypto/wallets",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "crypto",
-                "wallets"
-              ]
-            },
-            "description": "Creates an **additional** on-chain wallet for the calling account. Every account is born with one free wallet per supported pair (`tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc` — provisioned automatically in the background on registration), so this endpoint is for extra wallets. Every deposit credits the wallet's own asset balance. Person accounts hold **one wallet per network+asset** (the birth wallets already take each slot, so a manual creation responds `422 wallet_limit_reached`); company accounts can create **unlimited** wallets (use `label` to tell them apart).\n\nEvery additional creation bills the `wallet_creation` fee when configured by CBPay (fixed per wallet; 0 = free, the default; configurable per account); birth wallets are always free. The charge is refunded automatically if creation fails.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"chain\": \"eth\",\n  \"asset\": \"usdc\",\n  \"label\": \"USDC treasury\"\n}",
+              "raw": "{\n  \"chain\": \"eth\",\n  \"asset\": \"usdc\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -9566,7 +9442,7 @@
                 "wallets"
               ]
             },
-            "description": "Creates a new on-chain wallet owned by the calling **company** account. Its balance lives on-chain (never in the ledger) and it is exempt from the treasury sweep. Supported pairs: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`. Company accounts only (persons get `403 company_required`). An optional `Idempotency-Key` (or `idempotency_key` in the body) makes retries safe: a repeat returns the same wallet without creating a second one. May bill the `wallet_creation` fee (refunded if creation fails).",
+            "description": "Creates a new on-chain wallet owned by the calling account. Its balance lives on-chain (never in the ledger) and it is exempt from the treasury sweep. Supported pairs: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`. Company accounts can create unlimited wallets; person accounts hold **1 per network+asset pair** (a second one responds `422 wallet_limit_reached`). An optional `Idempotency-Key` (or `idempotency_key` in the body) makes retries safe: a repeat returns the same wallet without creating a second one. May bill the `wallet_creation` fee (refunded if creation fails).",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"chain\": \"tron\",\n  \"asset\": \"usdt\",\n  \"label\": \"Acme Client\",\n  \"idempotency_key\": \"wallet-client-001\"\n}",
@@ -9626,7 +9502,7 @@
                 "wallets"
               ]
             },
-            "description": "Creates a new on-chain wallet owned by the calling **company** account. Its balance lives on-chain (never in the ledger) and it is exempt from the treasury sweep. Supported pairs: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`. Company accounts only (persons get `403 company_required`). An optional `Idempotency-Key` (or `idempotency_key` in the body) makes retries safe: a repeat returns the same wallet without creating a second one. May bill the `wallet_creation` fee (refunded if creation fails).",
+            "description": "Creates a new on-chain wallet owned by the calling account. Its balance lives on-chain (never in the ledger) and it is exempt from the treasury sweep. Supported pairs: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`. Company accounts can create unlimited wallets; person accounts hold **1 per network+asset pair** (a second one responds `422 wallet_limit_reached`). An optional `Idempotency-Key` (or `idempotency_key` in the body) makes retries safe: a repeat returns the same wallet without creating a second one. May bill the `wallet_creation` fee (refunded if creation fails).",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"chain\": \"eth\",\n  \"asset\": \"usdc\",\n  \"label\": \"Project X\",\n  \"idempotency_key\": \"wallet-project-x\"\n}",

@@ -1,19 +1,22 @@
 ---
 title: "Segregated wallets"
 icon: "wallet"
-description: "On-chain wallets with their own balance for companies: create, import, receive, send, export the key and auto-forward — the balance lives on the blockchain, never in the ledger"
+description: "On-chain wallets with their own balance: create, import, receive, send, export the key and auto-forward — the balance lives on the blockchain, never in the ledger"
 ---
 
-**Segregated wallets** are on-chain wallets **owned by your company
-account**: their balance **is** the on-chain balance of the address, not a
-virtual balance in the CBPay ledger. You can create as many as you want,
+**Segregated wallets** are on-chain wallets **owned by your account**:
+their balance **is** the on-chain balance of the address, not a
+virtual balance in the CBPay ledger. You can
 receive and **send crypto directly from each wallet**, **import** external
 wallets with their private key, and **export** the key whenever you want
 (shared custody). They are ideal for segregating funds per client, per
 project or per business unit, with full control of the keys.
 
 <Note>
-Company accounts only. A person account gets `403 company_required`.
+Available to persons and companies, with different limits: **company**
+accounts can create **unlimited** segregated wallets; **person** accounts
+can hold **1 per network+asset pair** (a second one responds
+`422 wallet_limit_reached`).
 </Note>
 
 <Warning>
@@ -316,7 +319,7 @@ curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/auto-forward \
 
 | HTTP | `error` | Fix |
 |---|---|---|
-| 403 | `company_required` | Segregated wallets are for company accounts only |
+| 422 | `wallet_limit_reached` | A person account already holds its segregated wallet for that network+asset pair (companies have no limit) |
 | 403 | `human_session_required` | Import and export require a signed-in user session with 2FA (no API keys) |
 | 403 | `verification_required` | Complete your account onboarding ([verification](/en/guides/kyc)) |
 | 403 | `service_disabled` | The `wallets` service is not enabled; contact your operator |
@@ -366,7 +369,9 @@ on-chain balance is exclusively yours. It only moves when you send or when
 you configure auto-forward.
 </Accordion>
 <Accordion title="How many wallets can I create?">
-No limit. This is typical for segregating per client, project or business
-unit. Each wallet can carry a `label` to tell them apart.
+**Company** accounts have no limit: this is typical for segregating per
+client, project or business unit, using `label` to tell them apart.
+**Person** accounts can hold 1 segregated wallet per network+asset pair (a
+second one responds `422 wallet_limit_reached`).
 </Accordion>
 </AccordionGroup>

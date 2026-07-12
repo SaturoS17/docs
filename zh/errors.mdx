@@ -31,7 +31,7 @@ description: "错误格式与完整的错误码目录"
 | 403 | `service_disabled` | 该服务未对您的账户启用（查看 `GET /v1/services`） |
 | 403 | `org_suspended` | 服务已暂停；请联系 CBPay 团队 |
 | 403 | `company_only` | 仅企业账户可用的功能 |
-| 403 | `company_required` | 仅企业账户可用的功能（例如[独立钱包](/zh/guides/segregated-wallets)） |
+| 403 | `company_required` | 仅企业账户可用的功能（例如[第三方银行服务](/zh/guides/banking)） |
 | 403 | `human_session_required` | 该操作涉及私钥（独立钱包导入/导出），需要带 2FA 的已登录用户会话——不允许使用 API 密钥 |
 
 ### OTP / 双因素认证
@@ -114,7 +114,7 @@ description: "错误格式与完整的错误码目录"
 | 422 | `recipient_ambiguous` | 多个账户共用该 `to_phone` 号码（请使用 `to_account_id` 或 `to_email`） |
 | 422 | `contact_not_linked` | 该联系人没有可转账的已关联 CBPay 账户 |
 | 422 | `no_saved_destination` | 该联系人在该通道/链上没有已保存的目标 |
-| 422 | `wallet_limit_reached` | 个人账户试图在同一网络上创建第二个钱包 |
+| 422 | `wallet_limit_reached` | 该账户在此网络+资产组合下已持有对应钱包（充值钱包：所有账户；[隔离钱包](/zh/guides/segregated-wallets)：个人账户） |
 | 422 | `insufficient_gas` | [独立钱包](/zh/guides/segregated-wallets)没有支付网络费所需的原生 gas（TRX/ETH）；请为该地址充值后重试 |
 | 409 | `idempotency_conflict` | 使用相同幂等键的另一次钱包创建/转出仍在进行中；请使用同一个键重试 |
 | 409 | `card_limit_reached` | 个人账户试图创建第二张同类型卡片 |

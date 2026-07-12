@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.50'
+  version: '1.51'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -52,7 +52,7 @@ tags:
 - name: Crypto
   description: Fondeo y retiros on-chain de USDT (TRON y Ethereum).
 - name: Wallets segregadas
-  description: Wallets on-chain con saldo propio (solo cuentas empresa) — crear, importar, enviar, exportar la llave privada y auto-forward. El saldo vive on-chain, nunca en el ledger.
+  description: Wallets on-chain con saldo propio (empresas ilimitadas; personas 1 por combinación red+activo) — crear, importar, enviar, exportar la llave privada y auto-forward. El saldo vive on-chain, nunca en el ledger.
 - name: KYC / KYB
 - name: Screening de wallets
   description: Evaluación de riesgo AML de direcciones blockchain (sanciones, exposición a fondos
@@ -5963,19 +5963,18 @@ paths:
       tags:
       - Crypto
       operationId: createCryptoWallet
-      summary: Crear una wallet adicional
-      description: 'Crea una wallet on-chain **adicional** para la cuenta que llama. Toda cuenta nace con
-        una wallet gratis por cada par soportado (`tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc` — se
-        aprovisionan automáticamente en segundo plano al registrarse), así que este endpoint es para
-        wallets extra. Cada depósito acredita el saldo del activo de su wallet. Las cuentas de persona
-        mantienen **una wallet por red+activo** (las de nacimiento ya ocupan cada cupo, por lo que una
-        creación manual responde `422 wallet_limit_reached`); las cuentas de empresa pueden crear wallets
-        **ilimitadas** (usa `label` para distinguirlas).
+      summary: Reponer una wallet de depósito faltante
+      description: 'Toda cuenta — persona y empresa — tiene exactamente **una wallet de depósito por par
+        soportado** (`tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`), aprovisionadas automáticamente y gratis
+        al registrarse. Las wallets de depósito solo **reciben** crypto que se abona al saldo virtual de
+        la cuenta: no envían, y no se exportan ni importan (para eso están las wallets segregadas). Este
+        endpoint existe solo para reponer un par faltante (caso excepcional): con el par ya
+        aprovisionado responde `422 wallet_limit_reached` para todo tipo de cuenta.
 
 
-        Cada creación adicional cobra la comisión `wallet_creation` cuando CBPay la tiene configurada
-        (fija por wallet; 0 = gratis, el valor por defecto; configurable por cuenta); las wallets de
-        nacimiento son siempre gratis. El cargo se reembolsa automáticamente si la creación falla.'
+        Una reposición manual cobra la comisión `wallet_creation` cuando CBPay la tiene configurada
+        (fija por wallet; 0 = gratis, el valor por defecto); las wallets de nacimiento son siempre
+        gratis. El cargo se reembolsa automáticamente si la creación falla.'
       requestBody:
         required: true
         content:
@@ -6001,26 +6000,15 @@ paths:
                   type: string
                   description: Etiqueta descriptiva opcional.
             examples:
-              person:
-                summary: Persona — una wallet por red+activo
+              tron_usdt:
+                summary: Reponer el par TRON USDT
                 value:
                   chain: tron
-              company_labeled:
-                summary: Empresa — wallet con etiqueta (ilimitadas)
-                value:
-                  chain: tron
-                  label: Main treasury
-              company_eth:
-                summary: Empresa — red Ethereum
-                value:
-                  chain: eth
-                  label: E-commerce collections
               usdc_wallet:
-                summary: Wallet USDC (solo Ethereum)
+                summary: Reponer el par USDC (solo Ethereum)
                 value:
                   chain: eth
                   asset: usdc
-                  label: USDC treasury
       responses:
         '201':
           description: Wallet creada.
@@ -6055,13 +6043,13 @@ paths:
         '402':
           $ref: '#/components/responses/InsufficientFunds'
         '422':
-          description: La cuenta de persona ya tiene una wallet en esa red.
+          description: La cuenta ya tiene su wallet de depósito de ese par (aplica a todo tipo de cuenta).
           content:
             application/json:
               schema: *id008
               example:
                 error: wallet_limit_reached
-                message: person accounts hold one wallet per network; company accounts can create more
+                message: accounts hold one deposit wallet per network/asset pair (created automatically with the account); use segregated wallets for additional wallets
     get:
       tags:
       - Crypto
@@ -6086,14 +6074,20 @@ paths:
                   chain: tron
                   asset: USDT
                   address: TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT
-                  label: Main treasury
+                  label: ''
                   created_at: '2026-07-07T12:00:00Z'
                 - wallet_id: a1c9d8e7-2b3c-4d5e-6f70-8a9b0c1d2e3f
                   chain: eth
                   asset: USDT
                   address: '0x8f3Bc55D9F4a2E71c06b9a3D2e1F0A9B8C7D6E5F'
-                  label: E-commerce collections
-                  created_at: '2026-07-07T12:05:00Z'
+                  label: ''
+                  created_at: '2026-07-07T12:00:00Z'
+                - wallet_id: fb88c2d1-7a4e-4b0c-8d3f-1e2a3b4c5d6e
+                  chain: eth
+                  asset: USDC
+                  address: '0xa072E48Bc55D9F4a2E71c06b9a3D2e1F0A9B8C7D'
+                  label: ''
+                  created_at: '2026-07-07T12:00:00Z'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -6104,10 +6098,11 @@ paths:
       - Wallets segregadas
       operationId: createSegregatedWallet
       summary: Crear una wallet segregada
-      description: 'Crea una wallet on-chain nueva de la cuenta **empresa** que llama. Su saldo vive
+      description: 'Crea una wallet on-chain nueva de la cuenta que llama. Su saldo vive
         on-chain (nunca en el ledger) y queda exenta del barrido de tesorería. Pares soportados:
-        `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`. Solo cuentas empresa (las personas reciben
-        `403 company_required`). Un `Idempotency-Key` opcional (o `idempotency_key` en el body) hace
+        `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`. Las cuentas empresa pueden crear wallets ilimitadas;
+        las cuentas persona tienen **1 por combinación red+activo** (la segunda responde
+        `422 wallet_limit_reached`). Un `Idempotency-Key` opcional (o `idempotency_key` en el body) hace
         el reintento seguro: una repetición devuelve la misma wallet sin crear otra. Puede cobrar el fee
         `wallet_creation` (reembolsado si la creación falla).'
       requestBody:
@@ -6174,13 +6169,13 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
-          description: Se requiere cuenta empresa o el servicio está deshabilitado.
+          description: El servicio está deshabilitado para la cuenta.
           content:
             application/json:
               schema: *id_segw
               example:
-                error: company_required
-                message: segregated wallets are available for company accounts only
+                error: service_disabled
+                message: this service is not enabled for the account
         '409':
           description: Ya hay una wallet con esta idempotency key en aprovisionamiento.
           content:
@@ -6189,6 +6184,14 @@ paths:
               example:
                 error: idempotency_conflict
                 message: a wallet with this idempotency key is still being provisioned; retry with the same key
+        '422':
+          description: La cuenta persona ya tiene su wallet segregada de ese par.
+          content:
+            application/json:
+              schema: *id_segw
+              example:
+                error: wallet_limit_reached
+                message: person accounts hold one segregated wallet per network/asset pair; company accounts have no limit
     get:
       tags:
       - Wallets segregadas
@@ -6296,13 +6299,21 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
-          description: Se requiere cuenta empresa, verificación, sesión de usuario u OTP.
+          description: Se requiere verificación, sesión de usuario u OTP.
           content:
             application/json:
               schema: *id_segw
               example:
                 error: human_session_required
                 message: this operation handles private key material and requires a signed-in user session with 2FA; API keys are not allowed
+        '422':
+          description: La cuenta persona ya tiene su wallet segregada de ese par.
+          content:
+            application/json:
+              schema: *id_segw
+              example:
+                error: wallet_limit_reached
+                message: person accounts hold one segregated wallet per network/asset pair; company accounts have no limit
   /v1/wallets/{walletID}:
     get:
       tags:

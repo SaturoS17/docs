@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-12 16:20 UTC · versión `8d7262c2bc15`
+> **Documento actualizado:** 2026-07-12 18:15 UTC · versión `c72b98d7f420`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.50 (12 de julio de 2026) |
+| Versión de la documentación | v1.51 (12 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -1341,7 +1341,8 @@ El tipo se define al crear la cuenta y no cambia. Lo ves en
 | Capacidad | Persona | Empresa |
 |---|---|---|
 | Saldo USDT, payouts, payins, transferencias, banking, cartola | Igual | Igual |
-| **Wallets crypto** por red | **1** (`422 wallet_limit_reached` en la segunda) | **Ilimitadas** (usa `label` para distinguirlas) |
+| **Wallets de depósito** ([crypto](#crypto-wallets-depositos-y-retiros)) por red+activo | **1** (nacen con la cuenta; solo reciben) | **1** (nacen con la cuenta; solo reciben) |
+| **Wallets segregadas** ([saldo propio on-chain](#wallets-segregadas)) | **1 por red+activo** | **Ilimitadas** (usa `label` para distinguirlas) |
 | **Tarjetas** | **1 virtual + 1 física**, solo para sí misma | **Ilimitadas**, para la empresa o para **personas designadas** (empleados) |
 | **Miembros con login** (`POST /v1/members`) | No (`403 company_only`) | Sí — roles `owner` / `operator` / `viewer` |
 | **Verificación de identidad** (`/v1/me/verification`) | Onboarding **KYC** (wizard con documentos + prueba de vida) | Onboarding **KYB** (wizard con documentos societarios) |
@@ -1362,8 +1363,9 @@ límites de gasto por tarjeta, servicios habilitados — funciona idéntico.
 - Verificación: pide tu link KYC con `POST /v1/me/verification/link` y
   completa el wizard — hasta aprobar solo puedes fondear
   ([guía](#verificacion-kyc-y-kyb)).
-- Crypto: **una wallet por red** (TRON y ETH). ¿Necesitas más direcciones?
-  Ese es un caso de cuenta empresa.
+- Crypto: tus **wallets de depósito nacen con la cuenta** (una por
+  red+activo; solo reciben). ¿Necesitas una wallet con saldo propio?
+  Puedes tener **1 wallet segregada por red+activo**.
 - Tarjetas: hasta **1 virtual + 1 física**; la primera emisión lleva tus
   datos y documentos — [guía](#tarjetas-virtuales-y-fisicas).
 - Sin miembros: tu login y tus API keys operan la cuenta.
@@ -1374,8 +1376,10 @@ límites de gasto por tarjeta, servicios habilitados — funciona idéntico.
 - Verificación: pide tu link KYB con `POST /v1/me/verification/link` y
   completa el wizard con los datos societarios; aprobada, puedes además
   verificar a tus propios clientes ([guía](#verificacion-kyc-y-kyb)).
-- Crypto: **wallets ilimitadas** por red (una por sucursal, por producto,
-  por proveedor…), con `label` descriptivo.
+- Crypto: tus **wallets de depósito nacen con la cuenta** (una por
+  red+activo; solo reciben). Para saldos separados on-chain crea
+  **wallets segregadas ilimitadas** (una por sucursal, por producto, por
+  proveedor…), con `label` descriptivo.
 - Tarjetas: **ilimitadas** — corporativas (titular = la empresa, con
   documentos societarios en la primera) o para **empleados** (persona
   designada con sus datos en cada designación) —
@@ -1388,7 +1392,7 @@ límites de gasto por tarjeta, servicios habilitados — funciona idéntico.
 | `error` | Qué significa |
 |---|---|
 | `403 company_only` | Intentaste una función de empresa (miembros) desde una cuenta persona |
-| `422 wallet_limit_reached` | Una persona intentó su segunda wallet en la misma red |
+| `422 wallet_limit_reached` | La cuenta ya tiene su wallet de esa combinación (depósito: todos; segregada: personas) |
 | `409 card_limit_reached` | Una persona intentó su segunda tarjeta del mismo tipo |
 
 > **Nota**
@@ -3922,89 +3926,47 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
 La provisión corre en segundo plano al crear la cuenta: si consultas en el
 mismo segundo del registro puede faltar alguna dirección — reintenta a los
 pocos segundos.
-Las wallets son **puertas de entrada**: puedes tener varias (empresas), pero
-el saldo de la cuenta es uno solo.
+Las wallets de depósito son **puertas de entrada**, no billeteras
+operativas: solo sirven para **recibir** crypto que se abona a tu saldo
+virtual. No envían fondos, no se exportan ni se importan (para eso están
+las [wallets segregadas](#wallets-segregadas)).
 
-| Tipo de cuenta | Wallets por red |
+| Tipo de cuenta | Wallets de depósito por combinación red+activo |
 |---|---|
-| Persona | **1** (las de nacimiento ya ocupan el cupo de cada combinación) |
-| Empresa | **Ilimitadas** (usa `label` para distinguirlas) |
+| Persona | **1** (las de nacimiento ya ocupan el cupo) |
+| Empresa | **1** (las de nacimiento ya ocupan el cupo) |
 
-### Crear wallets adicionales
+### ¿Puedo crear más wallets de depósito?
 
-`POST /v1/crypto/wallets` queda para wallets **adicionales**: las empresas
-pueden crear tantas como necesiten (una por proveedor, por sucursal, por
-producto…). Las personas ya tienen su wallet de cada combinación desde el
-registro, así que una creación manual responde `422 wallet_limit_reached`.
+No. Toda cuenta — persona y empresa — tiene exactamente **una wallet de
+depósito por combinación** red+activo, y nacen todas con la cuenta.
+`POST /v1/crypto/wallets` existe solo para reponer un par que falte (caso
+excepcional): con las tres wallets ya provisionadas responde
+`422 wallet_limit_reached`.
 
-```bash Empresa (con label, ilimitadas)
+```bash
 curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{
-    "chain": "tron",
-    "label": "Tesorería principal"
-  }'
+  -d '{ "chain": "eth", "asset": "usdc" }'
 ```
 
-```bash Empresa, red Ethereum
-curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "chain": "eth",
-    "label": "Cobros e-commerce"
-  }'
-```
-
-```bash Wallet USDC (solo Ethereum)
-curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "chain": "eth",
-    "asset": "usdc",
-    "label": "Tesorería USDC"
-  }'
-```
-
-`asset` es opcional y por defecto `usdt`. El límite de una wallet por red
-para personas es por combinación red+activo: una persona puede tener su
-wallet `eth`/`usdt` **y** su wallet `eth`/`usdc`.
-
-Respuesta `201`:
-
-```json
-{
-  "wallet_id": "b7e3…",
-  "chain": "tron",
-  "asset": "USDT",
-  "address": "TQmZ…",
-  "label": "Tesorería principal",
-  "created_at": "2026-07-07T12:00:00Z",
-  "creation_fee": "1.000000"
-}
-```
-
-Si una persona intenta una segunda wallet en la misma red — `422`:
+Con el par ya provisionado — `422`:
 
 ```json
 {
   "error": "wallet_limit_reached",
-  "message": "person accounts can hold one wallet per network"
+  "message": "accounts hold one deposit wallet per network/asset pair (created automatically with the account); use segregated wallets for additional wallets"
 }
 ```
 
-- Las wallets **de nacimiento son siempre gratis**. Las creaciones
-  adicionales tienen un **costo fijo** (`wallet_creation`) configurado por
-  CBPay — puede diferenciarse para personas y empresas, e incluso por
-  cuenta. Con comisión 0 (el default) es gratis. Si la creación falla, el
-  cargo se reembolsa automáticamente.
-- Una **persona** que ya tiene wallet en esa red recibe
-  `422 wallet_limit_reached`; las **empresas** pueden crear tantas como
-  necesiten. Todas las diferencias persona/empresa están en
-  [personas y empresas](#personas-y-empresas).
-- `label` es opcional y solo descriptivo.
+- Las wallets **de nacimiento son siempre gratis**; el fee `wallet_creation`
+  solo aplicaría a una reposición manual (con comisión 0, el default, es
+  gratis; si la creación falla, el cargo se reembolsa automáticamente).
+- ¿Necesitas **varias wallets** con saldo propio (por cliente, por
+  proyecto, por unidad de negocio)? Ese es el producto
+  [wallets segregadas](#wallets-segregadas): empresas sin límite,
+  personas 1 por combinación red+activo.
 
 ### Ver mis wallets
 
@@ -4021,7 +3983,7 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
       "chain": "tron",
       "asset": "USDT",
       "address": "TQmZ…",
-      "label": "Tesorería principal",
+      "label": "",
       "created_at": "2026-07-07T12:00:00Z"
     },
     {
@@ -4029,8 +3991,16 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
       "chain": "eth",
       "asset": "USDT",
       "address": "0x8f3B…",
-      "label": "Cobros e-commerce",
-      "created_at": "2026-07-07T12:05:00Z"
+      "label": "",
+      "created_at": "2026-07-07T12:00:00Z"
+    },
+    {
+      "wallet_id": "fb88…",
+      "chain": "eth",
+      "asset": "USDC",
+      "address": "0xa072…",
+      "label": "",
+      "created_at": "2026-07-07T12:00:00Z"
     }
   ]
 }
@@ -4212,25 +4182,28 @@ las wallets son puertas de entrada, el saldo por moneda es uno solo.
 | 400 | `invalid_asset` | Combinación red/activo sin riel on-chain (soportadas: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc` — `BTC` y `GOLD` no operan on-chain) |
 | 400 | `to_address_required` | Falta la dirección destino del retiro |
 | 402 | `insufficient_funds` | Saldo insuficiente en ese activo (para el retiro o la comisión de creación) |
-| 422 | `wallet_limit_reached` | Una persona intentó crear una segunda wallet para la misma red+activo |
+| 422 | `wallet_limit_reached` | La cuenta ya tiene su wallet de depósito de esa combinación red+activo (aplica a personas y empresas) |
 | 422 | (retiro con `status: failed`) | Rechazado al transmitir; débito reembolsado |
 | 503 | `withdrawals_unavailable` | Retiros no habilitados aún para este corredor |
 
 
 ## Wallets segregadas
 
-*Wallets on-chain con saldo propio para empresas: crear, importar, recibir, enviar, exportar la llave y reenviar automáticamente — el saldo vive en la blockchain, nunca en el ledger*
+*Wallets on-chain con saldo propio: crear, importar, recibir, enviar, exportar la llave y reenviar automáticamente — el saldo vive en la blockchain, nunca en el ledger*
 
-Las **wallets segregadas** son wallets on-chain **propias** de tu cuenta
-empresa: su saldo **es** el saldo on-chain de la dirección, no un saldo
-virtual en el ledger de CBPay. Puedes crear cuantas quieras, recibir y
+Las **wallets segregadas** son wallets on-chain **propias** de tu cuenta:
+su saldo **es** el saldo on-chain de la dirección, no un saldo
+virtual en el ledger de CBPay. Puedes recibir y
 **enviar crypto directamente desde cada wallet**, **importar** wallets
 externas con su llave privada y **exportar** la llave cuando quieras
 (custodia compartida). Son ideales para segregar fondos por cliente, por
 proyecto o por unidad de negocio, con control total de las llaves.
 
 > **Nota**
-Solo cuentas **empresa**. Una cuenta persona recibe `403 company_required`.
+Disponibles para personas y empresas, con límites distintos: las
+**empresas** pueden crear wallets segregadas **ilimitadas**; las
+**personas** pueden tener **1 por combinación red+activo** (la segunda
+responde `422 wallet_limit_reached`).
 > **Importante**
 No las confundas con el producto [crypto](#crypto-wallets-depositos-y-retiros): ahí los
 depósitos **acreditan tu saldo USDT/USDC del ledger** y los retiros salen de
@@ -4516,7 +4489,7 @@ curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/auto-forward \
 
 | HTTP | `error` | Solución |
 |---|---|---|
-| 403 | `company_required` | Las wallets segregadas son solo para cuentas empresa |
+| 422 | `wallet_limit_reached` | Una cuenta persona ya tiene su wallet segregada de esa combinación red+activo (las empresas no tienen límite) |
 | 403 | `human_session_required` | Import y export exigen sesión de usuario con 2FA (no API keys) |
 | 403 | `verification_required` | Completa el onboarding de tu cuenta ([verificación](#verificacion-kyc-y-kyb)) |
 | 403 | `service_disabled` | El servicio `wallets` no está habilitado; contacta a tu operador |
@@ -4561,8 +4534,10 @@ Nunca. Estas wallets se crean exentas del barrido de tesorería: su saldo
 on-chain es exclusivamente tuyo. Solo se mueve cuando tú envías o cuando
 configuras auto-forward.
 #### ¿Cuántas wallets puedo crear?
-Sin límite. Es lo típico para segregar por cliente, proyecto o unidad de
-negocio. Cada wallet puede llevar un `label` para distinguirlas.
+Las cuentas **empresa** no tienen límite: es lo típico para segregar por
+cliente, proyecto o unidad de negocio, usando `label` para distinguirlas.
+Las cuentas **persona** pueden tener 1 wallet segregada por combinación
+red+activo (una segunda responde `422 wallet_limit_reached`).
 
 
 ## Tarjetas: virtuales y físicas
@@ -7930,7 +7905,7 @@ Todos los errores comparten el mismo formato:
 | 403 | `service_disabled` | El servicio no está habilitado para tu cuenta (consulta `GET /v1/services`) |
 | 403 | `org_suspended` | El servicio está suspendido; contacta al equipo de CBPay |
 | 403 | `company_only` | Función solo para cuentas empresa |
-| 403 | `company_required` | Función solo para cuentas empresa (ej. [wallets segregadas](#wallets-segregadas)) |
+| 403 | `company_required` | Función solo para cuentas empresa (ej. [banking para terceros](#banking)) |
 | 403 | `human_session_required` | La operación maneja llave privada (import/export de wallet segregada) y exige sesión de usuario con 2FA — las API keys no se permiten |
 
 #### OTP / 2FA
@@ -8013,7 +7988,7 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | 422 | `recipient_ambiguous` | Más de una cuenta comparte el teléfono de `to_phone` (usa `to_account_id` o `to_email`) |
 | 422 | `contact_not_linked` | El contacto no tiene cuenta CBPay asociada para transferirle |
 | 422 | `no_saved_destination` | El contacto no tiene destino guardado para ese corredor/chain |
-| 422 | `wallet_limit_reached` | Una cuenta persona intentó crear una segunda wallet en la misma red |
+| 422 | `wallet_limit_reached` | La cuenta ya tiene su wallet de esa combinación red+activo (depósito: todas las cuentas; [segregadas](#wallets-segregadas): personas) |
 | 422 | `insufficient_gas` | La [wallet segregada](#wallets-segregadas) no tiene gas nativo (TRX/ETH) para el fee de red; fondea la dirección y reintenta |
 | 409 | `idempotency_conflict` | Otra creación/envío de wallet con la misma clave sigue en curso; reintenta con la misma clave |
 | 409 | `card_limit_reached` | Una cuenta persona intentó crear una segunda tarjeta del mismo tipo |
@@ -8250,9 +8225,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-12 07:28 UTC · 219 requests · versión `447ae2684ce9`
+> **Colección actualizada:** 2026-07-12 18:15 UTC · 217 requests · versión `a8832f3736e8`
 
-<PostmanFreshness iso="2026-07-12T07:28:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-12T18:15:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -8286,6 +8261,25 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.51 — 12 de julio de 2026
+
+**Cambiado — Límites de wallets por tipo de cuenta**
+
+- **Wallets de depósito**: toda cuenta — persona y empresa — mantiene
+  exactamente **una wallet de depósito por par** soportado (`tron`/`usdt`,
+  `eth`/`usdt`, `eth`/`usdc`), creadas gratis al registrarse. `POST
+  /v1/crypto/wallets` queda solo para restaurar un par faltante; con el par
+  ya creado responde `422 wallet_limit_reached` para cualquier tipo de
+  cuenta (antes las empresas podían crear más).
+- **Wallets segregadas**: ahora también disponibles para cuentas persona,
+  con límite de **1 por par** red/activo (la segunda responde `422
+  wallet_limit_reached`). Las empresas siguen sin límite. El error `403
+  company_required` ya no aplica a wallets segregadas.
+- Guías de [crypto](#crypto-wallets-depositos-y-retiros) y [wallets
+  segregadas](#wallets-segregadas), página de [personas y
+  empresas](#personas-y-empresas) y
+  [errores](#errores) actualizadas.
 
 ### v1.50 — 12 de julio de 2026
 
@@ -9429,7 +9423,7 @@ está en la API Reference interactiva y en la colección Postman.
 | `GET` | `/v1/crypto/withdrawals/{withdrawalID}` | Obtener un retiro |
 | `GET` | `/v1/crypto/transactions` | Listar actividad on-chain |
 | `GET` | `/v1/crypto/wallets` | Listar mis wallets |
-| `POST` | `/v1/crypto/wallets` | Crear una wallet adicional |
+| `POST` | `/v1/crypto/wallets` | Reponer una wallet de depósito faltante |
 
 
 ## AML screening
