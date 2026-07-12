@@ -16,6 +16,11 @@ con anticipación y quedan marcados como **Breaking**.
   (ISO 3166-1 alfa-2, ej. `?country=MX`), combinable con `status`,
   `from`/`to` y la paginación. Guías de [payouts](/es/guias/payouts) y
   [payins](/es/guias/payins) actualizadas.
+- El bloque `fees` de `GET /v1/rates` ahora devuelve la configuración
+  de comisiones **efectiva** (defaults de la organización resueltos
+  contra los overrides de la cuenta). Antes una cuenta sin overrides
+  veía `fees: []` aunque sus operaciones tuvieran costo; usa este
+  bloque para cotizar la comisión exacta antes de crear la operación.
 
 </Update>
 

@@ -1453,8 +1453,9 @@ paths:
       operationId: getRates
       summary: Get my FX rates and fees
       description: Returns the exchange rates that apply to the calling account for each country — the
-        same rates used when operations execute (`local_amount / rate = USDT`) — plus the account's fee
-        configuration so clients can compute net prices. `rate` is the payout (dispersal) side and
+        same rates used when operations execute (`local_amount / rate = USDT`) — plus the account's **effective** fee
+        configuration — org defaults already resolved against your account's overrides — so
+        clients can compute the exact cost of an operation before creating it. `rate` is the payout (dispersal) side and
         `payin_rate` the payin (deposit) side. `asset_prices` carries the USD reference price of each
         virtual balance asset (BTC per unit, GOLD per gram; stablecoins are 1 by convention) for
         display/valuation. The `settlement` block shows, per enabled asset, the **effective settlement

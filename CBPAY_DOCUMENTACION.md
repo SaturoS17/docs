@@ -8,7 +8,7 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-12 20:17 UTC · versión `3d990a3edf8d`
+> **Documento actualizado:** 2026-07-12 20:40 UTC · versión `ce91d3db23fe`
 
 **Datos clave**
 
@@ -8225,9 +8225,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-12 20:17 UTC · 217 requests · versión `f4347b6c23e7`
+> **Colección actualizada:** 2026-07-12 20:40 UTC · 217 requests · versión `bc09eeab53f4`
 
-<PostmanFreshness iso="2026-07-12T20:17:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-12T20:40:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -8270,6 +8270,11 @@ con anticipación y quedan marcados como **Breaking**.
   (ISO 3166-1 alfa-2, ej. `?country=MX`), combinable con `status`,
   `from`/`to` y la paginación. Guías de [payouts](#payouts) y
   [payins](#payins) actualizadas.
+- El bloque `fees` de `GET /v1/rates` ahora devuelve la configuración
+  de comisiones **efectiva** (defaults de la organización resueltos
+  contra los overrides de la cuenta). Antes una cuenta sin overrides
+  veía `fees: []` aunque sus operaciones tuvieran costo; usa este
+  bloque para cotizar la comisión exacta antes de crear la operación.
 
 ### v1.51 — 12 de julio de 2026
 

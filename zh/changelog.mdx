@@ -15,6 +15,8 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   （ISO 3166-1 alpha-2，例如 `?country=MX`），可与 `status`、
   `from`/`to` 及分页组合使用。[付款](/zh/guides/payouts)与
   [收款](/zh/guides/payins)指南已更新。
+- `GET /v1/rates` 的 `fees` 块现在返回**有效**费用配置（组织默认值已与账户覆盖项解析合并）。
+  此前无覆盖项的账户会看到 `fees: []`；请用此块在创建操作前报价确切费用。
 
 </Update>
 
