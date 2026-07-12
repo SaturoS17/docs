@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-12 07:28 UTC · versión `9abdebc19c6f`
+> **Documento actualizado:** 2026-07-12 14:48 UTC · versión `b755aee1c00c`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.48 (12 de julio de 2026) |
+| Versión de la documentación | v1.49 (12 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -8278,6 +8278,18 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.49 — 12 de julio de 2026
+
+**Agregado — Documentación en 3 idiomas (inglés por defecto)**
+
+- Esta documentación ahora está disponible completa en **inglés** (idioma
+  por defecto), **español** y **chino simplificado**. Cambia de idioma con
+  el selector en la parte superior del sitio.
+- La API Reference también existe en los tres idiomas (mismos endpoints y
+  ejemplos; solo cambian las descripciones).
+- La colección Postman y la guía compilada en Markdown se mantienen al día
+  desde cualquier idioma del sitio.
 
 ### v1.48 — 12 de julio de 2026
 

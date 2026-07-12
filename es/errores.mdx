@@ -131,6 +131,14 @@ Detalle y flujo completo en [login social](/es/guias/login-social).
 | 400 | `amount_too_small` | El monto del swap no alcanza la unidad mínima de la moneda destino |
 | 400 | `swap_asset_disabled` | Una de las monedas del swap está deshabilitada para tu organización |
 
+### Cumplimiento (403 / 503)
+
+| HTTP | `error` | Significado |
+|---|---|---|
+| 403 | `compliance_hold` | La operación fue retenida por los controles de cumplimiento de la plataforma. No es un error de tu request: contacta a soporte con el timestamp — por política no se informa la razón exacta |
+| 403 | `geo_restricted` | El servicio o la operación no están disponibles para la jurisdicción de origen o de la contraparte |
+| 503 | `compliance_check_unavailable` | La verificación de cumplimiento no se pudo evaluar; la operación NO salió — reintenta con la **misma** clave de idempotencia |
+
 ### Servicio (5xx)
 
 | HTTP | `error` | Significado |

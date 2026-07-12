@@ -131,6 +131,14 @@ Full flow and details in [social login](/en/guides/social-login).
 | 400 | `amount_too_small` | The swap amount does not reach the destination currency's minimum unit |
 | 400 | `swap_asset_disabled` | One of the swap currencies is disabled for your organization |
 
+### Compliance (403 / 503)
+
+| HTTP | `error` | Meaning |
+|---|---|---|
+| 403 | `compliance_hold` | The operation was held by the platform's compliance controls. It is not a request error: contact support with the timestamp — by policy the exact reason is not disclosed |
+| 403 | `geo_restricted` | The service or the operation is not available for the origin or counterparty jurisdiction |
+| 503 | `compliance_check_unavailable` | The compliance check could not be evaluated; the operation did NOT go out — retry with the **same** idempotency key |
+
 ### Service (5xx)
 
 | HTTP | `error` | Meaning |

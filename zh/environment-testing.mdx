@@ -1,0 +1,111 @@
+---
+title: "环境与测试"
+icon: "flask"
+description: "如何安全地测试您的集成：环境、金额、本地 webhook 以及上线前检查清单"
+---
+
+CBPay 运行在**单一生产环境**上：没有独立的沙盒。本页说明如何安全地
+测试，以及在承接真实客户流量之前需要检查的事项。
+
+## 单一环境（生产）
+
+```
+https://api.qbank.cl/platform
+```
+
+没有沙盒：每笔付款都会真实出金，每笔收款都会真实收款。安全的测试
+方式与专业支付团队的做法相同：
+
+<Steps>
+  <Step title="使用最小金额测试">
+    使用通道允许的最小金额（例如 1,000 CLP、10 BOB）。API 没有技术
+    上的最低限额；金额极小时固定费用可能超过金额本身 —— 测试时这是
+    正常的。
+  </Step>
+  <Step title="使用您自己的账户和收款人">
+    向您团队自有的银行账户付款，并用您自己的支付方式收款，确保资金
+    始终在您的掌控之中。
+  </Step>
+  <Step title="依赖幂等性">
+    每个资金操作都要求 `idempotency_key`：您可以放心重试 —— 使用
+    相同密钥的重试绝不会重复执行。见
+    [幂等性](/zh/concepts/idempotency)。
+  </Step>
+  <Step title="通过读取接口验证每一步">
+    每次操作后，查询 `GET /v1/balances`、`GET /v1/movements` 以及该
+    资源的 `GET`，以确认真实状态。没有任何操作是只写的。
+  </Step>
+</Steps>
+
+<Warning>
+操作一旦完成即**真实且不可逆**。状态为 `completed` 的付款已到达
+收款人账户；唯一的撤销途径在 API 之外（请联系 CBPay 团队）。
+</Warning>
+
+## 在本地开发中测试 webhook
+
+回调 URL 必须是**公网 HTTPS**：创建订阅时会拒绝 `localhost`、私有
+IP 和 `.local` 域名。在本机开发时请使用 HTTPS 隧道：
+
+<CodeGroup>
+
+```bash Cloudflare Tunnel (free)
+# Install cloudflared and expose your local port
+cloudflared tunnel --url http://localhost:3000
+# → https://<random>.trycloudflare.com  ← use it as callback_url
+```
+
+```bash ngrok
+ngrok http 3000
+# → https://<random>.ngrok-free.app  ← use it as callback_url
+```
+
+</CodeGroup>
+
+然后使用该公网 URL 创建订阅：
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/webhooks/subscriptions \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_type": "payin_credited",
+    "callback_url": "https://your-tunnel.trycloudflare.com/webhooks/cbpay",
+    "secret": "a-long-random-secret"
+  }'
+```
+
+<Tip>
+投递失败会以递增退避的方式重试最多 **5 次**，因此即使隧道中断几
+分钟也不会丢失事件。务必验证 HMAC 签名 —— 完整做法见
+[webhooks](/zh/webhooks#signature-verification)。
+</Tip>
+
+## 安全地演练每个流程
+
+| 产品 | 低成本测试方式 |
+|---|---|
+| 付款（Payout） | 向您团队自有的银行账户付出最小金额 |
+| 收款（Payin） | 创建二维码收款或支付页面并自己完成支付；款项会回到您的余额 |
+| 转账 | 在您的组织中创建第二个账户，并在两者之间互转（免费） |
+| 加密资产 | 向您的钱包充值少量 USDT，再提现到您自有的地址 |
+| KYC | 使用贵公司的真实数据提交筛查（结果可复用） |
+| 卡片 | 发行一张虚拟卡并完成一笔小额线上消费 |
+
+## 上线前检查清单
+
+在承接真实客户流量之前：
+
+- [ ] API 密钥保存在密钥管理器中（绝不放在前端或代码仓库中）。
+- [ ] 每个资金操作都发送由您内部 ID 派生的 `idempotency_key`（而非每次尝试都用随机 UUID）。
+- [ ] 遇到超时或 `5xx` 时**不要换新密钥重试**：使用相同密钥重发，或通过 `GET` 查询状态。
+- [ ] 验证每个 webhook 的 HMAC 签名，并快速返回 `2xx`（异步处理）。
+- [ ] 妥善处理非最终状态（`pending`、`processing`），不预设成功。
+- [ ] 查询 `GET /v1/services`，只展示已启用的产品 —— 见[服务](/zh/concepts/services)。
+- [ ] 每日通过 `GET /v1/movements` 或[对账单](/zh/guides/statement)进行对账。
+- [ ] 与 CBPay 团队建立沟通渠道，处理 `unassigned` 充值或突发事件。
+
+<Note>
+本页没有回答您的问题？请查看 [FAQ](/zh/faq) —— 如果仍有遗漏，请
+反馈给我们：文档会随每个真实问题持续更新。
+</Note>

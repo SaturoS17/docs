@@ -1,0 +1,362 @@
+---
+title: "加密货币：钱包、充值与提现"
+icon: "link"
+description: "创建链上钱包、充值、转账并查询资金变动"
+---
+
+您的稳定币余额与区块链相连。支持的组合：
+
+| 网络 | 资产 | 入账余额 |
+|---|---|---|
+| `tron` | `usdt` | USDT |
+| `eth` | `usdt` | USDT |
+| `eth` | `usdc` | USDC |
+
+每笔充值都会计入**其对应资产的余额**（USDC 钱包的充值计入您的
+USDC 余额）。`BTC` 和 `GOLD` 是没有链上通道的余额：它们只能通过
+内部转账和运营方入账进行变动。
+
+```mermaid
+flowchart LR
+    subgraph depositFlow [充值]
+        wallet["您的 CBPay 钱包<br/>（固定地址）"] --> confirmed["链上<br/>确认"]
+        confirmed --> credit["自动入账<br/>− 入金费用"]
+    end
+    credit --> balance(("资产余额<br/>（USDT 或 USDC）"))
+    subgraph withdrawFlow [提现]
+        balance --> withdrawal["POST /v1/crypto/withdrawals<br/>扣除金额 + 费用"]
+        withdrawal --> onchain{"链上<br/>结果"}
+        onchain -->|"completed"| txid["tx_id = 您的凭证"]
+        onchain -->|"failed"| refund["全额自动<br/>退款"]
+    end
+```
+
+## 您的账户创建时即自带钱包
+
+每个账户——个人和企业——在创建时都会自动获得**每种支持组合各一个
+充值钱包**（`tron`/`usdt`、`eth`/`usdt` 和 `eth`/`usdc`），
+**完全免费**：注册完成后，您的三个地址即可接收资金。
+
+```bash
+# 账户创建后，您的地址即已存在：
+curl https://api.qbank.cl/platform/v1/crypto/wallets \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "page": 1,
+  "page_size": 50,
+  "wallets": [
+    { "wallet_id": "9d68…", "chain": "tron", "asset": "USDT", "address": "TXMD…", "label": "", "created_at": "2026-07-11T23:33:20Z" },
+    { "wallet_id": "a83d…", "chain": "eth", "asset": "USDT", "address": "0xefe0…", "label": "", "created_at": "2026-07-11T23:33:20Z" },
+    { "wallet_id": "fb88…", "chain": "eth", "asset": "USDC", "address": "0xa072…", "label": "", "created_at": "2026-07-11T23:33:20Z" }
+  ]
+}
+```
+
+<Note>
+钱包在账户创建时于后台配置：若您在注册的同一秒查询，某个地址可能
+尚未生成——请几秒后重试。
+</Note>
+
+钱包是**入金入口**：您可以持有多个钱包（企业），但账户余额只有
+一个。
+
+| 账户类型 | 每个网络的钱包数 |
+|---|---|
+| 个人 | **1**（初始钱包已占用每种组合的名额） |
+| 企业 | **不限**（使用 `label` 加以区分） |
+
+## 创建额外钱包
+
+`POST /v1/crypto/wallets` 用于创建**额外**钱包：企业可按需创建
+任意数量（每个供应商、每个分支机构、每个产品各一个……）。个人在
+注册时已持有每种组合的钱包，因此手动创建会返回
+`422 wallet_limit_reached`。
+
+<CodeGroup>
+
+```bash 企业（带 label，不限数量）
+curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "tron",
+    "label": "Main treasury"
+  }'
+```
+
+```bash 企业，Ethereum 网络
+curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "eth",
+    "label": "E-commerce collections"
+  }'
+```
+
+```bash USDC 钱包（仅限 Ethereum）
+curl -X POST https://api.qbank.cl/platform/v1/crypto/wallets \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "eth",
+    "asset": "usdc",
+    "label": "USDC treasury"
+  }'
+```
+
+</CodeGroup>
+
+`asset` 为可选，默认为 `usdt`。个人账户"每个网络一个钱包"的限制
+按网络+资产组合计算：个人可以同时持有 `eth`/`usdt` 钱包**和**
+`eth`/`usdc` 钱包。
+
+响应 `201`：
+
+```json
+{
+  "wallet_id": "b7e3…",
+  "chain": "tron",
+  "asset": "USDT",
+  "address": "TQmZ…",
+  "label": "Main treasury",
+  "created_at": "2026-07-07T12:00:00Z",
+  "creation_fee": "1.000000"
+}
+```
+
+若个人尝试在同一网络创建第二个钱包——`422`：
+
+```json
+{
+  "error": "wallet_limit_reached",
+  "message": "person accounts can hold one wallet per network"
+}
+```
+
+- 初始钱包**始终免费**。额外创建收取由 CBPay 配置的**固定费用**
+  （`wallet_creation`）——个人和企业的费用可以不同，甚至可按账户
+  区分。费用为 0（默认值）时即免费。若创建失败，费用会自动退回。
+- 已在该网络持有钱包的**个人**会收到 `422 wallet_limit_reached`；
+  **企业**可按需创建任意数量。个人/企业的全部差异见
+  [个人与企业](/zh/concepts/persons-companies)。
+- `label` 为可选项，仅用于描述。
+
+## 查看我的钱包
+
+```bash
+curl https://api.qbank.cl/platform/v1/crypto/wallets \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "wallets": [
+    {
+      "wallet_id": "b7e3…",
+      "chain": "tron",
+      "asset": "USDT",
+      "address": "TQmZ…",
+      "label": "Main treasury",
+      "created_at": "2026-07-07T12:00:00Z"
+    },
+    {
+      "wallet_id": "a1c9…",
+      "chain": "eth",
+      "asset": "USDT",
+      "address": "0x8f3B…",
+      "label": "E-commerce collections",
+      "created_at": "2026-07-07T12:05:00Z"
+    }
+  ]
+}
+```
+
+## 充值
+
+将钱包对应的资产**通过正确的网络**发送到其地址。充值在链上确认后，
+该资产的余额会自动入账（若 CBPay 配置了 `funding` 费用则扣除后
+入账），并触发 `crypto_deposit_credited` webhook：
+
+```json
+{
+  "account_id": "…",
+  "chain": "tron",
+  "asset": "USDT",
+  "tx_id": "b1946ac9…",
+  "amount": "499.000000",
+  "fee": "1.000000"
+}
+```
+
+<Warning>
+**只能通过钱包所属网络发送该钱包的资产**（USDT 发到 USDT 钱包，
+USDC 发到 USDC 钱包）。地址归您所有且固定不变：每次充值都可以
+重复使用。
+</Warning>
+
+### 确认时间
+
+| 网络 | 检测 | 入账（网络确认） |
+|---|---|---|
+| TRON | 近乎即时 | **约 1 分钟**（19 个确认） |
+| Ethereum | 近乎即时 | **数分钟**，视网络拥堵情况而定 |
+
+入账时始终附带 webhook 和 `tx_id`，您可以在网络浏览器上进行核验。
+
+## 转出（链上提现）
+
+从对应余额向任意外部地址发送 USDT 或 USDC（`asset` 为可选，默认
+`USDT`；USDC 仅支持 `eth` 网络）：
+
+<CodeGroup>
+
+```bash USDT（TRON 网络）
+curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "tron",
+    "to_address": "TVJ6…",
+    "amount": "100.000000",
+    "idempotency_key": "withdrawal-2026-07-07-b"
+  }'
+```
+
+```bash USDC（Ethereum 网络）
+curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "eth",
+    "asset": "USDC",
+    "to_address": "0x8f3B…",
+    "amount": "50.000000",
+    "idempotency_key": "withdrawal-usdc-2026-07-09-a"
+  }'
+```
+
+</CodeGroup>
+
+响应 `202` —— 扣除 `amount + fee`，交易随即广播：
+
+```json
+{
+  "withdrawal_id": "5e8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "to_address": "TVJ6…",
+  "amount": "100.000000",
+  "fee": "1.000000",
+  "total_debit": "101.000000",
+  "status": "processing",
+  "tx_id": "…"
+}
+```
+
+<Note>
+每笔提现都会自动将地址保存为[联系人](/zh/guides/contacts)——在
+请求体中用 `"contact_name"` 为其命名，或用 `"save_contact": false`
+禁用。若要重复发送，可使用 `"to_contact_id"` 代替 `to_address`
+（将使用该联系人在对应 `chain` 上保存的地址）。
+</Note>
+
+最终状态通过 `crypto_withdrawal_status_changed` webhook 送达：
+**`completed`**（`tx_id` 即您的凭证）或 **`failed`**（全额扣款
+退回）。
+
+您也可以随时查询提现：
+
+```bash
+curl https://api.qbank.cl/platform/v1/crypto/withdrawals/5e8c… \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "withdrawal_id": "5e8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "to_address": "TVJ6…",
+  "amount": "100.000000",
+  "fee": "1.000000",
+  "total_debit": "101.000000",
+  "status": "completed",
+  "status_code": "confirmed",
+  "status_message": "confirmed on-chain",
+  "tx_id": "7d1f…"
+}
+```
+
+<Note>
+若要向**另一个 CBPay 账户**转移余额，无需经过区块链：
+[内部转账](/zh/guides/transfers)即时且免费。
+</Note>
+
+## 资金变动
+
+```bash
+# 链上活动：充值 + 提现，支持 tx_id 与日期过滤
+curl "https://api.qbank.cl/platform/v1/crypto/transactions?from=2026-07-01&to=2026-07-08" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "page": 1,
+  "page_size": 50,
+  "deposits": [
+    {
+      "chain": "tron",
+      "asset": "USDT",
+      "tx_id": "b1946ac9…",
+      "from_address": "TX9a…",
+      "amount": "499.000000",
+      "reference": "dep_8813…",
+      "created_at": "2026-07-07T12:10:00Z"
+    }
+  ],
+  "withdrawals": [
+    {
+      "withdrawal_id": "5e8c…",
+      "chain": "tron",
+      "asset": "USDT",
+      "to_address": "TVJ6…",
+      "amount": "100.000000",
+      "fee": "1.000000",
+      "total_debit": "101.000000",
+      "status": "completed",
+      "tx_id": "7d1f…",
+      "created_at": "2026-07-07T15:00:00Z"
+    }
+  ]
+}
+```
+
+```bash
+# 当前余额（可用 + 冻结）
+curl https://api.qbank.cl/platform/v1/balances \
+  -H "Authorization: Bearer <token>"
+
+# 完整会计历史（入金、提现、钱包费用……）
+curl "https://api.qbank.cl/platform/v1/movements?type=funding&from=2026-07-01&to=2026-07-08" \
+  -H "Authorization: Bearer <token>"
+```
+
+每笔充值都计入**其钱包对应资产的余额**（USDT 或 USDC）；钱包是
+入金入口，每种货币只有一个余额。
+
+## 错误
+
+| HTTP | `error` | 原因 |
+|---|---|---|
+| 400 | `invalid_chain` | 不支持的网络（请使用 `tron` 或 `eth`） |
+| 400 | `invalid_asset` | 该网络/资产组合没有链上通道（支持：`tron`/`usdt`、`eth`/`usdt`、`eth`/`usdc` —— `BTC` 和 `GOLD` 不支持链上操作） |
+| 400 | `to_address_required` | 缺少提现目标地址 |
+| 402 | `insufficient_funds` | 该资产余额不足（不足以支付提现或创建费用） |
+| 422 | `wallet_limit_reached` | 个人尝试为同一网络+资产组合创建第二个钱包 |
+| 422 | （提现返回 `status: failed`） | 广播时被拒绝；扣款已退回 |
+| 503 | `withdrawals_unavailable` | 该通道的提现尚未启用 |
