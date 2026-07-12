@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.45'
+  version: '1.46'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -1503,14 +1503,9 @@ paths:
                         price:
                           type: string
                           example: '107.5341'
-                        source:
-                          type: string
-                          description: Fuente del precio (feed de ejecución on-chain `chainlink`, o
-                            una referencia de mercado).
-                          example: chainlink
                         updated_at:
                           type: string
-                          description: Cuándo actualizó la fuente este precio por última vez.
+                          description: Cuándo se actualizó este precio por última vez.
                         settlement_grade:
                           type: boolean
                           description: True cuando el precio está lo bastante fresco para ejecutar
@@ -1575,14 +1570,12 @@ paths:
                     currency: USD
                     unit: btc
                     price: '109853.24'
-                    source: chainlink
                     updated_at: '2026-07-07T11:59:41Z'
                     settlement_grade: true
                   GOLD:
                     currency: USD
                     unit: gram
                     price: '107.5341'
-                    source: chainlink
                     updated_at: '2026-07-07T09:12:05Z'
                     settlement_grade: true
                 settlement:
@@ -3488,6 +3481,132 @@ paths:
                 message: account has no compliance screening to monitor
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/aml/catalogs:
+    get:
+      tags:
+      - AML screening
+      operationId: getAmlCatalogs
+      summary: Catálogos para formularios de compliance
+      description: 'Devuelve todos los catálogos (listas de pares value/label) que el front debe usar
+        para construir formularios de compliance y verificación consistentes: géneros, estados de
+        empresa, tipos de dirección, formas jurídicas (lista global más cascada por país), fuentes
+        de ingreso/patrimonio, estándares de industria con su default por país, y las listas ISO-3166
+        completas de países y subdivisiones. Data estática — seguro cachearla por horas. `value` es
+        lo que envías a la API; `label` lo que muestras.'
+      responses:
+        '200':
+          description: Todos los catálogos más un bloque `meta` que describe las cascadas.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  genders:
+                    type: array
+                    description: Valores exactos requeridos al screenear personas.
+                    items:
+                      $ref: '#/components/schemas/CatalogItem'
+                  company_status:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CatalogItem'
+                  address_types:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CatalogItem'
+                  company_types:
+                    type: array
+                    description: Lista plana de formas jurídicas (idioma local oficial) como fallback.
+                    items:
+                      $ref: '#/components/schemas/CatalogItem'
+                  source_of_income:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CatalogItem'
+                  source_of_wealth:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CatalogItem'
+                  industries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CatalogItem'
+                  industry_code_types:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CatalogItem'
+                  company_types_by_country:
+                    type: object
+                    description: Formas jurídicas por país ISO (GLEIF ELF); si el país falta, usar
+                      `company_types`.
+                  industries_by_code_type:
+                    type: object
+                    description: Códigos de industria por estándar (`value` = código, `label` = descripción).
+                  industry_code_type_by_country:
+                    type: object
+                    description: Estándar de industria fijado por país (default ISIC).
+                  countries:
+                    type: array
+                    description: Países ISO-3166-1.
+                    items:
+                      $ref: '#/components/schemas/CatalogItem'
+                  country_subdivisions:
+                    type: object
+                    description: Subdivisiones ISO-3166-2 por país.
+                  meta:
+                    type: object
+                    description: Conteos más una nota que describe cómo se encadenan las cascadas.
+              example:
+                genders:
+                - value: male
+                  label: Male
+                - value: female
+                  label: Female
+                company_status:
+                - value: active
+                  label: Active
+                address_types:
+                - value: residential
+                  label: Residential
+                company_types:
+                - value: Sociedad Anónima
+                  label: Sociedad Anónima
+                source_of_income:
+                - value: salary
+                  label: Salary
+                source_of_wealth:
+                - value: business_ownership
+                  label: Business ownership
+                industries:
+                - value: financial_services
+                  label: Financial services
+                industry_code_types:
+                - value: ISIC
+                  label: ISIC Rev.4
+                company_types_by_country:
+                  CL:
+                  - value: Sociedad por Acciones
+                    label: Sociedad por Acciones
+                industries_by_code_type:
+                  ISIC:
+                  - value: '6419'
+                    label: Other monetary intermediation
+                industry_code_type_by_country:
+                  CL: ISIC
+                countries:
+                - value: CL
+                  label: Chile
+                country_subdivisions:
+                  CL:
+                  - value: CL-RM
+                    label: Región Metropolitana de Santiago
+                meta:
+                  country_count: 249
+                  note: value = send to the API; label = display in the UI.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
   /v1/me/verification/link:
     post:
       tags:
@@ -10033,6 +10152,16 @@ components:
             error: unauthorized
             message: invalid or missing credentials
   schemas:
+    CatalogItem:
+      type: object
+      description: Una entrada de catálogo — `value` es lo que envías a la API, `label` lo que muestras.
+      properties:
+        value:
+          type: string
+          example: CL
+        label:
+          type: string
+          example: Chile
     OTPChallenge:
       type: object
       properties:

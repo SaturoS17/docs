@@ -37,6 +37,40 @@ gratuito para ti. Requiere tener tu propia
 [verificación de identidad aprobada](/es/guias/kyc#tu-propia-verificacion-onboarding).
 </Note>
 
+## Catálogos para construir el formulario
+
+Antes de armar el formulario de screening (o de verificación), obtén los
+catálogos oficiales con `GET /v1/aml/catalogs`: géneros, estados de empresa,
+tipos de dirección, formas jurídicas (globales y en cascada por país),
+fuentes de ingreso/patrimonio, estándares de industria con su default por
+país, y las listas ISO-3166 de países y subdivisiones. Cada entrada trae
+`value` (lo que envías a la API) y `label` (lo que muestras). Es data
+estática: puedes cachearla por horas.
+
+```bash
+curl https://api.qbank.cl/platform/v1/aml/catalogs \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "genders": [ { "value": "male", "label": "Male" } ],
+  "company_types_by_country": {
+    "CL": [ { "value": "Sociedad por Acciones", "label": "Sociedad por Acciones" } ]
+  },
+  "industry_code_type_by_country": { "CL": "ISIC" },
+  "countries": [ { "value": "CL", "label": "Chile" } ],
+  "meta": { "note": "value = send to the API; label = display in the UI." }
+}
+```
+
+<Tip>
+Cascadas: el país de la empresa fija sus formas jurídicas
+(`company_types_by_country[país]`, con `company_types` como fallback) y su
+estándar de industria (`industry_code_type_by_country[país]`, default ISIC);
+con ese estándar tomas los códigos de `industries_by_code_type[estándar]`.
+</Tip>
+
 ## Enviar el screening
 
 Un solo endpoint para persona y empresa; el tipo se detecta del payload

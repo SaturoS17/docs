@@ -8,6 +8,25 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="11 de julio de 2026" description="v1.46">
+
+**Agregado — Catálogos de compliance**
+
+- Nuevo `GET /v1/aml/catalogs`: todos los catálogos para construir
+  formularios de compliance y verificación (géneros, formas jurídicas por
+  país, fuentes de ingreso/patrimonio, estándares de industria, países y
+  subdivisiones ISO-3166). Antes esta data no estaba disponible en la API.
+
+**Cambiado**
+
+- El bloque `asset_prices` de `GET /v1/rates` y `GET /v1/rates/history` ya
+  no incluye el campo interno `source`; usa `settlement_grade` y
+  `updated_at` para saber si un precio es ejecutable y qué tan fresco está.
+
+Guía: [AML screening](/es/guias/aml).
+
+</Update>
+
 <Update label="11 de julio de 2026" description="v1.45">
 
 **Agregado — Toda cuenta nace con sus wallets de depósito**

@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — that never mix or convert automatically.\nPayouts and service fees can be paid from any of the four balances:\nset a default with `PUT /v1/settlement` or override per payout with\n`settlement_asset`.\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-11 23:47 UTC",
-    "_content_sha256": "efe4e34aaf11be5c0659b9588ae86cf2851a0b601ee972cc7c7ed9c4af2c89ef"
+    "_generated_at": "2026-07-12 02:48 UTC",
+    "_content_sha256": "ba9d6228656a72c9ca641d86f5f043cbb1a6f761a6da3394c428f431c7752eb2"
   },
   "auth": {
     "type": "bearer",
@@ -2594,7 +2594,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"base\": \"USD\",\n  \"rates\": {\n    \"chile\": {\n      \"currency\": \"CLP\",\n      \"rate\": \"950.25\",\n      \"payin_rate\": \"955.10\"\n    },\n    \"mexico\": {\n      \"currency\": \"MXN\",\n      \"rate\": \"17.50\",\n      \"payin_rate\": \"17.62\"\n    },\n    \"peru\": {\n      \"currency\": \"PEN\",\n      \"rate\": \"3.72\",\n      \"payin_rate\": \"3.75\"\n    }\n  },\n  \"asset_prices\": {\n    \"USDT\": {\n      \"currency\": \"USD\",\n      \"unit\": \"usdt\",\n      \"price\": \"1\"\n    },\n    \"USDC\": {\n      \"currency\": \"USD\",\n      \"unit\": \"usdc\",\n      \"price\": \"1\"\n    },\n    \"BTC\": {\n      \"currency\": \"USD\",\n      \"unit\": \"btc\",\n      \"price\": \"109853.24\",\n      \"source\": \"chainlink\",\n      \"updated_at\": \"2026-07-07T11:59:41Z\",\n      \"settlement_grade\": true\n    },\n    \"GOLD\": {\n      \"currency\": \"USD\",\n      \"unit\": \"gram\",\n      \"price\": \"107.5341\",\n      \"source\": \"chainlink\",\n      \"updated_at\": \"2026-07-07T09:12:05Z\",\n      \"settlement_grade\": true\n    }\n  },\n  \"settlement\": {\n    \"default_asset\": \"USDT\",\n    \"assets\": [\n      {\n        \"asset\": \"USDT\",\n        \"available\": true,\n        \"settlement_rate\": \"1\"\n      },\n      {\n        \"asset\": \"USDC\",\n        \"available\": true,\n        \"settlement_rate\": \"0.99900000\"\n      },\n      {\n        \"asset\": \"BTC\",\n        \"available\": true,\n        \"settlement_rate\": \"109029.34070000\"\n      },\n      {\n        \"asset\": \"GOLD\",\n        \"available\": true,\n        \"settlement_rate\": \"106.99642950\"\n      }\n    ]\n  },\n  \"updated_at\": \"2026-07-07T12:00:00Z\",\n  \"fees\": [\n    {\n      \"id\": \"3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c\",\n      \"org_id\": \"1c9e7a2b-5f6d-4e3a-8c1b-2a9d8e7f6a5b\",\n      \"account_id\": \"\",\n      \"service\": \"payout\",\n      \"country\": \"CL\",\n      \"asset\": \"USDT\",\n      \"percent\": \"0\",\n      \"fixed_amount\": \"0.30\",\n      \"status\": \"active\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
+              "body": "{\n  \"base\": \"USD\",\n  \"rates\": {\n    \"chile\": {\n      \"currency\": \"CLP\",\n      \"rate\": \"950.25\",\n      \"payin_rate\": \"955.10\"\n    },\n    \"mexico\": {\n      \"currency\": \"MXN\",\n      \"rate\": \"17.50\",\n      \"payin_rate\": \"17.62\"\n    },\n    \"peru\": {\n      \"currency\": \"PEN\",\n      \"rate\": \"3.72\",\n      \"payin_rate\": \"3.75\"\n    }\n  },\n  \"asset_prices\": {\n    \"USDT\": {\n      \"currency\": \"USD\",\n      \"unit\": \"usdt\",\n      \"price\": \"1\"\n    },\n    \"USDC\": {\n      \"currency\": \"USD\",\n      \"unit\": \"usdc\",\n      \"price\": \"1\"\n    },\n    \"BTC\": {\n      \"currency\": \"USD\",\n      \"unit\": \"btc\",\n      \"price\": \"109853.24\",\n      \"updated_at\": \"2026-07-07T11:59:41Z\",\n      \"settlement_grade\": true\n    },\n    \"GOLD\": {\n      \"currency\": \"USD\",\n      \"unit\": \"gram\",\n      \"price\": \"107.5341\",\n      \"updated_at\": \"2026-07-07T09:12:05Z\",\n      \"settlement_grade\": true\n    }\n  },\n  \"settlement\": {\n    \"default_asset\": \"USDT\",\n    \"assets\": [\n      {\n        \"asset\": \"USDT\",\n        \"available\": true,\n        \"settlement_rate\": \"1\"\n      },\n      {\n        \"asset\": \"USDC\",\n        \"available\": true,\n        \"settlement_rate\": \"0.99900000\"\n      },\n      {\n        \"asset\": \"BTC\",\n        \"available\": true,\n        \"settlement_rate\": \"109029.34070000\"\n      },\n      {\n        \"asset\": \"GOLD\",\n        \"available\": true,\n        \"settlement_rate\": \"106.99642950\"\n      }\n    ]\n  },\n  \"updated_at\": \"2026-07-07T12:00:00Z\",\n  \"fees\": [\n    {\n      \"id\": \"3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c\",\n      \"org_id\": \"1c9e7a2b-5f6d-4e3a-8c1b-2a9d8e7f6a5b\",\n      \"account_id\": \"\",\n      \"service\": \"payout\",\n      \"country\": \"CL\",\n      \"asset\": \"USDT\",\n      \"percent\": \"0\",\n      \"fixed_amount\": \"0.30\",\n      \"status\": \"active\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
             }
           ]
         },
@@ -6269,6 +6269,54 @@
                 }
               ],
               "body": "{\n  \"customer_id\": \"e1d2c3b4-a596-8778-695a-4b3c2d1e0f9a\",\n  \"monitored\": true,\n  \"compliance_service\": \"compliance_monitoring\",\n  \"compliance_fee\": \"0.500000\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Compliance form catalogs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/aml/catalogs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "aml",
+                "catalogs"
+              ]
+            },
+            "description": "Returns every catalog (list of value/label pairs) the front should use to build consistent compliance and verification forms: genders, company status, address types, company legal forms (global list plus per-country cascade), income/wealth sources, industry standards with their per-country default, and the full ISO-3166 country and subdivision lists. Static data — safe to cache for hours. `value` is what you send to the API; `label` is what you display."
+          },
+          "response": [
+            {
+              "name": "200 All catalogs plus a `meta` block describing the cascades.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/aml/catalogs",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "aml",
+                    "catalogs"
+                  ]
+                }
+              },
+              "status": "All catalogs plus a `meta` block describing the cascades.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"genders\": [\n    {\n      \"value\": \"male\",\n      \"label\": \"Male\"\n    },\n    {\n      \"value\": \"female\",\n      \"label\": \"Female\"\n    }\n  ],\n  \"company_status\": [\n    {\n      \"value\": \"active\",\n      \"label\": \"Active\"\n    }\n  ],\n  \"address_types\": [\n    {\n      \"value\": \"residential\",\n      \"label\": \"Residential\"\n    }\n  ],\n  \"company_types\": [\n    {\n      \"value\": \"Sociedad Anónima\",\n      \"label\": \"Sociedad Anónima\"\n    }\n  ],\n  \"source_of_income\": [\n    {\n      \"value\": \"salary\",\n      \"label\": \"Salary\"\n    }\n  ],\n  \"source_of_wealth\": [\n    {\n      \"value\": \"business_ownership\",\n      \"label\": \"Business ownership\"\n    }\n  ],\n  \"industries\": [\n    {\n      \"value\": \"financial_services\",\n      \"label\": \"Financial services\"\n    }\n  ],\n  \"industry_code_types\": [\n    {\n      \"value\": \"ISIC\",\n      \"label\": \"ISIC Rev.4\"\n    }\n  ],\n  \"company_types_by_country\": {\n    \"CL\": [\n      {\n        \"value\": \"Sociedad por Acciones\",\n        \"label\": \"Sociedad por Acciones\"\n      }\n    ]\n  },\n  \"industries_by_code_type\": {\n    \"ISIC\": [\n      {\n        \"value\": \"6419\",\n        \"label\": \"Other monetary intermediation\"\n      }\n    ]\n  },\n  \"industry_code_type_by_country\": {\n    \"CL\": \"ISIC\"\n  },\n  \"countries\": [\n    {\n      \"value\": \"CL\",\n      \"label\": \"Chile\"\n    }\n  ],\n  \"country_subdivisions\": {\n    \"CL\": [\n      {\n        \"value\": \"CL-RM\",\n        \"label\": \"Región Metropolitana de Santiago\"\n      }\n    ]\n  },\n  \"meta\": {\n    \"country_count\": 249,\n    \"note\": \"value = send to the API; label = display in the UI.\"\n  }\n}"
             }
           ]
         }

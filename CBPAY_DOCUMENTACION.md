@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-11 23:47 UTC · versión `bc3e8ee45679`
+> **Documento actualizado:** 2026-07-12 02:48 UTC · versión `a25d323863e9`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.45 (11 de julio de 2026) |
+| Versión de la documentación | v1.46 (11 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -1033,10 +1033,10 @@ pagas una operación desde ese asset (spread incluido):
     "USDT": { "currency": "USD", "unit": "usdt", "price": "1" },
     "USDC": { "currency": "USD", "unit": "usdc", "price": "1" },
     "BTC": { "currency": "USD", "unit": "btc", "price": "109853.24",
-             "source": "chainlink", "updated_at": "2026-07-07T11:59:41Z",
+             "updated_at": "2026-07-07T11:59:41Z",
              "settlement_grade": true },
     "GOLD": { "currency": "USD", "unit": "gram", "price": "107.5341",
-              "source": "chainlink", "updated_at": "2026-07-07T09:12:05Z",
+              "updated_at": "2026-07-07T09:12:05Z",
               "settlement_grade": true }
   },
   "settlement": {
@@ -5964,6 +5964,38 @@ llamada (verás `compliance_fee` en la respuesta) y se **reembolsa
 automáticamente** si el screening falla. Con comisión 0 el servicio es
 gratuito para ti. Requiere tener tu propia
 [verificación de identidad aprobada](#verificacion-kyc-y-kyb).
+### Catálogos para construir el formulario
+
+Antes de armar el formulario de screening (o de verificación), obtén los
+catálogos oficiales con `GET /v1/aml/catalogs`: géneros, estados de empresa,
+tipos de dirección, formas jurídicas (globales y en cascada por país),
+fuentes de ingreso/patrimonio, estándares de industria con su default por
+país, y las listas ISO-3166 de países y subdivisiones. Cada entrada trae
+`value` (lo que envías a la API) y `label` (lo que muestras). Es data
+estática: puedes cachearla por horas.
+
+```bash
+curl https://api.qbank.cl/platform/v1/aml/catalogs \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "genders": [ { "value": "male", "label": "Male" } ],
+  "company_types_by_country": {
+    "CL": [ { "value": "Sociedad por Acciones", "label": "Sociedad por Acciones" } ]
+  },
+  "industry_code_type_by_country": { "CL": "ISIC" },
+  "countries": [ { "value": "CL", "label": "Chile" } ],
+  "meta": { "note": "value = send to the API; label = display in the UI." }
+}
+```
+
+> **Tip**
+Cascadas: el país de la empresa fija sus formas jurídicas
+(`company_types_by_country[país]`, con `company_types` como fallback) y su
+estándar de industria (`industry_code_type_by_country[país]`, default ISIC);
+con ese estándar tomas los códigos de `industries_by_code_type[estándar]`.
 ### Enviar el screening
 
 Un solo endpoint para persona y empresa; el tipo se detecta del payload
@@ -7908,9 +7940,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-11 23:47 UTC · 215 requests · versión `efe4e34aaf11`
+> **Colección actualizada:** 2026-07-12 02:48 UTC · 216 requests · versión `ba9d6228656a`
 
-<PostmanFreshness iso="2026-07-11T23:47:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-12T02:48:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -7944,6 +7976,23 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.46 — 11 de julio de 2026
+
+**Agregado — Catálogos de compliance**
+
+- Nuevo `GET /v1/aml/catalogs`: todos los catálogos para construir
+  formularios de compliance y verificación (géneros, formas jurídicas por
+  país, fuentes de ingreso/patrimonio, estándares de industria, países y
+  subdivisiones ISO-3166). Antes esta data no estaba disponible en la API.
+
+**Cambiado**
+
+- El bloque `asset_prices` de `GET /v1/rates` y `GET /v1/rates/history` ya
+  no incluye el campo interno `source`; usa `settlement_grade` y
+  `updated_at` para saber si un precio es ejecutable y qué tan fresco está.
+
+Guía: [AML screening](#aml-screening).
 
 ### v1.45 — 11 de julio de 2026
 
@@ -9018,6 +9067,7 @@ está en la API Reference interactiva y en la colección Postman.
 | `POST` | `/v1/aml/screenings` | Enviar un screening AML |
 | `POST` | `/v1/aml/rescreen` | Reejecutar verificación KYC/KYB |
 | `PATCH` | `/v1/aml/monitoring` | Habilitar o deshabilitar el monitoreo |
+| `GET` | `/v1/aml/catalogs` | Catálogos para formularios de compliance |
 
 
 ## KYC / KYB
