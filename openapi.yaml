@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.52'
+  version: '1.53'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -1161,6 +1161,12 @@ paths:
         today's `held` per asset. Days valued with today's spot price
         (before historical prices exist) are disclosed in
         `spot_priced_dates` — values are never invented.
+
+
+        The `assets` map also includes the banking account mirrors
+        (`BANK_USD`, `BANK_EUR`) as their own series in their own currency
+        (2 decimals). They are **not** part of the `total_usd` aggregate,
+        which only covers the operational balances (USDT, USDC, BTC, GOLD).
       parameters:
       - name: from
         in: query
@@ -1198,7 +1204,12 @@ paths:
                     example: UTC
                   assets:
                     type: object
-                    description: One daily closing-balance series per asset.
+                    description: >
+                      One daily closing-balance series per asset. Includes the
+                      operational balances (USDT, USDC, BTC, GOLD) and the
+                      banking account mirrors (BANK_USD, BANK_EUR) in their own
+                      currency; the banking series are excluded from
+                      `total_usd`.
                     additionalProperties:
                       type: object
                       properties:
@@ -1309,6 +1320,15 @@ paths:
                     first: '0.00060000'
                     last: '0.00060000'
                     change_pct: '0.00'
+                  BANK_USD:
+                    series:
+                    - date: '2026-06-12'
+                      balance: '1500.00'
+                    - date: '2026-07-11'
+                      balance: '1725.50'
+                    first: '1500.00'
+                    last: '1725.50'
+                    change_pct: '15.03'
                 total_usd:
                   series:
                   - date: '2026-06-12'

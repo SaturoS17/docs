@@ -7,6 +7,18 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月12日" description="v1.53">
+
+**新增 — 余额历史中的银行序列**
+
+- `GET /v1/balances/history` 的 `assets` 现在包含银行账户
+  （`BANK_USD`、`BANK_EUR`）的每日序列，各以自身货币（2 位小数）呈现，
+  可作为 USDT/USDC/BTC/GOLD 旁的又一筛选项直接绘图。它们仍不计入
+  `total_usd` 聚合——该聚合仅覆盖运营余额。
+  [分析](/zh/guides/analytics)指南已更新。
+
+</Update>
+
 <Update label="2026年7月12日" description="v1.52">
 
 **新增 — 付款与收款列表的国家筛选**

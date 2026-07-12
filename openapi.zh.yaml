@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.52'
+  version: '1.53'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC 和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
     payout 和服务费可从四个余额中的任意一个支付:
@@ -1102,6 +1102,9 @@ paths:
       summary: 获取余额历史
       description: '账户余额的每日演变,用于仪表盘图表:每个资产一条序列(每日收盘可用余额,无流水的日期沿用前值),外加一条按各日历史参考价对 BTC/GOLD 估值的 USD 汇总序列。包含期间总流入/流出及当前快照(可用 + 冻结),前端可据此渲染 Mercury 风格的余额卡片及其百分比变化。序列跟踪**可用**余额(冻结没有历史);`current` 携带今日各资产的 `held`。在历史价格存在之前用今日现价估值的日期会在 `spot_priced_dates` 中披露——绝不虚构数值。
 
+
+        `assets` 映射还包含银行账户镜像(`BANK_USD`、`BANK_EUR`),以其自身货币(2 位小数)作为独立序列提供。它们**不**计入 `total_usd` 汇总——该汇总仅覆盖运营余额(USDT、USDC、BTC、GOLD)。
+
         '
       parameters:
       - name: from
@@ -1140,7 +1143,7 @@ paths:
                     example: UTC
                   assets:
                     type: object
-                    description: 每个资产一条每日收盘余额序列。
+                    description: 每个资产一条每日收盘余额序列。包含运营余额(USDT、USDC、BTC、GOLD)以及以自身货币计的银行账户镜像(BANK_USD、BANK_EUR);银行序列不计入 `total_usd`。
                     additionalProperties:
                       type: object
                       properties:
@@ -1251,6 +1254,15 @@ paths:
                     first: '0.00060000'
                     last: '0.00060000'
                     change_pct: '0.00'
+                  BANK_USD:
+                    series:
+                    - date: '2026-06-12'
+                      balance: '1500.00'
+                    - date: '2026-07-11'
+                      balance: '1725.50'
+                    first: '1500.00'
+                    last: '1725.50'
+                    change_pct: '15.03'
                 total_usd:
                   series:
                   - date: '2026-06-12'

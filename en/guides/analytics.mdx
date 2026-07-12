@@ -290,6 +290,15 @@ curl "https://api.qbank.cl/platform/v1/balances/history?from=2026-06-12&to=2026-
       "first": "0.00060000",
       "last": "0.00060000",
       "change_pct": "0.00"
+    },
+    "BANK_USD": {
+      "series": [
+        { "date": "2026-06-12", "balance": "1500.00" },
+        { "date": "2026-07-11", "balance": "1725.50" }
+      ],
+      "first": "1500.00",
+      "last": "1725.50",
+      "change_pct": "15.03"
     }
   },
   "total_usd": {
@@ -317,6 +326,11 @@ curl "https://api.qbank.cl/platform/v1/balances/history?from=2026-06-12&to=2026-
 - Each point is the **available balance at that day's close** (UTC); days
   without movements carry the previous day's balance forward, so the
   series has no gaps and charts directly.
+- `assets` also includes the banking account mirrors (`BANK_USD`,
+  `BANK_EUR`) as their own series in their own currency (2 decimals) —
+  handy for a "Bank USD"/"Bank EUR" chip on the chart. They are **not**
+  part of the `total_usd` aggregate, which only covers the operational
+  balances.
 - `total_usd` values BTC/GOLD at **each day's historical price**. When a
   day has no historical price yet, today's spot is used and that day is
   disclosed in `spot_priced_dates` (values are never invented).

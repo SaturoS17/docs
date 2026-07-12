@@ -8,6 +8,19 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="12 de julio de 2026" description="v1.53">
+
+**Agregado — Series banking en el historial de saldos**
+
+- `GET /v1/balances/history` ahora incluye en `assets` las series diarias
+  de las cuentas banking (`BANK_USD`, `BANK_EUR`), cada una en su propia
+  moneda (2 decimales), listas para graficarlas como un filtro más junto a
+  USDT/USDC/BTC/GOLD. Siguen fuera del agregado `total_usd`, que cubre
+  solo los saldos operativos. Guía de
+  [analytics](/es/guias/analytics) actualizada.
+
+</Update>
+
 <Update label="12 de julio de 2026" description="v1.52">
 
 **Agregado — Filtro por país en envíos y depósitos**

@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-12 20:40 UTC · versión `ce91d3db23fe`
+> **Documento actualizado:** 2026-07-12 22:42 UTC · versión `d94e0f76557a`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.52 (12 de julio de 2026) |
+| Versión de la documentación | v1.53 (12 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -7100,6 +7100,15 @@ curl "https://api.qbank.cl/platform/v1/balances/history?from=2026-06-12&to=2026-
       "first": "0.00060000",
       "last": "0.00060000",
       "change_pct": "0.00"
+    },
+    "BANK_USD": {
+      "series": [
+        { "date": "2026-06-12", "balance": "1500.00" },
+        { "date": "2026-07-11", "balance": "1725.50" }
+      ],
+      "first": "1500.00",
+      "last": "1725.50",
+      "change_pct": "15.03"
     }
   },
   "total_usd": {
@@ -7127,6 +7136,10 @@ curl "https://api.qbank.cl/platform/v1/balances/history?from=2026-06-12&to=2026-
 - Cada punto es el **saldo disponible al cierre del día** (UTC); los días
   sin movimientos arrastran el saldo del día anterior, así la serie queda
   lista para graficar sin huecos.
+- `assets` incluye también los espejos de las cuentas banking (`BANK_USD`,
+  `BANK_EUR`) como serie propia en su moneda (2 decimales) — útiles para un
+  chip "Bank USD"/"Bank EUR" en el gráfico. **No** entran al agregado
+  `total_usd`, que cubre solo los saldos operativos.
 - `total_usd` valoriza BTC/GOLD al **precio histórico de cada día**. Si un
   día aún no tiene precio histórico se usa el spot de hoy y ese día se
   declara en `spot_priced_dates` (jamás inventamos valores).
@@ -8225,9 +8238,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-12 20:40 UTC · 217 requests · versión `bc09eeab53f4`
+> **Colección actualizada:** 2026-07-12 22:42 UTC · 217 requests · versión `e14571f863ce`
 
-<PostmanFreshness iso="2026-07-12T20:40:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-12T22:42:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -8261,6 +8274,17 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.53 — 12 de julio de 2026
+
+**Agregado — Series banking en el historial de saldos**
+
+- `GET /v1/balances/history` ahora incluye en `assets` las series diarias
+  de las cuentas banking (`BANK_USD`, `BANK_EUR`), cada una en su propia
+  moneda (2 decimales), listas para graficarlas como un filtro más junto a
+  USDT/USDC/BTC/GOLD. Siguen fuera del agregado `total_usd`, que cubre
+  solo los saldos operativos. Guía de
+  [analytics](#resumen-de-tu-cuenta-analytics) actualizada.
 
 ### v1.52 — 12 de julio de 2026
 
