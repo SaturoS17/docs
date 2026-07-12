@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-12 06:05 UTC · versión `b7fa367fd00b`
+> **Documento actualizado:** 2026-07-12 07:28 UTC · versión `9abdebc19c6f`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.47 (12 de julio de 2026) |
+| Versión de la documentación | v1.48 (12 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -51,6 +51,7 @@ solo saldo.
   - [Banking](#banking)
   - [Verificación KYC y KYB](#verificacion-kyc-y-kyb)
   - [AML screening](#aml-screening)
+  - [Screening de wallets](#screening-de-wallets)
   - [Cartola (estado de cuenta)](#cartola-estado-de-cuenta)
   - [Comprobantes](#comprobantes)
   - [Resumen de tu cuenta (analytics)](#resumen-de-tu-cuenta-analytics)
@@ -1150,6 +1151,7 @@ de las tasas de tu cuenta para ese país. Cotizado = cobrado, siempre.
 | `compliance_monitoring` | Fijo por activación | Al activar monitoreo AML continuo (desactivar es gratis) |
 | `kyc_verification` | Fijo por verificación | Al crear un link o submission KYC de un tercero ([verificación](#verificacion-kyc-y-kyb)); tu propio onboarding es gratis |
 | `kyb_verification` | Fijo por verificación | Al crear un link o submission KYB de un tercero |
+| `address_screening` | Fijo por scan | Al evaluar el riesgo de una dirección blockchain ([screening de wallets](#screening-de-wallets)); la protección automática de retiros/depósitos es gratis |
 | `banking_customer` | Fijo por perfil | Al crear tu perfil bancario ([banking](#banking)) |
 | `banking_account` | Fijo por cuenta | Al abrir cada cuenta bancaria |
 | `banking_operation` | Fijo por pago | Al enviar cada pago bancario (cotizar con `prepare` es gratis) |
@@ -6233,6 +6235,263 @@ verificación de identidad KYC/KYB (tu onboarding). El screening solo evalúa
 riesgo en listas.
 
 
+## Screening de wallets
+
+*Evalúa el riesgo AML de cualquier dirección blockchain — sanciones, fondos ilícitos, exposición — antes de operar con ella*
+
+El **screening de wallets** evalúa una dirección blockchain contra
+inteligencia on-chain global y devuelve su nivel de riesgo: si pertenece a
+una entidad sancionada, si recibió fondos de origen ilícito (ransomware,
+darknet, robos) y a qué categorías está expuesta. Úsalo antes de enviar
+fondos a una dirección de un tercero, al recibir una wallet nueva de un
+cliente, o como parte de tu propio programa de compliance.
+
+Es el complemento on-chain del [AML screening](#aml-screening) (que evalúa
+identidades de personas/empresas): aquí lo que se evalúa es la **dirección**.
+
+```mermaid
+flowchart LR
+    scan["POST /v1/screenings/addresses<br/>(cobra comisión)"] --> riesgo{"risk"}
+    riesgo -->|"Low / Medium"| ok["Operar normal"]
+    riesgo -->|"High"| cuidado["Revisar el detalle<br/>(exposiciones y triggers)"]
+    riesgo -->|"Severe"| bloquear["No operar<br/>(sanciones / ilícito directo)"]
+```
+
+> **Nota**
+La comisión del servicio `address_screening` (fija, por scan) se debita al
+ejecutar y se **reembolsa automáticamente** si el screening falla. Con
+comisión 0 el servicio es gratuito para ti. Requiere tener tu propia
+[verificación de identidad aprobada](#verificacion-kyc-y-kyb)
+y el servicio `screenings` habilitado en tu cuenta.
+### Ejecutar un screening
+
+La evaluación es **agnóstica a la red**: la misma dirección se evalúa sobre
+todas las blockchains soportadas a la vez. El campo `chain` es opcional y
+solo etiqueta tu registro. Como el scan cobra comisión, la
+`idempotency_key` es **obligatoria** — reintentar con la misma clave jamás
+cobra dos veces.
+
+### Envía la dirección
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/screenings/addresses \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "address": "TN2BBWc9EF8MMB6i1c4HZHXAssTEXstMDo",
+    "chain": "tron",
+    "idempotency_key": "scan-cliente-742-1"
+  }'
+```
+### Lee el nivel de riesgo
+
+Respuesta `201` — una dirección limpia:
+
+```json
+{
+  "screening_id": "5f0b1c9a-2f3e-4a7b-9c1d-8e6f5a4b3c2d",
+  "address": "TN2BBWc9EF8MMB6i1c4HZHXAssTEXstMDo",
+  "chain": "tron",
+  "risk": "Low",
+  "screening_fee": "0.500000",
+  "fee_asset": "USDT",
+  "idempotency_key": "scan-cliente-742-1",
+  "created_at": "2026-07-12T14:30:00Z",
+  "assessment": {
+    "address": "TN2BBWc9EF8MMB6i1c4HZHXAssTEXstMDo",
+    "risk": "Low",
+    "address_identifications": [],
+    "exposures": [
+      { "category": "exchange", "value_usd": "1250.75" }
+    ],
+    "triggers": []
+  }
+}
+```
+
+Y una dirección sancionada:
+
+```json
+{
+  "screening_id": "7a2c4e6f-8b1d-4c3a-9e5f-1a2b3c4d5e6f",
+  "address": "0x098B716B8Aaf21512996dC57EB0615e2383E2f96",
+  "chain": "eth",
+  "risk": "Severe",
+  "risk_reason": "Identified as Sanctioned Entity",
+  "screening_fee": "0.500000",
+  "fee_asset": "USDT",
+  "idempotency_key": "scan-sospechosa-9",
+  "created_at": "2026-07-12T14:31:00Z",
+  "assessment": {
+    "address": "0x098B716B8Aaf21512996dC57EB0615e2383E2f96",
+    "risk": "Severe",
+    "risk_reason": "Identified as Sanctioned Entity",
+    "cluster_name": "OFAC SDN Ronin Bridge Exploiter",
+    "cluster_category": "sanctioned entity",
+    "address_identifications": [
+      {
+        "name": "SANCTIONS: OFAC SDN Ronin Bridge Exploiter",
+        "category": "sanctioned entity",
+        "description": "This specific address 0x098b716b8aaf21512996dc57eb0615e2383e2f96 within this cluster has been identified as belonging to a sanctioned entity."
+      }
+    ],
+    "exposures": [],
+    "triggers": []
+  }
+}
+```
+### Decide según el riesgo
+
+Aplica tu política sobre `risk` (tabla de niveles abajo). El objeto
+`assessment` trae la evidencia completa para tu expediente: identificaciones
+puntuales, exposición en USD por categoría y las reglas de riesgo gatilladas.
+Reintentar con la misma `idempotency_key` devuelve el screening original
+con `idempotency_hit: true` y **no cobra de nuevo**:
+
+```json
+{
+  "screening_id": "5f0b1c9a-2f3e-4a7b-9c1d-8e6f5a4b3c2d",
+  "address": "TN2BBWc9EF8MMB6i1c4HZHXAssTEXstMDo",
+  "risk": "Low",
+  "screening_fee": "0.500000",
+  "fee_asset": "USDT",
+  "idempotency_key": "scan-cliente-742-1",
+  "created_at": "2026-07-12T14:30:00Z",
+  "idempotency_hit": true
+}
+```
+
+### Consultar el historial
+
+Todo screening queda guardado. El listado exige `from`/`to` y soporta
+paginación y filtro por riesgo:
+
+```bash
+curl "https://api.qbank.cl/platform/v1/screenings/addresses?from=2026-07-01&to=2026-07-12&risk=severe&page=1&page_size=50" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "page": 1,
+  "page_size": 50,
+  "screenings": [
+    {
+      "screening_id": "7a2c4e6f-8b1d-4c3a-9e5f-1a2b3c4d5e6f",
+      "address": "0x098B716B8Aaf21512996dC57EB0615e2383E2f96",
+      "chain": "eth",
+      "risk": "Severe",
+      "risk_reason": "Identified as Sanctioned Entity",
+      "screening_fee": "0.500000",
+      "fee_asset": "USDT",
+      "idempotency_key": "scan-sospechosa-9",
+      "created_at": "2026-07-12T14:31:00Z"
+    }
+  ]
+}
+```
+
+Y el detalle por id (incluye el `assessment` completo):
+
+```bash
+curl https://api.qbank.cl/platform/v1/screenings/addresses/7a2c4e6f-8b1d-4c3a-9e5f-1a2b3c4d5e6f \
+  -H "Authorization: Bearer <token>"
+```
+
+### Niveles de riesgo
+
+| `risk` | Qué significa | Qué hacer |
+|---|---|---|
+| `Low` | Sin señales de riesgo relevantes | Operar normal |
+| `Medium` | Exposición menor a categorías de riesgo | Operar; considerar registro interno |
+| `High` | Exposición significativa a fondos ilícitos | Revisar `exposures`/`triggers` antes de operar |
+| `Severe` | Entidad sancionada o ilícito directo | **No operar** con la dirección |
+
+Los niveles son **finales** (el screening es una foto al momento de la
+consulta): si necesitas re-evaluar la misma dirección más adelante, ejecuta
+un scan nuevo con otra `idempotency_key`.
+
+### Protección automática (sin costo)
+
+Además del screening a demanda, la plataforma **protege tus operaciones
+crypto automáticamente y gratis**:
+
+- **Retiros on-chain**: la dirección de destino se evalúa antes de firmar.
+  Si es de riesgo severo, el retiro se rechaza y el monto retenido se
+  **reembolsa completo** a tu saldo (verás el retiro `failed` con
+  `core_rejected` y su webhook `crypto_withdrawal_status_changed`).
+- **Depósitos entrantes**: el remitente de cada depósito se evalúa antes de
+  acreditar. Un remitente de riesgo severo deja el depósito **retenido en
+  revisión de compliance** (webhook `crypto_deposit_held`); uno de riesgo
+  alto se acredita normal con una alerta informativa
+  (webhook `crypto_deposit_alert`).
+
+> **Importante**
+Un depósito retenido NO está perdido: el equipo de compliance de tu
+operador lo revisa y decide liberarlo (se acredita con su comisión normal
+de funding) o rechazarlo. Si recibes un `crypto_deposit_held`, contacta a
+tu operador con el `tx_id`.
+### Webhooks
+
+| Evento | Cuándo |
+|---|---|
+| `crypto_deposit_held` | Un depósito entrante quedó retenido por riesgo del remitente |
+| `crypto_deposit_alert` | Un depósito se acreditó pero el remitente presenta riesgo alto (informativo) |
+
+```json crypto_deposit_held
+{
+  "account_id": "ae8c…",
+  "hold_id": "c1d2e3f4-…",
+  "chain": "tron",
+  "asset": "usdt",
+  "tx_id": "8a5b3c…",
+  "risk": "Severe",
+  "status": "held"
+}
+```
+
+Suscríbete igual que al resto de eventos (ver [Webhooks](#webhooks)).
+
+### Errores
+
+| HTTP | `error` | Causa | Solución |
+|---|---|---|---|
+| 400 | `idempotency_key_required` | Falta la clave de idempotencia | Envía `idempotency_key` en el body o el header `Idempotency-Key` |
+| 400 | `invalid_payload` | Falta `address` o es demasiado larga | Revisa el campo `address` |
+| 400 | `invalid_range` | `from`/`to` faltantes o inválidos en el listado | Usa `YYYY-MM-DD` en ambos |
+| 402 | `insufficient_funds` | Saldo insuficiente para la comisión | Fondea la cuenta y reintenta con la MISMA clave |
+| 403 | `verification_required` | Tu cuenta aún no aprobó su verificación | Completa tu [onboarding](#verificacion-kyc-y-kyb) |
+| 403 | `service_disabled` | El servicio `screenings` está deshabilitado para tu cuenta | Contacta a tu operador |
+| 404 | `not_found` | El `screening_id` no existe o no es tuyo | Verifica el id |
+| 422 | `invalid_address` | La dirección no pudo evaluarse (formato) | Revisa el formato de la dirección |
+| 502 | `screening_unavailable` | Servicio temporalmente no disponible (la comisión se reembolsó) | Reintenta más tarde con la MISMA clave |
+
+### Preguntas frecuentes
+
+#### ¿Necesito indicar la red (chain) de la dirección?
+No. La evaluación cubre todas las redes soportadas a la vez: una dirección
+ETH se evalúa con toda su actividad on-chain conocida. `chain` es solo una
+etiqueta opcional para tu propio registro.
+#### ¿Puedo scanear direcciones que no son mías ni de mis clientes?
+Sí. El producto acepta cualquier dirección blockchain — es exactamente el
+caso de uso de evaluar a un tercero antes de operar con él. Cada scan cobra
+su comisión.
+#### ¿El resultado caduca?
+El screening es una foto al momento de la consulta y queda guardado como
+evidencia con su fecha. El riesgo de una dirección puede cambiar (nuevas
+sanciones, nueva actividad): para decisiones sensibles re-evalúa con un
+scan fresco.
+#### ¿Los scans de la protección automática me los cobran?
+No. El screening automático de retiros y depósitos es parte del programa de
+compliance de la plataforma y no tiene costo. Solo el scan a demanda
+(`POST /v1/screenings/addresses`) cobra la comisión `address_screening`.
+#### ¿Qué pasa si el servicio de screening está caído cuando retiro?
+Por seguridad, los retiros no se firman sin poder evaluar el destino: el
+retiro queda rechazado con reembolso completo y puedes reintentar más
+tarde. Los depósitos entrantes NO se retienen por una caída del servicio —
+se acreditan normal.
+
+
 ## Cartola (estado de cuenta)
 
 *El estado de cuenta consolidado: JSON para tu web, PDF y Excel descargables, listos para tu contador*
@@ -7302,6 +7561,8 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 | `payout_status_changed` | Un payout cambió de estado |
 | `transfer_received` | La cuenta recibió una transferencia interna |
 | `crypto_deposit_credited` | Un depósito on-chain fue confirmado y abonado |
+| `crypto_deposit_held` | Un depósito entrante quedó retenido por riesgo del remitente ([screening](#screening-de-wallets)) |
+| `crypto_deposit_alert` | Un depósito se acreditó pero el remitente presenta riesgo alto (informativo) |
 | `crypto_withdrawal_status_changed` | Un retiro on-chain cambió de estado |
 | `banking_customer_status_changed` | Cambió la verificación de tu perfil bancario |
 | `banking_operation_status_changed` | Un pago bancario cambió de estado |
@@ -7367,6 +7628,29 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
   "tx_id": "b1946ac9…",
   "amount": "499.000000",
   "fee": "1.000000"
+}
+```
+
+```json crypto_deposit_held
+{
+  "account_id": "ae8c…",
+  "hold_id": "c1d2e3f4…",
+  "chain": "tron",
+  "asset": "usdt",
+  "tx_id": "8a5b3c…",
+  "risk": "Severe",
+  "status": "held"
+}
+```
+
+```json crypto_deposit_alert
+{
+  "account_id": "ae8c…",
+  "chain": "tron",
+  "asset": "usdt",
+  "tx_id": "9c6d4e…",
+  "risk": "High",
+  "status": "credited"
 }
 ```
 
@@ -7958,9 +8242,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-12 06:04 UTC · 216 requests · versión `9a341dd34e1b`
+> **Colección actualizada:** 2026-07-12 07:28 UTC · 219 requests · versión `447ae2684ce9`
 
-<PostmanFreshness iso="2026-07-12T06:04:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-12T07:28:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -7994,6 +8278,23 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.48 — 12 de julio de 2026
+
+**Agregado — Screening de wallets (riesgo AML de direcciones blockchain)**
+
+- Producto nuevo: `POST /v1/screenings/addresses` evalúa cualquier dirección
+  blockchain contra inteligencia on-chain global — sanciones, exposición a
+  fondos ilícitos — y devuelve un nivel de riesgo `Low`/`Medium`/`High`/
+  `Severe` con la evidencia completa. Comisión fija por scan
+  (`address_screening`, con reembolso automático si falla) e idempotencia
+  obligatoria. Historial con `GET /v1/screenings/addresses` (+`/{id}`).
+- **Protección automática gratis**: los retiros on-chain evalúan el destino
+  antes de firmar (riesgo severo ⇒ rechazo con reembolso completo) y los
+  depósitos entrantes evalúan al remitente antes de acreditar (severo ⇒
+  retenido en revisión de compliance; alto ⇒ se acredita con alerta).
+- Webhooks nuevos: `crypto_deposit_held` y `crypto_deposit_alert`.
+- Guía nueva: [Screening de wallets](#screening-de-wallets).
 
 ### v1.47 — 12 de julio de 2026
 
@@ -9134,6 +9435,15 @@ está en la API Reference interactiva y en la colección Postman.
 | `GET` | `/v1/kyc/submissions/{submissionID}/liveness_link` | Consultar el liveness link y su estado |
 | `POST` | `/v1/kyc/submissions/{submissionID}/liveness_link` | Crear un liveness link |
 | `GET` | `/v1/kyb/submissions/{submissionID}/report` | Descargar el informe de compliance firmado (PDF) |
+
+
+## Screening de wallets
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/v1/screenings/addresses` | Listar screenings de direcciones |
+| `POST` | `/v1/screenings/addresses` | Screenear una dirección blockchain |
+| `GET` | `/v1/screenings/addresses/{screeningID}` | Obtener un screening de dirección |
 
 
 ## Contacts

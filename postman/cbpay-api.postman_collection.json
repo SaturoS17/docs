@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — that never mix or convert automatically.\nPayouts and service fees can be paid from any of the four balances:\nset a default with `PUT /v1/settlement` or override per payout with\n`settlement_asset`.\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-12 06:04 UTC",
-    "_content_sha256": "9a341dd34e1b7fe3cc116aa4675037ee9909aa678b2807303164edd183935b2e"
+    "_generated_at": "2026-07-12 07:28 UTC",
+    "_content_sha256": "447ae2684ce9a87a7eaa0747541604976f232c0510963ed17db647b0a9745e4b"
   },
   "auth": {
     "type": "bearer",
@@ -7977,6 +7977,247 @@
             },
             "description": "Signed compliance report of a KYB verification — evidence for your own auditors. Free (the service was billed when the verification was created)."
           }
+        }
+      ]
+    },
+    {
+      "name": "Wallet screening",
+      "item": [
+        {
+          "name": "List address screenings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/screenings/addresses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "screenings",
+                "addresses"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": false,
+                  "description": "Start date YYYY-MM-DD (UTC, inclusive)."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": false,
+                  "description": "End date YYYY-MM-DD (UTC, inclusive)."
+                },
+                {
+                  "key": "risk",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by risk level (low, medium, high, severe)."
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "History of the account's screenings, newest first. Requires the from/to date range; supports pagination and a risk filter."
+          },
+          "response": [
+            {
+              "name": "200 Page of screenings.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/screenings/addresses",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "screenings",
+                    "addresses"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": false,
+                      "description": "Start date YYYY-MM-DD (UTC, inclusive)."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": false,
+                      "description": "End date YYYY-MM-DD (UTC, inclusive)."
+                    },
+                    {
+                      "key": "risk",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Filter by risk level (low, medium, high, severe)."
+                    },
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Page of screenings.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"screenings\": [\n    {\n      \"screening_id\": \"7a2c4e6f-8b1d-4c3a-9e5f-1a2b3c4d5e6f\",\n      \"address\": \"0x098B716B8Aaf21512996dC57EB0615e2383E2f96\",\n      \"chain\": \"eth\",\n      \"risk\": \"Severe\",\n      \"risk_reason\": \"Identified as Sanctioned Entity\",\n      \"screening_fee\": \"0.500000\",\n      \"fee_asset\": \"USDT\",\n      \"idempotency_key\": \"scan-suspicious-9\",\n      \"created_at\": \"2026-07-12T14:31:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Screen a blockchain address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/screenings/addresses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "screenings",
+                "addresses"
+              ]
+            },
+            "description": "Assesses the AML risk of a blockchain address (sanctioned entity, illicit-fund exposure) against global on-chain intelligence and returns a normalized risk level (Low/Medium/High/Severe) with the full evidence. Network-agnostic: the address is evaluated across every supported chain at once; `chain` only labels your record. Bills the fixed `address_screening` fee (refunded automatically if the screening fails), so `idempotency_key` is required — replaying with the same key returns the original screening with `idempotency_hit: true` and never charges twice. Requires the `screenings` service enabled and an approved account verification.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"TN2BBWc9EF8MMB6i1c4HZHXAssTEXstMDo\",\n  \"chain\": \"tron\",\n  \"idempotency_key\": \"scan-customer-742-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Idempotent replay — returns the original screening without c",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/screenings/addresses",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "screenings",
+                    "addresses"
+                  ]
+                }
+              },
+              "status": "Idempotent replay — returns the original screening without c",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"screening_id\": \"5f0b1c9a-2f3e-4a7b-9c1d-8e6f5a4b3c2d\",\n  \"address\": \"TN2BBWc9EF8MMB6i1c4HZHXAssTEXstMDo\",\n  \"chain\": \"tron\",\n  \"risk\": \"Low\",\n  \"screening_fee\": \"0.500000\",\n  \"fee_asset\": \"USDT\",\n  \"idempotency_key\": \"scan-customer-742-1\",\n  \"created_at\": \"2026-07-12T14:30:00Z\",\n  \"idempotency_hit\": true\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get an address screening",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/screenings/addresses/:screeningID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "screenings",
+                "addresses",
+                ":screeningID"
+              ],
+              "variable": [
+                {
+                  "key": "screeningID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Detail of a screening, including the full stored assessment. An id that belongs to another account returns 404."
+          },
+          "response": [
+            {
+              "name": "200 The screening.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/screenings/addresses/:screeningID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "screenings",
+                    "addresses",
+                    ":screeningID"
+                  ],
+                  "variable": [
+                    {
+                      "key": "screeningID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "The screening.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"screening_id\": \"7a2c4e6f-8b1d-4c3a-9e5f-1a2b3c4d5e6f\",\n  \"address\": \"0x098B716B8Aaf21512996dC57EB0615e2383E2f96\",\n  \"chain\": \"eth\",\n  \"risk\": \"Severe\",\n  \"risk_reason\": \"Identified as Sanctioned Entity\",\n  \"screening_fee\": \"0.500000\",\n  \"fee_asset\": \"USDT\",\n  \"idempotency_key\": \"scan-suspicious-9\",\n  \"created_at\": \"2026-07-12T14:31:00Z\",\n  \"assessment\": {\n    \"address\": \"0x098B716B8Aaf21512996dC57EB0615e2383E2f96\",\n    \"risk\": \"Severe\",\n    \"risk_reason\": \"Identified as Sanctioned Entity\",\n    \"cluster_name\": \"OFAC SDN Ronin Bridge Exploiter\",\n    \"cluster_category\": \"sanctioned entity\",\n    \"address_identifications\": [\n      {\n        \"name\": \"SANCTIONS: OFAC SDN Ronin Bridge Exploiter\",\n        \"category\": \"sanctioned entity\"\n      }\n    ],\n    \"exposures\": [],\n    \"triggers\": []\n  }\n}"
+            }
+          ]
         }
       ]
     },

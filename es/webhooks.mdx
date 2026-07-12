@@ -75,6 +75,8 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 | `payout_status_changed` | Un payout cambió de estado |
 | `transfer_received` | La cuenta recibió una transferencia interna |
 | `crypto_deposit_credited` | Un depósito on-chain fue confirmado y abonado |
+| `crypto_deposit_held` | Un depósito entrante quedó retenido por riesgo del remitente ([screening](/es/guias/screenings)) |
+| `crypto_deposit_alert` | Un depósito se acreditó pero el remitente presenta riesgo alto (informativo) |
 | `crypto_withdrawal_status_changed` | Un retiro on-chain cambió de estado |
 | `banking_customer_status_changed` | Cambió la verificación de tu perfil bancario |
 | `banking_operation_status_changed` | Un pago bancario cambió de estado |
@@ -142,6 +144,29 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
   "tx_id": "b1946ac9…",
   "amount": "499.000000",
   "fee": "1.000000"
+}
+```
+
+```json crypto_deposit_held
+{
+  "account_id": "ae8c…",
+  "hold_id": "c1d2e3f4…",
+  "chain": "tron",
+  "asset": "usdt",
+  "tx_id": "8a5b3c…",
+  "risk": "Severe",
+  "status": "held"
+}
+```
+
+```json crypto_deposit_alert
+{
+  "account_id": "ae8c…",
+  "chain": "tron",
+  "asset": "usdt",
+  "tx_id": "9c6d4e…",
+  "risk": "High",
+  "status": "credited"
 }
 ```
 

@@ -8,6 +8,25 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="12 de julio de 2026" description="v1.48">
+
+**Agregado — Screening de wallets (riesgo AML de direcciones blockchain)**
+
+- Producto nuevo: `POST /v1/screenings/addresses` evalúa cualquier dirección
+  blockchain contra inteligencia on-chain global — sanciones, exposición a
+  fondos ilícitos — y devuelve un nivel de riesgo `Low`/`Medium`/`High`/
+  `Severe` con la evidencia completa. Comisión fija por scan
+  (`address_screening`, con reembolso automático si falla) e idempotencia
+  obligatoria. Historial con `GET /v1/screenings/addresses` (+`/{id}`).
+- **Protección automática gratis**: los retiros on-chain evalúan el destino
+  antes de firmar (riesgo severo ⇒ rechazo con reembolso completo) y los
+  depósitos entrantes evalúan al remitente antes de acreditar (severo ⇒
+  retenido en revisión de compliance; alto ⇒ se acredita con alerta).
+- Webhooks nuevos: `crypto_deposit_held` y `crypto_deposit_alert`.
+- Guía nueva: [Screening de wallets](/es/guias/screenings).
+
+</Update>
+
 <Update label="12 de julio de 2026" description="v1.47">
 
 **Agregado — Assets públicos por CDN (avatares, branding, QR de cobro)**
