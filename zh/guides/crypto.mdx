@@ -48,9 +48,9 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
   "page": 1,
   "page_size": 50,
   "wallets": [
-    { "wallet_id": "9d68…", "chain": "tron", "asset": "USDT", "address": "TXMD…", "label": "", "created_at": "2026-07-11T23:33:20Z" },
-    { "wallet_id": "a83d…", "chain": "eth", "asset": "USDT", "address": "0xefe0…", "label": "", "created_at": "2026-07-11T23:33:20Z" },
-    { "wallet_id": "fb88…", "chain": "eth", "asset": "USDC", "address": "0xa072…", "label": "", "created_at": "2026-07-11T23:33:20Z" }
+    { "wallet_id": "9d68…", "chain": "tron", "asset": "USDT", "address": "TXMD…", "label": "", "type": "deposit", "receive_only": true, "created_at": "2026-07-11T23:33:20Z" },
+    { "wallet_id": "a83d…", "chain": "eth", "asset": "USDT", "address": "0xefe0…", "label": "", "type": "deposit", "receive_only": true, "created_at": "2026-07-11T23:33:20Z" },
+    { "wallet_id": "fb88…", "chain": "eth", "asset": "USDC", "address": "0xa072…", "label": "", "type": "deposit", "receive_only": true, "created_at": "2026-07-11T23:33:20Z" }
   ]
 }
 ```
@@ -63,6 +63,12 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
 充值钱包是**入金入口**，而非操作型钱包：它们只用于**接收**加密
 货币并计入您的虚拟余额。它们不能发送资金，也不能导出或导入（那是
 [隔离钱包](/zh/guides/segregated-wallets)的功能）。
+
+<Note>
+两个产品、两条路由：充值钱包位于 `/v1/crypto/wallets`，隔离钱包位于
+`/v1/segregated-wallets`。每个钱包响应都带有 `type` 鉴别字段
+（`deposit` / `segregated`），便于随时区分。
+</Note>
 
 | 账户类型 | 每个网络+资产组合的充值钱包数 |
 |---|---|
@@ -114,6 +120,8 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
       "asset": "USDT",
       "address": "TQmZ…",
       "label": "",
+      "type": "deposit",
+      "receive_only": true,
       "created_at": "2026-07-07T12:00:00Z"
     },
     {
@@ -122,6 +130,8 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
       "asset": "USDT",
       "address": "0x8f3B…",
       "label": "",
+      "type": "deposit",
+      "receive_only": true,
       "created_at": "2026-07-07T12:00:00Z"
     },
     {
@@ -130,6 +140,8 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
       "asset": "USDC",
       "address": "0xa072…",
       "label": "",
+      "type": "deposit",
+      "receive_only": true,
       "created_at": "2026-07-07T12:00:00Z"
     }
   ]

@@ -39,9 +39,9 @@ depends on your account's rates for that country. Quoted = charged, always.
 | `funding` | `%` over the deposit + fixed | When the on-chain deposit is credited |
 | `withdrawal` | `%` over the withdrawal + fixed | At creation (included in `total_debit`) |
 | `wallet_creation` | Fixed per wallet | On every wallet creation (persons: 1 per network; companies: unlimited). Fetching existing wallets is always free |
-| `wallet_import` | Fixed per import | When importing an external wallet into a [segregated wallet](/en/guides/segregated-wallets) (`POST /v1/wallets/import`) |
-| `wallet_export` | Fixed per export | When exporting a segregated wallet's private key (`POST /v1/wallets/{id}/export`) |
-| `wallet_send` | Fixed per send | When sending on-chain from a segregated wallet (`POST /v1/wallets/{id}/sends`); network gas is on the client |
+| `wallet_import` | Fixed per import | When importing an external wallet into a [segregated wallet](/en/guides/segregated-wallets) (`POST /v1/segregated-wallets/import`) |
+| `wallet_export` | Fixed per export | When exporting a segregated wallet's private key (`POST /v1/segregated-wallets/{id}/export`) |
+| `wallet_send` | Fixed per send | When sending on-chain from a segregated wallet (`POST /v1/segregated-wallets/{id}/sends`); network gas is on the client |
 | `compliance_person` | Fixed per call | When AML-screening a person (`POST /v1/aml/screenings`) |
 | `compliance_company` | Fixed per call | When AML-screening a company |
 | `compliance_rescreen` | Fixed per call | When re-running an AML screening |

@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — that never mix or convert automatically.\nPayouts and service fees can be paid from any of the four balances:\nset a default with `PUT /v1/settlement` or override per payout with\n`settlement_asset`.\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-13 15:33 UTC",
-    "_content_sha256": "7cffbc9601a06a62789d1947efc688cc0da9810aa1a8f5b051326de66f07312b"
+    "_generated_at": "2026-07-13 22:14 UTC",
+    "_content_sha256": "3cc0a8c03b6e56913321f064c49557bd5cd0300d24f203f55bf6984a82ec03c1"
   },
   "auth": {
     "type": "bearer",
@@ -253,13 +253,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/v1/wallets/:walletID/sends/:sendID/receipt",
+              "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/sends/:sendID/receipt",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "wallets",
+                "segregated-wallets",
                 ":walletID",
                 "sends",
                 ":sendID",
@@ -285,13 +285,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/v1/wallets/:walletID/deposits/:depositID/receipt",
+              "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/deposits/:depositID/receipt",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "wallets",
+                "segregated-wallets",
                 ":walletID",
                 "deposits",
                 ":depositID",
@@ -5931,7 +5931,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"wallets\": [\n    {\n      \"wallet_id\": \"b7e3a940-6f1d-4c2b-9a8e-5d4c3b2a1f0e\",\n      \"chain\": \"tron\",\n      \"asset\": \"USDT\",\n      \"address\": \"TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT\",\n      \"label\": \"\",\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    },\n    {\n      \"wallet_id\": \"a1c9d8e7-2b3c-4d5e-6f70-8a9b0c1d2e3f\",\n      \"chain\": \"eth\",\n      \"asset\": \"USDT\",\n      \"address\": \"0x8f3Bc55D9F4a2E71c06b9a3D2e1F0A9B8C7D6E5F\",\n      \"label\": \"\",\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    },\n    {\n      \"wallet_id\": \"fb88c2d1-7a4e-4b0c-8d3f-1e2a3b4c5d6e\",\n      \"chain\": \"eth\",\n      \"asset\": \"USDC\",\n      \"address\": \"0xa072E48Bc55D9F4a2E71c06b9a3D2e1F0A9B8C7D\",\n      \"label\": \"\",\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
+              "body": "{\n  \"wallets\": [\n    {\n      \"wallet_id\": \"b7e3a940-6f1d-4c2b-9a8e-5d4c3b2a1f0e\",\n      \"chain\": \"tron\",\n      \"asset\": \"USDT\",\n      \"address\": \"TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT\",\n      \"label\": \"\",\n      \"type\": \"deposit\",\n      \"receive_only\": true,\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    },\n    {\n      \"wallet_id\": \"a1c9d8e7-2b3c-4d5e-6f70-8a9b0c1d2e3f\",\n      \"chain\": \"eth\",\n      \"asset\": \"USDT\",\n      \"address\": \"0x8f3Bc55D9F4a2E71c06b9a3D2e1F0A9B8C7D6E5F\",\n      \"label\": \"\",\n      \"type\": \"deposit\",\n      \"receive_only\": true,\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    },\n    {\n      \"wallet_id\": \"fb88c2d1-7a4e-4b0c-8d3f-1e2a3b4c5d6e\",\n      \"chain\": \"eth\",\n      \"asset\": \"USDC\",\n      \"address\": \"0xa072E48Bc55D9F4a2E71c06b9a3D2e1F0A9B8C7D\",\n      \"label\": \"\",\n      \"type\": \"deposit\",\n      \"receive_only\": true,\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
             }
           ]
         },
@@ -5993,7 +5993,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"wallet_id\": \"b7e3a940-6f1d-4c2b-9a8e-5d4c3b2a1f0e\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT\",\n  \"label\": \"Main treasury\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"creation_fee\": \"1.000000\"\n}"
+              "body": "{\n  \"wallet_id\": \"b7e3a940-6f1d-4c2b-9a8e-5d4c3b2a1f0e\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT\",\n  \"label\": \"Main treasury\",\n  \"type\": \"deposit\",\n  \"receive_only\": true,\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"creation_fee\": \"1.000000\"\n}"
             }
           ]
         },
@@ -6055,7 +6055,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"wallet_id\": \"b7e3a940-6f1d-4c2b-9a8e-5d4c3b2a1f0e\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT\",\n  \"label\": \"Main treasury\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"creation_fee\": \"1.000000\"\n}"
+              "body": "{\n  \"wallet_id\": \"b7e3a940-6f1d-4c2b-9a8e-5d4c3b2a1f0e\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT\",\n  \"label\": \"Main treasury\",\n  \"type\": \"deposit\",\n  \"receive_only\": true,\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"creation_fee\": \"1.000000\"\n}"
             }
           ]
         }
@@ -9854,13 +9854,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/v1/wallets",
+              "raw": "{{baseUrl}}/v1/segregated-wallets",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "wallets"
+                "segregated-wallets"
               ],
               "query": [
                 {
@@ -9897,13 +9897,13 @@
               "originalRequest": {
                 "method": "GET",
                 "url": {
-                  "raw": "{{baseUrl}}/v1/wallets",
+                  "raw": "{{baseUrl}}/v1/segregated-wallets",
                   "host": [
                     "{{baseUrl}}"
                   ],
                   "path": [
                     "v1",
-                    "wallets"
+                    "segregated-wallets"
                   ],
                   "query": [
                     {
@@ -9942,7 +9942,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"wallets\": [\n    {\n      \"wallet_id\": \"b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d\",\n      \"chain\": \"tron\",\n      \"asset\": \"USDT\",\n      \"address\": \"TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd\",\n      \"label\": \"Acme Client\",\n      \"origin\": \"created\",\n      \"custody\": \"cbpay\",\n      \"exported\": false,\n      \"created_at\": \"2026-07-11T12:00:00Z\"\n    }\n  ]\n}"
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"wallets\": [\n    {\n      \"wallet_id\": \"b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d\",\n      \"chain\": \"tron\",\n      \"asset\": \"USDT\",\n      \"address\": \"TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd\",\n      \"label\": \"Acme Client\",\n      \"type\": \"segregated\",\n      \"origin\": \"created\",\n      \"custody\": \"cbpay\",\n      \"exported\": false,\n      \"created_at\": \"2026-07-11T12:00:00Z\"\n    }\n  ]\n}"
             }
           ]
         },
@@ -9957,13 +9957,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/v1/wallets",
+              "raw": "{{baseUrl}}/v1/segregated-wallets",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "wallets"
+                "segregated-wallets"
               ]
             },
             "description": "Creates a new on-chain wallet owned by the calling account. Its balance lives on-chain (never in the ledger) and it is exempt from the treasury sweep. Supported pairs: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`. Company accounts can create unlimited wallets; person accounts hold **1 per network+asset pair** (a second one responds `422 wallet_limit_reached`). An optional `Idempotency-Key` (or `idempotency_key` in the body) makes retries safe: a repeat returns the same wallet without creating a second one. May bill the `wallet_creation` fee (refunded if creation fails).",
@@ -9983,13 +9983,13 @@
               "originalRequest": {
                 "method": "POST",
                 "url": {
-                  "raw": "{{baseUrl}}/v1/wallets",
+                  "raw": "{{baseUrl}}/v1/segregated-wallets",
                   "host": [
                     "{{baseUrl}}"
                   ],
                   "path": [
                     "v1",
-                    "wallets"
+                    "segregated-wallets"
                   ]
                 }
               },
@@ -10002,7 +10002,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"wallet_id\": \"b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd\",\n  \"label\": \"Acme Client\",\n  \"origin\": \"created\",\n  \"custody\": \"cbpay\",\n  \"exported\": false,\n  \"created_at\": \"2026-07-11T12:00:00Z\"\n}"
+              "body": "{\n  \"wallet_id\": \"b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd\",\n  \"label\": \"Acme Client\",\n  \"type\": \"segregated\",\n  \"origin\": \"created\",\n  \"custody\": \"cbpay\",\n  \"exported\": false,\n  \"created_at\": \"2026-07-11T12:00:00Z\"\n}"
             }
           ]
         },
@@ -10017,13 +10017,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/v1/wallets",
+              "raw": "{{baseUrl}}/v1/segregated-wallets",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "wallets"
+                "segregated-wallets"
               ]
             },
             "description": "Creates a new on-chain wallet owned by the calling account. Its balance lives on-chain (never in the ledger) and it is exempt from the treasury sweep. Supported pairs: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`. Company accounts can create unlimited wallets; person accounts hold **1 per network+asset pair** (a second one responds `422 wallet_limit_reached`). An optional `Idempotency-Key` (or `idempotency_key` in the body) makes retries safe: a repeat returns the same wallet without creating a second one. May bill the `wallet_creation` fee (refunded if creation fails).",
@@ -10043,13 +10043,13 @@
               "originalRequest": {
                 "method": "POST",
                 "url": {
-                  "raw": "{{baseUrl}}/v1/wallets",
+                  "raw": "{{baseUrl}}/v1/segregated-wallets",
                   "host": [
                     "{{baseUrl}}"
                   ],
                   "path": [
                     "v1",
-                    "wallets"
+                    "segregated-wallets"
                   ]
                 }
               },
@@ -10062,7 +10062,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"wallet_id\": \"b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd\",\n  \"label\": \"Acme Client\",\n  \"origin\": \"created\",\n  \"custody\": \"cbpay\",\n  \"exported\": false,\n  \"created_at\": \"2026-07-11T12:00:00Z\"\n}"
+              "body": "{\n  \"wallet_id\": \"b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd\",\n  \"label\": \"Acme Client\",\n  \"type\": \"segregated\",\n  \"origin\": \"created\",\n  \"custody\": \"cbpay\",\n  \"exported\": false,\n  \"created_at\": \"2026-07-11T12:00:00Z\"\n}"
             }
           ]
         },
@@ -10082,13 +10082,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/v1/wallets/import",
+              "raw": "{{baseUrl}}/v1/segregated-wallets/import",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "wallets",
+                "segregated-wallets",
                 "import"
               ]
             },
@@ -10109,13 +10109,13 @@
               "originalRequest": {
                 "method": "POST",
                 "url": {
-                  "raw": "{{baseUrl}}/v1/wallets/import",
+                  "raw": "{{baseUrl}}/v1/segregated-wallets/import",
                   "host": [
                     "{{baseUrl}}"
                   ],
                   "path": [
                     "v1",
-                    "wallets",
+                    "segregated-wallets",
                     "import"
                   ]
                 }
@@ -10129,7 +10129,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"wallet_id\": \"c8f4b2d3-1a2b-4c3d-9e8f-7a6b5c4d3e2f\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TXimportedAddr00000000000000000000\",\n  \"label\": \"Migrated wallet\",\n  \"origin\": \"imported\",\n  \"custody\": \"client\",\n  \"exported\": false,\n  \"created_at\": \"2026-07-11T12:02:00Z\"\n}"
+              "body": "{\n  \"wallet_id\": \"c8f4b2d3-1a2b-4c3d-9e8f-7a6b5c4d3e2f\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TXimportedAddr00000000000000000000\",\n  \"label\": \"Migrated wallet\",\n  \"type\": \"segregated\",\n  \"origin\": \"imported\",\n  \"custody\": \"client\",\n  \"exported\": false,\n  \"created_at\": \"2026-07-11T12:02:00Z\"\n}"
             }
           ]
         },
@@ -10139,13 +10139,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/v1/wallets/:walletID",
+              "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "wallets",
+                "segregated-wallets",
                 ":walletID"
               ],
               "variable": [
@@ -10163,13 +10163,13 @@
               "originalRequest": {
                 "method": "GET",
                 "url": {
-                  "raw": "{{baseUrl}}/v1/wallets/:walletID",
+                  "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID",
                   "host": [
                     "{{baseUrl}}"
                   ],
                   "path": [
                     "v1",
-                    "wallets",
+                    "segregated-wallets",
                     ":walletID"
                   ],
                   "variable": [
@@ -10189,7 +10189,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"wallet_id\": \"b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd\",\n  \"label\": \"Acme Client\",\n  \"origin\": \"created\",\n  \"custody\": \"cbpay\",\n  \"exported\": false,\n  \"created_at\": \"2026-07-11T12:00:00Z\"\n}"
+              "body": "{\n  \"wallet_id\": \"b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd\",\n  \"label\": \"Acme Client\",\n  \"type\": \"segregated\",\n  \"origin\": \"created\",\n  \"custody\": \"cbpay\",\n  \"exported\": false,\n  \"created_at\": \"2026-07-11T12:00:00Z\"\n}"
             }
           ]
         },
@@ -10199,13 +10199,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/v1/wallets/:walletID/balance",
+              "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/balance",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "wallets",
+                "segregated-wallets",
                 ":walletID",
                 "balance"
               ],
@@ -10224,13 +10224,13 @@
               "originalRequest": {
                 "method": "GET",
                 "url": {
-                  "raw": "{{baseUrl}}/v1/wallets/:walletID/balance",
+                  "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/balance",
                   "host": [
                     "{{baseUrl}}"
                   ],
                   "path": [
                     "v1",
-                    "wallets",
+                    "segregated-wallets",
                     ":walletID",
                     "balance"
                   ],
@@ -10261,13 +10261,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/v1/wallets/:walletID/deposits",
+              "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/deposits",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "wallets",
+                "segregated-wallets",
                 ":walletID",
                 "deposits"
               ],
@@ -10312,13 +10312,13 @@
               "originalRequest": {
                 "method": "GET",
                 "url": {
-                  "raw": "{{baseUrl}}/v1/wallets/:walletID/deposits",
+                  "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/deposits",
                   "host": [
                     "{{baseUrl}}"
                   ],
                   "path": [
                     "v1",
-                    "wallets",
+                    "segregated-wallets",
                     ":walletID",
                     "deposits"
                   ],
@@ -10375,13 +10375,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/v1/wallets/:walletID/transactions",
+              "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/transactions",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "wallets",
+                "segregated-wallets",
                 ":walletID",
                 "transactions"
               ],
@@ -10426,13 +10426,13 @@
               "originalRequest": {
                 "method": "GET",
                 "url": {
-                  "raw": "{{baseUrl}}/v1/wallets/:walletID/transactions",
+                  "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/transactions",
                   "host": [
                     "{{baseUrl}}"
                   ],
                   "path": [
                     "v1",
-                    "wallets",
+                    "segregated-wallets",
                     ":walletID",
                     "transactions"
                   ],
@@ -10489,13 +10489,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/v1/wallets/:walletID/sends",
+              "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/sends",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "wallets",
+                "segregated-wallets",
                 ":walletID",
                 "sends"
               ],
@@ -10540,13 +10540,13 @@
               "originalRequest": {
                 "method": "GET",
                 "url": {
-                  "raw": "{{baseUrl}}/v1/wallets/:walletID/sends",
+                  "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/sends",
                   "host": [
                     "{{baseUrl}}"
                   ],
                   "path": [
                     "v1",
-                    "wallets",
+                    "segregated-wallets",
                     ":walletID",
                     "sends"
                   ],
@@ -10613,13 +10613,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/v1/wallets/:walletID/sends",
+              "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/sends",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "wallets",
+                "segregated-wallets",
                 ":walletID",
                 "sends"
               ],
@@ -10647,13 +10647,13 @@
               "originalRequest": {
                 "method": "POST",
                 "url": {
-                  "raw": "{{baseUrl}}/v1/wallets/:walletID/sends",
+                  "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/sends",
                   "host": [
                     "{{baseUrl}}"
                   ],
                   "path": [
                     "v1",
-                    "wallets",
+                    "segregated-wallets",
                     ":walletID",
                     "sends"
                   ],
@@ -10694,13 +10694,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/v1/wallets/:walletID/sends",
+              "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/sends",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "wallets",
+                "segregated-wallets",
                 ":walletID",
                 "sends"
               ],
@@ -10728,13 +10728,13 @@
               "originalRequest": {
                 "method": "POST",
                 "url": {
-                  "raw": "{{baseUrl}}/v1/wallets/:walletID/sends",
+                  "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/sends",
                   "host": [
                     "{{baseUrl}}"
                   ],
                   "path": [
                     "v1",
-                    "wallets",
+                    "segregated-wallets",
                     ":walletID",
                     "sends"
                   ],
@@ -10765,13 +10765,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/v1/wallets/:walletID/sends/:sendID",
+              "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/sends/:sendID",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "wallets",
+                "segregated-wallets",
                 ":walletID",
                 "sends",
                 ":sendID"
@@ -10795,13 +10795,13 @@
               "originalRequest": {
                 "method": "GET",
                 "url": {
-                  "raw": "{{baseUrl}}/v1/wallets/:walletID/sends/:sendID",
+                  "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/sends/:sendID",
                   "host": [
                     "{{baseUrl}}"
                   ],
                   "path": [
                     "v1",
-                    "wallets",
+                    "segregated-wallets",
                     ":walletID",
                     "sends",
                     ":sendID"
@@ -10847,13 +10847,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/v1/wallets/:walletID/export",
+              "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/export",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "wallets",
+                "segregated-wallets",
                 ":walletID",
                 "export"
               ],
@@ -10881,13 +10881,13 @@
               "originalRequest": {
                 "method": "POST",
                 "url": {
-                  "raw": "{{baseUrl}}/v1/wallets/:walletID/export",
+                  "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/export",
                   "host": [
                     "{{baseUrl}}"
                   ],
                   "path": [
                     "v1",
-                    "wallets",
+                    "segregated-wallets",
                     ":walletID",
                     "export"
                   ],
@@ -10918,13 +10918,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/v1/wallets/:walletID/auto-forward",
+              "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/auto-forward",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "wallets",
+                "segregated-wallets",
                 ":walletID",
                 "auto-forward"
               ],
@@ -10943,13 +10943,13 @@
               "originalRequest": {
                 "method": "GET",
                 "url": {
-                  "raw": "{{baseUrl}}/v1/wallets/:walletID/auto-forward",
+                  "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/auto-forward",
                   "host": [
                     "{{baseUrl}}"
                   ],
                   "path": [
                     "v1",
-                    "wallets",
+                    "segregated-wallets",
                     ":walletID",
                     "auto-forward"
                   ],
@@ -10990,13 +10990,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/v1/wallets/:walletID/auto-forward",
+              "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/auto-forward",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "wallets",
+                "segregated-wallets",
                 ":walletID",
                 "auto-forward"
               ],
@@ -11024,13 +11024,13 @@
               "originalRequest": {
                 "method": "POST",
                 "url": {
-                  "raw": "{{baseUrl}}/v1/wallets/:walletID/auto-forward",
+                  "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/auto-forward",
                   "host": [
                     "{{baseUrl}}"
                   ],
                   "path": [
                     "v1",
-                    "wallets",
+                    "segregated-wallets",
                     ":walletID",
                     "auto-forward"
                   ],
@@ -11071,13 +11071,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/v1/wallets/:walletID/auto-forward",
+              "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/auto-forward",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "wallets",
+                "segregated-wallets",
                 ":walletID",
                 "auto-forward"
               ],
@@ -11105,13 +11105,13 @@
               "originalRequest": {
                 "method": "POST",
                 "url": {
-                  "raw": "{{baseUrl}}/v1/wallets/:walletID/auto-forward",
+                  "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/auto-forward",
                   "host": [
                     "{{baseUrl}}"
                   ],
                   "path": [
                     "v1",
-                    "wallets",
+                    "segregated-wallets",
                     ":walletID",
                     "auto-forward"
                   ],

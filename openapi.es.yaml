@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.59'
+  version: '1.60'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -279,7 +279,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /v1/wallets/{walletID}/sends/{sendID}/receipt:
+  /v1/segregated-wallets/{walletID}/sends/{sendID}/receipt:
     get:
       tags:
       - Comprobantes
@@ -308,7 +308,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /v1/wallets/{walletID}/deposits/{depositID}/receipt:
+  /v1/segregated-wallets/{walletID}/deposits/{depositID}/receipt:
     get:
       tags:
       - Comprobantes
@@ -6499,6 +6499,8 @@ paths:
                 asset: USDT
                 address: TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT
                 label: Main treasury
+                type: deposit
+                receive_only: true
                 created_at: '2026-07-07T12:00:00Z'
                 creation_fee: '1.000000'
         '400':
@@ -6547,24 +6549,30 @@ paths:
                   asset: USDT
                   address: TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT
                   label: ''
+                  type: deposit
+                  receive_only: true
                   created_at: '2026-07-07T12:00:00Z'
                 - wallet_id: a1c9d8e7-2b3c-4d5e-6f70-8a9b0c1d2e3f
                   chain: eth
                   asset: USDT
                   address: '0x8f3Bc55D9F4a2E71c06b9a3D2e1F0A9B8C7D6E5F'
                   label: ''
+                  type: deposit
+                  receive_only: true
                   created_at: '2026-07-07T12:00:00Z'
                 - wallet_id: fb88c2d1-7a4e-4b0c-8d3f-1e2a3b4c5d6e
                   chain: eth
                   asset: USDC
                   address: '0xa072E48Bc55D9F4a2E71c06b9a3D2e1F0A9B8C7D'
                   label: ''
+                  type: deposit
+                  receive_only: true
                   created_at: '2026-07-07T12:00:00Z'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/AccountRequired'
-  /v1/wallets:
+  /v1/segregated-wallets:
     post:
       tags:
       - Wallets segregadas
@@ -6625,6 +6633,7 @@ paths:
                 asset: USDT
                 address: TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd
                 label: Acme Client
+                type: segregated
                 origin: created
                 custody: cbpay
                 exported: false
@@ -6708,13 +6717,14 @@ paths:
                   asset: USDT
                   address: TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd
                   label: Acme Client
+                  type: segregated
                   origin: created
                   custody: cbpay
                   exported: false
                   created_at: '2026-07-11T12:00:00Z'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /v1/wallets/import:
+  /v1/segregated-wallets/import:
     post:
       tags:
       - Wallets segregadas
@@ -6764,6 +6774,7 @@ paths:
                 asset: USDT
                 address: TXimportedAddr00000000000000000000
                 label: Migrated wallet
+                type: segregated
                 origin: imported
                 custody: client
                 exported: false
@@ -6786,7 +6797,7 @@ paths:
               example:
                 error: wallet_limit_reached
                 message: person accounts hold one segregated wallet per network/asset pair; company accounts have no limit
-  /v1/wallets/{walletID}:
+  /v1/segregated-wallets/{walletID}:
     get:
       tags:
       - Wallets segregadas
@@ -6810,13 +6821,14 @@ paths:
                 asset: USDT
                 address: TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd
                 label: Acme Client
+                type: segregated
                 origin: created
                 custody: cbpay
                 exported: false
                 created_at: '2026-07-11T12:00:00Z'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/wallets/{walletID}/balance:
+  /v1/segregated-wallets/{walletID}/balance:
     get:
       tags:
       - Wallets segregadas
@@ -6844,7 +6856,7 @@ paths:
                 updated_at: '2026-07-11T12:03:00Z'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/wallets/{walletID}/deposits:
+  /v1/segregated-wallets/{walletID}/deposits:
     get:
       tags:
       - Wallets segregadas
@@ -6885,7 +6897,7 @@ paths:
                   created_at: '2026-07-11T12:01:00Z'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/wallets/{walletID}/transactions:
+  /v1/segregated-wallets/{walletID}/transactions:
     get:
       tags:
       - Wallets segregadas
@@ -6927,7 +6939,7 @@ paths:
                   event_time: '2026-07-11T12:01:00Z'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/wallets/{walletID}/sends:
+  /v1/segregated-wallets/{walletID}/sends:
     post:
       tags:
       - Wallets segregadas
@@ -7067,7 +7079,7 @@ paths:
                   created_at: '2026-07-11T12:05:00Z'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/wallets/{walletID}/sends/{sendID}:
+  /v1/segregated-wallets/{walletID}/sends/{sendID}:
     get:
       tags:
       - Wallets segregadas
@@ -7101,7 +7113,7 @@ paths:
                 created_at: '2026-07-11T12:05:00Z'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/wallets/{walletID}/export:
+  /v1/segregated-wallets/{walletID}/export:
     post:
       tags:
       - Wallets segregadas
@@ -7165,7 +7177,7 @@ paths:
               example:
                 error: export_unavailable
                 message: private key export is not enabled on this environment
-  /v1/wallets/{walletID}/auto-forward:
+  /v1/segregated-wallets/{walletID}/auto-forward:
     get:
       tags:
       - Wallets segregadas
@@ -11653,6 +11665,14 @@ components:
         wallet_id:
           type: string
           format: uuid
+        type:
+          type: string
+          enum:
+          - deposit
+          description: 'Discriminador de producto: las wallets de depósito solo reciben crypto que acredita el saldo virtual.'
+        receive_only:
+          type: boolean
+          description: Siempre true. Las wallets de depósito no envían, no se exportan ni se importan (para eso están las segregadas).
         chain:
           type: string
           enum:
@@ -11673,6 +11693,11 @@ components:
       type: object
       properties:
         wallet_id: { type: string, format: uuid }
+        type:
+          type: string
+          enum:
+          - segregated
+          description: Discriminador de producto de las wallets segregadas.
         chain: { type: string, enum: [tron, eth] }
         asset: { type: string, example: USDT }
         address: { type: string }

@@ -39,8 +39,8 @@ sequenceDiagram
 | 兑换（Swap） | `GET /v1/swaps/{swapID}/receipt` |
 | 银行卡消费 | `GET /v1/cards/{cardID}/transactions/{transactionID}/receipt` |
 | 银行业务操作 | `GET /v1/banking/operations/{operationID}/receipt` |
-| 独立钱包转出 | `GET /v1/wallets/{walletID}/sends/{sendID}/receipt` |
-| 独立钱包充值 | `GET /v1/wallets/{walletID}/deposits/{depositID}/receipt` |
+| 独立钱包转出 | `GET /v1/segregated-wallets/{walletID}/sends/{sendID}/receipt` |
+| 独立钱包充值 | `GET /v1/segregated-wallets/{walletID}/deposits/{depositID}/receipt` |
 
 ```bash
 curl "https://api.qbank.cl/platform/v1/payouts/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d/receipt?lang=en" \

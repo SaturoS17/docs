@@ -28,14 +28,21 @@ ETH en Ethereum) corre por tu cuenta: cada wallet debe tener gas para poder
 enviar.
 </Warning>
 
+<Note>
+Dos productos, dos rutas: las wallets de depósito viven en
+`/v1/crypto/wallets` y las segregadas en `/v1/segregated-wallets`. Toda
+respuesta de wallet trae el discriminador `type` (`deposit` /
+`segregated`) para distinguirlas siempre.
+</Note>
+
 ```mermaid
 flowchart LR
-    crear["POST /v1/wallets"] --> wallet["Wallet on-chain<br/>(saldo propio)"]
+    crear["POST /v1/segregated-wallets"] --> wallet["Wallet on-chain<br/>(saldo propio)"]
     deposito["Depósito on-chain"] --> wallet
     wallet --> whIn["webhook<br/>wallet_deposit_received"]
-    wallet --> envio["POST /v1/wallets/{id}/sends"]
+    wallet --> envio["POST /v1/segregated-wallets/{id}/sends"]
     envio --> whOut["webhook<br/>wallet_send_status_changed"]
-    wallet --> export["POST /v1/wallets/{id}/export<br/>(llave privada)"]
+    wallet --> export["POST /v1/segregated-wallets/{id}/export<br/>(llave privada)"]
 ```
 
 ## Pares soportados
@@ -54,7 +61,7 @@ El `eth` nativo puede enviarse desde cualquier wallet de una chain `eth`
 <CodeGroup>
 
 ```bash TRON USDT
-curl -X POST https://api.qbank.cl/platform/v1/wallets \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: wallet-cliente-001" \
@@ -62,7 +69,7 @@ curl -X POST https://api.qbank.cl/platform/v1/wallets \
 ```
 
 ```bash ETH USDC
-curl -X POST https://api.qbank.cl/platform/v1/wallets \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: wallet-proyecto-x" \
@@ -76,6 +83,7 @@ Respuesta `201`:
 ```json
 {
   "wallet_id": "b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d",
+  "type": "segregated",
   "chain": "tron",
   "asset": "USDT",
   "address": "TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd",
@@ -101,7 +109,7 @@ los marca como externos, para que tu registro y tu cartola sigan completos.
 Con custodia `cbpay` la contabilidad de la wallet es **garantizada**: la
 cartola muestra su cuadratura de vida completa (`lifetime_in` −
 `lifetime_out` = `computed_balance`) y el detalle de cada envío
-(`GET /v1/wallets/{walletID}/sends/{sendID}`) incluye `funding_sources`:
+(`GET /v1/segregated-wallets/{walletID}/sends/{sendID}`) incluye `funding_sources`:
 la atribución FIFO de qué depósitos fondearon ese envío, con `tx_id`,
 dirección de origen y monto por tramo.
 
@@ -117,7 +125,7 @@ Trae una wallet que ya controlas entregando su llave privada. La llave
 registra en la plataforma**.
 
 ```bash
-curl -X POST https://api.qbank.cl/platform/v1/wallets/import \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets/import \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -H "X-OTP-Token: <token-otp>" \
@@ -146,15 +154,15 @@ El balance viene **en vivo de la blockchain** e incluye el gas de la red
 
 ```bash
 # Saldo on-chain en vivo (incluye gas)
-curl https://api.qbank.cl/platform/v1/wallets/{walletID}/balance \
+curl https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/balance \
   -H "Authorization: Bearer <token>"
 
 # Depósitos recibidos (con paginación y fechas)
-curl "https://api.qbank.cl/platform/v1/wallets/{walletID}/deposits?from=2026-07-01&to=2026-07-11&page=1&page_size=50" \
+curl "https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/deposits?from=2026-07-01&to=2026-07-11&page=1&page_size=50" \
   -H "Authorization: Bearer <token>"
 
 # Actividad on-chain completa (depósitos + envíos)
-curl "https://api.qbank.cl/platform/v1/wallets/{walletID}/transactions?from=2026-07-01&to=2026-07-11" \
+curl "https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/transactions?from=2026-07-01&to=2026-07-11" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -170,7 +178,7 @@ el custodio. `idempotency_key` es obligatoria.
 <CodeGroup>
 
 ```bash Por monto
-curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/sends \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/sends \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -H "X-OTP-Token: <token-otp>" \
@@ -183,7 +191,7 @@ curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/sends \
 ```
 
 ```bash Por unidades mínimas
-curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/sends \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/sends \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -H "X-OTP-Token: <token-otp>" \
@@ -230,10 +238,10 @@ dedupe garantiza que no se duplique.
 Consulta el historial:
 
 ```bash
-curl "https://api.qbank.cl/platform/v1/wallets/{walletID}/sends?from=2026-07-01&to=2026-07-11" \
+curl "https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/sends?from=2026-07-01&to=2026-07-11" \
   -H "Authorization: Bearer <token>"
 
-curl https://api.qbank.cl/platform/v1/wallets/{walletID}/sends/{sendID} \
+curl https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/sends/{sendID} \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -244,7 +252,7 @@ exportar, la wallet **sigue 100% operativa** en CBPay (puede recibir y
 enviar), pero tú también controlas los fondos con la llave.
 
 ```bash
-curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/export \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/export \
   -H "Authorization: Bearer <token>" \
   -H "X-OTP-Token: <token-otp>" \
   -H "Content-Type: application/json" \
@@ -257,6 +265,7 @@ Respuesta `200`:
 {
   "wallet": {
     "wallet_id": "b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d",
+    "type": "segregated",
     "chain": "tron",
     "asset": "USDT",
     "address": "TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd",
@@ -287,18 +296,18 @@ verificación y OTP.
 
 ```bash
 # Consultar la regla actual
-curl https://api.qbank.cl/platform/v1/wallets/{walletID}/auto-forward \
+curl https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/auto-forward \
   -H "Authorization: Bearer <token>"
 
 # Activar / actualizar
-curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/auto-forward \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/auto-forward \
   -H "Authorization: Bearer <token>" \
   -H "X-OTP-Token: <token-otp>" \
   -H "Content-Type: application/json" \
   -d '{ "linked_address": "TColdWallet...destino", "enabled": true }'
 
 # Desactivar
-curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/auto-forward \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/auto-forward \
   -H "Authorization: Bearer <token>" \
   -H "X-OTP-Token: <token-otp>" \
   -H "Content-Type: application/json" \

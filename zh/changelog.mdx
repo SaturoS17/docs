@@ -7,6 +7,38 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月13日" description="v1.60">
+
+**Breaking — 隔离钱包迁移至 `/v1/segregated-wallets`**
+
+- 所有隔离钱包路由从 `/v1/wallets*` 重命名为 `/v1/segregated-wallets*`。
+  方法、参数、响应结构、费用和 webhook 均不变——只有路径前缀改变。
+  **没有兼容别名**：旧的 `/v1/wallets*` 路由现在返回 `404`。
+- 映射（15 条路由遵循同一模式）：
+
+| 之前 | 现在 |
+|---|---|
+| `POST/GET /v1/wallets` | `POST/GET /v1/segregated-wallets` |
+| `POST /v1/wallets/import` | `POST /v1/segregated-wallets/import` |
+| `GET /v1/wallets/{id}`（+ `/balance`、`/deposits`、`/transactions`） | `GET /v1/segregated-wallets/{id}`（+ 相同子路由） |
+| `POST/GET /v1/wallets/{id}/sends`（+ `/{sendID}`、`/receipt`） | `POST/GET /v1/segregated-wallets/{id}/sends`（+ 相同子路由） |
+| `GET /v1/wallets/{id}/deposits/{depositID}/receipt` | `GET /v1/segregated-wallets/{id}/deposits/{depositID}/receipt` |
+| `POST /v1/wallets/{id}/export` · `GET/POST .../auto-forward` | `POST /v1/segregated-wallets/{id}/export` · `GET/POST .../auto-forward` |
+
+- 钱包发送/入金的响应、webhook 和回执邮件中的 `receipt_url` 现在指向
+  新路径。
+- 原因：通用前缀 `/v1/wallets` 经常与 [crypto](/zh/guides/crypto) 产品的
+  **充值钱包**混淆。充值钱包不受影响，仍位于 `/v1/crypto/wallets`。
+
+**新增 — 每个钱包响应带有 `type` 鉴别字段**
+
+- 充值钱包（`/v1/crypto/wallets`）现在包含 `type: "deposit"` 和
+  `receive_only: true`。
+- 隔离钱包包含 `type: "segregated"`。
+- 请用它防御性地区分两个产品——不要只依赖路由。
+
+</Update>
+
 <Update label="2026年7月13日" description="v1.59">
 
 **新增 — `payin_expired` webhook：未支付代收的自动关闭**

@@ -24,14 +24,20 @@ description: "拥有独立余额的链上钱包：创建、导入、收款、发
 钱包必须持有 gas 才能发送。
 </Warning>
 
+<Note>
+两个产品、两条路由：充值钱包位于 `/v1/crypto/wallets`，隔离钱包位于
+`/v1/segregated-wallets`。每个钱包响应都带有 `type` 鉴别字段
+（`deposit` / `segregated`），便于随时区分。
+</Note>
+
 ```mermaid
 flowchart LR
-    create["POST /v1/wallets"] --> wallet["链上钱包<br/>（独立余额）"]
+    create["POST /v1/segregated-wallets"] --> wallet["链上钱包<br/>（独立余额）"]
     deposit["链上充值"] --> wallet
     wallet --> whIn["webhook<br/>wallet_deposit_received"]
-    wallet --> send["POST /v1/wallets/{id}/sends"]
+    wallet --> send["POST /v1/segregated-wallets/{id}/sends"]
     send --> whOut["webhook<br/>wallet_send_status_changed"]
-    wallet --> export["POST /v1/wallets/{id}/export<br/>（私钥）"]
+    wallet --> export["POST /v1/segregated-wallets/{id}/export<br/>（私钥）"]
 ```
 
 ## 支持的组合
@@ -49,7 +55,7 @@ flowchart LR
 <CodeGroup>
 
 ```bash TRON USDT
-curl -X POST https://api.qbank.cl/platform/v1/wallets \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: wallet-client-001" \
@@ -57,7 +63,7 @@ curl -X POST https://api.qbank.cl/platform/v1/wallets \
 ```
 
 ```bash ETH USDC
-curl -X POST https://api.qbank.cl/platform/v1/wallets \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: wallet-project-x" \
@@ -71,6 +77,7 @@ curl -X POST https://api.qbank.cl/platform/v1/wallets \
 ```json
 {
   "wallet_id": "b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d",
+  "type": "segregated",
   "chain": "tron",
   "asset": "USDT",
   "address": "TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd",
@@ -96,7 +103,7 @@ curl -X POST https://api.qbank.cl/platform/v1/wallets \
 在 `cbpay` 托管模式下，钱包的会计核算是**有保证的**：对账单展示
 其全生命周期的勾稽（`lifetime_in` − `lifetime_out` =
 `computed_balance`），且每笔发送的详情
-（`GET /v1/wallets/{walletID}/sends/{sendID}`）包含
+（`GET /v1/segregated-wallets/{walletID}/sends/{sendID}`）包含
 `funding_sources`：按 FIFO 归因哪些充值为该笔发送提供了资金，
 附带 `tx_id`、来源地址与每一份额的金额。
 
@@ -111,7 +118,7 @@ curl -X POST https://api.qbank.cl/platform/v1/wallets \
 送达托管方，绝不会在平台中存储或记录日志**。
 
 ```bash
-curl -X POST https://api.qbank.cl/platform/v1/wallets/import \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets/import \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -H "X-OTP-Token: <otp-token>" \
@@ -140,15 +147,15 @@ curl -X POST https://api.qbank.cl/platform/v1/wallets/import \
 
 ```bash
 # 实时链上余额（包含 gas）
-curl https://api.qbank.cl/platform/v1/wallets/{walletID}/balance \
+curl https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/balance \
   -H "Authorization: Bearer <token>"
 
 # 已接收的充值（支持分页与日期）
-curl "https://api.qbank.cl/platform/v1/wallets/{walletID}/deposits?from=2026-07-01&to=2026-07-11&page=1&page_size=50" \
+curl "https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/deposits?from=2026-07-01&to=2026-07-11&page=1&page_size=50" \
   -H "Authorization: Bearer <token>"
 
 # 完整链上活动（充值 + 发送）
-curl "https://api.qbank.cl/platform/v1/wallets/{walletID}/transactions?from=2026-07-01&to=2026-07-11" \
+curl "https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/transactions?from=2026-07-01&to=2026-07-11" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -164,7 +171,7 @@ curl "https://api.qbank.cl/platform/v1/wallets/{walletID}/transactions?from=2026
 <CodeGroup>
 
 ```bash 按金额
-curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/sends \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/sends \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -H "X-OTP-Token: <otp-token>" \
@@ -177,7 +184,7 @@ curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/sends \
 ```
 
 ```bash 按最小单位
-curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/sends \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/sends \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -H "X-OTP-Token: <otp-token>" \
@@ -223,10 +230,10 @@ curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/sends \
 查询历史记录：
 
 ```bash
-curl "https://api.qbank.cl/platform/v1/wallets/{walletID}/sends?from=2026-07-01&to=2026-07-11" \
+curl "https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/sends?from=2026-07-01&to=2026-07-11" \
   -H "Authorization: Bearer <token>"
 
-curl https://api.qbank.cl/platform/v1/wallets/{walletID}/sends/{sendID} \
+curl https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/sends/{sendID} \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -236,7 +243,7 @@ curl https://api.qbank.cl/platform/v1/wallets/{walletID}/sends/{sendID} \
 **仍然完全可用**（可以接收和发送），但您也可以通过私钥掌控资金。
 
 ```bash
-curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/export \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/export \
   -H "Authorization: Bearer <token>" \
   -H "X-OTP-Token: <otp-token>" \
   -H "Content-Type: application/json" \
@@ -249,6 +256,7 @@ curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/export \
 {
   "wallet": {
     "wallet_id": "b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d",
+    "type": "segregated",
     "chain": "tron",
     "asset": "USDT",
     "address": "TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd",
@@ -278,18 +286,18 @@ curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/export \
 
 ```bash
 # 读取当前规则
-curl https://api.qbank.cl/platform/v1/wallets/{walletID}/auto-forward \
+curl https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/auto-forward \
   -H "Authorization: Bearer <token>"
 
 # 启用 / 更新
-curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/auto-forward \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/auto-forward \
   -H "Authorization: Bearer <token>" \
   -H "X-OTP-Token: <otp-token>" \
   -H "Content-Type: application/json" \
   -d '{ "linked_address": "TColdWallet...destination", "enabled": true }'
 
 # 禁用
-curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/auto-forward \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/auto-forward \
   -H "Authorization: Bearer <token>" \
   -H "X-OTP-Token: <otp-token>" \
   -H "Content-Type: application/json" \

@@ -8,6 +8,42 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="13 de julio de 2026" description="v1.60">
+
+**Breaking — Las wallets segregadas se mueven a `/v1/segregated-wallets`**
+
+- Todas las rutas de wallets segregadas se renombran de `/v1/wallets*` a
+  `/v1/segregated-wallets*`. Mismos métodos, parámetros, shapes de
+  respuesta, comisiones y webhooks — solo cambia el prefijo del path. **No
+  hay alias de compatibilidad**: las rutas viejas `/v1/wallets*` ahora
+  responden `404`.
+- Mapeo (las 15 rutas siguen el mismo patrón):
+
+| Antes | Ahora |
+|---|---|
+| `POST/GET /v1/wallets` | `POST/GET /v1/segregated-wallets` |
+| `POST /v1/wallets/import` | `POST /v1/segregated-wallets/import` |
+| `GET /v1/wallets/{id}` (+ `/balance`, `/deposits`, `/transactions`) | `GET /v1/segregated-wallets/{id}` (+ mismas subrutas) |
+| `POST/GET /v1/wallets/{id}/sends` (+ `/{sendID}`, `/receipt`) | `POST/GET /v1/segregated-wallets/{id}/sends` (+ mismas subrutas) |
+| `GET /v1/wallets/{id}/deposits/{depositID}/receipt` | `GET /v1/segregated-wallets/{id}/deposits/{depositID}/receipt` |
+| `POST /v1/wallets/{id}/export` · `GET/POST .../auto-forward` | `POST /v1/segregated-wallets/{id}/export` · `GET/POST .../auto-forward` |
+
+- El `receipt_url` de respuestas, webhooks y emails de comprobantes de
+  envíos/depósitos de wallets ahora apunta al path nuevo.
+- Por qué: el prefijo genérico `/v1/wallets` se confundía constantemente
+  con las **wallets de depósito** del producto [crypto](/es/guias/crypto).
+  Esas no cambian y siguen viviendo en `/v1/crypto/wallets`.
+
+**Agregado — Discriminador `type` en toda respuesta de wallet**
+
+- Las wallets de depósito (`/v1/crypto/wallets`) ahora incluyen
+  `type: "deposit"` y `receive_only: true`.
+- Las wallets segregadas incluyen `type: "segregated"`.
+- Úsalo para distinguir los dos productos de forma defensiva — nunca solo
+  por la ruta.
+
+</Update>
+
 <Update label="13 de julio de 2026" description="v1.59">
 
 **Agregado — Webhook `payin_expired`: cierre automático de cobros no pagados**

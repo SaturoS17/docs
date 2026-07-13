@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.59'
+  version: '1.60'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC 和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
     payout 和服务费可从四个余额中的任意一个支付:
@@ -247,7 +247,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /v1/wallets/{walletID}/sends/{sendID}/receipt:
+  /v1/segregated-wallets/{walletID}/sends/{sendID}/receipt:
     get:
       tags:
       - 凭证
@@ -275,7 +275,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /v1/wallets/{walletID}/deposits/{depositID}/receipt:
+  /v1/segregated-wallets/{walletID}/deposits/{depositID}/receipt:
     get:
       tags:
       - 凭证
@@ -6309,6 +6309,8 @@ paths:
                 asset: USDT
                 address: TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT
                 label: Main treasury
+                type: deposit
+                receive_only: true
                 created_at: '2026-07-07T12:00:00Z'
                 creation_fee: '1.000000'
         '400':
@@ -6357,24 +6359,30 @@ paths:
                   asset: USDT
                   address: TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT
                   label: ''
+                  type: deposit
+                  receive_only: true
                   created_at: '2026-07-07T12:00:00Z'
                 - wallet_id: a1c9d8e7-2b3c-4d5e-6f70-8a9b0c1d2e3f
                   chain: eth
                   asset: USDT
                   address: '0x8f3Bc55D9F4a2E71c06b9a3D2e1F0A9B8C7D6E5F'
                   label: ''
+                  type: deposit
+                  receive_only: true
                   created_at: '2026-07-07T12:00:00Z'
                 - wallet_id: fb88c2d1-7a4e-4b0c-8d3f-1e2a3b4c5d6e
                   chain: eth
                   asset: USDC
                   address: '0xa072E48Bc55D9F4a2E71c06b9a3D2e1F0A9B8C7D'
                   label: ''
+                  type: deposit
+                  receive_only: true
                   created_at: '2026-07-07T12:00:00Z'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/AccountRequired'
-  /v1/wallets:
+  /v1/segregated-wallets:
     post:
       tags:
       - 隔离钱包
@@ -6433,6 +6441,7 @@ paths:
                 asset: USDT
                 address: TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd
                 label: Acme Client
+                type: segregated
                 origin: created
                 custody: cbpay
                 exported: false
@@ -6527,13 +6536,14 @@ paths:
                   asset: USDT
                   address: TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd
                   label: Acme Client
+                  type: segregated
                   origin: created
                   custody: cbpay
                   exported: false
                   created_at: '2026-07-11T12:00:00Z'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /v1/wallets/import:
+  /v1/segregated-wallets/import:
     post:
       tags:
       - 隔离钱包
@@ -6597,6 +6607,7 @@ paths:
                 asset: USDT
                 address: TXimportedAddr00000000000000000000
                 label: Migrated wallet
+                type: segregated
                 origin: imported
                 custody: client
                 exported: false
@@ -6619,7 +6630,7 @@ paths:
               example:
                 error: wallet_limit_reached
                 message: person accounts hold one segregated wallet per network/asset pair; company accounts have no limit
-  /v1/wallets/{walletID}:
+  /v1/segregated-wallets/{walletID}:
     get:
       tags:
       - 隔离钱包
@@ -6644,13 +6655,14 @@ paths:
                 asset: USDT
                 address: TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd
                 label: Acme Client
+                type: segregated
                 origin: created
                 custody: cbpay
                 exported: false
                 created_at: '2026-07-11T12:00:00Z'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/wallets/{walletID}/balance:
+  /v1/segregated-wallets/{walletID}/balance:
     get:
       tags:
       - 隔离钱包
@@ -6685,7 +6697,7 @@ paths:
                 updated_at: '2026-07-11T12:03:00Z'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/wallets/{walletID}/deposits:
+  /v1/segregated-wallets/{walletID}/deposits:
     get:
       tags:
       - 隔离钱包
@@ -6737,7 +6749,7 @@ paths:
                   created_at: '2026-07-11T12:01:00Z'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/wallets/{walletID}/transactions:
+  /v1/segregated-wallets/{walletID}/transactions:
     get:
       tags:
       - 隔离钱包
@@ -6790,7 +6802,7 @@ paths:
                   event_time: '2026-07-11T12:01:00Z'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/wallets/{walletID}/sends:
+  /v1/segregated-wallets/{walletID}/sends:
     post:
       tags:
       - 隔离钱包
@@ -6952,7 +6964,7 @@ paths:
                   created_at: '2026-07-11T12:05:00Z'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/wallets/{walletID}/sends/{sendID}:
+  /v1/segregated-wallets/{walletID}/sends/{sendID}:
     get:
       tags:
       - 隔离钱包
@@ -6988,7 +7000,7 @@ paths:
                 created_at: '2026-07-11T12:05:00Z'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/wallets/{walletID}/export:
+  /v1/segregated-wallets/{walletID}/export:
     post:
       tags:
       - 隔离钱包
@@ -7054,7 +7066,7 @@ paths:
               example:
                 error: export_unavailable
                 message: private key export is not enabled on this environment
-  /v1/wallets/{walletID}/auto-forward:
+  /v1/segregated-wallets/{walletID}/auto-forward:
     get:
       tags:
       - 隔离钱包
@@ -12022,6 +12034,14 @@ components:
         wallet_id:
           type: string
           format: uuid
+        type:
+          type: string
+          enum:
+          - deposit
+          description: 产品鉴别字段：入金钱包只接收加密货币并计入虚拟余额。
+        receive_only:
+          type: boolean
+          description: 恒为 true。入金钱包不能发送、导出或导入（此类操作请使用隔离钱包）。
         chain:
           type: string
           enum:
@@ -12044,6 +12064,11 @@ components:
         wallet_id:
           type: string
           format: uuid
+        type:
+          type: string
+          enum:
+          - segregated
+          description: 隔离钱包的产品鉴别字段。
         chain:
           type: string
           enum:

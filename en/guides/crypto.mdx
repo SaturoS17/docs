@@ -50,9 +50,9 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
   "page": 1,
   "page_size": 50,
   "wallets": [
-    { "wallet_id": "9d68…", "chain": "tron", "asset": "USDT", "address": "TXMD…", "label": "", "created_at": "2026-07-11T23:33:20Z" },
-    { "wallet_id": "a83d…", "chain": "eth", "asset": "USDT", "address": "0xefe0…", "label": "", "created_at": "2026-07-11T23:33:20Z" },
-    { "wallet_id": "fb88…", "chain": "eth", "asset": "USDC", "address": "0xa072…", "label": "", "created_at": "2026-07-11T23:33:20Z" }
+    { "wallet_id": "9d68…", "chain": "tron", "asset": "USDT", "address": "TXMD…", "label": "", "type": "deposit", "receive_only": true, "created_at": "2026-07-11T23:33:20Z" },
+    { "wallet_id": "a83d…", "chain": "eth", "asset": "USDT", "address": "0xefe0…", "label": "", "type": "deposit", "receive_only": true, "created_at": "2026-07-11T23:33:20Z" },
+    { "wallet_id": "fb88…", "chain": "eth", "asset": "USDC", "address": "0xa072…", "label": "", "type": "deposit", "receive_only": true, "created_at": "2026-07-11T23:33:20Z" }
   ]
 }
 ```
@@ -67,6 +67,13 @@ Deposit wallets are **entry doors**, not operating wallets: they only
 **receive** crypto that credits your virtual balance. They cannot send
 funds, and cannot be exported or imported (that is what
 [segregated wallets](/en/guides/segregated-wallets) are for).
+
+<Note>
+Two products, two routes: deposit wallets live under `/v1/crypto/wallets`
+and segregated wallets under `/v1/segregated-wallets`. Every wallet
+response carries a `type` discriminator (`deposit` / `segregated`) so you
+can always tell them apart.
+</Note>
 
 | Account type | Deposit wallets per network+asset pair |
 |---|---|
@@ -121,6 +128,8 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
       "asset": "USDT",
       "address": "TQmZ…",
       "label": "",
+      "type": "deposit",
+      "receive_only": true,
       "created_at": "2026-07-07T12:00:00Z"
     },
     {
@@ -129,6 +138,8 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
       "asset": "USDT",
       "address": "0x8f3B…",
       "label": "",
+      "type": "deposit",
+      "receive_only": true,
       "created_at": "2026-07-07T12:00:00Z"
     },
     {
@@ -137,6 +148,8 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
       "asset": "USDC",
       "address": "0xa072…",
       "label": "",
+      "type": "deposit",
+      "receive_only": true,
       "created_at": "2026-07-07T12:00:00Z"
     }
   ]

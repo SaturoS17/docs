@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-13 19:56 UTC · versión `25b9006f737e`
+> **Documento actualizado:** 2026-07-13 22:14 UTC · versión `28563a3860eb`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.59 (13 de julio de 2026) |
+| Versión de la documentación | v1.60 (13 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -1277,9 +1277,9 @@ de las tasas de tu cuenta para ese país. Cotizado = cobrado, siempre.
 | `funding` | `%` sobre el depósito + fijo | Al acreditar el depósito on-chain |
 | `withdrawal` | `%` sobre el retiro + fijo | Al crear el retiro (incluido en `total_debit`) |
 | `wallet_creation` | Fijo por wallet | Al crear cada wallet (personas: 1 por red; empresas: ilimitadas). Consultar wallets existentes es siempre gratis |
-| `wallet_import` | Fijo por importación | Al importar una wallet externa a una [wallet segregada](#wallets-segregadas) (`POST /v1/wallets/import`) |
-| `wallet_export` | Fijo por exportación | Al exportar la llave privada de una wallet segregada (`POST /v1/wallets/{id}/export`) |
-| `wallet_send` | Fijo por envío | Al enviar on-chain desde una wallet segregada (`POST /v1/wallets/{id}/sends`); el gas de red lo pone el cliente |
+| `wallet_import` | Fijo por importación | Al importar una wallet externa a una [wallet segregada](#wallets-segregadas) (`POST /v1/segregated-wallets/import`) |
+| `wallet_export` | Fijo por exportación | Al exportar la llave privada de una wallet segregada (`POST /v1/segregated-wallets/{id}/export`) |
+| `wallet_send` | Fijo por envío | Al enviar on-chain desde una wallet segregada (`POST /v1/segregated-wallets/{id}/sends`); el gas de red lo pone el cliente |
 | `compliance_person` | Fijo por llamada | Al screenear una persona por AML (`POST /v1/aml/screenings`) |
 | `compliance_company` | Fijo por llamada | Al screenear una empresa por AML |
 | `compliance_rescreen` | Fijo por llamada | Al re-ejecutar un screening AML |
@@ -4055,9 +4055,9 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
   "page": 1,
   "page_size": 50,
   "wallets": [
-    { "wallet_id": "9d68…", "chain": "tron", "asset": "USDT", "address": "TXMD…", "label": "", "created_at": "2026-07-11T23:33:20Z" },
-    { "wallet_id": "a83d…", "chain": "eth", "asset": "USDT", "address": "0xefe0…", "label": "", "created_at": "2026-07-11T23:33:20Z" },
-    { "wallet_id": "fb88…", "chain": "eth", "asset": "USDC", "address": "0xa072…", "label": "", "created_at": "2026-07-11T23:33:20Z" }
+    { "wallet_id": "9d68…", "chain": "tron", "asset": "USDT", "address": "TXMD…", "label": "", "type": "deposit", "receive_only": true, "created_at": "2026-07-11T23:33:20Z" },
+    { "wallet_id": "a83d…", "chain": "eth", "asset": "USDT", "address": "0xefe0…", "label": "", "type": "deposit", "receive_only": true, "created_at": "2026-07-11T23:33:20Z" },
+    { "wallet_id": "fb88…", "chain": "eth", "asset": "USDC", "address": "0xa072…", "label": "", "type": "deposit", "receive_only": true, "created_at": "2026-07-11T23:33:20Z" }
   ]
 }
 ```
@@ -4071,6 +4071,11 @@ operativas: solo sirven para **recibir** crypto que se abona a tu saldo
 virtual. No envían fondos, no se exportan ni se importan (para eso están
 las [wallets segregadas](#wallets-segregadas)).
 
+> **Nota**
+Dos productos, dos rutas: las wallets de depósito viven en
+`/v1/crypto/wallets` y las segregadas en `/v1/segregated-wallets`. Toda
+respuesta de wallet trae el discriminador `type` (`deposit` /
+`segregated`) para distinguirlas siempre.
 | Tipo de cuenta | Wallets de depósito por combinación red+activo |
 |---|---|
 | Persona | **1** (las de nacimiento ya ocupan el cupo) |
@@ -4124,6 +4129,8 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
       "asset": "USDT",
       "address": "TQmZ…",
       "label": "",
+      "type": "deposit",
+      "receive_only": true,
       "created_at": "2026-07-07T12:00:00Z"
     },
     {
@@ -4132,6 +4139,8 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
       "asset": "USDT",
       "address": "0x8f3B…",
       "label": "",
+      "type": "deposit",
+      "receive_only": true,
       "created_at": "2026-07-07T12:00:00Z"
     },
     {
@@ -4140,6 +4149,8 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
       "asset": "USDC",
       "address": "0xa072…",
       "label": "",
+      "type": "deposit",
+      "receive_only": true,
       "created_at": "2026-07-07T12:00:00Z"
     }
   ]
@@ -4414,14 +4425,19 @@ una hot wallet. En las wallets segregadas el saldo **vive on-chain en la
 wallet** y los envíos salen **de esa misma wallet**. El **gas** (TRX en TRON,
 ETH en Ethereum) corre por tu cuenta: cada wallet debe tener gas para poder
 enviar.
+> **Nota**
+Dos productos, dos rutas: las wallets de depósito viven en
+`/v1/crypto/wallets` y las segregadas en `/v1/segregated-wallets`. Toda
+respuesta de wallet trae el discriminador `type` (`deposit` /
+`segregated`) para distinguirlas siempre.
 ```mermaid
 flowchart LR
-    crear["POST /v1/wallets"] --> wallet["Wallet on-chain<br/>(saldo propio)"]
+    crear["POST /v1/segregated-wallets"] --> wallet["Wallet on-chain<br/>(saldo propio)"]
     deposito["Depósito on-chain"] --> wallet
     wallet --> whIn["webhook<br/>wallet_deposit_received"]
-    wallet --> envio["POST /v1/wallets/{id}/sends"]
+    wallet --> envio["POST /v1/segregated-wallets/{id}/sends"]
     envio --> whOut["webhook<br/>wallet_send_status_changed"]
-    wallet --> export["POST /v1/wallets/{id}/export<br/>(llave privada)"]
+    wallet --> export["POST /v1/segregated-wallets/{id}/export<br/>(llave privada)"]
 ```
 
 ### Pares soportados
@@ -4438,7 +4454,7 @@ El `eth` nativo puede enviarse desde cualquier wallet de una chain `eth`
 ### 1. Crea una wallet
 
 ```bash TRON USDT
-curl -X POST https://api.qbank.cl/platform/v1/wallets \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: wallet-cliente-001" \
@@ -4446,7 +4462,7 @@ curl -X POST https://api.qbank.cl/platform/v1/wallets \
 ```
 
 ```bash ETH USDC
-curl -X POST https://api.qbank.cl/platform/v1/wallets \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: wallet-proyecto-x" \
@@ -4458,6 +4474,7 @@ Respuesta `201`:
 ```json
 {
   "wallet_id": "b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d",
+  "type": "segregated",
   "chain": "tron",
   "asset": "USDT",
   "address": "TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd",
@@ -4483,7 +4500,7 @@ los marca como externos, para que tu registro y tu cartola sigan completos.
 Con custodia `cbpay` la contabilidad de la wallet es **garantizada**: la
 cartola muestra su cuadratura de vida completa (`lifetime_in` −
 `lifetime_out` = `computed_balance`) y el detalle de cada envío
-(`GET /v1/wallets/{walletID}/sends/{sendID}`) incluye `funding_sources`:
+(`GET /v1/segregated-wallets/{walletID}/sends/{sendID}`) incluye `funding_sources`:
 la atribución FIFO de qué depósitos fondearon ese envío, con `tx_id`,
 dirección de origen y monto por tramo.
 
@@ -4499,7 +4516,7 @@ Trae una wallet que ya controlas entregando su llave privada. La llave
 registra en la plataforma**.
 
 ```bash
-curl -X POST https://api.qbank.cl/platform/v1/wallets/import \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets/import \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -H "X-OTP-Token: <token-otp>" \
@@ -4526,15 +4543,15 @@ El balance viene **en vivo de la blockchain** e incluye el gas de la red
 
 ```bash
 # Saldo on-chain en vivo (incluye gas)
-curl https://api.qbank.cl/platform/v1/wallets/{walletID}/balance \
+curl https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/balance \
   -H "Authorization: Bearer <token>"
 
 # Depósitos recibidos (con paginación y fechas)
-curl "https://api.qbank.cl/platform/v1/wallets/{walletID}/deposits?from=2026-07-01&to=2026-07-11&page=1&page_size=50" \
+curl "https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/deposits?from=2026-07-01&to=2026-07-11&page=1&page_size=50" \
   -H "Authorization: Bearer <token>"
 
 # Actividad on-chain completa (depósitos + envíos)
-curl "https://api.qbank.cl/platform/v1/wallets/{walletID}/transactions?from=2026-07-01&to=2026-07-11" \
+curl "https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/transactions?from=2026-07-01&to=2026-07-11" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -4548,7 +4565,7 @@ El envío sale **de la wallet misma** (dirección de origen real), firmado por
 el custodio. `idempotency_key` es obligatoria.
 
 ```bash Por monto
-curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/sends \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/sends \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -H "X-OTP-Token: <token-otp>" \
@@ -4561,7 +4578,7 @@ curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/sends \
 ```
 
 ```bash Por unidades mínimas
-curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/sends \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/sends \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -H "X-OTP-Token: <token-otp>" \
@@ -4606,10 +4623,10 @@ dedupe garantiza que no se duplique.
 Consulta el historial:
 
 ```bash
-curl "https://api.qbank.cl/platform/v1/wallets/{walletID}/sends?from=2026-07-01&to=2026-07-11" \
+curl "https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/sends?from=2026-07-01&to=2026-07-11" \
   -H "Authorization: Bearer <token>"
 
-curl https://api.qbank.cl/platform/v1/wallets/{walletID}/sends/{sendID} \
+curl https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/sends/{sendID} \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -4620,7 +4637,7 @@ exportar, la wallet **sigue 100% operativa** en CBPay (puede recibir y
 enviar), pero tú también controlas los fondos con la llave.
 
 ```bash
-curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/export \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/export \
   -H "Authorization: Bearer <token>" \
   -H "X-OTP-Token: <token-otp>" \
   -H "Content-Type: application/json" \
@@ -4633,6 +4650,7 @@ Respuesta `200`:
 {
   "wallet": {
     "wallet_id": "b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d",
+    "type": "segregated",
     "chain": "tron",
     "asset": "USDT",
     "address": "TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd",
@@ -4661,18 +4679,18 @@ verificación y OTP.
 
 ```bash
 # Consultar la regla actual
-curl https://api.qbank.cl/platform/v1/wallets/{walletID}/auto-forward \
+curl https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/auto-forward \
   -H "Authorization: Bearer <token>"
 
 # Activar / actualizar
-curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/auto-forward \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/auto-forward \
   -H "Authorization: Bearer <token>" \
   -H "X-OTP-Token: <token-otp>" \
   -H "Content-Type: application/json" \
   -d '{ "linked_address": "TColdWallet...destino", "enabled": true }'
 
 # Desactivar
-curl -X POST https://api.qbank.cl/platform/v1/wallets/{walletID}/auto-forward \
+curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/auto-forward \
   -H "Authorization: Bearer <token>" \
   -H "X-OTP-Token: <token-otp>" \
   -H "Content-Type: application/json" \
@@ -6886,8 +6904,8 @@ PDF sale en español por defecto; agrega `?lang=en` para inglés.
 | Conversión (swap) | `GET /v1/swaps/{swapID}/receipt` |
 | Compra con tarjeta | `GET /v1/cards/{cardID}/transactions/{transactionID}/receipt` |
 | Operación bancaria | `GET /v1/banking/operations/{operationID}/receipt` |
-| Envío desde wallet segregada | `GET /v1/wallets/{walletID}/sends/{sendID}/receipt` |
-| Depósito en wallet segregada | `GET /v1/wallets/{walletID}/deposits/{depositID}/receipt` |
+| Envío desde wallet segregada | `GET /v1/segregated-wallets/{walletID}/sends/{sendID}/receipt` |
+| Depósito en wallet segregada | `GET /v1/segregated-wallets/{walletID}/deposits/{depositID}/receipt` |
 
 ```bash
 curl "https://api.qbank.cl/platform/v1/payouts/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d/receipt?lang=es" \
@@ -8462,9 +8480,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-13 15:33 UTC · 224 requests · versión `7cffbc9601a0`
+> **Colección actualizada:** 2026-07-13 22:14 UTC · 224 requests · versión `3cc0a8c03b6e`
 
-<PostmanFreshness iso="2026-07-13T15:33:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-13T22:14:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -8498,6 +8516,40 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.60 — 13 de julio de 2026
+
+**Breaking — Las wallets segregadas se mueven a `/v1/segregated-wallets`**
+
+- Todas las rutas de wallets segregadas se renombran de `/v1/wallets*` a
+  `/v1/segregated-wallets*`. Mismos métodos, parámetros, shapes de
+  respuesta, comisiones y webhooks — solo cambia el prefijo del path. **No
+  hay alias de compatibilidad**: las rutas viejas `/v1/wallets*` ahora
+  responden `404`.
+- Mapeo (las 15 rutas siguen el mismo patrón):
+
+| Antes | Ahora |
+|---|---|
+| `POST/GET /v1/wallets` | `POST/GET /v1/segregated-wallets` |
+| `POST /v1/wallets/import` | `POST /v1/segregated-wallets/import` |
+| `GET /v1/wallets/{id}` (+ `/balance`, `/deposits`, `/transactions`) | `GET /v1/segregated-wallets/{id}` (+ mismas subrutas) |
+| `POST/GET /v1/wallets/{id}/sends` (+ `/{sendID}`, `/receipt`) | `POST/GET /v1/segregated-wallets/{id}/sends` (+ mismas subrutas) |
+| `GET /v1/wallets/{id}/deposits/{depositID}/receipt` | `GET /v1/segregated-wallets/{id}/deposits/{depositID}/receipt` |
+| `POST /v1/wallets/{id}/export` · `GET/POST .../auto-forward` | `POST /v1/segregated-wallets/{id}/export` · `GET/POST .../auto-forward` |
+
+- El `receipt_url` de respuestas, webhooks y emails de comprobantes de
+  envíos/depósitos de wallets ahora apunta al path nuevo.
+- Por qué: el prefijo genérico `/v1/wallets` se confundía constantemente
+  con las **wallets de depósito** del producto [crypto](#crypto-wallets-depositos-y-retiros).
+  Esas no cambian y siguen viviendo en `/v1/crypto/wallets`.
+
+**Agregado — Discriminador `type` en toda respuesta de wallet**
+
+- Las wallets de depósito (`/v1/crypto/wallets`) ahora incluyen
+  `type: "deposit"` y `receive_only: true`.
+- Las wallets segregadas incluyen `type: "segregated"`.
+- Úsalo para distinguir los dos productos de forma defensiva — nunca solo
+  por la ruta.
 
 ### v1.59 — 13 de julio de 2026
 
@@ -9675,8 +9727,8 @@ está en la API Reference interactiva y en la colección Postman.
 | `GET` | `/v1/swaps/{swapID}/receipt` | Descargar el comprobante del swap (PDF) |
 | `GET` | `/v1/cards/{cardID}/transactions/{transactionID}/receipt` | Descargar el comprobante de la compra con tarjeta (PDF) |
 | `GET` | `/v1/banking/operations/{operationID}/receipt` | Descargar el comprobante de la operación bancaria (PDF) |
-| `GET` | `/v1/wallets/{walletID}/sends/{sendID}/receipt` | Descargar el comprobante del envío desde wallet segregada (PDF) |
-| `GET` | `/v1/wallets/{walletID}/deposits/{depositID}/receipt` | Descargar el comprobante del depósito en wallet segregada (PDF) |
+| `GET` | `/v1/segregated-wallets/{walletID}/sends/{sendID}/receipt` | Descargar el comprobante del envío desde wallet segregada (PDF) |
+| `GET` | `/v1/segregated-wallets/{walletID}/deposits/{depositID}/receipt` | Descargar el comprobante del depósito en wallet segregada (PDF) |
 | `GET` | `/verify/receipts/{code}` | Verificar la autenticidad de un comprobante (público) |
 
 
@@ -9898,19 +9950,19 @@ está en la API Reference interactiva y en la colección Postman.
 
 | Método | Ruta | Qué hace |
 |---|---|---|
-| `GET` | `/v1/wallets` | Listar mis wallets segregadas |
-| `POST` | `/v1/wallets` | Crear una wallet segregada |
-| `POST` | `/v1/wallets/import` | Importar una wallet externa |
-| `GET` | `/v1/wallets/{walletID}` | Obtener una wallet segregada |
-| `GET` | `/v1/wallets/{walletID}/balance` | Obtener el saldo on-chain en vivo |
-| `GET` | `/v1/wallets/{walletID}/deposits` | Listar depósitos on-chain |
-| `GET` | `/v1/wallets/{walletID}/transactions` | Listar actividad on-chain |
-| `GET` | `/v1/wallets/{walletID}/sends` | Listar envíos de la wallet |
-| `POST` | `/v1/wallets/{walletID}/sends` | Enviar crypto desde la wallet |
-| `GET` | `/v1/wallets/{walletID}/sends/{sendID}` | Obtener un envío |
-| `POST` | `/v1/wallets/{walletID}/export` | Exportar la llave privada |
-| `GET` | `/v1/wallets/{walletID}/auto-forward` | Obtener la regla de auto-forward |
-| `POST` | `/v1/wallets/{walletID}/auto-forward` | Configurar auto-forward |
+| `GET` | `/v1/segregated-wallets` | Listar mis wallets segregadas |
+| `POST` | `/v1/segregated-wallets` | Crear una wallet segregada |
+| `POST` | `/v1/segregated-wallets/import` | Importar una wallet externa |
+| `GET` | `/v1/segregated-wallets/{walletID}` | Obtener una wallet segregada |
+| `GET` | `/v1/segregated-wallets/{walletID}/balance` | Obtener el saldo on-chain en vivo |
+| `GET` | `/v1/segregated-wallets/{walletID}/deposits` | Listar depósitos on-chain |
+| `GET` | `/v1/segregated-wallets/{walletID}/transactions` | Listar actividad on-chain |
+| `GET` | `/v1/segregated-wallets/{walletID}/sends` | Listar envíos de la wallet |
+| `POST` | `/v1/segregated-wallets/{walletID}/sends` | Enviar crypto desde la wallet |
+| `GET` | `/v1/segregated-wallets/{walletID}/sends/{sendID}` | Obtener un envío |
+| `POST` | `/v1/segregated-wallets/{walletID}/export` | Exportar la llave privada |
+| `GET` | `/v1/segregated-wallets/{walletID}/auto-forward` | Obtener la regla de auto-forward |
+| `POST` | `/v1/segregated-wallets/{walletID}/auto-forward` | Configurar auto-forward |
 
 
 ## Banking

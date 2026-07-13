@@ -7,6 +7,40 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 13, 2026" description="v1.60">
+
+**Breaking — Segregated wallets move to `/v1/segregated-wallets`**
+
+- Every segregated-wallet route is renamed from `/v1/wallets*` to
+  `/v1/segregated-wallets*`. Same methods, parameters, response shapes,
+  fees and webhooks — only the path prefix changes. There is **no
+  compatibility alias**: the old `/v1/wallets*` routes now respond `404`.
+- Mapping (the 15 routes follow the same pattern):
+
+| Before | Now |
+|---|---|
+| `POST/GET /v1/wallets` | `POST/GET /v1/segregated-wallets` |
+| `POST /v1/wallets/import` | `POST /v1/segregated-wallets/import` |
+| `GET /v1/wallets/{id}` (+ `/balance`, `/deposits`, `/transactions`) | `GET /v1/segregated-wallets/{id}` (+ same subroutes) |
+| `POST/GET /v1/wallets/{id}/sends` (+ `/{sendID}`, `/receipt`) | `POST/GET /v1/segregated-wallets/{id}/sends` (+ same subroutes) |
+| `GET /v1/wallets/{id}/deposits/{depositID}/receipt` | `GET /v1/segregated-wallets/{id}/deposits/{depositID}/receipt` |
+| `POST /v1/wallets/{id}/export` · `GET/POST .../auto-forward` | `POST /v1/segregated-wallets/{id}/export` · `GET/POST .../auto-forward` |
+
+- The `receipt_url` in responses, webhooks and receipt emails of wallet
+  sends/deposits now points to the new path.
+- Why: the generic `/v1/wallets` prefix was constantly confused with the
+  **deposit wallets** of the [crypto](/en/guides/crypto) product. Those are
+  untouched and keep living under `/v1/crypto/wallets`.
+
+**Added — `type` discriminator on every wallet response**
+
+- Deposit wallets (`/v1/crypto/wallets`) now include `type: "deposit"` and
+  `receive_only: true`.
+- Segregated wallets include `type: "segregated"`.
+- Use it to tell the two products apart defensively — never by route alone.
+
+</Update>
+
 <Update label="July 13, 2026" description="v1.59">
 
 **Added — `payin_expired` webhook: automatic closure of unpaid collections**
