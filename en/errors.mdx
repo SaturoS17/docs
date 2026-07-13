@@ -138,6 +138,13 @@ Full flow and details in [social login](/en/guides/social-login).
 | 403 | `compliance_hold` | The operation was held by the platform's compliance controls. It is not a request error: contact support with the timestamp — by policy the exact reason is not disclosed |
 | 403 | `geo_restricted` | The service or the operation is not available for the origin or counterparty jurisdiction |
 | 503 | `compliance_check_unavailable` | The compliance check could not be evaluated; the operation did NOT go out — retry with the **same** idempotency key |
+| 422 | `travel_rule_required` | On-chain withdrawal above the Travel Rule threshold without beneficiary data — add `travel_address` or `wallet_type: "self_hosted"` + `beneficiary_name` ([crypto guide](/en/guides/crypto)) |
+| 422 | `travel_rule_beneficiary_required` | `beneficiary_name` is missing on a withdrawal subject to the Travel Rule |
+| 422 | `travel_rule_address_mismatch` | Your `to_address` does not match the payment address approved by the receiving institution — omit it or use the one from the exchange |
+| 422 | `travel_rule_rejected` | The receiving institution rejected the transfer; verify the beneficiary data |
+| 422 | `travel_rule_pending` | The receiving institution has not resolved the exchange yet; retry with the **same** idempotency key |
+| 422 | `travel_rule_incomplete_approval` | The receiving institution approved without providing a payment address; contact support |
+| 503 | `travel_rule_unavailable` | Travel Rule exchange temporarily unavailable; retry with the **same** idempotency key |
 
 ### Service (5xx)
 

@@ -267,6 +267,75 @@ To move balance to **another CBPay account**, skip the blockchain:
 [internal transfers](/en/guides/transfers) are instant and free.
 </Note>
 
+### Travel Rule (withdrawals above the threshold)
+
+International regulation (FATF R.16, the "Travel Rule") requires on-chain
+withdrawals **from 1,000 USD** to declare who receives the funds before
+moving the money. Below the threshold nothing changes. There are two
+paths:
+
+<Tabs>
+<Tab title="Own wallet (self-hosted)">
+
+If the destination is a wallet owned by the account holder (not an
+exchange), declare `wallet_type` and the beneficiary name:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "tron",
+    "to_address": "TVJ6…",
+    "amount": "1500.000000",
+    "wallet_type": "self_hosted",
+    "beneficiary_name": "Maria Perez",
+    "idempotency_key": "withdrawal-2026-07-12-a"
+  }'
+```
+
+The response includes `"travel_rule_status": "self_hosted_attested"`.
+
+</Tab>
+<Tab title="Another institution (travel address)">
+
+If the destination is an account at another compatible institution, ask
+the beneficiary for their **travel address** (a code starting with `ta…`)
+and send it along with their name — the payment address is provided by
+the receiving institution, so `to_address` can be omitted:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "tron",
+    "amount": "1500.000000",
+    "travel_address": "ta2AQSjBotWQf38c8sxYYK2Kfis…",
+    "beneficiary_name": "Maria Perez",
+    "idempotency_key": "withdrawal-2026-07-12-b"
+  }'
+```
+
+The exchange with the receiving institution happens inline. If it
+approves, the withdrawal goes to the address it provided and the response
+includes `"travel_rule_status": "approved"`. If the institution rejects
+(`travel_rule_rejected`) or has not resolved yet (`travel_rule_pending`),
+the withdrawal is not executed and nothing is debited — retry later with
+the **same** `idempotency_key`.
+
+</Tab>
+</Tabs>
+
+| Error | What it means | What to do |
+|---|---|---|
+| `travel_rule_required` | Withdrawal above the threshold without beneficiary data | Add `travel_address` or `wallet_type: "self_hosted"` + `beneficiary_name` |
+| `travel_rule_beneficiary_required` | `beneficiary_name` is missing | Send the destination holder's name |
+| `travel_rule_address_mismatch` | Your `to_address` does not match the address approved by the receiving institution | Omit `to_address` or use the address from the approved exchange |
+| `travel_rule_rejected` | The receiving institution rejected the transfer | Verify the beneficiary data with the recipient |
+| `travel_rule_pending` | The receiving institution has not resolved yet | Retry later with the same `idempotency_key` |
+| `travel_rule_unavailable` | Exchange temporarily unavailable | Retry with the same `idempotency_key` |
+
 ## Movements
 
 ```bash

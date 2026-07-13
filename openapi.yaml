@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.53'
+  version: '1.54'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -2978,6 +2978,22 @@ paths:
                   type: boolean
                   default: true
                   description: The address is saved as a contact automatically; send false to skip it.
+                travel_address:
+                  type: string
+                  description: Travel Rule (FATF R.16) — the beneficiary institution's travel address
+                    (`ta…` code) for withdrawals above the org threshold towards another institution.
+                    The payment address is provided by the receiving institution, so `to_address`
+                    can be omitted.
+                wallet_type:
+                  type: string
+                  enum:
+                  - self_hosted
+                  description: Travel Rule — declare `self_hosted` when the destination is the account
+                    holder's own wallet (requires `beneficiary_name`).
+                beneficiary_name:
+                  type: string
+                  description: Travel Rule — name of the destination holder. Required above the
+                    threshold (with `travel_address` or `wallet_type=self_hosted`).
             examples:
               usdt_tron:
                 summary: USDT over TRON
@@ -2994,6 +3010,23 @@ paths:
                   to_address: '0x8f3Ba1c2De4567890aBcDeF1234567890aBcDeF1'
                   amount: '50.000000'
                   idempotency_key: withdrawal-usdc-2026-07-09-a
+              travel_rule_self_hosted:
+                summary: Above the Travel Rule threshold to an own (self-hosted) wallet
+                value:
+                  chain: tron
+                  to_address: TVJ6njG5Fyrq6XwYok3xPQx8kR7HQx6vXk
+                  amount: '1500.000000'
+                  wallet_type: self_hosted
+                  beneficiary_name: Maria Perez
+                  idempotency_key: withdrawal-2026-07-12-a
+              travel_rule_vasp:
+                summary: Above the threshold to another institution (travel address)
+                value:
+                  chain: tron
+                  amount: '1500.000000'
+                  travel_address: ta2AQSjBotWQf38c8sxYYK2KfisPoMsTPiYkviErEcoSn1uK
+                  beneficiary_name: Maria Perez
+                  idempotency_key: withdrawal-2026-07-12-b
       responses:
         '202':
           description: Withdrawal accepted and broadcasting.
@@ -11168,6 +11201,17 @@ components:
           type: string
         tx_id:
           type: string
+        travel_rule_status:
+          type: string
+          enum:
+          - not_required
+          - self_hosted_attested
+          - approved
+          description: Present when the withdrawal was evaluated against the Travel Rule
+            (FATF R.16) policy.
+        beneficiary_name:
+          type: string
+          description: Declared beneficiary name (Travel Rule withdrawals).
         created_at:
           type: string
           format: date-time

@@ -257,6 +257,70 @@ curl https://api.qbank.cl/platform/v1/crypto/withdrawals/5e8c… \
 [内部转账](/zh/guides/transfers)即时且免费。
 </Note>
 
+### Travel Rule（超过阈值的提现）
+
+国际监管（FATF R.16，即 "Travel Rule"）要求 **1,000 USD 起**的链上
+提现在资金移动前申报收款人。低于阈值一切不变。有两条路径：
+
+<Tabs>
+<Tab title="自有钱包（self-hosted）">
+
+若目的地是账户持有人自己的钱包（而非交易所），申报 `wallet_type`
+和受益人姓名：
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "tron",
+    "to_address": "TVJ6…",
+    "amount": "1500.000000",
+    "wallet_type": "self_hosted",
+    "beneficiary_name": "Maria Perez",
+    "idempotency_key": "withdrawal-2026-07-12-a"
+  }'
+```
+
+响应包含 `"travel_rule_status": "self_hosted_attested"`。
+
+</Tab>
+<Tab title="其他机构（travel address）">
+
+若目的地是另一家兼容机构的账户，向受益人索取其 **travel address**
+（以 `ta…` 开头的代码），连同其姓名一起发送 — 付款地址由收款机构
+提供，因此可省略 `to_address`：
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "tron",
+    "amount": "1500.000000",
+    "travel_address": "ta2AQSjBotWQf38c8sxYYK2Kfis…",
+    "beneficiary_name": "Maria Perez",
+    "idempotency_key": "withdrawal-2026-07-12-b"
+  }'
+```
+
+与收款机构的数据交换内联完成。若获批准，提现会发往对方提供的地址，
+且响应包含 `"travel_rule_status": "approved"`。若对方拒绝
+（`travel_rule_rejected`）或尚未处理（`travel_rule_pending`），
+提现不会执行、也不会扣款 — 稍后用**同一个** `idempotency_key` 重试。
+
+</Tab>
+</Tabs>
+
+| 错误 | 含义 | 处理方式 |
+|---|---|---|
+| `travel_rule_required` | 超过阈值的提现缺少受益人数据 | 补充 `travel_address` 或 `wallet_type: "self_hosted"` + `beneficiary_name` |
+| `travel_rule_beneficiary_required` | 缺少 `beneficiary_name` | 发送目的持有人的姓名 |
+| `travel_rule_address_mismatch` | 您的 `to_address` 与收款机构批准的地址不一致 | 省略 `to_address` 或使用批准交换中的地址 |
+| `travel_rule_rejected` | 收款机构拒绝了该转账 | 与收款人核对受益人数据 |
+| `travel_rule_pending` | 收款机构尚未处理 | 稍后用同一个 `idempotency_key` 重试 |
+| `travel_rule_unavailable` | 数据交换暂时不可用 | 用同一个 `idempotency_key` 重试 |
+
 ## 资金变动
 
 ```bash

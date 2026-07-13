@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-12 22:42 UTC · versión `d94e0f76557a`
+> **Documento actualizado:** 2026-07-12 23:42 UTC · versión `1f9e12548182`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.53 (12 de julio de 2026) |
+| Versión de la documentación | v1.54 (12 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -4121,6 +4121,69 @@ curl https://api.qbank.cl/platform/v1/crypto/withdrawals/5e8c… \
 Para mover saldo a **otra cuenta CBPay** no uses la blockchain: las
 [transferencias internas](#transferencias-internas) son instantáneas y
 gratis.
+#### Travel Rule (retiros sobre el umbral)
+
+Por regulación internacional (FATF R.16, "Travel Rule"), los retiros
+on-chain **desde 1.000 USD** exigen declarar quién recibe los fondos antes
+de mover el dinero. Bajo el umbral nada cambia. Hay dos caminos:
+
+#### Wallet propia (self-hosted)
+
+Si el destino es una wallet del propio titular (no un exchange), declara
+`wallet_type` y el nombre del beneficiario:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "tron",
+    "to_address": "TVJ6…",
+    "amount": "1500.000000",
+    "wallet_type": "self_hosted",
+    "beneficiary_name": "Maria Perez",
+    "idempotency_key": "retiro-2026-07-12-a"
+  }'
+```
+
+La respuesta incluye `"travel_rule_status": "self_hosted_attested"`.
+
+#### Otra institución (travel address)
+
+Si el destino es una cuenta en otra institución compatible, pide al
+beneficiario su **travel address** (código que empieza con `ta…`) y
+envíala junto con su nombre — la dirección de pago la entrega la
+institución receptora, por lo que `to_address` puede omitirse:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "tron",
+    "amount": "1500.000000",
+    "travel_address": "ta2AQSjBotWQf38c8sxYYK2Kfis…",
+    "beneficiary_name": "Maria Perez",
+    "idempotency_key": "retiro-2026-07-12-b"
+  }'
+```
+
+El intercambio con la institución receptora ocurre en línea. Si aprueba,
+el retiro sale hacia la dirección que ella entregó y la respuesta incluye
+`"travel_rule_status": "approved"`. Si la institución rechaza
+(`travel_rule_rejected`) o aún no responde (`travel_rule_pending`), el
+retiro no se ejecuta y no se debita nada — reintenta más tarde con la
+**misma** `idempotency_key`.
+
+| Error | Qué significa | Qué hacer |
+|---|---|---|
+| `travel_rule_required` | Retiro sobre el umbral sin datos del beneficiario | Agrega `travel_address` o `wallet_type: "self_hosted"` + `beneficiary_name` |
+| `travel_rule_beneficiary_required` | Falta `beneficiary_name` | Envía el nombre del titular del destino |
+| `travel_rule_address_mismatch` | Tu `to_address` no coincide con la dirección aprobada por la institución receptora | Omite `to_address` o usa la dirección del intercambio aprobado |
+| `travel_rule_rejected` | La institución receptora rechazó la transferencia | Verifica los datos del beneficiario con el destinatario |
+| `travel_rule_pending` | La institución receptora aún no resuelve | Reintenta más tarde con la misma `idempotency_key` |
+| `travel_rule_unavailable` | Intercambio temporalmente no disponible | Reintenta con la misma `idempotency_key` |
+
 ### Movimientos
 
 ```bash
@@ -8025,6 +8088,13 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | 403 | `compliance_hold` | La operación fue retenida por los controles de cumplimiento de la plataforma. No es un error de tu request: contacta a soporte con el timestamp — por política no se informa la razón exacta |
 | 403 | `geo_restricted` | El servicio o la operación no están disponibles para la jurisdicción de origen o de la contraparte |
 | 503 | `compliance_check_unavailable` | La verificación de cumplimiento no se pudo evaluar; la operación NO salió — reintenta con la **misma** clave de idempotencia |
+| 422 | `travel_rule_required` | Retiro on-chain sobre el umbral Travel Rule sin datos del beneficiario — agrega `travel_address` o `wallet_type: "self_hosted"` + `beneficiary_name` ([guía crypto](#crypto-wallets-depositos-y-retiros)) |
+| 422 | `travel_rule_beneficiary_required` | Falta `beneficiary_name` en un retiro sujeto a Travel Rule |
+| 422 | `travel_rule_address_mismatch` | Tu `to_address` no coincide con la dirección de pago aprobada por la institución receptora — omítela o usa la del intercambio |
+| 422 | `travel_rule_rejected` | La institución receptora rechazó la transferencia; verifica los datos del beneficiario |
+| 422 | `travel_rule_pending` | La institución receptora aún no resuelve el intercambio; reintenta con la **misma** clave de idempotencia |
+| 422 | `travel_rule_incomplete_approval` | La institución receptora aprobó sin entregar dirección de pago; contacta a soporte |
+| 503 | `travel_rule_unavailable` | Intercambio Travel Rule temporalmente no disponible; reintenta con la **misma** clave de idempotencia |
 
 #### Servicio (5xx)
 
@@ -8238,9 +8308,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-12 22:42 UTC · 217 requests · versión `e14571f863ce`
+> **Colección actualizada:** 2026-07-12 23:42 UTC · 219 requests · versión `aef07e9b6cf8`
 
-<PostmanFreshness iso="2026-07-12T22:42:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-12T23:42:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -8274,6 +8344,25 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.54 — 12 de julio de 2026
+
+**Agregado — Travel Rule en retiros on-chain (FATF R.16)**
+
+- Los retiros crypto sobre el umbral configurado (default 1.000 USD)
+  ahora exigen declarar el beneficiario antes de mover fondos:
+  `wallet_type: "self_hosted"` + `beneficiary_name` para wallets propias,
+  o `travel_address` + `beneficiary_name` para destinos en otra
+  institución (el intercambio de datos ocurre en línea y la dirección de
+  pago la entrega la institución receptora). Bajo el umbral nada cambia.
+- La respuesta del retiro incluye `travel_rule_status`
+  (`not_required` / `self_hosted_attested` / `approved`).
+- Códigos de error nuevos: `travel_rule_required`,
+  `travel_rule_beneficiary_required`, `travel_rule_address_mismatch`,
+  `travel_rule_rejected`, `travel_rule_pending`,
+  `travel_rule_incomplete_approval`, `travel_rule_unavailable`. Detalle en
+  la [guía crypto](#crypto-wallets-depositos-y-retiros) y la
+  [página de errores](#errores).
 
 ### v1.53 — 12 de julio de 2026
 

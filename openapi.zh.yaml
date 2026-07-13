@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.53'
+  version: '1.54'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC 和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
     payout 和服务费可从四个余额中的任意一个支付:
@@ -2840,6 +2840,17 @@ paths:
                   type: boolean
                   default: true
                   description: 地址会自动保存为联系人;传 false 可跳过。
+                travel_address:
+                  type: string
+                  description: Travel Rule(FATF R.16)— 超过组织阈值且转往其他机构时,收款机构的 travel address(`ta…` 代码)。付款地址由收款机构提供,因此可省略 `to_address`。
+                wallet_type:
+                  type: string
+                  enum:
+                  - self_hosted
+                  description: Travel Rule — 目的地为账户持有人自己的钱包时声明 `self_hosted`(需要 `beneficiary_name`)。
+                beneficiary_name:
+                  type: string
+                  description: Travel Rule — 目的持有人的姓名。超过阈值时必填(配合 `travel_address` 或 `wallet_type=self_hosted`)。
             examples:
               usdt_tron:
                 summary: TRON 上的 USDT
@@ -2856,6 +2867,23 @@ paths:
                   to_address: '0x8f3Ba1c2De4567890aBcDeF1234567890aBcDeF1'
                   amount: '50.000000'
                   idempotency_key: withdrawal-usdc-2026-07-09-a
+              travel_rule_self_hosted:
+                summary: 超过 Travel Rule 阈值,转往自托管钱包
+                value:
+                  chain: tron
+                  to_address: TVJ6njG5Fyrq6XwYok3xPQx8kR7HQx6vXk
+                  amount: '1500.000000'
+                  wallet_type: self_hosted
+                  beneficiary_name: Maria Perez
+                  idempotency_key: withdrawal-2026-07-12-a
+              travel_rule_vasp:
+                summary: 超过阈值,转往其他机构(travel address)
+                value:
+                  chain: tron
+                  amount: '1500.000000'
+                  travel_address: ta2AQSjBotWQf38c8sxYYK2KfisPoMsTPiYkviErEcoSn1uK
+                  beneficiary_name: Maria Perez
+                  idempotency_key: withdrawal-2026-07-12-b
       responses:
         '202':
           description: 提现已受理并广播中。
@@ -11558,6 +11586,16 @@ components:
           type: string
         tx_id:
           type: string
+        travel_rule_status:
+          type: string
+          enum:
+          - not_required
+          - self_hosted_attested
+          - approved
+          description: 提现按 Travel Rule(FATF R.16)政策评估时返回。
+        beneficiary_name:
+          type: string
+          description: 声明的受益人姓名(Travel Rule 提现)。
         created_at:
           type: string
           format: date-time

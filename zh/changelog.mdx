@@ -7,6 +7,25 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月12日" description="v1.54">
+
+**新增 — 链上提现的 Travel Rule（FATF R.16）**
+
+- 超过配置阈值（默认 1,000 USD）的加密货币提现，现在必须在资金移动前
+  申报受益人：自有钱包用 `wallet_type: "self_hosted"` +
+  `beneficiary_name`；目的地在其他机构时用 `travel_address` +
+  `beneficiary_name`（数据交换内联完成，付款地址由收款机构提供）。
+  低于阈值一切不变。
+- 提现响应新增 `travel_rule_status`
+  （`not_required` / `self_hosted_attested` / `approved`）。
+- 新增错误码：`travel_rule_required`、
+  `travel_rule_beneficiary_required`、`travel_rule_address_mismatch`、
+  `travel_rule_rejected`、`travel_rule_pending`、
+  `travel_rule_incomplete_approval`、`travel_rule_unavailable`。详见
+  [加密货币指南](/zh/guides/crypto)与[错误页](/zh/errors)。
+
+</Update>
+
 <Update label="2026年7月12日" description="v1.53">
 
 **新增 — 余额历史中的银行序列**

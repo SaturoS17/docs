@@ -7,6 +7,28 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 12, 2026" description="v1.54">
+
+**Added — Travel Rule on on-chain withdrawals (FATF R.16)**
+
+- Crypto withdrawals above the configured threshold (default 1,000 USD)
+  now require declaring the beneficiary before moving funds:
+  `wallet_type: "self_hosted"` + `beneficiary_name` for own wallets, or
+  `travel_address` + `beneficiary_name` for destinations at another
+  institution (the data exchange happens inline and the payment address
+  is provided by the receiving institution). Below the threshold nothing
+  changes.
+- The withdrawal response includes `travel_rule_status`
+  (`not_required` / `self_hosted_attested` / `approved`).
+- New error codes: `travel_rule_required`,
+  `travel_rule_beneficiary_required`, `travel_rule_address_mismatch`,
+  `travel_rule_rejected`, `travel_rule_pending`,
+  `travel_rule_incomplete_approval`, `travel_rule_unavailable`. Details in
+  the [crypto guide](/en/guides/crypto) and the
+  [errors page](/en/errors).
+
+</Update>
+
 <Update label="July 12, 2026" description="v1.53">
 
 **Added — Banking series in the balance history**
