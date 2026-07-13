@@ -7,6 +7,29 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 13, 2026" description="v1.58">
+
+**Changed — Redesigned receipts, statement and emails**
+
+- Every PDF receipt (`GET .../receipt`) ships a banking-grade redesign:
+  header with logo and receipt number, product icon, hero amount,
+  two-column details, a "Verifiable document" strip with the QR code and an
+  institutional footer. The brand symbol appears as a subtle watermark;
+  non-final operations keep the status watermark.
+- The statement PDF (`GET /v1/reports/statement?format=pdf`) adds summary
+  cards with icons, a verified-reconciliation badge and per-section icons;
+  the Excel export keeps its structure.
+- Emails (receipts, verification codes and security notices) now share a
+  branded template with your organization's institutional header and
+  footer.
+- On fiat payout receipts the beneficiary bank is ALWAYS shown by name: if
+  the operation was created with the catalog `bank_code`, it is resolved to
+  the bank's display name automatically.
+- No API changes: same routes, same shapes. Only the documents and emails
+  look different.
+
+</Update>
+
 <Update label="July 13, 2026" description="v1.57">
 
 **Added — Refresh tokens for user sessions**

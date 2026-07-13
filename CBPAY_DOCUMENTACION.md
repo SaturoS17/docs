@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-13 15:33 UTC · versión `8484da1b54c8`
+> **Documento actualizado:** 2026-07-13 17:30 UTC · versión `3a7d05ad6b1f`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.57 (13 de julio de 2026) |
+| Versión de la documentación | v1.58 (13 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -8480,6 +8480,28 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.58 — 13 de julio de 2026
+
+**Cambiado — Comprobantes, cartola y emails con diseño renovado**
+
+- Todos los comprobantes PDF (`GET .../receipt`) estrenan un diseño de nivel
+  bancario: encabezado con logo y N° de comprobante, icono del producto,
+  monto destacado, detalle en dos columnas, franja "Documento verificable"
+  con QR y pie institucional. El símbolo de la marca aparece como marca de
+  agua sutil; las operaciones no completadas conservan la marca de agua de
+  estado.
+- La cartola PDF (`GET /v1/reports/statement?format=pdf`) suma tarjetas de
+  resumen con iconos, sello de cuadratura verificada e iconos por sección;
+  el Excel mantiene su estructura.
+- Los emails (comprobantes, códigos de verificación y avisos de seguridad)
+  comparten ahora una plantilla brandeada con encabezado y pie
+  institucionales de tu organización.
+- En los comprobantes de envíos fiat el banco del beneficiario se muestra
+  SIEMPRE por nombre: si la operación se creó con el `bank_code` del
+  catálogo, se resuelve automáticamente al nombre del banco.
+- Sin cambios de API: mismas rutas, mismos shapes. Solo cambia el diseño de
+  los documentos y correos.
 
 ### v1.57 — 13 de julio de 2026
 
