@@ -462,6 +462,13 @@ curl https://api.qbank.cl/platform/v1/payins/9c2a… \
 CBPay 团队将其路由到某个账户。分配后，按目标账户的汇率和费用入账。
 </Info>
 
+<Note>
+当一笔待支付的代收（二维码或 checkout）在未收到付款的情况下终止时，payin
+会自动从 `pending` 变为 `expired`（或 `failed`），并且您会收到
+[`payin_expired`](/zh/webhooks) webhook。不产生任何资金变动：如需重新
+收款，请创建新的 payin。
+</Note>
+
 ## 查询与历史记录
 
 ```bash

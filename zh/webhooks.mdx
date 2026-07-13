@@ -68,6 +68,7 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 | 事件 | 触发时机 |
 |---|---|
 | `payin_credited` | 收到一笔法币代收并已入账 |
+| `payin_expired` | 一笔待支付的代收（二维码 / checkout）已过期或失败，未收到付款 |
 | `payout_status_changed` | 一笔付款（payout）状态发生变化 |
 | `transfer_received` | 账户收到一笔内部转账 |
 | `crypto_deposit_credited` | 一笔链上充值已确认并入账 |
@@ -103,6 +104,18 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
   "fx_rate": "6.91",
   "usdt_credited": "100.302460",
   "fee": "1.000000"
+}
+```
+
+```json payin_expired
+{
+  "payin_id": "567d…",
+  "account_id": "ae8c…",
+  "status": "expired",
+  "country": "BO",
+  "currency": "BOB",
+  "local_amount": "60.99",
+  "reference": "CBK7Q2M4XZ9P"
 }
 ```
 

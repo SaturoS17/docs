@@ -482,6 +482,13 @@ quedan `unassigned` hasta que el equipo de CBPay los asigna a una cuenta.
 Al asignarse, se acreditan con la tasa y comisiones de la cuenta destino.
 </Info>
 
+<Note>
+Cuando un cobro activo (QR o checkout) muere sin pago, el payin pasa de
+`pending` a `expired` (o `failed`) automáticamente y recibes el webhook
+[`payin_expired`](/es/webhooks). No se mueve dinero: si quieres reintentar
+el cobro, crea un payin nuevo.
+</Note>
+
 ## Consulta e historial
 
 ```bash

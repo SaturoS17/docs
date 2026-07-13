@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-13 17:30 UTC · versión `3a7d05ad6b1f`
+> **Documento actualizado:** 2026-07-13 19:56 UTC · versión `25b9006f737e`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.58 (13 de julio de 2026) |
+| Versión de la documentación | v1.59 (13 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -3181,6 +3181,11 @@ curl https://api.qbank.cl/platform/v1/payins/9c2a… \
 Los depósitos que llegan por transferencia directa sin referencia clara
 quedan `unassigned` hasta que el equipo de CBPay los asigna a una cuenta.
 Al asignarse, se acreditan con la tasa y comisiones de la cuenta destino.
+> **Nota**
+Cuando un cobro activo (QR o checkout) muere sin pago, el payin pasa de
+`pending` a `expired` (o `failed`) automáticamente y recibes el webhook
+[`payin_expired`](#webhooks). No se mueve dinero: si quieres reintentar
+el cobro, crea un payin nuevo.
 ### Consulta e historial
 
 ```bash
@@ -7744,6 +7749,7 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 | Evento | Cuándo se emite |
 |---|---|
 | `payin_credited` | Un cobro fiat fue recibido y abonado |
+| `payin_expired` | Un cobro activo (QR / checkout) venció o falló sin recibir el pago |
 | `payout_status_changed` | Un payout cambió de estado |
 | `transfer_received` | La cuenta recibió una transferencia interna |
 | `crypto_deposit_credited` | Un depósito on-chain fue confirmado y abonado |
@@ -7777,6 +7783,18 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
   "fx_rate": "6.91",
   "usdt_credited": "100.302460",
   "fee": "1.000000"
+}
+```
+
+```json payin_expired
+{
+  "payin_id": "567d…",
+  "account_id": "ae8c…",
+  "status": "expired",
+  "country": "BO",
+  "currency": "BOB",
+  "local_amount": "60.99",
+  "reference": "CBK7Q2M4XZ9P"
 }
 ```
 
@@ -8480,6 +8498,19 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.59 — 13 de julio de 2026
+
+**Agregado — Webhook `payin_expired`: cierre automático de cobros no pagados**
+
+- Cuando un cobro activo (QR o checkout hosteado) vence o falla sin recibir
+  el pago, el payin ahora pasa automáticamente de `pending` a `expired`
+  (o `failed`) — antes podía quedar pendiente indefinidamente.
+- Nuevo evento de webhook **`payin_expired`** con el `payin_id`, el estado
+  final, el corredor y la referencia, para que cierres el cobro en tu
+  sistema sin polling. Suscribible en `POST /v1/webhooks/subscriptions`.
+- No se mueve dinero en ningún caso: para reintentar el cobro se crea un
+  payin nuevo.
 
 ### v1.58 — 13 de julio de 2026
 

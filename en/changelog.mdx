@@ -7,6 +7,21 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 13, 2026" description="v1.59">
+
+**Added — `payin_expired` webhook: automatic closure of unpaid collections**
+
+- When an active charge (QR or hosted checkout) expires or fails without
+  receiving the payment, the payin now moves automatically from `pending`
+  to `expired` (or `failed`) — previously it could stay pending forever.
+- New **`payin_expired`** webhook event carrying the `payin_id`, the final
+  status, the corridor and the reference, so you can close the collection
+  on your side without polling. Subscribable via
+  `POST /v1/webhooks/subscriptions`.
+- No funds move in any case: to retry the collection, create a new payin.
+
+</Update>
+
 <Update label="July 13, 2026" description="v1.58">
 
 **Changed — Redesigned receipts, statement and emails**

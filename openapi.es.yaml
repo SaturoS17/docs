@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.58'
+  version: '1.59'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -6296,6 +6296,7 @@ paths:
                   type: string
                   enum:
                   - payin_credited
+                  - payin_expired
                   - payout_status_changed
                   - transfer_received
                   - crypto_deposit_credited
@@ -11769,6 +11770,51 @@ webhooks:
               fx_rate: '6.91'
               usdt_credited: '100.302460'
               fee: '1.000000'
+      responses:
+        '200':
+          description: Devuelve cualquier 2xx para confirmar la entrega.
+  payin_expired:
+    post:
+      summary: Payin expirado
+      description: 'Un cobro activo (QR o checkout hosteado) llegó a estado final
+        sin recibir el pago: el payin pasa de `pending` a `expired` (o `failed`).
+        No se mueve dinero; crea un payin nuevo para reintentar el cobro.
+
+
+        Cada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
+        y `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`. Responde 2xx; hasta
+        5 intentos con backoff incremental.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payin_id:
+                  type: string
+                account_id:
+                  type: string
+                status:
+                  type: string
+                  enum:
+                  - expired
+                  - failed
+                country:
+                  type: string
+                currency:
+                  type: string
+                local_amount:
+                  type: string
+                reference:
+                  type: string
+            example:
+              payin_id: 567d0d1a-49bc-437e-92e3-77e921112e49
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              status: expired
+              country: BO
+              currency: BOB
+              local_amount: '60.99'
+              reference: CBK7Q2M4XZ9P
       responses:
         '200':
           description: Devuelve cualquier 2xx para confirmar la entrega.

@@ -482,6 +482,13 @@ Deposits arriving by direct transfer without a clear reference stay
 they are credited with the destination account's rate and fees.
 </Info>
 
+<Note>
+When an active charge (QR or checkout) dies unpaid, the payin moves from
+`pending` to `expired` (or `failed`) automatically and you receive the
+[`payin_expired`](/en/webhooks) webhook. No funds move: to retry the
+collection, create a new payin.
+</Note>
+
 ## Reads and history
 
 ```bash

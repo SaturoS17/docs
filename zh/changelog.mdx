@@ -7,6 +7,20 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月13日" description="v1.59">
+
+**新增 — `payin_expired` webhook：未支付代收的自动关闭**
+
+- 当一笔待支付的代收（二维码或托管 checkout）在未收到付款的情况下过期或
+  失败时，payin 现在会自动从 `pending` 变为 `expired`（或 `failed`）——
+  此前可能会无限期停留在 pending。
+- 新增 **`payin_expired`** webhook 事件，携带 `payin_id`、最终状态、
+  通道和参考号，让您无需轮询即可在自己的系统中关闭该笔代收。可通过
+  `POST /v1/webhooks/subscriptions` 订阅。
+- 任何情况下都不产生资金变动：如需重新收款，请创建新的 payin。
+
+</Update>
+
 <Update label="2026年7月13日" description="v1.58">
 
 **变更 — 凭证、对账单与邮件全新设计**

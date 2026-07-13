@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.58'
+  version: '1.59'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC 和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
     payout 和服务费可从四个余额中的任意一个支付:
@@ -6113,6 +6113,7 @@ paths:
                   type: string
                   enum:
                   - payin_credited
+                  - payin_expired
                   - payout_status_changed
                   - transfer_received
                   - crypto_deposit_credited
@@ -12183,6 +12184,47 @@ webhooks:
               fx_rate: '6.91'
               usdt_credited: '100.302460'
               fee: '1.000000'
+      responses:
+        '200':
+          description: 返回任意 2xx 以确认投递。
+  payin_expired:
+    post:
+      summary: payin 已过期
+      description: '一笔待支付的代收(二维码或托管 checkout)在未收到付款的情况下到达最终状态:payin 从 `pending` 变为 `expired`(或 `failed`)。不产生任何资金变动;如需重新收款请创建新的 payin。
+
+
+        每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。请返回 2xx;最多重试 5 次,间隔递增。'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payin_id:
+                  type: string
+                account_id:
+                  type: string
+                status:
+                  type: string
+                  enum:
+                  - expired
+                  - failed
+                country:
+                  type: string
+                currency:
+                  type: string
+                local_amount:
+                  type: string
+                reference:
+                  type: string
+            example:
+              payin_id: 567d0d1a-49bc-437e-92e3-77e921112e49
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              status: expired
+              country: BO
+              currency: BOB
+              local_amount: '60.99'
+              reference: CBK7Q2M4XZ9P
       responses:
         '200':
           description: 返回任意 2xx 以确认投递。

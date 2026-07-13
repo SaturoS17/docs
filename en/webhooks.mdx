@@ -72,6 +72,7 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 | Event | When it fires |
 |---|---|
 | `payin_credited` | A fiat collection was received and credited |
+| `payin_expired` | An active collection (QR / checkout) expired or failed without receiving the payment |
 | `payout_status_changed` | A payout changed state |
 | `transfer_received` | The account received an internal transfer |
 | `crypto_deposit_credited` | An on-chain deposit was confirmed and credited |
@@ -107,6 +108,18 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
   "fx_rate": "6.91",
   "usdt_credited": "100.302460",
   "fee": "1.000000"
+}
+```
+
+```json payin_expired
+{
+  "payin_id": "567d…",
+  "account_id": "ae8c…",
+  "status": "expired",
+  "country": "BO",
+  "currency": "BOB",
+  "local_amount": "60.99",
+  "reference": "CBK7Q2M4XZ9P"
 }
 ```
 

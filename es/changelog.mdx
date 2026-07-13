@@ -8,6 +8,21 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="13 de julio de 2026" description="v1.59">
+
+**Agregado — Webhook `payin_expired`: cierre automático de cobros no pagados**
+
+- Cuando un cobro activo (QR o checkout hosteado) vence o falla sin recibir
+  el pago, el payin ahora pasa automáticamente de `pending` a `expired`
+  (o `failed`) — antes podía quedar pendiente indefinidamente.
+- Nuevo evento de webhook **`payin_expired`** con el `payin_id`, el estado
+  final, el corredor y la referencia, para que cierres el cobro en tu
+  sistema sin polling. Suscribible en `POST /v1/webhooks/subscriptions`.
+- No se mueve dinero en ningún caso: para reintentar el cobro se crea un
+  payin nuevo.
+
+</Update>
+
 <Update label="13 de julio de 2026" description="v1.58">
 
 **Cambiado — Comprobantes, cartola y emails con diseño renovado**
