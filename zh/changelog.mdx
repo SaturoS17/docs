@@ -7,6 +7,43 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月13日" description="v1.57">
+
+**新增 — 用户会话的刷新令牌（refresh tokens）**
+
+- 每次登录（密码、OTP、社交登录、通行密钥、handoff 和注册）现在会在
+  24 小时 `access_token` 之外一并返回一次性 **`refresh_token`**（`rt_…`），
+  用于免重新登录续期会话：`POST /v1/auth/refresh` 签发新的令牌对并轮换
+  刷新令牌（每次轮换有效 30 天，自最初登录起绝对上限 90 天）。详情与
+  安全规则见[身份认证 → 会话续期](/zh/authentication#session-renewal-refresh-tokens)。
+- **严格轮换与防盗检测**：交换时会吊销该设备之前的 access token；提交
+  已被交换过的刷新令牌会吊销整条令牌链，并在
+  `GET /v1/me/security/events` 中记录 `refresh_token_reuse` 事件。退出
+  登录、吊销会话或修改密码也会使刷新令牌失效。
+- 新错误码：`401 invalid_refresh_token`。API key（`pk_`）不受影响：
+  永不过期，也不使用刷新机制。
+
+</Update>
+
+<Update label="2026年7月13日" description="v1.56">
+
+**新增 — 使用模拟资金的测试环境（沙盒）**
+
+- 新的 **test** 环境：`https://cryptobank.qbank.cl/platform`。API 完全
+  相同，所有通道由确定性的内部模拟器提供服务 —— 始终可用，不依赖任何
+  第三方。操作在几秒内自动完成，**魔法值**（`.99`/`.77` 金额、
+  `REJECT` 收款人、OTP `000000` 等）可强制触发其他所有结果。完整指南见
+  [环境与测试](/zh/environment-testing)。
+- **按环境区分的 API 密钥**：test 只签发和接受 `pk_test_` 密钥；live
+  只接受 `pk_`。另一环境的密钥返回 `401` —— 不可能误用错环境。
+- 每个响应都带有 **`CBPay-Environment`** 头（`test` | `live`），
+  `GET /healthz` 返回 `livemode`。
+- **一键 test/live 切换**：`POST /v1/auth/environment-handoff`（live）
+  签发一次性 60 秒令牌，在 `POST /v1/auth/handoff`（test）兑换为测试
+  环境会话，并自动创建镜像账户。
+
+</Update>
+
 <Update label="2026年7月12日" description="v1.55">
 
 **新增 — AML 筛查审计历史**

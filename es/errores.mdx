@@ -24,6 +24,7 @@ Todos los errores comparten el mismo formato:
 |---|---|---|
 | 401 | `unauthorized` | Credencial ausente o inválida |
 | 401 | `invalid_credentials` | Email o contraseña incorrectos (login) |
+| 401 | `invalid_refresh_token` | Refresh token inválido, expirado, ya usado o revocado — vuelve al login |
 | 403 | `account_required` | El endpoint exige credencial de cuenta |
 | 403 | `org_admin_required` | El endpoint exige credencial de administrador |
 | 403 | `forbidden` | Nivel de credencial no permitido |

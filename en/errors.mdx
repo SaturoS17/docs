@@ -24,6 +24,7 @@ All errors share the same shape:
 |---|---|---|
 | 401 | `unauthorized` | Missing or invalid credential |
 | 401 | `invalid_credentials` | Wrong email or password (login) |
+| 401 | `invalid_refresh_token` | Refresh token invalid, expired, already used or revoked — send the user back to login |
 | 403 | `account_required` | Endpoint requires an account credential |
 | 403 | `org_admin_required` | Endpoint requires an admin credential |
 | 403 | `forbidden` | Credential level not allowed |

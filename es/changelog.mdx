@@ -8,6 +8,50 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="13 de julio de 2026" description="v1.57">
+
+**Agregado — Refresh tokens para sesiones de usuario**
+
+- Todo login (contraseña, OTP, social, passkey, handoff y registro) ahora
+  devuelve, junto al `access_token` de 24 horas, un **`refresh_token`**
+  (`rt_…`) de un solo uso para renovar la sesión sin re-login:
+  `POST /v1/auth/refresh` entrega un par nuevo y rota el token (30 días por
+  rotación, tope absoluto de 90 días desde el login original). Detalle y
+  reglas de seguridad en
+  [Autenticación → Renovación de sesión](/es/autenticacion#renovacion-de-sesion-refresh-tokens).
+- **Rotación estricta y detección de robo**: canjear revoca el access token
+  anterior del dispositivo; presentar un refresh token ya canjeado revoca la
+  cadena completa y registra el evento `refresh_token_reuse` en
+  `GET /v1/me/security/events`. Cerrar sesión, revocar sesiones o cambiar la
+  contraseña también invalida los refresh tokens.
+- Código de error nuevo: `401 invalid_refresh_token`. Las API keys `pk_` no
+  cambian: no expiran ni usan refresh.
+
+</Update>
+
+<Update label="13 de julio de 2026" description="v1.56">
+
+**Agregado — Ambiente de test (sandbox) con dinero simulado**
+
+- Nuevo ambiente de **test** en `https://cryptobank.qbank.cl/platform`:
+  la misma API, con todos los corredores atendidos por un simulador propio
+  determinista — siempre disponible, sin depender de terceros. Las
+  operaciones completan solas en segundos y los **valores mágicos**
+  (montos `.99`/`.77`, beneficiario `REJECT`, OTP `000000`, etc.) fuerzan
+  cada resultado alternativo. Guía completa en
+  [Ambientes y pruebas](/es/entorno-y-pruebas).
+- **API keys por ambiente**: test emite y acepta solo keys `pk_test_`;
+  live solo `pk_`. Una key del otro ambiente devuelve `401` — imposible
+  cruzar ambientes por error.
+- Toda respuesta lleva el header **`CBPay-Environment`** (`test` | `live`)
+  y `GET /healthz` expone `livemode`.
+- **Switch test/live de un click**: `POST /v1/auth/environment-handoff`
+  (live) emite un token de un solo uso (60s) que se canjea en
+  `POST /v1/auth/handoff` (test) por una sesión del ambiente de test, con
+  auto-provisión de la cuenta espejo si no existe.
+
+</Update>
+
 <Update label="12 de julio de 2026" description="v1.55">
 
 **Agregado — Historial auditable de screenings AML**

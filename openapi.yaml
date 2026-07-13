@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.55'
+  version: '1.57'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -28,6 +28,9 @@ info:
     '
 servers:
 - url: https://api.qbank.cl/platform
+  description: Live (production, real money)
+- url: https://cryptobank.qbank.cl/platform
+  description: Test (sandbox, simulated money — pk_test_ keys)
 security:
 - bearerAuth: []
 tags:
@@ -482,6 +485,12 @@ paths:
                   expires_at:
                     type: string
                     format: date-time
+                  refresh_token:
+                    type: string
+                    description: Single-use rotating refresh token for `POST /v1/auth/refresh`.
+                  refresh_expires_at:
+                    type: string
+                    format: date-time
               example:
                 account: &id001
                   id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -499,6 +508,8 @@ paths:
                   updated_at: '2026-07-07T12:00:00Z'
                 access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…
                 expires_at: '2026-07-08T12:00:00Z'
+                refresh_token: rt_6a1e6c22-93a1-4f0e-a7d1-1f2e3c4b5a69.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                refresh_expires_at: '2026-08-06T12:00:00Z'
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':
@@ -519,6 +530,119 @@ paths:
               example:
                 error: duplicate
                 message: resource already exists
+  /v1/auth/environment-handoff:
+    post:
+      tags:
+      - Authentication
+      operationId: createEnvironmentHandoff
+      summary: Get a test-mode handoff token
+      description: >-
+        Issues a single-use token (60-second TTL) that moves the CURRENT
+        member session to the test environment — this is what powers the
+        dashboard's one-click test/live switch, with no second login and no
+        new OTP challenge. Only the live environment issues handoffs, and
+        only member sessions (JWT) can request one: API keys never switch
+        environments (each environment manages its own keys).
+      responses:
+        '201':
+          description: Handoff token issued. Exchange it right away at the test environment's `POST /v1/auth/handoff`.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  handoff_token:
+                    type: string
+                    description: Single-use signed token (expires in 60 seconds).
+                  expires_at:
+                    type: string
+                    format: date-time
+                  exchange_url:
+                    type: string
+                    description: Test-environment URL where the token is exchanged.
+              example:
+                handoff_token: eyJqdGkiOiI2ZjFjMDJhYS0uLi4ifQ.9zXk1v…
+                expires_at: '2026-07-13T12:01:00Z'
+                exchange_url: https://cryptobank.qbank.cl/platform/v1/auth/handoff
+        '403':
+          description: The caller is not a member session (`session_required`) — API keys cannot switch environments.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: session_required
+                message: environment handoff requires a member session
+  /v1/auth/handoff:
+    post:
+      tags:
+      - Authentication
+      security: []
+      operationId: exchangeEnvironmentHandoff
+      summary: Exchange a handoff token for a test session
+      description: >-
+        Test environment only (live always answers 404). Exchanges the
+        single-use token issued by `POST /v1/auth/environment-handoff` in
+        live for a session of the test environment. If the account does not
+        exist in test yet, its mirror is provisioned automatically — the
+        test mode always exists for every user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - token
+              properties:
+                token:
+                  type: string
+                  description: The `handoff_token` issued by the live environment.
+            example:
+              token: eyJqdGkiOiI2ZjFjMDJhYS0uLi4ifQ.9zXk1v…
+      responses:
+        '200':
+          description: Test session issued.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                  refresh_token:
+                    type: string
+                  refresh_expires_at:
+                    type: string
+                    format: date-time
+                  account:
+                    type: object
+                    description: The mirror account in the test environment.
+                  livemode:
+                    type: boolean
+                    description: Always false in the test environment.
+              example:
+                access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…
+                expires_at: '2026-07-14T12:00:00Z'
+                refresh_token: rt_6a1e6c22-93a1-4f0e-a7d1-1f2e3c4b5a69.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                refresh_expires_at: '2026-08-12T12:00:00Z'
+                account:
+                  id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                  type: person
+                  display_name: Ana Test
+                livemode: false
+        '401':
+          description: The token is invalid, expired or was already used (`invalid_handoff`, `handoff_replayed`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_handoff
+                message: handoff token is invalid or expired
   /v1/auth/login:
     post:
       tags:
@@ -565,6 +689,12 @@ paths:
                   expires_at:
                     type: string
                     format: date-time
+                  refresh_token:
+                    type: string
+                    description: Single-use rotating refresh token (`rt_…`) to renew the session at `POST /v1/auth/refresh` without re-login.
+                  refresh_expires_at:
+                    type: string
+                    format: date-time
                   account_id:
                     type: string
                     format: uuid
@@ -595,6 +725,8 @@ paths:
                   value:
                     access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…
                     expires_at: '2026-07-08T12:00:00Z'
+                    refresh_token: rt_6a1e6c22-93a1-4f0e-a7d1-1f2e3c4b5a69.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                    refresh_expires_at: '2026-08-06T12:00:00Z'
                     account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
                     role: owner
                 otpRequired:
@@ -659,6 +791,11 @@ paths:
                   expires_at:
                     type: string
                     format: date-time
+                  refresh_token:
+                    type: string
+                  refresh_expires_at:
+                    type: string
+                    format: date-time
                   account_id:
                     type: string
                     format: uuid
@@ -667,6 +804,8 @@ paths:
               example:
                 access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…
                 expires_at: '2026-07-09T21:00:00Z'
+                refresh_token: rt_6a1e6c22-93a1-4f0e-a7d1-1f2e3c4b5a69.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                refresh_expires_at: '2026-08-07T21:00:00Z'
                 account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
                 role: owner
         '401':
@@ -689,6 +828,89 @@ paths:
               example:
                 error: challenge_not_pending
                 message: the challenge already expired or was used; log in again
+  /v1/auth/refresh:
+    post:
+      tags:
+      - Authentication
+      security: []
+      operationId: refreshSession
+      summary: Refresh the session
+      description: >-
+        Exchanges a single-use refresh token (`rt_…`, issued with every
+        login) for a fresh access token + refresh token pair without asking
+        for credentials again. Strict rotation: the previous access token of
+        that device is revoked on exchange, and presenting an
+        already-exchanged refresh token revokes the device's entire token
+        chain (theft response) and records a `refresh_token_reuse` security
+        event. Refresh tokens last 30 days per rotation with an absolute cap
+        of 90 days from the original login; signing out, revoking sessions or
+        changing the password also invalidates them.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+                  description: The `rt_…` token from the last login or refresh.
+            example:
+              refresh_token: rt_6a1e6c22-93a1-4f0e-a7d1-1f2e3c4b5a69.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+      responses:
+        '200':
+          description: New pair issued; the previous pair is now invalid.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                  refresh_token:
+                    type: string
+                    description: Replaces the exchanged token (single use).
+                  refresh_expires_at:
+                    type: string
+                    format: date-time
+                  account_id:
+                    type: string
+                    format: uuid
+                  role:
+                    type: string
+              example:
+                access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…
+                expires_at: '2026-07-15T12:00:00Z'
+                refresh_token: rt_9f2b1c30-51ab-4dd0-93e2-7a6b5c4d3e2f.YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY
+                refresh_expires_at: '2026-08-13T12:00:00Z'
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                role: owner
+        '401':
+          description: >-
+            The refresh token is invalid, expired, already used or revoked
+            (`invalid_refresh_token`). Send the user back to the login
+            screen.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_refresh_token
+                message: the refresh token is invalid or expired; log in again
+        '429':
+          description: Too many refresh attempts from this address (`too_many_attempts`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: too_many_attempts
+                message: too many refresh attempts from this address; retry later
   /v1/auth/oauth:
     post:
       tags:
@@ -740,6 +962,8 @@ paths:
               example:
                 access_token: eyJhbGciOiJIUzI1Ni…
                 expires_at: '2026-07-09T21:00:00Z'
+                refresh_token: rt_6a1e6c22-93a1-4f0e-a7d1-1f2e3c4b5a69.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                refresh_expires_at: '2026-08-07T21:00:00Z'
                 account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
                 role: owner
         '201':
@@ -754,6 +978,8 @@ paths:
                   display_name: Ana
                 access_token: eyJhbGciOiJIUzI1Ni…
                 expires_at: '2026-07-09T21:00:00Z'
+                refresh_token: rt_6a1e6c22-93a1-4f0e-a7d1-1f2e3c4b5a69.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                refresh_expires_at: '2026-08-07T21:00:00Z'
                 created: true
         '401':
           description: The credential is invalid, expired or from another app (`invalid_credential`).
@@ -10051,7 +10277,7 @@ paths:
       responses:
         '200':
           description: Session issued.
-          content: {application/json: {example: {access_token: 'eyJ…', expires_at: '2026-07-12T00:00:00Z', account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, role: owner}}}
+          content: {application/json: {example: {access_token: 'eyJ…', expires_at: '2026-07-12T00:00:00Z', refresh_token: 'rt_6a1e6c22-….XXXX…', refresh_expires_at: '2026-08-10T00:00:00Z', account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, role: owner}}}
         '401':
           description: The passkey could not be verified (`invalid_credential`).
   /v1/me/password:
@@ -10080,7 +10306,7 @@ paths:
       responses:
         '200':
           description: Password changed; previous sessions revoked; new session returned.
-          content: {application/json: {example: {status: password_changed, access_token: 'eyJ…', expires_at: '2026-07-12T00:00:00Z', note: all previous sessions were revoked}}}
+          content: {application/json: {example: {status: password_changed, access_token: 'eyJ…', expires_at: '2026-07-12T00:00:00Z', refresh_token: 'rt_6a1e6c22-….XXXX…', refresh_expires_at: '2026-08-10T00:00:00Z', note: all previous sessions were revoked}}}
         '403':
           description: Wrong current password (`invalid_password`) or OTP required (`otp_required`).
   /v1/me/email/change:

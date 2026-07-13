@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.55'
+  version: '1.57'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC 和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
     payout 和服务费可从四个余额中的任意一个支付:
@@ -18,6 +18,9 @@ info:
     '
 servers:
 - url: https://api.qbank.cl/platform
+  description: Live（生产环境，真实资金）
+- url: https://cryptobank.qbank.cl/platform
+  description: Test（沙盒，模拟资金 — pk_test_ 密钥）
 security:
 - bearerAuth: []
 tags:
@@ -442,6 +445,12 @@ paths:
                   expires_at:
                     type: string
                     format: date-time
+                  refresh_token:
+                    type: string
+                    description: 用于 `POST /v1/auth/refresh` 的一次性轮换刷新令牌。
+                  refresh_expires_at:
+                    type: string
+                    format: date-time
               example:
                 account: &id001
                   id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -459,6 +468,8 @@ paths:
                   updated_at: '2026-07-07T12:00:00Z'
                 access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…
                 expires_at: '2026-07-08T12:00:00Z'
+                refresh_token: rt_6a1e6c22-93a1-4f0e-a7d1-1f2e3c4b5a69.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                refresh_expires_at: '2026-08-06T12:00:00Z'
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':
@@ -479,6 +490,117 @@ paths:
               example:
                 error: duplicate
                 message: resource already exists
+  /v1/auth/environment-handoff:
+    post:
+      tags:
+      - Authentication
+      operationId: createEnvironmentHandoff
+      summary: 获取测试模式 handoff 令牌
+      description: >-
+        签发一个一次性令牌（有效期 60 秒），将当前 member 会话转移到测试
+        环境 —— 这就是控制台一键 test/live 切换的底层机制，无需再次登录，
+        也无需新的 OTP 验证。只有 live 环境签发 handoff，且只有 member
+        会话（JWT）可以请求：API 密钥永远不会跨环境（每个环境管理自己的
+        密钥）。
+      responses:
+        '201':
+          description: handoff 令牌已签发。请立即在测试环境的 `POST /v1/auth/handoff` 兑换。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  handoff_token:
+                    type: string
+                    description: 一次性签名令牌（60 秒后过期）。
+                  expires_at:
+                    type: string
+                    format: date-time
+                  exchange_url:
+                    type: string
+                    description: 兑换令牌的测试环境 URL。
+              example:
+                handoff_token: eyJqdGkiOiI2ZjFjMDJhYS0uLi4ifQ.9zXk1v…
+                expires_at: '2026-07-13T12:01:00Z'
+                exchange_url: https://cryptobank.qbank.cl/platform/v1/auth/handoff
+        '403':
+          description: 调用方不是 member 会话（`session_required`）—— API 密钥不能切换环境。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: session_required
+                message: environment handoff requires a member session
+  /v1/auth/handoff:
+    post:
+      tags:
+      - Authentication
+      security: []
+      operationId: exchangeEnvironmentHandoff
+      summary: 用 handoff 令牌兑换测试会话
+      description: >-
+        仅限测试环境（live 始终返回 404）。将 live 环境通过
+        `POST /v1/auth/environment-handoff` 签发的一次性令牌兑换为测试
+        环境自己的会话。如果账户在测试环境尚不存在，会自动创建其镜像
+        —— 测试模式对每个用户始终存在。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - token
+              properties:
+                token:
+                  type: string
+                  description: live 环境签发的 `handoff_token`。
+            example:
+              token: eyJqdGkiOiI2ZjFjMDJhYS0uLi4ifQ.9zXk1v…
+      responses:
+        '200':
+          description: 测试会话已签发。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                  refresh_token:
+                    type: string
+                  refresh_expires_at:
+                    type: string
+                    format: date-time
+                  account:
+                    type: object
+                    description: 测试环境中的镜像账户。
+                  livemode:
+                    type: boolean
+                    description: 在测试环境中始终为 false。
+              example:
+                access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…
+                expires_at: '2026-07-14T12:00:00Z'
+                refresh_token: rt_6a1e6c22-93a1-4f0e-a7d1-1f2e3c4b5a69.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                refresh_expires_at: '2026-08-12T12:00:00Z'
+                account:
+                  id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                  type: person
+                  display_name: Ana Test
+                livemode: false
+        '401':
+          description: 令牌无效、已过期或已被使用（`invalid_handoff`、`handoff_replayed`）。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_handoff
+                message: handoff token is invalid or expired
   /v1/auth/login:
     post:
       tags:
@@ -522,6 +644,12 @@ paths:
                   expires_at:
                     type: string
                     format: date-time
+                  refresh_token:
+                    type: string
+                    description: 一次性轮换刷新令牌(`rt_…`),可在 `POST /v1/auth/refresh` 免重新登录续期会话。
+                  refresh_expires_at:
+                    type: string
+                    format: date-time
                   account_id:
                     type: string
                     format: uuid
@@ -554,6 +682,8 @@ paths:
                   value:
                     access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…
                     expires_at: '2026-07-08T12:00:00Z'
+                    refresh_token: rt_6a1e6c22-93a1-4f0e-a7d1-1f2e3c4b5a69.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                    refresh_expires_at: '2026-08-06T12:00:00Z'
                     account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
                     role: owner
                 otpRequired:
@@ -615,6 +745,11 @@ paths:
                   expires_at:
                     type: string
                     format: date-time
+                  refresh_token:
+                    type: string
+                  refresh_expires_at:
+                    type: string
+                    format: date-time
                   account_id:
                     type: string
                     format: uuid
@@ -623,6 +758,8 @@ paths:
               example:
                 access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…
                 expires_at: '2026-07-09T21:00:00Z'
+                refresh_token: rt_6a1e6c22-93a1-4f0e-a7d1-1f2e3c4b5a69.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                refresh_expires_at: '2026-08-07T21:00:00Z'
                 account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
                 role: owner
         '401':
@@ -643,6 +780,82 @@ paths:
               example:
                 error: challenge_not_pending
                 message: the challenge already expired or was used; log in again
+  /v1/auth/refresh:
+    post:
+      tags:
+      - 身份认证
+      security: []
+      operationId: refreshSession
+      summary: 续期会话
+      description: >-
+        用一次性刷新令牌(`rt_…`,每次登录都会签发)换取一对新的 access token +
+        refresh token,无需再次输入凭证。严格轮换:交换时会立即吊销该设备之前的
+        access token;若提交一个已被交换过的刷新令牌,会吊销该设备的整条令牌链
+        (防盗响应)并记录 `refresh_token_reuse` 安全事件。刷新令牌每次轮换有效
+        30 天,自最初登录起绝对上限 90 天;退出登录、吊销会话或修改密码也会使其失效。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+                  description: 上次登录或刷新返回的 `rt_…` 令牌。
+            example:
+              refresh_token: rt_6a1e6c22-93a1-4f0e-a7d1-1f2e3c4b5a69.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+      responses:
+        '200':
+          description: 已签发新令牌对;之前的令牌对随即失效。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                  refresh_token:
+                    type: string
+                    description: 替换被交换的令牌(一次性)。
+                  refresh_expires_at:
+                    type: string
+                    format: date-time
+                  account_id:
+                    type: string
+                    format: uuid
+                  role:
+                    type: string
+              example:
+                access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…
+                expires_at: '2026-07-15T12:00:00Z'
+                refresh_token: rt_9f2b1c30-51ab-4dd0-93e2-7a6b5c4d3e2f.YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY
+                refresh_expires_at: '2026-08-13T12:00:00Z'
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                role: owner
+        '401':
+          description: 刷新令牌无效、已过期、已被使用或已被吊销(`invalid_refresh_token`)。请引导用户回到登录页。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_refresh_token
+                message: the refresh token is invalid or expired; log in again
+        '429':
+          description: 来自此地址的刷新尝试过多(`too_many_attempts`)。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: too_many_attempts
+                message: too many refresh attempts from this address; retry later
   /v1/auth/oauth:
     post:
       tags:
@@ -694,6 +907,8 @@ paths:
               example:
                 access_token: eyJhbGciOiJIUzI1Ni…
                 expires_at: '2026-07-09T21:00:00Z'
+                refresh_token: rt_6a1e6c22-93a1-4f0e-a7d1-1f2e3c4b5a69.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                refresh_expires_at: '2026-08-07T21:00:00Z'
                 account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
                 role: owner
         '201':
@@ -708,6 +923,8 @@ paths:
                   display_name: Ana
                 access_token: eyJhbGciOiJIUzI1Ni…
                 expires_at: '2026-07-09T21:00:00Z'
+                refresh_token: rt_6a1e6c22-93a1-4f0e-a7d1-1f2e3c4b5a69.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                refresh_expires_at: '2026-08-07T21:00:00Z'
                 created: true
         '401':
           description: 凭证无效、已过期或来自其他应用(`invalid_credential`)。
@@ -10104,6 +10321,8 @@ paths:
               example:
                 access_token: eyJ…
                 expires_at: '2026-07-12T00:00:00Z'
+                refresh_token: rt_6a1e6c22-….XXXX…
+                refresh_expires_at: '2026-08-10T00:00:00Z'
                 account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
                 role: owner
         '401':
@@ -10148,6 +10367,8 @@ paths:
                 status: password_changed
                 access_token: eyJ…
                 expires_at: '2026-07-12T00:00:00Z'
+                refresh_token: rt_6a1e6c22-….XXXX…
+                refresh_expires_at: '2026-08-10T00:00:00Z'
                 note: all previous sessions were revoked
         '403':
           description: 当前密码错误(`invalid_password`)或需要 OTP(`otp_required`)。

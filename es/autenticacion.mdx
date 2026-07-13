@@ -20,7 +20,9 @@ También se acepta `X-API-Key: <token>` como header alternativo.
 <Tab title="Sesión JWT (personas con login)">
 
 Se obtiene con `POST /v1/auth/register` o `POST /v1/auth/login` y dura
-**24 horas**. Pensada para apps con usuarios que inician sesión.
+**24 horas**. Pensada para apps con usuarios que inician sesión. Junto al
+`access_token` recibes un **refresh token** para renovar la sesión sin pedir
+la contraseña de nuevo — ver [renovación de sesión](#renovacion-de-sesion-refresh-tokens).
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/auth/login \
@@ -31,7 +33,9 @@ curl -X POST https://api.qbank.cl/platform/v1/auth/login \
 ```json
 {
   "access_token": "eyJ…",
-  "expires_at": "2026-07-08T00:00:00Z",
+  "expires_at": "2026-07-14T15:20:49Z",
+  "refresh_token": "rt_6a1e6c22-….XXXXXXXX…",
+  "refresh_expires_at": "2026-08-12T15:20:49Z",
   "account_id": "…",
   "role": "owner"
 }
@@ -81,6 +85,82 @@ un hash — si lo pierdes, emite una key nueva.
 
 </Tab>
 </Tabs>
+
+## Renovación de sesión (refresh tokens)
+
+El `access_token` dura 24 horas; el `refresh_token` (`rt_…`) permite obtener
+un par nuevo **sin re-login** durante 30 días, renovables en cada uso hasta
+un máximo de 90 días desde el login original. Es de **un solo uso**: cada
+canje devuelve un `refresh_token` nuevo y el anterior queda invalidado
+(rotación).
+
+```mermaid
+sequenceDiagram
+    participant App as Tu front
+    participant API as CBPay API
+    App->>API: POST /v1/auth/login
+    API-->>App: access_token (24h) + refresh_token A
+    Note over App: … pasan las horas, el access token vence …
+    App->>API: POST /v1/auth/refresh { refresh_token: A }
+    API-->>App: access_token nuevo + refresh_token B (A queda usado)
+    App->>API: POST /v1/auth/refresh { refresh_token: A } (reúso)
+    API-->>App: 401 + se revoca la cadena completa (posible robo)
+```
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{ "refresh_token": "rt_6a1e6c22-….XXXXXXXX…" }'
+```
+
+```json
+{
+  "access_token": "eyJ…",
+  "expires_at": "2026-07-14T15:20:50Z",
+  "refresh_token": "rt_9f2b1c30-….YYYYYYYY…",
+  "refresh_expires_at": "2026-08-12T15:20:50Z",
+  "account_id": "…",
+  "role": "owner"
+}
+```
+
+Reglas de seguridad que tu front debe conocer:
+
+- **Rotación estricta**: al canjear, el access token anterior de ese
+  dispositivo queda revocado al instante (solo hay un access token vivo por
+  cadena). Reemplaza siempre AMBOS tokens con los de la respuesta.
+- **Reúso = robo**: si un refresh token ya canjeado vuelve a presentarse, la
+  cadena completa del dispositivo se revoca (tokens y sesiones) y queda un
+  evento `refresh_token_reuse` en `GET /v1/me/security/events`. El usuario
+  debe iniciar sesión de nuevo.
+- **Muere con la sesión**: cerrar sesión (`DELETE /v1/me/sessions/{id}`),
+  `POST /v1/me/sessions/revoke-all` o un cambio/reset de contraseña
+  invalidan también los refresh tokens asociados.
+- Cualquier rechazo responde `401 invalid_refresh_token` — ante ese error,
+  manda al usuario al login.
+- Guarda el refresh token en almacenamiento seguro (Keychain/Keystore en
+  móvil; en web, preferir memoria + re-login o cookie httpOnly de tu
+  backend). Las API keys `pk_` no usan refresh: no expiran.
+
+<AccordionGroup>
+<Accordion title="¿Cada cuánto debo refrescar?">
+Cuando el access token esté por vencer (usa `expires_at`) o al recibir un
+`401` en una llamada normal. Evita refrescar en paralelo desde varios
+lugares: si dos canjes del mismo token llegan a la vez, uno gana y el otro
+recibe `401` sin castigo — pero un canje de un token YA rotado revoca la
+cadena.
+</Accordion>
+<Accordion title="¿Qué pasa a los 90 días?">
+El tope absoluto de la cadena es 90 días desde el login original: aunque
+refresques a diario, al llegar al límite el refresh devuelve `401` y el
+usuario debe autenticarse de nuevo (con su contraseña, passkey o login
+social).
+</Accordion>
+<Accordion title="¿El refresh funciona con API keys?">
+No aplica: las API keys `pk_` no expiran ni tienen sesión. El refresh es
+solo para sesiones JWT de usuarios humanos.
+</Accordion>
+</AccordionGroup>
 
 ## Nivel de acceso
 

@@ -20,7 +20,10 @@ Authorization: Bearer <token>
 <Tab title="JWT session (users with login)">
 
 Obtained from `POST /v1/auth/register` or `POST /v1/auth/login`, valid for
-**24 hours**. Meant for apps where users sign in.
+**24 hours**. Meant for apps where users sign in. Along with the
+`access_token` you receive a **refresh token** to renew the session without
+asking for the password again — see
+[session renewal](#session-renewal-refresh-tokens).
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/auth/login \
@@ -31,7 +34,9 @@ curl -X POST https://api.qbank.cl/platform/v1/auth/login \
 ```json
 {
   "access_token": "eyJ…",
-  "expires_at": "2026-07-08T00:00:00Z",
+  "expires_at": "2026-07-14T15:20:49Z",
+  "refresh_token": "rt_6a1e6c22-….XXXXXXXX…",
+  "refresh_expires_at": "2026-08-12T15:20:49Z",
   "account_id": "…",
   "role": "owner"
 }
@@ -81,6 +86,81 @@ side — if you lose it, issue a new key.
 
 </Tab>
 </Tabs>
+
+## Session renewal (refresh tokens)
+
+The `access_token` lasts 24 hours; the `refresh_token` (`rt_…`) lets you get
+a fresh pair **without re-login** for 30 days, renewed on every use up to a
+maximum of 90 days from the original login. It is **single-use**: every
+exchange returns a new `refresh_token` and invalidates the previous one
+(rotation).
+
+```mermaid
+sequenceDiagram
+    participant App as Your front end
+    participant API as CBPay API
+    App->>API: POST /v1/auth/login
+    API-->>App: access_token (24h) + refresh_token A
+    Note over App: … hours pass, the access token expires …
+    App->>API: POST /v1/auth/refresh { refresh_token: A }
+    API-->>App: new access_token + refresh_token B (A is now used)
+    App->>API: POST /v1/auth/refresh { refresh_token: A } (reuse)
+    API-->>App: 401 + the whole chain is revoked (possible theft)
+```
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{ "refresh_token": "rt_6a1e6c22-….XXXXXXXX…" }'
+```
+
+```json
+{
+  "access_token": "eyJ…",
+  "expires_at": "2026-07-14T15:20:50Z",
+  "refresh_token": "rt_9f2b1c30-….YYYYYYYY…",
+  "refresh_expires_at": "2026-08-12T15:20:50Z",
+  "account_id": "…",
+  "role": "owner"
+}
+```
+
+Security rules your front end must know:
+
+- **Strict rotation**: on exchange, the previous access token of that device
+  is revoked immediately (only one live access token per chain). Always
+  replace BOTH tokens with the ones in the response.
+- **Reuse = theft**: if an already-exchanged refresh token is presented
+  again, the device's entire chain is revoked (tokens and sessions) and a
+  `refresh_token_reuse` event is recorded in
+  `GET /v1/me/security/events`. The user must sign in again.
+- **Dies with the session**: signing out (`DELETE /v1/me/sessions/{id}`),
+  `POST /v1/me/sessions/revoke-all` or a password change/reset also
+  invalidate the associated refresh tokens.
+- Every rejection returns `401 invalid_refresh_token` — on that error, send
+  the user to the login screen.
+- Store the refresh token in secure storage (Keychain/Keystore on mobile; on
+  web, prefer memory + re-login or an httpOnly cookie from your backend).
+  `pk_` API keys do not use refresh: they never expire.
+
+<AccordionGroup>
+<Accordion title="How often should I refresh?">
+When the access token is about to expire (use `expires_at`) or upon a `401`
+on a normal call. Avoid refreshing in parallel from several places: if two
+exchanges of the same token race, one wins and the other gets a `401`
+without penalty — but exchanging a token that was ALREADY rotated revokes
+the chain.
+</Accordion>
+<Accordion title="What happens after 90 days?">
+The chain's absolute cap is 90 days from the original login: even refreshing
+daily, once the limit is reached the refresh returns `401` and the user must
+authenticate again (password, passkey or social login).
+</Accordion>
+<Accordion title="Does refresh work with API keys?">
+Not applicable: `pk_` API keys never expire and have no session. Refresh is
+only for JWT sessions of human users.
+</Accordion>
+</AccordionGroup>
 
 ## Access level
 

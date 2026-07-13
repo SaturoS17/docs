@@ -7,6 +7,50 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 13, 2026" description="v1.57">
+
+**Added — Refresh tokens for user sessions**
+
+- Every login (password, OTP, social, passkey, handoff and register) now
+  returns, alongside the 24-hour `access_token`, a single-use
+  **`refresh_token`** (`rt_…`) to renew the session without re-login:
+  `POST /v1/auth/refresh` issues a fresh pair and rotates the token (30 days
+  per rotation, absolute cap of 90 days from the original login). Details
+  and security rules in
+  [Authentication → Session renewal](/en/authentication#session-renewal-refresh-tokens).
+- **Strict rotation and theft detection**: exchanging revokes the device's
+  previous access token; presenting an already-exchanged refresh token
+  revokes the entire chain and records a `refresh_token_reuse` event in
+  `GET /v1/me/security/events`. Signing out, revoking sessions or changing
+  the password also invalidates refresh tokens.
+- New error code: `401 invalid_refresh_token`. API keys `pk_` are
+  unchanged: they never expire and don't use refresh.
+
+</Update>
+
+<Update label="July 13, 2026" description="v1.56">
+
+**Added — Test environment (sandbox) with simulated money**
+
+- New **test** environment at `https://cryptobank.qbank.cl/platform`: the
+  same API, with every corridor served by a deterministic internal
+  simulator — always available, no third-party dependency. Operations
+  complete on their own within seconds and **magic values** (`.99`/`.77`
+  amounts, `REJECT` beneficiary, OTP `000000`, etc.) force every other
+  outcome. Full guide in
+  [Environments and testing](/en/environment-testing).
+- **Per-environment API keys**: test issues and accepts only `pk_test_`
+  keys; live only `pk_`. A key from the other environment returns `401` —
+  impossible to cross environments by mistake.
+- Every response carries the **`CBPay-Environment`** header
+  (`test` | `live`) and `GET /healthz` exposes `livemode`.
+- **One-click test/live switch**: `POST /v1/auth/environment-handoff`
+  (live) issues a single-use 60-second token exchanged at
+  `POST /v1/auth/handoff` (test) for a test-environment session, with
+  automatic mirror-account provisioning.
+
+</Update>
+
 <Update label="July 12, 2026" description="v1.55">
 
 **Added — AML screening audit history**

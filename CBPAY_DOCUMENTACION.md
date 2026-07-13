@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-13 02:28 UTC · versión `737e8bcd9984`
+> **Documento actualizado:** 2026-07-13 15:33 UTC · versión `8484da1b54c8`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.55 (12 de julio de 2026) |
+| Versión de la documentación | v1.57 (13 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -27,7 +27,7 @@ solo saldo.
   - [Inicio rápido](#inicio-rapido)
   - [Autenticación y cuenta](#autenticacion-y-cuenta)
   - [Login social (Google, Apple, Microsoft, Meta)](#login-social-google-apple-microsoft-meta)
-  - [Ambiente y pruebas](#ambiente-y-pruebas)
+  - [Ambientes y pruebas](#ambientes-y-pruebas)
 - **Conceptos**
   - [Modelo de dinero](#modelo-de-dinero)
   - [Comisiones](#comisiones)
@@ -334,7 +334,7 @@ los [ejemplos por país de la guía de payouts](#payouts).
 ### Cierra el ciclo: suscríbete al webhook
 
 El estado final del payout llega por push. Suscribe tu endpoint HTTPS (en
-desarrollo usa un [túnel](#ambiente-y-pruebas)):
+desarrollo usa un [túnel](#ambientes-y-pruebas)):
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/webhooks/subscriptions \
@@ -391,7 +391,9 @@ También se acepta `X-API-Key: <token>` como header alternativo.
 #### Sesión JWT (personas con login)
 
 Se obtiene con `POST /v1/auth/register` o `POST /v1/auth/login` y dura
-**24 horas**. Pensada para apps con usuarios que inician sesión.
+**24 horas**. Pensada para apps con usuarios que inician sesión. Junto al
+`access_token` recibes un **refresh token** para renovar la sesión sin pedir
+la contraseña de nuevo — ver [renovación de sesión](#renovacion-de-sesion-refresh-tokens).
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/auth/login \
@@ -402,7 +404,9 @@ curl -X POST https://api.qbank.cl/platform/v1/auth/login \
 ```json
 {
   "access_token": "eyJ…",
-  "expires_at": "2026-07-08T00:00:00Z",
+  "expires_at": "2026-07-14T15:20:49Z",
+  "refresh_token": "rt_6a1e6c22-….XXXXXXXX…",
+  "refresh_expires_at": "2026-08-12T15:20:49Z",
   "account_id": "…",
   "role": "owner"
 }
@@ -443,6 +447,76 @@ curl -X POST https://api.qbank.cl/platform/v1/api-keys \
 > **Importante**
 El token en claro se muestra **una sola vez**. En el servidor solo se guarda
 un hash — si lo pierdes, emite una key nueva.
+### Renovación de sesión (refresh tokens)
+
+El `access_token` dura 24 horas; el `refresh_token` (`rt_…`) permite obtener
+un par nuevo **sin re-login** durante 30 días, renovables en cada uso hasta
+un máximo de 90 días desde el login original. Es de **un solo uso**: cada
+canje devuelve un `refresh_token` nuevo y el anterior queda invalidado
+(rotación).
+
+```mermaid
+sequenceDiagram
+    participant App as Tu front
+    participant API as CBPay API
+    App->>API: POST /v1/auth/login
+    API-->>App: access_token (24h) + refresh_token A
+    Note over App: … pasan las horas, el access token vence …
+    App->>API: POST /v1/auth/refresh { refresh_token: A }
+    API-->>App: access_token nuevo + refresh_token B (A queda usado)
+    App->>API: POST /v1/auth/refresh { refresh_token: A } (reúso)
+    API-->>App: 401 + se revoca la cadena completa (posible robo)
+```
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{ "refresh_token": "rt_6a1e6c22-….XXXXXXXX…" }'
+```
+
+```json
+{
+  "access_token": "eyJ…",
+  "expires_at": "2026-07-14T15:20:50Z",
+  "refresh_token": "rt_9f2b1c30-….YYYYYYYY…",
+  "refresh_expires_at": "2026-08-12T15:20:50Z",
+  "account_id": "…",
+  "role": "owner"
+}
+```
+
+Reglas de seguridad que tu front debe conocer:
+
+- **Rotación estricta**: al canjear, el access token anterior de ese
+  dispositivo queda revocado al instante (solo hay un access token vivo por
+  cadena). Reemplaza siempre AMBOS tokens con los de la respuesta.
+- **Reúso = robo**: si un refresh token ya canjeado vuelve a presentarse, la
+  cadena completa del dispositivo se revoca (tokens y sesiones) y queda un
+  evento `refresh_token_reuse` en `GET /v1/me/security/events`. El usuario
+  debe iniciar sesión de nuevo.
+- **Muere con la sesión**: cerrar sesión (`DELETE /v1/me/sessions/{id}`),
+  `POST /v1/me/sessions/revoke-all` o un cambio/reset de contraseña
+  invalidan también los refresh tokens asociados.
+- Cualquier rechazo responde `401 invalid_refresh_token` — ante ese error,
+  manda al usuario al login.
+- Guarda el refresh token en almacenamiento seguro (Keychain/Keystore en
+  móvil; en web, preferir memoria + re-login o cookie httpOnly de tu
+  backend). Las API keys `pk_` no usan refresh: no expiran.
+
+#### ¿Cada cuánto debo refrescar?
+Cuando el access token esté por vencer (usa `expires_at`) o al recibir un
+`401` en una llamada normal. Evita refrescar en paralelo desde varios
+lugares: si dos canjes del mismo token llegan a la vez, uno gana y el otro
+recibe `401` sin castigo — pero un canje de un token YA rotado revoca la
+cadena.
+#### ¿Qué pasa a los 90 días?
+El tope absoluto de la cadena es 90 días desde el login original: aunque
+refresques a diario, al llegar al límite el refresh devuelve `401` y el
+usuario debe autenticarse de nuevo (con su contraseña, passkey o login
+social).
+#### ¿El refresh funciona con API keys?
+No aplica: las API keys `pk_` no expiran ni tienen sesión. El refresh es
+solo para sesiones JWT de usuarios humanos.
 ### Nivel de acceso
 
 Tu credencial (JWT de sesión o API key) opera **tu propia cuenta**: saldos,
@@ -788,69 +862,108 @@ proveedor).
     todas las llamadas siguientes usan el `access_token` de CBPay.
 
 
-## Ambiente y pruebas
+## Ambientes y pruebas
 
-*Cómo probar tu integración de forma segura: ambiente, montos, webhooks en local y checklist de go-live*
+*Modo test y modo live: base URL de pruebas, keys pk_test_, valores mágicos para forzar cada resultado, webhooks en local y checklist de go-live*
 
-CBPay opera sobre **un único ambiente de producción**: no existe un sandbox
-separado. Esta página explica cómo probar de forma segura y qué revisar
-antes de salir a producción con tráfico real.
+CBPay opera sobre **dos ambientes**: **test** (sandbox, dinero simulado) y
+**live** (producción, dinero real). Están completamente aislados — URLs
+separadas, API keys separadas, datos separados — y exponen exactamente la
+misma API: una integración construida contra test funciona en live
+cambiando la base URL y la key.
 
-### Un solo ambiente (producción)
+| | Test (sandbox) | Live (producción) |
+|---|---|---|
+| Base URL | `https://cryptobank.qbank.cl/platform` | `https://api.qbank.cl/platform` |
+| API keys | `pk_test_...` | `pk_...` |
+| Dinero | Simulado (nada real se mueve) | **Real e irreversible** |
+| Proveedores | Simulador interno — siempre disponible, determinista | Rieles bancarios reales |
+| Header de respuesta | `CBPay-Environment: test` | `CBPay-Environment: live` |
 
+> **Nota**
+Las keys jamás cruzan de ambiente: una key `pk_test_` es rechazada por
+live y una key `pk_` de live es rechazada por test. No hay ningún flag que
+cambiar — el ambiente lo define hacia dónde apuntas tus requests.
+```mermaid
+flowchart LR
+    You[Tu integración] -->|"pk_test_..."| TestEnv["cryptobank.qbank.cl<br/>rieles simulados"]
+    You -->|"pk_..."| LiveEnv["api.qbank.cl<br/>rieles reales"]
 ```
-https://api.qbank.cl/platform
-```
 
-No hay sandbox: cada payout dispersa dinero real y cada payin cobra dinero
-real. La forma segura de probar es la misma que usan los equipos de pago
-profesionales:
+### Cómo se comporta el ambiente de test
 
-### Prueba con montos mínimos
+El ambiente de test es **100% autocontenido**: todos los corredores
+(payouts, payins, transferencias, crypto, banking, tarjetas, verificación
+de identidad) los atiende un simulador interno, así que nunca depende de
+que un tercero esté disponible. Las operaciones se resuelven de forma
+**determinista**:
 
-Usa los montos más pequeños que el corredor permita (ej. 1.000 CLP,
-10 BOB). La API no impone mínimos técnicos; con montos muy chicos la
-comisión fija puede superar el monto — para pruebas está bien.
-### Usa cuentas y beneficiarios propios
+- Toda operación que crees se acepta y llega a `completed` a los pocos
+  segundos (default ~10s), disparando los mismos webhooks que live.
+- Los **valores mágicos** fuerzan cada resultado alternativo, para que
+  pruebes tu manejo de errores sin adivinar.
 
-Dispersa a cuentas bancarias de tu propio equipo y cobra desde tus
-propios medios de pago, así el dinero nunca sale de tu control.
-### Aprovecha la idempotencia
+#### Valores mágicos
 
-Toda operación de dinero exige `idempotency_key`: puedes reintentar sin
-miedo — un retry con la misma clave jamás duplica. Ver
-[idempotencia](#idempotencia).
-### Verifica cada paso con lecturas
+| Producto | Valor | Resultado |
+|---|---|---|
+| Payouts | Monto terminado en `.99` (ej. `100.99`) | Falla tras el delay (`failed`, saldo reembolsado) |
+| Payouts | Monto terminado en `.77` | Queda `processing` para siempre (prueba tu manejo de timeouts) |
+| Payouts | Beneficiario con nombre que contenga `REJECT` | Rechazo inmediato |
+| Payins (QR / página de pago) | Monto terminado en `.99` | El cobro expira sin pagarse |
+| Payins (QR / página de pago) | Monto terminado en `.77` | Queda `pending` para siempre |
+| Payins (QR / página de pago) | Cualquier otro monto | Se paga solo tras el delay y acredita tu saldo |
+| Collect (cobros pull) | OTP `000000` | Aprueba el cobro; cualquier otro OTP falla |
+| Códigos de login / 2FA | `000000` | Válido en todos los canales (SMS, WhatsApp, email) — no se envía ningún mensaje real |
+| Verificación de identidad (KYC/KYB) | Nombre o external id que contenga `REJECT` | La verificación termina `rejected` |
+| Verificación de identidad (KYC/KYB) | Cualquier otro | Se auto-aprueba tras el delay (los documentos siempre pasan el OCR) |
+| Screening AML | Nombre que contenga `SANCTION` | Screening con coincidencias, riesgo `prohibited` |
+| Screening AML | Nombre que contenga `PEP` | Screening con coincidencias, riesgo `high` |
+| Dirección de retiro crypto | Terminada en `SANC` | Bloqueada por el gate de sanciones |
+| Dirección de retiro crypto | Terminada en `HIGH` / `MED` | Evaluada como riesgo alto / medio |
+| Retiros crypto | Cualquier dirección (no mágica) | Confirma con un tx id `SIMTX...` tras el delay |
 
-Después de cada operación consulta `GET /v1/balances`,
-`GET /v1/movements` y el `GET` del recurso para confirmar el estado
-real. Nada es write-only.
-> **Importante**
-Las operaciones son **reales e irreversibles** una vez completadas. Un
-payout `completed` ya está en la cuenta del beneficiario; la única vía de
-reverso es fuera de la API (contacto con el equipo CBPay).
+> **Tip**
+Los **depósitos** crypto en test se acreditan desde el dashboard (o por tu
+administrador de plataforma) — no hay chain real desde dónde enviar. Los
+retiros, saldos, holds y webhooks se comportan exactamente igual que live.
+#### Qué difiere de live
+
+- Ningún dinero, tarjeta, email ni SMS real sale jamás del ambiente de test.
+- Los catálogos de bancos son ficticios (`Simulated National Bank`, ...).
+- Las tasas FX son reales (misma fuente que live), así los montos se ven realistas.
+- Los datos de test se refrescan periódicamente desde un snapshot
+  sanitizado; trata el dataset de test como desechable.
+
+### Modo test desde el dashboard
+
+El **switch test/live** del dashboard mueve tu sesión entre ambientes con
+un click — sin registro aparte ni segundo login. Si tu cuenta aún no existe
+en test, se crea automáticamente la primera vez que cambias. Las API keys
+se administran por ambiente: crea tus keys `pk_test_` estando en modo test.
+
 ### Probar webhooks en desarrollo local
 
-Las URLs de callback deben ser **HTTPS públicas**: `localhost`, IPs
-privadas y dominios `.local` se rechazan al crear la suscripción. Para
-desarrollar en tu máquina usa un túnel HTTPS:
+Las callback URLs deben ser **HTTPS públicas**: `localhost`, IPs privadas y
+dominios `.local` se rechazan al crear la suscripción. Para desarrollar en
+tu máquina usa un túnel HTTPS:
 
 ```bash Cloudflare Tunnel (gratis)
 # Instala cloudflared y expone tu puerto local
 cloudflared tunnel --url http://localhost:3000
-# → https://<aleatorio>.trycloudflare.com  ← úsala como callback_url
+# → https://<random>.trycloudflare.com  ← úsala como callback_url
 ```
 
 ```bash ngrok
 ngrok http 3000
-# → https://<aleatorio>.ngrok-free.app  ← úsala como callback_url
+# → https://<random>.ngrok-free.app  ← úsala como callback_url
 ```
 
-Luego crea la suscripción con esa URL pública:
+Luego crea la suscripción con esa URL pública (nota la base URL de test):
 
 ```bash
-curl -X POST https://api.qbank.cl/platform/v1/webhooks/subscriptions \
-  -H "Authorization: Bearer <token>" \
+curl -X POST https://cryptobank.qbank.cl/platform/v1/webhooks/subscriptions \
+  -H "X-API-Key: pk_test_..." \
   -H "Content-Type: application/json" \
   -d '{
     "event_type": "payin_credited",
@@ -860,37 +973,59 @@ curl -X POST https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 ```
 
 > **Tip**
-Los eventos fallidos se reintentan hasta **5 veces con backoff
-incremental**, así que si tu túnel se cae unos minutos no pierdes el
-evento. Verifica siempre la firma HMAC — receta completa en
+Las entregas fallidas reintentan hasta **5 veces con backoff incremental**,
+así que si tu túnel se cae unos minutos no pierdes el evento. Verifica
+siempre la firma HMAC — receta completa en
 [webhooks](#webhooks).
-### Simular cada flujo con seguridad
+### Ejercitar cada flujo en test
 
-| Producto | Cómo probarlo barato |
+| Producto | Cómo probarlo |
 |---|---|
-| Payout | Dispersa un monto mínimo a una cuenta bancaria de tu equipo |
-| Payin | Crea un cargo QR o página de pago y págalo tú mismo; el abono vuelve a tu saldo |
-| Transferencia | Crea una segunda cuenta en tu organización y transfiere entre ambas (gratis) |
-| Crypto | Deposita un monto pequeño de USDT a tu wallet y retíralo a una dirección propia |
-| KYC | Envía el screening con los datos reales de tu empresa (el resultado es reutilizable) |
-| Tarjetas | Emite una tarjeta virtual y haz una compra pequeña online |
+| Payout | Créalo con cualquier beneficiario; completa en segundos. Usa los montos mágicos para forzar fallas |
+| Payin | Crea un cobro QR o página de pago; se paga solo tras el delay y acredita tu saldo |
+| Transferencia | Crea una segunda cuenta de test y transfiere entre ambas (gratis) |
+| Crypto | Acredita un depósito de test desde el dashboard y retira a cualquier dirección |
+| Identidad (KYC/KYB) | Crea el link de verificación; se auto-aprueba en segundos |
+| AML | Screenea a `John SANCTION` y `Maria PEP` para ejercitar tu manejo de coincidencias |
+| Tarjetas | Emite una tarjeta y simula compras desde el dashboard |
+| 2FA | Actívalo y usa el código `000000` en todas partes |
 
 ### Checklist de go-live
 
-Antes de enviar tráfico de clientes reales:
+Antes de apuntar tu integración al ambiente live:
 
-- [ ] Guardas las API keys en un gestor de secretos (nunca en el front ni en el repo).
-- [ ] Toda operación de dinero envía `idempotency_key` derivada de TU id interno (no un UUID aleatorio por intento).
-- [ ] Ante timeout o `5xx` **no reintentas con clave nueva**: repites con la misma clave o consultas el estado con el `GET`.
+- [ ] Cambia la base URL a `https://api.qbank.cl/platform` y la key a tu `pk_...` de live (emitida en modo live).
+- [ ] Las API keys viven en un secrets manager (nunca en el frontend ni en el repo).
+- [ ] Toda operación de dinero envía un `idempotency_key` derivado de TU id interno (no un UUID aleatorio por intento).
+- [ ] Ante timeout o `5xx` **no reintentas con una key nueva**: repite con la misma key o consulta el estado con el `GET`.
 - [ ] Verificas la firma HMAC de cada webhook y respondes `2xx` rápido (procesa async).
-- [ ] Manejas los estados no finales (`pending`, `processing`) sin asumir éxito.
-- [ ] Consultas `GET /v1/services` para mostrar solo los productos habilitados — ver [servicios](#servicios-habilitados).
+- [ ] Manejas los estados no finales (`pending`, `processing`) sin asumir éxito — en live la liquidación tarda más que los 10 segundos simulados.
+- [ ] Re-creaste tus suscripciones de webhook en live (las de test no se traspasan).
+- [ ] Consultas `GET /v1/services` para mostrar solo productos habilitados — ver [servicios](#servicios-habilitados).
 - [ ] Concilias a diario con `GET /v1/movements` o la [cartola](#cartola-estado-de-cuenta).
-- [ ] Tienes un canal con el equipo CBPay para depósitos `unassigned` o incidencias.
+- [ ] Tienes un canal con el equipo CBPay para depósitos `unassigned` o incidentes.
 
-> **Nota**
-¿Dudas que no cubre esta página? Revisa el [FAQ](#preguntas-frecuentes) — y si falta
-algo, repórtalo: la documentación se actualiza con cada pregunta real.
+> **Importante**
+En **live** toda operación es real e irreversible una vez completada. Un
+payout `completed` ya está en la cuenta del beneficiario; la única vía de
+reversa es fuera de la API (contactar al equipo CBPay).
+#### ¿El modo test cuesta algo?
+    No. Las comisiones se cobran contra saldos simulados, así que puedes
+    ejercitar toda la lógica de pricing sin gastar dinero real.
+#### ¿Puedo usar mi key de live en test (o al revés)?
+    No. Cada ambiente acepta solo sus propias keys (`pk_test_` en test,
+    `pk_` en live). Una key del otro ambiente devuelve `401`.
+#### ¿Cómo sé qué ambiente me respondió?
+    Toda respuesta lleva el header `CBPay-Environment` (`test` o `live`),
+    y `GET /healthz` devuelve `livemode`.
+#### ¿Por qué desaparecieron mis datos de test?
+    El dataset de test se refresca periódicamente desde un snapshot
+    sanitizado de producción. Reconstruye tus fixtures por API (es barato:
+    todo se resuelve en segundos) y trata los datos de test como
+    desechables.
+#### ¿Los webhooks se disparan en test?
+    Sí — exactamente los mismos eventos, firmados con el secreto de tu
+    suscripción de test. Apúntalos a tu túnel de desarrollo.
 
 
 # Conceptos
@@ -7576,7 +7711,7 @@ curl -X POST https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 - `event_type`: uno de los eventos de la tabla siguiente, o `*` para todos.
 - `callback_url`: **HTTPS obligatorio**; se rechazan localhost e IPs
   privadas — para desarrollo local usa un
-  [túnel HTTPS](#ambiente-y-pruebas).
+  [túnel HTTPS](#ambientes-y-pruebas).
 - `secret`: mínimo 16 caracteres; se usa para firmar cada entrega. Se
   almacena cifrado y no puede recuperarse.
 
@@ -7974,6 +8109,7 @@ Todos los errores comparten el mismo formato:
 |---|---|---|
 | 401 | `unauthorized` | Credencial ausente o inválida |
 | 401 | `invalid_credentials` | Email o contraseña incorrectos (login) |
+| 401 | `invalid_refresh_token` | Refresh token inválido, expirado, ya usado o revocado — vuelve al login |
 | 403 | `account_required` | El endpoint exige credencial de cuenta |
 | 403 | `org_admin_required` | El endpoint exige credencial de administrador |
 | 403 | `forbidden` | Nivel de credencial no permitido |
@@ -8274,7 +8410,7 @@ API (`GET /v1/payouts/{id}`, `GET /v1/payins/{id}`…) en cualquier momento.
 #### ¿Cómo pruebo webhooks desde mi máquina (localhost)?
 Las URLs locales se rechazan por seguridad. Usa un túnel HTTPS gratuito
 (Cloudflare Tunnel o ngrok) y suscribe esa URL pública — receta paso a
-paso en [ambiente y pruebas](#ambiente-y-pruebas).
+paso en [ambiente y pruebas](#ambientes-y-pruebas).
 #### ¿Cuál es la diferencia entre GET /v1/movements y la cartola?
 Leen el mismo ledger: `movements` es la vista programática paginada (para
 conciliación automática y tu UI); la cartola es el snapshot del período con
@@ -8308,9 +8444,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-13 02:11 UTC · 221 requests · versión `0a1116c9b480`
+> **Colección actualizada:** 2026-07-13 15:33 UTC · 224 requests · versión `7cffbc9601a0`
 
-<PostmanFreshness iso="2026-07-13T02:11:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-13T15:33:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -8344,6 +8480,46 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.57 — 13 de julio de 2026
+
+**Agregado — Refresh tokens para sesiones de usuario**
+
+- Todo login (contraseña, OTP, social, passkey, handoff y registro) ahora
+  devuelve, junto al `access_token` de 24 horas, un **`refresh_token`**
+  (`rt_…`) de un solo uso para renovar la sesión sin re-login:
+  `POST /v1/auth/refresh` entrega un par nuevo y rota el token (30 días por
+  rotación, tope absoluto de 90 días desde el login original). Detalle y
+  reglas de seguridad en
+  [Autenticación → Renovación de sesión](#autenticacion-y-cuenta).
+- **Rotación estricta y detección de robo**: canjear revoca el access token
+  anterior del dispositivo; presentar un refresh token ya canjeado revoca la
+  cadena completa y registra el evento `refresh_token_reuse` en
+  `GET /v1/me/security/events`. Cerrar sesión, revocar sesiones o cambiar la
+  contraseña también invalida los refresh tokens.
+- Código de error nuevo: `401 invalid_refresh_token`. Las API keys `pk_` no
+  cambian: no expiran ni usan refresh.
+
+### v1.56 — 13 de julio de 2026
+
+**Agregado — Ambiente de test (sandbox) con dinero simulado**
+
+- Nuevo ambiente de **test** en `https://cryptobank.qbank.cl/platform`:
+  la misma API, con todos los corredores atendidos por un simulador propio
+  determinista — siempre disponible, sin depender de terceros. Las
+  operaciones completan solas en segundos y los **valores mágicos**
+  (montos `.99`/`.77`, beneficiario `REJECT`, OTP `000000`, etc.) fuerzan
+  cada resultado alternativo. Guía completa en
+  [Ambientes y pruebas](#ambientes-y-pruebas).
+- **API keys por ambiente**: test emite y acepta solo keys `pk_test_`;
+  live solo `pk_`. Una key del otro ambiente devuelve `401` — imposible
+  cruzar ambientes por error.
+- Toda respuesta lleva el header **`CBPay-Environment`** (`test` | `live`)
+  y `GET /healthz` expone `livemode`.
+- **Switch test/live de un click**: `POST /v1/auth/environment-handoff`
+  (live) emite un token de un solo uso (60s) que se canjea en
+  `POST /v1/auth/handoff` (test) por una sesión del ambiente de test, con
+  auto-provisión de la cuenta espejo si no existe.
 
 ### v1.55 — 12 de julio de 2026
 
@@ -9012,7 +9188,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
 
 - **Navegación nueva**: Comenzar → Conceptos → Flujos de integración →
   Productos → Integración → Recursos, con icono por página y breadcrumbs.
-- **Páginas nuevas**: [ambiente y pruebas](#ambiente-y-pruebas) (túnel
+- **Páginas nuevas**: [ambiente y pruebas](#ambientes-y-pruebas) (túnel
   para webhooks en local + checklist de go-live),
   [servicios habilitados](#servicios-habilitados),
   [estados y ciclo de vida](#estados-y-ciclo-de-vida) (incluye el catálogo de
@@ -9468,8 +9644,17 @@ está en la API Reference interactiva y en la colección Postman.
 | `POST` | `/v1/auth/register` | Registrar una cuenta |
 | `POST` | `/v1/auth/login` | Iniciar sesión |
 | `POST` | `/v1/auth/login/otp` | Completar el login en dos pasos |
+| `POST` | `/v1/auth/refresh` | Renovar la sesión |
 | `POST` | `/v1/auth/password/forgot` | Solicitar un código para recuperar la contraseña |
 | `POST` | `/v1/auth/password/reset` | Restablecer la contraseña con un código |
+
+
+## Authentication
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `POST` | `/v1/auth/environment-handoff` | Obtener un token de handoff a modo test |
+| `POST` | `/v1/auth/handoff` | Canjear un token de handoff por una sesión de test |
 
 
 ## Login social
