@@ -7,6 +7,22 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 12, 2026" description="v1.55">
+
+**Added — AML screening audit history**
+
+- `GET /v1/aml/screenings` and `GET /v1/aml/screenings/{screeningID}` list and
+  retrieve every AML screening (person, company and rescreen) stored locally for
+  audit — subject, risk, fee and full result.
+- `POST /v1/aml/screenings` and `POST /v1/aml/rescreen` now require
+  `idempotency_key` (the operations charge a fee). Replaying with the same key
+  returns the original record with `idempotency_hit: true` and never double-charges.
+- `PATCH /v1/aml/monitoring` stores each enable/disable toggle in the same
+  history (`kind: monitoring`); `idempotency_key` is required when the state
+  changes (enable charges a fee).
+
+</Update>
+
 <Update label="July 12, 2026" description="v1.54">
 
 **Added — Travel Rule on on-chain withdrawals (FATF R.16)**

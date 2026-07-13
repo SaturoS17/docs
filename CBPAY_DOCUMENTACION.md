@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-12 23:42 UTC · versión `1f9e12548182`
+> **Documento actualizado:** 2026-07-13 02:28 UTC · versión `737e8bcd9984`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.54 (12 de julio de 2026) |
+| Versión de la documentación | v1.55 (12 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -8308,9 +8308,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-12 23:42 UTC · 219 requests · versión `aef07e9b6cf8`
+> **Colección actualizada:** 2026-07-13 02:11 UTC · 221 requests · versión `0a1116c9b480`
 
-<PostmanFreshness iso="2026-07-12T23:42:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-13T02:11:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -8344,6 +8344,20 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.55 — 12 de julio de 2026
+
+**Agregado — Historial auditable de screenings AML**
+
+- `GET /v1/aml/screenings` y `GET /v1/aml/screenings/{screeningID}` listan y
+  consultan cada screening AML (persona, empresa y rescreen) guardado localmente
+  para auditoría — sujeto, riesgo, comisión y resultado completo.
+- `POST /v1/aml/screenings` y `POST /v1/aml/rescreen` ahora exigen
+  `idempotency_key` (las operaciones cobran comisión). Repetir con la misma clave
+  devuelve el registro original con `idempotency_hit: true` sin cobrar dos veces.
+- `PATCH /v1/aml/monitoring` guarda cada activación/desactivación en el mismo
+  historial (`kind: monitoring`); `idempotency_key` es obligatoria cuando el
+  estado cambia (habilitar cobra comisión).
 
 ### v1.54 — 12 de julio de 2026
 
@@ -9557,9 +9571,11 @@ está en la API Reference interactiva y en la colección Postman.
 
 | Método | Ruta | Qué hace |
 |---|---|---|
+| `GET` | `/v1/aml/screenings` | Listar screenings AML |
 | `POST` | `/v1/aml/screenings` | Enviar un screening AML |
-| `POST` | `/v1/aml/rescreen` | Reejecutar verificación KYC/KYB |
-| `PATCH` | `/v1/aml/monitoring` | Habilitar o deshabilitar el monitoreo |
+| `GET` | `/v1/aml/screenings/{screeningID}` | Obtener un screening AML |
+| `POST` | `/v1/aml/rescreen` | Re-ejecutar un screening AML |
+| `PATCH` | `/v1/aml/monitoring` | Habilitar o deshabilitar el monitoreo AML |
 | `GET` | `/v1/aml/catalogs` | Catálogos para formularios de compliance |
 
 

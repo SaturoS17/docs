@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.54'
+  version: '1.55'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -3241,34 +3241,33 @@ paths:
       - AML screening
       operationId: submitAmlScreening
       summary: Enviar un screening AML
-      description: Screenea una persona o empresa (detectado desde el payload) contra listas de
-        sanciones, PEP y prensa adversa vía el servicio de compliance. Es solo screening de listas —
-        la verificación de identidad con documentos y prueba de vida vive en /v1/kyc y /v1/kyb. Todos los campos de identidad
-        son opcionales y se reenvían íntegros al motor de screening; mientras más datos envíes (fecha
-        de nacimiento, países, documentos fuertes, alias), más preciso es el análisis. Si hay una comisión
-        de compliance configurada, se debita antes de la llamada y se reembolsa si el screening falla.
-        La respuesta incluye el resultado del screening más `compliance_service` y `compliance_fee`.
+      description: Screenea una persona o empresa (detectado desde el payload) contra listas de sanciones, PEP y prensa adversa vía el servicio de compliance. Es solo screening de listas — la verificación de identidad con documentos y prueba de vida vive en /v1/kyc y /v1/kyb. Todos los campos de identidad son opcionales y se reenvían íntegros al motor; mientras más datos envíes, más preciso es el análisis. Si hay comisión de compliance, se debita antes de la llamada y se reembolsa si falla. El resultado queda guardado localmente para historial (`GET /v1/aml/screenings`). `idempotency_key` es obligatoria — repetir con la misma clave devuelve el screening original con `idempotency_hit` true sin cobrar dos veces.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+              - idempotency_key
               properties:
+                idempotency_key:
+                  type: string
+                  description: Obligatoria (el screening cobra comisión). También aceptada en el header Idempotency-Key.
                 customer:
                   type: object
-                  description: 'Datos de identidad. Envía `person` o `company`; cuando se omite
+                  description: 'Identity data. Provide `person` or `company`; when omitted
 
-                    se completa desde el perfil de la cuenta. Se aceptan campos adicionales
+                    it is filled from the account profile. Additional fields are accepted
 
-                    y se reenvían al motor de screening.
+                    and forwarded to the screening engine.
 
                     '
                   properties:
                     person:
                       type: object
-                      description: Identidad de la persona. Todos los campos son opcionales; más datos
-                        de identidad producen un screening más preciso.
+                      description: Person identity. Every field is optional; more identity data yields
+                        a more precise screening.
                       properties:
                         full_name:
                           type: string
@@ -3279,10 +3278,10 @@ paths:
                         last_name:
                           type: string
                         date_of_birth:
-                          description: String "YYYY-MM-DD" u objeto {year, month, day}.
+                          description: '"YYYY-MM-DD" string or an object {year, month, day}.'
                         nationality:
                           type: string
-                          description: Código de país ISO-3166 (o arreglo `nationalities`).
+                          description: ISO-3166 country code (or `nationalities` array).
                         country_of_birth:
                           type: string
                         residential_information:
@@ -3294,7 +3293,7 @@ paths:
                                 type: string
                         personal_identification:
                           type: array
-                          description: Documentos de identidad fuertes (cédula, pasaporte, ...).
+                          description: Strong identity documents (national ID, passport, ...).
                           items:
                             type: object
                             properties:
@@ -3308,11 +3307,11 @@ paths:
                           type: array
                           items:
                             type: string
-                          description: Otros nombres conocidos.
+                          description: Other known names.
                     company:
                       type: object
-                      description: Identidad de la empresa. Todos los campos son opcionales; más datos
-                        de identidad producen un screening más preciso.
+                      description: Company identity. Every field is optional; more identity data yields
+                        a more precise screening.
                       properties:
                         legal_name:
                           type: string
@@ -3320,14 +3319,14 @@ paths:
                           type: array
                           items:
                             type: string
-                          description: Nombres comerciales / de fantasía.
+                          description: Trade / brand names.
                         tax_id:
                           type: string
                         registration_number:
                           type: string
                         registration_authority_identification:
                           type: string
-                          description: Número ante el registro mercantil.
+                          description: Company registry number.
                         place_of_registration:
                           type: string
                         country_of_incorporation:
@@ -3348,10 +3347,10 @@ paths:
                 monitor:
                   type: boolean
                   default: false
-                  description: Habilita el monitoreo continuo desde el inicio.
+                  description: Enable continuous monitoring from the start.
             examples:
               person:
-                summary: Persona (KYC)
+                summary: Person (KYC)
                 value:
                   customer:
                     person:
@@ -3365,7 +3364,7 @@ paths:
                     country: CL
                   monitor: false
               personFull:
-                summary: Persona (KYC) — identidad completa para el screening más preciso
+                summary: Person (KYC) — full identity for the most precise screening
                 value:
                   customer:
                     person:
@@ -3386,7 +3385,7 @@ paths:
                     country: CL
                   monitor: false
               company:
-                summary: Empresa (KYB)
+                summary: Company (KYB)
                 value:
                   customer:
                     company:
@@ -3396,7 +3395,7 @@ paths:
                     country: CL
                   monitor: true
               companyFull:
-                summary: Empresa (KYB) — identidad completa para el screening más preciso
+                summary: Company (KYB) — full identity for the most precise screening
                 value:
                   customer:
                     company:
@@ -3413,42 +3412,88 @@ paths:
                     country: CL
                   monitor: true
               minimal:
-                summary: Mínimo — autocompletado desde la cuenta
+                summary: Minimal — autofilled from the account
                 value:
                   customer: {}
                   monitor: false
       responses:
         '201':
-          description: Screening enviado.
+          description: Screening enviado y guardado localmente.
           content:
             application/json:
               schema:
                 type: object
-                description: Resultado del screening (pass-through) más los campos de cobro.
+                description: Espejo local del screening más campos de cobro. El resultado completo está en `result`.
                 properties:
-                  compliance_service:
+                  screening_id:
+                    type: string
+                  kind:
+                    type: string
+                    enum:
+                    - screening
+                  service:
                     type: string
                     enum:
                     - compliance_person
                     - compliance_company
-                  compliance_fee:
+                  subject_type:
                     type: string
-                    example: '0.000000'
+                    enum:
+                    - person
+                    - company
+                  subject_name:
+                    type: string
+                  risk:
+                    type: string
+                  monitor:
+                    type: boolean
+                  screening_fee:
+                    type: string
+                  fee_asset:
+                    type: string
+                  idempotency_key:
+                    type: string
+                  idempotency_hit:
+                    type: boolean
+                  created_at:
+                    type: string
+                    format: date-time
+                  result:
+                    type: object
+                    description: Resultado neutro del servicio de compliance.
               example:
-                customer_id: e1d2c3b4-a596-8778-695a-4b3c2d1e0f9a
-                status: completed
-                risk_level: low
-                screening_result: no_hits
-                monitored: false
-                deduplicated: false
-                compliance_service: compliance_person
-                compliance_fee: '2.000000'
+                screening_id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                kind: screening
+                service: compliance_person
+                subject_type: person
+                subject_name: Ana Perez Rojas
+                risk: low
+                monitor: false
+                screening_fee: '2.000000'
+                fee_asset: USDT
+                idempotency_key: aml-screen-ana-1
+                created_at: '2026-07-12T18:00:00Z'
+                result:
+                  customer_id: e1d2c3b4-a596-8778-695a-4b3c2d1e0f9a
+                  status: completed
+                  risk_level: low
+                  screening_result: no_hits
+                  monitored: false
+        '400':
+          description: Falta idempotency_key (`idempotency_key_required`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: idempotency_key_required
+                message: provide idempotency_key (body or Idempotency-Key header)
         '402':
           $ref: '#/components/responses/InsufficientFunds'
         '403':
           $ref: '#/components/responses/AccountRequired'
         '502':
-          description: Screening temporalmente no disponible (`compliance_unavailable`).
+          description: Screening temporarily unavailable (`compliance_unavailable`).
           content:
             application/json:
               schema:
@@ -3458,44 +3503,165 @@ paths:
                 message: screening temporarily unavailable
         '401':
           $ref: '#/components/responses/Unauthorized'
+    get:
+      tags:
+      - AML screening
+      operationId: listAmlScreenings
+      summary: Listar screenings AML
+      description: Historial de screenings AML de la cuenta (persona, empresa y rescreens), del más nuevo al más antiguo.
+        Exige el rango from/to; admite paginación y filtro por riesgo.
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+        description: Fecha inicio YYYY-MM-DD (UTC, inclusive).
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+        description: Fecha fin YYYY-MM-DD (UTC, inclusive).
+      - name: risk
+        in: query
+        schema:
+          type: string
+        description: Filtrar por nivel de riesgo.
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+      responses:
+        '200':
+          description: Página de screenings.
+          content:
+            application/json:
+              example:
+                page: 1
+                page_size: 50
+                screenings:
+                - screening_id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                  kind: screening
+                  service: compliance_person
+                  subject_type: person
+                  subject_name: Ana Perez Rojas
+                  risk: low
+                  monitor: false
+                  screening_fee: '2.000000'
+                  fee_asset: USDT
+                  idempotency_key: aml-screen-ana-1
+                  created_at: '2026-07-12T18:00:00Z'
+        '400':
+          $ref: '#/components/responses/InvalidRange'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/aml/screenings/{screeningID}:
+    get:
+      tags:
+      - AML screening
+      operationId: getAmlScreening
+      summary: Obtener un screening AML
+      description: Detalle de un screening, incluyendo el resultado guardado. Un id de otra cuenta devuelve 404.
+      parameters:
+      - name: screeningID
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: El screening.
+          content:
+            application/json:
+              example:
+                screening_id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                kind: screening
+                service: compliance_person
+                subject_type: person
+                subject_name: Ana Perez Rojas
+                risk: low
+                monitor: false
+                screening_fee: '2.000000'
+                fee_asset: USDT
+                idempotency_key: aml-screen-ana-1
+                created_at: '2026-07-12T18:00:00Z'
+                result:
+                  customer_id: e1d2c3b4-a596-8778-695a-4b3c2d1e0f9a
+                  status: completed
+                  risk_level: low
+                  screening_result: no_hits
+                  monitored: false
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/aml/rescreen:
     post:
       tags:
       - AML screening
       operationId: rescreenAml
-      summary: Reejecutar verificación KYC/KYB
-      description: Reejecuta la verificación de la cuenta. Requiere un envío previo de KYC/KYB. Cobra
-        la comisión `compliance_rescreen` si está configurada; se reembolsa ante una falla upstream.
+      summary: Re-ejecutar un screening AML
+      description: Re-ejecuta el screening de la cuenta. Requiere un screening previo. Cobra `compliance_rescreen` si está configurado; se reembolsa si falla el upstream. Cada rescreen queda en el historial (`GET /v1/aml/screenings`). `idempotency_key` es obligatoria — repetir con la misma clave devuelve el rescreen original con `idempotency_hit` true sin cobrar dos veces.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - idempotency_key
+              properties:
+                idempotency_key:
+                  type: string
+                  description: Obligatoria (el rescreen cobra comisión). También aceptada en el header Idempotency-Key.
+            example:
+              idempotency_key: aml-rescreen-2026-07-12
       responses:
         '200':
-          description: Resultado del re-screening más los campos de cobro.
+          description: Resultado del rescreen guardado localmente.
+          content:
+            application/json:
+              example:
+                screening_id: b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e
+                kind: rescreen
+                service: compliance_rescreen
+                risk: low
+                screening_fee: '1.000000'
+                fee_asset: USDT
+                idempotency_key: aml-rescreen-2026-07-12
+                created_at: '2026-07-12T19:00:00Z'
+                result:
+                  customer_id: e1d2c3b4-a596-8778-695a-4b3c2d1e0f9a
+                  status: completed
+                  screening_result: no_hits
+        '400':
+          description: Falta idempotency_key (`idempotency_key_required`).
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  compliance_service:
-                    type: string
-                    example: compliance_rescreen
-                  compliance_fee:
-                    type: string
+                $ref: '#/components/schemas/Error'
               example:
-                customer_id: e1d2c3b4-a596-8778-695a-4b3c2d1e0f9a
-                status: completed
-                screening_result: no_hits
-                compliance_service: compliance_rescreen
-                compliance_fee: '1.000000'
+                error: idempotency_key_required
+                message: provide idempotency_key (body or Idempotency-Key header)
         '402':
           $ref: '#/components/responses/InsufficientFunds'
         '409':
-          description: La cuenta no tiene un screening previo (`no_screening`).
+          description: Account has no prior screening (`no_screening`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
                 error: no_screening
-                message: account has no compliance screening to rescreen
+                message: account has no AML screening to rescreen
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/aml/monitoring:
@@ -3503,10 +3669,13 @@ paths:
       tags:
       - AML screening
       operationId: setAmlMonitoring
-      summary: Habilitar o deshabilitar el monitoreo
-      description: Activa o desactiva el monitoreo continuo de compliance para la identidad verificada
-        de la cuenta. Habilitarlo cobra la comisión `compliance_monitoring` si está configurada; deshabilitarlo
-        es gratis. Requiere un envío previo de KYC/KYB.
+      summary: Habilitar o deshabilitar el monitoreo AML
+      description: Activa o desactiva el monitoreo continuo de compliance de la identidad verificada de la cuenta. Habilitar
+        cobra la comisión `compliance_monitoring` si está configurada; deshabilitar es gratis. Requiere un screening
+        previo. Cada cambio de estado queda guardado en el historial (`GET /v1/aml/screenings`,
+        filtro kind monitoring). Cuando el estado cambia de verdad, `idempotency_key` es obligatoria — repetir
+        con la misma clave devuelve el evento original con `idempotency_hit` true. Si ya está en el estado pedido,
+        devuelve unchanged true sin cobrar.
       requestBody:
         required: true
         content:
@@ -3518,39 +3687,50 @@ paths:
               properties:
                 enabled:
                   type: boolean
+                idempotency_key:
+                  type: string
+                  description: Obligatoria cuando cambia el estado (habilitar cobra comisión). Also accepted as the Idempotency-Key header.
             example:
               enabled: true
+              idempotency_key: aml-monitor-enable-1
       responses:
         '200':
-          description: Estado del monitoreo más los campos de cobro.
+          description: Estado del monitoreo guardado localmente.
+          content:
+            application/json:
+              example:
+                screening_id: c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f
+                kind: monitoring
+                service: compliance_monitoring
+                monitor: true
+                monitoring_enabled: true
+                screening_fee: '1.000000'
+                fee_asset: USDT
+                idempotency_key: aml-monitor-enable-1
+                created_at: '2026-07-12T20:00:00Z'
+                compliance_service: compliance_monitoring
+                compliance_fee: '1.000000'
+        '400':
+          description: Falta idempotency_key cuando cambia el estado (`idempotency_key_required`).
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  monitored:
-                    type: boolean
-                  compliance_service:
-                    type: string
-                    example: compliance_monitoring
-                  compliance_fee:
-                    type: string
+                $ref: '#/components/schemas/Error'
               example:
-                customer_id: e1d2c3b4-a596-8778-695a-4b3c2d1e0f9a
-                monitored: true
-                compliance_service: compliance_monitoring
+                error: idempotency_key_required
+                message: provide idempotency_key (body or Idempotency-Key header)
                 compliance_fee: '0.500000'
         '402':
           $ref: '#/components/responses/InsufficientFunds'
         '409':
-          description: La cuenta no tiene un screening previo (`no_screening`).
+          description: Account has no prior screening (`no_screening`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
                 error: no_screening
-                message: account has no compliance screening to monitor
+                message: account has no AML screening to monitor
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/aml/catalogs:

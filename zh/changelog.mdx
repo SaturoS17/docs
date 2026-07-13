@@ -7,6 +7,19 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月12日" description="v1.55">
+
+**新增 — AML 筛查审计历史**
+
+- `GET /v1/aml/screenings` 与 `GET /v1/aml/screenings/{screeningID}` 列出并查询
+  本地保存的每条 AML 筛查（个人、企业及重新筛查）——主体、风险、费用与完整结果。
+- `POST /v1/aml/screenings` 与 `POST /v1/aml/rescreen` 现须 `idempotency_key`
+  （操作收费）。相同键重放返回原记录且 `idempotency_hit: true`，不会重复扣费。
+- `PATCH /v1/aml/monitoring` 将每次启用/停用写入同一历史（`kind: monitoring`）；
+  状态实际变更时须提供 `idempotency_key`（启用会收费）。
+
+</Update>
+
 <Update label="2026年7月12日" description="v1.54">
 
 **新增 — 链上提现的 Travel Rule（FATF R.16）**

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.54'
+  version: '1.55'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC 和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
     payout 和服务费可从四个余额中的任意一个支付:
@@ -3086,28 +3086,36 @@ paths:
   /v1/aml/screenings:
     post:
       tags:
-      - AML 筛查
+      - AML screening
       operationId: submitAmlScreening
       summary: 提交 AML 筛查
-      description: 通过合规服务对个人或企业(从载荷自动识别)进行制裁、PEP 与负面媒体名单筛查。这仅是名单筛查——带文件和活体检测的身份验证在 /v1/kyc 和 /v1/kyb。所有身份字段均可选,并完整转发给筛查引擎;提供的身份数据越多(出生日期、国家、强标识符、别名),分析越精确。若配置了合规费用,会在调用前扣款,筛查失败则退款。响应包含筛查结果以及 `compliance_service` 与 `compliance_fee`。
+      description: 通过合规服务对个人或企业（由 payload 判定）进行制裁、PEP 与负面媒体名单筛查。仅名单筛查——带证件与活体核验的身份验证见 /v1/kyc 与 /v1/kyb。身份字段均为可选并完整转发；信息越完整结果越精确。若配置合规费用，调用前扣款，失败则退款。结果本地保存供审计（`GET /v1/aml/screenings`）。必须提供 `idempotency_key`——相同键重放返回原记录且 `idempotency_hit` true，不会重复扣费。
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+              - idempotency_key
               properties:
+                idempotency_key:
+                  type: string
+                  description: 必填（筛查收费）。也可使用 Idempotency-Key 请求头。
                 customer:
                   type: object
-                  description: '身份数据。提供 `person` 或 `company`;省略时
+                  description: 'Identity data. Provide `person` or `company`; when omitted
 
-                    将从账户档案填充。额外字段也会被接受并转发给筛查引擎。
+                    it is filled from the account profile. Additional fields are accepted
+
+                    and forwarded to the screening engine.
 
                     '
                   properties:
                     person:
                       type: object
-                      description: 个人身份信息。所有字段均可选;身份数据越多,筛查越精确。
+                      description: Person identity. Every field is optional; more identity data yields
+                        a more precise screening.
                       properties:
                         full_name:
                           type: string
@@ -3118,10 +3126,10 @@ paths:
                         last_name:
                           type: string
                         date_of_birth:
-                          description: '"YYYY-MM-DD" 字符串或对象 {year, month, day}。'
+                          description: '"YYYY-MM-DD" string or an object {year, month, day}.'
                         nationality:
                           type: string
-                          description: ISO-3166 国家代码(或 `nationalities` 数组)。
+                          description: ISO-3166 country code (or `nationalities` array).
                         country_of_birth:
                           type: string
                         residential_information:
@@ -3133,7 +3141,7 @@ paths:
                                 type: string
                         personal_identification:
                           type: array
-                          description: 强身份文件(身份证、护照……)。
+                          description: Strong identity documents (national ID, passport, ...).
                           items:
                             type: object
                             properties:
@@ -3147,10 +3155,11 @@ paths:
                           type: array
                           items:
                             type: string
-                          description: 其他已知名称。
+                          description: Other known names.
                     company:
                       type: object
-                      description: 公司身份信息。所有字段均可选;身份数据越多,筛查越精确。
+                      description: Company identity. Every field is optional; more identity data yields
+                        a more precise screening.
                       properties:
                         legal_name:
                           type: string
@@ -3158,14 +3167,14 @@ paths:
                           type: array
                           items:
                             type: string
-                          description: 商号/品牌名称。
+                          description: Trade / brand names.
                         tax_id:
                           type: string
                         registration_number:
                           type: string
                         registration_authority_identification:
                           type: string
-                          description: 公司注册号。
+                          description: Company registry number.
                         place_of_registration:
                           type: string
                         country_of_incorporation:
@@ -3186,10 +3195,10 @@ paths:
                 monitor:
                   type: boolean
                   default: false
-                  description: 从一开始就启用持续监控。
+                  description: Enable continuous monitoring from the start.
             examples:
               person:
-                summary: 个人(KYC)
+                summary: Person (KYC)
                 value:
                   customer:
                     person:
@@ -3203,7 +3212,7 @@ paths:
                     country: CL
                   monitor: false
               personFull:
-                summary: 个人(KYC)— 完整身份信息以获得最精确的筛查
+                summary: Person (KYC) — full identity for the most precise screening
                 value:
                   customer:
                     person:
@@ -3224,7 +3233,7 @@ paths:
                     country: CL
                   monitor: false
               company:
-                summary: 企业(KYB)
+                summary: Company (KYB)
                 value:
                   customer:
                     company:
@@ -3234,7 +3243,7 @@ paths:
                     country: CL
                   monitor: true
               companyFull:
-                summary: 企业(KYB)— 完整身份信息以获得最精确的筛查
+                summary: Company (KYB) — full identity for the most precise screening
                 value:
                   customer:
                     company:
@@ -3251,42 +3260,88 @@ paths:
                     country: CL
                   monitor: true
               minimal:
-                summary: 最简 — 从账户自动填充
+                summary: Minimal — autofilled from the account
                 value:
                   customer: {}
                   monitor: false
       responses:
         '201':
-          description: 筛查已提交。
+          description: 筛查已提交并本地保存。
           content:
             application/json:
               schema:
                 type: object
-                description: 筛查结果(透传)及计费字段。
+                description: 筛查本地镜像及计费字段，完整结果在 `result` 中。
                 properties:
-                  compliance_service:
+                  screening_id:
+                    type: string
+                  kind:
+                    type: string
+                    enum:
+                    - screening
+                  service:
                     type: string
                     enum:
                     - compliance_person
                     - compliance_company
-                  compliance_fee:
+                  subject_type:
                     type: string
-                    example: '0.000000'
+                    enum:
+                    - person
+                    - company
+                  subject_name:
+                    type: string
+                  risk:
+                    type: string
+                  monitor:
+                    type: boolean
+                  screening_fee:
+                    type: string
+                  fee_asset:
+                    type: string
+                  idempotency_key:
+                    type: string
+                  idempotency_hit:
+                    type: boolean
+                  created_at:
+                    type: string
+                    format: date-time
+                  result:
+                    type: object
+                    description: 合规服务返回的中立筛查结果。
               example:
-                customer_id: e1d2c3b4-a596-8778-695a-4b3c2d1e0f9a
-                status: completed
-                risk_level: low
-                screening_result: no_hits
-                monitored: false
-                deduplicated: false
-                compliance_service: compliance_person
-                compliance_fee: '2.000000'
+                screening_id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                kind: screening
+                service: compliance_person
+                subject_type: person
+                subject_name: Ana Perez Rojas
+                risk: low
+                monitor: false
+                screening_fee: '2.000000'
+                fee_asset: USDT
+                idempotency_key: aml-screen-ana-1
+                created_at: '2026-07-12T18:00:00Z'
+                result:
+                  customer_id: e1d2c3b4-a596-8778-695a-4b3c2d1e0f9a
+                  status: completed
+                  risk_level: low
+                  screening_result: no_hits
+                  monitored: false
+        '400':
+          description: 缺少 idempotency_key（`idempotency_key_required`）。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: idempotency_key_required
+                message: provide idempotency_key (body or Idempotency-Key header)
         '402':
           $ref: '#/components/responses/InsufficientFunds'
         '403':
           $ref: '#/components/responses/AccountRequired'
         '502':
-          description: 筛查暂不可用(`compliance_unavailable`)。
+          description: Screening temporarily unavailable (`compliance_unavailable`).
           content:
             application/json:
               schema:
@@ -3296,36 +3351,157 @@ paths:
                 message: screening temporarily unavailable
         '401':
           $ref: '#/components/responses/Unauthorized'
+    get:
+      tags:
+      - AML screening
+      operationId: listAmlScreenings
+      summary: 列出 AML 筛查记录
+      description: 账户 AML 筛查历史（个人、企业及重新筛查），按时间倒序。需要 from/to 日期范围；支持分页与风险筛选。
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+        description: 开始日期 YYYY-MM-DD（UTC，含当日）。
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+        description: 结束日期 YYYY-MM-DD（UTC，含当日）。
+      - name: risk
+        in: query
+        schema:
+          type: string
+        description: 按风险等级筛选。
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+      responses:
+        '200':
+          description: 筛查分页结果。
+          content:
+            application/json:
+              example:
+                page: 1
+                page_size: 50
+                screenings:
+                - screening_id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                  kind: screening
+                  service: compliance_person
+                  subject_type: person
+                  subject_name: Ana Perez Rojas
+                  risk: low
+                  monitor: false
+                  screening_fee: '2.000000'
+                  fee_asset: USDT
+                  idempotency_key: aml-screen-ana-1
+                  created_at: '2026-07-12T18:00:00Z'
+        '400':
+          $ref: '#/components/responses/InvalidRange'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/aml/screenings/{screeningID}:
+    get:
+      tags:
+      - AML screening
+      operationId: getAmlScreening
+      summary: 获取 AML 筛查详情
+      description: 筛查详情（含完整存储结果）。其他账户的 ID 返回 404。
+      parameters:
+      - name: screeningID
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 该筛查记录。
+          content:
+            application/json:
+              example:
+                screening_id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                kind: screening
+                service: compliance_person
+                subject_type: person
+                subject_name: Ana Perez Rojas
+                risk: low
+                monitor: false
+                screening_fee: '2.000000'
+                fee_asset: USDT
+                idempotency_key: aml-screen-ana-1
+                created_at: '2026-07-12T18:00:00Z'
+                result:
+                  customer_id: e1d2c3b4-a596-8778-695a-4b3c2d1e0f9a
+                  status: completed
+                  risk_level: low
+                  screening_result: no_hits
+                  monitored: false
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/aml/rescreen:
     post:
       tags:
-      - AML 筛查
+      - AML screening
       operationId: rescreenAml
       summary: 重新运行 AML 筛查
-      description: 重新运行账户的筛查。需要已有历史筛查。若配置了 `compliance_rescreen` 费用则计费;上游失败退款。
+      description: 重新运行账户筛查，需先有筛查记录。若配置则收取 `compliance_rescreen` 费用，上游失败则退款。每次重新筛查写入历史（`GET /v1/aml/screenings`）。必须提供 `idempotency_key`——相同键重放返回原记录且不会重复扣费。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - idempotency_key
+              properties:
+                idempotency_key:
+                  type: string
+                  description: 必填（重新筛查收费）。也可使用 Idempotency-Key 请求头。
+            example:
+              idempotency_key: aml-rescreen-2026-07-12
       responses:
         '200':
-          description: 重新筛查结果及计费字段。
+          description: 重新筛查结果已本地保存。
+          content:
+            application/json:
+              example:
+                screening_id: b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e
+                kind: rescreen
+                service: compliance_rescreen
+                risk: low
+                screening_fee: '1.000000'
+                fee_asset: USDT
+                idempotency_key: aml-rescreen-2026-07-12
+                created_at: '2026-07-12T19:00:00Z'
+                result:
+                  customer_id: e1d2c3b4-a596-8778-695a-4b3c2d1e0f9a
+                  status: completed
+                  screening_result: no_hits
+        '400':
+          description: 缺少 idempotency_key（`idempotency_key_required`）。
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  compliance_service:
-                    type: string
-                    example: compliance_rescreen
-                  compliance_fee:
-                    type: string
+                $ref: '#/components/schemas/Error'
               example:
-                customer_id: e1d2c3b4-a596-8778-695a-4b3c2d1e0f9a
-                status: completed
-                screening_result: no_hits
-                compliance_service: compliance_rescreen
-                compliance_fee: '1.000000'
+                error: idempotency_key_required
+                message: provide idempotency_key (body or Idempotency-Key header)
         '402':
           $ref: '#/components/responses/InsufficientFunds'
         '409':
-          description: 该账户尚无历史筛查(`no_screening`)。
+          description: Account has no prior screening (`no_screening`).
           content:
             application/json:
               schema:
@@ -3338,10 +3514,13 @@ paths:
   /v1/aml/monitoring:
     patch:
       tags:
-      - AML 筛查
+      - AML screening
       operationId: setAmlMonitoring
       summary: 启用或停用 AML 监控
-      description: 为账户已验证的身份开关持续合规监控。启用时若配置了 `compliance_monitoring` 费用则计费;停用免费。需要已有历史筛查。
+      description: 切换账户已验证身份的持续合规监控。启用时若配置则收取 `compliance_monitoring` 费用；停用免费。需先有筛查记录。
+        每次状态变更写入审计历史（`GET /v1/aml/screenings`，筛选 kind monitoring）。状态实际变更时
+        必须提供 `idempotency_key`——相同键重放返回原事件且 `idempotency_hit` true。若已是目标状态则返回
+        unchanged true 且不扣费。
       requestBody:
         required: true
         content:
@@ -3353,32 +3532,43 @@ paths:
               properties:
                 enabled:
                   type: boolean
+                idempotency_key:
+                  type: string
+                  description: 状态变更时必填（启用会收费）. Also accepted as the Idempotency-Key header.
             example:
               enabled: true
+              idempotency_key: aml-monitor-enable-1
       responses:
         '200':
-          description: 监控状态及计费字段。
+          description: 监控状态已本地保存。
+          content:
+            application/json:
+              example:
+                screening_id: c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f
+                kind: monitoring
+                service: compliance_monitoring
+                monitor: true
+                monitoring_enabled: true
+                screening_fee: '1.000000'
+                fee_asset: USDT
+                idempotency_key: aml-monitor-enable-1
+                created_at: '2026-07-12T20:00:00Z'
+                compliance_service: compliance_monitoring
+                compliance_fee: '1.000000'
+        '400':
+          description: 状态变更时缺少 idempotency_key (`idempotency_key_required`).
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  monitored:
-                    type: boolean
-                  compliance_service:
-                    type: string
-                    example: compliance_monitoring
-                  compliance_fee:
-                    type: string
+                $ref: '#/components/schemas/Error'
               example:
-                customer_id: e1d2c3b4-a596-8778-695a-4b3c2d1e0f9a
-                monitored: true
-                compliance_service: compliance_monitoring
+                error: idempotency_key_required
+                message: provide idempotency_key (body or Idempotency-Key header)
                 compliance_fee: '0.500000'
         '402':
           $ref: '#/components/responses/InsufficientFunds'
         '409':
-          description: 该账户尚无历史筛查(`no_screening`)。
+          description: Account has no prior screening (`no_screening`).
           content:
             application/json:
               schema:
