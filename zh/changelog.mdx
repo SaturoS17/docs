@@ -7,6 +7,18 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月14日" description="v1.63">
+
+**修复**
+
+- `POST /v1/me/passkeys/register/begin` 与
+  `DELETE /v1/me/passkeys/{passkeyID}` 现在接受不带请求体的请求,与规范
+  文档一致(请求体可选)。此前会返回 `400 invalid_json`。有密码的账户仍
+  必须提供当前密码(缺失或错误时返回 `403 invalid_password`);仅使用
+  社交登录的账户凭其会话即可通过。
+
+</Update>
+
 <Update label="2026年7月14日" description="v1.62">
 
 **修复**

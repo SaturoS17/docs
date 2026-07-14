@@ -7,6 +7,19 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 14, 2026" description="v1.63">
+
+**Fixed**
+
+- `POST /v1/me/passkeys/register/begin` and
+  `DELETE /v1/me/passkeys/{passkeyID}` now accept a request without a
+  body, as the spec documents (optional body). They previously returned
+  `400 invalid_json`. The current password is still required for
+  accounts that have one (`403 invalid_password` if missing or wrong);
+  social-login-only accounts pass with their session.
+
+</Update>
+
 <Update label="July 14, 2026" description="v1.62">
 
 **Fixed**
