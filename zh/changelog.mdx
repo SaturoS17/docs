@@ -7,6 +7,18 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月14日" description="v1.64">
+
+**变更**
+
+- `PUT /v1/otp/preferences`:通过电话渠道(`sms`/`whatsapp`)为 `login`
+  操作启用 2FA 时,现在要求账户电话号码已**验证**(先完成任意
+  SMS/WhatsApp OTP 挑战)。号码未验证时 API 返回
+  `409 phone_verification_required`。该保障可防止输错的号码在启用登录
+  2FA 时把你锁在账户外。
+
+</Update>
+
 <Update label="2026年7月14日" description="v1.63">
 
 **修复**

@@ -99,6 +99,12 @@ CBPay 通过一次性验证码保护敏感操作。你可以按操作选择是�
 
 `GET /v1/otp/preferences` 显示你的生效策略（以及你所在组织的要求，后者是**下限**：你可以更严格，但不能低于它）。`PUT /v1/otp/preferences` 用于调整策略。**削弱** 2FA（关闭某个操作或降低渠道等级）需要先验证你当前的因子。
 
+<Warning>
+通过 `sms` 或 `whatsapp` 启用**登录** 2FA 前，你的手机号必须已**验证**（先完成任意
+SMS/WhatsApp OTP 挑战：`POST /v1/otp/challenges` + verify）。号码未验证时 API 返回
+`409 phone_verification_required` — 这样输错的号码不会把你锁在账户外。
+</Warning>
+
 ### 身份验证器应用（TOTP）
 
 <Steps>
@@ -149,6 +155,7 @@ CBPay 通过一次性验证码保护敏感操作。你可以按操作选择是�
 | `no_pending_email` | 409 | 没有待确认的邮箱更换；请重新发起 |
 | `policy_locked_by_org` | 403 | 你所在组织强制要求该操作/渠道；无法削弱 |
 | `totp_enrollment_required` | 409 | 在要求 `totp` 渠道之前需先注册应用 |
+| `phone_verification_required` | 409 | 通过 SMS/WhatsApp 启用登录 2FA 前需先验证手机号（OTP 挑战） |
 | `last_login_method` | 409 | 无法移除你唯一的登录方式 |
 | `passkeys_unavailable` | 503 | 你所在组织未配置通行密钥 |
 | `image_too_large` / `unsupported_image` | 413 / 415 | 头像最大 512 KB，JPEG/PNG/WebP |

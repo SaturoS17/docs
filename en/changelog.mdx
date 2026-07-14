@@ -7,6 +7,19 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 14, 2026" description="v1.64">
+
+**Changed**
+
+- `PUT /v1/otp/preferences`: enabling 2FA for the `login` action over a
+  phone channel (`sms`/`whatsapp`) now requires the account phone number
+  already **verified** (complete any SMS/WhatsApp OTP challenge first).
+  If the number is not verified the API responds
+  `409 phone_verification_required`. This safeguard prevents a mistyped
+  number from locking you out of your account when enabling login 2FA.
+
+</Update>
+
 <Update label="July 14, 2026" description="v1.63">
 
 **Fixed**

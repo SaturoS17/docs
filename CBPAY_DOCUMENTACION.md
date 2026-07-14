@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-14 13:17 UTC · versión `261f888cb180`
+> **Documento actualizado:** 2026-07-14 15:45 UTC · versión `c8606103f605`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.63 (14 de julio de 2026) |
+| Versión de la documentación | v1.64 (14 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -3944,6 +3944,12 @@ organización, que es el **piso**: puedes endurecer, no bajar de ahí). Con
 `PUT /v1/otp/preferences` la ajustas. **Relajar** tu 2FA (desactivar una acción
 o bajar de canal) pide primero verificar tu factor actual.
 
+> **Importante**
+Activar el 2FA del **login** por `sms` o `whatsapp` exige tu teléfono ya
+**verificado** (completa antes cualquier desafío OTP por SMS/WhatsApp:
+`POST /v1/otp/challenges` + verify). Si el número no está verificado la API
+responde `409 phone_verification_required` — así un número mal escrito no te
+deja fuera de tu cuenta.
 #### App autenticadora (TOTP)
 
 ### Enrolar
@@ -4000,6 +4006,7 @@ agrega/quita un factor — tu red de seguridad ante un acceso no autorizado.
 | `no_pending_email` | 409 | No hay cambio de email pendiente; inícialo de nuevo |
 | `policy_locked_by_org` | 403 | Tu organización exige esa acción/canal; no se puede relajar |
 | `totp_enrollment_required` | 409 | Enrola la app antes de exigir el canal `totp` |
+| `phone_verification_required` | 409 | Verifica tu teléfono (desafío OTP) antes de activar el 2FA de login por SMS/WhatsApp |
 | `last_login_method` | 409 | No puedes quitar tu único método de acceso |
 | `passkeys_unavailable` | 503 | Tu organización no tiene passkeys configuradas |
 | `image_too_large` / `unsupported_image` | 413 / 415 | Avatar máx 512 KB, JPEG/PNG/WebP |
@@ -8177,6 +8184,7 @@ Detalle y flujo completo en [seguridad y 2FA](#seguridad-y-2fa-otp).
 | 403 | `otp_invalid` | Token OTP inválido, expirado o ya usado |
 | 403 | `session_required` | Los desafíos OTP requieren sesión de usuario, no API key |
 | 403 | `phone_binding_cooldown` | Teléfono enlazado hace menos de 24 h sin verificación |
+| 409 | `phone_verification_required` | Verifica tu teléfono (desafío OTP) antes de activar el 2FA de login por SMS/WhatsApp |
 | 401 | `invalid_code` | El código no coincide |
 | 401 | `invalid_pending_token` | El token intermedio del login expiró; vuelve a iniciar sesión |
 | 400 | `invalid_action` / `invalid_channel` | Acción o canal fuera de catálogo |
@@ -8491,9 +8499,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-14 02:49 UTC · 224 requests · versión `5f1c00339e4e`
+> **Colección actualizada:** 2026-07-14 15:45 UTC · 224 requests · versión `6c3b60163c91`
 
-<PostmanFreshness iso="2026-07-14T02:49:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-14T15:45:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -8527,6 +8535,17 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.64 — 14 de julio de 2026
+
+**Cambiado**
+
+- `PUT /v1/otp/preferences`: activar el 2FA de la acción `login` por canal
+  telefónico (`sms`/`whatsapp`) ahora exige el teléfono de la cuenta ya
+  **verificado** (completa cualquier desafío OTP por SMS/WhatsApp antes).
+  Si el número no está verificado, la API responde
+  `409 phone_verification_required`. Este candado evita que un número mal
+  escrito te deje fuera de tu cuenta al activar el 2FA de login.
 
 ### v1.63 — 14 de julio de 2026
 

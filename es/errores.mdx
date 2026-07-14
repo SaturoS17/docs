@@ -45,6 +45,7 @@ Detalle y flujo completo en [seguridad y 2FA](/es/seguridad-2fa).
 | 403 | `otp_invalid` | Token OTP inválido, expirado o ya usado |
 | 403 | `session_required` | Los desafíos OTP requieren sesión de usuario, no API key |
 | 403 | `phone_binding_cooldown` | Teléfono enlazado hace menos de 24 h sin verificación |
+| 409 | `phone_verification_required` | Verifica tu teléfono (desafío OTP) antes de activar el 2FA de login por SMS/WhatsApp |
 | 401 | `invalid_code` | El código no coincide |
 | 401 | `invalid_pending_token` | El token intermedio del login expiró; vuelve a iniciar sesión |
 | 400 | `invalid_action` / `invalid_channel` | Acción o canal fuera de catálogo |

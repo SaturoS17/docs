@@ -131,6 +131,14 @@ organization requires, which is the **floor**: you can harden, not go below).
 `PUT /v1/otp/preferences` adjusts it. **Weakening** your 2FA (disabling an
 action or lowering the channel) first requires verifying your current factor.
 
+<Warning>
+Enabling **login** 2FA over `sms` or `whatsapp` requires your phone number
+already **verified** (complete any SMS/WhatsApp OTP challenge first:
+`POST /v1/otp/challenges` + verify). If the number is not verified the API
+responds `409 phone_verification_required` — so a mistyped number cannot lock
+you out of your account.
+</Warning>
+
 ### Authenticator app (TOTP)
 
 <Steps>
@@ -195,6 +203,7 @@ factor is added/removed — your safety net against unauthorized access.
 | `no_pending_email` | 409 | No pending email change; start it again |
 | `policy_locked_by_org` | 403 | Your organization requires that action/channel; it cannot be weakened |
 | `totp_enrollment_required` | 409 | Enroll the app before requiring the `totp` channel |
+| `phone_verification_required` | 409 | Verify your phone (OTP challenge) before enabling login 2FA over SMS/WhatsApp |
 | `last_login_method` | 409 | You cannot remove your only sign-in method |
 | `passkeys_unavailable` | 503 | Your organization has no passkeys configured |
 | `image_too_large` / `unsupported_image` | 413 / 415 | Avatar max 512 KB, JPEG/PNG/WebP |

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.63'
+  version: '1.64'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -10776,7 +10776,9 @@ paths:
       operationId: putOTPPreferences
       summary: 更新我的 2FA 偏好设置
       description: 允许账户所有者配置自己的 2FA。你随时可以加固(启用操作、切换到更强渠道:totp > email > sms/whatsapp),但绝不能低于组织下限。弱化(停用已启用的操作或降低渠道)需要针对
-        `security_settings` 操作的 `X-OTP-Token`。选择 `channel:totp` 需要已注册验证器应用。
+        `security_settings` 操作的 `X-OTP-Token`。选择 `channel:totp` 需要已注册验证器应用。通过电话渠道(`sms`/`whatsapp`)为
+        `login` 操作启用 2FA 时,账户电话号码必须已验证(完成任意 SMS/WhatsApp OTP 挑战);否则请求会被拒绝并返回
+        `409 phone_verification_required` — 防止因号码输入错误而把自己锁在账户外。
       parameters:
       - name: X-OTP-Token
         in: header
@@ -10836,6 +10838,8 @@ paths:
                   source: account
         '403':
           description: 被组织锁定(`policy_locked_by_org` / `channel_locked_by_org`)或弱化需 OTP(`otp_required`)。
+        '409':
+          description: '`channel:totp` 未注册验证器应用(`totp_enrollment_required`),或通过电话渠道启用登录 2FA 时电话未验证(`phone_verification_required`)。'
   /v1/me/totp:
     get:
       tags:

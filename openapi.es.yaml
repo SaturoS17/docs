@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.63'
+  version: '1.64'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -11096,7 +11096,10 @@ paths:
       description: 'Permite al owner de la cuenta configurar su propio 2FA. Siempre puedes endurecer (activar
         acciones, subir a un canal más fuerte: totp > email > sms/whatsapp) pero nunca bajar del piso
         de la organización. Relajar (desactivar una acción activa o bajar de canal) exige un `X-OTP-Token`
-        de la acción `security_settings`. Elegir `channel:totp` exige la app autenticadora ya enrolada.'
+        de la acción `security_settings`. Elegir `channel:totp` exige la app autenticadora ya enrolada.
+        Activar el 2FA de la acción `login` por canal telefónico (`sms`/`whatsapp`) exige el teléfono de
+        la cuenta ya verificado (completa cualquier desafío OTP por SMS/WhatsApp); si no, el request se
+        rechaza con `409 phone_verification_required` — evita que te bloquees con un número mal escrito.'
       parameters:
       - name: X-OTP-Token
         in: header
@@ -11157,6 +11160,9 @@ paths:
         '403':
           description: Bloqueado por la org (`policy_locked_by_org` / `channel_locked_by_org`) u OTP requerido
             para relajar (`otp_required`).
+        '409':
+          description: App autenticadora sin enrolar para `channel:totp` (`totp_enrollment_required`),
+            o teléfono sin verificar al activar el 2FA de login por canal telefónico (`phone_verification_required`).
   /v1/me/totp:
     get:
       tags:
