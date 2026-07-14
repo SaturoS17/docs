@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-14 17:00 UTC · versión `00dc49af1bdb`
+> **Documento actualizado:** 2026-07-14 18:38 UTC · versión `3b148d701b1f`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.66 (14 de julio de 2026) |
+| Versión de la documentación | v1.67 (14 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -935,17 +935,24 @@ retiros, saldos, holds y webhooks se comportan exactamente igual que live.
   `kyc_status: approved`, así puedes ejercitar todos los productos de
   inmediato — sin gate de onboarding. En live las cuentas nacen sin
   verificar y deben completar su KYC/KYB antes de que salga dinero.
+- **Las cuentas nacen pobladas**: toda cuenta nueva de test parte con
+  ~6 meses de historia demo realista de todos los productos (payouts,
+  payins, transfers, crypto, swaps, tarjetas, banking, contactos...), con
+  saldos, cartola conciliada y analytics listos para explorar — puedes
+  construir dashboards y reportes antes de crear una sola operación.
 - Los catálogos de bancos son ficticios (`Simulated National Bank`, ...).
 - Las tasas FX son reales (misma fuente que live), así los montos se ven realistas.
-- Los datos de test se refrescan periódicamente desde un snapshot
-  sanitizado; trata el dataset de test como desechable.
+- Los datos de test son totalmente independientes de live: nada se copia
+  desde producción. Trata el dataset de test como desechable.
 
 ### Modo test desde el dashboard
 
 El **switch test/live** del dashboard mueve tu sesión entre ambientes con
 un click — sin registro aparte ni segundo login. Si tu cuenta aún no existe
-en test, se crea automáticamente la primera vez que cambias. Las API keys
-se administran por ambiente: crea tus keys `pk_test_` estando en modo test.
+en test, se crea automáticamente la primera vez que cambias — nace
+verificada y poblada con historia demo, como toda cuenta de test. Las API
+keys se administran por ambiente: crea tus keys `pk_test_` estando en modo
+test.
 
 ### Probar webhooks en desarrollo local
 
@@ -1023,11 +1030,11 @@ reversa es fuera de la API (contactar al equipo CBPay).
 #### ¿Cómo sé qué ambiente me respondió?
     Toda respuesta lleva el header `CBPay-Environment` (`test` o `live`),
     y `GET /healthz` devuelve `livemode`.
-#### ¿Por qué desaparecieron mis datos de test?
-    El dataset de test se refresca periódicamente desde un snapshot
-    sanitizado de producción. Reconstruye tus fixtures por API (es barato:
-    todo se resuelve en segundos) y trata los datos de test como
-    desechables.
+#### ¿De dónde sale la historia demo de mi cuenta de test?
+    Se genera al crear la cuenta: ~6 meses de operaciones demo
+    deterministas y contablemente consistentes de todos los productos. No
+    es data real ni se copia desde producción — los ambientes no comparten
+    nada. Trata los datos de test como desechables.
 #### ¿Los webhooks se disparan en test?
     Sí — exactamente los mismos eventos, firmados con el secreto de tu
     suscripción de test. Apúntalos a tu túnel de desarrollo.
@@ -8677,6 +8684,23 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.67 — 14 de julio de 2026
+
+**Agregado**
+
+- **Las cuentas de test nacen pobladas**: toda cuenta nueva del ambiente de
+  test nace con ~6 meses de historia demo realista de todos los productos
+  (payouts, payins, transfers, crypto, swaps, tarjetas, banking,
+  contactos...), con saldos de juego, cartola conciliada y analytics listos
+  para explorar. Aplica a todo camino de creación (registro, login social,
+  creación por admin y el switch test/live del dashboard).
+
+**Cambiado**
+
+- **Ambientes 100% independientes**: los datos de test ya no se refrescan
+  desde un snapshot de producción — nada se copia entre ambientes. Guía de
+  [entornos y pruebas](#ambientes-y-pruebas) actualizada.
 
 ### v1.66 — 14 de julio de 2026
 

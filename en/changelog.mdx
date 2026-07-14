@@ -7,6 +7,25 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 14, 2026" description="v1.67">
+
+**Added**
+
+- **Test accounts are born populated**: every new account in the test
+  environment starts with ~6 months of realistic demo history across all
+  products (payouts, payins, transfers, crypto, swaps, cards, banking,
+  contacts...), with play balances, a reconciled statement and analytics
+  ready to explore. Applies to every creation path (registration, social
+  login, admin creation and the dashboard's test/live switch).
+
+**Changed**
+
+- **Fully independent environments**: test data is no longer refreshed from
+  a production snapshot — nothing is copied between environments. Updated
+  [environments and testing](/en/environment-testing) guide.
+
+</Update>
+
 <Update label="July 14, 2026" description="v1.66">
 
 **Added**

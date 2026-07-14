@@ -75,17 +75,23 @@ balances, holds and webhooks behave exactly like live.
   `kyc_status: approved`, so you can exercise every product immediately —
   no onboarding gate. In live, accounts are born unverified and must
   complete KYC/KYB before money can leave.
+- **Accounts are born populated**: every new test account starts with
+  ~6 months of realistic demo history across all products (payouts, payins,
+  transfers, crypto, swaps, cards, banking, contacts...), with balances,
+  a reconciled statement and analytics ready to explore — you can build
+  dashboards and reports before creating a single operation yourself.
 - Bank catalogs are fictitious (`Simulated National Bank`, ...).
 - FX rates are real (same source as live) so amounts look realistic.
-- Test data is periodically refreshed from a sanitized snapshot; treat the
-  test dataset as disposable.
+- Test data is fully independent from live: nothing is copied from
+  production. Treat the test dataset as disposable.
 
 ## Test mode from the dashboard
 
 The dashboard's **test/live switch** moves your session between
 environments with one click — no separate registration and no second login.
 If your account does not exist in test yet, it is created automatically the
-first time you switch. API keys are managed per environment: create your
+first time you switch — born verified and populated with demo history, like
+every test account. API keys are managed per environment: create your
 `pk_test_` keys while in test mode.
 
 ## Testing webhooks in local development
@@ -176,10 +182,11 @@ reversal path is outside the API (contact the CBPay team).
     Every response carries the `CBPay-Environment` header (`test` or
     `live`), and `GET /healthz` returns `livemode`.
   </Accordion>
-  <Accordion title="Why did my test data disappear?">
-    The test dataset is periodically refreshed from a sanitized snapshot of
-    production. Rebuild your fixtures via API (they are cheap: everything
-    resolves in seconds) and treat test data as disposable.
+  <Accordion title="Where does the demo history in my test account come from?">
+    It is generated at account creation: ~6 months of deterministic,
+    accounting-consistent demo operations across every product. It is not
+    real data and it is not copied from production — the environments share
+    nothing. Treat test data as disposable.
   </Accordion>
   <Accordion title="Do webhooks fire in test?">
     Yes — the exact same events, signed with your test subscription's
