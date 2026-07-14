@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-14 15:45 UTC · versión `c8606103f605`
+> **Documento actualizado:** 2026-07-14 16:25 UTC · versión `f9ff68bd5ffc`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.64 (14 de julio de 2026) |
+| Versión de la documentación | v1.65 (14 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -930,6 +930,10 @@ retiros, saldos, holds y webhooks se comportan exactamente igual que live.
 #### Qué difiere de live
 
 - Ningún dinero, tarjeta, email ni SMS real sale jamás del ambiente de test.
+- **Las cuentas nacen verificadas**: toda cuenta nueva de test parte con
+  `kyc_status: approved`, así puedes ejercitar todos los productos de
+  inmediato — sin gate de onboarding. En live las cuentas nacen sin
+  verificar y deben completar su KYC/KYB antes de que salga dinero.
 - Los catálogos de bancos son ficticios (`Simulated National Bank`, ...).
 - Las tasas FX son reales (misma fuente que live), así los montos se ven realistas.
 - Los datos de test se refrescan periódicamente desde un snapshot
@@ -985,7 +989,7 @@ siempre la firma HMAC — receta completa en
 | Payin | Crea un cobro QR o página de pago; se paga solo tras el delay y acredita tu saldo |
 | Transferencia | Crea una segunda cuenta de test y transfiere entre ambas (gratis) |
 | Crypto | Acredita un depósito de test desde el dashboard y retira a cualquier dirección |
-| Identidad (KYC/KYB) | Crea el link de verificación; se auto-aprueba en segundos |
+| Identidad (KYC/KYB) | Tu propia cuenta ya nace aprobada. Para probar el flujo de verificación, corre verificaciones KYC/KYB de terceros — se auto-aprueban en segundos (`REJECT` en el nombre fuerza el rechazo) |
 | AML | Screenea a `John SANCTION` y `Maria PEP` para ejercitar tu manejo de coincidencias |
 | Tarjetas | Emite una tarjeta y simula compras desde el dashboard |
 | 2FA | Actívalo y usa el código `000000` en todas partes |
@@ -8535,6 +8539,19 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.65 — 14 de julio de 2026
+
+**Cambiado**
+
+- **Ambiente de test**: las cuentas nuevas ahora nacen con
+  `kyc_status: approved` — puedes probar todos los productos de inmediato,
+  sin pasar por el onboarding. Aplica a todo camino de creación (registro,
+  login social, creación por admin y el switch test/live del dashboard);
+  las cuentas de test existentes fueron aprobadas retroactivamente. En
+  **live** nada cambia: las cuentas nacen sin verificar y el KYC/KYB sigue
+  siendo obligatorio antes de que salga dinero. Para probar el flujo de
+  verificación en test, usa las verificaciones KYC/KYB de terceros.
 
 ### v1.64 — 14 de julio de 2026
 

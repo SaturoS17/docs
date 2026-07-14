@@ -7,6 +7,21 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 14, 2026" description="v1.65">
+
+**Changed**
+
+- **Test environment**: new accounts are now born with
+  `kyc_status: approved` — you can exercise every product immediately,
+  with no onboarding gate. This applies to every creation path (register,
+  social login, admin creation and the dashboard test/live switch);
+  existing test accounts were approved retroactively. **Live** is
+  unchanged: accounts are born unverified and KYC/KYB remains mandatory
+  before money can leave. To test the verification flow in test mode, use
+  third-party KYC/KYB verifications.
+
+</Update>
+
 <Update label="July 14, 2026" description="v1.64">
 
 **Changed**

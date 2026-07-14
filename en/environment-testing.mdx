@@ -71,6 +71,10 @@ balances, holds and webhooks behave exactly like live.
 ### What differs from live
 
 - No real money, cards, emails or SMS ever leave the test environment.
+- **Accounts are born verified**: every new test account starts with
+  `kyc_status: approved`, so you can exercise every product immediately —
+  no onboarding gate. In live, accounts are born unverified and must
+  complete KYC/KYB before money can leave.
 - Bank catalogs are fictitious (`Simulated National Bank`, ...).
 - FX rates are real (same source as live) so amounts look realistic.
 - Test data is periodically refreshed from a sanitized snapshot; treat the
@@ -133,7 +137,7 @@ verify the HMAC signature — full recipe in
 | Payin | Create a QR charge or payment page; it pays itself after the delay and credits your balance |
 | Transfer | Create a second test account and transfer between both (free) |
 | Crypto | Credit a test deposit from the dashboard, then withdraw to any address |
-| Identity (KYC/KYB) | Create the verification link; it auto-approves in seconds |
+| Identity (KYC/KYB) | Your own account is already approved at birth. To test the verification flow itself, run third-party KYC/KYB verifications — they auto-approve in seconds (`REJECT` in the name forces a rejection) |
 | AML | Screen `John SANCTION` and `Maria PEP` to exercise your hit handling |
 | Cards | Issue a card and simulate purchases from the dashboard |
 | 2FA | Enable it and use code `000000` everywhere |

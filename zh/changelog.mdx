@@ -7,6 +7,18 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月14日" description="v1.65">
+
+**变更**
+
+- **测试环境**:新账户现在生而带有 `kyc_status: approved` —— 您可以
+  立即演练所有产品,没有入驻闸门。适用于所有创建路径(注册、社交
+  登录、管理员创建以及控制台的 test/live 切换);现有测试账户已追溯
+  批准。**live** 环境不变:账户生而未验证,资金转出前 KYC/KYB 仍为
+  强制要求。要在测试模式演练验证流程,请使用第三方 KYC/KYB 验证。
+
+</Update>
+
 <Update label="2026年7月14日" description="v1.64">
 
 **变更**

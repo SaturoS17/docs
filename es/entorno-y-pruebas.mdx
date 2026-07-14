@@ -72,6 +72,10 @@ retiros, saldos, holds y webhooks se comportan exactamente igual que live.
 ### Qué difiere de live
 
 - Ningún dinero, tarjeta, email ni SMS real sale jamás del ambiente de test.
+- **Las cuentas nacen verificadas**: toda cuenta nueva de test parte con
+  `kyc_status: approved`, así puedes ejercitar todos los productos de
+  inmediato — sin gate de onboarding. En live las cuentas nacen sin
+  verificar y deben completar su KYC/KYB antes de que salga dinero.
 - Los catálogos de bancos son ficticios (`Simulated National Bank`, ...).
 - Las tasas FX son reales (misma fuente que live), así los montos se ven realistas.
 - Los datos de test se refrescan periódicamente desde un snapshot
@@ -133,7 +137,7 @@ siempre la firma HMAC — receta completa en
 | Payin | Crea un cobro QR o página de pago; se paga solo tras el delay y acredita tu saldo |
 | Transferencia | Crea una segunda cuenta de test y transfiere entre ambas (gratis) |
 | Crypto | Acredita un depósito de test desde el dashboard y retira a cualquier dirección |
-| Identidad (KYC/KYB) | Crea el link de verificación; se auto-aprueba en segundos |
+| Identidad (KYC/KYB) | Tu propia cuenta ya nace aprobada. Para probar el flujo de verificación, corre verificaciones KYC/KYB de terceros — se auto-aprueban en segundos (`REJECT` en el nombre fuerza el rechazo) |
 | AML | Screenea a `John SANCTION` y `Maria PEP` para ejercitar tu manejo de coincidencias |
 | Tarjetas | Emite una tarjeta y simula compras desde el dashboard |
 | 2FA | Actívalo y usa el código `000000` en todas partes |

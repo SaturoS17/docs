@@ -8,6 +8,21 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="14 de julio de 2026" description="v1.65">
+
+**Cambiado**
+
+- **Ambiente de test**: las cuentas nuevas ahora nacen con
+  `kyc_status: approved` — puedes probar todos los productos de inmediato,
+  sin pasar por el onboarding. Aplica a todo camino de creación (registro,
+  login social, creación por admin y el switch test/live del dashboard);
+  las cuentas de test existentes fueron aprobadas retroactivamente. En
+  **live** nada cambia: las cuentas nacen sin verificar y el KYC/KYB sigue
+  siendo obligatorio antes de que salga dinero. Para probar el flujo de
+  verificación en test, usa las verificaciones KYC/KYB de terceros.
+
+</Update>
+
 <Update label="14 de julio de 2026" description="v1.64">
 
 **Cambiado**
