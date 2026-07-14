@@ -65,6 +65,7 @@ Available corridors and methods:
 | Venezuela | VES | `bank_transfer`, `pago_movil` |
 | Bolivia | BOB / USD | `bank_transfer`, `qr` (see [QR payout](#qr-payout)) |
 | Brazil | BRL | `pix` (by key or to account) |
+| Ecuador | USD | `bank_transfer`, `deuna`, `cash_pickup`, `cnb` |
 | Paraguay | PYG | `bank_transfer` |
 
 Availability may vary; the catalog (`GET /v1/payouts/methods`) is always
@@ -287,6 +288,9 @@ when configured; `0.30` here).
 | VE | `bank_transfer` | `name`, `account_number` (20 digits), `document_value` |
 | BO | `bank_transfer` | `name`, `tax_id`, `bank_code`, `account_number` |
 | BR | `pix` | `name`, `tax_id` + (`pix_key` and `pix_key_type`) or (`bank_code` ISPB, `branch_code`, `account_number`) |
+| EC | `bank_transfer` | `name`, `document_value` (cédula), `sender_name`, `account_number` (+ `bank_code` and `account_type` for other banks) |
+| EC | `deuna` | `name`, `document_value`, `sender_name`, `phone` (wallet mobile number) |
+| EC | `cash_pickup` / `cnb` | `name`, `document_value`, `sender_name` — the beneficiary withdraws with their ID |
 | PY | `bank_transfer` | `name` (max 35 chars), `tax_id`, `bank_code`, `account_number` |
 
 
@@ -639,6 +643,126 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
   `GET /v1/payouts/{id}`.
 
 </Tab>
+<Tab title="Ecuador">
+
+Remittances in **USD** (1 to 10,000 per operation, up to 2 decimals) with
+four methods: bank transfer, the **DE UNA** wallet (by mobile number),
+**cash pickup** at a branch (`cash_pickup`) and cash at a **non-bank
+correspondent** (`cnb`). This is a remittance corridor: besides the
+beneficiary, the rail requires the **sender's** data (who originates the
+payment), sent flat inside the same `beneficiary` object with the
+`sender_*` prefix.
+
+<CodeGroup>
+
+```bash bank_transfer (to account)
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "EC",
+    "currency": "USD",
+    "method": "bank_transfer",
+    "amount": "250.00",
+    "beneficiary": {
+      "name": "Carlos Andrade Vera",
+      "document_value": "1712345678",
+      "account_number": "2203456789",
+      "sender_name": "Ana Torres Silva",
+      "sender_document_value": "V23456789",
+      "sender_country": "US"
+    },
+    "idempotency_key": "ec-bank-4471"
+  }'
+```
+
+```bash deuna (wallet)
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "EC",
+    "currency": "USD",
+    "method": "deuna",
+    "amount": "80.00",
+    "beneficiary": {
+      "name": "Lucia Paredes Mora",
+      "document_value": "0923456781",
+      "phone": "0998765432",
+      "sender_name": "Ana Torres Silva"
+    },
+    "idempotency_key": "ec-deuna-5520"
+  }'
+```
+
+```bash cash_pickup (branch)
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "EC",
+    "currency": "USD",
+    "method": "cash_pickup",
+    "amount": "120.00",
+    "beneficiary": {
+      "name": "Miguel Zambrano Loor",
+      "document_value": "1309876543",
+      "sender_name": "Ana Torres Silva"
+    },
+    "idempotency_key": "ec-cash-6612"
+  }'
+```
+
+```bash cnb (correspondent)
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "EC",
+    "currency": "USD",
+    "method": "cnb",
+    "amount": "60.00",
+    "beneficiary": {
+      "name": "Rosa Cedeño Vera",
+      "document_value": "0801234567",
+      "sender_name": "Ana Torres Silva"
+    },
+    "idempotency_key": "ec-cnb-7703"
+  }'
+```
+
+</CodeGroup>
+
+```json
+{
+  "payout_id": "9f3a…",
+  "country": "EC",
+  "currency": "USD",
+  "method": "bank_transfer",
+  "local_amount": "250.00",
+  "fx_rate": "1",
+  "usdt_amount": "250.000000",
+  "fee": "0.300000",
+  "total_debit": "250.300000",
+  "status": "processing"
+}
+```
+
+- Ecuador is dollarized: the local currency IS the USD (`fx_rate: "1"`).
+- `document_value` is the beneficiary's cédula; `document_type` accepts
+  `IDCD` (national ID, default), `CCPT` (passport) or `TXID` (RUC).
+- On `bank_transfer`, omitting `bank_code` targets an account at the
+  corridor's issuing bank; for **another bank** send the `bank_code` from
+  the catalog (`GET /v1/payouts/banks?country=EC`) plus `account_type`
+  (`checking` or `savings`).
+- Optional structured names (`given_name`, `middle_name`,
+  `first_surname`, `second_surname` and their `sender_*` counterparts):
+  send them when you have them — they take precedence over the automatic
+  split of `name`.
+- The final status arrives via the `payout_status_changed` webhook (with
+  periodic reconciliation as backup).
+
+</Tab>
 <Tab title="Paraguay">
 
 Bank transfer in PYG:
@@ -763,6 +887,7 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
 | 403 | `service_disabled` | Payouts is not enabled for your account — see [services](/en/concepts/services) |
 | 422 | `currency_not_supported` | No FX rate for that currency |
 | 422 | (payout with `status: failed`) | The corridor rejected the data; the debit was already refunded — fix `beneficiary` and retry with a new key |
+| 503 | `channel_unavailable` | The payout channel is temporarily unavailable; retry later with the SAME `idempotency_key` |
 
 ## Immediate rejection vs later failure
 
@@ -776,6 +901,7 @@ object in `status: failed` and the refund already applied. If it fails later
 | `status_code` | Meaning | Action |
 |---|---|---|
 | `core_rejected` | The processor rejected the operation at creation (invalid beneficiary data, corridor unavailable) | Read `status_message`, fix the data and create a new payout with a new key |
+| `channel_unavailable` | The payout channel became temporarily unavailable | Retry later; the refund (if a debit happened) is already applied |
 | *another code* | Later rejection by the banking rail (e.g. destination account closed) | Same: fix the data and create a new operation |
 | *(empty)* | Generic corridor failure | Check `status_message`; if unclear, contact support with the `payout_id` |
 

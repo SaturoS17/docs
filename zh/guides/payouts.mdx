@@ -62,6 +62,7 @@ curl https://api.qbank.cl/platform/v1/payouts/methods \
 | 委内瑞拉 | VES | `bank_transfer`、`pago_movil` |
 | 玻利维亚 | BOB / USD | `bank_transfer`、`qr`（参见 [QR 出金](#qr-出金)） |
 | 巴西 | BRL | `pix`（按密钥或到账户） |
+| 厄瓜多尔 | USD | `bank_transfer`、`deuna`、`cash_pickup`、`cnb` |
 | 巴拉圭 | PYG | `bank_transfer` |
 
 可用性可能变化；目录（`GET /v1/payouts/methods`）始终是唯一可信来源。
@@ -279,6 +280,9 @@ curl "https://api.qbank.cl/platform/v1/payouts?from=2026-07-01&to=2026-07-08&sta
 | VE | `bank_transfer` | `name`、`account_number`（20 位）、`document_value` |
 | BO | `bank_transfer` | `name`、`tax_id`、`bank_code`、`account_number` |
 | BR | `pix` | `name`、`tax_id` +（`pix_key` 和 `pix_key_type`）或（`bank_code` ISPB、`branch_code`、`account_number`） |
+| EC | `bank_transfer` | `name`、`document_value`（身份证 cédula）、`sender_name`、`account_number`（转到其他银行还需 `bank_code` 和 `account_type`） |
+| EC | `deuna` | `name`、`document_value`、`sender_name`、`phone`（钱包手机号） |
+| EC | `cash_pickup` / `cnb` | `name`、`document_value`、`sender_name` — 收款人凭证件领取现金 |
 | PY | `bank_transfer` | `name`（最多 35 个字符）、`tax_id`、`bank_code`、`account_number` |
 
 
@@ -628,6 +632,123 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
   也可随时使用 `GET /v1/payouts/{id}` 查询。
 
 </Tab>
+<Tab title="厄瓜多尔">
+
+以 **USD** 汇出汇款（每笔 1 至 10,000，最多 2 位小数），支持四种方式：
+银行转账、**DE UNA** 钱包（按手机号）、**柜台取现**（`cash_pickup`）和
+**非银行代理点取现**（`cnb`）。这是一个汇款通道：除收款人外，通道还
+要求提供**汇款人**（付款发起方）的信息，以 `sender_*` 前缀平铺在同一个
+`beneficiary` 对象中。
+
+<CodeGroup>
+
+```bash bank_transfer（到账户）
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "EC",
+    "currency": "USD",
+    "method": "bank_transfer",
+    "amount": "250.00",
+    "beneficiary": {
+      "name": "Carlos Andrade Vera",
+      "document_value": "1712345678",
+      "account_number": "2203456789",
+      "sender_name": "Ana Torres Silva",
+      "sender_document_value": "V23456789",
+      "sender_country": "US"
+    },
+    "idempotency_key": "ec-bank-4471"
+  }'
+```
+
+```bash deuna（钱包）
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "EC",
+    "currency": "USD",
+    "method": "deuna",
+    "amount": "80.00",
+    "beneficiary": {
+      "name": "Lucia Paredes Mora",
+      "document_value": "0923456781",
+      "phone": "0998765432",
+      "sender_name": "Ana Torres Silva"
+    },
+    "idempotency_key": "ec-deuna-5520"
+  }'
+```
+
+```bash cash_pickup（柜台）
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "EC",
+    "currency": "USD",
+    "method": "cash_pickup",
+    "amount": "120.00",
+    "beneficiary": {
+      "name": "Miguel Zambrano Loor",
+      "document_value": "1309876543",
+      "sender_name": "Ana Torres Silva"
+    },
+    "idempotency_key": "ec-cash-6612"
+  }'
+```
+
+```bash cnb（代理点）
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "EC",
+    "currency": "USD",
+    "method": "cnb",
+    "amount": "60.00",
+    "beneficiary": {
+      "name": "Rosa Cedeño Vera",
+      "document_value": "0801234567",
+      "sender_name": "Ana Torres Silva"
+    },
+    "idempotency_key": "ec-cnb-7703"
+  }'
+```
+
+</CodeGroup>
+
+```json
+{
+  "payout_id": "9f3a…",
+  "country": "EC",
+  "currency": "USD",
+  "method": "bank_transfer",
+  "local_amount": "250.00",
+  "fx_rate": "1",
+  "usdt_amount": "250.000000",
+  "fee": "0.300000",
+  "total_debit": "250.300000",
+  "status": "processing"
+}
+```
+
+- 厄瓜多尔为美元化经济体：当地货币就是美元（`fx_rate: "1"`）。
+- `document_value` 为收款人的身份证号（cédula）；`document_type` 接受
+  `IDCD`（身份证，默认）、`CCPT`（护照）或 `TXID`（RUC）。
+- 在 `bank_transfer` 中，省略 `bank_code` 表示账户属于通道的发卡银行；
+  转到**其他银行**时需发送目录中的 `bank_code`
+  （`GET /v1/payouts/banks?country=EC`）以及 `account_type`
+  （`checking` 或 `savings`）。
+- 可选的结构化姓名字段（`given_name`、`middle_name`、`first_surname`、
+  `second_surname` 及其 `sender_*` 对应字段）：如有请发送 —— 它们优先
+  于对 `name` 的自动拆分。
+- 最终状态通过 `payout_status_changed` webhook 送达（并有周期性对账
+  作为兜底）。
+
+</Tab>
 <Tab title="巴拉圭">
 
 以 PYG 进行银行转账：
@@ -752,6 +873,7 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
 | 403 | `service_disabled` | 您的账户未启用出金服务 —— 参见[服务](/zh/concepts/services) |
 | 422 | `currency_not_supported` | 该货币没有可用的外汇汇率 |
 | 422 | （出金处于 `status: failed`） | 通道拒绝了该数据；扣款已退回 —— 修正 `beneficiary` 后使用新的键重试 |
+| 503 | `channel_unavailable` | 出金通道暂时不可用；请稍后使用**相同的** `idempotency_key` 重试 |
 
 ## 立即拒绝与后续失败
 
@@ -764,6 +886,7 @@ webhook 会以 `status: failed` 送达，自动退款也在那一刻发生。
 | `status_code` | 含义 | 处理方式 |
 |---|---|---|
 | `core_rejected` | 处理方在创建时拒绝了该操作（收款人数据无效、通道不可用） | 阅读 `status_message`，修正数据后使用新的键创建新出金 |
+| `channel_unavailable` | 出金通道暂时不可用 | 稍后重试；退款（如已扣款）已经完成 |
 | *其他代码* | 银行通道在后续阶段拒绝（例如目标账户已注销） | 同上：修正数据后创建新的操作 |
 | *（空）* | 通道的一般性失败 | 检查 `status_message`；如仍不清楚，请携带 `payout_id` 联系支持 |
 

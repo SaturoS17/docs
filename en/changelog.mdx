@@ -7,6 +7,23 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 14, 2026" description="v1.68">
+
+**Added**
+
+- **New corridor: Ecuador (USD)** with four payout methods —
+  `bank_transfer`, `deuna` (DeUna wallet), `cash_pickup` (over-the-counter
+  withdrawal, no account needed) and `cnb` (non-bank correspondent). The
+  beneficiary accepts structured names (`given_name`/`first_surname`/...)
+  or automatic splitting from `name`, plus an optional sender block
+  (`sender_name` or its structured fields). Per-method examples in the
+  [payouts guide](/en/guides/payouts) and the spec.
+- **New error code `channel_unavailable`** (HTTP 503): the corridor's
+  payment channel is temporarily unavailable. Retry later with the same
+  `idempotency_key`. Documented on the [errors](/en/errors) page.
+
+</Update>
+
 <Update label="July 14, 2026" description="v1.67">
 
 **Added**

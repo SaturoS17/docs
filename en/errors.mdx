@@ -160,6 +160,7 @@ Full flow and details in [social login](/en/guides/social-login).
 | 503 | `org_credential_missing` | Service being configured; contact CBPay support |
 | 503 | `withdrawals_unavailable` | On-chain withdrawals not enabled for the corridor |
 | 503 | `pricing_unavailable` | BTC/GOLD execution price unavailable or stale; retry later or settle in USDT/USDC |
+| 503 | `channel_unavailable` | The payout channel is temporarily unavailable; retry later with the **same** idempotency key |
 | 503 | `export_unavailable` | Segregated wallet private key export is not enabled on this environment |
 
 ## How to handle them

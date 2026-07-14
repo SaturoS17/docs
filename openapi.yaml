@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.67'
+  version: '1.68'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -2148,6 +2148,16 @@ paths:
 
                     `bank_code` (ISPB) + `branch_code` + `account_number` + `tax_id`.
 
+                    Ecuador (remittance corridor): `document_value` (cédula) plus the
+
+                    sender''s data flat in the same object (`sender_name`,
+
+                    `sender_document_value`, ...); optional structured names
+
+                    (`given_name`, `first_surname`, ... and their `sender_*` pairs)
+
+                    take precedence over the automatic split of `name`.
+
                     '
                 beneficiary_contact_id:
                   type: string
@@ -2286,6 +2296,58 @@ paths:
                     pix_key_type: cpf
                     pix_key: '12345678909'
                   idempotency_key: br-pix-3321
+              ec_bank_transfer:
+                summary: Ecuador — bank transfer (USD, remittance with sender data)
+                value:
+                  country: EC
+                  currency: USD
+                  method: bank_transfer
+                  amount: '250.00'
+                  beneficiary:
+                    name: Carlos Andrade Vera
+                    document_value: '1712345678'
+                    account_number: '2203456789'
+                    sender_name: Ana Torres Silva
+                    sender_document_value: V23456789
+                    sender_country: US
+                  idempotency_key: ec-bank-4471
+              ec_deuna:
+                summary: Ecuador — DE UNA wallet by mobile number (USD)
+                value:
+                  country: EC
+                  currency: USD
+                  method: deuna
+                  amount: '80.00'
+                  beneficiary:
+                    name: Lucia Paredes Mora
+                    document_value: '0923456781'
+                    phone: '0998765432'
+                    sender_name: Ana Torres Silva
+                  idempotency_key: ec-deuna-5520
+              ec_cash_pickup:
+                summary: Ecuador — cash pickup at a branch (USD)
+                value:
+                  country: EC
+                  currency: USD
+                  method: cash_pickup
+                  amount: '120.00'
+                  beneficiary:
+                    name: Miguel Zambrano Loor
+                    document_value: '1309876543'
+                    sender_name: Ana Torres Silva
+                  idempotency_key: ec-cash-6612
+              ec_cnb:
+                summary: Ecuador — cash at a non-bank correspondent (USD)
+                value:
+                  country: EC
+                  currency: USD
+                  method: cnb
+                  amount: '60.00'
+                  beneficiary:
+                    name: Rosa Cedeño Vera
+                    document_value: '0801234567'
+                    sender_name: Ana Torres Silva
+                  idempotency_key: ec-cnb-7703
               py_bank_transfer:
                 summary: Paraguay — bank transfer (PYG)
                 value:
@@ -2424,6 +2486,16 @@ paths:
                 status_message: beneficiary account is invalid
                 created_at: '2026-07-07T12:00:00Z'
                 updated_at: '2026-07-07T12:00:00Z'
+        '503':
+          description: The payout channel is temporarily unavailable (`channel_unavailable`);
+            retry later with the SAME idempotency key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: channel_unavailable
+                message: the payout channel is temporarily unavailable, please retry later
         '401':
           $ref: '#/components/responses/Unauthorized'
     get:
@@ -2571,6 +2643,18 @@ paths:
                 - country: CL
                   currency: CLP
                   method: bank_transfer
+                - country: EC
+                  currency: USD
+                  method: bank_transfer
+                - country: EC
+                  currency: USD
+                  method: deuna
+                - country: EC
+                  currency: USD
+                  method: cash_pickup
+                - country: EC
+                  currency: USD
+                  method: cnb
                 - country: MX
                   currency: MXN
                   method: bank_transfer
@@ -2590,7 +2674,7 @@ paths:
                   currency: VES
                   method: pago_movil
                 meta:
-                  retrieved: 9
+                  retrieved: 13
         '403':
           $ref: '#/components/responses/Forbidden'
         '401':

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.67'
+  version: '1.68'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -2049,6 +2049,14 @@ paths:
 
                     `bank_code`(ISPB)+ `branch_code` + `account_number` + `tax_id`。
 
+                    厄瓜多尔(汇款走廊):`document_value`(身份证号)加上在同一对象中平铺的汇款人数据(`sender_name`、
+
+                    `sender_document_value` 等);可选的结构化姓名字段
+
+                    (`given_name`、`first_surname` 等及其对应的 `sender_*` 字段)
+
+                    优先于对 `name` 的自动拆分。
+
                     '
                 beneficiary_contact_id:
                   type: string
@@ -2184,6 +2192,58 @@ paths:
                     pix_key_type: cpf
                     pix_key: '12345678909'
                   idempotency_key: br-pix-3321
+              ec_bank_transfer:
+                summary: 厄瓜多尔 — 银行转账(USD,含汇款人数据的汇款)
+                value:
+                  country: EC
+                  currency: USD
+                  method: bank_transfer
+                  amount: '250.00'
+                  beneficiary:
+                    name: Carlos Andrade Vera
+                    document_value: '1712345678'
+                    account_number: '2203456789'
+                    sender_name: Ana Torres Silva
+                    sender_document_value: V23456789
+                    sender_country: US
+                  idempotency_key: ec-bank-4471
+              ec_deuna:
+                summary: 厄瓜多尔 — 按手机号的 DE UNA 钱包(USD)
+                value:
+                  country: EC
+                  currency: USD
+                  method: deuna
+                  amount: '80.00'
+                  beneficiary:
+                    name: Lucia Paredes Mora
+                    document_value: '0923456781'
+                    phone: '0998765432'
+                    sender_name: Ana Torres Silva
+                  idempotency_key: ec-deuna-5520
+              ec_cash_pickup:
+                summary: 厄瓜多尔 — 网点现金领取(USD)
+                value:
+                  country: EC
+                  currency: USD
+                  method: cash_pickup
+                  amount: '120.00'
+                  beneficiary:
+                    name: Miguel Zambrano Loor
+                    document_value: '1309876543'
+                    sender_name: Ana Torres Silva
+                  idempotency_key: ec-cash-6612
+              ec_cnb:
+                summary: 厄瓜多尔 — 非银行代理点现金(USD)
+                value:
+                  country: EC
+                  currency: USD
+                  method: cnb
+                  amount: '60.00'
+                  beneficiary:
+                    name: Rosa Cedeño Vera
+                    document_value: '0801234567'
+                    sender_name: Ana Torres Silva
+                  idempotency_key: ec-cnb-7703
               py_bank_transfer:
                 summary: 巴拉圭 — 银行转账(PYG)
                 value:
@@ -2319,6 +2379,15 @@ paths:
                 status_message: beneficiary account is invalid
                 created_at: '2026-07-07T12:00:00Z'
                 updated_at: '2026-07-07T12:00:00Z'
+        '503':
+          description: 付款通道暂时不可用(`channel_unavailable`);请稍后使用相同的幂等键重试。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: channel_unavailable
+                message: the payout channel is temporarily unavailable, please retry later
         '401':
           $ref: '#/components/responses/Unauthorized'
     get:
@@ -2465,6 +2534,18 @@ paths:
                 - country: CL
                   currency: CLP
                   method: bank_transfer
+                - country: EC
+                  currency: USD
+                  method: bank_transfer
+                - country: EC
+                  currency: USD
+                  method: deuna
+                - country: EC
+                  currency: USD
+                  method: cash_pickup
+                - country: EC
+                  currency: USD
+                  method: cnb
                 - country: MX
                   currency: MXN
                   method: bank_transfer
@@ -2484,7 +2565,7 @@ paths:
                   currency: VES
                   method: pago_movil
                 meta:
-                  retrieved: 9
+                  retrieved: 13
         '403':
           $ref: '#/components/responses/Forbidden'
         '401':

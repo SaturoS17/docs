@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-14 18:38 UTC · versión `3b148d701b1f`
+> **Documento actualizado:** 2026-07-14 21:10 UTC · versión `44f8314837ee`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.67 (14 de julio de 2026) |
+| Versión de la documentación | v1.68 (14 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -78,7 +78,7 @@ cuenta mantiene **cuatro saldos virtuales independientes** — `USDT` (la
 moneda operativa), `USDC`, `BTC` y `GOLD` (gramos de oro) — y opera sobre
 ellos:
 
-- **Payouts fiat** — Dispersa dinero a cuentas bancarias locales en Chile, Perú, México, Venezuela, Bolivia, Brasil y Paraguay, debitado de tu saldo USDT.
+- **Payouts fiat** — Dispersa dinero a cuentas bancarias locales en Chile, Perú, México, Venezuela, Bolivia, Brasil, Paraguay y Ecuador, debitado de tu saldo USDT.
 - **Payins fiat** — Cobra en moneda local (QR, transferencias, página de pago y cobro pull) y recibe el abono automáticamente en USDT.
 - **Transferencias internas** — Mueve saldo a cualquier otra cuenta CBPay, al instante y sin comisión.
 - **Crypto on-chain** — Fondea con USDT por TRON o Ethereum y retira on-chain a cualquier dirección.
@@ -2044,6 +2044,7 @@ Corredores y métodos disponibles:
 | Venezuela | VES | `bank_transfer`, `pago_movil` |
 | Bolivia | BOB / USD | `bank_transfer`, `qr` (ver [Payout QR](#payout-qr)) |
 | Brasil | BRL | `pix` (por llave o a cuenta) |
+| Ecuador | USD | `bank_transfer`, `deuna`, `cash_pickup`, `cnb` |
 | Paraguay | PYG | `bank_transfer` |
 
 La disponibilidad puede variar; el catálogo (`GET /v1/payouts/methods`) es
@@ -2262,6 +2263,9 @@ las de tu cuenta en `GET /v1/rates`; el débito es `usdt_amount + fee`
 | VE | `bank_transfer` | `name`, `account_number` (20 dígitos), `document_value` |
 | BO | `bank_transfer` | `name`, `tax_id`, `bank_code`, `account_number` |
 | BR | `pix` | `name`, `tax_id` + (`pix_key` y `pix_key_type`) o (`bank_code` ISPB, `branch_code`, `account_number`) |
+| EC | `bank_transfer` | `name`, `document_value` (cédula), `sender_name`, `account_number` (+ `bank_code` y `account_type` si es a otro banco) |
+| EC | `deuna` | `name`, `document_value`, `sender_name`, `phone` (celular de la billetera) |
+| EC | `cash_pickup` / `cnb` | `name`, `document_value`, `sender_name` — el beneficiario retira con su documento |
 | PY | `bank_transfer` | `name` (≤35), `tax_id`, `bank_code`, `account_number` |
 
 #### Chile
@@ -2596,6 +2600,119 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
   (conciliación continua contra el rail); consulta puntual con
   `GET /v1/payouts/{id}`.
 
+#### Ecuador
+
+Remesas en **USD** (1 a 10.000 por operación, máx. 2 decimales) con cuatro
+métodos: transferencia bancaria, billetera **DE UNA** (por celular),
+retiro en **ventanilla** (`cash_pickup`) y retiro en **corresponsal no
+bancario** (`cnb`). Es un corredor de remesas: además del beneficiario, el
+rail exige los datos del **ordenante** (quien envía), que van planos
+dentro del mismo `beneficiary` con prefijo `sender_*`.
+
+```bash bank_transfer (a cuenta)
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "EC",
+    "currency": "USD",
+    "method": "bank_transfer",
+    "amount": "250.00",
+    "beneficiary": {
+      "name": "Carlos Andrade Vera",
+      "document_value": "1712345678",
+      "account_number": "2203456789",
+      "sender_name": "Ana Torres Silva",
+      "sender_document_value": "V23456789",
+      "sender_country": "US"
+    },
+    "idempotency_key": "ec-bank-4471"
+  }'
+```
+
+```bash deuna (billetera)
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "EC",
+    "currency": "USD",
+    "method": "deuna",
+    "amount": "80.00",
+    "beneficiary": {
+      "name": "Lucia Paredes Mora",
+      "document_value": "0923456781",
+      "phone": "0998765432",
+      "sender_name": "Ana Torres Silva"
+    },
+    "idempotency_key": "ec-deuna-5520"
+  }'
+```
+
+```bash cash_pickup (ventanilla)
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "EC",
+    "currency": "USD",
+    "method": "cash_pickup",
+    "amount": "120.00",
+    "beneficiary": {
+      "name": "Miguel Zambrano Loor",
+      "document_value": "1309876543",
+      "sender_name": "Ana Torres Silva"
+    },
+    "idempotency_key": "ec-cash-6612"
+  }'
+```
+
+```bash cnb (corresponsal)
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "EC",
+    "currency": "USD",
+    "method": "cnb",
+    "amount": "60.00",
+    "beneficiary": {
+      "name": "Rosa Cedeño Vera",
+      "document_value": "0801234567",
+      "sender_name": "Ana Torres Silva"
+    },
+    "idempotency_key": "ec-cnb-7703"
+  }'
+```
+
+```json
+{
+  "payout_id": "9f3a…",
+  "country": "EC",
+  "currency": "USD",
+  "method": "bank_transfer",
+  "local_amount": "250.00",
+  "fx_rate": "1",
+  "usdt_amount": "250.000000",
+  "fee": "0.300000",
+  "total_debit": "250.300000",
+  "status": "processing"
+}
+```
+
+- Ecuador está dolarizado: la moneda local ES el USD (`fx_rate: "1"`).
+- `document_value` es la cédula del beneficiario; `document_type` acepta
+  `IDCD` (cédula, default), `CCPT` (pasaporte) o `TXID` (RUC).
+- En `bank_transfer`, si omites `bank_code` la cuenta es del banco emisor
+  del corredor; para **otro banco** envía el `bank_code` del catálogo
+  (`GET /v1/payouts/banks?country=EC`) más `account_type`
+  (`checking` o `savings`).
+- Nombres estructurados opcionales (`given_name`, `middle_name`,
+  `first_surname`, `second_surname` y sus pares `sender_*`): si los
+  tienes, envíalos — mandan sobre la separación automática de `name`.
+- El estado final llega por webhook `payout_status_changed`
+  (con conciliación periódica de respaldo).
+
 #### Paraguay
 
 Transferencia bancaria en PYG:
@@ -2718,6 +2835,7 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
 | 403 | `service_disabled` | Payouts no está habilitado para tu cuenta — ver [servicios](#servicios-habilitados) |
 | 422 | `currency_not_supported` | No hay tasa FX para esa moneda |
 | 422 | (payout con `status: failed`) | El corredor rechazó los datos; el débito ya fue reembolsado — corrige `beneficiary` y reintenta con clave nueva |
+| 503 | `channel_unavailable` | El canal de pago está temporalmente no disponible; reintenta más tarde con la MISMA `idempotency_key` |
 
 ### Rechazo inmediato vs fallo posterior
 
@@ -2731,6 +2849,7 @@ webhook con `status: failed` y el reembolso automático en ese momento.
 | `status_code` | Significado | Acción |
 |---|---|---|
 | `core_rejected` | El procesador rechazó la operación al crearla (datos del beneficiario inválidos, corredor no disponible) | Lee `status_message`, corrige y crea un payout nuevo con clave nueva |
+| `channel_unavailable` | El canal de pago quedó temporalmente no disponible | Reintenta más tarde; el reembolso (si hubo débito) ya está aplicado |
 | *otro código* | Rechazo posterior del riel bancario (p. ej. cuenta destino cerrada) | Igual: corrige los datos y crea una operación nueva |
 | *(vacío)* | Fallo genérico del corredor | Revisa `status_message`; si no es claro, contacta soporte con el `payout_id` |
 
@@ -8311,6 +8430,7 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | 503 | `org_credential_missing` | Servicio en configuración; contacta al soporte de CBPay |
 | 503 | `withdrawals_unavailable` | Retiros on-chain no habilitados para el corredor |
 | 503 | `pricing_unavailable` | Precio de ejecución de BTC/GOLD no disponible o desactualizado; reintenta más tarde o liquida en USDT/USDC |
+| 503 | `channel_unavailable` | El canal de payout está temporalmente no disponible; reintenta más tarde con la **misma** clave de idempotencia |
 | 503 | `export_unavailable` | El export de llaves privadas de wallets segregadas no está habilitado en este entorno |
 
 ### Cómo manejarlos
@@ -8511,9 +8631,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-14 15:45 UTC · 224 requests · versión `6c3b60163c91`
+> **Colección actualizada:** 2026-07-14 21:10 UTC · 228 requests · versión `383d72a413bc`
 
-<PostmanFreshness iso="2026-07-14T15:45:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-14T21:10:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -8684,6 +8804,23 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.68 — 14 de julio de 2026
+
+**Agregado**
+
+- **Nuevo corredor: Ecuador (USD)** con cuatro métodos de payout —
+  `bank_transfer` (transferencia bancaria), `deuna` (billetera DeUna),
+  `cash_pickup` (retiro en ventanilla sin cuenta) y `cnb` (corresponsal no
+  bancario). El beneficiario acepta nombres estructurados
+  (`given_name`/`first_surname`/...) o el split automático desde `name`, y
+  un bloque opcional de remitente (`sender_name` o sus campos
+  estructurados). Ejemplos por método en la
+  [guía de payouts](#payouts) y en el spec.
+- **Nuevo código de error `channel_unavailable`** (HTTP 503): el canal de
+  pago del corredor no está disponible temporalmente. Reintenta más tarde
+  con la misma `idempotency_key`. Documentado en la página de
+  [errores](#errores).
 
 ### v1.67 — 14 de julio de 2026
 

@@ -7,6 +7,22 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月14日" description="v1.68">
+
+**新增**
+
+- **新走廊：厄瓜多尔（USD）**，支持四种出金方式 —— `bank_transfer`
+  （银行转账）、`deuna`（DeUna 钱包）、`cash_pickup`（柜台取现，无需
+  账户）和 `cnb`（非银行代理点）。收款人支持结构化姓名
+  （`given_name`/`first_surname`/...）或从 `name` 自动拆分，并可附带
+  可选的汇款人信息块（`sender_name` 或其结构化字段）。各方式示例见
+  [出金指南](/zh/guides/payouts)与 API 规范。
+- **新错误码 `channel_unavailable`**（HTTP 503）：该走廊的支付通道
+  暂时不可用。请稍后使用相同的 `idempotency_key` 重试。详见
+  [错误页面](/zh/errors)。
+
+</Update>
+
 <Update label="2026年7月14日" description="v1.67">
 
 **新增**

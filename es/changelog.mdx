@@ -8,6 +8,25 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="14 de julio de 2026" description="v1.68">
+
+**Agregado**
+
+- **Nuevo corredor: Ecuador (USD)** con cuatro métodos de payout —
+  `bank_transfer` (transferencia bancaria), `deuna` (billetera DeUna),
+  `cash_pickup` (retiro en ventanilla sin cuenta) y `cnb` (corresponsal no
+  bancario). El beneficiario acepta nombres estructurados
+  (`given_name`/`first_surname`/...) o el split automático desde `name`, y
+  un bloque opcional de remitente (`sender_name` o sus campos
+  estructurados). Ejemplos por método en la
+  [guía de payouts](/es/guias/payouts) y en el spec.
+- **Nuevo código de error `channel_unavailable`** (HTTP 503): el canal de
+  pago del corredor no está disponible temporalmente. Reintenta más tarde
+  con la misma `idempotency_key`. Documentado en la página de
+  [errores](/es/errores).
+
+</Update>
+
 <Update label="14 de julio de 2026" description="v1.67">
 
 **Agregado**
