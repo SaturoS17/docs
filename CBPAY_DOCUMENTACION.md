@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-14 02:50 UTC · versión `ca23f19d58b1`
+> **Documento actualizado:** 2026-07-14 04:46 UTC · versión `94f24823441d`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.61 (13 de julio de 2026) |
+| Versión de la documentación | v1.62 (14 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -8527,6 +8527,24 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.62 — 14 de julio de 2026
+
+**Corregido**
+
+- `POST /v1/me/totp/enroll` ahora acepta un request sin body, tal como lo
+  documenta el spec (body opcional). Antes respondía `400 invalid_json`.
+  La contraseña actual sigue siendo obligatoria para las cuentas que
+  tienen contraseña (`403 invalid_password` si falta o es incorrecta);
+  las cuentas que solo usan login social pasan con su sesión.
+- `PUT /v1/otp/preferences` con canal `email` o `totp` respondía un error
+  500; corregido — los cuatro canales (`sms`, `whatsapp`, `email`,
+  `totp`) se guardan correctamente.
+
+**Cambiado**
+
+- Cartola PDF: los estados de las operaciones ahora aparecen coloreados
+  (verde completado, ámbar pendiente, rojo fallido) para lectura rápida.
 
 ### v1.61 — 13 de julio de 2026
 

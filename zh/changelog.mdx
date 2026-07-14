@@ -7,6 +7,24 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月14日" description="v1.62">
+
+**修复**
+
+- `POST /v1/me/totp/enroll` 现在接受不带请求体的请求,与规范文档一致
+  (请求体可选)。此前会返回 `400 invalid_json`。有密码的账户仍必须提供
+  当前密码(缺失或错误时返回 `403 invalid_password`);仅使用社交登录的
+  账户凭其会话即可通过。
+- `PUT /v1/otp/preferences` 选择 `email` 或 `totp` 渠道时返回 500 错误;
+  已修复 — 四个渠道(`sms`、`whatsapp`、`email`、`totp`)均可正常保存。
+
+**变更**
+
+- PDF 对账单:操作状态现在以颜色区分(绿色已完成、琥珀色待处理、红色
+  失败),便于快速浏览。
+
+</Update>
+
 <Update label="2026年7月13日" description="v1.61">
 
 **新增 — 列表支持 CSV / Excel 导出**

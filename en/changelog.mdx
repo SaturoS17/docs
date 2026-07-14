@@ -7,6 +7,26 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 14, 2026" description="v1.62">
+
+**Fixed**
+
+- `POST /v1/me/totp/enroll` now accepts a request without a body, as the
+  spec documents (optional body). It previously returned
+  `400 invalid_json`. The current password is still required for
+  accounts that have one (`403 invalid_password` if missing or wrong);
+  social-login-only accounts pass with their session.
+- `PUT /v1/otp/preferences` with channel `email` or `totp` returned a
+  500 error; fixed — all four channels (`sms`, `whatsapp`, `email`,
+  `totp`) now save correctly.
+
+**Changed**
+
+- PDF statement: operation statuses are now color-coded (green
+  completed, amber pending, red failed) for quick scanning.
+
+</Update>
+
 <Update label="July 13, 2026" description="v1.61">
 
 **Added — CSV / Excel export on listings**
