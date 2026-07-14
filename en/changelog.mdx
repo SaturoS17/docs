@@ -7,6 +7,25 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 13, 2026" description="v1.61">
+
+**Added — CSV / Excel export on listings**
+
+- The `movements`, `payouts`, `payins` and `transfers` listings now accept
+  the `format=csv` or `format=xlsx` parameter to download the rows as an
+  accounting-ready file (up to 10,000 rows per download; the `from`/`to`,
+  `status` and other filters apply the same).
+
+```bash
+curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-01&to=2026-07-13&format=xlsx" \
+  -H "Authorization: Bearer pk_…"
+```
+
+- Without `format` the response is still the usual paginated JSON — no
+  compatibility changes.
+
+</Update>
+
 <Update label="July 13, 2026" description="v1.60">
 
 **Breaking — Segregated wallets move to `/v1/segregated-wallets`**

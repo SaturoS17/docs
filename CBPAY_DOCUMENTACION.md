@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-13 22:14 UTC · versión `28563a3860eb`
+> **Documento actualizado:** 2026-07-14 02:50 UTC · versión `ca23f19d58b1`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.60 (13 de julio de 2026) |
+| Versión de la documentación | v1.61 (13 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -1768,6 +1768,17 @@ curl "https://api.qbank.cl/platform/v1/movements?from=2026-07-01&to=2026-07-08&p
 Filtros: `from`/`to` (`YYYY-MM-DD`, UTC), `type`, `asset`, `page`,
 `page_size` (máx. 200). Cada entrada trae `reference_type` +
 `reference_id`: el recurso de negocio que la originó.
+
+#### Exportar a CSV / Excel
+
+Agrega `format=csv` o `format=xlsx` para descargar las mismas filas como
+archivo listo para contabilidad (hasta 10.000 filas por descarga). También
+disponible en los listados de `payouts`, `payins` y `transfers`:
+
+```bash
+curl -o movimientos.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-01&to=2026-07-13&format=xlsx" \
+  -H "Authorization: Bearer <token>"
+```
 
 ### Catálogo completo de tipos
 
@@ -8480,9 +8491,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-13 22:14 UTC · 224 requests · versión `3cc0a8c03b6e`
+> **Colección actualizada:** 2026-07-14 02:49 UTC · 224 requests · versión `5f1c00339e4e`
 
-<PostmanFreshness iso="2026-07-13T22:14:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-14T02:49:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -8516,6 +8527,23 @@ después de cada entrada del [changelog](#novedades) para tener los
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.61 — 13 de julio de 2026
+
+**Agregado — Exportación CSV / Excel en los listados**
+
+- Los listados de `movements`, `payouts`, `payins` y `transfers` aceptan
+  ahora el parámetro `format=csv` o `format=xlsx` para descargar las
+  filas como archivo listo para contabilidad (hasta 10.000 filas por
+  descarga; los filtros `from`/`to`, `status` y demás aplican igual).
+
+```bash
+curl -o movimientos.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-01&to=2026-07-13&format=xlsx" \
+  -H "Authorization: Bearer pk_…"
+```
+
+- Sin `format` la respuesta sigue siendo el JSON paginado de siempre —
+  no hay cambios de compatibilidad.
 
 ### v1.60 — 13 de julio de 2026
 

@@ -1,8 +1,9 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.60'
-  description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC 和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
+  version: '1.61'
+  description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
+    和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
     payout 和服务费可从四个余额中的任意一个支付:
 
@@ -310,7 +311,8 @@ paths:
       - 凭证
       operationId: verifyReceipt
       summary: 验证凭证真伪(公开)
-      description: '公开端点(无需凭证),对应每张凭证上打印的 QR。代码经加密签名:被篡改或伪造的代码返回 404 且 `valid: false`。响应展示操作的真实当前状态与金额——绝不展示受益人的个人数据。浏览器获得品牌化 HTML 页面;API 客户端获得 JSON。按 IP 限流。'
+      description: '公开端点(无需凭证),对应每张凭证上打印的 QR。代码经加密签名:被篡改或伪造的代码返回 404 且 `valid: false`。响应展示操作的真实当前状态与金额——绝不展示受益人的个人数据。浏览器获得品牌化
+        HTML 页面;API 客户端获得 JSON。按 IP 限流。'
       parameters:
       - name: code
         in: path
@@ -352,7 +354,8 @@ paths:
       - 账户
       operationId: getBranding
       summary: 获取平台品牌
-      description: 你所在平台的有效品牌(名称、颜色、base64 logo),让白标前端可从 API 自动取得主题而无需硬编码资源。`logo_url`/`symbol_url` 是同一批 logo 的公共 CDN URL——优先于 base64 载荷使用。只读,无 PII。
+      description: 你所在平台的有效品牌(名称、颜色、base64 logo),让白标前端可从 API 自动取得主题而无需硬编码资源。`logo_url`/`symbol_url` 是同一批
+        logo 的公共 CDN URL——优先于 base64 载荷使用。只读,无 PII。
       responses:
         '200':
           description: 有效品牌。
@@ -496,12 +499,8 @@ paths:
       - Authentication
       operationId: createEnvironmentHandoff
       summary: 获取测试模式 handoff 令牌
-      description: >-
-        签发一个一次性令牌（有效期 60 秒），将当前 member 会话转移到测试
-        环境 —— 这就是控制台一键 test/live 切换的底层机制，无需再次登录，
-        也无需新的 OTP 验证。只有 live 环境签发 handoff，且只有 member
-        会话（JWT）可以请求：API 密钥永远不会跨环境（每个环境管理自己的
-        密钥）。
+      description: 签发一个一次性令牌（有效期 60 秒），将当前 member 会话转移到测试 环境 —— 这就是控制台一键 test/live 切换的底层机制，无需再次登录， 也无需新的
+        OTP 验证。只有 live 环境签发 handoff，且只有 member 会话（JWT）可以请求：API 密钥永远不会跨环境（每个环境管理自己的 密钥）。
       responses:
         '201':
           description: handoff 令牌已签发。请立即在测试环境的 `POST /v1/auth/handoff` 兑换。
@@ -539,11 +538,8 @@ paths:
       security: []
       operationId: exchangeEnvironmentHandoff
       summary: 用 handoff 令牌兑换测试会话
-      description: >-
-        仅限测试环境（live 始终返回 404）。将 live 环境通过
-        `POST /v1/auth/environment-handoff` 签发的一次性令牌兑换为测试
-        环境自己的会话。如果账户在测试环境尚不存在，会自动创建其镜像
-        —— 测试模式对每个用户始终存在。
+      description: 仅限测试环境（live 始终返回 404）。将 live 环境通过 `POST /v1/auth/environment-handoff` 签发的一次性令牌兑换为测试
+        环境自己的会话。如果账户在测试环境尚不存在，会自动创建其镜像 —— 测试模式对每个用户始终存在。
       requestBody:
         required: true
         content:
@@ -633,7 +629,8 @@ paths:
               password: a-secure-password
       responses:
         '200':
-          description: 已签发会话——或者,当账户策略要求登录 OTP 时,返回带 `otp_required` true 和 `pending_token` 的中间响应,在 `POST /v1/auth/login/otp` 交换。
+          description: 已签发会话——或者,当账户策略要求登录 OTP 时,返回带 `otp_required` true 和 `pending_token` 的中间响应,在 `POST
+            /v1/auth/login/otp` 交换。
           content:
             application/json:
               schema:
@@ -712,7 +709,8 @@ paths:
       security: []
       operationId: loginOTP
       summary: 完成两步登录
-      description: 用 `POST /v1/auth/login` 返回的 `pending_token` 加上通过 SMS/WhatsApp 收到的 OTP 验证码换取真正的会话令牌。pending token 10 分钟后过期,且自身永远无法调用 API。
+      description: 用 `POST /v1/auth/login` 返回的 `pending_token` 加上通过 SMS/WhatsApp 收到的 OTP 验证码换取真正的会话令牌。pending
+        token 10 分钟后过期,且自身永远无法调用 API。
       requestBody:
         required: true
         content:
@@ -787,12 +785,9 @@ paths:
       security: []
       operationId: refreshSession
       summary: 续期会话
-      description: >-
-        用一次性刷新令牌(`rt_…`,每次登录都会签发)换取一对新的 access token +
-        refresh token,无需再次输入凭证。严格轮换:交换时会立即吊销该设备之前的
-        access token;若提交一个已被交换过的刷新令牌,会吊销该设备的整条令牌链
-        (防盗响应)并记录 `refresh_token_reuse` 安全事件。刷新令牌每次轮换有效
-        30 天,自最初登录起绝对上限 90 天;退出登录、吊销会话或修改密码也会使其失效。
+      description: 用一次性刷新令牌(`rt_…`,每次登录都会签发)换取一对新的 access token + refresh token,无需再次输入凭证。严格轮换:交换时会立即吊销该设备之前的
+        access token;若提交一个已被交换过的刷新令牌,会吊销该设备的整条令牌链 (防盗响应)并记录 `refresh_token_reuse` 安全事件。刷新令牌每次轮换有效 30 天,自最初登录起绝对上限
+        90 天;退出登录、吊销会话或修改密码也会使其失效。
       requestBody:
         required: true
         content:
@@ -863,7 +858,8 @@ paths:
       security: []
       operationId: oauthLogin
       summary: 通过社交提供方登录或注册
-      description: 令牌交换。前端获取提供方凭证(Google/Apple/Microsoft 的 `id_token`、Facebook 的 `access_token`)并提交到此处。API 向提供方验证后返回 CBPay 会话——首次使用时创建账户。遵守账户的登录 OTP 策略(可能返回 `otp_required`)。
+      description: 令牌交换。前端获取提供方凭证(Google/Apple/Microsoft 的 `id_token`、Facebook 的 `access_token`)并提交到此处。API
+        向提供方验证后返回 CBPay 会话——首次使用时创建账户。遵守账户的登录 OTP 策略(可能返回 `otp_required`)。
       requestBody:
         required: true
         content:
@@ -952,7 +948,8 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 error: email_conflict
-                message: an account with this email already exists; sign in with your current method and link this provider from your session
+                message: an account with this email already exists; sign in with your current method and
+                  link this provider from your session
   /v1/auth/oauth/providers:
     get:
       tags:
@@ -1083,7 +1080,8 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 error: last_login_method
-                message: cannot unlink the only sign-in method; set a password or link another provider first
+                message: cannot unlink the only sign-in method; set a password or link another provider
+                  first
         '404':
           $ref: '#/components/responses/NotFound'
   /v1/me:
@@ -1277,7 +1275,8 @@ paths:
       - 余额
       operationId: getBalances
       summary: 获取余额
-      description: 调用账户的四个独立虚拟余额(USDT——运营货币——、USDC、BTC 和以纯金克数计的 GOLD)。每个受支持的资产始终存在,账户未使用过该货币时为零。若账户使用 Banking,其 BANK_USD/BANK_EUR 镜像余额也会列出,`custody` 标记为 `banking`(权威余额在银行;这些余额在平台内不可消费)。
+      description: 调用账户的四个独立虚拟余额(USDT——运营货币——、USDC、BTC 和以纯金克数计的 GOLD)。每个受支持的资产始终存在,账户未使用过该货币时为零。若账户使用
+        Banking,其 BANK_USD/BANK_EUR 镜像余额也会列出,`custody` 标记为 `banking`(权威余额在银行;这些余额在平台内不可消费)。
       responses:
         '200':
           description: 调用账户的余额(每个受支持资产各一条)。
@@ -1317,7 +1316,9 @@ paths:
       - 余额
       operationId: getBalancesHistory
       summary: 获取余额历史
-      description: '账户余额的每日演变,用于仪表盘图表:每个资产一条序列(每日收盘可用余额,无流水的日期沿用前值),外加一条按各日历史参考价对 BTC/GOLD 估值的 USD 汇总序列。包含期间总流入/流出及当前快照(可用 + 冻结),前端可据此渲染 Mercury 风格的余额卡片及其百分比变化。序列跟踪**可用**余额(冻结没有历史);`current` 携带今日各资产的 `held`。在历史价格存在之前用今日现价估值的日期会在 `spot_priced_dates` 中披露——绝不虚构数值。
+      description: '账户余额的每日演变,用于仪表盘图表:每个资产一条序列(每日收盘可用余额,无流水的日期沿用前值),外加一条按各日历史参考价对 BTC/GOLD 估值的 USD 汇总序列。包含期间总流入/流出及当前快照(可用
+        + 冻结),前端可据此渲染 Mercury 风格的余额卡片及其百分比变化。序列跟踪**可用**余额(冻结没有历史);`current` 携带今日各资产的 `held`。在历史价格存在之前用今日现价估值的日期会在
+        `spot_priced_dates` 中披露——绝不虚构数值。
 
 
         `assets` 映射还包含银行账户镜像(`BANK_USD`、`BANK_EUR`),以其自身货币(2 位小数)作为独立序列提供。它们**不**计入 `total_usd` 汇总——该汇总仅覆盖运营余额(USDT、USDC、BTC、GOLD)。
@@ -1360,7 +1361,8 @@ paths:
                     example: UTC
                   assets:
                     type: object
-                    description: 每个资产一条每日收盘余额序列。包含运营余额(USDT、USDC、BTC、GOLD)以及以自身货币计的银行账户镜像(BANK_USD、BANK_EUR);银行序列不计入 `total_usd`。
+                    description: 每个资产一条每日收盘余额序列。包含运营余额(USDT、USDC、BTC、GOLD)以及以自身货币计的银行账户镜像(BANK_USD、BANK_EUR);银行序列不计入
+                      `total_usd`。
                     additionalProperties:
                       type: object
                       properties:
@@ -1583,6 +1585,14 @@ paths:
           type: string
           format: date
         description: 过滤至此日期(YYYY-MM-DD,UTC,含当日)。
+      - name: format
+        in: query
+        description: 将相同的行导出为文件：`csv` 或 `xlsx`（会计级下载，最多 10,000 行；相同的过滤器和日期范围）。省略则返回 JSON 视图。
+        schema:
+          type: string
+          enum:
+          - csv
+          - xlsx
       responses:
         '200':
           description: 流水分页。
@@ -1623,7 +1633,10 @@ paths:
       - 余额
       operationId: getRates
       summary: 获取我的外汇汇率与费用
-      description: 返回适用于调用账户的各国汇率——与操作执行时使用的相同(`local_amount / rate = USDT`)——以及账户的**有效**费用配置(组织默认值已与账户覆盖项解析合并),便于客户端在创建操作前计算确切成本。`rate` 为 payout(派发)侧,`payin_rate` 为 payin(充值)侧。`asset_prices` 携带各虚拟余额资产的 USD 参考价(BTC 按单位、GOLD 按克;稳定币约定为 1)用于展示/估值。`settlement` 块按启用的资产显示你的账户此刻从该余额支付操作可获得的**有效结算价格**(`settlement_rate`,已含点差)及该资产当前是否 `available`——可在 payout 传 `settlement_asset` 之前用它来估算。
+      description: 返回适用于调用账户的各国汇率——与操作执行时使用的相同(`local_amount / rate = USDT`)——以及账户的**有效**费用配置(组织默认值已与账户覆盖项解析合并),便于客户端在创建操作前计算确切成本。`rate`
+        为 payout(派发)侧,`payin_rate` 为 payin(充值)侧。`asset_prices` 携带各虚拟余额资产的 USD 参考价(BTC 按单位、GOLD 按克;稳定币约定为
+        1)用于展示/估值。`settlement` 块按启用的资产显示你的账户此刻从该余额支付操作可获得的**有效结算价格**(`settlement_rate`,已含点差)及该资产当前是否 `available`——可在
+        payout 传 `settlement_asset` 之前用它来估算。
       responses:
         '200':
           description: 汇率、参考资产价格与费用。
@@ -1784,7 +1797,9 @@ paths:
       - 余额
       operationId: getRatesHistory
       summary: 获取外汇汇率历史
-      description: '适用于调用账户的外汇汇率时间序列,用于汇率演变图表。每个点携带你在该时刻操作会得到的相同汇率——`rate`(payout 侧)和 `payin_rate`(充值侧)——且每个国家块包含 `first`、`last` 及二者之间带符号的 `change_pct`,可直接用于 "+3.4% / -3.0%" 徽章。`asset_prices` 携带 BTC 与 GOLD 的 USD 参考序列。无数据的桶沿用前值;历史开始之前的日期会被省略(绝不虚构)。
+      description: '适用于调用账户的外汇汇率时间序列,用于汇率演变图表。每个点携带你在该时刻操作会得到的相同汇率——`rate`(payout 侧)和 `payin_rate`(充值侧)——且每个国家块包含
+        `first`、`last` 及二者之间带符号的 `change_pct`,可直接用于 "+3.4% / -3.0%" 徽章。`asset_prices` 携带 BTC 与 GOLD 的
+        USD 参考序列。无数据的桶沿用前值;历史开始之前的日期会被省略(绝不虚构)。
 
         '
       parameters:
@@ -1990,7 +2005,9 @@ paths:
       description: '向本地银行账户派发法币。本地金额按**你账户的汇率**(与 `GET /v1/rates` 返回的相同)转换为 USDT;扣除 `usdt_amount` 加固定费用(如有配置)并冻结,直到派发完成。若失败,全额退款。
 
 
-        **从任意余额支付**:默认从你账户的默认结算资产扣款(USDT,除非通过 `PUT /v1/settlement` 更改)。传 `settlement_asset`(USDT、USDC、BTC 或 GOLD)可让这笔操作从其他余额支付:USDT 总额按当时的有效结算价格转换为该资产(见 `GET /v1/rates` 的 `settlement` 块),扣款、冻结以及失败时的退款都在该资产中且金额完全一致。若 BTC/GOLD 的执行价格不可用,请求返回 `503 pricing_unavailable`;波动性资产还有单笔限额(`422 settlement_limit_exceeded`)。
+        **从任意余额支付**:默认从你账户的默认结算资产扣款(USDT,除非通过 `PUT /v1/settlement` 更改)。传 `settlement_asset`(USDT、USDC、BTC
+        或 GOLD)可让这笔操作从其他余额支付:USDT 总额按当时的有效结算价格转换为该资产(见 `GET /v1/rates` 的 `settlement` 块),扣款、冻结以及失败时的退款都在该资产中且金额完全一致。若
+        BTC/GOLD 的执行价格不可用,请求返回 `503 pricing_unavailable`;波动性资产还有单笔限额(`422 settlement_limit_exceeded`)。
 
 
         必须提供幂等键(请求体字段或 `Idempotency-Key` 请求头)。使用相同键重试会返回原始 payout(`200` 且 `idempotency_hit: true`)。'
@@ -2036,7 +2053,8 @@ paths:
                 beneficiary_contact_id:
                   type: string
                   format: uuid
-                  description: 使用联系人在该国家(及方式,若传入)最近保存的受益人,而无需再次输入 `beneficiary`。显式 `beneficiary` 始终优先;若联系人没有则返回 422 no_saved_destination。
+                  description: 使用联系人在该国家(及方式,若传入)最近保存的受益人,而无需再次输入 `beneficiary`。显式 `beneficiary` 始终优先;若联系人没有则返回
+                    422 no_saved_destination。
                 save_contact:
                   type: boolean
                   default: true
@@ -2269,7 +2287,8 @@ paths:
                 error: account_blocked
                 message: account is not active
         '422':
-          description: '该货币无外汇汇率(`currency_not_supported`),或 payout 被预先拒绝——响应为带 `status: failed` 的 payout 对象,扣款已退回。
+          description: '该货币无外汇汇率(`currency_not_supported`),或 payout 被预先拒绝——响应为带 `status: failed` 的 payout
+            对象,扣款已退回。
 
             '
           content:
@@ -2324,7 +2343,7 @@ paths:
         in: query
         schema:
           type: string
-        description: "按目的国筛选（ISO 3166-1 alpha-2，例如 CL、PE、MX）。"
+        description: 按目的国筛选（ISO 3166-1 alpha-2，例如 CL、PE、MX）。
       - name: from
         in: query
         schema:
@@ -2337,6 +2356,14 @@ paths:
           type: string
           format: date
         description: 过滤至此日期(YYYY-MM-DD,UTC,含当日)。
+      - name: format
+        in: query
+        description: 将相同的行导出为文件：`csv` 或 `xlsx`（会计级下载，最多 10,000 行；相同的过滤器和日期范围）。省略则返回 JSON 视图。
+        schema:
+          type: string
+          enum:
+          - csv
+          - xlsx
       responses:
         '200':
           description: payouts 分页。
@@ -2468,7 +2495,8 @@ paths:
       - 付款(Payouts)
       operationId: getPayoutBanks
       summary: 列出目标银行
-      description: 某国 payout 的银行目录。不带 `method` 时返回该国所有 payout 方式的银行并集(按代码去重);传入 `method` 可获取单一渠道的目录。部分方式没有银行目录(例如 QR),不贡献任何条目。
+      description: 某国 payout 的银行目录。不带 `method` 时返回该国所有 payout 方式的银行并集(按代码去重);传入 `method` 可获取单一渠道的目录。部分方式没有银行目录(例如
+        QR),不贡献任何条目。
       parameters:
       - name: country
         in: query
@@ -2508,7 +2536,10 @@ paths:
       - 收款(Payins)
       operationId: createPayin
       summary: 创建 payin(充值收款)
-      description: '创建一笔法币充值。使用 `method: "qr"`(默认)会通过处理方生成主动 QR 收款——在玻利维亚为本地互通 QR,在巴西为动态 PIX QR,其 `charge` 携带 QR 图片和 "copia e cola" 载荷。使用 `method: "bank_transfer"` 会预告存款,响应携带付款人必须附上的参考号,以便到账转账被自动匹配入账——一个 12 位字母数字短码,适配任何银行附言字段(部分通道上限 20 个字符且不允许特殊字符)。使用 `method: "fintoc"`(智利)响应携带托管 `payment_url`:付款人打开后可从任意智利银行或钱包转账;存款会被自动检测、校验并入账。创建收款免费;存款入账时收取 payin 费用。'
+      description: '创建一笔法币充值。使用 `method: "qr"`(默认)会通过处理方生成主动 QR 收款——在玻利维亚为本地互通 QR,在巴西为动态 PIX QR,其 `charge`
+        携带 QR 图片和 "copia e cola" 载荷。使用 `method: "bank_transfer"` 会预告存款,响应携带付款人必须附上的参考号,以便到账转账被自动匹配入账——一个
+        12 位字母数字短码,适配任何银行附言字段(部分通道上限 20 个字符且不允许特殊字符)。使用 `method: "fintoc"`(智利)响应携带托管 `payment_url`:付款人打开后可从任意智利银行或钱包转账;存款会被自动检测、校验并入账。创建收款免费;存款入账时收取
+        payin 费用。'
       requestBody:
         required: true
         content:
@@ -2544,7 +2575,8 @@ paths:
                   - bank_transfer
                   - fintoc
                   default: qr
-                  description: 收款模式。`qr` 通过处理方创建主动 QR 收款;`bank_transfer` 预告一笔入账存款并返回需附在转账附言中的参考号;`fintoc`(仅智利)返回托管 `payment_url`,付款人可从任意智利银行或钱包转账,存款自动检测。pull 收款请使用 /v1/payins/collect。
+                  description: 收款模式。`qr` 通过处理方创建主动 QR 收款;`bank_transfer` 预告一笔入账存款并返回需附在转账附言中的参考号;`fintoc`(仅智利)返回托管
+                    `payment_url`,付款人可从任意智利银行或钱包转账,存款自动检测。pull 收款请使用 /v1/payins/collect。
                 idempotency_key:
                   type: string
                   description: 可选幂等键(`fintoc` 方式;也接受 `Idempotency-Key` 请求头)。使用相同键重试会返回原始 payin 及其 `payment_url`,而不会开启第二个支付会话。
@@ -2624,7 +2656,8 @@ paths:
                     payin_id: 4f81c1d0-aaaa-bbbb-cccc-ddddeeeeffff
                     status: pending
                     reference: CBJ6T3W9M2K5
-                    note: include the reference in the transfer description so the deposit is credited automatically
+                    note: include the reference in the transfer description so the deposit is credited
+                      automatically
                 fintoc:
                   summary: 托管支付页(方式:fintoc,智利)
                   value:
@@ -2633,7 +2666,8 @@ paths:
                     reference: 7a2b3c4d-1111-2222-3333-444455556666
                     payment_url: https://pay.fintoc.com/plink_K2zwNNSxPyx8w3GZ
                     expires_at: '2026-07-08T18:48:25Z'
-                    note: share the payment_url with the payer; the deposit is credited automatically once the transfer is detected
+                    note: share the payment_url with the payer; the deposit is credited automatically
+                      once the transfer is detected
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':
@@ -2680,7 +2714,7 @@ paths:
         in: query
         schema:
           type: string
-        description: "按来源国筛选（ISO 3166-1 alpha-2，例如 BO、MX、VE）。"
+        description: 按来源国筛选（ISO 3166-1 alpha-2，例如 BO、MX、VE）。
       - name: from
         in: query
         schema:
@@ -2693,6 +2727,14 @@ paths:
           type: string
           format: date
         description: 过滤至此日期(YYYY-MM-DD,UTC,含当日)。
+      - name: format
+        in: query
+        description: 将相同的行导出为文件：`csv` 或 `xlsx`（会计级下载，最多 10,000 行；相同的过滤器和日期范围）。省略则返回 JSON 视图。
+        schema:
+          type: string
+          enum:
+          - csv
+          - xlsx
       responses:
         '200':
           description: payins 分页。
@@ -2809,7 +2851,9 @@ paths:
       - 转账
       operationId: createTransfer
       summary: 创建内部转账
-      description: '在两个 CBPay 账户之间划转余额,原子执行且始终免费——任意组合皆可:个人对个人、个人对企业、企业对个人或企业对企业。支持四个虚拟余额(默认 `USDT`、`USDC`、`BTC`、`GOLD`),且始终在**同一货币**的余额之间进行(不做兑换)。目标通过 `to_account_id`、`to_email`、`to_phone`(仅 OTP 已验证的手机号)或 `to_contact_id` 解析。每笔转账都会自动把收款人保存为联系人(用 `save_contact: false` 退出)。收款方的 webhook 订阅者会收到 `transfer_received`。'
+      description: '在两个 CBPay 账户之间划转余额,原子执行且始终免费——任意组合皆可:个人对个人、个人对企业、企业对个人或企业对企业。支持四个虚拟余额(默认 `USDT`、`USDC`、`BTC`、`GOLD`),且始终在**同一货币**的余额之间进行(不做兑换)。目标通过
+        `to_account_id`、`to_email`、`to_phone`(仅 OTP 已验证的手机号)或 `to_contact_id` 解析。每笔转账都会自动把收款人保存为联系人(用
+        `save_contact: false` 退出)。收款方的 webhook 订阅者会收到 `transfer_received`。'
       parameters:
       - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:
@@ -2829,7 +2873,8 @@ paths:
                   format: email
                 to_phone:
                   type: string
-                  description: 目标账户的 E.164 手机号。只有 OTP 已验证手机号的账户能被解析(否则 404 recipient_not_found;若多个账户共用该号码则 422 recipient_ambiguous)。
+                  description: 目标账户的 E.164 手机号。只有 OTP 已验证手机号的账户能被解析(否则 404 recipient_not_found;若多个账户共用该号码则
+                    422 recipient_ambiguous)。
                 to_contact_id:
                   type: string
                   format: uuid
@@ -2984,6 +3029,14 @@ paths:
           type: string
           format: date
         description: 过滤至此日期(YYYY-MM-DD,UTC,含当日)。
+      - name: format
+        in: query
+        description: 将相同的行导出为文件：`csv` 或 `xlsx`（会计级下载，最多 10,000 行；相同的过滤器和日期范围）。省略则返回 JSON 视图。
+        schema:
+          type: string
+          enum:
+          - csv
+          - xlsx
       responses:
         '200':
           description: 转账。
@@ -3014,7 +3067,8 @@ paths:
       - 加密货币
       operationId: createCryptoWithdrawal
       summary: 创建链上提现
-      description: 从其自身余额链上发送 USDT 或 USDC。支持的组合:`tron`/`USDT`、`eth`/`USDT`、`eth`/`USDC`(BTC 和 GOLD 无链上通道)。`amount + 提现费` 原子扣除并冻结;最终状态通过 `crypto_withdrawal_status_changed` webhook 送达。`failed` 会全额退款。
+      description: 从其自身余额链上发送 USDT 或 USDC。支持的组合:`tron`/`USDT`、`eth`/`USDT`、`eth`/`USDC`(BTC 和 GOLD 无链上通道)。`amount
+        + 提现费` 原子扣除并冻结;最终状态通过 `crypto_withdrawal_status_changed` webhook 送达。`failed` 会全额退款。
       parameters:
       - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:
@@ -3059,7 +3113,8 @@ paths:
                   description: 地址会自动保存为联系人;传 false 可跳过。
                 travel_address:
                   type: string
-                  description: Travel Rule(FATF R.16)— 超过组织阈值且转往其他机构时,收款机构的 travel address(`ta…` 代码)。付款地址由收款机构提供,因此可省略 `to_address`。
+                  description: Travel Rule(FATF R.16)— 超过组织阈值且转往其他机构时,收款机构的 travel address(`ta…` 代码)。付款地址由收款机构提供,因此可省略
+                    `to_address`。
                 wallet_type:
                   type: string
                   enum:
@@ -3306,7 +3361,8 @@ paths:
       - AML screening
       operationId: submitAmlScreening
       summary: 提交 AML 筛查
-      description: 通过合规服务对个人或企业（由 payload 判定）进行制裁、PEP 与负面媒体名单筛查。仅名单筛查——带证件与活体核验的身份验证见 /v1/kyc 与 /v1/kyb。身份字段均为可选并完整转发；信息越完整结果越精确。若配置合规费用，调用前扣款，失败则退款。结果本地保存供审计（`GET /v1/aml/screenings`）。必须提供 `idempotency_key`——相同键重放返回原记录且 `idempotency_hit` true，不会重复扣费。
+      description: 通过合规服务对个人或企业（由 payload 判定）进行制裁、PEP 与负面媒体名单筛查。仅名单筛查——带证件与活体核验的身份验证见 /v1/kyc 与 /v1/kyb。身份字段均为可选并完整转发；信息越完整结果越精确。若配置合规费用，调用前扣款，失败则退款。结果本地保存供审计（`GET
+        /v1/aml/screenings`）。必须提供 `idempotency_key`——相同键重放返回原记录且 `idempotency_hit` true，不会重复扣费。
       requestBody:
         required: true
         content:
@@ -3673,7 +3729,8 @@ paths:
       - AML screening
       operationId: rescreenAml
       summary: 重新运行 AML 筛查
-      description: 重新运行账户筛查，需先有筛查记录。若配置则收取 `compliance_rescreen` 费用，上游失败则退款。每次重新筛查写入历史（`GET /v1/aml/screenings`）。必须提供 `idempotency_key`——相同键重放返回原记录且不会重复扣费。
+      description: 重新运行账户筛查，需先有筛查记录。若配置则收取 `compliance_rescreen` 费用，上游失败则退款。每次重新筛查写入历史（`GET /v1/aml/screenings`）。必须提供
+        `idempotency_key`——相同键重放返回原记录且不会重复扣费。
       requestBody:
         required: true
         content:
@@ -3734,10 +3791,9 @@ paths:
       - AML screening
       operationId: setAmlMonitoring
       summary: 启用或停用 AML 监控
-      description: 切换账户已验证身份的持续合规监控。启用时若配置则收取 `compliance_monitoring` 费用；停用免费。需先有筛查记录。
-        每次状态变更写入审计历史（`GET /v1/aml/screenings`，筛选 kind monitoring）。状态实际变更时
-        必须提供 `idempotency_key`——相同键重放返回原事件且 `idempotency_hit` true。若已是目标状态则返回
-        unchanged true 且不扣费。
+      description: 切换账户已验证身份的持续合规监控。启用时若配置则收取 `compliance_monitoring` 费用；停用免费。需先有筛查记录。 每次状态变更写入审计历史（`GET
+        /v1/aml/screenings`，筛选 kind monitoring）。状态实际变更时 必须提供 `idempotency_key`——相同键重放返回原事件且 `idempotency_hit`
+        true。若已是目标状态则返回 unchanged true 且不扣费。
       requestBody:
         required: true
         content:
@@ -3801,7 +3857,8 @@ paths:
       - AML 筛查
       operationId: getAmlCatalogs
       summary: 合规表单目录
-      description: 返回前端构建一致的合规与验证表单所需的全部目录(value/label 对列表):性别、公司状态、地址类型、公司法律形式(全局列表加各国级联)、收入/财富来源、行业标准及其各国默认值,以及完整的 ISO-3166 国家和行政区划列表。静态数据——可安全缓存数小时。`value` 是发送给 API 的值;`label` 是展示用的文本。
+      description: 返回前端构建一致的合规与验证表单所需的全部目录(value/label 对列表):性别、公司状态、地址类型、公司法律形式(全局列表加各国级联)、收入/财富来源、行业标准及其各国默认值,以及完整的
+        ISO-3166 国家和行政区划列表。静态数据——可安全缓存数小时。`value` 是发送给 API 的值;`label` 是展示用的文本。
       responses:
         '200':
           description: 全部目录,外加描述级联关系的 `meta` 块。
@@ -3921,7 +3978,8 @@ paths:
       - KYC / KYB
       operationId: createMyVerificationLink
       summary: 请求我的入驻验证链接
-      description: 返回账户自己的身份验证链接(个人账户获得 KYC 链接,企业账户获得 KYB 链接——由账户类型决定)。托管向导涵盖完整流程:表单、文件上传与视频活体检测。免费。若已存在开放链接则返回 200;已通过验证的账户返回 409 already_verified。在账户验证通过之前,所有资金流出操作返回 403 verification_required(充值与读取保持可用)。
+      description: 返回账户自己的身份验证链接(个人账户获得 KYC 链接,企业账户获得 KYB 链接——由账户类型决定)。托管向导涵盖完整流程:表单、文件上传与视频活体检测。免费。若已存在开放链接则返回
+        200;已通过验证的账户返回 409 already_verified。在账户验证通过之前,所有资金流出操作返回 403 verification_required(充值与读取保持可用)。
       requestBody:
         required: false
         content:
@@ -4023,7 +4081,9 @@ paths:
       - 钱包筛查
       operationId: createAddressScreening
       summary: 筛查区块链地址
-      description: '依托全球链上情报评估区块链地址的 AML 风险(受制裁实体、非法资金暴露),返回归一化的风险等级(Low/Medium/High/Severe)及完整证据。与网络无关:地址会一次性在所有受支持的链上评估;`chain` 仅用于标注你的记录。按固定 `address_screening` 费用计费(筛查失败自动退款),因此必须提供 `idempotency_key`——使用相同键重放会返回原始筛查并带 `idempotency_hit: true`,绝不重复扣费。需要启用 `screenings` 服务且账户验证已通过。'
+      description: '依托全球链上情报评估区块链地址的 AML 风险(受制裁实体、非法资金暴露),返回归一化的风险等级(Low/Medium/High/Severe)及完整证据。与网络无关:地址会一次性在所有受支持的链上评估;`chain`
+        仅用于标注你的记录。按固定 `address_screening` 费用计费(筛查失败自动退款),因此必须提供 `idempotency_key`——使用相同键重放会返回原始筛查并带 `idempotency_hit:
+        true`,绝不重复扣费。需要启用 `screenings` 服务且账户验证已通过。'
       requestBody:
         required: true
         content:
@@ -4237,7 +4297,8 @@ paths:
       - KYC / KYB
       operationId: createKycLink
       summary: 为客户创建 KYC 链接
-      description: 仅限企业账户:为你的终端客户生成托管 KYC 链接。向导涵盖表单、文件与视频活体检测。若配置了固定 `kyc_verification` 费用则计费(创建失败退款);必须提供 `idempotency_key`——使用相同键重试会返回原始链接,绝不重复扣费。
+      description: 仅限企业账户:为你的终端客户生成托管 KYC 链接。向导涵盖表单、文件与视频活体检测。若配置了固定 `kyc_verification` 费用则计费(创建失败退款);必须提供
+        `idempotency_key`——使用相同键重试会返回原始链接,绝不重复扣费。
       requestBody:
         required: true
         content:
@@ -4389,7 +4450,8 @@ paths:
       - KYC / KYB
       operationId: createKybLink
       summary: 为客户创建 KYB 链接
-      description: 仅限企业账户:为你的终端客户(企业)生成托管 KYB 链接。若配置了固定 `kyb_verification` 费用则计费(创建失败退款);必须提供 `idempotency_key`。`country` 决定向导通道:us、cl、ve、br、mx、co、pe、bo、py、ar 或 generic(需传 ISO alpha-2 的 `generic_country`,可选 `currency`)。
+      description: 仅限企业账户:为你的终端客户(企业)生成托管 KYB 链接。若配置了固定 `kyb_verification` 费用则计费(创建失败退款);必须提供 `idempotency_key`。`country`
+        决定向导通道:us、cl、ve、br、mx、co、pe、bo、py、ar 或 generic(需传 ISO alpha-2 的 `generic_country`,可选 `currency`)。
       requestBody:
         required: true
         content:
@@ -4542,7 +4604,9 @@ paths:
       - KYC / KYB
       operationId: createKycSubmission
       summary: 通过 API 数据创建 KYC submission
-      description: '仅限企业账户:直接提交数据验证你的终端客户(无向导)。国家用 ISO alpha-3,日期用 YYYY-MM-DD,id_type 为 passport | id_card | drivers_license。创建时文件可选(通过 presign 流程上传);创建时无需活体检测——submission 会带 liveness_pending: true,用活体链接完成它。在 submission 开放期间用相同 external_customer_id 重新提交会更新它而不再次扣费。按固定 `kyc_verification` 费用计费;必须提供 `idempotency_key`。'
+      description: '仅限企业账户:直接提交数据验证你的终端客户(无向导)。国家用 ISO alpha-3,日期用 YYYY-MM-DD,id_type 为 passport | id_card
+        | drivers_license。创建时文件可选(通过 presign 流程上传);创建时无需活体检测——submission 会带 liveness_pending: true,用活体链接完成它。在
+        submission 开放期间用相同 external_customer_id 重新提交会更新它而不再次扣费。按固定 `kyc_verification` 费用计费;必须提供 `idempotency_key`。'
       requestBody:
         required: true
         content:
@@ -4693,7 +4757,8 @@ paths:
       - KYC / KYB
       operationId: getKycSubmission
       summary: 获取 KYC submission
-      description: 不含内部敏感数据的汇总状态:status、risk_band、pending_documents(合规要求补充的文件)、rejection_reason、changes_requested_comments、liveness_pending 和 documents_received。
+      description: 不含内部敏感数据的汇总状态:status、risk_band、pending_documents(合规要求补充的文件)、rejection_reason、changes_requested_comments、liveness_pending
+        和 documents_received。
       parameters:
       - name: submissionID
         in: path
@@ -4729,7 +4794,8 @@ paths:
       - KYC / KYB
       operationId: createKybSubmission
       summary: 通过 API 数据创建 KYB submission
-      description: 仅限企业账户:直接提交数据以验证你的终端客户(企业)。请求体:external_customer_id、country?、business(公司字段)、ubos?、directors?、signers?、bank_info?、metadata?。按固定 `kyb_verification` 费用计费;必须提供 `idempotency_key`。在开放期间重新提交会更新同一份 submission 而不再次扣费。
+      description: 仅限企业账户:直接提交数据以验证你的终端客户(企业)。请求体:external_customer_id、country?、business(公司字段)、ubos?、directors?、signers?、bank_info?、metadata?。按固定
+        `kyb_verification` 费用计费;必须提供 `idempotency_key`。在开放期间重新提交会更新同一份 submission 而不再次扣费。
       requestBody:
         required: true
         content:
@@ -4875,7 +4941,8 @@ paths:
       - KYC / KYB
       operationId: getKybSubmission
       summary: 获取 KYB submission
-      description: 汇总状态:status、risk_band、pending_documents、rejection_reason、changes_requested_comments 和 aml_decision。
+      description: 汇总状态:status、risk_band、pending_documents、rejection_reason、changes_requested_comments
+        和 aml_decision。
       parameters:
       - name: submissionID
         in: path
@@ -4909,7 +4976,8 @@ paths:
       - KYC / KYB
       operationId: presignKycDocument
       summary: 预签名 KYC 文件上传
-      description: 文件流程第 1 步:返回临时上传 URL。然后用相同 Content-Type 向 upload_url PUT 二进制内容(第 2 步)并确认(第 3 步)。类别:identity、proofOfResidence。类型:application/pdf、image/png、image/jpeg;最大 15 MB;URL 15 分钟后过期。
+      description: 文件流程第 1 步:返回临时上传 URL。然后用相同 Content-Type 向 upload_url PUT 二进制内容(第 2 步)并确认(第 3 步)。类别:identity、proofOfResidence。类型:application/pdf、image/png、image/jpeg;最大
+        15 MB;URL 15 分钟后过期。
       parameters:
       - name: submissionID
         in: path
@@ -5101,7 +5169,8 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 error: invalid_category
-                message: category must be one of legalPresence, ownershipStructure, controlStructure, companyDetails
+                message: category must be one of legalPresence, ownershipStructure, controlStructure,
+                  companyDetails
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
@@ -5193,7 +5262,8 @@ paths:
       - KYC / KYB
       operationId: createKycLivenessLink
       summary: 创建活体检测链接
-      description: 托管页面,你的客户在此仅完成视频活体检测(摄像头手势 + 服务端与已上传身份文件的人脸比对)。免费——服务已在创建 submission 时计费。若存在开放链接则返回同一个;若检测已通过,返回 400 liveness_already_completed。
+      description: 托管页面,你的客户在此仅完成视频活体检测(摄像头手势 + 服务端与已上传身份文件的人脸比对)。免费——服务已在创建 submission 时计费。若存在开放链接则返回同一个;若检测已通过,返回
+        400 liveness_already_completed。
       parameters:
       - name: submissionID
         in: path
@@ -5778,7 +5848,8 @@ paths:
       - 兑换(Swaps)
       operationId: quoteSwap
       summary: swap 报价
-      description: 在你的 USDT、USDC、BTC 和 GOLD 余额之间兑换的免费指示性报价(任意交易对,源与目标不同)。你看到的汇率就是你账户的执行汇率——所见即所得,无额外费用。指示性:执行时使用 POST 当刻的价格(稳定币对保持稳定)。
+      description: 在你的 USDT、USDC、BTC 和 GOLD 余额之间兑换的免费指示性报价(任意交易对,源与目标不同)。你看到的汇率就是你账户的执行汇率——所见即所得,无额外费用。指示性:执行时使用
+        POST 当刻的价格(稳定币对保持稳定)。
       parameters:
       - name: from_asset
         in: query
@@ -5860,7 +5931,8 @@ paths:
       - 兑换(Swaps)
       operationId: createSwap
       summary: 创建 swap
-      description: 在你的两种货币之间同步、原子地兑换余额——余额即时变动,资金从不离开你的账户(无需 OTP)。波动性交易对(BTC/GOLD)与 payouts 和卡片消费共享单笔及 24 小时交易量限额。必须提供幂等键:重放会返回原始 swap,绝不重复执行。
+      description: 在你的两种货币之间同步、原子地兑换余额——余额即时变动,资金从不离开你的账户(无需 OTP)。波动性交易对(BTC/GOLD)与 payouts 和卡片消费共享单笔及
+        24 小时交易量限额。必须提供幂等键:重放会返回原始 swap,绝不重复执行。
       parameters:
       - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:
@@ -5950,7 +6022,8 @@ paths:
                 created_at: '2026-07-10T15:00:00Z'
                 idempotency_hit: true
         '400':
-          description: invalid_asset / invalid_pair / invalid_amount / amount_too_small / swap_asset_disabled / idempotency_key_required
+          description: invalid_asset / invalid_pair / invalid_amount / amount_too_small / swap_asset_disabled
+            / idempotency_key_required
           content:
             application/json:
               schema:
@@ -5977,7 +6050,8 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 error: settlement_daily_limit_exceeded
-                message: the account exceeded its 24h volume for volatile assets; retry later or use smaller amounts
+                message: the account exceeded its 24h volume for volatile assets; retry later or use smaller
+                  amounts
         '503':
           description: 执行价格不可用或过期(pricing_unavailable)。
           content:
@@ -6095,7 +6169,8 @@ paths:
       description: '订阅一个 HTTPS 回调以接收调用账户的事件。
 
 
-        投递均带签名:`X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`,时间戳在 `X-Webhook-Timestamp`。最多重试 5 次,间隔递增。
+        投递均带签名:`X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`,时间戳在 `X-Webhook-Timestamp`。最多重试
+        5 次,间隔递增。
 
         '
       requestBody:
@@ -6253,7 +6328,8 @@ paths:
       - 加密货币
       operationId: createCryptoWallet
       summary: 补齐缺失的充值钱包
-      description: '每个账户——个人和企业——每个受支持组合都恰好持有**一个充值钱包**(`tron`/`usdt`、`eth`/`usdt`、`eth`/`usdc`),注册时自动免费开通。充值钱包只用于**接收**加密货币并计入账户的虚拟余额:不能发送,也不能导出或导入(那是隔离钱包的功能)。本端点仅用于补齐缺失的组合(例外情况):组合已存在时对所有账户类型都返回 `422 wallet_limit_reached`。
+      description: '每个账户——个人和企业——每个受支持组合都恰好持有**一个充值钱包**(`tron`/`usdt`、`eth`/`usdt`、`eth`/`usdc`),注册时自动免费开通。充值钱包只用于**接收**加密货币并计入账户的虚拟余额:不能发送,也不能导出或导入(那是隔离钱包的功能)。本端点仅用于补齐缺失的组合(例外情况):组合已存在时对所有账户类型都返回
+        `422 wallet_limit_reached`。
 
 
         手动补齐在 CBPay 配置了 `wallet_creation` 费用时计费(每个钱包固定;0 = 免费,即默认值);出生钱包始终免费。创建失败时自动退款。'
@@ -6333,7 +6409,8 @@ paths:
               schema: *id008
               example:
                 error: wallet_limit_reached
-                message: accounts hold one deposit wallet per network/asset pair (created automatically with the account); use segregated wallets for additional wallets
+                message: accounts hold one deposit wallet per network/asset pair (created automatically
+                  with the account); use segregated wallets for additional wallets
     get:
       tags:
       - 加密货币
@@ -6388,7 +6465,9 @@ paths:
       - 隔离钱包
       operationId: createSegregatedWallet
       summary: 创建隔离钱包
-      description: 创建一个由调用方账户拥有的链上新钱包。其余额存在于链上(从不进入账本),并豁免于资金归集(treasury sweep)。支持的组合:`tron`/`usdt`、`eth`/`usdt`、`eth`/`usdc`。企业账户可创建不限数量的钱包;个人账户每个网络+资产组合限 **1 个**(创建第二个会返回 `422 wallet_limit_reached`)。可选的 `Idempotency-Key`(或请求体中的 `idempotency_key`)让重试安全:重复请求返回同一钱包,不会创建第二个。可能收取 `wallet_creation` 费用(创建失败退款)。
+      description: 创建一个由调用方账户拥有的链上新钱包。其余额存在于链上(从不进入账本),并豁免于资金归集(treasury sweep)。支持的组合:`tron`/`usdt`、`eth`/`usdt`、`eth`/`usdc`。企业账户可创建不限数量的钱包;个人账户每个网络+资产组合限
+        **1 个**(创建第二个会返回 `422 wallet_limit_reached`)。可选的 `Idempotency-Key`(或请求体中的 `idempotency_key`)让重试安全:重复请求返回同一钱包,不会创建第二个。可能收取
+        `wallet_creation` 费用(创建失败退款)。
       requestBody:
         required: true
         content:
@@ -6472,7 +6551,8 @@ paths:
               schema: *id009
               example:
                 error: idempotency_conflict
-                message: a wallet with this idempotency key is still being provisioned; retry with the same key
+                message: a wallet with this idempotency key is still being provisioned; retry with the
+                  same key
         '422':
           description: 个人账户在该组合下已持有隔离钱包。
           content:
@@ -6480,7 +6560,8 @@ paths:
               schema: *id009
               example:
                 error: wallet_limit_reached
-                message: person accounts hold one segregated wallet per network/asset pair; company accounts have no limit
+                message: person accounts hold one segregated wallet per network/asset pair; company accounts
+                  have no limit
     get:
       tags:
       - 隔离钱包
@@ -6549,7 +6630,8 @@ paths:
       - 隔离钱包
       operationId: importSegregatedWallet
       summary: 导入外部钱包
-      description: 通过提供 `private_key_hex` 导入你已控制的钱包。私钥只会传输至托管方,平台**绝不存储或记录**。需要带 2FA 的登录用户会话(API key 会以 `human_session_required` 被拒)、已验证账户和 OTP。收取 `wallet_import` 费用(若核心拒绝则退款)。
+      description: 通过提供 `private_key_hex` 导入你已控制的钱包。私钥只会传输至托管方,平台**绝不存储或记录**。需要带 2FA 的登录用户会话(API key 会以
+        `human_session_required` 被拒)、已验证账户和 OTP。收取 `wallet_import` 费用(若核心拒绝则退款)。
       parameters:
       - name: X-OTP-Token
         in: header
@@ -6621,7 +6703,8 @@ paths:
               schema: *id009
               example:
                 error: human_session_required
-                message: this operation handles private key material and requires a signed-in user session with 2FA; API keys are not allowed
+                message: this operation handles private key material and requires a signed-in user session
+                  with 2FA; API keys are not allowed
         '422':
           description: 个人账户在该组合下已持有隔离钱包。
           content:
@@ -6629,7 +6712,8 @@ paths:
               schema: *id009
               example:
                 error: wallet_limit_reached
-                message: person accounts hold one segregated wallet per network/asset pair; company accounts have no limit
+                message: person accounts hold one segregated wallet per network/asset pair; company accounts
+                  have no limit
   /v1/segregated-wallets/{walletID}:
     get:
       tags:
@@ -6808,7 +6892,9 @@ paths:
       - 隔离钱包
       operationId: createSegregatedWalletSend
       summary: 从钱包发送加密货币
-      description: '**从钱包本身**发送加密货币(真实源地址,由托管方签名)。必须提供 `idempotency_key`。gas 由客户承担:若钱包缺少原生 gas,发送会在任何扣费前以 `422 insufficient_gas` 被拒。可能收取 `wallet_send` 费用(从账户账本结算余额,绝不动用钱包链上资金;若核心拒绝则退款)。需要已验证账户和 OTP。发生歧义失败时发送保持 `pending`——用相同的键重试,绝不重复发送。'
+      description: '**从钱包本身**发送加密货币(真实源地址,由托管方签名)。必须提供 `idempotency_key`。gas 由客户承担:若钱包缺少原生 gas,发送会在任何扣费前以
+        `422 insufficient_gas` 被拒。可能收取 `wallet_send` 费用(从账户账本结算余额,绝不动用钱包链上资金;若核心拒绝则退款)。需要已验证账户和 OTP。发生歧义失败时发送保持
+        `pending`——用相同的键重试,绝不重复发送。'
       parameters:
       - name: walletID
         in: path
@@ -6898,7 +6984,8 @@ paths:
               schema: *id009
               example:
                 error: insufficient_gas
-                message: the wallet does not hold enough TRX to pay the network fee (minimum 5.000000 TRX); fund the wallet address with TRX and retry
+                message: the wallet does not hold enough TRX to pay the network fee (minimum 5.000000
+                  TRX); fund the wallet address with TRX and retry
     get:
       tags:
       - 隔离钱包
@@ -7006,7 +7093,8 @@ paths:
       - 隔离钱包
       operationId: exportSegregatedWalletKey
       summary: 导出私钥
-      description: 返回钱包的私钥(共享托管:导出后钱包在平台仍可操作)。这是本产品最敏感的操作:需要带 2FA 的登录用户会话(API key 被拒)、已验证账户,以及至少 20 个字符并保留在审计记录中的 `reason`。每次导出都会触发 `wallet_key_exported` webhook。收取 `wallet_export` 费用。
+      description: 返回钱包的私钥(共享托管:导出后钱包在平台仍可操作)。这是本产品最敏感的操作:需要带 2FA 的登录用户会话(API key 被拒)、已验证账户,以及至少 20 个字符并保留在审计记录中的
+        `reason`。每次导出都会触发 `wallet_key_exported` webhook。收取 `wallet_export` 费用。
       parameters:
       - name: walletID
         in: path
@@ -7049,7 +7137,8 @@ paths:
                 private_key_hex: <64 hex>
                 export:
                   custody: shared
-                  warning: anyone holding this private key controls the wallet funds; the wallet remains operational in the platform
+                  warning: anyone holding this private key controls the wallet funds; the wallet remains
+                    operational in the platform
         '403':
           description: 需要真人会话、验证或 OTP。
           content:
@@ -7057,7 +7146,8 @@ paths:
               schema: *id009
               example:
                 error: human_session_required
-                message: this operation handles private key material and requires a signed-in user session with 2FA; API keys are not allowed
+                message: this operation handles private key material and requires a signed-in user session
+                  with 2FA; API keys are not allowed
         '503':
           description: 此环境未启用私钥导出。
           content:
@@ -7160,7 +7250,8 @@ paths:
       - 付款(Payouts)
       operationId: payoutQrScan
       summary: 扫描 payout QR(玻利维亚、巴西)
-      description: 'QR payout 第 1 步——玻利维亚(本地互通 QR)与巴西(PIX QR,含 "copia e cola" 代码):读取收款 QR 并返回收款人数据及确认所需的 `provider_reference`。**免费**——确认步骤之前不会有任何扣款。默认玻利维亚;巴西请传 `country: "BR"` 和 `currency: "BRL"`。'
+      description: 'QR payout 第 1 步——玻利维亚(本地互通 QR)与巴西(PIX QR,含 "copia e cola" 代码):读取收款 QR 并返回收款人数据及确认所需的
+        `provider_reference`。**免费**——确认步骤之前不会有任何扣款。默认玻利维亚;巴西请传 `country: "BR"` 和 `currency: "BRL"`。'
       requestBody:
         required: true
         content:
@@ -7249,7 +7340,8 @@ paths:
       - 付款(Payouts)
       operationId: payoutQrConfirm
       summary: 确认 QR payout(玻利维亚、巴西)
-      description: QR payout 第 2 步(玻利维亚与巴西/PIX),计费方式与常规 payout 完全相同:本地金额按**你账户的汇率**转换,扣除 `usdt_amount + 固定费用`。结果为**同步**——响应携带最终状态(`completed`,或 `failed` 并自动退款)。已扫描的 QR 只能支付一次;与所有资金操作一样需要幂等键。
+      description: QR payout 第 2 步(玻利维亚与巴西/PIX),计费方式与常规 payout 完全相同:本地金额按**你账户的汇率**转换,扣除 `usdt_amount
+        + 固定费用`。结果为**同步**——响应携带最终状态(`completed`,或 `failed` 并自动退款)。已扫描的 QR 只能支付一次;与所有资金操作一样需要幂等键。
       parameters:
       - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:
@@ -7412,7 +7504,8 @@ paths:
       - 收款(Payins)
       operationId: payinCollect
       summary: 主动收款(pull)
-      description: 在支持 pull 收款的通道(例如委内瑞拉 `c2p` / `debito_inmediato`)直接向付款人扣款。同步执行:若扣款获批,存款按你当前的 `payin_rate` 转换并在同一调用中入账,已扣除 payin 费用。若付款人拒绝,`paid` 为 false,payin 标记为 failed 且不产生任何扣款。
+      description: 在支持 pull 收款的通道(例如委内瑞拉 `c2p` / `debito_inmediato`)直接向付款人扣款。同步执行:若扣款获批,存款按你当前的 `payin_rate`
+        转换并在同一调用中入账,已扣除 payin 费用。若付款人拒绝,`paid` 为 false,payin 标记为 failed 且不产生任何扣款。
       requestBody:
         required: true
         content:
@@ -7725,7 +7818,8 @@ paths:
       - 银行服务
       operationId: createBankingCustomer
       summary: 创建我的银行档案
-      description: 开通账户的银行档案(每个账户一次)。省略的 `type`/`name`/`email` 从 CBPay 账户自动填充。按固定 `banking_customer` 费用从 USDT 余额计费;若通道拒绝则退款。
+      description: 开通账户的银行档案(每个账户一次)。省略的 `type`/`name`/`email` 从 CBPay 账户自动填充。按固定 `banking_customer` 费用从
+        USDT 余额计费;若通道拒绝则退款。
       requestBody:
         required: true
         content:
@@ -8350,7 +8444,8 @@ paths:
       - 银行服务
       operationId: createBankingOperation
       summary: 发送银行付款
-      description: 执行 TRANSFER(你自己的银行账户之间)或 WITHDRAW(至已登记的受益人)。必须提供幂等键;使用相同键重试会返回原始操作而不重复扣费。按固定 `banking_operation` 费用计费;若通道拒绝则退款。最终状态通过 banking_operation_status_changed webhook 送达。
+      description: 执行 TRANSFER(你自己的银行账户之间)或 WITHDRAW(至已登记的受益人)。必须提供幂等键;使用相同键重试会返回原始操作而不重复扣费。按固定 `banking_operation`
+        费用计费;若通道拒绝则退款。最终状态通过 banking_operation_status_changed webhook 送达。
       parameters:
       - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:
@@ -8604,7 +8699,9 @@ paths:
       - 余额
       operationId: getAccountStatement
       summary: 账户对账单(JSON、PDF 或 Excel)
-      description: '将期间内的全部流水——payouts、payins、加密充值与提现、内部转账及服务费——合并为一份可审计的对账单,并做精确对账:opening_balance + total_in − total_out = closing_balance,与账本核验(`balanced`)。摘要与流水覆盖 USDT 运营余额;其他有活动的虚拟余额(USDC、BTC、GOLD)在 `assets` 中独立对账。请求 `format=pdf` 或 `format=xlsx` 可下载 CBPay 品牌文件(Content-Disposition: attachment)。'
+      description: '将期间内的全部流水——payouts、payins、加密充值与提现、内部转账及服务费——合并为一份可审计的对账单,并做精确对账:opening_balance +
+        total_in − total_out = closing_balance,与账本核验(`balanced`)。摘要与流水覆盖 USDT 运营余额;其他有活动的虚拟余额(USDC、BTC、GOLD)在
+        `assets` 中独立对账。请求 `format=pdf` 或 `format=xlsx` 可下载 CBPay 品牌文件(Content-Disposition: attachment)。'
       parameters:
       - name: from
         in: query
@@ -8826,7 +8923,9 @@ paths:
       - 卡片
       operationId: createCard
       summary: 创建卡片
-      description: 发行一张卡片(虚拟或实体),以 Just-In-Time 方式从账户中央余额按卡片的消费资产扣款(`spending_asset`:USDT/USDC 与 USD 1:1,或 BTC/GOLD 按每笔事件当时价格转换;默认 USDT)——无需预充值:每笔消费都实时对照可用余额和卡片自身限额授权。个人账户可持有 **1 张虚拟卡 + 1 张实体卡**;企业账户可创建**不限数量**的卡片,为企业本身或指定人员(例如员工,传入其身份文件)。若配置了 `card_creation_virtual` / `card_creation_physical` 费用则在发卡时计费(0 = 免费);发卡失败自动退款。实体卡初始状态为 `pending_activation`,直到持卡人确认收到。
+      description: 发行一张卡片(虚拟或实体),以 Just-In-Time 方式从账户中央余额按卡片的消费资产扣款(`spending_asset`:USDT/USDC 与 USD 1:1,或
+        BTC/GOLD 按每笔事件当时价格转换;默认 USDT)——无需预充值:每笔消费都实时对照可用余额和卡片自身限额授权。个人账户可持有 **1 张虚拟卡 + 1 张实体卡**;企业账户可创建**不限数量**的卡片,为企业本身或指定人员(例如员工,传入其身份文件)。若配置了
+        `card_creation_virtual` / `card_creation_physical` 费用则在发卡时计费(0 = 免费);发卡失败自动退款。实体卡初始状态为 `pending_activation`,直到持卡人确认收到。
       requestBody:
         required: true
         content:
@@ -8850,7 +8949,8 @@ paths:
                   - BTC
                   - GOLD
                   default: USDT
-                  description: 卡片消费扣款的余额。USDT/USDC 与 USD 等价(精确 1:1,无转换费)。BTC/GOLD 按每笔事件当时的有效价格转换,并在授权时预留缓冲(fail-closed 定价,单笔及 24 小时波动限额与 payouts 共享)。
+                  description: 卡片消费扣款的余额。USDT/USDC 与 USD 等价(精确 1:1,无转换费)。BTC/GOLD 按每笔事件当时的有效价格转换,并在授权时预留缓冲(fail-closed
+                    定价,单笔及 24 小时波动限额与 payouts 共享)。
                 limits:
                   type: object
                   description: 可选的 USD 消费限额(授权时执行;0 或省略 = 无限制)。
@@ -8863,7 +8963,8 @@ paths:
                       type: string
                 cardholder:
                   type: object
-                  description: 持卡人数据。账户首次开卡时会在发卡方创建持卡人:身份数据与文件会从账户已通过的身份验证自动填充(显式字段优先);你只需补充发卡方特有的字段(occupation 目录代码、salary_usd)。后续开卡时可省略:直接复用已验证的持卡人。企业账户还可以设置 kind "person" 加上该人已通过 KYC 的 verification_id,为指定人员开卡(其身份与文件来自该验证)。
+                  description: 持卡人数据。账户首次开卡时会在发卡方创建持卡人:身份数据与文件会从账户已通过的身份验证自动填充(显式字段优先);你只需补充发卡方特有的字段(occupation
+                    目录代码、salary_usd)。后续开卡时可省略:直接复用已验证的持卡人。企业账户还可以设置 kind "person" 加上该人已通过 KYC 的 verification_id,为指定人员开卡(其身份与文件来自该验证)。
                   properties:
                     verification_id:
                       type: string
@@ -8947,7 +9048,8 @@ paths:
                 error: card_limit_reached
                 message: person accounts can hold at most 1 virtual card (cancel the existing one first)
         '422':
-          description: verification_required / verification_not_approved / verification_kind_mismatch(指定人员需要已通过的第三方 KYC verification_id)。
+          description: verification_required / verification_not_approved / verification_kind_mismatch(指定人员需要已通过的第三方
+            KYC verification_id)。
           content:
             application/json:
               schema:
@@ -9248,7 +9350,8 @@ paths:
       - 卡片
       operationId: listCardTransactions
       summary: 列出卡片交易
-      description: 消费及其生命周期:`authorized`(实时冻结)、`settled`(清算确认)、`reversed`(已撤销,资金退回同一余额)和 `declined`(附原因:insufficient_funds、card_limit_exceeded、card_frozen……)。`spend_asset` / `spend_amount` 显示该消费扣了哪个余额及该资产的金额;`amount_usd` / `amount_usdt` 保持 USD 参考值。
+      description: 消费及其生命周期:`authorized`(实时冻结)、`settled`(清算确认)、`reversed`(已撤销,资金退回同一余额)和 `declined`(附原因:insufficient_funds、card_limit_exceeded、card_frozen……)。`spend_asset`
+        / `spend_amount` 显示该消费扣了哪个余额及该资产的金额;`amount_usd` / `amount_usdt` 保持 USD 参考值。
       parameters:
       - $ref: '#/components/parameters/cardID'
       - $ref: '#/components/parameters/page'
@@ -9444,7 +9547,8 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 error: phone_required
-                message: the account has no phone number; set it with PATCH /v1/me before requesting OTP codes
+                message: the account has no phone number; set it with PATCH /v1/me before requesting OTP
+                  codes
         '429':
           description: 发送配额已达上限(`too_many_attempts`)。
           content:
@@ -9532,7 +9636,8 @@ paths:
       - 安全(OTP)
       operationId: verifyOTPChallenge
       summary: 校验验证码
-      description: 校验通过 SMS/WhatsApp 收到的验证码,返回授权受保护操作的一次性 `otp_token`(放在 `X-OTP-Token` 请求头中发送)。每个挑战 5 次尝试。
+      description: 校验通过 SMS/WhatsApp 收到的验证码,返回授权受保护操作的一次性 `otp_token`(放在 `X-OTP-Token` 请求头中发送)。每个挑战 5
+        次尝试。
       parameters:
       - name: challengeID
         in: path
@@ -9592,7 +9697,8 @@ paths:
       - 账户
       operationId: getServices
       summary: 已启用的服务
-      description: 此账户当前可用产品的有效映射(payouts、payins、transfers、crypto、banking、kyc、cards)。服务停用时,其操作端点返回 403 service_disabled;读取及在途资金绝不受影响。可据此决定 UI 显示内容。
+      description: 此账户当前可用产品的有效映射(payouts、payins、transfers、crypto、banking、kyc、cards)。服务停用时,其操作端点返回 403
+        service_disabled;读取及在途资金绝不受影响。可据此决定 UI 显示内容。
       responses:
         '200':
           description: 有效服务映射。
@@ -9707,7 +9813,8 @@ paths:
       - 卡片
       operationId: listCardOccupations
       summary: 职业目录
-      description: 发卡方官方职业代码(指定个人持卡人时用于 `occupation` 字段)。用 `q` 搜索(匹配代码或标签)。使用 `code` 值;自由文本职业会以 400 invalid_occupation 被拒。
+      description: 发卡方官方职业代码(指定个人持卡人时用于 `occupation` 字段)。用 `q` 搜索(匹配代码或标签)。使用 `code` 值;自由文本职业会以 400 invalid_occupation
+        被拒。
       parameters:
       - name: q
         in: query
@@ -9735,7 +9842,8 @@ paths:
       - 卡片
       operationId: listCardBusinessActivities
       summary: 商业活动目录
-      description: 发卡方官方经济活动代码(创建企业持卡人时用于 `kind_of_business`)。用 `q` 搜索。使用 `code` 值;自由文本会以 400 invalid_kind_of_business 被拒。
+      description: 发卡方官方经济活动代码(创建企业持卡人时用于 `kind_of_business`)。用 `q` 搜索。使用 `code` 值;自由文本会以 400 invalid_kind_of_business
+        被拒。
       parameters:
       - name: q
         in: query
@@ -9760,7 +9868,8 @@ paths:
       - 分析
       operationId: analyticsSummary
       summary: 用于仪表盘的账户摘要
-      description: '一次调用即可获得账户全部流水的汇总视图:总流入/流出、交易笔数、新增 banking 用户、按服务划分的分区(payouts、payins、充值、提现、transfers、swaps、cards、banking、verifications、aml、contacts)及其维度(国家、货币、方式、状态、链、商户)、服务支出与估值后的余额。金额为 USD 十进制字符串;空桶以零填充。仅限账户凭证。
+      description: '一次调用即可获得账户全部流水的汇总视图:总流入/流出、交易笔数、新增 banking 用户、按服务划分的分区(payouts、payins、充值、提现、transfers、swaps、cards、banking、verifications、aml、contacts)及其维度(国家、货币、方式、状态、链、商户)、服务支出与估值后的余额。金额为
+        USD 十进制字符串;空桶以零填充。仅限账户凭证。
 
         '
       parameters:
@@ -9921,7 +10030,9 @@ paths:
       - 银行服务
       operationId: createBankingThirdParty
       summary: 注册第三方 banking 用户(仅企业)
-      description: '企业账户可将终端客户注册为独立的 banking 用户,并以其名义开设账户。需要第三方已通过(APPROVED)的 KYC/KYB 验证的 verification_id:类型由验证种类决定(KYC = INDIVIDUAL,KYB = COMPANY),身份数据从已验证的档案自动填充(显式字段优先),且已校验的文件会自动重新递交给 banking 提供方(documents_synced)。收取 banking 档案费用(若核心拒绝则退款)。个人账户返回 403 company_required。
+      description: '企业账户可将终端客户注册为独立的 banking 用户,并以其名义开设账户。需要第三方已通过(APPROVED)的 KYC/KYB 验证的 verification_id:类型由验证种类决定(KYC
+        = INDIVIDUAL,KYB = COMPANY),身份数据从已验证的档案自动填充(显式字段优先),且已校验的文件会自动重新递交给 banking 提供方(documents_synced)。收取
+        banking 档案费用(若核心拒绝则退款)。个人账户返回 403 company_required。
 
         '
       requestBody:
@@ -9971,7 +10082,8 @@ paths:
         '403':
           description: company_required
         '422':
-          description: verification_required / verification_not_approved / verification_kind_mismatch / verification_invalid
+          description: verification_required / verification_not_approved / verification_kind_mismatch
+            / verification_invalid
     get:
       tags:
       - 银行服务
@@ -10167,7 +10279,8 @@ paths:
       - 身份认证
       operationId: forgotPassword
       summary: 请求密码重置验证码
-      description: 向成员邮箱(默认)或其已验证手机号(`channel:"sms"`)发送重置验证码。无论账户是否存在都返回 200 及相同响应体——防止账户枚举。用 `POST /v1/auth/password/reset` 完成重置。
+      description: 向成员邮箱(默认)或其已验证手机号(`channel:"sms"`)发送重置验证码。无论账户是否存在都返回 200 及相同响应体——防止账户枚举。用 `POST /v1/auth/password/reset`
+        完成重置。
       requestBody:
         required: true
         content:
@@ -10200,7 +10313,8 @@ paths:
             application/json:
               example:
                 status: ok
-                note: if an account matches, a verification code was sent; complete the reset with POST /v1/auth/password/reset
+                note: if an account matches, a verification code was sent; complete the reset with POST
+                  /v1/auth/password/reset
   /v1/auth/password/reset:
     post:
       tags:
@@ -10266,7 +10380,8 @@ paths:
       - 通行密钥
       operationId: passkeyLoginBegin
       summary: 开始无密码通行密钥登录
-      description: 启动 WebAuthn 可发现凭证登录仪式。将返回的 `options.publicKey` 传给 `navigator.credentials.get()`,并把结果发送到 `finish`。挑战为一次性,2 分钟后过期。
+      description: 启动 WebAuthn 可发现凭证登录仪式。将返回的 `options.publicKey` 传给 `navigator.credentials.get()`,并把结果发送到
+        `finish`。挑战为一次性,2 分钟后过期。
       requestBody:
         required: true
         content:
@@ -10346,7 +10461,8 @@ paths:
       - 账户
       operationId: changePassword
       summary: 更改我的密码
-      description: 更改调用成员的密码。需要当前密码(通过社交登录创建且无密码的成员在此设置首个密码,`current_password` 留空);当 OTP 策略要求时,还需针对 `password_change` 操作的 `X-OTP-Token`。其他所有会话都会被吊销,并返回新的会话。
+      description: 更改调用成员的密码。需要当前密码(通过社交登录创建且无密码的成员在此设置首个密码,`current_password` 留空);当 OTP 策略要求时,还需针对 `password_change`
+        操作的 `X-OTP-Token`。其他所有会话都会被吊销,并返回新的会话。
       parameters:
       - name: X-OTP-Token
         in: header
@@ -10391,7 +10507,8 @@ paths:
       - 账户
       operationId: changeEmail
       summary: 更改我的登录邮箱
-      description: 发起登录邮箱变更。验证码会发送到新邮箱;用 `POST /v1/me/email/confirm` 确认。当 OTP 策略要求时,还需针对 `email_change` 操作的 `X-OTP-Token`。必须验证新邮箱——防止攻击者把登录指向其无法控制的邮箱。
+      description: 发起登录邮箱变更。验证码会发送到新邮箱;用 `POST /v1/me/email/confirm` 确认。当 OTP 策略要求时,还需针对 `email_change`
+        操作的 `X-OTP-Token`。必须验证新邮箱——防止攻击者把登录指向其无法控制的邮箱。
       parameters:
       - name: X-OTP-Token
         in: header
@@ -10421,7 +10538,8 @@ paths:
                 status: code_sent
                 email: t***@***.com
                 expires_at: '2026-07-11T00:30:00Z'
-                note: confirm the change with POST /v1/me/email/confirm using the code sent to the new email
+                note: confirm the change with POST /v1/me/email/confirm using the code sent to the new
+                  email
         '409':
           description: 新邮箱已被使用(`email_in_use`)。
   /v1/me/email/verify:
@@ -10524,7 +10642,8 @@ paths:
       - 账户
       operationId: putMyAvatar
       summary: 上传我的头像
-      description: 上传(或替换)账户头像。请求体为原始图片字节(JPEG、PNG 或 WebP),最大 512 KB。内容类型从文件魔数检测,绝不依赖请求头。当图片发布到公共 CDN 时,`avatar_url` 为无需认证即可加载的绝对 URL;否则为需认证的 API 路径。
+      description: 上传(或替换)账户头像。请求体为原始图片字节(JPEG、PNG 或 WebP),最大 512 KB。内容类型从文件魔数检测,绝不依赖请求头。当图片发布到公共 CDN
+        时,`avatar_url` 为无需认证即可加载的绝对 URL;否则为需认证的 API 路径。
       requestBody:
         required: true
         content:
@@ -10597,7 +10716,8 @@ paths:
       - 账户
       operationId: resolveRecipient
       summary: 按别名或 QR 解析收款人
-      description: 返回同组织内某账户的最简预览(别名、显示名称、类型、头像),用于发送前确认。提供 `alias` 或 `qr`(原始令牌或完整 `cbpay:pay?to=…` 载荷)。返回统一的 404 并限流以防枚举。
+      description: 返回同组织内某账户的最简预览(别名、显示名称、类型、头像),用于发送前确认。提供 `alias` 或 `qr`(原始令牌或完整 `cbpay:pay?to=…` 载荷)。返回统一的
+        404 并限流以防枚举。
       parameters:
       - name: alias
         in: query
@@ -10655,7 +10775,8 @@ paths:
       - 安全(OTP)
       operationId: putOTPPreferences
       summary: 更新我的 2FA 偏好设置
-      description: 允许账户所有者配置自己的 2FA。你随时可以加固(启用操作、切换到更强渠道:totp > email > sms/whatsapp),但绝不能低于组织下限。弱化(停用已启用的操作或降低渠道)需要针对 `security_settings` 操作的 `X-OTP-Token`。选择 `channel:totp` 需要已注册验证器应用。
+      description: 允许账户所有者配置自己的 2FA。你随时可以加固(启用操作、切换到更强渠道:totp > email > sms/whatsapp),但绝不能低于组织下限。弱化(停用已启用的操作或降低渠道)需要针对
+        `security_settings` 操作的 `X-OTP-Token`。选择 `channel:totp` 需要已注册验证器应用。
       parameters:
       - name: X-OTP-Token
         in: header
@@ -10765,7 +10886,8 @@ paths:
       - 通行密钥
       operationId: enrollMyTOTP
       summary: 开始注册身份验证器应用
-      description: 生成 TOTP 密钥并返回 `otpauth://` URI 及可在 Google Authenticator / Authy 中扫描的 QR PNG。需要当前密码(若成员设有密码)。用 `POST /v1/me/totp/confirm` 确认。
+      description: 生成 TOTP 密钥并返回 `otpauth://` URI 及可在 Google Authenticator / Authy 中扫描的 QR PNG。需要当前密码(若成员设有密码)。用
+        `POST /v1/me/totp/confirm` 确认。
       requestBody:
         required: false
         content:
@@ -10786,7 +10908,8 @@ paths:
                 totp_secret: JBSWY3DPEHPK3PXP
                 otpauth_uri: otpauth://totp/CBPay:taylor@example.com?secret=JBSWY3DPEHPK3PXP&issuer=CBPay
                 qr_png_base64: iVBORw0KGgo…
-                note: scan the QR (or type the secret) in your authenticator app, then confirm with POST /v1/me/totp/confirm
+                note: scan the QR (or type the secret) in your authenticator app, then confirm with POST
+                  /v1/me/totp/confirm
         '409':
           description: 已有激活的身份验证器应用(`totp_already_enrolled`)。
   /v1/me/totp/confirm:
@@ -10819,7 +10942,8 @@ paths:
                 recovery_codes:
                 - ABCD-EFGH
                 - JKLM-NPQR
-                note: 'store these recovery codes now: they are shown only once and each works a single time'
+                note: 'store these recovery codes now: they are shown only once and each works a single
+                  time'
         '403':
           description: 验证码无效(`otp_invalid`)。
   /v1/me/totp/recovery-codes:
@@ -12184,7 +12308,8 @@ webhooks:
       description: '已收到一笔法币收款并以 USDT 入账到账户。
 
 
-        每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。请返回 2xx;最多重试 5 次,间隔递增。'
+        每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和
+        `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。请返回 2xx;最多重试 5 次,间隔递增。'
       requestBody:
         content:
           application/json:
@@ -12215,10 +12340,12 @@ webhooks:
   payin_expired:
     post:
       summary: payin 已过期
-      description: '一笔待支付的代收(二维码或托管 checkout)在未收到付款的情况下到达最终状态:payin 从 `pending` 变为 `expired`(或 `failed`)。不产生任何资金变动;如需重新收款请创建新的 payin。
+      description: '一笔待支付的代收(二维码或托管 checkout)在未收到付款的情况下到达最终状态:payin 从 `pending` 变为 `expired`(或 `failed`)。不产生任何资金变动;如需重新收款请创建新的
+        payin。
 
 
-        每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。请返回 2xx;最多重试 5 次,间隔递增。'
+        每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和
+        `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。请返回 2xx;最多重试 5 次,间隔递增。'
       requestBody:
         content:
           application/json:
@@ -12259,7 +12386,8 @@ webhooks:
       description: 'payout 进入新状态(processing、completed 或 failed)。
 
 
-        每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。请返回 2xx;最多重试 5 次,间隔递增。'
+        每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和
+        `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。请返回 2xx;最多重试 5 次,间隔递增。'
       requestBody:
         content:
           application/json:
@@ -12294,7 +12422,8 @@ webhooks:
       description: '账户收到一笔内部转账。
 
 
-        每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。请返回 2xx;最多重试 5 次,间隔递增。'
+        每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和
+        `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。请返回 2xx;最多重试 5 次,间隔递增。'
       requestBody:
         content:
           application/json:
@@ -12325,7 +12454,8 @@ webhooks:
       description: '一笔链上充值已确认并入账(扣除充值手续费后)到钱包资产(`USDT` 或 `USDC`)对应的余额。
 
 
-        每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。请返回 2xx;最多重试 5 次,间隔递增。'
+        每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和
+        `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。请返回 2xx;最多重试 5 次,间隔递增。'
       requestBody:
         content:
           application/json:
@@ -12389,7 +12519,8 @@ webhooks:
       description: '一笔链上提现进入新状态。
 
 
-        每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。请返回 2xx;最多重试 5 次,间隔递增。'
+        每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和
+        `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。请返回 2xx;最多重试 5 次,间隔递增。'
       requestBody:
         content:
           application/json:
@@ -12479,7 +12610,8 @@ webhooks:
   kyc_verification_status_changed:
     post:
       summary: KYC 验证状态已变更
-      description: '在每次 KYC submission 生命周期变更时触发(submitted、in_review、changes_requested、more_info_required、escalated、approved、approved_partial、rejected)。你自己的入驻会带 self_onboarding: true。'
+      description: '在每次 KYC submission 生命周期变更时触发(submitted、in_review、changes_requested、more_info_required、escalated、approved、approved_partial、rejected)。你自己的入驻会带
+        self_onboarding: true。'
       requestBody:
         content:
           application/json:
@@ -12626,7 +12758,8 @@ webhooks:
       description: '一笔链上充值已在隔离钱包确认。它**不会**触及账本(余额存在于钱包链上)。
 
 
-        每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。请返回 2xx。'
+        每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和
+        `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。请返回 2xx。'
       requestBody:
         content:
           application/json:

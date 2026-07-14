@@ -8,6 +8,25 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="13 de julio de 2026" description="v1.61">
+
+**Agregado — Exportación CSV / Excel en los listados**
+
+- Los listados de `movements`, `payouts`, `payins` y `transfers` aceptan
+  ahora el parámetro `format=csv` o `format=xlsx` para descargar las
+  filas como archivo listo para contabilidad (hasta 10.000 filas por
+  descarga; los filtros `from`/`to`, `status` y demás aplican igual).
+
+```bash
+curl -o movimientos.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-01&to=2026-07-13&format=xlsx" \
+  -H "Authorization: Bearer pk_…"
+```
+
+- Sin `format` la respuesta sigue siendo el JSON paginado de siempre —
+  no hay cambios de compatibilidad.
+
+</Update>
+
 <Update label="13 de julio de 2026" description="v1.60">
 
 **Breaking — Las wallets segregadas se mueven a `/v1/segregated-wallets`**
