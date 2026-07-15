@@ -108,7 +108,7 @@ curl -X POST https://api.qbank.cl/platform/v1/aml/screenings \
     "customer": {
       "company": {
         "legal_name": "Comercial Andina SpA",
-        "tax_id": "76.543.210-8"
+        "registration_authority_identification": "76.543.210-8"
       },
       "email": "legal@andina.cl",
       "country": "CL"
@@ -150,11 +150,18 @@ rule out namesakes and reduce false positives.
 |---|---|
 | `legal_name` | Legal name |
 | `alias[]` | Trade names |
-| `tax_id` / `registration_number` | Tax/mercantile identifiers |
-| `registration_authority_identification` | Registry number |
-| `place_of_registration` / `country_of_incorporation` | Registration country |
-| `incorporation_date` | Incorporation date |
+| `registration_authority_identification` | Tax/mercantile identifier (tax number, registry number) |
+| `place_of_registration` | Registration/incorporation country (ISO-3166) |
+| `incorporation_date` | Incorporation date as an object `{ "year": 2015, "month": 8, "day": 1 }` |
 | `address[]` | Addresses, each with `country` |
+
+<Warning>
+Do not send flat fields like `tax_id`, `registration_number` or
+`country_of_incorporation` inside `company` — the screening engine rejects
+them with `422`. The identifier goes in
+`registration_authority_identification` and the country in
+`place_of_registration`.
+</Warning>
 
 <Note>
 A query with **exactly the same identity data** reuses the previous
@@ -359,5 +366,14 @@ Each screening bills its fee (person or company depending on the payload).
 No. Since v1.34 your account's `kyc_status` is managed exclusively by the
 KYC/KYB identity verification (your onboarding). Screening only evaluates
 list risk.
+</Accordion>
+<Accordion title="Why does an old screening not appear in the history or have a PDF report?">
+The history and the PDF report are generated from each screening's
+persisted evidence, available for operations executed since the history
+exists (v1.55). Screenings older than that version have no persisted
+evidence, so they do not appear in `GET /v1/aml/screenings` and cannot
+download a report. If you need the document, run a new screening of the
+same identity (identical data reuses the previous result without a new
+charge) and download its report.
 </Accordion>
 </AccordionGroup>

@@ -24,6 +24,16 @@ con anticipación y quedan marcados como **Breaking**.
   informe PDF no es `en`, `es` ni `zh`. Documentado en la página de
   [errores](/es/errores).
 
+**Corregido**
+
+- **Campos de empresa en el AML screening**: los ejemplos y el spec
+  documentaban `tax_id`/`registration_number`/`country_of_incorporation`
+  como campos planos de `customer.company`, pero el motor de screening los
+  rechaza con `422`. El identificador va en
+  `registration_authority_identification`, el país en
+  `place_of_registration` y `incorporation_date` es un objeto
+  `{year, month, day}`. Guía y spec corregidos (verificado en producción).
+
 </Update>
 
 <Update label="14 de julio de 2026" description="v1.68">

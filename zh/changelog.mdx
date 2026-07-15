@@ -21,6 +21,15 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
 - **新错误码 `invalid_language`**（HTTP 400）：PDF 报告的 `lang` 不是
   `en`、`es` 或 `zh`。详见[错误页面](/zh/errors)。
 
+**修复**
+
+- **AML 筛查的企业字段**：示例与 spec 曾将
+  `tax_id`/`registration_number`/`country_of_incorporation` 记为
+  `customer.company` 的扁平字段，但筛查引擎会以 `422` 拒绝。标识符应放在
+  `registration_authority_identification`，国家放在
+  `place_of_registration`，`incorporation_date` 为 `{year, month, day}`
+  对象。指南与 spec 已修正（已在生产环境验证）。
+
 </Update>
 
 <Update label="2026年7月14日" description="v1.68">

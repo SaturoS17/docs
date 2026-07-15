@@ -8,7 +8,7 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-15 03:16 UTC · versión `92f289116b7f`
+> **Documento actualizado:** 2026-07-15 05:23 UTC · versión `c8adee48d7e2`
 
 **Datos clave**
 
@@ -6395,7 +6395,7 @@ curl -X POST https://api.qbank.cl/platform/v1/aml/screenings \
     "customer": {
       "company": {
         "legal_name": "Comercial Andina SpA",
-        "tax_id": "76.543.210-8"
+        "registration_authority_identification": "76.543.210-8"
       },
       "email": "legal@andina.cl",
       "country": "CL"
@@ -6435,12 +6435,17 @@ los documentos fuertes descartan homónimos y reducen falsos positivos.
 |---|---|
 | `legal_name` | Razón social |
 | `alias[]` | Nombres comerciales / de fantasía |
-| `tax_id` / `registration_number` | Identificadores tributarios/mercantiles |
-| `registration_authority_identification` | Número ante el registro mercantil |
-| `place_of_registration` / `country_of_incorporation` | País de registro/constitución |
-| `incorporation_date` | Fecha de constitución |
+| `registration_authority_identification` | Identificador tributario/mercantil (RUT, número de registro) |
+| `place_of_registration` | País de registro/constitución (ISO-3166) |
+| `incorporation_date` | Fecha de constitución como objeto `{ "year": 2015, "month": 8, "day": 1 }` |
 | `address[]` | Domicilios, cada uno con `country` |
 
+> **Importante**
+No envíes campos planos tipo `tax_id`, `registration_number` ni
+`country_of_incorporation` dentro de `company` — el motor de screening los
+rechaza con `422`. El identificador va en
+`registration_authority_identification` y el país en
+`place_of_registration`.
 > **Nota**
 Una consulta con **exactamente los mismos datos de identidad** reutiliza el
 screening anterior (no se cobra uno nuevo). Agregar o cambiar campos de
@@ -6627,6 +6632,14 @@ payload).
 No. Desde v1.34 el `kyc_status` de tu cuenta lo maneja exclusivamente la
 verificación de identidad KYC/KYB (tu onboarding). El screening solo evalúa
 riesgo en listas.
+#### ¿Por qué un screening antiguo no aparece en el historial ni tiene informe PDF?
+El historial y el informe PDF se generan desde la evidencia persistida de
+cada screening, disponible para las operaciones ejecutadas desde que el
+historial existe (v1.55). Los screenings anteriores a esa versión no tienen
+evidencia persistida, por lo que no aparecen en `GET /v1/aml/screenings` ni
+pueden descargar informe. Si necesitas el documento, ejecuta un screening
+nuevo de la misma identidad (si los datos son idénticos, reutiliza el
+resultado sin cobrar de nuevo) y descarga su informe.
 
 
 ## Screening de wallets
@@ -8681,9 +8694,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-15 03:16 UTC · 229 requests · versión `df77f54e4f4a`
+> **Colección actualizada:** 2026-07-15 05:23 UTC · 229 requests · versión `9c92b3df4ac3`
 
-<PostmanFreshness iso="2026-07-15T03:16:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-15T05:23:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -8870,6 +8883,16 @@ con anticipación y quedan marcados como **Breaking**.
 - **Nuevo código de error `invalid_language`** (HTTP 400): el `lang` del
   informe PDF no es `en`, `es` ni `zh`. Documentado en la página de
   [errores](#errores).
+
+**Corregido**
+
+- **Campos de empresa en el AML screening**: los ejemplos y el spec
+  documentaban `tax_id`/`registration_number`/`country_of_incorporation`
+  como campos planos de `customer.company`, pero el motor de screening los
+  rechaza con `422`. El identificador va en
+  `registration_authority_identification`, el país en
+  `place_of_registration` y `incorporation_date` es un objeto
+  `{year, month, day}`. Guía y spec corregidos (verificado en producción).
 
 ### v1.68 — 14 de julio de 2026
 

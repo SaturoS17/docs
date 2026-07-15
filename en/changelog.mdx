@@ -23,6 +23,16 @@ Breaking changes are announced in advance and flagged as **Breaking**.
 - **New error code `invalid_language`** (HTTP 400): the PDF report `lang`
   is not `en`, `es` or `zh`. Documented on the [errors](/en/errors) page.
 
+**Fixed**
+
+- **Company fields in the AML screening**: examples and the spec documented
+  `tax_id`/`registration_number`/`country_of_incorporation` as flat fields
+  of `customer.company`, but the screening engine rejects them with `422`.
+  The identifier goes in `registration_authority_identification`, the
+  country in `place_of_registration` and `incorporation_date` is a
+  `{year, month, day}` object. Guide and spec corrected (verified in
+  production).
+
 </Update>
 
 <Update label="July 14, 2026" description="v1.68">

@@ -102,7 +102,7 @@ curl -X POST https://api.qbank.cl/platform/v1/aml/screenings \
     "customer": {
       "company": {
         "legal_name": "Comercial Andina SpA",
-        "tax_id": "76.543.210-8"
+        "registration_authority_identification": "76.543.210-8"
       },
       "email": "legal@andina.cl",
       "country": "CL"
@@ -143,11 +143,17 @@ curl -X POST https://api.qbank.cl/platform/v1/aml/screenings \
 |---|---|
 | `legal_name` | 法定名称 |
 | `alias[]` | 商号/别名 |
-| `tax_id` / `registration_number` | 税务/商业登记标识 |
-| `registration_authority_identification` | 登记机关编号 |
-| `place_of_registration` / `country_of_incorporation` | 注册国家/地区 |
-| `incorporation_date` | 成立日期 |
+| `registration_authority_identification` | 税务/商业登记标识（税号、登记号） |
+| `place_of_registration` | 注册/成立国家（ISO-3166） |
+| `incorporation_date` | 成立日期，对象格式 `{ "year": 2015, "month": 8, "day": 1 }` |
 | `address[]` | 地址，每项包含 `country` |
+
+<Warning>
+不要在 `company` 中发送 `tax_id`、`registration_number` 或
+`country_of_incorporation` 等扁平字段——筛查引擎会以 `422` 拒绝。
+标识符放在 `registration_authority_identification`，国家放在
+`place_of_registration`。
+</Warning>
 
 <Note>
 使用**完全相同的身份数据**再次查询会复用之前的
@@ -344,5 +350,13 @@ curl "https://api.qbank.cl/platform/v1/aml/screenings/a1b2c3d4-e5f6-7890-abcd-ef
 不会。自 v1.34 起，你账户的 `kyc_status` 完全由
 KYC/KYB 身份验证（你的入驻验证）管理。筛查只评估
 名单风险。
+</Accordion>
+<Accordion title="为什么旧的筛查不出现在历史记录中，也无法下载 PDF 报告？">
+历史记录和 PDF 报告基于每次筛查的持久化证据生成，
+仅覆盖历史功能上线（v1.55）之后执行的操作。更早的筛查
+没有持久化证据，因此不会出现在 `GET /v1/aml/screenings` 中，
+也无法下载报告。如需该文件，请对同一身份重新执行一次筛查
+（身份数据完全相同时会复用之前的结果，不重复收费），
+然后下载其报告。
 </Accordion>
 </AccordionGroup>

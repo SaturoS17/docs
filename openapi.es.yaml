@@ -3675,19 +3675,24 @@ paths:
                           items:
                             type: string
                           description: Trade / brand names.
-                        tax_id:
-                          type: string
-                        registration_number:
-                          type: string
                         registration_authority_identification:
                           type: string
-                          description: Company registry number.
+                          description: Identificador ante el registro mercantil (ej.
+                            RUT/número de registro).
                         place_of_registration:
                           type: string
-                        country_of_incorporation:
-                          type: string
+                          description: País de registro/constitución (ISO-3166).
                         incorporation_date:
-                          type: string
+                          type: object
+                          description: 'Fecha de constitución como objeto: {year,
+                            month, day} (enteros).'
+                          properties:
+                            year:
+                              type: integer
+                            month:
+                              type: integer
+                            day:
+                              type: integer
                         address:
                           type: array
                           items:
@@ -3745,7 +3750,7 @@ paths:
                   customer:
                     company:
                       legal_name: Comercial Andina SpA
-                      tax_id: 76.543.210-8
+                      registration_authority_identification: 76.543.210-8
                     email: legal@andina.cl
                     country: CL
                   monitor: true
@@ -3757,10 +3762,12 @@ paths:
                       legal_name: Comercial Andina SpA
                       alias:
                       - Andina Market
-                      tax_id: 76.543.210-8
-                      registration_authority_identification: '76543210'
+                      registration_authority_identification: 76.543.210-8
                       place_of_registration: CL
-                      incorporation_date: '2015-08-01'
+                      incorporation_date:
+                        year: 2015
+                        month: 8
+                        day: 1
                       address:
                       - country: CL
                     email: legal@andina.cl
