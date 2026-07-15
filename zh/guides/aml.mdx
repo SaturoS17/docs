@@ -249,6 +249,54 @@ curl -X PATCH https://api.qbank.cl/platform/v1/aml/monitoring \
 停用时，`compliance_fee` 返回 `"0.000000"`——停用
 始终免费。
 
+## 筛查 PDF 报告
+
+历史记录中的每一条筛查都可以下载为带有你品牌的**高管级 PDF 报告**：
+封面呈现决策及其风险信号灯、风险指标（制裁、观察名单、PEP、恐怖主义、
+毒品、负面媒体、欺诈、腐败、武器）、含名单及关联关系的合并匹配、别名、
+信号术语表，以及列明所查国际数据源的最终背书章节。这是你交给审计师或
+交易对手作为分析证据的文档。
+
+先在历史记录中找到 `screening_id`：
+
+```bash
+curl "https://api.qbank.cl/platform/v1/aml/screenings?from=2026-07-01&to=2026-07-14&page=1&page_size=50" \
+  -H "Authorization: Bearer <token>"
+```
+
+然后下载报告（纯读取——无费用、无幂等键）：
+
+<CodeGroup>
+
+```bash 英文（默认）
+curl "https://api.qbank.cl/platform/v1/aml/screenings/a1b2c3d4-e5f6-7890-abcd-ef1234567890/report" \
+  -H "Authorization: Bearer <token>" \
+  -o aml_report.pdf
+```
+
+```bash 西班牙文
+curl "https://api.qbank.cl/platform/v1/aml/screenings/a1b2c3d4-e5f6-7890-abcd-ef1234567890/report?lang=es" \
+  -H "Authorization: Bearer <token>" \
+  -o aml_report.pdf
+```
+
+```bash 中文
+curl "https://api.qbank.cl/platform/v1/aml/screenings/a1b2c3d4-e5f6-7890-abcd-ef1234567890/report?lang=zh" \
+  -H "Authorization: Bearer <token>" \
+  -o aml_report.pdf
+```
+
+</CodeGroup>
+
+响应为 `application/pdf`，带有描述性的 `Content-Disposition` 文件名。
+`lang` 接受 `en`（默认）、`es` 和 `zh`；其他值返回
+`400 invalid_language`。属于其他账户的 `screening_id` 返回 `404`。
+
+<Note>
+报告基于筛查的持久化证据生成，即使合规引擎不可用也始终可以下载。
+分析数据（名单名称、媒体标题）保留原文；仅报告的标签会被翻译。
+</Note>
+
 ## Webhook
 
 | 事件 | 触发时机 |
@@ -272,6 +320,7 @@ curl -X PATCH https://api.qbank.cl/platform/v1/aml/monitoring \
 
 | HTTP | `error` | 原因 | 解决方法 |
 |---|---|---|---|
+| 400 | `invalid_language` | PDF 报告的 `lang` 不是 `en`、`es` 或 `zh` | 使用三种受支持语言之一 |
 | 402 | `insufficient_funds` | 余额不足以支付合规费用 | 为账户充值后重试 |
 | 403 | `verification_required` | 你的账户尚未通过身份验证 | 完成你的[入驻验证](/zh/guides/kyc#your-own-verification-onboarding) |
 | 403 | `service_disabled` | 你的账户未启用 `aml` 服务 | 联系你的运营方 |

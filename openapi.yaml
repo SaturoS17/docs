@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.68'
+  version: '1.69'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -3947,6 +3947,55 @@ paths:
                   risk_level: low
                   screening_result: no_hits
                   monitored: false
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/aml/screenings/{screeningID}/report:
+    get:
+      tags:
+      - AML screening
+      operationId: getAmlScreeningReport
+      summary: Download the AML screening report (PDF)
+      description: Branded PDF report of the screening — executive decision page, risk indicators
+        (sanctions, watchlists, PEP, adverse media...), consolidated matches, aliases, glossary and a
+        final backing section with the international data sources consulted. Trilingual via `lang`
+        (default English). Pure read — no fee, no idempotency key. An id that belongs to another account
+        returns 404.
+      parameters:
+      - name: screeningID
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: lang
+        in: query
+        schema:
+          type: string
+          enum:
+          - en
+          - es
+          - zh
+          default: en
+        description: Language of the PDF report (default English).
+      responses:
+        '200':
+          description: Branded PDF report of the screening.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+              example: '%PDF-1.7 (binary report content)'
+        '400':
+          description: Unsupported language (`invalid_language`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_language
+                message: 'lang must be one of: en, es, zh'
         '404':
           $ref: '#/components/responses/NotFound'
         '401':

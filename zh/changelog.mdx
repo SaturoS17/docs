@@ -7,6 +7,22 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月15日" description="v1.69">
+
+**新增**
+
+- **AML 筛查 PDF 报告**：
+  `GET /v1/aml/screenings/{screeningID}/report` 可将历史记录中的任一筛查
+  下载为带你品牌的高管级 PDF 报告 —— 封面呈现决策及其风险信号灯、风险
+  指标（制裁、观察名单、PEP、负面媒体等）、合并匹配、别名、术语表，以及
+  列明所查国际数据源的最终背书章节。通过 `lang=en|es|zh` 支持三语
+  （默认英文）。纯读取，无费用。详见 [AML 指南](/zh/guides/aml#筛查-pdf-报告)
+  的新章节。
+- **新错误码 `invalid_language`**（HTTP 400）：PDF 报告的 `lang` 不是
+  `en`、`es` 或 `zh`。详见[错误页面](/zh/errors)。
+
+</Update>
+
 <Update label="2026年7月14日" description="v1.68">
 
 **新增**

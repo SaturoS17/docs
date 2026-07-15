@@ -7,6 +7,24 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 15, 2026" description="v1.69">
+
+**Added**
+
+- **AML screening PDF report**:
+  `GET /v1/aml/screenings/{screeningID}/report` downloads any screening in
+  your history as an executive PDF report with your branding — a cover
+  page with the decision and its risk traffic light, indicators
+  (sanctions, watchlists, PEP, adverse media...), consolidated matches,
+  aliases, a glossary and a final backing section with the international
+  data sources consulted. Trilingual via `lang=en|es|zh` (default
+  English). Pure read, no fee. New section in the
+  [AML guide](/en/guides/aml#screening-pdf-report).
+- **New error code `invalid_language`** (HTTP 400): the PDF report `lang`
+  is not `en`, `es` or `zh`. Documented on the [errors](/en/errors) page.
+
+</Update>
+
 <Update label="July 14, 2026" description="v1.68">
 
 **Added**

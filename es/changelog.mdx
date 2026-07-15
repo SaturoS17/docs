@@ -8,6 +8,24 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="15 de julio de 2026" description="v1.69">
+
+**Agregado**
+
+- **Informe PDF del screening AML**:
+  `GET /v1/aml/screenings/{screeningID}/report` descarga cada screening de
+  tu historial como informe PDF ejecutivo con tu branding — portada con la
+  decisión y su semáforo de riesgo, indicadores (sanciones, watchlists,
+  PEP, prensa adversa...), coincidencias consolidadas, alias, glosario y
+  sección final de respaldo con las fuentes internacionales consultadas.
+  Trilingüe vía `lang=en|es|zh` (default inglés). Lectura pura, sin
+  comisión. Sección nueva en la [guía AML](/es/guias/aml#informe-pdf-del-screening).
+- **Nuevo código de error `invalid_language`** (HTTP 400): el `lang` del
+  informe PDF no es `en`, `es` ni `zh`. Documentado en la página de
+  [errores](/es/errores).
+
+</Update>
+
 <Update label="14 de julio de 2026" description="v1.68">
 
 **Agregado**

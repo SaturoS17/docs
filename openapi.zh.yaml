@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.68'
+  version: '1.69'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -3800,6 +3800,52 @@ paths:
                   risk_level: low
                   screening_result: no_hits
                   monitored: false
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/aml/screenings/{screeningID}/report:
+    get:
+      tags:
+      - AML screening
+      operationId: getAmlScreeningReport
+      summary: 下载 AML 筛查报告（PDF）
+      description: 品牌化的筛查 PDF 报告 — 含决策封面、风险指标（制裁、观察名单、PEP、负面媒体等）、合并匹配、别名、术语表，以及列明所查国际数据源的最终背书章节。通过
+        `lang` 支持三语（默认英文）。纯读取 — 无费用、无幂等键。其他账户的 ID 返回 404。
+      parameters:
+      - name: screeningID
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: lang
+        in: query
+        schema:
+          type: string
+          enum:
+          - en
+          - es
+          - zh
+          default: en
+        description: PDF 报告语言（默认英文）。
+      responses:
+        '200':
+          description: 品牌化的筛查 PDF 报告。
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+              example: '%PDF-1.7 (binary report content)'
+        '400':
+          description: 不支持的语言（`invalid_language`）。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_language
+                message: 'lang must be one of: en, es, zh'
         '404':
           $ref: '#/components/responses/NotFound'
         '401':

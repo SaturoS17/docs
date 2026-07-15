@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-14 21:10 UTC · versión `44f8314837ee`
+> **Documento actualizado:** 2026-07-15 03:16 UTC · versión `92f289116b7f`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.68 (14 de julio de 2026) |
+| Versión de la documentación | v1.69 (15 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -6533,6 +6533,54 @@ Respuesta `200`:
 Al desactivar, `compliance_fee` vuelve `"0.000000"` — desactivar es
 siempre gratis.
 
+### Informe PDF del screening
+
+Cada screening de tu historial puede descargarse como **informe PDF
+ejecutivo** con tu branding: portada con la decisión y su semáforo de
+riesgo, indicadores (sanciones, watchlists, PEP, terrorismo, narcóticos,
+prensa adversa, fraude, corrupción, armas), las coincidencias consolidadas
+con sus listas y vínculos, alias, glosario de señales y una sección final
+de respaldo con las fuentes internacionales consultadas. Es el documento
+que entregas a un auditor o a una contraparte como evidencia del análisis.
+
+Primero ubica el `screening_id` en tu historial:
+
+```bash
+curl "https://api.qbank.cl/platform/v1/aml/screenings?from=2026-07-01&to=2026-07-14&page=1&page_size=50" \
+  -H "Authorization: Bearer <token>"
+```
+
+Y descarga el informe (lectura pura — sin comisión ni clave de
+idempotencia):
+
+```bash Inglés (default)
+curl "https://api.qbank.cl/platform/v1/aml/screenings/a1b2c3d4-e5f6-7890-abcd-ef1234567890/report" \
+  -H "Authorization: Bearer <token>" \
+  -o informe_aml.pdf
+```
+
+```bash Español
+curl "https://api.qbank.cl/platform/v1/aml/screenings/a1b2c3d4-e5f6-7890-abcd-ef1234567890/report?lang=es" \
+  -H "Authorization: Bearer <token>" \
+  -o informe_aml.pdf
+```
+
+```bash Chino
+curl "https://api.qbank.cl/platform/v1/aml/screenings/a1b2c3d4-e5f6-7890-abcd-ef1234567890/report?lang=zh" \
+  -H "Authorization: Bearer <token>" \
+  -o informe_aml.pdf
+```
+
+La respuesta es `application/pdf` con `Content-Disposition` y nombre de
+archivo descriptivo. `lang` acepta `en` (default), `es` y `zh`; otro valor
+devuelve `400 invalid_language`. Un `screening_id` de otra cuenta devuelve
+`404`.
+
+> **Nota**
+El informe se genera desde la evidencia persistida del screening, por lo
+que siempre está disponible aunque el motor de compliance esté caído. Los
+datos del análisis (nombres de listas, títulos de prensa) se muestran en su
+idioma original; solo las etiquetas del informe se traducen.
 ### Webhook
 
 | Evento | Cuándo |
@@ -6556,6 +6604,7 @@ Suscríbete igual que al resto de eventos (ver [Webhooks](#webhooks)).
 
 | HTTP | `error` | Causa | Solución |
 |---|---|---|---|
+| 400 | `invalid_language` | `lang` del informe PDF no es `en`, `es` ni `zh` | Usa uno de los tres idiomas soportados |
 | 402 | `insufficient_funds` | Saldo insuficiente para la comisión de compliance | Fondea la cuenta y reintenta |
 | 403 | `verification_required` | Tu cuenta aún no aprobó su verificación de identidad | Completa tu [onboarding](#verificacion-kyc-y-kyb) |
 | 403 | `service_disabled` | El servicio `aml` está deshabilitado para tu cuenta | Contacta a tu operador |
@@ -8359,6 +8408,7 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | `liveness_already_completed` | La prueba de vida de esa verificación ya fue superada |
 | `invalid_event_type` / `weak_secret` / `invalid_callback_url` | Suscripción de webhook inválida |
 | `invalid_phone` | Teléfono no normalizable a E.164 (contactos y `to_phone`) |
+| `invalid_language` | `lang` del informe PDF no es `en`, `es` ni `zh` (informe AML) |
 | `batch_too_large` | Import de contactos con más de 1.000 entradas (pagina la subida) |
 | `invalid_status` / `invalid_kyc_status` / `invalid_direction` / `reason_required` / `account_id_required` / `invalid_service` / `invalid_fee` | Validaciones de administración |
 
@@ -8631,9 +8681,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-14 21:10 UTC · 228 requests · versión `383d72a413bc`
+> **Colección actualizada:** 2026-07-15 03:16 UTC · 229 requests · versión `df77f54e4f4a`
 
-<PostmanFreshness iso="2026-07-14T21:10:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-15T03:16:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -8804,6 +8854,22 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.69 — 15 de julio de 2026
+
+**Agregado**
+
+- **Informe PDF del screening AML**:
+  `GET /v1/aml/screenings/{screeningID}/report` descarga cada screening de
+  tu historial como informe PDF ejecutivo con tu branding — portada con la
+  decisión y su semáforo de riesgo, indicadores (sanciones, watchlists,
+  PEP, prensa adversa...), coincidencias consolidadas, alias, glosario y
+  sección final de respaldo con las fuentes internacionales consultadas.
+  Trilingüe vía `lang=en|es|zh` (default inglés). Lectura pura, sin
+  comisión. Sección nueva en la [guía AML](#aml-screening).
+- **Nuevo código de error `invalid_language`** (HTTP 400): el `lang` del
+  informe PDF no es `en`, `es` ni `zh`. Documentado en la página de
+  [errores](#errores).
 
 ### v1.68 — 14 de julio de 2026
 
@@ -10267,6 +10333,7 @@ está en la API Reference interactiva y en la colección Postman.
 | `GET` | `/v1/aml/screenings` | Listar screenings AML |
 | `POST` | `/v1/aml/screenings` | Enviar un screening AML |
 | `GET` | `/v1/aml/screenings/{screeningID}` | Obtener un screening AML |
+| `GET` | `/v1/aml/screenings/{screeningID}/report` | Descargar el informe del screening AML (PDF) |
 | `POST` | `/v1/aml/rescreen` | Re-ejecutar un screening AML |
 | `PATCH` | `/v1/aml/monitoring` | Habilitar o deshabilitar el monitoreo AML |
 | `GET` | `/v1/aml/catalogs` | Catálogos para formularios de compliance |

@@ -257,6 +257,60 @@ Respuesta `200`:
 Al desactivar, `compliance_fee` vuelve `"0.000000"` — desactivar es
 siempre gratis.
 
+## Informe PDF del screening
+
+Cada screening de tu historial puede descargarse como **informe PDF
+ejecutivo** con tu branding: portada con la decisión y su semáforo de
+riesgo, indicadores (sanciones, watchlists, PEP, terrorismo, narcóticos,
+prensa adversa, fraude, corrupción, armas), las coincidencias consolidadas
+con sus listas y vínculos, alias, glosario de señales y una sección final
+de respaldo con las fuentes internacionales consultadas. Es el documento
+que entregas a un auditor o a una contraparte como evidencia del análisis.
+
+Primero ubica el `screening_id` en tu historial:
+
+```bash
+curl "https://api.qbank.cl/platform/v1/aml/screenings?from=2026-07-01&to=2026-07-14&page=1&page_size=50" \
+  -H "Authorization: Bearer <token>"
+```
+
+Y descarga el informe (lectura pura — sin comisión ni clave de
+idempotencia):
+
+<CodeGroup>
+
+```bash Inglés (default)
+curl "https://api.qbank.cl/platform/v1/aml/screenings/a1b2c3d4-e5f6-7890-abcd-ef1234567890/report" \
+  -H "Authorization: Bearer <token>" \
+  -o informe_aml.pdf
+```
+
+```bash Español
+curl "https://api.qbank.cl/platform/v1/aml/screenings/a1b2c3d4-e5f6-7890-abcd-ef1234567890/report?lang=es" \
+  -H "Authorization: Bearer <token>" \
+  -o informe_aml.pdf
+```
+
+```bash Chino
+curl "https://api.qbank.cl/platform/v1/aml/screenings/a1b2c3d4-e5f6-7890-abcd-ef1234567890/report?lang=zh" \
+  -H "Authorization: Bearer <token>" \
+  -o informe_aml.pdf
+```
+
+</CodeGroup>
+
+La respuesta es `application/pdf` con `Content-Disposition` y nombre de
+archivo descriptivo. `lang` acepta `en` (default), `es` y `zh`; otro valor
+devuelve `400 invalid_language`. Un `screening_id` de otra cuenta devuelve
+`404`.
+
+<Note>
+El informe se genera desde la evidencia persistida del screening, por lo
+que siempre está disponible aunque el motor de compliance esté caído. Los
+datos del análisis (nombres de listas, títulos de prensa) se muestran en su
+idioma original; solo las etiquetas del informe se traducen.
+</Note>
+
 ## Webhook
 
 | Evento | Cuándo |
@@ -280,6 +334,7 @@ Suscríbete igual que al resto de eventos (ver [Webhooks](/es/webhooks)).
 
 | HTTP | `error` | Causa | Solución |
 |---|---|---|---|
+| 400 | `invalid_language` | `lang` del informe PDF no es `en`, `es` ni `zh` | Usa uno de los tres idiomas soportados |
 | 402 | `insufficient_funds` | Saldo insuficiente para la comisión de compliance | Fondea la cuenta y reintenta |
 | 403 | `verification_required` | Tu cuenta aún no aprobó su verificación de identidad | Completa tu [onboarding](/es/guias/kyc#tu-propia-verificacion-onboarding) |
 | 403 | `service_disabled` | El servicio `aml` está deshabilitado para tu cuenta | Contacta a tu operador |
