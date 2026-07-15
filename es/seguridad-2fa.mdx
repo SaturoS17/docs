@@ -183,6 +183,12 @@ curl -X POST https://api.qbank.cl/platform/v1/auth/login/otp \
   del desafío); solo si no tienes ninguna alternativa recibes
   `403 phone_binding_cooldown`. El teléfono cargado por tu operador no tiene
   cooldown.
+- El **login en dos pasos** respeta la misma regla: con 2FA de login por
+  SMS/WhatsApp y el teléfono en cooldown, el código del login se emite por
+  la app autenticadora o tu email de login (el `channel` efectivo llega en
+  la respuesta del login) — jamás viaja a un número recién enlazado sin
+  verificar. Sin factor alternativo el login responde
+  `403 phone_binding_cooldown` hasta que venza el cooldown.
 
 ## Errores
 

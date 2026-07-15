@@ -7,6 +7,21 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 15, 2026" description="v1.72">
+
+**Changed**
+
+- **Two-step login also honors the phone binding cooldown**: with login
+  2FA over SMS/WhatsApp and a recently linked, unverified number, the
+  login code is issued over a stronger factor (authenticator app, then
+  login email) instead of the phone — the effective `channel` comes back
+  in the login response. Without an alternative factor the login responds
+  `403 phone_binding_cooldown` until the cooldown expires. The code is
+  never sent to a number linked from the session itself. Details in the
+  [security and 2FA guide](/en/security-2fa).
+
+</Update>
+
 <Update label="July 15, 2026" description="v1.71">
 
 **Changed**

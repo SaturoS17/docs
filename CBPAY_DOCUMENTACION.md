@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-15 21:04 UTC · versión `34b67c4e9886`
+> **Documento actualizado:** 2026-07-15 21:43 UTC · versión `ac67499a15c3`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.71 (15 de julio de 2026) |
+| Versión de la documentación | v1.72 (15 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -7897,6 +7897,12 @@ curl -X POST https://api.qbank.cl/platform/v1/auth/login/otp \
   del desafío); solo si no tienes ninguna alternativa recibes
   `403 phone_binding_cooldown`. El teléfono cargado por tu operador no tiene
   cooldown.
+- El **login en dos pasos** respeta la misma regla: con 2FA de login por
+  SMS/WhatsApp y el teléfono en cooldown, el código del login se emite por
+  la app autenticadora o tu email de login (el `channel` efectivo llega en
+  la respuesta del login) — jamás viaja a un número recién enlazado sin
+  verificar. Sin factor alternativo el login responde
+  `403 phone_binding_cooldown` hasta que venza el cooldown.
 
 ### Errores
 
@@ -8899,6 +8905,19 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.72 — 15 de julio de 2026
+
+**Cambiado**
+
+- **El login en dos pasos también respeta el cooldown del teléfono**: con
+  2FA de login por SMS/WhatsApp y un número recién enlazado sin verificar,
+  el código del login se emite por un factor más fuerte (app autenticadora,
+  luego email de login) en vez del teléfono — el `channel` efectivo llega
+  en la respuesta del login. Sin factor alternativo el login responde
+  `403 phone_binding_cooldown` hasta que venza el cooldown. El código
+  jamás viaja a un número enlazado desde la propia sesión. Detalle en la
+  [guía de seguridad y 2FA](#seguridad-y-2fa-otp).
 
 ### v1.71 — 15 de julio de 2026
 

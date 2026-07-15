@@ -8,6 +8,21 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="15 de julio de 2026" description="v1.72">
+
+**Cambiado**
+
+- **El login en dos pasos también respeta el cooldown del teléfono**: con
+  2FA de login por SMS/WhatsApp y un número recién enlazado sin verificar,
+  el código del login se emite por un factor más fuerte (app autenticadora,
+  luego email de login) en vez del teléfono — el `channel` efectivo llega
+  en la respuesta del login. Sin factor alternativo el login responde
+  `403 phone_binding_cooldown` hasta que venza el cooldown. El código
+  jamás viaja a un número enlazado desde la propia sesión. Detalle en la
+  [guía de seguridad y 2FA](/es/seguridad-2fa).
+
+</Update>
+
 <Update label="15 de julio de 2026" description="v1.71">
 
 **Cambiado**

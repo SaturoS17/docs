@@ -7,6 +7,19 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月15日" description="v1.72">
+
+**变更**
+
+- **两步登录同样遵循手机号绑定冷却期**：登录 2FA 为 SMS/WhatsApp 且
+  号码为最近绑定且未验证时，登录验证码会通过更强的因素发出（身份
+  验证器应用，其次登录邮箱），而不是发送到该手机号——登录响应中会
+  返回实际使用的 `channel`。没有替代因素时，登录返回
+  `403 phone_binding_cooldown`，直到冷却期结束。验证码绝不会发送到
+  从当前会话绑定的号码。详见[安全与 2FA 指南](/zh/security-2fa)。
+
+</Update>
+
 <Update label="2026年7月15日" description="v1.71">
 
 **变更**

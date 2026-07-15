@@ -182,6 +182,12 @@ curl -X POST https://api.qbank.cl/platform/v1/auth/login/otp \
   automatically over that stronger factor (the channel comes back in the
   challenge response); you only get `403 phone_binding_cooldown` when no
   alternative factor exists. A phone set by your operator has no cooldown.
+- The **two-step login** honors the same rule: with login 2FA over
+  SMS/WhatsApp and the phone in cooldown, the login code is issued over the
+  authenticator app or your login email instead (the effective `channel`
+  comes back in the login response) — it is never sent to a recently
+  linked, unverified number. Without an alternative factor the login
+  responds `403 phone_binding_cooldown` until the cooldown expires.
 
 ## Errors
 

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.71'
+  version: '1.72'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -720,6 +720,11 @@ paths:
                     enum:
                     - sms
                     - whatsapp
+                    - email
+                    - totp
+                    description: Canal efectivo del desafío de login. Con el teléfono en cooldown de enlace
+                      el desafío cae automáticamente a un factor más fuerte (app autenticadora, luego email
+                      de login) — el código jamás viaja a un número recién enlazado sin verificar.
                   phone:
                     type: string
                     description: Teléfono enmascarado al que viajó el código.
@@ -743,6 +748,18 @@ paths:
                     phone: '********5678'
                     expires_at: '2026-07-08T21:10:00Z'
                     note: verify the code with POST /v1/auth/login/otp to receive the session token
+        '403':
+          description: La política de login resuelve a SMS/WhatsApp pero el teléfono se enlazó hace menos
+            de 24 horas sin verificar y la cuenta no tiene factor alternativo (`phone_binding_cooldown`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: phone_binding_cooldown
+                message: the phone number was linked recently without verification; SMS/WhatsApp login
+                  codes unlock 24 hours after the change and no alternative factor (authenticator app or
+                  login email) is available
         '401':
           description: Email o contraseña incorrectos (`invalid_credentials`).
           content:

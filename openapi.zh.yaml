@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.71'
+  version: '1.72'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -670,6 +670,9 @@ paths:
                     enum:
                     - sms
                     - whatsapp
+                    - email
+                    - totp
+                    description: 登录质询的实际渠道。手机号处于绑定冷却期时，质询会自动改用更强的因素（身份验证器应用，其次登录邮箱）——验证码绝不会发送到最近绑定且未验证的号码。
                   phone:
                     type: string
                     description: 验证码发送到的打码手机号。
@@ -693,6 +696,17 @@ paths:
                     phone: '********5678'
                     expires_at: '2026-07-08T21:10:00Z'
                     note: verify the code with POST /v1/auth/login/otp to receive the session token
+        '403':
+          description: 登录策略解析为 SMS/WhatsApp，但手机号在 24 小时内绑定且未验证，账户也没有替代因素（`phone_binding_cooldown`）。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: phone_binding_cooldown
+                message: the phone number was linked recently without verification; SMS/WhatsApp login
+                  codes unlock 24 hours after the change and no alternative factor (authenticator app or
+                  login email) is available
         '401':
           description: 邮箱或密码不正确(`invalid_credentials`)。
           content:
