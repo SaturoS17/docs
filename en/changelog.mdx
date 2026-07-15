@@ -7,6 +7,23 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 15, 2026" description="v1.71">
+
+**Changed**
+
+- **OTP challenges with the phone in cooldown fall back to a stronger
+  factor**: with a recently linked number (24 h cooldown),
+  `POST /v1/otp/challenges` no longer blocks if you have the authenticator
+  app enrolled or a verified email — the challenge is issued automatically
+  over that channel (hierarchy totp > email) and the response reports the
+  effective channel. The `403 phone_binding_cooldown` remains only for
+  accounts with no alternative factor. Previously the cooldown blocked
+  every 2FA relaxation (even disabling the email channel) even when
+  stronger factors were available. Details in the
+  [security and 2FA guide](/en/security-2fa).
+
+</Update>
+
 <Update label="July 15, 2026" description="v1.70">
 
 **Added**

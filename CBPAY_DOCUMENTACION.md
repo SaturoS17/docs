@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-15 20:21 UTC · versión `e7d155ecf5fe`
+> **Documento actualizado:** 2026-07-15 21:04 UTC · versión `34b67c4e9886`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.70 (15 de julio de 2026) |
+| Versión de la documentación | v1.71 (15 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -7890,9 +7890,13 @@ curl -X POST https://api.qbank.cl/platform/v1/auth/login/otp \
   número **anterior** — así nadie puede redirigir tus códigos sin tener tu
   teléfono actual.
 - Si el teléfono se enlaza por primera vez (o se cambia sin verificación),
-  las acciones protegidas quedan bloqueadas por **24 horas**
-  (`403 phone_binding_cooldown`): es la ventana anti-secuestro de sesión.
-  El teléfono cargado por tu operador no tiene cooldown.
+  los desafíos por SMS/WhatsApp quedan bloqueados por **24 horas**: es la
+  ventana anti-secuestro de sesión. Durante el cooldown, si tienes la app
+  autenticadora enrolada o tu email verificado, el desafío se emite
+  automáticamente por ese factor más fuerte (el canal llega en la respuesta
+  del desafío); solo si no tienes ninguna alternativa recibes
+  `403 phone_binding_cooldown`. El teléfono cargado por tu operador no tiene
+  cooldown.
 
 ### Errores
 
@@ -7901,7 +7905,7 @@ curl -X POST https://api.qbank.cl/platform/v1/auth/login/otp \
 | 403 | `otp_required` | La acción exige OTP y no enviaste `X-OTP-Token` | Crea y verifica un desafío, reintenta con el header |
 | 403 | `otp_invalid` | Token inválido, expirado o ya usado | Verifica un desafío nuevo |
 | 403 | `session_required` | Pediste un desafío con una API key | Los desafíos son solo para sesiones de usuario |
-| 403 | `phone_binding_cooldown` | Teléfono enlazado hace menos de 24 h sin verificación | Espera el cooldown o pide a tu operador fijar el número |
+| 403 | `phone_binding_cooldown` | Teléfono enlazado hace menos de 24 h sin verificación y sin factor alternativo (app autenticadora o email verificado) | Enrola la app autenticadora o verifica tu email; si no, espera el cooldown o pide a tu operador fijar el número |
 | 401 | `invalid_code` | El código no coincide | Revisa el SMS/WhatsApp y reintenta (5 intentos) |
 | 401 | `invalid_pending_token` | El token intermedio del login expiró | Vuelve a iniciar sesión |
 | 409 | `phone_required` | La cuenta no tiene teléfono | `PATCH /v1/me` con `phone` E.164 |
@@ -8403,7 +8407,7 @@ Detalle y flujo completo en [seguridad y 2FA](#seguridad-y-2fa-otp).
 | 403 | `otp_required` | La acción exige OTP: verifica un desafío y reintenta con `X-OTP-Token` |
 | 403 | `otp_invalid` | Token OTP inválido, expirado o ya usado |
 | 403 | `session_required` | Los desafíos OTP requieren sesión de usuario, no API key |
-| 403 | `phone_binding_cooldown` | Teléfono enlazado hace menos de 24 h sin verificación |
+| 403 | `phone_binding_cooldown` | Teléfono enlazado hace menos de 24 h sin verificación y sin factor alternativo (app autenticadora o email verificado) |
 | 409 | `phone_verification_required` | Verifica tu teléfono (desafío OTP) antes de activar el 2FA de login por SMS/WhatsApp |
 | 401 | `invalid_code` | El código no coincide |
 | 401 | `invalid_pending_token` | El token intermedio del login expiró; vuelve a iniciar sesión |
@@ -8895,6 +8899,20 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.71 — 15 de julio de 2026
+
+**Cambiado**
+
+- **Desafíos OTP con teléfono en cooldown caen a un factor más fuerte**:
+  con el número recién enlazado (cooldown de 24 h), `POST /v1/otp/challenges`
+  ya no bloquea si tienes la app autenticadora enrolada o tu email
+  verificado — el desafío se emite automáticamente por ese canal (jerarquía
+  totp > email) y la respuesta indica el canal efectivo. El
+  `403 phone_binding_cooldown` queda solo para cuentas sin factor
+  alternativo. Antes, el cooldown bloqueaba toda relajación del 2FA
+  (incluso desactivar el canal email) aunque tuvieras factores más fuertes
+  disponibles. Detalle en la [guía de seguridad y 2FA](#seguridad-y-2fa-otp).
 
 ### v1.70 — 15 de julio de 2026
 

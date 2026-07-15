@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.70'
+  version: '1.71'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -9966,8 +9966,10 @@ paths:
                 created_at: '2026-07-08T21:00:00Z'
                 expires_at: '2026-07-08T21:10:00Z'
         '403':
-          description: Credencial API key (`session_required`) o teléfono recién enlazado sin verificación
-            (`phone_binding_cooldown`).
+          description: Credencial API key (`session_required`) o teléfono recién enlazado sin verificación y sin factor
+            alternativo (`phone_binding_cooldown`). Con el teléfono en cooldown, el desafío cae automáticamente a la app
+            autenticadora (si está enrolada) o al email de login verificado; el canal efectivo llega en la respuesta del
+            desafío.
           content:
             application/json:
               schema:

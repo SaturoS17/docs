@@ -176,9 +176,13 @@ curl -X POST https://api.qbank.cl/platform/v1/auth/login/otp \
   número **anterior** — así nadie puede redirigir tus códigos sin tener tu
   teléfono actual.
 - Si el teléfono se enlaza por primera vez (o se cambia sin verificación),
-  las acciones protegidas quedan bloqueadas por **24 horas**
-  (`403 phone_binding_cooldown`): es la ventana anti-secuestro de sesión.
-  El teléfono cargado por tu operador no tiene cooldown.
+  los desafíos por SMS/WhatsApp quedan bloqueados por **24 horas**: es la
+  ventana anti-secuestro de sesión. Durante el cooldown, si tienes la app
+  autenticadora enrolada o tu email verificado, el desafío se emite
+  automáticamente por ese factor más fuerte (el canal llega en la respuesta
+  del desafío); solo si no tienes ninguna alternativa recibes
+  `403 phone_binding_cooldown`. El teléfono cargado por tu operador no tiene
+  cooldown.
 
 ## Errores
 
@@ -187,7 +191,7 @@ curl -X POST https://api.qbank.cl/platform/v1/auth/login/otp \
 | 403 | `otp_required` | La acción exige OTP y no enviaste `X-OTP-Token` | Crea y verifica un desafío, reintenta con el header |
 | 403 | `otp_invalid` | Token inválido, expirado o ya usado | Verifica un desafío nuevo |
 | 403 | `session_required` | Pediste un desafío con una API key | Los desafíos son solo para sesiones de usuario |
-| 403 | `phone_binding_cooldown` | Teléfono enlazado hace menos de 24 h sin verificación | Espera el cooldown o pide a tu operador fijar el número |
+| 403 | `phone_binding_cooldown` | Teléfono enlazado hace menos de 24 h sin verificación y sin factor alternativo (app autenticadora o email verificado) | Enrola la app autenticadora o verifica tu email; si no, espera el cooldown o pide a tu operador fijar el número |
 | 401 | `invalid_code` | El código no coincide | Revisa el SMS/WhatsApp y reintenta (5 intentos) |
 | 401 | `invalid_pending_token` | El token intermedio del login expiró | Vuelve a iniciar sesión |
 | 409 | `phone_required` | La cuenta no tiene teléfono | `PATCH /v1/me` con `phone` E.164 |

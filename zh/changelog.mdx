@@ -7,6 +7,20 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月15日" description="v1.71">
+
+**变更**
+
+- **手机号处于冷却期时，OTP 质询自动改用更强的因素**：手机号为最近
+  绑定（24 小时冷却期）时，`POST /v1/otp/challenges` 在您已注册身份
+  验证器应用或已验证邮箱的情况下不再阻止 — 质询会自动通过该渠道发出
+  （层级 totp > email），响应中会返回实际使用的渠道。
+  `403 phone_binding_cooldown` 仅在没有任何替代因素时返回。此前，
+  即使拥有更强的因素，冷却期也会阻止所有 2FA 放宽操作（甚至包括停用
+  email 渠道）。详见[安全与 2FA 指南](/zh/security-2fa)。
+
+</Update>
+
 <Update label="2026年7月15日" description="v1.70">
 
 **新增**

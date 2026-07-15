@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.70'
+  version: '1.71'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -9675,7 +9675,7 @@ paths:
                 created_at: '2026-07-08T21:00:00Z'
                 expires_at: '2026-07-08T21:10:00Z'
         '403':
-          description: API key 凭证(`session_required`)或最近绑定且未验证的手机号(`phone_binding_cooldown`)。
+          description: API key 凭证(`session_required`)，或最近绑定且未验证的手机号且无替代因素(`phone_binding_cooldown`)。手机号处于冷却期时，质询会自动改用身份验证器应用（若已注册）或已验证的登录邮箱；实际使用的渠道会在质询响应中返回。
           content:
             application/json:
               schema:

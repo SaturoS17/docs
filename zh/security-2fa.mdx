@@ -154,7 +154,7 @@ curl -X POST https://api.qbank.cl/platform/v1/auth/login/otp \
 - **E.164** 格式（`+56912345678`），可在注册时、通过 `PATCH /v1/me` 或由您的运营方设置。
 - `phone_verified` 会在您首次成功验证质询时变为 `true`：这证明持有人手中确实握有该手机。
 - **更换手机号**（操作 `phone_change`）时，验证码将发送到**原有**号码进行校验——任何人在未持有您当前手机的情况下都无法劫持您的验证码。
-- 如果手机号是首次绑定（或未经验证即被更改），受保护的操作将锁定 **24 小时**（`403 phone_binding_cooldown`）：这是防会话劫持的窗口期。由运营方设置的手机号没有冷却期。
+- 如果手机号是首次绑定（或未经验证即被更改），SMS/WhatsApp 质询将锁定 **24 小时**：这是防会话劫持的窗口期。冷却期内，若您已注册身份验证器应用或已验证邮箱，质询会自动改用该更强的因素发出（质询响应中会返回实际使用的渠道）；仅当没有任何替代因素时才会收到 `403 phone_binding_cooldown`。由运营方设置的手机号没有冷却期。
 
 ## 错误
 
@@ -163,7 +163,7 @@ curl -X POST https://api.qbank.cl/platform/v1/auth/login/otp \
 | 403 | `otp_required` | 该操作需要 OTP，但未发送 `X-OTP-Token` | 创建并验证一个质询，携带该请求头重试 |
 | 403 | `otp_invalid` | 令牌无效、已过期或已被使用 | 验证一个新的质询 |
 | 403 | `session_required` | 使用 API 密钥请求了质询 | 质询仅适用于用户会话 |
-| 403 | `phone_binding_cooldown` | 手机号绑定未满 24 小时且未经验证 | 等待冷却期结束，或请您的运营方设置号码 |
+| 403 | `phone_binding_cooldown` | 手机号绑定未满 24 小时且未经验证，且没有替代因素（身份验证器应用或已验证邮箱） | 注册身份验证器应用或验证邮箱；否则等待冷却期结束，或请您的运营方设置号码 |
 | 401 | `invalid_code` | 验证码不匹配 | 核对 SMS/WhatsApp 中的验证码并重试（5 次机会） |
 | 401 | `invalid_pending_token` | 登录中间令牌已过期 | 重新登录 |
 | 409 | `phone_required` | 账户未绑定手机号 | 通过 `PATCH /v1/me` 设置 E.164 格式的 `phone` |

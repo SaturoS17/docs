@@ -176,9 +176,12 @@ curl -X POST https://api.qbank.cl/platform/v1/auth/login/otp \
   the **previous** number — nobody can redirect your codes without holding
   your current phone.
 - If the phone is linked for the first time (or changed without
-  verification), protected actions stay locked for **24 hours**
-  (`403 phone_binding_cooldown`): the anti session-hijacking window. A
-  phone set by your operator has no cooldown.
+  verification), SMS/WhatsApp challenges stay locked for **24 hours**: the
+  anti session-hijacking window. During the cooldown, if you have the
+  authenticator app enrolled or a verified email, the challenge is issued
+  automatically over that stronger factor (the channel comes back in the
+  challenge response); you only get `403 phone_binding_cooldown` when no
+  alternative factor exists. A phone set by your operator has no cooldown.
 
 ## Errors
 
@@ -187,7 +190,7 @@ curl -X POST https://api.qbank.cl/platform/v1/auth/login/otp \
 | 403 | `otp_required` | The action requires OTP and no `X-OTP-Token` was sent | Create and verify a challenge, retry with the header |
 | 403 | `otp_invalid` | Token invalid, expired or already used | Verify a new challenge |
 | 403 | `session_required` | You requested a challenge with an API key | Challenges are for user sessions only |
-| 403 | `phone_binding_cooldown` | Phone linked less than 24 h ago without verification | Wait out the cooldown or ask your operator to set the number |
+| 403 | `phone_binding_cooldown` | Phone linked less than 24 h ago without verification and no alternative factor (authenticator app or verified email) | Enroll the authenticator app or verify your email; otherwise wait out the cooldown or ask your operator to set the number |
 | 401 | `invalid_code` | The code does not match | Check the SMS/WhatsApp and retry (5 attempts) |
 | 401 | `invalid_pending_token` | The intermediate login token expired | Log in again |
 | 409 | `phone_required` | The account has no phone | `PATCH /v1/me` with an E.164 `phone` |
