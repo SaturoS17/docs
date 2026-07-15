@@ -85,6 +85,12 @@ curl https://api.qbank.cl/platform/v1/me/verification \
 Cuando compliance aprueba, tu `kyc_status` pasa a `approved`
 **automáticamente** y todos los servicios se desbloquean (recibirás el
 webhook `kyc_verification_status_changed` con `self_onboarding: true`).
+
+La aprobación además **rellena el perfil de tu cuenta con la identidad
+verificada**: `display_name` (persona = nombre + apellido; empresa = razón
+social), `tax_id` y `country` se toman de la verificación y desde ese
+momento quedan **inmutables** vía `PATCH /v1/me` (`409 identity_locked`) —
+la identidad verificada es la fuente de verdad.
 </Step>
 </Steps>
 

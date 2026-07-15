@@ -108,6 +108,7 @@ Full flow and details in [social login](/en/guides/social-login).
 | 422 | `verification_invalid` | You referenced an own-onboarding verification where a third-party one is required |
 | 403 | `company_account_required` | Third-party verification (KYC/KYB links/submissions) is for company accounts only |
 | 409 | `already_verified` | Onboarding link requested with an already-verified account |
+| 409 | `identity_locked` | With the verification approved, `display_name`, `tax_id` and `country` come from the verified identity and cannot be changed via `PATCH /v1/me`; contact support |
 | 409 | `no_screening` | AML rescreen/monitoring without a prior screening |
 | 409 | `no_banking_customer` | Banking operation without a banking profile (`POST /v1/banking/customer` first) |
 | 409 | `banking_customer_exists` | The account already has a banking profile (one per account) |

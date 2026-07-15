@@ -7,6 +7,24 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月15日" description="v1.70">
+
+**新增**
+
+- **已验证身份成为档案数据的最终来源**：KYC/KYB 入驻获批后，
+  `display_name`（个人 = 名 + 姓；企业 = 法定名称）、`tax_id` 和
+  `country` 会自动由已验证的身份回填。详见 [KYC 指南](/zh/guides/kyc)
+  与[档案指南](/zh/guides/profile)。
+
+**变更**
+
+- **`PATCH /v1/me` 在验证获批后锁定身份字段**：当
+  `kyc_status: approved` 时，修改 `display_name`、`tax_id` 或 `country`
+  将返回 `409 identity_locked`（[错误页](/zh/errors)新增该代码）。
+  `phone` 仍可通过其专属验证流程修改。
+
+</Update>
+
 <Update label="2026年7月15日" description="v1.69">
 
 **新增**

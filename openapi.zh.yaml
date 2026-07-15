@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.69'
+  version: '1.70'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -1107,6 +1107,9 @@ paths:
       - 账户
       operationId: updateMe
       summary: 更新我的档案
+      description: 身份验证获批后，`display_name`、`tax_id` 和 `country`
+        将由已验证的身份自动填充并锁定（`409 identity_locked`）；`phone`
+        仍可通过其专属验证流程修改。
       requestBody:
         required: true
         content:
@@ -1145,6 +1148,15 @@ paths:
                 profile: *id002
                 created_at: '2026-07-07T12:00:00Z'
                 updated_at: '2026-07-07T12:00:00Z'
+        '409':
+          description: 验证通过后身份字段将被锁定。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: identity_locked
+                message: display_name, tax_id and country come from your approved identity verification and cannot be changed here; contact support to update your verified identity
         '403':
           $ref: '#/components/responses/AccountRequired'
         '401':

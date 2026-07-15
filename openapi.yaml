@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.69'
+  version: '1.70'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -1161,6 +1161,10 @@ paths:
       - Account
       operationId: updateMe
       summary: Update my profile
+      description: Once your identity verification is approved, `display_name`,
+        `tax_id` and `country` are filled from the verified identity and locked
+        (`409 identity_locked`); `phone` stays editable with its own
+        verification flow.
       requestBody:
         required: true
         content:
@@ -1199,6 +1203,15 @@ paths:
                 profile: *id002
                 created_at: '2026-07-07T12:00:00Z'
                 updated_at: '2026-07-07T12:00:00Z'
+        '409':
+          description: Identity fields are locked after verification approval.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: identity_locked
+                message: display_name, tax_id and country come from your approved identity verification and cannot be changed here; contact support to update your verified identity
         '403':
           $ref: '#/components/responses/AccountRequired'
         '401':

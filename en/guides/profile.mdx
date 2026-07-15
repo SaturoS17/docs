@@ -18,6 +18,26 @@ flowchart LR
     sessions["Sessions & activity"] --> acct
 ```
 
+## Profile data and verified identity
+
+`PATCH /v1/me` updates your profile data (`display_name`, `tax_id`, `phone`,
+`country`). But once your identity verification (KYC/KYB) is **approved**,
+your name, tax ID and country are **filled automatically from the verified
+identity** — what the verification confirmed, not what was self-declared —
+and they become **immutable** through this endpoint:
+
+```json
+{
+  "error": "identity_locked",
+  "message": "display_name, tax_id and country come from your approved identity verification and cannot be changed here; contact support to update your verified identity"
+}
+```
+
+To correct verified data (a legal name change, for example) contact your
+platform's support: it takes a new verification or an operational override by
+an administrator. `phone` stays editable at any time with its own
+verification flow (OTP to the previous number when the policy requires it).
+
 ## Password
 
 <Steps>

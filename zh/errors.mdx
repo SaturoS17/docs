@@ -108,6 +108,7 @@ description: "错误格式与完整的错误码目录"
 | 422 | `verification_invalid` | 在需要第三方验证的场景引用了自身入驻的验证 |
 | 403 | `company_account_required` | 第三方验证（KYC/KYB 链接/提交）仅限企业账户 |
 | 409 | `already_verified` | 使用已通过验证的账户请求了入驻链接 |
+| 409 | `identity_locked` | 验证获批后，`display_name`、`tax_id` 和 `country` 来自已验证的身份，无法通过 `PATCH /v1/me` 修改；请联系支持 |
 | 409 | `no_screening` | 在没有先行筛查的情况下发起 AML 重新筛查/监控 |
 | 409 | `no_banking_customer` | 在没有银行账户资料的情况下发起银行操作（请先 `POST /v1/banking/customer`） |
 | 409 | `banking_customer_exists` | 该账户已有银行账户资料（每个账户仅限一个） |

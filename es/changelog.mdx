@@ -8,6 +8,26 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="15 de julio de 2026" description="v1.70">
+
+**Agregado**
+
+- **Identidad verificada como fuente de verdad del perfil**: al aprobarse
+  tu onboarding KYC/KYB, `display_name` (persona = nombre + apellido;
+  empresa = razón social), `tax_id` y `country` se rellenan
+  automáticamente desde la identidad verificada. Documentado en la
+  [guía de KYC](/es/guias/kyc) y la [guía de perfil](/es/guias/perfil).
+
+**Cambiado**
+
+- **`PATCH /v1/me` bloquea los campos de identidad tras verificar**: con
+  `kyc_status: approved`, cambiar `display_name`, `tax_id` o `country`
+  responde `409 identity_locked` (código nuevo en la página de
+  [errores](/es/errores)). `phone` sigue editable con su propio flujo de
+  verificación.
+
+</Update>
+
 <Update label="15 de julio de 2026" description="v1.69">
 
 **Agregado**

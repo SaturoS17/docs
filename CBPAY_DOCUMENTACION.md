@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-15 05:23 UTC · versión `c8adee48d7e2`
+> **Documento actualizado:** 2026-07-15 20:21 UTC · versión `e7d155ecf5fe`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.69 (15 de julio de 2026) |
+| Versión de la documentación | v1.70 (15 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -3971,6 +3971,27 @@ flowchart LR
     sesiones["Sesiones y actividad"] --> cuenta
 ```
 
+### Datos del perfil e identidad verificada
+
+`PATCH /v1/me` actualiza los datos del perfil (`display_name`, `tax_id`,
+`phone`, `country`). Pero con la verificación de identidad (KYC/KYB)
+**aprobada**, el nombre, el tax ID y el país se **rellenan automáticamente
+desde la identidad verificada** — lo que confirmó la verificación, no lo
+autodeclarado — y quedan **inmutables** por este endpoint:
+
+```json
+{
+  "error": "identity_locked",
+  "message": "display_name, tax_id and country come from your approved identity verification and cannot be changed here; contact support to update your verified identity"
+}
+```
+
+Para corregir un dato verificado (un cambio de razón social, por ejemplo)
+contacta al soporte de tu plataforma: requiere una nueva verificación o un
+override operativo de un administrador. `phone` sigue editable en todo
+momento con su propio flujo de verificación (OTP al número anterior cuando
+la política lo exige).
+
 ### Contraseña
 
 ### Cambiarla (con sesión)
@@ -5886,6 +5907,12 @@ curl https://api.qbank.cl/platform/v1/me/verification \
 Cuando compliance aprueba, tu `kyc_status` pasa a `approved`
 **automáticamente** y todos los servicios se desbloquean (recibirás el
 webhook `kyc_verification_status_changed` con `self_onboarding: true`).
+
+La aprobación además **rellena el perfil de tu cuenta con la identidad
+verificada**: `display_name` (persona = nombre + apellido; empresa = razón
+social), `tax_id` y `country` se toman de la verificación y desde ese
+momento quedan **inmutables** vía `PATCH /v1/me` (`409 identity_locked`) —
+la identidad verificada es la fuente de verdad.
 > **Nota**
 Mientras esperas la aprobación puedes fondear con normalidad: payins en
 todos los métodos, depósitos crypto y transferencias entrantes funcionan
@@ -8440,6 +8467,7 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | 422 | `verification_invalid` | Referenciaste una verificación de onboarding propio donde se exige la de un tercero |
 | 403 | `company_account_required` | La verificación de terceros (links/submissions KYC-KYB) es solo para cuentas empresa |
 | 409 | `already_verified` | Pediste link de onboarding con la cuenta ya verificada |
+| 409 | `identity_locked` | Con la verificación aprobada, `display_name`, `tax_id` y `country` vienen de la identidad verificada y no se cambian por `PATCH /v1/me`; contacta al soporte |
 | 409 | `no_screening` | Rescreen/monitoreo AML sin un screening previo |
 | 409 | `no_banking_customer` | Operación banking sin perfil bancario creado (`POST /v1/banking/customer` primero) |
 | 409 | `banking_customer_exists` | La cuenta ya tiene perfil bancario (es uno por cuenta) |
@@ -8694,9 +8722,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-15 05:23 UTC · 229 requests · versión `9c92b3df4ac3`
+> **Colección actualizada:** 2026-07-15 20:21 UTC · 229 requests · versión `037d157df102`
 
-<PostmanFreshness iso="2026-07-15T05:23:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-15T20:21:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -8867,6 +8895,24 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.70 — 15 de julio de 2026
+
+**Agregado**
+
+- **Identidad verificada como fuente de verdad del perfil**: al aprobarse
+  tu onboarding KYC/KYB, `display_name` (persona = nombre + apellido;
+  empresa = razón social), `tax_id` y `country` se rellenan
+  automáticamente desde la identidad verificada. Documentado en la
+  [guía de KYC](#verificacion-kyc-y-kyb) y la [guía de perfil](#perfil-y-seguridad).
+
+**Cambiado**
+
+- **`PATCH /v1/me` bloquea los campos de identidad tras verificar**: con
+  `kyc_status: approved`, cambiar `display_name`, `tax_id` o `country`
+  responde `409 identity_locked` (código nuevo en la página de
+  [errores](#errores)). `phone` sigue editable con su propio flujo de
+  verificación.
 
 ### v1.69 — 15 de julio de 2026
 

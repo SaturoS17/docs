@@ -70,6 +70,11 @@ curl https://api.qbank.cl/platform/v1/me/verification \
 ```
 
 合规团队批准后，您的 `kyc_status` 会**自动**变为 `approved`，所有服务随即解锁（您会收到带 `self_onboarding: true` 的 `kyc_verification_status_changed` webhook）。
+
+批准后还会**用已验证的身份回填您的账户档案**：`display_name`（个人 =
+名 + 姓；企业 = 法定名称）、`tax_id` 和 `country` 均取自验证结果，此后
+通过 `PATCH /v1/me` 修改将返回 `409 identity_locked` —— 已验证的身份即为
+数据的最终来源。
 </Step>
 </Steps>
 

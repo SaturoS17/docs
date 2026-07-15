@@ -108,6 +108,7 @@ Detalle y flujo completo en [login social](/es/guias/login-social).
 | 422 | `verification_invalid` | Referenciaste una verificación de onboarding propio donde se exige la de un tercero |
 | 403 | `company_account_required` | La verificación de terceros (links/submissions KYC-KYB) es solo para cuentas empresa |
 | 409 | `already_verified` | Pediste link de onboarding con la cuenta ya verificada |
+| 409 | `identity_locked` | Con la verificación aprobada, `display_name`, `tax_id` y `country` vienen de la identidad verificada y no se cambian por `PATCH /v1/me`; contacta al soporte |
 | 409 | `no_screening` | Rescreen/monitoreo AML sin un screening previo |
 | 409 | `no_banking_customer` | Operación banking sin perfil bancario creado (`POST /v1/banking/customer` primero) |
 | 409 | `banking_customer_exists` | La cuenta ya tiene perfil bancario (es uno por cuenta) |

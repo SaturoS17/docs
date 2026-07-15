@@ -7,6 +7,25 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 15, 2026" description="v1.70">
+
+**Added**
+
+- **Verified identity as the profile's source of truth**: when your
+  KYC/KYB onboarding is approved, `display_name` (person = first + last
+  name; company = legal name), `tax_id` and `country` are backfilled
+  automatically from the verified identity. Documented in the
+  [KYC guide](/en/guides/kyc) and the [profile guide](/en/guides/profile).
+
+**Changed**
+
+- **`PATCH /v1/me` locks identity fields once verified**: with
+  `kyc_status: approved`, changing `display_name`, `tax_id` or `country`
+  answers `409 identity_locked` (new code on the [errors](/en/errors)
+  page). `phone` stays editable with its own verification flow.
+
+</Update>
+
 <Update label="July 15, 2026" description="v1.69">
 
 **Added**
