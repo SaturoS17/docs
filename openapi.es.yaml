@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.74'
+  version: '1.75'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -2773,8 +2773,10 @@ paths:
         alfanuméricos que cabe en cualquier concepto bancario (algunos rieles lo limitan a 20 caracteres
         sin caracteres especiales). Con `method: "fintoc"` (Chile) la respuesta trae una `payment_url`
         hosted: el pagador la abre y transfiere desde cualquier banco o billetera chilena; el depósito
-        se detecta, valida y acredita automáticamente. Cobrar es gratis; la comisión de payin aplica cuando
-        el depósito se acredita.'
+        se detecta, valida y acredita automáticamente. Con `method: "card"` (Bolivia) la respuesta trae
+        una `payment_url` hosted de un checkout de tarjeta con 3-D Secure y la marca de tu organización —
+        los datos de la tarjeta jamás tocan tu integración. Cobrar es gratis; la comisión de payin aplica
+        cuando el depósito se acredita.'
       requestBody:
         required: true
         content:
@@ -2809,17 +2811,37 @@ paths:
                   - qr
                   - bank_transfer
                   - fintoc
+                  - card
                   default: qr
                   description: Modo de cobro. `qr` crea un cobro QR activo a través del procesador; `bank_transfer`
                     anuncia un depósito entrante y devuelve la referencia a incluir en la descripción
                     de la transferencia; `fintoc` (solo Chile) devuelve una `payment_url` hosted donde
                     el pagador transfiere desde cualquier banco o billetera chilena y el depósito se detecta
-                    automáticamente. Usa /v1/payins/collect para cobros pull.
+                    automáticamente; `card` (Bolivia) devuelve una `payment_url` hosted de un checkout de
+                    tarjeta con 3-D Secure. Usa /v1/payins/collect para cobros pull.
                 idempotency_key:
                   type: string
-                  description: Clave de idempotencia opcional (método `fintoc`; también se acepta como
-                    header `Idempotency-Key`). Un retry con la misma clave devuelve el payin original
+                  description: Clave de idempotencia opcional (métodos `fintoc` y `card`; también se acepta
+                    como header `Idempotency-Key`). Un retry con la misma clave devuelve el payin original
                     y su `payment_url` en vez de abrir una segunda sesión de pago.
+                customer:
+                  type: object
+                  description: Prefill opcional de facturación para el checkout de tarjeta (método `card`) —
+                    `email`, `first_name`, `last_name`, `address`, `city`, `country` (texto plano, máx 120
+                    caracteres por campo). El pagador puede completarlos o corregirlos en la página.
+                success_url:
+                  type: string
+                  description: URL https pública opcional (método `card`) a la que se redirige al pagador
+                    tras un pago aprobado.
+                failure_url:
+                  type: string
+                  description: URL https pública opcional (método `card`) a la que se redirige al pagador
+                    cuando el pago falla o expira.
+                expires_at:
+                  type: string
+                  format: date-time
+                  description: Expiración RFC3339 opcional de la sesión de pago con tarjeta (método `card`,
+                    mínimo 15 minutos hacia adelante; default 24 horas).
             examples:
               bo_qr:
                 summary: Bolivia — cobro QR (BOB)
@@ -2862,6 +2884,21 @@ paths:
                   amount: '150000'
                   description: Top-up order 8841
                   idempotency_key: topup-8841
+              bo_card:
+                summary: Bolivia — checkout de tarjeta 3-D Secure (BOB)
+                value:
+                  country: BO
+                  currency: BOB
+                  method: card
+                  amount: '700.00'
+                  description: App top-up
+                  customer:
+                    email: payer@example.com
+                    first_name: Ana
+                    last_name: Rojas
+                  success_url: https://your-app.com/payment/ok
+                  failure_url: https://your-app.com/payment/error
+                  idempotency_key: topup-7719
       responses:
         '201':
           description: Cobro creado.
@@ -2908,6 +2945,16 @@ paths:
                     expires_at: '2026-07-08T18:48:25Z'
                     note: share the payment_url with the payer; the deposit is credited automatically
                       once the transfer is detected
+                card:
+                  summary: 'Página de pago con tarjeta (method: card, Bolivia)'
+                  value:
+                    payin_id: b41c9a70-1111-2222-3333-444455556666
+                    status: pending
+                    reference: b41c9a70-1111-2222-3333-444455556666
+                    payment_url: https://api.qbank.cl/pay/cards/9f3XkT2m…
+                    expires_at: '2026-07-16T18:30:00Z'
+                    note: share the payment_url with the payer; the balance is credited automatically
+                      once the card payment is approved
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':

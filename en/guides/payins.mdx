@@ -16,6 +16,7 @@ webhook:
 flowchart LR
     qr["Collection QR<br/>(BO, BR·PIX)"] --> pay["Your customer pays<br/>in local currency"]
     hosted["Hosted payment page<br/>(CL: fintoc)"] --> pay
+    card["3-D Secure card payment<br/>(BO: card)"] --> pay
     announced["Announced transfer<br/>(CL, PE, MX, PY)"] --> pay
     pull["Active pull collection<br/>(VE: c2p, debit)"] --> pay
     clabe["Dedicated CLABE account<br/>(MX)"] --> pay
@@ -57,7 +58,7 @@ Collection corridors and modes:
 | Peru | PEN | Announced bank transfer |
 | Mexico | MXN | Dedicated CLABE account, announced bank transfer |
 | Venezuela | VES | Active collection `c2p` and `debito_inmediato` (pull) |
-| Bolivia | BOB / USD | Collection QR |
+| Bolivia | BOB / USD | Collection QR, card payment page (`card`) |
 | Paraguay | PYG | Announced bank transfer |
 | Brazil | BRL | Dynamic PIX QR |
 
@@ -349,6 +350,62 @@ for an `<img>` tag (prefer it over the base64 `qr_image`); when they pay,
 your account is credited automatically. It also works in USD
 (`currency: "USD"`).
 
+**Card payment page (`card`)**: you receive a `payment_url` for a hosted
+3-D Secure checkout — the payer enters their card on a secure page branded
+with your organization's identity and, when their bank requires it,
+completes the authentication challenge right there. Card data never touches
+your system or your integration.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BO",
+    "currency": "BOB",
+    "method": "card",
+    "amount": "700.00",
+    "description": "App top-up",
+    "customer": { "email": "payer@example.com", "first_name": "Ana", "last_name": "Rojas" },
+    "success_url": "https://your-app.com/payment/ok",
+    "failure_url": "https://your-app.com/payment/error",
+    "idempotency_key": "topup-7719"
+  }'
+```
+
+Response `201`:
+
+```json
+{
+  "payin_id": "b41c…",
+  "status": "pending",
+  "reference": "b41c…",
+  "payment_url": "https://api.qbank.cl/pay/cards/9f3XkT…",
+  "expires_at": "2026-07-16T18:30:00Z",
+  "note": "share the payment_url with the payer; the balance is credited automatically once the card payment is approved"
+}
+```
+
+Share the `payment_url` (link, redirect or WebView). Flow details:
+
+- `customer` is an **optional** prefill of the billing details (`email`,
+  `first_name`, `last_name`, `address`, `city`, `country` — plain text,
+  max 120 chars per field); the payer can complete/correct them on the
+  page.
+- `success_url` / `failure_url` (optional, public https) redirect the payer
+  when done; without them the page shows the final result.
+- `expires_at` (optional, RFC3339, at least 15 minutes ahead) shortens the
+  session lifetime; the default is 24 hours. If it expires unpaid, the
+  payin moves to `expired` and you receive the `payin_expired` webhook.
+- The payer has a limited number of attempts; an issuer decline lets them
+  retry with another card within the same session.
+- Approval is online: once the charge is approved your account is credited
+  in USDT at your `payin_rate` and you receive `payin_credited` — same as
+  every other mode.
+- A retry with the same `idempotency_key` returns the same payin and the
+  same `payment_url`; it never opens a second payment session.
+- It also works in USD (`currency: "USD"`).
+
 </Tab>
 <Tab title="Paraguay">
 
@@ -508,7 +565,7 @@ curl "https://api.qbank.cl/platform/v1/payins?from=2026-07-01&to=2026-07-08&stat
 
 | HTTP | `error` | What to do |
 |---|---|---|
-| 400 | `invalid_request` | Check `method` (qr, bank_transfer, fintoc; collect has its own endpoint) |
+| 400 | `invalid_request` | Check `method` (qr, bank_transfer, fintoc, card; collect has its own endpoint) |
 | 400 | `idempotency_key_required` | Collect requires an idempotency key (real debit against the payer) |
 | 403 | `service_disabled` | Payins is not enabled for your account — see [services](/en/concepts/services) |
 | 422 | `core_rejected` | The processor rejected the charge; check the message |

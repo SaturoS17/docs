@@ -7,6 +7,22 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 16, 2026" description="v1.75">
+
+**Added**
+
+- **Card payments (`card`) on payins**: `POST /v1/payins` accepts
+  `method: "card"` (Bolivia, BOB or USD) and returns `payment_url` — a
+  hosted payment page with your organization's branding where the payer
+  enters their card in secure fields and completes their bank's 3-D Secure
+  verification. Optional fields `customer`, `success_url`, `failure_url`
+  and `expires_at`. A confirmed payment arrives via the `payin_received`
+  webhook and credits the balance like any payin; if nobody pays,
+  `payin_expired` closes the charge. Details in the
+  [payins guide](/en/guides/payins).
+
+</Update>
+
 <Update label="July 16, 2026" description="v1.74">
 
 **Added**

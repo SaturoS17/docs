@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.74'
+  version: '1.75'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -2645,7 +2645,8 @@ paths:
       summary: 创建 payin(充值收款)
       description: '创建一笔法币充值。使用 `method: "qr"`(默认)会通过处理方生成主动 QR 收款——在玻利维亚为本地互通 QR,在巴西为动态 PIX QR,其 `charge`
         携带 QR 图片和 "copia e cola" 载荷。使用 `method: "bank_transfer"` 会预告存款,响应携带付款人必须附上的参考号,以便到账转账被自动匹配入账——一个
-        12 位字母数字短码,适配任何银行附言字段(部分通道上限 20 个字符且不允许特殊字符)。使用 `method: "fintoc"`(智利)响应携带托管 `payment_url`:付款人打开后可从任意智利银行或钱包转账;存款会被自动检测、校验并入账。创建收款免费;存款入账时收取
+        12 位字母数字短码,适配任何银行附言字段(部分通道上限 20 个字符且不允许特殊字符)。使用 `method: "fintoc"`(智利)响应携带托管 `payment_url`:付款人打开后可从任意智利银行或钱包转账;存款会被自动检测、校验并入账。使用
+        `method: "card"`(玻利维亚)响应携带一个托管 3-D Secure 银行卡收银台的 `payment_url`,页面带有您组织的品牌 —— 银行卡数据绝不经过您的集成。创建收款免费;存款入账时收取
         payin 费用。'
       requestBody:
         required: true
@@ -2681,12 +2682,28 @@ paths:
                   - qr
                   - bank_transfer
                   - fintoc
+                  - card
                   default: qr
                   description: 收款模式。`qr` 通过处理方创建主动 QR 收款;`bank_transfer` 预告一笔入账存款并返回需附在转账附言中的参考号;`fintoc`(仅智利)返回托管
-                    `payment_url`,付款人可从任意智利银行或钱包转账,存款自动检测。pull 收款请使用 /v1/payins/collect。
+                    `payment_url`,付款人可从任意智利银行或钱包转账,存款自动检测;`card`(玻利维亚)返回托管 3-D Secure
+                    银行卡收银台的 `payment_url`。pull 收款请使用 /v1/payins/collect。
                 idempotency_key:
                   type: string
-                  description: 可选幂等键(`fintoc` 方式;也接受 `Idempotency-Key` 请求头)。使用相同键重试会返回原始 payin 及其 `payment_url`,而不会开启第二个支付会话。
+                  description: 可选幂等键(`fintoc` 与 `card` 方式;也接受 `Idempotency-Key` 请求头)。使用相同键重试会返回原始 payin 及其 `payment_url`,而不会开启第二个支付会话。
+                customer:
+                  type: object
+                  description: 银行卡收银台的可选账单预填(`card` 方式)—— `email`、`first_name`、`last_name`、`address`、`city`、`country`(纯文本,每个字段最多
+                    120 个字符)。付款人可在页面上补充或更正。
+                success_url:
+                  type: string
+                  description: 可选的公共 https URL(`card` 方式),支付获批后将付款人重定向至此。
+                failure_url:
+                  type: string
+                  description: 可选的公共 https URL(`card` 方式),支付失败或过期时将付款人重定向至此。
+                expires_at:
+                  type: string
+                  format: date-time
+                  description: 银行卡支付会话的可选 RFC3339 过期时间(`card` 方式,至少提前 15 分钟;默认 24 小时)。
             examples:
               bo_qr:
                 summary: 玻利维亚 — QR 收款(BOB)
@@ -2729,6 +2746,21 @@ paths:
                   amount: '150000'
                   description: 充值订单 8841
                   idempotency_key: topup-8841
+              bo_card:
+                summary: 玻利维亚 — 3-D Secure 银行卡收银台(BOB)
+                value:
+                  country: BO
+                  currency: BOB
+                  method: card
+                  amount: '700.00'
+                  description: App top-up
+                  customer:
+                    email: payer@example.com
+                    first_name: Ana
+                    last_name: Rojas
+                  success_url: https://your-app.com/payment/ok
+                  failure_url: https://your-app.com/payment/error
+                  idempotency_key: topup-7719
       responses:
         '201':
           description: 收款已创建。
@@ -2775,6 +2807,16 @@ paths:
                     expires_at: '2026-07-08T18:48:25Z'
                     note: share the payment_url with the payer; the deposit is credited automatically
                       once the transfer is detected
+                card:
+                  summary: 银行卡支付页(方式:card,玻利维亚)
+                  value:
+                    payin_id: b41c9a70-1111-2222-3333-444455556666
+                    status: pending
+                    reference: b41c9a70-1111-2222-3333-444455556666
+                    payment_url: https://api.qbank.cl/pay/cards/9f3XkT2m…
+                    expires_at: '2026-07-16T18:30:00Z'
+                    note: share the payment_url with the payer; the balance is credited automatically
+                      once the card payment is approved
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.74'
+  version: '1.75'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -2765,6 +2765,8 @@ paths:
         any bank concept field (some rails cap it at 20 characters with no special characters). With `method:
         "fintoc"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers
         from any Chilean bank or wallet; the deposit is detected, validated and credited automatically.
+        With `method: "card"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure
+        card checkout branded with your organization — card data never touches your integration.
         Charging is free; the payin fee applies when the deposit is credited.'
       requestBody:
         required: true
@@ -2800,17 +2802,37 @@ paths:
                   - qr
                   - bank_transfer
                   - fintoc
+                  - card
                   default: qr
                   description: Collection mode. `qr` creates an active QR charge through the processor;
                     `bank_transfer` announces an incoming deposit and returns the reference to include
                     in the transfer description; `fintoc` (Chile only) returns a hosted `payment_url`
                     where the payer transfers from any Chilean bank or wallet and the deposit is detected
-                    automatically. Use /v1/payins/collect for pull collections.
+                    automatically; `card` (Bolivia) returns a hosted `payment_url` for a 3-D Secure card
+                    checkout. Use /v1/payins/collect for pull collections.
                 idempotency_key:
                   type: string
-                  description: Optional idempotency key (`fintoc` method; also accepted as the `Idempotency-Key`
-                    header). A retry with the same key returns the original payin and its `payment_url`
-                    instead of opening a second payment session.
+                  description: Optional idempotency key (`fintoc` and `card` methods; also accepted as the
+                    `Idempotency-Key` header). A retry with the same key returns the original payin and
+                    its `payment_url` instead of opening a second payment session.
+                customer:
+                  type: object
+                  description: Optional billing prefill for the card checkout (`card` method) — `email`,
+                    `first_name`, `last_name`, `address`, `city`, `country` (plain text, max 120 chars
+                    per field). The payer can complete or correct them on the page.
+                success_url:
+                  type: string
+                  description: Optional public https URL (`card` method) the payer is redirected to after
+                    an approved payment.
+                failure_url:
+                  type: string
+                  description: Optional public https URL (`card` method) the payer is redirected to when
+                    the payment fails or expires.
+                expires_at:
+                  type: string
+                  format: date-time
+                  description: Optional RFC3339 expiry for the card payment session (`card` method, at
+                    least 15 minutes ahead; default 24 hours).
             examples:
               bo_qr:
                 summary: Bolivia — QR charge (BOB)
@@ -2853,6 +2875,21 @@ paths:
                   amount: '150000'
                   description: Top-up order 8841
                   idempotency_key: topup-8841
+              bo_card:
+                summary: Bolivia — 3-D Secure card checkout (BOB)
+                value:
+                  country: BO
+                  currency: BOB
+                  method: card
+                  amount: '700.00'
+                  description: App top-up
+                  customer:
+                    email: payer@example.com
+                    first_name: Ana
+                    last_name: Rojas
+                  success_url: https://your-app.com/payment/ok
+                  failure_url: https://your-app.com/payment/error
+                  idempotency_key: topup-7719
       responses:
         '201':
           description: Charge created.
@@ -2899,6 +2936,16 @@ paths:
                     expires_at: '2026-07-08T18:48:25Z'
                     note: share the payment_url with the payer; the deposit is credited automatically
                       once the transfer is detected
+                card:
+                  summary: 'Card payment page (method: card, Bolivia)'
+                  value:
+                    payin_id: b41c9a70-1111-2222-3333-444455556666
+                    status: pending
+                    reference: b41c9a70-1111-2222-3333-444455556666
+                    payment_url: https://api.qbank.cl/pay/cards/9f3XkT2m…
+                    expires_at: '2026-07-16T18:30:00Z'
+                    note: share the payment_url with the payer; the balance is credited automatically
+                      once the card payment is approved
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':

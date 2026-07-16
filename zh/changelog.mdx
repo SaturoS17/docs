@@ -7,6 +7,20 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月16日" description="v1.75">
+
+**新增**
+
+- **payin 银行卡支付（`card`）**：`POST /v1/payins` 接受
+  `method: "card"`（玻利维亚，BOB 或 USD）并返回 `payment_url` —
+  一个带有你组织品牌的托管支付页面，付款人在安全字段中输入银行卡并完成其
+  银行的 3-D Secure 验证。可选字段 `customer`、`success_url`、
+  `failure_url` 与 `expires_at`。支付确认通过 `payin_received` webhook
+  送达并像任何 payin 一样入账；若无人支付，`payin_expired` 会关闭该收款。
+  详见[payin 指南](/zh/guides/payins)。
+
+</Update>
+
 <Update label="2026年7月16日" description="v1.74">
 
 **新增**

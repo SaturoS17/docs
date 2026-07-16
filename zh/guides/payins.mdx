@@ -14,6 +14,7 @@ USDT 入账，按**您的入金汇率**（`GET /v1/rates` 中的 `payin_rate`）
 flowchart LR
     qr["收款二维码<br/>（BO、BR·PIX）"] --> pay["您的客户以<br/>当地货币付款"]
     hosted["托管支付页面<br/>（CL：fintoc）"] --> pay
+    card["3-D Secure 银行卡支付<br/>（BO：card）"] --> pay
     announced["预告转账<br/>（CL、PE、MX、PY）"] --> pay
     pull["主动拉取收款<br/>（VE：c2p、即时扣款）"] --> pay
     clabe["专属 CLABE 账户<br/>（MX）"] --> pay
@@ -53,7 +54,7 @@ curl https://api.qbank.cl/platform/v1/payins/methods \
 | 秘鲁 | PEN | 预告银行转账 |
 | 墨西哥 | MXN | 专属 CLABE 账户、预告银行转账 |
 | 委内瑞拉 | VES | 主动收款 `c2p` 和 `debito_inmediato`（拉取式） |
-| 玻利维亚 | BOB / USD | 收款二维码 |
+| 玻利维亚 | BOB / USD | 收款二维码、银行卡支付页面（`card`） |
 | 巴拉圭 | PYG | 预告银行转账 |
 | 巴西 | BRL | 动态 PIX 二维码 |
 
@@ -336,6 +337,58 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
 公共 CDN URL（优先使用它而非 base64 的 `qr_image`）；客户付款后，
 您的账户会自动入账。它同样支持 USD（`currency: "USD"`）。
 
+**银行卡支付页面（`card`）**：您会收到一个托管 3-D Secure 收银台的
+`payment_url` —— 付款人在带有您组织品牌的安全页面上输入银行卡信息，
+如其发卡行要求，还会在同一页面完成认证挑战。银行卡数据绝不会经过
+您的系统或您的集成。
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BO",
+    "currency": "BOB",
+    "method": "card",
+    "amount": "700.00",
+    "description": "App top-up",
+    "customer": { "email": "payer@example.com", "first_name": "Ana", "last_name": "Rojas" },
+    "success_url": "https://your-app.com/payment/ok",
+    "failure_url": "https://your-app.com/payment/error",
+    "idempotency_key": "topup-7719"
+  }'
+```
+
+响应 `201`：
+
+```json
+{
+  "payin_id": "b41c…",
+  "status": "pending",
+  "reference": "b41c…",
+  "payment_url": "https://api.qbank.cl/pay/cards/9f3XkT…",
+  "expires_at": "2026-07-16T18:30:00Z",
+  "note": "share the payment_url with the payer; the balance is credited automatically once the card payment is approved"
+}
+```
+
+分享 `payment_url`（链接、重定向或 WebView）。流程细节：
+
+- `customer` 是账单信息的**可选**预填（`email`、`first_name`、
+  `last_name`、`address`、`city`、`country` —— 纯文本，每个字段最多
+  120 个字符）；付款人可在页面上补充或更正。
+- `success_url` / `failure_url`（可选，公共 https）在完成后重定向付款
+  人；不提供时页面会显示最终结果。
+- `expires_at`（可选，RFC3339，至少提前 15 分钟）可缩短会话有效期；
+  默认为 24 小时。到期未付款时，该 payin 转为 `expired`，您会收到
+  `payin_expired` webhook。
+- 付款人的尝试次数有限；发卡行拒绝后，可在同一会话内换卡重试。
+- 授权是在线完成的：收款获批后，您的账户按您的 `payin_rate` 以 USDT
+  入账，并收到 `payin_credited` —— 与其他所有模式相同。
+- 使用相同 `idempotency_key` 重试会返回同一个 payin 和同一个
+  `payment_url`；绝不会开启第二个支付会话。
+- 同样支持 USD（`currency: "USD"`）。
+
 </Tab>
 <Tab title="巴拉圭">
 
@@ -488,7 +541,7 @@ curl "https://api.qbank.cl/platform/v1/payins?from=2026-07-01&to=2026-07-08&stat
 
 | HTTP | `error` | 应对方式 |
 |---|---|---|
-| 400 | `invalid_request` | 检查 `method`（qr、bank_transfer、fintoc；collect 有自己的端点） |
+| 400 | `invalid_request` | 检查 `method`（qr、bank_transfer、fintoc、card；collect 有自己的端点） |
 | 400 | `idempotency_key_required` | Collect 需要幂等键（对付款人的真实扣款） |
 | 403 | `service_disabled` | 您的账户未启用入金服务 —— 参见[服务](/zh/concepts/services) |
 | 422 | `core_rejected` | 处理方拒绝了该收款；请检查消息 |

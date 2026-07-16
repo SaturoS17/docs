@@ -8,6 +8,22 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="16 de julio de 2026" description="v1.75">
+
+**Agregado**
+
+- **Pago con tarjeta (`card`) en payins**: `POST /v1/payins` acepta
+  `method: "card"` (Bolivia, BOB o USD) y devuelve `payment_url` — una
+  página de pago alojada con el branding de tu organización donde el
+  pagador ingresa su tarjeta en campos seguros y pasa la verificación
+  3-D Secure de su banco. Campos opcionales `customer`, `success_url`,
+  `failure_url` y `expires_at`. El pago confirmado llega por el webhook
+  `payin_received` y acredita el saldo como cualquier payin; si nadie paga,
+  `payin_expired` cierra el cobro. Detalle en la
+  [guía de payins](/es/guias/payins).
+
+</Update>
+
 <Update label="16 de julio de 2026" description="v1.74">
 
 **Agregado**

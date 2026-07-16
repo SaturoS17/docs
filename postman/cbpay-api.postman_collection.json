@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — that never mix or convert automatically.\nPayouts and service fees can be paid from any of the four balances:\nset a default with `PUT /v1/settlement` or override per payout with\n`settlement_asset`.\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-16 04:25 UTC",
-    "_content_sha256": "4e051a8bcbf4d322d81b1c27f5fcbd74e13c74b2d5f1ec96508aebab0f827c99"
+    "_generated_at": "2026-07-16 06:33 UTC",
+    "_content_sha256": "ab4ad7eb9d7a7dae9349d2610e1c2e2a2d08eb49cd1d778662a528420044c764"
   },
   "auth": {
     "type": "bearer",
@@ -4570,7 +4570,7 @@
                 "payins"
               ]
             },
-            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. Charging is free; the payin fee applies when the deposit is credited.",
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. Charging is free; the payin fee applies when the deposit is credited.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"country\": \"BO\",\n  \"currency\": \"BOB\",\n  \"method\": \"qr\",\n  \"amount\": \"700.00\",\n  \"description\": \"App top-up\",\n  \"expires_in\": 3600\n}",
@@ -4630,7 +4630,7 @@
                 "payins"
               ]
             },
-            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. Charging is free; the payin fee applies when the deposit is credited.",
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. Charging is free; the payin fee applies when the deposit is credited.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"country\": \"BR\",\n  \"currency\": \"BRL\",\n  \"method\": \"qr\",\n  \"amount\": \"120.00\",\n  \"description\": \"Order 7719\",\n  \"expires_in\": 1800\n}",
@@ -4690,7 +4690,7 @@
                 "payins"
               ]
             },
-            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. Charging is free; the payin fee applies when the deposit is credited.",
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. Charging is free; the payin fee applies when the deposit is credited.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"country\": \"CL\",\n  \"currency\": \"CLP\",\n  \"method\": \"bank_transfer\",\n  \"amount\": \"500000\"\n}",
@@ -4750,7 +4750,7 @@
                 "payins"
               ]
             },
-            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. Charging is free; the payin fee applies when the deposit is credited.",
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. Charging is free; the payin fee applies when the deposit is credited.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"country\": \"PY\",\n  \"currency\": \"PYG\",\n  \"method\": \"bank_transfer\",\n  \"amount\": \"596000\"\n}",
@@ -4810,10 +4810,70 @@
                 "payins"
               ]
             },
-            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. Charging is free; the payin fee applies when the deposit is credited.",
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. Charging is free; the payin fee applies when the deposit is credited.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"country\": \"CL\",\n  \"currency\": \"CLP\",\n  \"method\": \"fintoc\",\n  \"amount\": \"150000\",\n  \"description\": \"Top-up order 8841\",\n  \"idempotency_key\": \"topup-8841\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Charge created.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payins",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payins"
+                  ]
+                }
+              },
+              "status": "Charge created.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a payin (top-up charge) — Bolivia — 3-D Secure card checkout (BOB)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payins",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payins"
+              ]
+            },
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. Charging is free; the payin fee applies when the deposit is credited.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country\": \"BO\",\n  \"currency\": \"BOB\",\n  \"method\": \"card\",\n  \"amount\": \"700.00\",\n  \"description\": \"App top-up\",\n  \"customer\": {\n    \"email\": \"payer@example.com\",\n    \"first_name\": \"Ana\",\n    \"last_name\": \"Rojas\"\n  },\n  \"success_url\": \"https://your-app.com/payment/ok\",\n  \"failure_url\": \"https://your-app.com/payment/error\",\n  \"idempotency_key\": \"topup-7719\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

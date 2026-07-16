@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-16 04:25 UTC · versión `42a1e63d66a1`
+> **Documento actualizado:** 2026-07-16 06:33 UTC · versión `bbe485098f3a`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.74 (16 de julio de 2026) |
+| Versión de la documentación | v1.75 (16 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -2879,6 +2879,7 @@ automático + webhook:
 flowchart LR
     qr["QR de cobro<br/>(BO, BR·PIX)"] --> pago["Tu cliente paga<br/>en moneda local"]
     hosted["Página de pago hosted<br/>(CL: fintoc)"] --> pago
+    card["Pago con tarjeta 3-D Secure<br/>(BO: card)"] --> pago
     anunciada["Transferencia anunciada<br/>(CL, PE, MX, PY)"] --> pago
     pull["Cobro activo pull<br/>(VE: c2p, débito)"] --> pago
     clabe["Cuenta CLABE dedicada<br/>(MX)"] --> pago
@@ -2920,7 +2921,7 @@ Corredores y modalidades de cobro:
 | Perú | PEN | Transferencia anunciada |
 | México | MXN | Cuenta CLABE dedicada, transferencia anunciada |
 | Venezuela | VES | Cobro activo `c2p` y `debito_inmediato` (pull) |
-| Bolivia | BOB / USD | QR de cobro |
+| Bolivia | BOB / USD | QR de cobro, página de pago con tarjeta (`card`) |
 | Paraguay | PYG | Transferencia anunciada |
 | Brasil | BRL | QR PIX dinámico |
 
@@ -3203,6 +3204,62 @@ para un `` (prefiérela por sobre el base64 `qr_image`); cuando paga, tu
 cuenta se acredita automáticamente. También funciona en USD
 (`currency: "USD"`).
 
+**Página de pago con tarjeta (`card`)**: recibes una `payment_url` de un
+checkout hosted con 3-D Secure — el pagador ingresa su tarjeta en una página
+segura con la marca de tu organización y, si su banco lo exige, completa el
+desafío de autenticación ahí mismo. Los datos de la tarjeta nunca pasan por
+tu sistema ni por tu integración.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BO",
+    "currency": "BOB",
+    "method": "card",
+    "amount": "700.00",
+    "description": "Recarga app",
+    "customer": { "email": "pagador@ejemplo.com", "first_name": "Ana", "last_name": "Rojas" },
+    "success_url": "https://tu-app.com/pago/ok",
+    "failure_url": "https://tu-app.com/pago/error",
+    "idempotency_key": "recarga-7719"
+  }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "payin_id": "b41c…",
+  "status": "pending",
+  "reference": "b41c…",
+  "payment_url": "https://api.qbank.cl/pay/cards/9f3XkT…",
+  "expires_at": "2026-07-16T18:30:00Z",
+  "note": "share the payment_url with the payer; the balance is credited automatically once the card payment is approved"
+}
+```
+
+Comparte la `payment_url` (link, redirección o WebView). Detalles del flujo:
+
+- `customer` es un prefill **opcional** de los datos de facturación
+  (`email`, `first_name`, `last_name`, `address`, `city`, `country` —
+  texto plano, máx 120 caracteres por campo); el pagador puede
+  completarlos/corregirlos en la página.
+- `success_url` / `failure_url` (opcionales, https públicas) redirigen al
+  pagador al terminar; sin ellas la página muestra el resultado final.
+- `expires_at` (opcional, RFC3339, mínimo 15 minutos) acorta la vigencia de
+  la sesión; el default es 24 horas. Si vence sin pago, el payin pasa a
+  `expired` y recibes el webhook `payin_expired`.
+- El pagador tiene un número limitado de intentos; un rechazo del emisor le
+  permite reintentar con otra tarjeta dentro de la misma sesión.
+- La aprobación es en línea: al aprobarse el cargo tu cuenta se acredita en
+  USDT a tu `payin_rate` y recibes `payin_credited` — igual que cualquier
+  otra modalidad.
+- Un retry con la misma `idempotency_key` devuelve el mismo payin y la misma
+  `payment_url`; nunca abre una segunda sesión de pago.
+- Funciona también en USD (`currency: "USD"`).
+
 #### Paraguay
 
 **Transferencia anunciada** en guaraníes: anuncias el depósito, tu pagador
@@ -3347,7 +3404,7 @@ curl "https://api.qbank.cl/platform/v1/payins?from=2026-07-01&to=2026-07-08&stat
 
 | HTTP | `error` | Qué hacer |
 |---|---|---|
-| 400 | `invalid_request` | Revisa `method` (qr, bank_transfer, fintoc; collect va en su endpoint) |
+| 400 | `invalid_request` | Revisa `method` (qr, bank_transfer, fintoc, card; collect va en su endpoint) |
 | 400 | `idempotency_key_required` | El collect exige clave de idempotencia (débito real al pagador) |
 | 403 | `service_disabled` | Payins no está habilitado para tu cuenta — ver [servicios](#servicios-habilitados) |
 | 422 | `core_rejected` | El procesador rechazó el cargo; revisa el mensaje |
@@ -8778,9 +8835,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-16 04:25 UTC · 232 requests · versión `4e051a8bcbf4`
+> **Colección actualizada:** 2026-07-16 06:33 UTC · 233 requests · versión `ab4ad7eb9d7a`
 
-<PostmanFreshness iso="2026-07-16T04:25:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-16T06:33:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -8951,6 +9008,20 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.75 — 16 de julio de 2026
+
+**Agregado**
+
+- **Pago con tarjeta (`card`) en payins**: `POST /v1/payins` acepta
+  `method: "card"` (Bolivia, BOB o USD) y devuelve `payment_url` — una
+  página de pago alojada con el branding de tu organización donde el
+  pagador ingresa su tarjeta en campos seguros y pasa la verificación
+  3-D Secure de su banco. Campos opcionales `customer`, `success_url`,
+  `failure_url` y `expires_at`. El pago confirmado llega por el webhook
+  `payin_received` y acredita el saldo como cualquier payin; si nadie paga,
+  `payin_expired` cierra el cobro. Detalle en la
+  [guía de payins](#payins).
 
 ### v1.74 — 16 de julio de 2026
 
