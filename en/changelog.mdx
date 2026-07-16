@@ -7,6 +7,23 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 15, 2026" description="v1.73">
+
+**Added**
+
+- **Bitcoin on-chain (`btc`/`btc`)**: fourth supported network of the
+  crypto product. Every account is now born with **four deposit wallets**
+  (Bitcoin joins, bech32 address `bc1q…`); BTC deposits credit the BTC
+  balance (~30 min confirmation, 3 blocks) and on-chain withdrawals accept
+  `chain: "btc"` (bech32, taproot and legacy destinations; the network fee
+  is covered by the operation — the recipient receives the exact amount).
+  [Segregated wallets](/en/guides/segregated-wallets) also support the
+  `btc`/`btc` pair (no gas: the fee comes out of the wallet's balance).
+  Travel Rule applies as on the other networks, valuing the amount in USD.
+  Details in the [crypto guide](/en/guides/crypto).
+
+</Update>
+
 <Update label="July 15, 2026" description="v1.72">
 
 **Changed**

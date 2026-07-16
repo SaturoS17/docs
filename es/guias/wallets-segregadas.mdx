@@ -25,7 +25,8 @@ depósitos **acreditan tu saldo USDT/USDC del ledger** y los retiros salen de
 una hot wallet. En las wallets segregadas el saldo **vive on-chain en la
 wallet** y los envíos salen **de esa misma wallet**. El **gas** (TRX en TRON,
 ETH en Ethereum) corre por tu cuenta: cada wallet debe tener gas para poder
-enviar.
+enviar. En Bitcoin no hay gas: el fee de red se descuenta del saldo BTC de
+la wallet.
 </Warning>
 
 <Note>
@@ -52,9 +53,11 @@ flowchart LR
 | `tron` | `usdt` | TRX |
 | `eth` | `usdt` | ETH |
 | `eth` | `usdc` | ETH |
+| `btc` | `btc` | — (el fee de red sale del propio saldo BTC) |
 
 El `eth` nativo puede enviarse desde cualquier wallet de una chain `eth`
-(es el gas de la red).
+(es el gas de la red). En Bitcoin no existe gas separado: el fee de red se
+descuenta del saldo de la wallet en cada envío.
 
 ## 1. Crea una wallet
 
@@ -224,8 +227,10 @@ Respuesta `202` (el envío es asíncrono; el estado final llega por webhook):
 }
 ```
 
-Antes de enviar, CBPay verifica que la wallet tenga **gas** suficiente; si no,
-responde `422 insufficient_gas` con el mínimo requerido — sin cobrar nada.
+Antes de enviar, CBPay verifica que la wallet tenga **gas** suficiente
+(solo TRON y Ethereum; Bitcoin salta este check porque el fee sale del
+monto); si no, responde `422 insufficient_gas` con el mínimo requerido —
+sin cobrar nada.
 El envío puede cobrar el fee `wallet_send` (del saldo de settlement de tu
 cuenta en el ledger; **la plata on-chain de la wallet no se toca**), que se
 reembolsa si el envío es rechazado por el custodio.

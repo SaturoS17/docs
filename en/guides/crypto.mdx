@@ -4,7 +4,7 @@ icon: "link"
 description: "Create on-chain wallets, deposit, transfer and check movements"
 ---
 
-Your stablecoin balances are connected to the blockchain. Supported
+Your crypto balances are connected to the blockchain. Supported
 combinations:
 
 | Network | Asset | Balance credited |
@@ -12,10 +12,12 @@ combinations:
 | `tron` | `usdt` | USDT |
 | `eth` | `usdt` | USDT |
 | `eth` | `usdc` | USDC |
+| `btc` | `btc` | BTC |
 
 Every deposit credits the **balance of its own asset** (a USDC wallet
-credits your USDC balance). `BTC` and `GOLD` are balances with no on-chain
-rail: they move only via internal transfers and operator credits.
+credits your USDC balance; the Bitcoin wallet credits your BTC balance).
+`GOLD` is the only balance with no on-chain rail: it moves only via
+internal transfers and operator credits.
 
 ```mermaid
 flowchart LR
@@ -23,7 +25,7 @@ flowchart LR
         wallet["Your CBPay wallet<br/>(stable address)"] --> confirmed["On-chain<br/>confirmation"]
         confirmed --> credit["Automatic credit<br/>− funding fee"]
     end
-    credit --> balance(("Asset balance<br/>(USDT or USDC)"))
+    credit --> balance(("Asset balance<br/>(USDT, USDC or BTC)"))
     subgraph withdrawFlow [Withdraw]
         balance --> withdrawal["POST /v1/crypto/withdrawals<br/>debits amount + fee"]
         withdrawal --> onchain{"On-chain<br/>result"}
@@ -35,9 +37,9 @@ flowchart LR
 ## Your account is born with its wallets
 
 Every account — person and company — is created with **one deposit wallet
-per supported combination** (`tron`/`usdt`, `eth`/`usdt` and `eth`/`usdc`),
-**free of charge** and automatically: as soon as you register, your three
-addresses are ready to receive funds.
+per supported combination** (`tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc` and
+`btc`/`btc`), **free of charge** and automatically: as soon as you
+register, your four addresses are ready to receive funds.
 
 ```bash
 # Right after creating the account, your addresses already exist:
@@ -52,7 +54,8 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
   "wallets": [
     { "wallet_id": "9d68…", "chain": "tron", "asset": "USDT", "address": "TXMD…", "label": "", "type": "deposit", "receive_only": true, "created_at": "2026-07-11T23:33:20Z" },
     { "wallet_id": "a83d…", "chain": "eth", "asset": "USDT", "address": "0xefe0…", "label": "", "type": "deposit", "receive_only": true, "created_at": "2026-07-11T23:33:20Z" },
-    { "wallet_id": "fb88…", "chain": "eth", "asset": "USDC", "address": "0xa072…", "label": "", "type": "deposit", "receive_only": true, "created_at": "2026-07-11T23:33:20Z" }
+    { "wallet_id": "fb88…", "chain": "eth", "asset": "USDC", "address": "0xa072…", "label": "", "type": "deposit", "receive_only": true, "created_at": "2026-07-11T23:33:20Z" },
+    { "wallet_id": "c1d4…", "chain": "btc", "asset": "BTC", "address": "bc1qf66…", "label": "", "type": "deposit", "receive_only": true, "created_at": "2026-07-11T23:33:20Z" }
   ]
 }
 ```
@@ -85,7 +88,7 @@ can always tell them apart.
 No. Every account — person and company — holds exactly **one deposit
 wallet per network+asset pair**, and all of them are born with the account.
 `POST /v1/crypto/wallets` exists only to restore a missing pair (an
-exceptional case): with the three wallets already provisioned it responds
+exceptional case): with the four wallets already provisioned it responds
 `422 wallet_limit_reached`.
 
 ```bash
@@ -151,10 +154,26 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
       "type": "deposit",
       "receive_only": true,
       "created_at": "2026-07-07T12:00:00Z"
+    },
+    {
+      "wallet_id": "c1d4…",
+      "chain": "btc",
+      "asset": "BTC",
+      "address": "bc1qf66…",
+      "label": "",
+      "type": "deposit",
+      "receive_only": true,
+      "created_at": "2026-07-07T12:00:00Z"
     }
   ]
 }
 ```
+
+<Note>
+Bitcoin addresses are **native bech32** (`bc1q…`): any modern wallet or
+exchange can send funds to them. BTC amounts use 8 decimals
+(`"0.00050000"`).
+</Note>
 
 ## Deposit
 
@@ -176,8 +195,8 @@ automatically (net of the `funding` fee if CBPay configured one) and the
 
 <Warning>
 Send **only the wallet's asset over its network** (USDT to a USDT wallet,
-USDC to a USDC wallet). Addresses are yours and stable: you can reuse them
-for every deposit.
+USDC to a USDC wallet, BTC to the Bitcoin wallet). Addresses are yours and
+stable: you can reuse them for every deposit.
 </Warning>
 
 ### Confirmation times
@@ -186,14 +205,16 @@ for every deposit.
 |---|---|---|
 | TRON | Near-instant | **~1 minute** (19 confirmations) |
 | Ethereum | Near-instant | **A few minutes** depending on congestion |
+| Bitcoin | At the first block (~10 min) | **~30 minutes** (3 confirmations) |
 
 The credit always arrives with the webhook and the `tx_id` so you can
 verify it on the network explorer.
 
 ## Transfer (on-chain withdrawals)
 
-Send USDT or USDC from its balance to any external address (`asset` is
-optional, default `USDT`; USDC only over `eth`):
+Send USDT, USDC or BTC from its balance to any external address (`asset`
+is optional: default `USDT` on `tron`/`eth` and `BTC` on `btc`; USDC only
+over `eth`):
 
 <CodeGroup>
 
@@ -222,7 +243,26 @@ curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
   }'
 ```
 
+```bash BTC over Bitcoin
+curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "btc",
+    "to_address": "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4",
+    "amount": "0.00050000",
+    "idempotency_key": "withdrawal-btc-2026-07-15-a"
+  }'
+```
+
 </CodeGroup>
+
+<Note>
+On Bitcoin the destination can be a bech32 (`bc1q…`), taproot (`bc1p…`) or
+legacy (`1…` / `3…`) address. The Bitcoin **network fee** is covered by
+the operation itself — you receive the final status via webhook like any
+other withdrawal.
+</Note>
 
 Response `202` — `amount + fee` is debited and the transaction broadcasts:
 
@@ -399,15 +439,15 @@ curl "https://api.qbank.cl/platform/v1/movements?type=funding&from=2026-07-01&to
   -H "Authorization: Bearer <token>"
 ```
 
-Every deposit credits the **balance of its wallet's asset** (USDT or
-USDC); wallets are entry points, each currency has a single balance.
+Every deposit credits the **balance of its wallet's asset** (USDT, USDC or
+BTC); wallets are entry points, each currency has a single balance.
 
 ## Errors
 
 | HTTP | `error` | Cause |
 |---|---|---|
-| 400 | `invalid_chain` | Unsupported network (use `tron` or `eth`) |
-| 400 | `invalid_asset` | Network/asset pair without an on-chain rail (supported: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc` — `BTC` and `GOLD` do not operate on-chain) |
+| 400 | `invalid_chain` | Unsupported network (use `tron`, `eth` or `btc`) |
+| 400 | `invalid_asset` | Network/asset pair without an on-chain rail (supported: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`, `btc`/`btc` — `GOLD` does not operate on-chain) |
 | 400 | `to_address_required` | Missing withdrawal destination address |
 | 402 | `insufficient_funds` | Not enough balance in that asset (for the withdrawal or the creation fee) |
 | 422 | `wallet_limit_reached` | The account already holds its deposit wallet for that network+asset pair (applies to persons and companies) |

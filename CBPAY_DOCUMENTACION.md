@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-15 21:43 UTC · versión `ac67499a15c3`
+> **Documento actualizado:** 2026-07-16 02:32 UTC · versión `d67fcdb20369`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.72 (15 de julio de 2026) |
+| Versión de la documentación | v1.73 (15 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -1085,8 +1085,8 @@ salir de cualquiera de los cuatro saldos — ver
 [Elige desde qué saldo pagas](#elige-desde-que-saldo-pagas). Los payins
 siempre acreditan al saldo USDT; los otros saldos se fondean con
 [transferencias internas](#transferencias-internas) (siempre entre saldos
-de la misma moneda), depósitos on-chain (USDC) o abonos de tu operador
-(BTC y GOLD).
+de la misma moneda), depósitos on-chain (USDC y BTC) o abonos de tu
+operador (GOLD).
 
 ### Elige desde qué saldo pagas
 
@@ -4179,7 +4179,7 @@ email, así que siguen funcionando.
 
 *Crea wallets on-chain, deposita, transfiere y consulta movimientos*
 
-Tus saldos stablecoin viven conectados a la blockchain. Combinaciones
+Tus saldos crypto viven conectados a la blockchain. Combinaciones
 soportadas:
 
 | Red | Activo | Saldo que acredita |
@@ -4187,10 +4187,12 @@ soportadas:
 | `tron` | `usdt` | USDT |
 | `eth` | `usdt` | USDT |
 | `eth` | `usdc` | USDC |
+| `btc` | `btc` | BTC |
 
 Cada depósito acredita el **saldo de su propio activo** (una wallet USDC
-abona tu saldo USDC). `BTC` y `GOLD` son saldos sin riel on-chain: se
-mueven solo por transferencias internas y abonos del operador.
+abona tu saldo USDC; la wallet Bitcoin abona tu saldo BTC). `GOLD` es el
+único saldo sin riel on-chain: se mueve solo por transferencias internas y
+abonos del operador.
 
 ```mermaid
 flowchart LR
@@ -4198,7 +4200,7 @@ flowchart LR
         wallet["Tu wallet CBPay<br/>(dirección estable)"] --> confirmado["Confirmación<br/>on-chain"]
         confirmado --> abono["Abono automático<br/>− fee funding"]
     end
-    abono --> saldo(("Saldo del activo<br/>(USDT o USDC)"))
+    abono --> saldo(("Saldo del activo<br/>(USDT, USDC o BTC)"))
     subgraph salida [Retirar]
         saldo --> retiro["POST /v1/crypto/withdrawals<br/>debita amount + fee"]
         retiro --> onchain{"Resultado<br/>on-chain"}
@@ -4210,9 +4212,9 @@ flowchart LR
 ### Tu cuenta nace con sus wallets
 
 Toda cuenta — persona y empresa — se crea con **una wallet de depósito por
-cada combinación soportada** (`tron`/`usdt`, `eth`/`usdt` y `eth`/`usdc`),
-**sin costo** y de forma automática: apenas te registras ya tienes tus tres
-direcciones listas para recibir fondos.
+cada combinación soportada** (`tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc` y
+`btc`/`btc`), **sin costo** y de forma automática: apenas te registras ya
+tienes tus cuatro direcciones listas para recibir fondos.
 
 ```bash
 # Recién creada la cuenta, tus direcciones ya existen:
@@ -4227,7 +4229,8 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
   "wallets": [
     { "wallet_id": "9d68…", "chain": "tron", "asset": "USDT", "address": "TXMD…", "label": "", "type": "deposit", "receive_only": true, "created_at": "2026-07-11T23:33:20Z" },
     { "wallet_id": "a83d…", "chain": "eth", "asset": "USDT", "address": "0xefe0…", "label": "", "type": "deposit", "receive_only": true, "created_at": "2026-07-11T23:33:20Z" },
-    { "wallet_id": "fb88…", "chain": "eth", "asset": "USDC", "address": "0xa072…", "label": "", "type": "deposit", "receive_only": true, "created_at": "2026-07-11T23:33:20Z" }
+    { "wallet_id": "fb88…", "chain": "eth", "asset": "USDC", "address": "0xa072…", "label": "", "type": "deposit", "receive_only": true, "created_at": "2026-07-11T23:33:20Z" },
+    { "wallet_id": "c1d4…", "chain": "btc", "asset": "BTC", "address": "bc1qf66…", "label": "", "type": "deposit", "receive_only": true, "created_at": "2026-07-11T23:33:20Z" }
   ]
 }
 ```
@@ -4256,7 +4259,7 @@ respuesta de wallet trae el discriminador `type` (`deposit` /
 No. Toda cuenta — persona y empresa — tiene exactamente **una wallet de
 depósito por combinación** red+activo, y nacen todas con la cuenta.
 `POST /v1/crypto/wallets` existe solo para reponer un par que falte (caso
-excepcional): con las tres wallets ya provisionadas responde
+excepcional): con las cuatro wallets ya provisionadas responde
 `422 wallet_limit_reached`.
 
 ```bash
@@ -4322,11 +4325,25 @@ curl https://api.qbank.cl/platform/v1/crypto/wallets \
       "type": "deposit",
       "receive_only": true,
       "created_at": "2026-07-07T12:00:00Z"
+    },
+    {
+      "wallet_id": "c1d4…",
+      "chain": "btc",
+      "asset": "BTC",
+      "address": "bc1qf66…",
+      "label": "",
+      "type": "deposit",
+      "receive_only": true,
+      "created_at": "2026-07-07T12:00:00Z"
     }
   ]
 }
 ```
 
+> **Nota**
+Las direcciones Bitcoin son **bech32 nativas** (`bc1q…`): cualquier wallet
+o exchange moderno puede enviarles fondos. Los montos BTC usan 8 decimales
+(`"0.00050000"`).
 ### Depositar
 
 Envía el activo de la wallet a su dirección, **por la red correcta**.
@@ -4347,22 +4364,24 @@ se emite el webhook `crypto_deposit_credited`:
 
 > **Importante**
 Envía **solo el activo de la wallet y por su red** (USDT a una wallet
-USDT, USDC a una wallet USDC). Las direcciones son tuyas y estables:
-puedes reutilizarlas para todos tus depósitos.
+USDT, USDC a una wallet USDC, BTC a la wallet Bitcoin). Las direcciones
+son tuyas y estables: puedes reutilizarlas para todos tus depósitos.
 #### Tiempos de confirmación
 
 | Red | Detección | Abono (confirmación de la red) |
 |---|---|---|
 | TRON | Casi inmediata | **~1 minuto** (19 confirmaciones) |
 | Ethereum | Casi inmediata | **Algunos minutos** según congestión |
+| Bitcoin | Al primer bloque (~10 min) | **~30 minutos** (3 confirmaciones) |
 
 El abono siempre llega con el webhook y el `tx_id` para verificarlo en el
 explorador de la red.
 
 ### Transferir (retiros on-chain)
 
-Envía USDT o USDC desde su saldo a cualquier dirección externa (`asset`
-opcional, default `USDT`; USDC solo por `eth`):
+Envía USDT, USDC o BTC desde su saldo a cualquier dirección externa
+(`asset` opcional: default `USDT` en `tron`/`eth` y `BTC` en `btc`; USDC
+solo por `eth`):
 
 ```bash USDT por TRON
 curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
@@ -4389,6 +4408,23 @@ curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
   }'
 ```
 
+```bash BTC por Bitcoin
+curl -X POST https://api.qbank.cl/platform/v1/crypto/withdrawals \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "btc",
+    "to_address": "bc1qw50…",
+    "amount": "0.00050000",
+    "idempotency_key": "retiro-btc-2026-07-15-a"
+  }'
+```
+
+> **Nota**
+En Bitcoin el destino puede ser una dirección bech32 (`bc1q…`), taproot
+(`bc1p…`) o legacy (`1…` / `3…`). El **fee de red** de Bitcoin lo cubre la
+propia operación — recibes el estado final por webhook como en cualquier
+otro retiro.
 Respuesta `202` — se debita `amount + fee` y la transacción se transmite:
 
 ```json
@@ -4555,15 +4591,15 @@ curl "https://api.qbank.cl/platform/v1/movements?type=funding&from=2026-07-01&to
   -H "Authorization: Bearer <token>"
 ```
 
-Cada depósito acredita el **saldo del activo de su wallet** (USDT o USDC);
-las wallets son puertas de entrada, el saldo por moneda es uno solo.
+Cada depósito acredita el **saldo del activo de su wallet** (USDT, USDC o
+BTC); las wallets son puertas de entrada, el saldo por moneda es uno solo.
 
 ### Errores
 
 | HTTP | `error` | Causa |
 |---|---|---|
-| 400 | `invalid_chain` | Red no soportada (usa `tron` o `eth`) |
-| 400 | `invalid_asset` | Combinación red/activo sin riel on-chain (soportadas: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc` — `BTC` y `GOLD` no operan on-chain) |
+| 400 | `invalid_chain` | Red no soportada (usa `tron`, `eth` o `btc`) |
+| 400 | `invalid_asset` | Combinación red/activo sin riel on-chain (soportadas: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`, `btc`/`btc` — `GOLD` no opera on-chain) |
 | 400 | `to_address_required` | Falta la dirección destino del retiro |
 | 402 | `insufficient_funds` | Saldo insuficiente en ese activo (para el retiro o la comisión de creación) |
 | 422 | `wallet_limit_reached` | La cuenta ya tiene su wallet de depósito de esa combinación red+activo (aplica a personas y empresas) |
@@ -4594,7 +4630,8 @@ depósitos **acreditan tu saldo USDT/USDC del ledger** y los retiros salen de
 una hot wallet. En las wallets segregadas el saldo **vive on-chain en la
 wallet** y los envíos salen **de esa misma wallet**. El **gas** (TRX en TRON,
 ETH en Ethereum) corre por tu cuenta: cada wallet debe tener gas para poder
-enviar.
+enviar. En Bitcoin no hay gas: el fee de red se descuenta del saldo BTC de
+la wallet.
 > **Nota**
 Dos productos, dos rutas: las wallets de depósito viven en
 `/v1/crypto/wallets` y las segregadas en `/v1/segregated-wallets`. Toda
@@ -4617,9 +4654,11 @@ flowchart LR
 | `tron` | `usdt` | TRX |
 | `eth` | `usdt` | ETH |
 | `eth` | `usdc` | ETH |
+| `btc` | `btc` | — (el fee de red sale del propio saldo BTC) |
 
 El `eth` nativo puede enviarse desde cualquier wallet de una chain `eth`
-(es el gas de la red).
+(es el gas de la red). En Bitcoin no existe gas separado: el fee de red se
+descuenta del saldo de la wallet en cada envío.
 
 ### 1. Crea una wallet
 
@@ -4779,8 +4818,10 @@ Respuesta `202` (el envío es asíncrono; el estado final llega por webhook):
 }
 ```
 
-Antes de enviar, CBPay verifica que la wallet tenga **gas** suficiente; si no,
-responde `422 insufficient_gas` con el mínimo requerido — sin cobrar nada.
+Antes de enviar, CBPay verifica que la wallet tenga **gas** suficiente
+(solo TRON y Ethereum; Bitcoin salta este check porque el fee sale del
+monto); si no, responde `422 insufficient_gas` con el mínimo requerido —
+sin cobrar nada.
 El envío puede cobrar el fee `wallet_send` (del saldo de settlement de tu
 cuenta en el ledger; **la plata on-chain de la wallet no se toca**), que se
 reembolsa si el envío es rechazado por el custodio.
@@ -8732,9 +8773,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-15 20:21 UTC · 229 requests · versión `037d157df102`
+> **Colección actualizada:** 2026-07-16 02:32 UTC · 232 requests · versión `c8fc28c971e7`
 
-<PostmanFreshness iso="2026-07-15T20:21:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-16T02:32:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -8905,6 +8946,21 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.73 — 15 de julio de 2026
+
+**Agregado**
+
+- **Bitcoin on-chain (`btc`/`btc`)**: cuarta red soportada del producto
+  crypto. Toda cuenta nace ahora con **cuatro wallets de depósito**
+  (se suma la de Bitcoin, dirección bech32 `bc1q…`); los depósitos BTC
+  acreditan el saldo BTC (confirmación ~30 min, 3 bloques) y los retiros
+  on-chain aceptan `chain: "btc"` (destinos bech32, taproot y legacy;
+  el fee de red lo cubre la operación, el destinatario recibe el monto
+  exacto). Las [wallets segregadas](#wallets-segregadas) también
+  soportan el par `btc`/`btc` (sin gas: el fee sale del saldo de la
+  wallet). Travel Rule aplica igual que en las demás redes, valorando el
+  monto a USD. Detalle en la [guía crypto](#crypto-wallets-depositos-y-retiros).
 
 ### v1.72 — 15 de julio de 2026
 

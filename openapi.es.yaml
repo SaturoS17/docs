@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.72'
+  version: '1.73'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -52,7 +52,7 @@ tags:
 - name: Swaps
   description: Transferencias internas gratuitas entre cuentas CBPay (persona o empresa, cualquier combinación).
 - name: Crypto
-  description: Fondeo y retiros on-chain de USDT (TRON y Ethereum).
+  description: Fondeo y retiros on-chain (TRON, Ethereum y Bitcoin).
 - name: Wallets segregadas
   description: Wallets on-chain con saldo propio (empresas ilimitadas; personas 1 por combinación red+activo)
     — crear, importar, enviar, exportar la llave privada y auto-forward. El saldo vive on-chain, nunca
@@ -3317,8 +3317,8 @@ paths:
       - Crypto
       operationId: createCryptoWithdrawal
       summary: Crear un retiro on-chain
-      description: 'Envía USDT o USDC on-chain desde su propio saldo. Pares soportados: `tron`/`USDT`,
-        `eth`/`USDT`, `eth`/`USDC` (BTC y GOLD no tienen riel on-chain). `amount + comisión de retiro`
+      description: 'Envía USDT, USDC o BTC on-chain desde su propio saldo. Pares soportados: `tron`/`USDT`,
+        `eth`/`USDT`, `eth`/`USDC`, `btc`/`BTC` (GOLD no tiene riel on-chain). `amount + comisión de retiro`
         se debita atómicamente y queda retenido; el estado final llega vía el webhook `crypto_withdrawal_status_changed`.
         `failed` reembolsa el débito completo.'
       parameters:
@@ -3337,14 +3337,17 @@ paths:
                   enum:
                   - tron
                   - eth
+                  - btc
                   default: tron
                 asset:
                   type: string
                   enum:
                   - USDT
                   - USDC
+                  - BTC
                   default: USDT
-                  description: Activo a enviar (USDC solo por `eth`).
+                  description: Activo a enviar (USDC solo por `eth`; en `btc` el activo por defecto
+                    es `BTC`).
                 to_address:
                   type: string
                 to_contact_id:
@@ -3354,7 +3357,7 @@ paths:
                     (un `to_address` explícito siempre gana).
                 amount:
                   type: string
-                  description: String decimal positivo, hasta 6 decimales.
+                  description: String decimal positivo, hasta 6 decimales (8 para BTC).
                 idempotency_key:
                   type: string
                 contact_name:
@@ -3396,6 +3399,13 @@ paths:
                   to_address: '0x8f3Ba1c2De4567890aBcDeF1234567890aBcDeF1'
                   amount: '50.000000'
                   idempotency_key: withdrawal-usdc-2026-07-09-a
+              btc_bitcoin:
+                summary: BTC por Bitcoin
+                value:
+                  chain: btc
+                  to_address: bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4
+                  amount: '0.00050000'
+                  idempotency_key: withdrawal-btc-2026-07-15-a
               travel_rule_self_hosted:
                 summary: Sobre el umbral Travel Rule a wallet propia (self-hosted)
                 value:
@@ -6709,7 +6719,7 @@ paths:
       operationId: createCryptoWallet
       summary: Reponer una wallet de depósito faltante
       description: 'Toda cuenta — persona y empresa — tiene exactamente **una wallet de depósito por par
-        soportado** (`tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`), aprovisionadas automáticamente y gratis
+        soportado** (`tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`, `btc`/`btc`), aprovisionadas automáticamente y gratis
         al registrarse. Las wallets de depósito solo **reciben** crypto que se abona al saldo virtual
         de la cuenta: no envían, y no se exportan ni importan (para eso están las wallets segregadas).
         Este endpoint existe solo para reponer un par faltante (caso excepcional): con el par ya aprovisionado
@@ -6733,13 +6743,16 @@ paths:
                   enum:
                   - tron
                   - eth
+                  - btc
                 asset:
                   type: string
                   enum:
                   - usdt
                   - usdc
+                  - btc
                   default: usdt
-                  description: Activo de la wallet (usdc solo por `eth`).
+                  description: Activo de la wallet (usdc solo por `eth`; en `btc` el activo por defecto
+                    es `btc`).
                 label:
                   type: string
                   description: Etiqueta descriptiva opcional.
@@ -6753,6 +6766,10 @@ paths:
                 value:
                   chain: eth
                   asset: usdc
+              btc_wallet:
+                summary: Reponer el par Bitcoin
+                value:
+                  chain: btc
       responses:
         '201':
           description: Wallet creada.
@@ -6783,7 +6800,7 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 error: invalid_chain
-                message: unsupported chain "btc" (tron, eth)
+                message: unsupported chain "doge" (tron, eth, btc)
         '401':
           $ref: '#/components/responses/Unauthorized'
         '402':
@@ -6841,6 +6858,14 @@ paths:
                   type: deposit
                   receive_only: true
                   created_at: '2026-07-07T12:00:00Z'
+                - wallet_id: 0d6f2a3b-4c5d-6e7f-8a9b-0c1d2e3f4a5b
+                  chain: btc
+                  asset: BTC
+                  address: bc1q2w2w6cv5stsxpfygxk8ylvnqg9hu96pvvczvnc
+                  label: ''
+                  type: deposit
+                  receive_only: true
+                  created_at: '2026-07-07T12:00:00Z'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -6853,7 +6878,7 @@ paths:
       summary: Crear una wallet segregada
       description: 'Crea una wallet on-chain nueva de la cuenta que llama. Su saldo vive on-chain (nunca
         en el ledger) y queda exenta del barrido de tesorería. Pares soportados: `tron`/`usdt`, `eth`/`usdt`,
-        `eth`/`usdc`. Las cuentas empresa pueden crear wallets ilimitadas; las cuentas persona tienen
+        `eth`/`usdc`, `btc`/`btc`. Las cuentas empresa pueden crear wallets ilimitadas; las cuentas persona tienen
         **1 por combinación red+activo** (la segunda responde `422 wallet_limit_reached`). Un `Idempotency-Key`
         opcional (o `idempotency_key` en el body) hace el reintento seguro: una repetición devuelve la
         misma wallet sin crear otra. Puede cobrar el fee `wallet_creation` (reembolsado si la creación
@@ -6872,11 +6897,13 @@ paths:
                   enum:
                   - tron
                   - eth
+                  - btc
                 asset:
                   type: string
                   enum:
                   - usdt
                   - usdc
+                  - btc
                   default: usdt
                 label:
                   type: string
@@ -6897,6 +6924,13 @@ paths:
                   asset: usdc
                   label: Project X
                   idempotency_key: wallet-project-x
+              btc_btc:
+                summary: Bitcoin BTC
+                value:
+                  chain: btc
+                  asset: btc
+                  label: BTC custody
+                  idempotency_key: wallet-btc-001
       responses:
         '201':
           description: Wallet creada.
@@ -6923,7 +6957,7 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 error: invalid_asset
-                message: 'unsupported chain/asset pair (supported: tron/usdt, eth/usdt, eth/usdc)'
+                message: 'unsupported chain/asset pair (supported: tron/usdt, eth/usdt, eth/usdc, btc/btc)'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -7045,11 +7079,13 @@ paths:
                   enum:
                   - tron
                   - eth
+                  - btc
                 asset:
                   type: string
                   enum:
                   - usdt
                   - usdc
+                  - btc
                   default: usdt
                 private_key_hex:
                   type: string
@@ -12627,6 +12663,7 @@ components:
           enum:
           - tron
           - eth
+          - btc
         asset:
           type: string
           example: USDT
@@ -12690,6 +12727,7 @@ components:
           enum:
           - tron
           - eth
+          - btc
         asset:
           type: string
           example: USDT
@@ -12717,6 +12755,7 @@ components:
           enum:
           - tron
           - eth
+          - btc
         asset:
           type: string
           example: USDT
@@ -12756,6 +12795,7 @@ components:
           enum:
           - tron
           - eth
+          - btc
         asset:
           type: string
           example: USDT

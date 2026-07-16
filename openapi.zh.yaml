@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.72'
+  version: '1.73'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -42,7 +42,7 @@ tags:
 - name: 兑换(Swaps)
   description: CBPay 账户之间的免费内部转账(个人或企业,任意组合)。
 - name: 加密货币
-  description: 链上 USDT 充值与提现(TRON 和 Ethereum)。
+  description: 链上充值与提现(TRON、Ethereum 和 Bitcoin)。
 - name: 隔离钱包
   description: 拥有自身余额的链上钱包(企业不限数量;个人每个网络+资产组合 1 个)——创建、导入、发送、导出私钥与自动转发。余额存在于链上,从不进入账本。
 - name: KYC / KYB
@@ -3174,7 +3174,7 @@ paths:
       - 加密货币
       operationId: createCryptoWithdrawal
       summary: 创建链上提现
-      description: 从其自身余额链上发送 USDT 或 USDC。支持的组合:`tron`/`USDT`、`eth`/`USDT`、`eth`/`USDC`(BTC 和 GOLD 无链上通道)。`amount
+      description: 从其自身余额链上发送 USDT、USDC 或 BTC。支持的组合:`tron`/`USDT`、`eth`/`USDT`、`eth`/`USDC`、`btc`/`BTC`(GOLD 无链上通道)。`amount
         + 提现费` 原子扣除并冻结;最终状态通过 `crypto_withdrawal_status_changed` webhook 送达。`failed` 会全额退款。
       parameters:
       - $ref: '#/components/parameters/idempotencyKeyHeader'
@@ -3192,14 +3192,16 @@ paths:
                   enum:
                   - tron
                   - eth
+                  - btc
                   default: tron
                 asset:
                   type: string
                   enum:
                   - USDT
                   - USDC
+                  - BTC
                   default: USDT
-                  description: 要发送的资产(USDC 仅支持 `eth`)。
+                  description: 要发送的资产(USDC 仅支持 `eth`;在 `btc` 上资产默认为 `BTC`)。
                 to_address:
                   type: string
                 to_contact_id:
@@ -3208,7 +3210,7 @@ paths:
                   description: 使用联系人为该链保存的地址代替 `to_address`(显式 `to_address` 始终优先)。
                 amount:
                   type: string
-                  description: 正数十进制字符串,最多 6 位小数。
+                  description: 正数十进制字符串,最多 6 位小数(BTC 为 8 位)。
                 idempotency_key:
                   type: string
                 contact_name:
@@ -3246,6 +3248,13 @@ paths:
                   to_address: '0x8f3Ba1c2De4567890aBcDeF1234567890aBcDeF1'
                   amount: '50.000000'
                   idempotency_key: withdrawal-usdc-2026-07-09-a
+              btc_bitcoin:
+                summary: Bitcoin 上的 BTC
+                value:
+                  chain: btc
+                  to_address: bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4
+                  amount: '0.00050000'
+                  idempotency_key: withdrawal-btc-2026-07-15-a
               travel_rule_self_hosted:
                 summary: 超过 Travel Rule 阈值,转往自托管钱包
                 value:
@@ -6486,7 +6495,7 @@ paths:
       - 加密货币
       operationId: createCryptoWallet
       summary: 补齐缺失的充值钱包
-      description: '每个账户——个人和企业——每个受支持组合都恰好持有**一个充值钱包**(`tron`/`usdt`、`eth`/`usdt`、`eth`/`usdc`),注册时自动免费开通。充值钱包只用于**接收**加密货币并计入账户的虚拟余额:不能发送,也不能导出或导入(那是隔离钱包的功能)。本端点仅用于补齐缺失的组合(例外情况):组合已存在时对所有账户类型都返回
+      description: '每个账户——个人和企业——每个受支持组合都恰好持有**一个充值钱包**(`tron`/`usdt`、`eth`/`usdt`、`eth`/`usdc`、`btc`/`btc`),注册时自动免费开通。充值钱包只用于**接收**加密货币并计入账户的虚拟余额:不能发送,也不能导出或导入(那是隔离钱包的功能)。本端点仅用于补齐缺失的组合(例外情况):组合已存在时对所有账户类型都返回
         `422 wallet_limit_reached`。
 
 
@@ -6505,13 +6514,15 @@ paths:
                   enum:
                   - tron
                   - eth
+                  - btc
                 asset:
                   type: string
                   enum:
                   - usdt
                   - usdc
+                  - btc
                   default: usdt
-                  description: 钱包资产(usdc 仅支持 `eth`)。
+                  description: 钱包资产(usdc 仅支持 `eth`;在 `btc` 上资产默认为 `btc`)。
                 label:
                   type: string
                   description: 可选的描述性标签。
@@ -6525,6 +6536,10 @@ paths:
                 value:
                   chain: eth
                   asset: usdc
+              btc_wallet:
+                summary: 补齐 Bitcoin 组合
+                value:
+                  chain: btc
       responses:
         '201':
           description: 钱包已创建。
@@ -6555,7 +6570,7 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 error: invalid_chain
-                message: unsupported chain "btc" (tron, eth)
+                message: unsupported chain "doge" (tron, eth, btc)
         '401':
           $ref: '#/components/responses/Unauthorized'
         '402':
@@ -6613,6 +6628,14 @@ paths:
                   type: deposit
                   receive_only: true
                   created_at: '2026-07-07T12:00:00Z'
+                - wallet_id: 0d6f2a3b-4c5d-6e7f-8a9b-0c1d2e3f4a5b
+                  chain: btc
+                  asset: BTC
+                  address: bc1q2w2w6cv5stsxpfygxk8ylvnqg9hu96pvvczvnc
+                  label: ''
+                  type: deposit
+                  receive_only: true
+                  created_at: '2026-07-07T12:00:00Z'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -6623,7 +6646,7 @@ paths:
       - 隔离钱包
       operationId: createSegregatedWallet
       summary: 创建隔离钱包
-      description: 创建一个由调用方账户拥有的链上新钱包。其余额存在于链上(从不进入账本),并豁免于资金归集(treasury sweep)。支持的组合:`tron`/`usdt`、`eth`/`usdt`、`eth`/`usdc`。企业账户可创建不限数量的钱包;个人账户每个网络+资产组合限
+      description: 创建一个由调用方账户拥有的链上新钱包。其余额存在于链上(从不进入账本),并豁免于资金归集(treasury sweep)。支持的组合:`tron`/`usdt`、`eth`/`usdt`、`eth`/`usdc`、`btc`/`btc`。企业账户可创建不限数量的钱包;个人账户每个网络+资产组合限
         **1 个**(创建第二个会返回 `422 wallet_limit_reached`)。可选的 `Idempotency-Key`(或请求体中的 `idempotency_key`)让重试安全:重复请求返回同一钱包,不会创建第二个。可能收取
         `wallet_creation` 费用(创建失败退款)。
       requestBody:
@@ -6640,11 +6663,13 @@ paths:
                   enum:
                   - tron
                   - eth
+                  - btc
                 asset:
                   type: string
                   enum:
                   - usdt
                   - usdc
+                  - btc
                   default: usdt
                 label:
                   type: string
@@ -6665,6 +6690,13 @@ paths:
                   asset: usdc
                   label: Project X
                   idempotency_key: wallet-project-x
+              btc_btc:
+                summary: Bitcoin BTC
+                value:
+                  chain: btc
+                  asset: btc
+                  label: BTC custody
+                  idempotency_key: wallet-btc-001
       responses:
         '201':
           description: 钱包已创建。
@@ -6691,7 +6723,7 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 error: invalid_asset
-                message: 'unsupported chain/asset pair (supported: tron/usdt, eth/usdt, eth/usdc)'
+                message: 'unsupported chain/asset pair (supported: tron/usdt, eth/usdt, eth/usdc, btc/btc)'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -6811,11 +6843,13 @@ paths:
                   enum:
                   - tron
                   - eth
+                  - btc
                 asset:
                   type: string
                   enum:
                   - usdt
                   - usdc
+                  - btc
                   default: usdt
                 private_key_hex:
                   type: string
@@ -12272,6 +12306,7 @@ components:
           enum:
           - tron
           - eth
+          - btc
         asset:
           type: string
           example: USDT
@@ -12333,6 +12368,7 @@ components:
           enum:
           - tron
           - eth
+          - btc
         asset:
           type: string
           example: USDT
@@ -12360,6 +12396,7 @@ components:
           enum:
           - tron
           - eth
+          - btc
         asset:
           type: string
           example: USDT
@@ -12399,6 +12436,7 @@ components:
           enum:
           - tron
           - eth
+          - btc
         asset:
           type: string
           example: USDT

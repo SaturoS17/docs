@@ -7,6 +7,21 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月15日" description="v1.73">
+
+**新增**
+
+- **比特币链上通道（`btc`/`btc`）**：crypto 产品支持的第四条网络。
+  每个账户现在出生即拥有**四个充值钱包**（新增比特币，bech32 地址
+  `bc1q…`）；BTC 充值入账到 BTC 余额（约 30 分钟确认，3 个区块），
+  链上提现接受 `chain: "btc"`（支持 bech32、taproot 与 legacy 目标
+  地址；网络费由操作承担——收款方收到精确金额）。
+  [隔离钱包](/zh/guides/segregated-wallets)同样支持 `btc`/`btc`
+  组合（没有 gas：费用从钱包余额中扣除）。Travel Rule 与其他网络
+  一致，按 USD 估值。详见 [crypto 指南](/zh/guides/crypto)。
+
+</Update>
+
 <Update label="2026年7月15日" description="v1.72">
 
 **变更**

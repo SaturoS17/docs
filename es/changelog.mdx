@@ -8,6 +8,23 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="15 de julio de 2026" description="v1.73">
+
+**Agregado**
+
+- **Bitcoin on-chain (`btc`/`btc`)**: cuarta red soportada del producto
+  crypto. Toda cuenta nace ahora con **cuatro wallets de depósito**
+  (se suma la de Bitcoin, dirección bech32 `bc1q…`); los depósitos BTC
+  acreditan el saldo BTC (confirmación ~30 min, 3 bloques) y los retiros
+  on-chain aceptan `chain: "btc"` (destinos bech32, taproot y legacy;
+  el fee de red lo cubre la operación, el destinatario recibe el monto
+  exacto). Las [wallets segregadas](/es/guias/wallets-segregadas) también
+  soportan el par `btc`/`btc` (sin gas: el fee sale del saldo de la
+  wallet). Travel Rule aplica igual que en las demás redes, valorando el
+  monto a USD. Detalle en la [guía crypto](/es/guias/crypto).
+
+</Update>
+
 <Update label="15 de julio de 2026" description="v1.72">
 
 **Cambiado**

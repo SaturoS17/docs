@@ -24,7 +24,9 @@ Don't confuse them with the [crypto](/en/guides/crypto) product: there,
 deposits **credit your USDT/USDC ledger balance** and withdrawals leave from
 a hot wallet. With segregated wallets the balance **lives on-chain in the
 wallet** and sends leave **from that same wallet**. **Gas** (TRX on TRON, ETH
-on Ethereum) is on you: each wallet must hold gas to be able to send.
+on Ethereum) is on you: each wallet must hold gas to be able to send. On
+Bitcoin there is no gas: the network fee comes out of the wallet's BTC
+balance.
 </Warning>
 
 <Note>
@@ -51,9 +53,11 @@ flowchart LR
 | `tron` | `usdt` | TRX |
 | `eth` | `usdt` | ETH |
 | `eth` | `usdc` | ETH |
+| `btc` | `btc` | — (the network fee comes out of the wallet's BTC balance) |
 
 Native `eth` can be sent from any wallet on an `eth` chain (it is the
-network gas).
+network gas). On Bitcoin there is no separate gas: the network fee is
+deducted from the wallet's balance on every send.
 
 ## 1. Create a wallet
 
@@ -224,8 +228,10 @@ webhook):
 }
 ```
 
-Before sending, CBPay verifies the wallet holds enough **gas**; if not, it
-responds `422 insufficient_gas` with the required minimum — charging nothing.
+Before sending, CBPay verifies the wallet holds enough **gas** (TRON and
+Ethereum only; Bitcoin skips this check since the fee comes out of the
+amount); if not, it responds `422 insufficient_gas` with the required
+minimum — charging nothing.
 The send may charge the `wallet_send` fee (from your account's settlement
 balance in the ledger; **the wallet's on-chain funds are never touched**),
 refunded if the custodian rejects the send.

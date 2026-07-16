@@ -21,7 +21,8 @@ description: "拥有独立余额的链上钱包：创建、导入、收款、发
 充值**计入您在账本中的 USDT/USDC 余额**，提现从热钱包发出。而在
 隔离钱包中，余额**存在于钱包的链上**，发送**从该钱包本身**发出。
 **Gas**（TRON 上的 TRX、Ethereum 上的 ETH）由您自行承担：每个
-钱包必须持有 gas 才能发送。
+钱包必须持有 gas 才能发送。比特币没有 gas：网络费从钱包自身的
+BTC 余额中扣除。
 </Warning>
 
 <Note>
@@ -47,8 +48,10 @@ flowchart LR
 | `tron` | `usdt` | TRX |
 | `eth` | `usdt` | ETH |
 | `eth` | `usdc` | ETH |
+| `btc` | `btc` | —（网络费从钱包自身的 BTC 余额中扣除） |
 
 原生 `eth` 可以从任意 `eth` 链上的钱包发送（它是该网络的 gas）。
+比特币没有独立的 gas：每次发送时网络费直接从钱包余额中扣除。
 
 ## 1. 创建钱包
 
@@ -217,7 +220,8 @@ curl -X POST https://api.qbank.cl/platform/v1/segregated-wallets/{walletID}/send
 }
 ```
 
-发送之前，CBPay 会校验钱包是否持有足够的 **gas**；若不足，则返回
+发送之前，CBPay 会校验钱包是否持有足够的 **gas**（仅 TRON 与
+Ethereum；比特币跳过此校验，因为费用从金额中扣除）；若不足，则返回
 `422 insufficient_gas` 并附带所需的最低数额——不收取任何费用。
 发送可能收取 `wallet_send` 费用（从您账户在账本中的结算余额扣除；
 **绝不动用钱包的链上资金**），若托管方拒绝发送则费用退回。

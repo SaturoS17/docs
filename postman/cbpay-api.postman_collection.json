@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — that never mix or convert automatically.\nPayouts and service fees can be paid from any of the four balances:\nset a default with `PUT /v1/settlement` or override per payout with\n`settlement_asset`.\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-15 20:21 UTC",
-    "_content_sha256": "037d157df10214c7cce3590f193aa9a9069bf13d18bf6a595c17e9e332fc3416"
+    "_generated_at": "2026-07-16 02:32 UTC",
+    "_content_sha256": "c8fc28c971e7fff7607fa60eb4fe7372876c0fc6dafa5d0c578474813cccd82a"
   },
   "auth": {
     "type": "bearer",
@@ -5795,7 +5795,7 @@
                 "withdrawals"
               ]
             },
-            "description": "Sends USDT or USDC on-chain from its own balance. Supported pairs: `tron`/`USDT`, `eth`/`USDT`, `eth`/`USDC` (BTC and GOLD have no on-chain rail). `amount + withdrawal fee` is debited atomically and held; final state arrives via the `crypto_withdrawal_status_changed` webhook. `failed` refunds the full debit.",
+            "description": "Sends USDT, USDC or BTC on-chain from its own balance. Supported pairs: `tron`/`USDT`, `eth`/`USDT`, `eth`/`USDC`, `btc`/`BTC` (GOLD has no on-chain rail). `amount + withdrawal fee` is debited atomically and held; final state arrives via the `crypto_withdrawal_status_changed` webhook. `failed` refunds the full debit.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"chain\": \"tron\",\n  \"to_address\": \"TVJ6njG5Fyrq6XwYok3xPQx8kR7HQx6vXk\",\n  \"amount\": \"100.000000\",\n  \"idempotency_key\": \"withdrawal-2026-07-07-a\"\n}",
@@ -5862,10 +5862,77 @@
                 "withdrawals"
               ]
             },
-            "description": "Sends USDT or USDC on-chain from its own balance. Supported pairs: `tron`/`USDT`, `eth`/`USDT`, `eth`/`USDC` (BTC and GOLD have no on-chain rail). `amount + withdrawal fee` is debited atomically and held; final state arrives via the `crypto_withdrawal_status_changed` webhook. `failed` refunds the full debit.",
+            "description": "Sends USDT, USDC or BTC on-chain from its own balance. Supported pairs: `tron`/`USDT`, `eth`/`USDT`, `eth`/`USDC`, `btc`/`BTC` (GOLD has no on-chain rail). `amount + withdrawal fee` is debited atomically and held; final state arrives via the `crypto_withdrawal_status_changed` webhook. `failed` refunds the full debit.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"chain\": \"eth\",\n  \"asset\": \"USDC\",\n  \"to_address\": \"0x8f3Ba1c2De4567890aBcDeF1234567890aBcDeF1\",\n  \"amount\": \"50.000000\",\n  \"idempotency_key\": \"withdrawal-usdc-2026-07-09-a\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Idempotency replay.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/crypto/withdrawals",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "crypto",
+                    "withdrawals"
+                  ]
+                }
+              },
+              "status": "Idempotency replay.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"withdrawal_id\": \"6c5d4e3f-2a1b-0c9d-8e7f-6a5b4c3d2e1f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"idempotency_key\": \"withdrawal-2026-07-07-a\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"to_address\": \"TVJ6njG5Fyrq6XwYok3xPQx8kR7HQx6vXk\",\n  \"amount\": \"100.000000\",\n  \"fee\": \"1.000000\",\n  \"total_debit\": \"101.000000\",\n  \"status\": \"processing\",\n  \"status_code\": \"\",\n  \"status_message\": \"broadcasted\",\n  \"tx_id\": \"b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:00Z\",\n  \"idempotency_hit\": true\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create an on-chain withdrawal — BTC over Bitcoin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/crypto/withdrawals",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "crypto",
+                "withdrawals"
+              ]
+            },
+            "description": "Sends USDT, USDC or BTC on-chain from its own balance. Supported pairs: `tron`/`USDT`, `eth`/`USDT`, `eth`/`USDC`, `btc`/`BTC` (GOLD has no on-chain rail). `amount + withdrawal fee` is debited atomically and held; final state arrives via the `crypto_withdrawal_status_changed` webhook. `failed` refunds the full debit.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chain\": \"btc\",\n  \"to_address\": \"bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4\",\n  \"amount\": \"0.00050000\",\n  \"idempotency_key\": \"withdrawal-btc-2026-07-15-a\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5929,7 +5996,7 @@
                 "withdrawals"
               ]
             },
-            "description": "Sends USDT or USDC on-chain from its own balance. Supported pairs: `tron`/`USDT`, `eth`/`USDT`, `eth`/`USDC` (BTC and GOLD have no on-chain rail). `amount + withdrawal fee` is debited atomically and held; final state arrives via the `crypto_withdrawal_status_changed` webhook. `failed` refunds the full debit.",
+            "description": "Sends USDT, USDC or BTC on-chain from its own balance. Supported pairs: `tron`/`USDT`, `eth`/`USDT`, `eth`/`USDC`, `btc`/`BTC` (GOLD has no on-chain rail). `amount + withdrawal fee` is debited atomically and held; final state arrives via the `crypto_withdrawal_status_changed` webhook. `failed` refunds the full debit.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"chain\": \"tron\",\n  \"to_address\": \"TVJ6njG5Fyrq6XwYok3xPQx8kR7HQx6vXk\",\n  \"amount\": \"1500.000000\",\n  \"wallet_type\": \"self_hosted\",\n  \"beneficiary_name\": \"Maria Perez\",\n  \"idempotency_key\": \"withdrawal-2026-07-12-a\"\n}",
@@ -5996,7 +6063,7 @@
                 "withdrawals"
               ]
             },
-            "description": "Sends USDT or USDC on-chain from its own balance. Supported pairs: `tron`/`USDT`, `eth`/`USDT`, `eth`/`USDC` (BTC and GOLD have no on-chain rail). `amount + withdrawal fee` is debited atomically and held; final state arrives via the `crypto_withdrawal_status_changed` webhook. `failed` refunds the full debit.",
+            "description": "Sends USDT, USDC or BTC on-chain from its own balance. Supported pairs: `tron`/`USDT`, `eth`/`USDT`, `eth`/`USDC`, `btc`/`BTC` (GOLD has no on-chain rail). `amount + withdrawal fee` is debited atomically and held; final state arrives via the `crypto_withdrawal_status_changed` webhook. `failed` refunds the full debit.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"chain\": \"tron\",\n  \"amount\": \"1500.000000\",\n  \"travel_address\": \"ta2AQSjBotWQf38c8sxYYK2KfisPoMsTPiYkviErEcoSn1uK\",\n  \"beneficiary_name\": \"Maria Perez\",\n  \"idempotency_key\": \"withdrawal-2026-07-12-b\"\n}",
@@ -6239,7 +6306,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"wallets\": [\n    {\n      \"wallet_id\": \"b7e3a940-6f1d-4c2b-9a8e-5d4c3b2a1f0e\",\n      \"chain\": \"tron\",\n      \"asset\": \"USDT\",\n      \"address\": \"TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT\",\n      \"label\": \"\",\n      \"type\": \"deposit\",\n      \"receive_only\": true,\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    },\n    {\n      \"wallet_id\": \"a1c9d8e7-2b3c-4d5e-6f70-8a9b0c1d2e3f\",\n      \"chain\": \"eth\",\n      \"asset\": \"USDT\",\n      \"address\": \"0x8f3Bc55D9F4a2E71c06b9a3D2e1F0A9B8C7D6E5F\",\n      \"label\": \"\",\n      \"type\": \"deposit\",\n      \"receive_only\": true,\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    },\n    {\n      \"wallet_id\": \"fb88c2d1-7a4e-4b0c-8d3f-1e2a3b4c5d6e\",\n      \"chain\": \"eth\",\n      \"asset\": \"USDC\",\n      \"address\": \"0xa072E48Bc55D9F4a2E71c06b9a3D2e1F0A9B8C7D\",\n      \"label\": \"\",\n      \"type\": \"deposit\",\n      \"receive_only\": true,\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
+              "body": "{\n  \"wallets\": [\n    {\n      \"wallet_id\": \"b7e3a940-6f1d-4c2b-9a8e-5d4c3b2a1f0e\",\n      \"chain\": \"tron\",\n      \"asset\": \"USDT\",\n      \"address\": \"TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT\",\n      \"label\": \"\",\n      \"type\": \"deposit\",\n      \"receive_only\": true,\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    },\n    {\n      \"wallet_id\": \"a1c9d8e7-2b3c-4d5e-6f70-8a9b0c1d2e3f\",\n      \"chain\": \"eth\",\n      \"asset\": \"USDT\",\n      \"address\": \"0x8f3Bc55D9F4a2E71c06b9a3D2e1F0A9B8C7D6E5F\",\n      \"label\": \"\",\n      \"type\": \"deposit\",\n      \"receive_only\": true,\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    },\n    {\n      \"wallet_id\": \"fb88c2d1-7a4e-4b0c-8d3f-1e2a3b4c5d6e\",\n      \"chain\": \"eth\",\n      \"asset\": \"USDC\",\n      \"address\": \"0xa072E48Bc55D9F4a2E71c06b9a3D2e1F0A9B8C7D\",\n      \"label\": \"\",\n      \"type\": \"deposit\",\n      \"receive_only\": true,\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    },\n    {\n      \"wallet_id\": \"0d6f2a3b-4c5d-6e7f-8a9b-0c1d2e3f4a5b\",\n      \"chain\": \"btc\",\n      \"asset\": \"BTC\",\n      \"address\": \"bc1q2w2w6cv5stsxpfygxk8ylvnqg9hu96pvvczvnc\",\n      \"label\": \"\",\n      \"type\": \"deposit\",\n      \"receive_only\": true,\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
             }
           ]
         },
@@ -6264,7 +6331,7 @@
                 "wallets"
               ]
             },
-            "description": "Every account — person and company — holds exactly **one deposit wallet per supported pair** (`tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`), provisioned automatically and free of charge on registration. Deposit wallets only **receive** crypto that credits the account's virtual balance: they cannot send, and cannot be exported or imported (use segregated wallets for that). This endpoint exists only to restore a missing pair (an exceptional case): with the pair already provisioned it responds `422 wallet_limit_reached` for every account type.\n\nA manual restoration bills the `wallet_creation` fee when configured by CBPay (fixed per wallet; 0 = free, the default); birth wallets are always free. The charge is refunded automatically if creation fails.",
+            "description": "Every account — person and company — holds exactly **one deposit wallet per supported pair** (`tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`, `btc`/`btc`), provisioned automatically and free of charge on registration. Deposit wallets only **receive** crypto that credits the account's virtual balance: they cannot send, and cannot be exported or imported (use segregated wallets for that). This endpoint exists only to restore a missing pair (an exceptional case): with the pair already provisioned it responds `422 wallet_limit_reached` for every account type.\n\nA manual restoration bills the `wallet_creation` fee when configured by CBPay (fixed per wallet; 0 = free, the default); birth wallets are always free. The charge is refunded automatically if creation fails.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"chain\": \"tron\"\n}",
@@ -6326,10 +6393,72 @@
                 "wallets"
               ]
             },
-            "description": "Every account — person and company — holds exactly **one deposit wallet per supported pair** (`tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`), provisioned automatically and free of charge on registration. Deposit wallets only **receive** crypto that credits the account's virtual balance: they cannot send, and cannot be exported or imported (use segregated wallets for that). This endpoint exists only to restore a missing pair (an exceptional case): with the pair already provisioned it responds `422 wallet_limit_reached` for every account type.\n\nA manual restoration bills the `wallet_creation` fee when configured by CBPay (fixed per wallet; 0 = free, the default); birth wallets are always free. The charge is refunded automatically if creation fails.",
+            "description": "Every account — person and company — holds exactly **one deposit wallet per supported pair** (`tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`, `btc`/`btc`), provisioned automatically and free of charge on registration. Deposit wallets only **receive** crypto that credits the account's virtual balance: they cannot send, and cannot be exported or imported (use segregated wallets for that). This endpoint exists only to restore a missing pair (an exceptional case): with the pair already provisioned it responds `422 wallet_limit_reached` for every account type.\n\nA manual restoration bills the `wallet_creation` fee when configured by CBPay (fixed per wallet; 0 = free, the default); birth wallets are always free. The charge is refunded automatically if creation fails.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"chain\": \"eth\",\n  \"asset\": \"usdc\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Wallet created.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/crypto/wallets",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "crypto",
+                    "wallets"
+                  ]
+                }
+              },
+              "status": "Wallet created.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"wallet_id\": \"b7e3a940-6f1d-4c2b-9a8e-5d4c3b2a1f0e\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TQmZ1kfWzcmRDYkqLnybXnbWzPMYNvbYqT\",\n  \"label\": \"Main treasury\",\n  \"type\": \"deposit\",\n  \"receive_only\": true,\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"creation_fee\": \"1.000000\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Restore a missing deposit wallet — Restore the Bitcoin pair",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/crypto/wallets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "crypto",
+                "wallets"
+              ]
+            },
+            "description": "Every account — person and company — holds exactly **one deposit wallet per supported pair** (`tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`, `btc`/`btc`), provisioned automatically and free of charge on registration. Deposit wallets only **receive** crypto that credits the account's virtual balance: they cannot send, and cannot be exported or imported (use segregated wallets for that). This endpoint exists only to restore a missing pair (an exceptional case): with the pair already provisioned it responds `422 wallet_limit_reached` for every account type.\n\nA manual restoration bills the `wallet_creation` fee when configured by CBPay (fixed per wallet; 0 = free, the default); birth wallets are always free. The charge is refunded automatically if creation fails.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chain\": \"btc\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10309,7 +10438,7 @@
                 "segregated-wallets"
               ]
             },
-            "description": "Creates a new on-chain wallet owned by the calling account. Its balance lives on-chain (never in the ledger) and it is exempt from the treasury sweep. Supported pairs: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`. Company accounts can create unlimited wallets; person accounts hold **1 per network+asset pair** (a second one responds `422 wallet_limit_reached`). An optional `Idempotency-Key` (or `idempotency_key` in the body) makes retries safe: a repeat returns the same wallet without creating a second one. May bill the `wallet_creation` fee (refunded if creation fails).",
+            "description": "Creates a new on-chain wallet owned by the calling account. Its balance lives on-chain (never in the ledger) and it is exempt from the treasury sweep. Supported pairs: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`, `btc`/`btc`. Company accounts can create unlimited wallets; person accounts hold **1 per network+asset pair** (a second one responds `422 wallet_limit_reached`). An optional `Idempotency-Key` (or `idempotency_key` in the body) makes retries safe: a repeat returns the same wallet without creating a second one. May bill the `wallet_creation` fee (refunded if creation fails).",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"chain\": \"tron\",\n  \"asset\": \"usdt\",\n  \"label\": \"Acme Client\",\n  \"idempotency_key\": \"wallet-client-001\"\n}",
@@ -10369,10 +10498,70 @@
                 "segregated-wallets"
               ]
             },
-            "description": "Creates a new on-chain wallet owned by the calling account. Its balance lives on-chain (never in the ledger) and it is exempt from the treasury sweep. Supported pairs: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`. Company accounts can create unlimited wallets; person accounts hold **1 per network+asset pair** (a second one responds `422 wallet_limit_reached`). An optional `Idempotency-Key` (or `idempotency_key` in the body) makes retries safe: a repeat returns the same wallet without creating a second one. May bill the `wallet_creation` fee (refunded if creation fails).",
+            "description": "Creates a new on-chain wallet owned by the calling account. Its balance lives on-chain (never in the ledger) and it is exempt from the treasury sweep. Supported pairs: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`, `btc`/`btc`. Company accounts can create unlimited wallets; person accounts hold **1 per network+asset pair** (a second one responds `422 wallet_limit_reached`). An optional `Idempotency-Key` (or `idempotency_key` in the body) makes retries safe: a repeat returns the same wallet without creating a second one. May bill the `wallet_creation` fee (refunded if creation fails).",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"chain\": \"eth\",\n  \"asset\": \"usdc\",\n  \"label\": \"Project X\",\n  \"idempotency_key\": \"wallet-project-x\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Wallet created.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/segregated-wallets",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "segregated-wallets"
+                  ]
+                }
+              },
+              "status": "Wallet created.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"wallet_id\": \"b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd\",\n  \"label\": \"Acme Client\",\n  \"type\": \"segregated\",\n  \"origin\": \"created\",\n  \"custody\": \"cbpay\",\n  \"exported\": false,\n  \"created_at\": \"2026-07-11T12:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a segregated wallet — Bitcoin BTC",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/segregated-wallets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "segregated-wallets"
+              ]
+            },
+            "description": "Creates a new on-chain wallet owned by the calling account. Its balance lives on-chain (never in the ledger) and it is exempt from the treasury sweep. Supported pairs: `tron`/`usdt`, `eth`/`usdt`, `eth`/`usdc`, `btc`/`btc`. Company accounts can create unlimited wallets; person accounts hold **1 per network+asset pair** (a second one responds `422 wallet_limit_reached`). An optional `Idempotency-Key` (or `idempotency_key` in the body) makes retries safe: a repeat returns the same wallet without creating a second one. May bill the `wallet_creation` fee (refunded if creation fails).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chain\": \"btc\",\n  \"asset\": \"btc\",\n  \"label\": \"BTC custody\",\n  \"idempotency_key\": \"wallet-btc-001\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
