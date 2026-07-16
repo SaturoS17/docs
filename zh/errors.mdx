@@ -134,6 +134,9 @@ description: "错误格式与完整的错误码目录"
 | 400 | `invalid_pair` | 兑换（swap）的源货币与目标货币相同 |
 | 400 | `amount_too_small` | 兑换金额不足目标货币的最小单位 |
 | 400 | `swap_asset_disabled` | 兑换涉及的某一货币已被您的组织禁用 |
+| 409 | `already_paid` | [通用收款链接](/zh/guides/payins#通用收款链接checkout)已通过其他方式支付 |
+| 410 | `checkout_expired` | 通用收款链接到期未支付 |
+| 422 | `method_unavailable` | 收款链接上所选方式在此收款走廊不可用 |
 
 ### 合规（403 / 503）
 

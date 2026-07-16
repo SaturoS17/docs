@@ -7,6 +7,26 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 16, 2026" description="v1.77">
+
+**Added**
+
+- **Universal checkout link (`checkout`)**: `POST /v1/payins` accepts
+  `method: "checkout"` and returns `checkout_url` — a branded public page
+  where the payer picks how to pay: QR, card, bank transfer or **crypto**
+  (USDT on TRON, USDT/USDC on Ethereum and BTC) with a deposit address
+  exclusive to that charge and accumulation of partial payments. One link
+  = one charge: the first method that completes the payment wins. State
+  queryable without auth at `GET {checkout_url}/state`; the
+  `payin_credited` of a crypto payment adds `settled_via` and
+  `crypto_amount`. Supports `success_url`, `failure_url`, `expires_in`
+  (10 minutes to 7 days) and idempotency (a retry returns the same link).
+  New errors `already_paid`, `checkout_expired` and `method_unavailable`.
+  Details in the
+  [payins guide](/en/guides/payins#universal-checkout-link-checkout).
+
+</Update>
+
 <Update label="July 16, 2026" description="v1.76">
 
 **Changed**

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.76'
+  version: '1.77'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -380,6 +380,199 @@ paths:
               example:
                 error: too_many_attempts
                 message: too many verification attempts; wait a moment and retry
+  /pay/{token}:
+    get:
+      security: []
+      tags:
+      - Payins
+      operationId: checkoutPage
+      summary: Universal checkout page (public)
+      description: 'Public branded HTML page behind the `checkout_url` returned by `POST /v1/payins`
+        with `method: "checkout"`. The payer opens it without credentials, picks the payment method
+        (QR, card, bank transfer or crypto) and the page updates itself when the payment is confirmed.
+        The token is cryptographically derived; an invalid one answers 404. Rate limited per IP.'
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Opaque checkout token embedded in the `checkout_url`.
+      responses:
+        '200':
+          description: Branded checkout page (HTML).
+          content:
+            text/html:
+              example: <!doctype html>…
+        '404':
+          description: Invalid token or unknown payment link.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: payment link not found
+        '429':
+          description: Too many requests from this IP.
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many requests; wait a moment and retry
+  /pay/{token}/state:
+    get:
+      security: []
+      tags:
+      - Payins
+      operationId: checkoutState
+      summary: Universal checkout state (public)
+      description: JSON state of a universal checkout link — for the page's own polling and for
+        integrators rendering their own payment front end over the same link. Shows the status,
+        the winning method once paid, and the live progress of every crypto deposit address
+        materialized for the link (amount due vs received). No credentials; rate limited per IP.
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Opaque checkout token embedded in the `checkout_url`.
+      responses:
+        '200':
+          description: Current state of the payment link.
+          content:
+            application/json:
+              examples:
+                pending:
+                  summary: Pending with crypto progress
+                  value:
+                    status: pending
+                    country: MX
+                    currency: MXN
+                    local_amount: '250.00'
+                    description: Order 8841
+                    expires_at: '2026-07-17T17:57:44Z'
+                    crypto:
+                    - method: crypto:tron:usdt
+                      chain: tron
+                      asset: USDT
+                      address: TWkfyUCXSdRfNHrRc9CJisFLYd6Ha3XWvS
+                      due: '13.400000'
+                      received: '5.000000'
+                paid:
+                  summary: Paid via crypto
+                  value:
+                    status: paid
+                    country: MX
+                    currency: MXN
+                    local_amount: '250.00'
+                    description: Order 8841
+                    expires_at: '2026-07-17T17:57:44Z'
+                    paid_method: crypto:tron:usdt
+                    paid_at: '2026-07-16T18:03:11Z'
+                    redirect_url: https://your-app.com/payment/ok
+        '404':
+          description: Invalid token or unknown payment link.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: payment link not found
+        '429':
+          description: Too many requests from this IP.
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many requests; wait a moment and retry
+  /pay/{token}/methods/{method}:
+    post:
+      security: []
+      tags:
+      - Payins
+      operationId: checkoutMaterialize
+      summary: Materialize a checkout payment option (public)
+      description: Creates (lazily) the payment option the payer picked on a universal checkout
+        link and returns its instructions — the payment URL for card/hosted methods, the QR for
+        QR methods, the announce reference for bank transfers, or an exclusive crypto deposit
+        address with the exact quoted amount. Re-POSTing the same method returns the SAME
+        materialization; picking a method never blocks the others while nobody has paid.
+        No credentials; rate limited per IP.
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Opaque checkout token embedded in the `checkout_url`.
+      - name: method
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Method to materialize — a fiat method from the corridor catalog (`qr`,
+          `card`, `fintoc`, `bank_transfer`) or a crypto option (`crypto:tron:usdt`,
+          `crypto:eth:usdt`, `crypto:eth:usdc`, `crypto:btc:btc`).
+      responses:
+        '200':
+          description: Instructions for the chosen payment method.
+          content:
+            application/json:
+              examples:
+                crypto:
+                  summary: Crypto — exclusive deposit address
+                  value:
+                    method: crypto:tron:usdt
+                    payload:
+                      chain: tron
+                      asset: USDT
+                      address: TWkfyUCXSdRfNHrRc9CJisFLYd6Ha3XWvS
+                      due: '13.400000'
+                      received: '0.000000'
+                      note: send the exact amount to the address; the payment is confirmed on-chain
+                        automatically
+                bank_transfer:
+                  summary: Bank transfer — announce reference
+                  value:
+                    method: bank_transfer
+                    payload:
+                      reference: CB68JZCT46QE
+                      note: include the reference in the transfer description so the payment is
+                        detected automatically
+        '404':
+          description: Invalid token or unknown payment link.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: payment link not found
+        '409':
+          description: The link was already paid via another method.
+          content:
+            application/json:
+              example:
+                error: already_paid
+                message: this payment link was already paid
+        '410':
+          description: The link expired without payment.
+          content:
+            application/json:
+              example:
+                error: checkout_expired
+                message: this payment link expired
+        '422':
+          description: The method is not available for this link's corridor.
+          content:
+            application/json:
+              example:
+                error: method_unavailable
+                message: this payment method is not available for this link
+        '429':
+          description: Too many requests from this IP.
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many requests; wait a moment and retry
   /v1/branding:
     get:
       tags:
@@ -2767,6 +2960,9 @@ paths:
         from any Chilean bank or wallet; the deposit is detected, validated and credited automatically.
         With `method: "card"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure
         card checkout branded with your organization — card data never touches your integration.
+        With `method: "checkout"` the response carries a public `checkout_url` — a branded universal
+        checkout link where the payer picks the payment method (QR, card, bank transfer or crypto with
+        a deposit address exclusive to that charge); the first method that completes the payment wins.
         Charging is free; the payin fee applies when the deposit is credited.'
       requestBody:
         required: true
@@ -2795,7 +2991,8 @@ paths:
                   description: Optional channel hint passed to the core.
                 expires_in:
                   type: integer
-                  description: Charge expiration in seconds.
+                  description: Charge expiration in seconds. For `checkout` it accepts 600 to 604800
+                    (10 minutes to 7 days; default 24 hours).
                 method:
                   type: string
                   enum:
@@ -2803,18 +3000,22 @@ paths:
                   - bank_transfer
                   - fintoc
                   - card
+                  - checkout
                   default: qr
                   description: Collection mode. `qr` creates an active QR charge through the processor;
                     `bank_transfer` announces an incoming deposit and returns the reference to include
                     in the transfer description; `fintoc` (Chile only) returns a hosted `payment_url`
                     where the payer transfers from any Chilean bank or wallet and the deposit is detected
                     automatically; `card` (Bolivia) returns a hosted `payment_url` for a 3-D Secure card
-                    checkout. Use /v1/payins/collect for pull collections.
+                    checkout; `checkout` returns a public `checkout_url` where the payer picks the
+                    payment method (QR, card, bank transfer or crypto). Use /v1/payins/collect for pull
+                    collections.
                 idempotency_key:
                   type: string
-                  description: Optional idempotency key (`fintoc` and `card` methods; also accepted as the
-                    `Idempotency-Key` header). A retry with the same key returns the original payin and
-                    its `payment_url` instead of opening a second payment session.
+                  description: Optional idempotency key (`fintoc`, `card` and `checkout` methods; also
+                    accepted as the `Idempotency-Key` header). A retry with the same key returns the
+                    original payin and its `payment_url`/`checkout_url` instead of opening a second
+                    payment session.
                 customer:
                   type: object
                   description: Optional billing prefill for the card checkout (`card` method) — `email`,
@@ -2822,12 +3023,12 @@ paths:
                     per field). The payer can complete or correct them on the page.
                 success_url:
                   type: string
-                  description: Optional public https URL (`card` method) the payer is redirected to after
-                    an approved payment.
+                  description: Optional public https URL (`card` and `checkout` methods) the payer is
+                    redirected to after an approved payment.
                 failure_url:
                   type: string
-                  description: Optional public https URL (`card` method) the payer is redirected to when
-                    the payment fails or expires.
+                  description: Optional public https URL (`card` and `checkout` methods) the payer is
+                    redirected to when the payment fails or expires.
                 expires_at:
                   type: string
                   format: date-time
@@ -2890,6 +3091,18 @@ paths:
                   success_url: https://your-app.com/payment/ok
                   failure_url: https://your-app.com/payment/error
                   idempotency_key: topup-7719
+              cl_checkout:
+                summary: Chile — universal checkout link (CLP)
+                value:
+                  country: CL
+                  currency: CLP
+                  method: checkout
+                  amount: '15000'
+                  description: Order 8841
+                  success_url: https://your-app.com/payment/ok
+                  failure_url: https://your-app.com/payment/error
+                  expires_in: 86400
+                  idempotency_key: order-8841
       responses:
         '201':
           description: Charge created.
@@ -2946,6 +3159,20 @@ paths:
                     expires_at: '2026-07-16T18:30:00Z'
                     note: share the payment_url with the payer; the balance is credited automatically
                       once the card payment is approved
+                checkout:
+                  summary: 'Universal checkout link (method: checkout)'
+                  value:
+                    payin_id: d0135ed5-8e9c-4f8b-a522-8ec100470426
+                    kind: checkout
+                    status: pending
+                    country: CL
+                    currency: CLP
+                    local_amount: '15000'
+                    description: Order 8841
+                    reference: CB68JZCT46QE
+                    checkout_url: https://api.qbank.cl/platform/pay/fc4981b8e7c7…
+                    expires_at: '2026-07-17T17:57:44Z'
+                    receipt_url: https://api.qbank.cl/platform/v1/payins/d0135ed5-8e9c-4f8b-a522-8ec100470426/receipt
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':

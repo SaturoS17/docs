@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-16 15:33 UTC · versión `f1aaead44301`
+> **Documento actualizado:** 2026-07-16 18:35 UTC · versión `195e7d7102f4`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.76 (16 de julio de 2026) |
+| Versión de la documentación | v1.77 (16 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -3330,6 +3330,111 @@ hora); el pago se acredita automáticamente al confirmarse en el rail
 > **Nota**
 En Brasil el cobro es únicamente por QR PIX dinámico (un QR = un pago, con
 monto exacto embebido). La transferencia anunciada llegará más adelante.
+### Link de cobro universal (`checkout`)
+
+Si no quieres elegir la modalidad por tu cliente, crea un **link de cobro
+universal**: un solo `POST /v1/payins` con `method: "checkout"` devuelve una
+URL pública brandeada donde el pagador elige cómo pagar — QR, tarjeta,
+transferencia bancaria o **crypto** (USDT en TRON, USDT/USDC en Ethereum y
+BTC, con una dirección de depósito única generada para ese cobro).
+
+```mermaid
+sequenceDiagram
+    participant I as Tu integración
+    participant C as CBPay
+    participant P as Pagador
+    I->>C: POST /v1/payins (method checkout)
+    C-->>I: checkout_url
+    I->>P: comparte el link
+    P->>C: abre la página y elige el método
+    C-->>P: instrucciones (QR, URL de pago, referencia o dirección crypto)
+    P->>C: paga por el método elegido
+    C-->>I: webhook payin_credited
+    C-->>P: la página cambia sola a "pagado"
+```
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method": "checkout",
+    "country": "CL",
+    "currency": "CLP",
+    "amount": "15000",
+    "description": "Pedido 8841",
+    "success_url": "https://tu-app.com/pago/ok",
+    "failure_url": "https://tu-app.com/pago/error",
+    "expires_in": 86400,
+    "idempotency_key": "orden-8841"
+  }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "payin_id": "d0135ed5-8e9c-4f8b-a522-8ec100470426",
+  "kind": "checkout",
+  "status": "pending",
+  "country": "CL",
+  "currency": "CLP",
+  "local_amount": "15000",
+  "description": "Pedido 8841",
+  "reference": "CB68JZCT46QE",
+  "checkout_url": "https://api.qbank.cl/platform/pay/fc4981b8e7c7…",
+  "expires_at": "2026-07-17T17:57:44Z",
+  "receipt_url": "https://api.qbank.cl/platform/v1/payins/d0135ed5-…/receipt"
+}
+```
+
+Comparte la `checkout_url` (link, correo, WhatsApp, QR impreso). La página
+no exige login, lleva el branding de tu organización y se actualiza sola:
+cuando el pago se confirma por cualquiera de los métodos, muestra "pagado"
+y redirige a tu `success_url` si la configuraste.
+
+Cómo funciona cada método dentro del link:
+
+- **Métodos fiat**: la página ofrece los métodos del catálogo
+  (`GET /v1/payins/methods`) disponibles para el país y la moneda del
+  cobro — QR, tarjeta, página de pago hosted o transferencia anunciada con
+  la `reference` del payin. El abono llega con la conversión y comisiones
+  normales de payin.
+- **Crypto (wallet por cobro)**: al elegir una moneda se genera una
+  **dirección de depósito exclusiva de ese cobro** con el monto exacto
+  cotizado (USDT/USDC al equivalente USD del momento; BTC con cotización
+  que se refresca cada 15 minutos). Los pagos parciales se acumulan y la
+  página muestra cuánto falta; al completar la meta el cobro queda pagado.
+  El abono llega en el asset recibido menos tu comisión de funding.
+
+Reglas del link:
+
+- **Un link = un cobro**: el primer método que completa el pago gana; el
+  resto de las opciones queda inutilizado (elegir un método NO bloquea los
+  demás mientras nadie pague).
+- `expires_in` acepta de 600 a 604800 segundos (10 minutos a 7 días;
+  default 24 horas). Al vencer sin pago el payin pasa a `expired` y
+  recibes el webhook `payin_expired`.
+- El retry con la misma `idempotency_key` devuelve el **mismo link** (la
+  URL no cambia); jamás se abre un segundo cobro.
+- Estado consultable sin auth en `GET {checkout_url}/state` (JSON con
+  `status`, `paid_method` y el progreso crypto) — útil si prefieres
+  renderizar tu propia página de pago sobre el mismo link.
+
+Cuando el cobro se paga recibes el `payin_credited` normal; si se pagó por
+crypto el evento agrega `settled_via` (ej. `crypto:tron:usdt`) y
+`crypto_amount` con el monto on-chain recibido.
+
+Errores propios del link (los ve quien abre la página):
+
+| HTTP | `error` | Significado |
+|---|---|---|
+| 404 | `not_found` | Token inválido o link inexistente |
+| 409 | `already_paid` | El link ya se pagó por otro método |
+| 410 | `checkout_expired` | El link venció sin pago |
+| 422 | `method_unavailable` | Ese método no está disponible para el corredor del cobro |
+| 429 | `too_many_attempts` | Rate limit por IP de la página pública |
+
 ### 3. Recibe el abono
 
 Cuando el pago llega (por cualquiera de las modalidades), tu cuenta se
@@ -8611,6 +8716,9 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | 400 | `invalid_pair` | Swap con la misma moneda de origen y destino |
 | 400 | `amount_too_small` | El monto del swap no alcanza la unidad mínima de la moneda destino |
 | 400 | `swap_asset_disabled` | Una de las monedas del swap está deshabilitada para tu organización |
+| 409 | `already_paid` | El [link de cobro universal](#payins) ya se pagó por otro método |
+| 410 | `checkout_expired` | El link de cobro universal venció sin pago |
+| 422 | `method_unavailable` | El método elegido en el link de cobro no está disponible para el corredor del cobro |
 
 #### Cumplimiento (403 / 503)
 
@@ -8840,9 +8948,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-16 06:33 UTC · 233 requests · versión `ab4ad7eb9d7a`
+> **Colección actualizada:** 2026-07-16 18:35 UTC · 237 requests · versión `20ebebf5e563`
 
-<PostmanFreshness iso="2026-07-16T06:33:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-16T18:35:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -9013,6 +9121,24 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.77 — 16 de julio de 2026
+
+**Agregado**
+
+- **Link de cobro universal (`checkout`)**: `POST /v1/payins` acepta
+  `method: "checkout"` y devuelve `checkout_url` — una página pública
+  brandeada donde el pagador elige cómo pagar: QR, tarjeta, transferencia
+  bancaria o **crypto** (USDT en TRON, USDT/USDC en Ethereum y BTC) con una
+  dirección de depósito exclusiva de ese cobro y acumulación de pagos
+  parciales. Un link = un cobro: el primer método que completa el pago
+  gana. Estado consultable sin auth en `GET {checkout_url}/state`; el
+  `payin_credited` de un pago crypto agrega `settled_via` y
+  `crypto_amount`. Soporta `success_url`, `failure_url`, `expires_in`
+  (10 minutos a 7 días) e idempotencia (el retry devuelve el mismo link).
+  Errores nuevos `already_paid`, `checkout_expired` y
+  `method_unavailable`. Detalle en la
+  [guía de payins](#payins).
 
 ### v1.76 — 16 de julio de 2026
 
@@ -10469,6 +10595,23 @@ está en la API Reference interactiva y en la colección Postman.
 | `GET` | `/verify/receipts/{code}` | Verificar la autenticidad de un comprobante (público) |
 
 
+## Payins
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/pay/{token}` | Página de cobro universal (pública) |
+| `GET` | `/pay/{token}/state` | Estado del cobro universal (público) |
+| `POST` | `/pay/{token}/methods/{method}` | Materializar una opción de pago del checkout (público) |
+| `GET` | `/v1/payins` | Listar payins |
+| `POST` | `/v1/payins` | Crear un payin (cobro de recarga) |
+| `GET` | `/v1/payins/{payinID}` | Obtener un payin |
+| `GET` | `/v1/payins/methods` | Listar métodos de payin |
+| `POST` | `/v1/payins/collect` | Cobro activo (pull) |
+| `POST` | `/v1/payins/collect/otp` | Solicitar un OTP de cobro |
+| `GET` | `/v1/payins/deposit-accounts` | Listar mis cuentas de depósito |
+| `POST` | `/v1/payins/deposit-accounts` | Crear una cuenta de depósito dedicada |
+
+
 ## Account
 
 | Método | Ruta | Qué hace |
@@ -10558,20 +10701,6 @@ está en la API Reference interactiva y en la colección Postman.
 | `GET` | `/v1/payouts/banks` | Listar bancos de destino |
 | `POST` | `/v1/payouts/qr/scan` | Escanear un QR de payout (Bolivia, Brasil) |
 | `POST` | `/v1/payouts/qr/confirm` | Confirmar un payout por QR (Bolivia, Brasil) |
-
-
-## Payins
-
-| Método | Ruta | Qué hace |
-|---|---|---|
-| `GET` | `/v1/payins` | Listar payins |
-| `POST` | `/v1/payins` | Crear un payin (cobro de recarga) |
-| `GET` | `/v1/payins/{payinID}` | Obtener un payin |
-| `GET` | `/v1/payins/methods` | Listar métodos de payin |
-| `POST` | `/v1/payins/collect` | Cobro activo (pull) |
-| `POST` | `/v1/payins/collect/otp` | Solicitar un OTP de cobro |
-| `GET` | `/v1/payins/deposit-accounts` | Listar mis cuentas de depósito |
-| `POST` | `/v1/payins/deposit-accounts` | Crear una cuenta de depósito dedicada |
 
 
 ## Transferencias

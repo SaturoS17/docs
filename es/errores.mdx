@@ -134,6 +134,9 @@ Detalle y flujo completo en [login social](/es/guias/login-social).
 | 400 | `invalid_pair` | Swap con la misma moneda de origen y destino |
 | 400 | `amount_too_small` | El monto del swap no alcanza la unidad mínima de la moneda destino |
 | 400 | `swap_asset_disabled` | Una de las monedas del swap está deshabilitada para tu organización |
+| 409 | `already_paid` | El [link de cobro universal](/es/guias/payins#link-de-cobro-universal-checkout) ya se pagó por otro método |
+| 410 | `checkout_expired` | El link de cobro universal venció sin pago |
+| 422 | `method_unavailable` | El método elegido en el link de cobro no está disponible para el corredor del cobro |
 
 ### Cumplimiento (403 / 503)
 

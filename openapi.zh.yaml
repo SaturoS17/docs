@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.76'
+  version: '1.77'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -348,6 +348,194 @@ paths:
               example:
                 error: too_many_attempts
                 message: too many verification attempts; wait a moment and retry
+  /pay/{token}:
+    get:
+      security: []
+      tags:
+      - Payins
+      operationId: checkoutPage
+      summary: 通用收款页面（公开）
+      description: '`POST /v1/payins` 使用 `method: "checkout"` 返回的 `checkout_url` 背后的公开品牌化
+        HTML 页面。付款人无需凭证即可打开，选择支付方式（二维码、银行卡、银行转账或加密货币），付款确认后页面自动更新。
+        令牌经加密派生；无效令牌返回 404。按 IP 限流。'
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+        description: 嵌入在 `checkout_url` 中的不透明结账令牌。
+      responses:
+        '200':
+          description: 品牌化收款页面（HTML）。
+          content:
+            text/html:
+              example: <!doctype html>…
+        '404':
+          description: 令牌无效或收款链接不存在。
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: payment link not found
+        '429':
+          description: 来自此 IP 的请求过多。
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many requests; wait a moment and retry
+  /pay/{token}/state:
+    get:
+      security: []
+      tags:
+      - Payins
+      operationId: checkoutState
+      summary: 通用收款状态（公开）
+      description: 通用收款链接的 JSON 状态 — 供页面自身轮询，也供在同一链接上渲染自有支付前端的集成方使用。
+        显示状态、支付完成后的获胜方式，以及为该链接生成的每个加密货币充值地址的实时进度（应付金额与已收金额）。
+        无需凭证；按 IP 限流。
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+        description: 嵌入在 `checkout_url` 中的不透明结账令牌。
+      responses:
+        '200':
+          description: 收款链接的当前状态。
+          content:
+            application/json:
+              examples:
+                pending:
+                  summary: 待支付（含加密货币进度）
+                  value:
+                    status: pending
+                    country: MX
+                    currency: MXN
+                    local_amount: '250.00'
+                    description: Order 8841
+                    expires_at: '2026-07-17T17:57:44Z'
+                    crypto:
+                    - method: crypto:tron:usdt
+                      chain: tron
+                      asset: USDT
+                      address: TWkfyUCXSdRfNHrRc9CJisFLYd6Ha3XWvS
+                      due: '13.400000'
+                      received: '5.000000'
+                paid:
+                  summary: 通过加密货币支付
+                  value:
+                    status: paid
+                    country: MX
+                    currency: MXN
+                    local_amount: '250.00'
+                    description: Order 8841
+                    expires_at: '2026-07-17T17:57:44Z'
+                    paid_method: crypto:tron:usdt
+                    paid_at: '2026-07-16T18:03:11Z'
+                    redirect_url: https://your-app.com/payment/ok
+        '404':
+          description: 令牌无效或收款链接不存在。
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: payment link not found
+        '429':
+          description: 来自此 IP 的请求过多。
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many requests; wait a moment and retry
+  /pay/{token}/methods/{method}:
+    post:
+      security: []
+      tags:
+      - Payins
+      operationId: checkoutMaterialize
+      summary: 生成结账支付选项（公开）
+      description: 延迟创建付款人在通用收款链接上选择的支付选项并返回其指引 — 银行卡/托管方式的支付
+        URL、二维码方式的二维码、银行转账的申报参考码，或带精确报价金额的专属加密货币充值地址。
+        对同一方式重复 POST 返回相同的结果；在无人支付前，选择某个方式不会锁定其他方式。
+        无需凭证；按 IP 限流。
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+        description: 嵌入在 `checkout_url` 中的不透明结账令牌。
+      - name: method
+        in: path
+        required: true
+        schema:
+          type: string
+        description: 要生成的方式 — 走廊目录中的法币方式（`qr`、`card`、`fintoc`、`bank_transfer`）
+          或加密货币选项（`crypto:tron:usdt`、`crypto:eth:usdt`、`crypto:eth:usdc`、`crypto:btc:btc`）。
+      responses:
+        '200':
+          description: 所选支付方式的指引。
+          content:
+            application/json:
+              examples:
+                crypto:
+                  summary: 加密货币 — 专属充值地址
+                  value:
+                    method: crypto:tron:usdt
+                    payload:
+                      chain: tron
+                      asset: USDT
+                      address: TWkfyUCXSdRfNHrRc9CJisFLYd6Ha3XWvS
+                      due: '13.400000'
+                      received: '0.000000'
+                      note: send the exact amount to the address; the payment is confirmed on-chain
+                        automatically
+                bank_transfer:
+                  summary: 银行转账 — 申报参考码
+                  value:
+                    method: bank_transfer
+                    payload:
+                      reference: CB68JZCT46QE
+                      note: include the reference in the transfer description so the payment is
+                        detected automatically
+        '404':
+          description: 令牌无效或收款链接不存在。
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: payment link not found
+        '409':
+          description: 该链接已通过其他方式支付。
+          content:
+            application/json:
+              example:
+                error: already_paid
+                message: this payment link was already paid
+        '410':
+          description: 该链接已过期且未支付。
+          content:
+            application/json:
+              example:
+                error: checkout_expired
+                message: this payment link expired
+        '422':
+          description: 该方式对此链接的走廊不可用。
+          content:
+            application/json:
+              example:
+                error: method_unavailable
+                message: this payment method is not available for this link
+        '429':
+          description: 来自此 IP 的请求过多。
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many requests; wait a moment and retry
   /v1/branding:
     get:
       tags:
@@ -2646,7 +2834,8 @@ paths:
       description: '创建一笔法币充值。使用 `method: "qr"`(默认)会通过处理方生成主动 QR 收款——在玻利维亚为本地互通 QR,在巴西为动态 PIX QR,其 `charge`
         携带 QR 图片和 "copia e cola" 载荷。使用 `method: "bank_transfer"` 会预告存款,响应携带付款人必须附上的参考号,以便到账转账被自动匹配入账——一个
         12 位字母数字短码,适配任何银行附言字段(部分通道上限 20 个字符且不允许特殊字符)。使用 `method: "fintoc"`(智利)响应携带托管 `payment_url`:付款人打开后可从任意智利银行或钱包转账;存款会被自动检测、校验并入账。使用
-        `method: "card"`(玻利维亚)响应携带一个托管 3-D Secure 银行卡收银台的 `payment_url`,页面带有您组织的品牌 —— 银行卡数据绝不经过您的集成。创建收款免费;存款入账时收取
+        `method: "card"`(玻利维亚)响应携带一个托管 3-D Secure 银行卡收银台的 `payment_url`,页面带有您组织的品牌 —— 银行卡数据绝不经过您的集成。使用
+        `method: "checkout"` 响应携带一个公开的 `checkout_url` —— 带品牌的通用收款链接,付款人在页面上自行选择支付方式(QR、银行卡、银行转账或加密货币,并为该笔收款生成专属充值地址);最先完成支付的方式生效。创建收款免费;存款入账时收取
         payin 费用。'
       requestBody:
         required: true
@@ -2675,7 +2864,7 @@ paths:
                   description: 传递给核心的可选渠道提示。
                 expires_in:
                   type: integer
-                  description: 收款过期时间(秒)。
+                  description: 收款过期时间(秒)。对 `checkout` 取值 600 到 604800(10 分钟到 7 天;默认 24 小时)。
                 method:
                   type: string
                   enum:
@@ -2683,23 +2872,26 @@ paths:
                   - bank_transfer
                   - fintoc
                   - card
+                  - checkout
                   default: qr
                   description: 收款模式。`qr` 通过处理方创建主动 QR 收款;`bank_transfer` 预告一笔入账存款并返回需附在转账附言中的参考号;`fintoc`(仅智利)返回托管
                     `payment_url`,付款人可从任意智利银行或钱包转账,存款自动检测;`card`(玻利维亚)返回托管 3-D Secure
-                    银行卡收银台的 `payment_url`。pull 收款请使用 /v1/payins/collect。
+                    银行卡收银台的 `payment_url`;`checkout` 返回一个公开的 `checkout_url`,付款人在页面上自行选择支付方式(QR、银行卡、银行转账或加密货币)。pull
+                    收款请使用 /v1/payins/collect。
                 idempotency_key:
                   type: string
-                  description: 可选幂等键(`fintoc` 与 `card` 方式;也接受 `Idempotency-Key` 请求头)。使用相同键重试会返回原始 payin 及其 `payment_url`,而不会开启第二个支付会话。
+                  description: 可选幂等键(`fintoc`、`card` 与 `checkout` 方式;也接受 `Idempotency-Key` 请求头)。使用相同键重试会返回原始
+                    payin 及其 `payment_url`/`checkout_url`,而不会开启第二个支付会话。
                 customer:
                   type: object
                   description: 银行卡收银台的可选账单预填(`card` 方式)—— `email`、`first_name`、`last_name`、`address`、`city`、`country`(纯文本,每个字段最多
                     120 个字符)。付款人可在页面上补充或更正。
                 success_url:
                   type: string
-                  description: 可选的公共 https URL(`card` 方式),支付获批后将付款人重定向至此。
+                  description: 可选的公共 https URL(`card` 与 `checkout` 方式),支付获批后将付款人重定向至此。
                 failure_url:
                   type: string
-                  description: 可选的公共 https URL(`card` 方式),支付失败或过期时将付款人重定向至此。
+                  description: 可选的公共 https URL(`card` 与 `checkout` 方式),支付失败或过期时将付款人重定向至此。
                 expires_at:
                   type: string
                   format: date-time
@@ -2761,6 +2953,18 @@ paths:
                   success_url: https://your-app.com/payment/ok
                   failure_url: https://your-app.com/payment/error
                   idempotency_key: topup-7719
+              cl_checkout:
+                summary: 智利 — 通用收款链接(CLP)
+                value:
+                  country: CL
+                  currency: CLP
+                  method: checkout
+                  amount: '15000'
+                  description: Order 8841
+                  success_url: https://your-app.com/payment/ok
+                  failure_url: https://your-app.com/payment/error
+                  expires_in: 86400
+                  idempotency_key: order-8841
       responses:
         '201':
           description: 收款已创建。
@@ -2817,6 +3021,20 @@ paths:
                     expires_at: '2026-07-16T18:30:00Z'
                     note: share the payment_url with the payer; the balance is credited automatically
                       once the card payment is approved
+                checkout:
+                  summary: 通用收款链接(方式:checkout)
+                  value:
+                    payin_id: d0135ed5-8e9c-4f8b-a522-8ec100470426
+                    kind: checkout
+                    status: pending
+                    country: CL
+                    currency: CLP
+                    local_amount: '15000'
+                    description: Order 8841
+                    reference: CB68JZCT46QE
+                    checkout_url: https://api.qbank.cl/platform/pay/fc4981b8e7c7…
+                    expires_at: '2026-07-17T17:57:44Z'
+                    receipt_url: https://api.qbank.cl/platform/v1/payins/d0135ed5-8e9c-4f8b-a522-8ec100470426/receipt
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':

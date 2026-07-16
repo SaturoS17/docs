@@ -459,6 +459,103 @@ base64 或 `charge.qr_image_url`，即公共 CDN URL）。二维码按
 </Tab>
 </Tabs>
 
+## 通用收款链接（`checkout`）
+
+如果你不想替客户预先选定收款方式，可以创建一个**通用收款链接**：一次
+`POST /v1/payins`（`method: "checkout"`）即可返回一个带品牌的公开 URL，
+付款人在页面上自行选择支付方式——二维码、银行卡、银行转账或**加密货币**
+（TRON 上的 USDT、以太坊上的 USDT/USDC 以及 BTC，且会为该笔收款生成专属
+充值地址）。
+
+```mermaid
+sequenceDiagram
+    participant I as 你的集成
+    participant C as CBPay
+    participant P as 付款人
+    I->>C: POST /v1/payins（method checkout）
+    C-->>I: checkout_url
+    I->>P: 分享链接
+    P->>C: 打开页面并选择方式
+    C-->>P: 支付指引（二维码、支付 URL、参考码或加密地址）
+    P->>C: 通过所选方式付款
+    C-->>I: payin_credited Webhook
+    C-->>P: 页面自动变为"已支付"
+```
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method": "checkout",
+    "country": "CL",
+    "currency": "CLP",
+    "amount": "15000",
+    "description": "订单 8841",
+    "success_url": "https://your-app.com/payment/ok",
+    "failure_url": "https://your-app.com/payment/error",
+    "expires_in": 86400,
+    "idempotency_key": "order-8841"
+  }'
+```
+
+响应 `201`：
+
+```json
+{
+  "payin_id": "d0135ed5-8e9c-4f8b-a522-8ec100470426",
+  "kind": "checkout",
+  "status": "pending",
+  "country": "CL",
+  "currency": "CLP",
+  "local_amount": "15000",
+  "description": "订单 8841",
+  "reference": "CB68JZCT46QE",
+  "checkout_url": "https://api.qbank.cl/platform/pay/fc4981b8e7c7…",
+  "expires_at": "2026-07-17T17:57:44Z",
+  "receipt_url": "https://api.qbank.cl/platform/v1/payins/d0135ed5-…/receipt"
+}
+```
+
+把 `checkout_url` 分享给付款人（链接、邮件、WhatsApp、打印二维码均可）。
+页面无需登录，带有你组织的品牌，并会自动刷新：任一方式确认付款后，页面
+显示"已支付"，如设置了 `success_url` 则自动跳转。
+
+链接内各支付方式的工作原理：
+
+- **法币方式**：页面按目录（`GET /v1/payins/methods`）提供该收款国家和
+  币种可用的方式——二维码、银行卡、托管支付页或带 `reference` 的银行
+  转账通知。入账按正常 payin 汇率与手续费结算。
+- **加密货币（每笔收款一个钱包）**：选择币种后会生成**该笔收款专属的
+  充值地址**并给出精确报价（USDT/USDC 按当时美元等值；BTC 报价每 15
+  分钟刷新）。部分支付会累加，页面显示剩余金额；达到目标后收款即完成。
+  入账为收到的资产扣除你的 funding 手续费。
+
+链接规则：
+
+- **一个链接 = 一笔收款**：最先完成支付的方式生效，其余选项随之失效
+  （在无人付款前，选择某个方式不会锁定其他方式）。
+- `expires_in` 取值 600 到 604800 秒（10 分钟到 7 天；默认 24 小时）。
+  到期未支付时 payin 变为 `expired`，你会收到 `payin_expired` Webhook。
+- 使用相同 `idempotency_key` 重试会返回**同一个链接**（URL 不变），
+  绝不会开启第二笔收款。
+- 状态可通过 `GET {checkout_url}/state` 免认证查询（JSON，含 `status`、
+  `paid_method` 及加密支付进度）——如果你想在同一链接上渲染自己的支付
+  页面会很有用。
+- 收款完成后你会收到正常的 `payin_credited`；若以加密货币支付，事件会
+  附带 `settled_via`（如 `crypto:tron:usdt`）和链上实收金额
+  `crypto_amount`。
+
+链接专属错误（由打开页面的人看到）：
+
+| HTTP | `error` | 含义 |
+|---|---|---|
+| 404 | `not_found` | 令牌无效或链接不存在 |
+| 409 | `already_paid` | 链接已通过其他方式支付 |
+| 410 | `checkout_expired` | 链接到期未支付 |
+| 422 | `method_unavailable` | 该方式在此收款走廊不可用 |
+| 429 | `too_many_attempts` | 公开页面的按 IP 限流 |
+
 ## 3. 接收入账
 
 当付款到达（无论通过哪种模式），您的账户会自动入账，并触发

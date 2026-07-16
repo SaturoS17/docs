@@ -482,6 +482,112 @@ payment, exact amount embedded). Announced bank transfers will come later.
 </Tab>
 </Tabs>
 
+## Universal checkout link (`checkout`)
+
+If you don't want to pick the collection mode for your customer, create a
+**universal checkout link**: a single `POST /v1/payins` with
+`method: "checkout"` returns a branded public URL where the payer chooses
+how to pay — QR, card, bank transfer or **crypto** (USDT on TRON, USDT/USDC
+on Ethereum and BTC, with a deposit address generated exclusively for that
+charge).
+
+```mermaid
+sequenceDiagram
+    participant I as Your integration
+    participant C as CBPay
+    participant P as Payer
+    I->>C: POST /v1/payins (method checkout)
+    C-->>I: checkout_url
+    I->>P: share the link
+    P->>C: opens the page and picks a method
+    C-->>P: instructions (QR, payment URL, reference or crypto address)
+    P->>C: pays through the chosen method
+    C-->>I: payin_credited webhook
+    C-->>P: the page flips to "paid" on its own
+```
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method": "checkout",
+    "country": "CL",
+    "currency": "CLP",
+    "amount": "15000",
+    "description": "Order 8841",
+    "success_url": "https://your-app.com/payment/ok",
+    "failure_url": "https://your-app.com/payment/error",
+    "expires_in": 86400,
+    "idempotency_key": "order-8841"
+  }'
+```
+
+Response `201`:
+
+```json
+{
+  "payin_id": "d0135ed5-8e9c-4f8b-a522-8ec100470426",
+  "kind": "checkout",
+  "status": "pending",
+  "country": "CL",
+  "currency": "CLP",
+  "local_amount": "15000",
+  "description": "Order 8841",
+  "reference": "CB68JZCT46QE",
+  "checkout_url": "https://api.qbank.cl/platform/pay/fc4981b8e7c7…",
+  "expires_at": "2026-07-17T17:57:44Z",
+  "receipt_url": "https://api.qbank.cl/platform/v1/payins/d0135ed5-…/receipt"
+}
+```
+
+Share the `checkout_url` (link, email, WhatsApp, printed QR). The page
+requires no login, carries your organization's branding and updates by
+itself: once the payment is confirmed through any method it shows "paid"
+and redirects to your `success_url` if you set one.
+
+How each method works inside the link:
+
+- **Fiat methods**: the page offers the catalog methods
+  (`GET /v1/payins/methods`) available for the charge's country and
+  currency — QR, card, hosted payment page or announced bank transfer with
+  the payin's `reference`. The credit arrives with the normal payin
+  conversion and fees.
+- **Crypto (wallet per charge)**: choosing a currency generates a
+  **deposit address exclusive to that charge** with the exact quoted
+  amount (USDT/USDC at the current USD equivalent; BTC with a quote that
+  refreshes every 15 minutes). Partial payments accumulate and the page
+  shows what's missing; once the target is reached the charge is paid.
+  The credit arrives in the received asset minus your funding fee.
+
+Link rules:
+
+- **One link = one charge**: the first method that completes the payment
+  wins; the remaining options become unusable (picking a method does NOT
+  lock the others while nobody has paid).
+- `expires_in` accepts 600 to 604800 seconds (10 minutes to 7 days;
+  default 24 hours). If it expires unpaid the payin flips to `expired`
+  and you receive the `payin_expired` webhook.
+- A retry with the same `idempotency_key` returns the **same link** (the
+  URL never changes); a second charge is never opened.
+- The state is queryable without auth at `GET {checkout_url}/state`
+  (JSON with `status`, `paid_method` and the crypto progress) — useful if
+  you prefer to render your own payment page on top of the same link.
+- When the charge is paid you receive the normal `payin_credited`; if it
+  was paid with crypto the event adds `settled_via` (e.g.
+  `crypto:tron:usdt`) and `crypto_amount` with the on-chain amount
+  received.
+
+Link-specific errors (seen by whoever opens the page):
+
+| HTTP | `error` | Meaning |
+|---|---|---|
+| 404 | `not_found` | Invalid token or non-existent link |
+| 409 | `already_paid` | The link was already paid through another method |
+| 410 | `checkout_expired` | The link expired unpaid |
+| 422 | `method_unavailable` | That method is not available for the charge's corridor |
+| 429 | `too_many_attempts` | Per-IP rate limit of the public page |
+
 ## 3. Receiving the credit
 
 When the payment arrives (through any of the modes), your account is

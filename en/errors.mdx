@@ -134,6 +134,9 @@ Full flow and details in [social login](/en/guides/social-login).
 | 400 | `invalid_pair` | Swap with the same source and destination currency |
 | 400 | `amount_too_small` | The swap amount does not reach the destination currency's minimum unit |
 | 400 | `swap_asset_disabled` | One of the swap currencies is disabled for your organization |
+| 409 | `already_paid` | The [universal checkout link](/en/guides/payins#universal-checkout-link-checkout) was already paid through another method |
+| 410 | `checkout_expired` | The universal checkout link expired unpaid |
+| 422 | `method_unavailable` | The method chosen on the checkout link is not available for the charge's corridor |
 
 ### Compliance (403 / 503)
 

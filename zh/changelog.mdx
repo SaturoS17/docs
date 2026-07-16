@@ -7,6 +7,23 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月16日" description="v1.77">
+
+**新增**
+
+- **通用收款链接（`checkout`）**：`POST /v1/payins` 接受
+  `method: "checkout"` 并返回 `checkout_url` —— 一个带品牌的公开页面，
+  付款人自行选择支付方式：QR、银行卡、银行转账或**加密货币**（TRON 上的
+  USDT、以太坊上的 USDT/USDC 以及 BTC），并为该笔收款生成专属充值地址，
+  支持部分支付累加。一个链接 = 一笔收款：最先完成支付的方式生效。状态可
+  通过 `GET {checkout_url}/state` 免认证查询；加密支付的 `payin_credited`
+  事件附带 `settled_via` 和 `crypto_amount`。支持 `success_url`、
+  `failure_url`、`expires_in`（10 分钟到 7 天）与幂等（重试返回同一链接）。
+  新增错误 `already_paid`、`checkout_expired` 与 `method_unavailable`。
+  详见[收款指南](/zh/guides/payins#通用收款链接checkout)。
+
+</Update>
+
 <Update label="2026年7月16日" description="v1.76">
 
 **变更**
