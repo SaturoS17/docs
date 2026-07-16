@@ -60,6 +60,7 @@ Response `201` — a clean address:
 ```json
 {
   "screening_id": "5f0b1c9a-2f3e-4a7b-9c1d-8e6f5a4b3c2d",
+  "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
   "address": "TN2BBWc9EF8MMB6i1c4HZHXAssTEXstMDo",
   "chain": "tron",
   "risk": "Low",
@@ -84,6 +85,7 @@ And a sanctioned address:
 ```json
 {
   "screening_id": "7a2c4e6f-8b1d-4c3a-9e5f-1a2b3c4d5e6f",
+  "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
   "address": "0x098B716B8Aaf21512996dC57EB0615e2383E2f96",
   "chain": "eth",
   "risk": "Severe",
@@ -127,6 +129,7 @@ with `idempotency_hit: true` and **does not charge again**:
 ```json
 {
   "screening_id": "5f0b1c9a-2f3e-4a7b-9c1d-8e6f5a4b3c2d",
+  "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
   "address": "TN2BBWc9EF8MMB6i1c4HZHXAssTEXstMDo",
   "risk": "Low",
   "screening_fee": "0.500000",
@@ -154,6 +157,7 @@ curl "https://api.qbank.cl/platform/v1/screenings/addresses?from=2026-07-01&to=2
   "screenings": [
     {
       "screening_id": "7a2c4e6f-8b1d-4c3a-9e5f-1a2b3c4d5e6f",
+      "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
       "address": "0x098B716B8Aaf21512996dC57EB0615e2383E2f96",
       "chain": "eth",
       "risk": "Severe",

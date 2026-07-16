@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.73'
+  version: '1.74'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -4471,6 +4471,7 @@ paths:
                   summary: Dirección limpia
                   value:
                     screening_id: 5f0b1c9a-2f3e-4a7b-9c1d-8e6f5a4b3c2d
+                    account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
                     address: TN2BBWc9EF8MMB6i1c4HZHXAssTEXstMDo
                     chain: tron
                     risk: Low
@@ -4490,6 +4491,7 @@ paths:
                   summary: Dirección sancionada
                   value:
                     screening_id: 7a2c4e6f-8b1d-4c3a-9e5f-1a2b3c4d5e6f
+                    account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
                     address: '0x098B716B8Aaf21512996dC57EB0615e2383E2f96'
                     chain: eth
                     risk: Severe
@@ -4515,6 +4517,7 @@ paths:
             application/json:
               example:
                 screening_id: 5f0b1c9a-2f3e-4a7b-9c1d-8e6f5a4b3c2d
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
                 address: TN2BBWc9EF8MMB6i1c4HZHXAssTEXstMDo
                 chain: tron
                 risk: Low
@@ -4592,6 +4595,7 @@ paths:
                 page_size: 50
                 screenings:
                 - screening_id: 7a2c4e6f-8b1d-4c3a-9e5f-1a2b3c4d5e6f
+                  account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
                   address: '0x098B716B8Aaf21512996dC57EB0615e2383E2f96'
                   chain: eth
                   risk: Severe
@@ -4625,6 +4629,7 @@ paths:
             application/json:
               example:
                 screening_id: 7a2c4e6f-8b1d-4c3a-9e5f-1a2b3c4d5e6f
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
                 address: '0x098B716B8Aaf21512996dC57EB0615e2383E2f96'
                 chain: eth
                 risk: Severe
@@ -6385,6 +6390,7 @@ paths:
                 $ref: '#/components/schemas/Swap'
               example:
                 swap_id: 8a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
                 from_asset: USDT
                 to_asset: BTC
                 from_amount: '1000.000000'
@@ -6401,6 +6407,7 @@ paths:
                 $ref: '#/components/schemas/Swap'
               example:
                 swap_id: 8a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
                 from_asset: USDT
                 to_asset: BTC
                 from_amount: '1000.000000'
@@ -6504,6 +6511,7 @@ paths:
                 page_size: 50
                 swaps:
                 - swap_id: 8a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+                  account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
                   from_asset: USDT
                   to_asset: BTC
                   from_amount: '1000.000000'
@@ -6538,6 +6546,7 @@ paths:
                 $ref: '#/components/schemas/Swap'
               example:
                 swap_id: 8a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
                 from_asset: BTC
                 to_asset: GOLD
                 from_amount: '0.01000000'
@@ -12244,6 +12253,10 @@ components:
         swap_id:
           type: string
           format: uuid
+        account_id:
+          type: string
+          format: uuid
+          description: Cuenta dueña. Permite a los org admins atribuir cada registro en la vista org-wide.
         from_asset:
           type: string
           enum:

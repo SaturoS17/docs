@@ -8,6 +8,18 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="16 de julio de 2026" description="v1.74">
+
+**Agregado**
+
+- **`account_id` en swaps y address screenings**: las respuestas de
+  `POST/GET /v1/swaps` y `POST/GET /v1/screenings/addresses` ahora incluyen
+  `account_id` (la cuenta dueña de la operación). Para integraciones de una
+  sola cuenta es informativo; en vistas administrativas permite atribuir
+  cada registro.
+
+</Update>
+
 <Update label="15 de julio de 2026" description="v1.73">
 
 **Agregado**

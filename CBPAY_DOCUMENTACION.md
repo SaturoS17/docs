@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-16 02:32 UTC · versión `d67fcdb20369`
+> **Documento actualizado:** 2026-07-16 04:25 UTC · versión `42a1e63d66a1`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.73 (15 de julio de 2026) |
+| Versión de la documentación | v1.74 (16 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -3634,6 +3634,7 @@ Respuesta `201` — el swap es síncrono, tu saldo cambia al instante:
 ```json
 {
   "swap_id": "8a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d",
+  "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
   "from_asset": "USDT",
   "to_asset": "BTC",
   "from_amount": "1000.000000",
@@ -6765,6 +6766,7 @@ Respuesta `201` — una dirección limpia:
 ```json
 {
   "screening_id": "5f0b1c9a-2f3e-4a7b-9c1d-8e6f5a4b3c2d",
+  "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
   "address": "TN2BBWc9EF8MMB6i1c4HZHXAssTEXstMDo",
   "chain": "tron",
   "risk": "Low",
@@ -6789,6 +6791,7 @@ Y una dirección sancionada:
 ```json
 {
   "screening_id": "7a2c4e6f-8b1d-4c3a-9e5f-1a2b3c4d5e6f",
+  "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
   "address": "0x098B716B8Aaf21512996dC57EB0615e2383E2f96",
   "chain": "eth",
   "risk": "Severe",
@@ -6826,6 +6829,7 @@ con `idempotency_hit: true` y **no cobra de nuevo**:
 ```json
 {
   "screening_id": "5f0b1c9a-2f3e-4a7b-9c1d-8e6f5a4b3c2d",
+  "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
   "address": "TN2BBWc9EF8MMB6i1c4HZHXAssTEXstMDo",
   "risk": "Low",
   "screening_fee": "0.500000",
@@ -6853,6 +6857,7 @@ curl "https://api.qbank.cl/platform/v1/screenings/addresses?from=2026-07-01&to=2
   "screenings": [
     {
       "screening_id": "7a2c4e6f-8b1d-4c3a-9e5f-1a2b3c4d5e6f",
+      "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
       "address": "0x098B716B8Aaf21512996dC57EB0615e2383E2f96",
       "chain": "eth",
       "risk": "Severe",
@@ -8773,9 +8778,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-16 02:32 UTC · 232 requests · versión `c8fc28c971e7`
+> **Colección actualizada:** 2026-07-16 04:25 UTC · 232 requests · versión `4e051a8bcbf4`
 
-<PostmanFreshness iso="2026-07-16T02:32:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-16T04:25:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -8946,6 +8951,16 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.74 — 16 de julio de 2026
+
+**Agregado**
+
+- **`account_id` en swaps y address screenings**: las respuestas de
+  `POST/GET /v1/swaps` y `POST/GET /v1/screenings/addresses` ahora incluyen
+  `account_id` (la cuenta dueña de la operación). Para integraciones de una
+  sola cuenta es informativo; en vistas administrativas permite atribuir
+  cada registro.
 
 ### v1.73 — 15 de julio de 2026
 

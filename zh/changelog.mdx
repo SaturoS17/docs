@@ -7,6 +7,16 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月16日" description="v1.74">
+
+**新增**
+
+- **swaps 与地址筛查响应中的 `account_id`**：`POST/GET /v1/swaps` 与
+  `POST/GET /v1/screenings/addresses` 的响应现在包含 `account_id`
+  （操作所属的账户）。对单账户集成仅作参考；管理视图用它来归属每条记录。
+
+</Update>
+
 <Update label="2026年7月15日" description="v1.73">
 
 **新增**

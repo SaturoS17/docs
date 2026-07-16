@@ -7,6 +7,17 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 16, 2026" description="v1.74">
+
+**Added**
+
+- **`account_id` on swaps and address screenings**: the responses of
+  `POST/GET /v1/swaps` and `POST/GET /v1/screenings/addresses` now include
+  `account_id` (the account that owns the operation). Informational for
+  single-account integrations; admin views use it to attribute each record.
+
+</Update>
+
 <Update label="July 15, 2026" description="v1.73">
 
 **Added**
