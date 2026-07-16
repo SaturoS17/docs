@@ -52,6 +52,11 @@ Operations resolve **deterministically**:
 | Payins (QR / payment page) | Amount ending in `.99` | The charge expires unpaid |
 | Payins (QR / payment page) | Amount ending in `.77` | Stays `pending` forever |
 | Payins (QR / payment page) | Any other amount | Pays itself after the settle delay and credits your balance |
+| Card checkout (`card`) | Amount ending in `.99` | The issuer declines the charge (the page lets the payer retry with another card) |
+| Card checkout (`card`) | Amount ending in `.77` | Ambiguous failure after the charge was sent — the session is held for review (never retried automatically) |
+| Card checkout (`card`) | Amount ending in `.55` | 3-D Secure authentication with a challenge (simulated step-up on the page) |
+| Card checkout (`card`) | Amount ending in `.44` | 3-D Secure authentication ends without an eligible ECI — the pre-capture filter rejects the attempt |
+| Card checkout (`card`) | Cardholder name containing `REJECT` | 3-D Secure authentication fails |
 | Collect (pull charges) | OTP `000000` | Approves the charge; any other OTP fails |
 | Login / 2FA codes | `000000` | Valid on every channel (SMS, WhatsApp, email) — no message is actually sent |
 | Identity verification (KYC/KYB) | Name or external id containing `REJECT` | Verification ends `rejected` |

@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-16 06:33 UTC · versión `bbe485098f3a`
+> **Documento actualizado:** 2026-07-16 15:33 UTC · versión `f1aaead44301`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.75 (16 de julio de 2026) |
+| Versión de la documentación | v1.76 (16 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -914,6 +914,11 @@ que un tercero esté disponible. Las operaciones se resuelven de forma
 | Payins (QR / página de pago) | Monto terminado en `.99` | El cobro expira sin pagarse |
 | Payins (QR / página de pago) | Monto terminado en `.77` | Queda `pending` para siempre |
 | Payins (QR / página de pago) | Cualquier otro monto | Se paga solo tras el delay y acredita tu saldo |
+| Checkout con tarjeta (`card`) | Monto terminado en `.99` | El emisor rechaza el cargo (la página permite reintentar con otra tarjeta) |
+| Checkout con tarjeta (`card`) | Monto terminado en `.77` | Falla ambigua tras enviar el cargo — la sesión queda en revisión (nunca se reintenta sola) |
+| Checkout con tarjeta (`card`) | Monto terminado en `.55` | Autenticación 3-D Secure con desafío (step-up simulado en la página) |
+| Checkout con tarjeta (`card`) | Monto terminado en `.44` | La autenticación 3-D Secure termina sin un ECI elegible — el filtro previo a la captura rechaza el intento |
+| Checkout con tarjeta (`card`) | Nombre del tarjetahabiente con `REJECT` | La autenticación 3-D Secure falla |
 | Collect (cobros pull) | OTP `000000` | Aprueba el cobro; cualquier otro OTP falla |
 | Códigos de login / 2FA | `000000` | Válido en todos los canales (SMS, WhatsApp, email) — no se envía ningún mensaje real |
 | Verificación de identidad (KYC/KYB) | Nombre o external id que contenga `REJECT` | La verificación termina `rejected` |
@@ -9008,6 +9013,21 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.76 — 16 de julio de 2026
+
+**Cambiado**
+
+- **Filtro de autenticación previo a la captura en pagos con tarjeta**: los
+  cargos con tarjeta solo se envían al procesador cuando la verificación
+  3-D Secure terminó con autenticación exitosa o intentada y con los datos
+  de autenticación completos; un intento sin autenticación real se rechaza
+  antes de mover fondos y el pagador puede reintentar. La página de pago
+  además extendió la recolección de datos del dispositivo (~11 s) para
+  mejorar la tasa de aprobación de los bancos emisores. En el ambiente de
+  test, el monto terminado en `.44` simula un intento rechazado por este
+  filtro (tabla completa en
+  [Ambiente de pruebas](#ambientes-y-pruebas)).
 
 ### v1.75 — 16 de julio de 2026
 

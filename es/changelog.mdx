@@ -8,6 +8,23 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="16 de julio de 2026" description="v1.76">
+
+**Cambiado**
+
+- **Filtro de autenticación previo a la captura en pagos con tarjeta**: los
+  cargos con tarjeta solo se envían al procesador cuando la verificación
+  3-D Secure terminó con autenticación exitosa o intentada y con los datos
+  de autenticación completos; un intento sin autenticación real se rechaza
+  antes de mover fondos y el pagador puede reintentar. La página de pago
+  además extendió la recolección de datos del dispositivo (~11 s) para
+  mejorar la tasa de aprobación de los bancos emisores. En el ambiente de
+  test, el monto terminado en `.44` simula un intento rechazado por este
+  filtro (tabla completa en
+  [Ambiente de pruebas](/es/entorno-y-pruebas)).
+
+</Update>
+
 <Update label="16 de julio de 2026" description="v1.75">
 
 **Agregado**

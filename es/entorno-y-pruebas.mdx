@@ -53,6 +53,11 @@ que un tercero esté disponible. Las operaciones se resuelven de forma
 | Payins (QR / página de pago) | Monto terminado en `.99` | El cobro expira sin pagarse |
 | Payins (QR / página de pago) | Monto terminado en `.77` | Queda `pending` para siempre |
 | Payins (QR / página de pago) | Cualquier otro monto | Se paga solo tras el delay y acredita tu saldo |
+| Checkout con tarjeta (`card`) | Monto terminado en `.99` | El emisor rechaza el cargo (la página permite reintentar con otra tarjeta) |
+| Checkout con tarjeta (`card`) | Monto terminado en `.77` | Falla ambigua tras enviar el cargo — la sesión queda en revisión (nunca se reintenta sola) |
+| Checkout con tarjeta (`card`) | Monto terminado en `.55` | Autenticación 3-D Secure con desafío (step-up simulado en la página) |
+| Checkout con tarjeta (`card`) | Monto terminado en `.44` | La autenticación 3-D Secure termina sin un ECI elegible — el filtro previo a la captura rechaza el intento |
+| Checkout con tarjeta (`card`) | Nombre del tarjetahabiente con `REJECT` | La autenticación 3-D Secure falla |
 | Collect (cobros pull) | OTP `000000` | Aprueba el cobro; cualquier otro OTP falla |
 | Códigos de login / 2FA | `000000` | Válido en todos los canales (SMS, WhatsApp, email) — no se envía ningún mensaje real |
 | Verificación de identidad (KYC/KYB) | Nombre o external id que contenga `REJECT` | La verificación termina `rejected` |

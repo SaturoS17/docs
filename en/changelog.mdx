@@ -7,6 +7,22 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 16, 2026" description="v1.76">
+
+**Changed**
+
+- **Pre-capture authentication filter on card payments**: card charges are
+  only sent to the processor when the 3-D Secure verification ended with a
+  successful or attempted authentication and complete authentication data;
+  an attempt without real authentication is rejected before any funds move
+  and the payer can retry. The payment page also extended device data
+  collection (~11 s) to improve issuer approval rates. In the test
+  environment, an amount ending in `.44` simulates an attempt rejected by
+  this filter (full table in
+  [Test environment](/en/environment-testing)).
+
+</Update>
+
 <Update label="July 16, 2026" description="v1.75">
 
 **Added**
