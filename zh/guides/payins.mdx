@@ -484,25 +484,34 @@ base64 或 `charge.qr_image_url`，即公共 CDN URL）。二维码按
 
 ## 通用收款链接（`checkout`）
 
-如果你不想替客户预先选定收款方式，可以创建一个**通用收款链接**：一次
-`POST /v1/payins`（`method: "checkout"`）即可返回一个带品牌的公开 URL，
-付款人在页面上自行选择支付方式——二维码、银行卡、银行转账或**加密货币**
-（TRON 上的 USDT、以太坊上的 USDT/USDC 以及 BTC，且会为该笔收款生成专属
-充值地址）。
+创建一个**通用收款链接**：一次 `POST /v1/payins`（`method: "checkout"`）
+即可返回一个带品牌的公开 URL，付款人在页面上自行选择支付方式。收款以
+**你选择的虚拟余额**计价（`settlement_asset`：`USDT`、`USDC`、`BTC` 或
+`GOLD`，默认 `USDT`），每笔付款在入账时**自动转换**为该余额——除非付款
+人用同一资产支付，此时不发生转换。
+
+付款人在同一页面上可以看到：
+
+- **所有有可用代收走廊的国家**——选择自己的国家后即可看到可用方式
+  （二维码、银行卡、银行转账、托管支付页）及即时报出的当地金额。
+- **4 种加密货币选项**（TRON 上的 USDT、以太坊上的 USDT/USDC 以及
+  BTC），每笔收款专属充值地址，并附带**可扫描二维码**，兼容外部钱包
+  （Trust Wallet、MetaMask、Binance 等）。
+- **使用 CBPay 应用直接支付**：商户别名和二维码始终可见——用应用扫码
+  即可通过内部转账即时付款，支持 4 种余额中的任意一种。
 
 ```mermaid
-sequenceDiagram
-    participant I as 你的集成
-    participant C as CBPay
-    participant P as 付款人
-    I->>C: POST /v1/payins（method checkout）
-    C-->>I: checkout_url
-    I->>P: 分享链接
-    P->>C: 打开页面并选择方式
-    C-->>P: 支付指引（二维码、支付 URL、参考码或加密地址）
-    P->>C: 通过所选方式付款
-    C-->>I: payin_credited Webhook
-    C-->>P: 页面自动变为"已支付"
+flowchart LR
+    M[创建链接：50 USDT 或 0.001 BTC] --> P[公开页面]
+    P --> C1[加密货币：地址 + 含应付额的二维码]
+    P --> C2[国家 + 法币方式：报出的当地金额]
+    P --> C3[CBPay 应用：商户别名 + 二维码]
+    C1 --> S{与 settlement 同一资产？}
+    C2 --> S
+    C3 --> S
+    S -->|是| FIN[留在所选余额]
+    S -->|否| SW[自动转换为 settlement_asset]
+    SW --> FIN
 ```
 
 ```bash
@@ -511,16 +520,24 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
   -H "Content-Type: application/json" \
   -d '{
     "method": "checkout",
-    "country": "CL",
-    "currency": "CLP",
-    "amount": "15000",
+    "amount": "50",
+    "settlement_asset": "USDT",
     "description": "订单 8841",
+    "country": "CL",
     "success_url": "https://your-app.com/payment/ok",
     "failure_url": "https://your-app.com/payment/error",
     "expires_in": 86400,
     "idempotency_key": "order-8841"
   }'
 ```
+
+- `amount` 以 **`settlement_asset`** 计价：配 `USDT` 的 `"50"` 表示 50
+  USDT；配 `BTC` 的 `"0.001"` 表示 0.001 BTC；配 `GOLD` 的 `"2"` 表示
+  2 克黄金。不要发送 `currency`——那是旧契约，会返回 `400`（收款不再
+  绑定当地货币）。
+- `country` 为**可选**，仅用于页面上的国家预选；付款人可以更改。
+- `GOLD` 没有自己的支付轨道：收款始终通过自动转换达成，无论客户用什么
+  方式付款。
 
 响应 `201`：
 
@@ -529,9 +546,9 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
   "payin_id": "d0135ed5-8e9c-4f8b-a522-8ec100470426",
   "kind": "checkout",
   "status": "pending",
+  "settlement_asset": "USDT",
+  "asset_amount": "50",
   "country": "CL",
-  "currency": "CLP",
-  "local_amount": "15000",
   "description": "订单 8841",
   "reference": "CB68JZCT46QE",
   "checkout_url": "https://api.qbank.cl/platform/pay/fc4981b8e7c7…",
@@ -544,40 +561,86 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
 页面无需登录，带有你组织的品牌，并会自动刷新：任一方式确认付款后，页面
 显示"已支付"，如设置了 `success_url` 则自动跳转。
 
-链接内各支付方式的工作原理：
+### 各支付轨道的工作方式
 
-- **法币方式**：页面按目录（`GET /v1/payins/methods`）提供该收款国家和
-  币种可用的方式——二维码、银行卡、托管支付页或带 `reference` 的银行
-  转账通知。入账按正常 payin 汇率与手续费结算。
-- **加密货币（每笔收款一个钱包）**：选择币种后会生成**该笔收款专属的
-  充值地址**并给出精确报价（USDT/USDC 按当时美元等值；BTC 报价每 15
-  分钟刷新）。部分支付会累加，页面显示剩余金额；达到目标后收款即完成。
-  入账为收到的资产扣除你的 funding 手续费。
+- **多国家法币**：付款人选择国家和方式；当地金额即时报价（目标金额 →
+  美元 → 当地货币，按你走廊的 `payin_rate`，向上取整），在选定方式时
+  **冻结**。入账按正常 payin 汇率与手续费结算，随后转换为
+  `settlement_asset`。付款金额**小于**冻结报价时照常入账（钱是真实的），
+  但**不会**将链接标记为已支付。
+- **加密货币（每笔收款一个钱包）**：选择币种后生成专属地址及其
+  `qr_payload` 和 `qr_png_base64`——BTC 使用 BIP-21 URI
+  （`bitcoin:<address>?amount=…`，自动填充金额）；TRON/ETH 的二维码为
+  裸地址（兼容性最高），金额显示在旁边可复制。若支付资产与
+  `settlement_asset` 不同，报出的应付额**已包含转换成本**（由付款人
+  承担；你收到精确的目标金额）。部分支付会累加，页面显示剩余金额。
+  涉及 BTC/GOLD 的报价每 15 分钟刷新。
+- **CBPay 应用**：商户二维码内嵌链接
+  （`cbpay:pay?to=…&checkout=…`）。应用通过内部转账以 4 种余额中的
+  任意一种付款：同一资产 ⇒ 精确目标金额；不同 ⇒ 含转换的应付额。金额
+  在服务端按新报价校验——不足以覆盖收款时返回
+  `422 checkout_amount_mismatch` 及当前应付额。集成方：
+  `POST /v1/transfers` 接受可选字段 `checkout_token`（或在
+  `to_qr_token` 中使用扩展二维码）；目标账户强制为链接所属账户。
 
-链接规则：
+### 自动转换到所选余额
 
-- **一个链接 = 一笔收款**：最先完成支付的方式生效，其余选项随之失效
-  （在无人付款前，选择某个方式不会锁定其他方式）。
+任何与 `settlement_asset` 不同资产的入账都会经你账户的转换引擎转换
+（与 `POST /v1/swaps` 相同的点差与限额）。汇总状态通过
+`conversion_status` 传递：
+
+| `conversion_status` | 含义 |
+|---|---|
+| _（缺省）_ | 未发生转换（用同一资产支付） |
+| `done` | 链接的所有转换均已执行 |
+| `pending_retry` | 某次转换暂时失败（价格不可用或限额）；资金留在收到的资产中并自动重试 |
+
+### 链接的公开端点（免认证，有限流）
+
+- `GET {checkout_url}/state`——链接状态：`status`、`paid_method`、
+  `settlement_asset`、`asset_amount`、冻结的法币物化
+  （`fiat_methods`）、加密进度（`crypto`，含 `due`/`received`）及
+  `conversion_status`。
+- `GET {checkout_url}/quote`——选择前的报价：`countries`（含各国货币
+  与方式的目录）、`crypto`（各币对的参考应付额）和 `cbpay`（别名 +
+  各资产应付额）。带 `?country=XX` 时额外返回该国当地金额的
+  `country_quote`。
+- `POST {checkout_url}/methods/{method}`——物化所选支付选项。法币方式
+  要求 `?country=XX`；加密货币使用 `crypto:<chain>:<asset>`
+  （如 `crypto:tron:usdt`），不带国家。对同一国家+方式重复 POST 返回
+  **同一个**物化结果。
+
+如果你想在同一链接上渲染自己的支付页面，这些端点会很有用。
+
+### 链接规则
+
+- **一个链接 = 一笔收款**：最先完成支付的方式生效；之后经其他轨道的
+  付款不会入账（在无人付款前，选择某个方式不会锁定其他方式）。
 - `expires_in` 取值 600 到 604800 秒（10 分钟到 7 天；默认 24 小时）。
   到期未支付时 payin 变为 `expired`，你会收到 `payin_expired` Webhook。
 - 使用相同 `idempotency_key` 重试会返回**同一个链接**（URL 不变），
   绝不会开启第二笔收款。
-- 状态可通过 `GET {checkout_url}/state` 免认证查询（JSON，含 `status`、
-  `paid_method` 及加密支付进度）——如果你想在同一链接上渲染自己的支付
-  页面会很有用。
-- 收款完成后你会收到正常的 `payin_credited`；若以加密货币支付，事件会
-  附带 `settled_via`（如 `crypto:tron:usdt`）和链上实收金额
-  `crypto_amount`。
+- `settlement_asset` 必须已为你的组织启用；若被停用，创建请求返回
+  `422 settlement_asset_disabled`。
+
+收款完成后你会收到 `payin_credited`，附带 `settled_via`（如
+`crypto:tron:usdt`、`qr`、`cbpay`）、`settlement_asset` 和
+`asset_amount`；加密支付额外附带 `crypto_amount`，CBPay 应用支付额外
+附带 `transfer_id`、`asset` 和 `amount`。
 
 链接专属错误（由打开页面的人看到）：
 
 | HTTP | `error` | 含义 |
 |---|---|---|
 | 404 | `not_found` | 令牌无效或链接不存在 |
+| 400 | `country_required` | 法币方式缺少 `?country=XX` |
 | 409 | `already_paid` | 链接已通过其他方式支付 |
 | 410 | `checkout_expired` | 链接到期未支付 |
-| 422 | `method_unavailable` | 该方式在此收款走廊不可用 |
+| 422 | `method_unavailable` | 该方式对此链接或国家不可用 |
+| 422 | `country_unavailable` | 该国家没有可用的支付方式 |
+| 422 | `checkout_amount_mismatch` | CBPay 转账不足以覆盖收款的当前应付额 |
 | 429 | `too_many_attempts` | 公开页面的按 IP 限流 |
+| 503 | `pricing_unavailable` | 报价暂时不可用；请稍后重试 |
 
 ## 3. 接收入账
 

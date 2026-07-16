@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — that never mix or convert automatically.\nPayouts and service fees can be paid from any of the four balances:\nset a default with `PUT /v1/settlement` or override per payout with\n`settlement_asset`.\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-16 18:35 UTC",
-    "_content_sha256": "20ebebf5e563c8be4587e110a17a17d36ee30a7fd38b9e4f6d7c0039c8c6f80a"
+    "_generated_at": "2026-07-16 23:47 UTC",
+    "_content_sha256": "66e212bcfdd6a46dd03aeb3bd13cfd0694b68d5a8166d8b47dc23795fece0da0"
   },
   "auth": {
     "type": "bearer",
@@ -400,7 +400,7 @@
                 }
               ]
             },
-            "description": "Public branded HTML page behind the `checkout_url` returned by `POST /v1/payins` with `method: \"checkout\"`. The payer opens it without credentials, picks the payment method (QR, card, bank transfer or crypto) and the page updates itself when the payment is confirmed. The token is cryptographically derived; an invalid one answers 404. Rate limited per IP.",
+            "description": "Public branded HTML page behind the `checkout_url` returned by `POST /v1/payins` with `method: \"checkout\"`. The payer opens it without credentials, picks a country and fiat method, a crypto option (deposit address with scannable QR) or pays directly from the CBPay app (merchant QR + alias always visible), and the page updates itself when the payment is confirmed. The token is cryptographically derived; an invalid one answers 404. Rate limited per IP.",
             "auth": {
               "type": "noauth"
             }
@@ -428,7 +428,7 @@
                 }
               ]
             },
-            "description": "JSON state of a universal checkout link — for the page's own polling and for integrators rendering their own payment front end over the same link. Shows the status, the winning method once paid, and the live progress of every crypto deposit address materialized for the link (amount due vs received). No credentials; rate limited per IP.",
+            "description": "JSON state of a universal checkout link — for the page's own polling and for integrators rendering their own payment front end over the same link. Shows the status, the settlement asset and amount, the winning method once paid, the frozen fiat materializations (`fiat_methods`), the live progress of every crypto deposit address (amount due vs received) and the `conversion_status` of the auto-conversion. No credentials; rate limited per IP.",
             "auth": {
               "type": "noauth"
             }
@@ -465,7 +465,86 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"status\": \"pending\",\n  \"country\": \"MX\",\n  \"currency\": \"MXN\",\n  \"local_amount\": \"250.00\",\n  \"description\": \"Order 8841\",\n  \"expires_at\": \"2026-07-17T17:57:44Z\",\n  \"crypto\": [\n    {\n      \"method\": \"crypto:tron:usdt\",\n      \"chain\": \"tron\",\n      \"asset\": \"USDT\",\n      \"address\": \"TWkfyUCXSdRfNHrRc9CJisFLYd6Ha3XWvS\",\n      \"due\": \"13.400000\",\n      \"received\": \"5.000000\"\n    }\n  ]\n}"
+              "body": "{\n  \"status\": \"pending\",\n  \"settlement_asset\": \"USDT\",\n  \"asset_amount\": \"50\",\n  \"description\": \"Order 8841\",\n  \"expires_at\": \"2026-07-17T17:57:44Z\",\n  \"fiat_methods\": [\n    {\n      \"method\": \"qr\",\n      \"country\": \"MX\",\n      \"currency\": \"MXN\",\n      \"local_amount\": \"941.00\"\n    }\n  ],\n  \"crypto\": [\n    {\n      \"method\": \"crypto:tron:usdt\",\n      \"chain\": \"tron\",\n      \"asset\": \"USDT\",\n      \"address\": \"TWkfyUCXSdRfNHrRc9CJisFLYd6Ha3XWvS\",\n      \"due\": \"50.000000\",\n      \"received\": \"5.000000\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Quote a checkout link before choosing (public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pay/:token/quote",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pay",
+                ":token",
+                "quote"
+              ],
+              "query": [
+                {
+                  "key": "country",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Optional ISO-3166 alpha-2 country to quote the local amount for."
+                }
+              ],
+              "variable": [
+                {
+                  "key": "token",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Indicative quotes for a universal checkout link BEFORE materializing — the catalog of countries with live fiat methods, the due amount per crypto option (conversion cost included when the pay asset differs from the settlement asset), and the CBPay direct payment dues per enabled balance. With `?country=XX` it also returns the quoted local amount for that country. Materializing freezes the definitive quote. No credentials; rate limited per IP.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 Indicative quotes for the link.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/pay/:token/quote",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "pay",
+                    ":token",
+                    "quote"
+                  ],
+                  "query": [
+                    {
+                      "key": "country",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Optional ISO-3166 alpha-2 country to quote the local amount for."
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "key": "token",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Indicative quotes for the link.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"pending\",\n  \"settlement_asset\": \"USDT\",\n  \"asset_amount\": \"50\",\n  \"countries\": [\n    {\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"methods\": [\n        \"qr\",\n        \"card\"\n      ]\n    },\n    {\n      \"country\": \"CL\",\n      \"currency\": \"CLP\",\n      \"methods\": [\n        \"bank_transfer\",\n        \"fintoc\"\n      ]\n    }\n  ],\n  \"crypto\": [\n    {\n      \"method\": \"crypto:tron:usdt\",\n      \"chain\": \"tron\",\n      \"asset\": \"USDT\",\n      \"due\": \"50.000000\"\n    },\n    {\n      \"method\": \"crypto:btc:btc\",\n      \"chain\": \"btc\",\n      \"asset\": \"BTC\",\n      \"due\": \"0.00046120\",\n      \"quote_ttl_seconds\": 900\n    }\n  ],\n  \"cbpay\": {\n    \"alias\": \"tayl.code\",\n    \"dues\": {\n      \"USDT\": \"50.000000\",\n      \"USDC\": \"50.100200\",\n      \"BTC\": \"0.00046120\",\n      \"GOLD\": \"0.462100\"\n    }\n  },\n  \"country_quote\": {\n    \"country\": \"CL\",\n    \"currency\": \"CLP\",\n    \"methods\": [\n      \"bank_transfer\",\n      \"fintoc\"\n    ],\n    \"local_amount\": \"47180\"\n  }\n}"
             }
           ]
         },
@@ -485,6 +564,14 @@
                 "methods",
                 ":method"
               ],
+              "query": [
+                {
+                  "key": "country",
+                  "value": "",
+                  "disabled": true,
+                  "description": "ISO-3166 alpha-2 country of the fiat method being materialized. Required for fiat methods, ignored for crypto."
+                }
+              ],
               "variable": [
                 {
                   "key": "token",
@@ -496,7 +583,7 @@
                 }
               ]
             },
-            "description": "Creates (lazily) the payment option the payer picked on a universal checkout link and returns its instructions — the payment URL for card/hosted methods, the QR for QR methods, the announce reference for bank transfers, or an exclusive crypto deposit address with the exact quoted amount. Re-POSTing the same method returns the SAME materialization; picking a method never blocks the others while nobody has paid. No credentials; rate limited per IP.",
+            "description": "Creates (lazily) the payment option the payer picked on a universal checkout link and returns its instructions — the payment URL for card/hosted methods, the QR for QR methods, the announce reference for bank transfers, or an exclusive crypto deposit address with the exact quoted amount plus a scannable QR (`qr_payload` + `qr_png_base64` — BIP-21 URI for BTC, raw address for TRON/ETH tokens, readable by external wallets). Fiat methods require `?country=XX`; the local amount is quoted and FROZEN at this moment. Re-POSTing the same country+method returns the SAME materialization; picking a method never blocks the others while nobody has paid. No credentials; rate limited per IP.",
             "auth": {
               "type": "noauth"
             }
@@ -516,6 +603,14 @@
                     ":token",
                     "methods",
                     ":method"
+                  ],
+                  "query": [
+                    {
+                      "key": "country",
+                      "value": "",
+                      "disabled": true,
+                      "description": "ISO-3166 alpha-2 country of the fiat method being materialized. Required for fiat methods, ignored for crypto."
+                    }
                   ],
                   "variable": [
                     {
@@ -538,7 +633,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"method\": \"crypto:tron:usdt\",\n  \"payload\": {\n    \"chain\": \"tron\",\n    \"asset\": \"USDT\",\n    \"address\": \"TWkfyUCXSdRfNHrRc9CJisFLYd6Ha3XWvS\",\n    \"due\": \"13.400000\",\n    \"received\": \"0.000000\",\n    \"note\": \"send the exact amount to the address; the payment is confirmed on-chain automatically\"\n  }\n}"
+              "body": "{\n  \"method\": \"crypto:btc:btc\",\n  \"payload\": {\n    \"chain\": \"btc\",\n    \"asset\": \"BTC\",\n    \"address\": \"bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh\",\n    \"due\": \"0.00046120\",\n    \"received\": \"0.00000000\",\n    \"qr_payload\": \"bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh?amount=0.00046120\",\n    \"qr_png_base64\": \"iVBORw0KGgo…\",\n    \"quote_expires_at\": \"2026-07-16T18:15:00Z\",\n    \"note\": \"send the exact amount to the address; the payment is confirmed on-chain automatically\"\n  }\n}"
             }
           ]
         },
@@ -692,7 +787,7 @@
                 "payins"
               ]
             },
-            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link where the payer picks the payment method (QR, card, bank transfer or crypto with a deposit address exclusive to that charge); the first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"country\": \"BO\",\n  \"currency\": \"BOB\",\n  \"method\": \"qr\",\n  \"amount\": \"700.00\",\n  \"description\": \"App top-up\",\n  \"expires_in\": 3600\n}",
@@ -752,7 +847,7 @@
                 "payins"
               ]
             },
-            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link where the payer picks the payment method (QR, card, bank transfer or crypto with a deposit address exclusive to that charge); the first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"country\": \"BR\",\n  \"currency\": \"BRL\",\n  \"method\": \"qr\",\n  \"amount\": \"120.00\",\n  \"description\": \"Order 7719\",\n  \"expires_in\": 1800\n}",
@@ -812,7 +907,7 @@
                 "payins"
               ]
             },
-            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link where the payer picks the payment method (QR, card, bank transfer or crypto with a deposit address exclusive to that charge); the first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"country\": \"CL\",\n  \"currency\": \"CLP\",\n  \"method\": \"bank_transfer\",\n  \"amount\": \"500000\"\n}",
@@ -872,7 +967,7 @@
                 "payins"
               ]
             },
-            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link where the payer picks the payment method (QR, card, bank transfer or crypto with a deposit address exclusive to that charge); the first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"country\": \"PY\",\n  \"currency\": \"PYG\",\n  \"method\": \"bank_transfer\",\n  \"amount\": \"596000\"\n}",
@@ -932,7 +1027,7 @@
                 "payins"
               ]
             },
-            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link where the payer picks the payment method (QR, card, bank transfer or crypto with a deposit address exclusive to that charge); the first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"country\": \"CL\",\n  \"currency\": \"CLP\",\n  \"method\": \"fintoc\",\n  \"amount\": \"150000\",\n  \"description\": \"Top-up order 8841\",\n  \"idempotency_key\": \"topup-8841\"\n}",
@@ -992,7 +1087,7 @@
                 "payins"
               ]
             },
-            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link where the payer picks the payment method (QR, card, bank transfer or crypto with a deposit address exclusive to that charge); the first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"country\": \"BO\",\n  \"currency\": \"BOB\",\n  \"method\": \"card\",\n  \"amount\": \"700.00\",\n  \"description\": \"App top-up\",\n  \"customer\": {\n    \"email\": \"payer@example.com\",\n    \"first_name\": \"Ana\",\n    \"last_name\": \"Rojas\"\n  },\n  \"success_url\": \"https://your-app.com/payment/ok\",\n  \"failure_url\": \"https://your-app.com/payment/error\",\n  \"idempotency_key\": \"topup-7719\"\n}",
@@ -1033,7 +1128,7 @@
           ]
         },
         {
-          "name": "Create a payin (top-up charge) — Chile — universal checkout link (CLP)",
+          "name": "Create a payin (top-up charge) — Universal checkout link — 50 USDT, any country/method",
           "request": {
             "method": "POST",
             "header": [
@@ -1052,10 +1147,70 @@
                 "payins"
               ]
             },
-            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link where the payer picks the payment method (QR, card, bank transfer or crypto with a deposit address exclusive to that charge); the first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"country\": \"CL\",\n  \"currency\": \"CLP\",\n  \"method\": \"checkout\",\n  \"amount\": \"15000\",\n  \"description\": \"Order 8841\",\n  \"success_url\": \"https://your-app.com/payment/ok\",\n  \"failure_url\": \"https://your-app.com/payment/error\",\n  \"expires_in\": 86400,\n  \"idempotency_key\": \"order-8841\"\n}",
+              "raw": "{\n  \"method\": \"checkout\",\n  \"amount\": \"50\",\n  \"settlement_asset\": \"USDT\",\n  \"description\": \"Order 8841\",\n  \"country\": \"CL\",\n  \"success_url\": \"https://your-app.com/payment/ok\",\n  \"failure_url\": \"https://your-app.com/payment/error\",\n  \"expires_in\": 86400,\n  \"idempotency_key\": \"order-8841\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Charge created.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payins",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payins"
+                  ]
+                }
+              },
+              "status": "Charge created.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a payin (top-up charge) — Universal checkout link — 0.001 BTC settlement",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payins",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payins"
+              ]
+            },
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"method\": \"checkout\",\n  \"amount\": \"0.001\",\n  \"settlement_asset\": \"BTC\",\n  \"description\": \"Invoice 2210\",\n  \"idempotency_key\": \"invoice-2210\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

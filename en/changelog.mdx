@@ -7,6 +7,33 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 16, 2026" description="v1.79">
+
+**Changed**
+
+- **Universal checkout link v2 — multi-country + settlement in the asset
+  you choose** (**Breaking** over yesterday's v1 shape): the charge is now
+  denominated in any of your 4 virtual balances via `settlement_asset`
+  (`USDT` default, `USDC`, `BTC`, `GOLD`) with `amount` IN that asset
+  ("50" USDT, "0.001" BTC, "2" g of gold); sending `currency` returns
+  `400` (existing v1 links keep working). The payer sees **every country
+  with a live pay-in corridor** (pick a country → its methods with the
+  local amount quoted and frozen at materialization), the 4 crypto options
+  with a **scannable QR** (`qr_payload` + `qr_png_base64`; BIP-21 for BTC,
+  raw address for TRON/ETH tokens — readable by Trust Wallet, MetaMask,
+  Binance and external wallets), and the merchant's **CBPay QR + alias**
+  to pay instantly from the app (deeplink `cbpay:pay?to=…&checkout=…`;
+  `POST /v1/transfers` accepts `checkout_token` and validates the due
+  server-side). Every payment **auto-converts** into the
+  `settlement_asset` on credit (same asset skips conversion);
+  `conversion_status` is visible on `/state`. New public endpoint
+  `GET {checkout_url}/quote` with the country catalog, crypto dues and
+  CBPay dues. New errors `country_required`, `country_unavailable`,
+  `settlement_asset_disabled` and `checkout_amount_mismatch`. Details in
+  the [payins guide](/en/guides/payins#universal-checkout-link-checkout).
+
+</Update>
+
 <Update label="July 16, 2026" description="v1.78">
 
 **Added**

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.78'
+  version: '1.79'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -393,9 +393,11 @@ paths:
       operationId: checkoutPage
       summary: Página de cobro universal (pública)
       description: 'Página HTML pública brandeada detrás de la `checkout_url` que devuelve `POST /v1/payins`
-        con `method: "checkout"`. El pagador la abre sin credenciales, elige el método de pago
-        (QR, tarjeta, transferencia bancaria o crypto) y la página se actualiza sola cuando el pago
-        se confirma. El token es derivado criptográficamente; uno inválido responde 404. Rate limit por IP.'
+        con `method: "checkout"`. El pagador la abre sin credenciales, elige un país y método fiat,
+        una opción crypto (dirección de depósito con QR escaneable) o paga directo desde la app
+        CBPay (QR + alias del comercio siempre visibles), y la página se actualiza sola cuando el
+        pago se confirma. El token es derivado criptográficamente; uno inválido responde 404. Rate
+        limit por IP.'
       parameters:
       - name: token
         in: path
@@ -432,9 +434,10 @@ paths:
       summary: Estado del cobro universal (público)
       description: Estado JSON de un link de cobro universal — para el polling de la propia página y
         para integradores que rendericen su propio front de pago sobre el mismo link. Muestra el
-        estado, el método ganador una vez pagado, y el progreso en vivo de cada dirección de
-        depósito crypto materializada para el link (monto adeudado vs recibido). Sin credenciales;
-        rate limit por IP.
+        estado, el asset y monto de settlement, el método ganador una vez pagado, las
+        materializaciones fiat congeladas (`fiat_methods`), el progreso en vivo de cada dirección
+        de depósito crypto (monto adeudado vs recibido) y el `conversion_status` de la
+        auto-conversión. Sin credenciales; rate limit por IP.
       parameters:
       - name: token
         in: path
@@ -449,30 +452,34 @@ paths:
             application/json:
               examples:
                 pending:
-                  summary: Pendiente con progreso crypto
+                  summary: Pendiente con cotización fiat congelada y progreso crypto
                   value:
                     status: pending
-                    country: MX
-                    currency: MXN
-                    local_amount: '250.00'
+                    settlement_asset: USDT
+                    asset_amount: '50'
                     description: Order 8841
                     expires_at: '2026-07-17T17:57:44Z'
+                    fiat_methods:
+                    - method: qr
+                      country: MX
+                      currency: MXN
+                      local_amount: '941.00'
                     crypto:
                     - method: crypto:tron:usdt
                       chain: tron
                       asset: USDT
                       address: TWkfyUCXSdRfNHrRc9CJisFLYd6Ha3XWvS
-                      due: '13.400000'
+                      due: '50.000000'
                       received: '5.000000'
                 paid:
-                  summary: Pagado vía crypto
+                  summary: Pagado vía crypto, conversión hecha
                   value:
                     status: paid
-                    country: MX
-                    currency: MXN
-                    local_amount: '250.00'
+                    settlement_asset: GOLD
+                    asset_amount: '2'
                     description: Order 8841
                     expires_at: '2026-07-17T17:57:44Z'
+                    conversion_status: done
                     paid_method: crypto:tron:usdt
                     paid_at: '2026-07-16T18:03:11Z'
                     redirect_url: https://your-app.com/payment/ok
@@ -490,6 +497,104 @@ paths:
               example:
                 error: too_many_attempts
                 message: too many requests; wait a moment and retry
+  /pay/{token}/quote:
+    get:
+      security: []
+      tags:
+      - Payins
+      operationId: checkoutQuote
+      summary: Cotizar un link de cobro antes de elegir (público)
+      description: Cotizaciones indicativas de un link de cobro universal ANTES de materializar —
+        el catálogo de países con métodos fiat vivos, el monto adeudado por opción crypto (con el
+        costo de conversión incluido cuando el asset de pago difiere del de settlement) y los
+        montos de pago directo CBPay por saldo habilitado. Con `?country=XX` devuelve además el
+        monto local cotizado de ese país. La materialización congela la cotización definitiva.
+        Sin credenciales; rate limit por IP.
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Token opaco del checkout embebido en la `checkout_url`.
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+        description: País ISO-3166 alpha-2 opcional para cotizar el monto local.
+      responses:
+        '200':
+          description: Cotizaciones indicativas del link.
+          content:
+            application/json:
+              example:
+                status: pending
+                settlement_asset: USDT
+                asset_amount: '50'
+                countries:
+                - country: BO
+                  currency: BOB
+                  methods:
+                  - qr
+                  - card
+                - country: CL
+                  currency: CLP
+                  methods:
+                  - bank_transfer
+                  - fintoc
+                crypto:
+                - method: crypto:tron:usdt
+                  chain: tron
+                  asset: USDT
+                  due: '50.000000'
+                - method: crypto:btc:btc
+                  chain: btc
+                  asset: BTC
+                  due: '0.00046120'
+                  quote_ttl_seconds: 900
+                cbpay:
+                  alias: tayl.code
+                  dues:
+                    USDT: '50.000000'
+                    USDC: '50.100200'
+                    BTC: '0.00046120'
+                    GOLD: '0.462100'
+                country_quote:
+                  country: CL
+                  currency: CLP
+                  methods:
+                  - bank_transfer
+                  - fintoc
+                  local_amount: '47180'
+        '404':
+          description: Token inválido o link de cobro desconocido.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: payment link not found
+        '422':
+          description: El país pedido no tiene métodos de pago disponibles.
+          content:
+            application/json:
+              example:
+                error: country_unavailable
+                message: no payment methods are available for that country
+        '429':
+          description: Demasiadas peticiones desde esta IP.
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many requests; wait a moment and retry
+        '503':
+          description: Cotización temporalmente no disponible.
+          content:
+            application/json:
+              example:
+                error: pricing_unavailable
+                message: pricing is temporarily unavailable; retry in a moment
   /pay/{token}/methods/{method}:
     post:
       security: []
@@ -500,8 +605,11 @@ paths:
       description: Crea (lazy) la opción de pago que el pagador eligió en un link de cobro universal
         y devuelve sus instrucciones — la URL de pago para tarjeta/métodos hosted, el QR para
         métodos QR, la referencia de anuncio para transferencias bancarias, o una dirección de
-        depósito crypto exclusiva con el monto exacto cotizado. Re-POST del mismo método devuelve
-        la MISMA materialización; elegir un método nunca bloquea los demás mientras nadie pague.
+        depósito crypto exclusiva con el monto exacto cotizado más un QR escaneable
+        (`qr_payload` + `qr_png_base64` — URI BIP-21 para BTC, dirección cruda para tokens
+        TRON/ETH, legibles por wallets externas). Los métodos fiat exigen `?country=XX`; el monto
+        local se cotiza y CONGELA en ese momento. Re-POST del mismo país+método devuelve la MISMA
+        materialización; elegir un método nunca bloquea los demás mientras nadie pague.
         Sin credenciales; rate limit por IP.
       parameters:
       - name: token
@@ -515,9 +623,16 @@ paths:
         required: true
         schema:
           type: string
-        description: Método a materializar — un método fiat del catálogo del corredor (`qr`,
-          `card`, `fintoc`, `bank_transfer`) o una opción crypto (`crypto:tron:usdt`,
-          `crypto:eth:usdt`, `crypto:eth:usdc`, `crypto:btc:btc`).
+        description: Método a materializar — un método fiat del catálogo multi-país (`qr`,
+          `card`, `fintoc`, `bank_transfer`; exige `?country=XX`) o una opción crypto
+          (`crypto:tron:usdt`, `crypto:eth:usdt`, `crypto:eth:usdc`, `crypto:btc:btc`; sin país).
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+        description: País ISO-3166 alpha-2 del método fiat a materializar. Obligatorio para
+          métodos fiat, ignorado para crypto.
       responses:
         '200':
           description: Instrucciones del método de pago elegido.
@@ -525,21 +640,27 @@ paths:
             application/json:
               examples:
                 crypto:
-                  summary: Crypto — dirección de depósito exclusiva
+                  summary: Crypto — dirección de depósito exclusiva con QR escaneable
                   value:
-                    method: crypto:tron:usdt
+                    method: crypto:btc:btc
                     payload:
-                      chain: tron
-                      asset: USDT
-                      address: TWkfyUCXSdRfNHrRc9CJisFLYd6Ha3XWvS
-                      due: '13.400000'
-                      received: '0.000000'
+                      chain: btc
+                      asset: BTC
+                      address: bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
+                      due: '0.00046120'
+                      received: '0.00000000'
+                      qr_payload: bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh?amount=0.00046120
+                      qr_png_base64: iVBORw0KGgo…
+                      quote_expires_at: '2026-07-16T18:15:00Z'
                       note: send the exact amount to the address; the payment is confirmed on-chain
                         automatically
                 bank_transfer:
-                  summary: Transferencia bancaria — referencia de anuncio
+                  summary: Transferencia bancaria — referencia de anuncio (cotización congelada)
                   value:
                     method: bank_transfer
+                    country: CL
+                    currency: CLP
+                    local_amount: '47180'
                     payload:
                       reference: CB68JZCT46QE
                       note: include the reference in the transfer description so the payment is
@@ -565,13 +686,28 @@ paths:
               example:
                 error: checkout_expired
                 message: this payment link expired
-        '422':
-          description: El método no está disponible para el corredor de este link.
+        '400':
+          description: Método fiat sin el país obligatorio.
           content:
             application/json:
               example:
-                error: method_unavailable
-                message: this payment method is not available for this link
+                error: country_required
+                message: 'pass ?country=XX to materialize a fiat method'
+        '422':
+          description: El método no está disponible para este link o país.
+          content:
+            application/json:
+              examples:
+                method_unavailable:
+                  summary: Método no ofrecido
+                  value:
+                    error: method_unavailable
+                    message: this payment method is not available for this link
+                country_unavailable:
+                  summary: País sin métodos vivos
+                  value:
+                    error: country_unavailable
+                    message: no payment methods are available for that country
         '429':
           description: Demasiadas peticiones desde esta IP.
           content:
@@ -579,6 +715,13 @@ paths:
               example:
                 error: too_many_attempts
                 message: too many requests; wait a moment and retry
+        '503':
+          description: Cotización temporalmente no disponible.
+          content:
+            application/json:
+              example:
+                error: pricing_unavailable
+                message: pricing is temporarily unavailable; retry in a moment
   /v1/branding:
     get:
       tags:
@@ -2969,11 +3112,14 @@ paths:
         hosted: el pagador la abre y transfiere desde cualquier banco o billetera chilena; el depósito
         se detecta, valida y acredita automáticamente. Con `method: "card"` (Bolivia) la respuesta trae
         una `payment_url` hosted de un checkout de tarjeta con 3-D Secure y la marca de tu organización —
-        los datos de la tarjeta jamás tocan tu integración. Con `method: "checkout"` la respuesta trae
-        una `checkout_url` pública — un link de cobro universal brandeado donde el pagador elige el
-        método de pago (QR, tarjeta, transferencia bancaria o crypto con dirección de depósito exclusiva
-        de ese cobro); el primer método que completa el pago gana. Cobrar es gratis; la comisión de payin
-        aplica cuando el depósito se acredita.'
+        los datos de la tarjeta jamás tocan tu integración.         Con `method: "checkout"` la respuesta trae
+        una `checkout_url` pública — un link de cobro universal denominado en el saldo virtual que
+        elijas (`settlement_asset`: USDT, USDC, BTC o GOLD). El pagador elige cualquier país con
+        corredor de payin vivo (monto local cotizado), cualquiera de las 4 opciones crypto (dirección
+        de depósito exclusiva con QR escaneable) o paga al instante desde la app CBPay vía el
+        QR/alias del comercio; cada pago se convierte automático al asset de settlement salvo que se
+        pague en el mismo asset. El primer método que completa el pago gana. Cobrar es gratis; la
+        comisión de payin aplica cuando el depósito se acredita.'
       requestBody:
         required: true
         content:
@@ -2988,12 +3134,20 @@ paths:
                 country:
                   type: string
                   example: BO
+                  description: País del corredor. Obligatorio para todos los métodos salvo
+                    `checkout`, donde es opcional y solo preselecciona el país del pagador en la
+                    página.
                 currency:
                   type: string
                   example: BOB
+                  description: Moneda del corredor. Obligatoria para todos los métodos salvo
+                    `checkout`, que la rechaza con 400 — el cobro se denomina en
+                    `settlement_asset`.
                 amount:
                   type: string
-                  description: Monto en moneda local como string decimal positivo.
+                  description: String decimal positivo. Monto en moneda local para métodos de
+                    corredor; para `checkout` se denomina en el `settlement_asset` ("50" USDT,
+                    "0.001" BTC, "2" gramos de oro).
                 description:
                   type: string
                 channel:
@@ -3043,6 +3197,18 @@ paths:
                   format: date-time
                   description: Expiración RFC3339 opcional de la sesión de pago con tarjeta (método `card`,
                     mínimo 15 minutos hacia adelante; default 24 horas).
+                settlement_asset:
+                  type: string
+                  enum:
+                  - USDT
+                  - USDC
+                  - BTC
+                  - GOLD
+                  default: USDT
+                  description: Solo checkout — el saldo virtual en que se denomina y liquida el
+                    cobro. Todo pago se convierte automático a este asset al acreditar (pagos en el
+                    mismo asset no convierten). Debe estar habilitado para tu organización
+                    (`422 settlement_asset_disabled` si no).
             examples:
               bo_qr:
                 summary: Bolivia — cobro QR (BOB)
@@ -3100,18 +3266,26 @@ paths:
                   success_url: https://your-app.com/payment/ok
                   failure_url: https://your-app.com/payment/error
                   idempotency_key: topup-7719
-              cl_checkout:
-                summary: Chile — link de cobro universal (CLP)
+              checkout_usdt:
+                summary: Link de cobro universal — 50 USDT (multi-país, CL preseleccionado)
                 value:
-                  country: CL
-                  currency: CLP
                   method: checkout
-                  amount: '15000'
+                  amount: '50'
+                  settlement_asset: USDT
+                  country: CL
                   description: Order 8841
                   success_url: https://your-app.com/payment/ok
                   failure_url: https://your-app.com/payment/error
                   expires_in: 86400
                   idempotency_key: order-8841
+              checkout_btc:
+                summary: Link de cobro universal — 0.001 BTC (liquidación en BTC)
+                value:
+                  method: checkout
+                  amount: '0.001'
+                  settlement_asset: BTC
+                  description: Invoice 1204
+                  idempotency_key: invoice-1204
       responses:
         '201':
           description: Cobro creado.
@@ -3174,9 +3348,9 @@ paths:
                     payin_id: d0135ed5-8e9c-4f8b-a522-8ec100470426
                     kind: checkout
                     status: pending
+                    settlement_asset: USDT
+                    asset_amount: '50'
                     country: CL
-                    currency: CLP
-                    local_amount: '15000'
                     description: Order 8841
                     reference: CB68JZCT46QE
                     checkout_url: https://api.qbank.cl/platform/pay/fc4981b8e7c7…
@@ -3400,6 +3574,19 @@ paths:
                   format: uuid
                   description: Envía directo a un contacto de tu libreta (usa su cuenta CBPay enlazada,
                     o su teléfono verificado).
+                to_qr_token:
+                  type: string
+                  description: Token del QR de perfil de la cuenta destino (escaneado desde su QR
+                    CBPay). También acepta el payload extendido del QR de checkout
+                    (`cbpay:pay?to=…&checkout=…`) — el checkout token embebido se honra
+                    automáticamente.
+                checkout_token:
+                  type: string
+                  description: Token opcional de un link de cobro universal para pagarlo directo. El
+                    destino se fuerza a la cuenta del link y el monto debe cubrir el due cotizado
+                    server-side en el asset elegido (`422 checkout_amount_mismatch` con el due
+                    actualizado si no). Al completar, el link se liquida y auto-convierte a su
+                    `settlement_asset`.
                 asset:
                   type: string
                   enum:
@@ -13171,7 +13358,10 @@ webhooks:
   payin_credited:
     post:
       summary: Payin acreditado
-      description: 'Se recibió un cobro fiat y se acreditó a la cuenta en USDT.
+      description: 'Se recibió un cobro fiat y se acreditó a la cuenta en USDT. Para links de cobro
+        universal (`kind: checkout`) el payload trae además `settled_via` (ej. `qr`,
+        `crypto:tron:usdt`, `cbpay`), `settlement_asset` y `asset_amount`; los pagos crypto agregan
+        `crypto_amount` y los pagos desde la app CBPay agregan `transfer_id`, `asset` y `amount`.
 
 
         Cada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`

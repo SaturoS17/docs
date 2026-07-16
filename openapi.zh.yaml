@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.78'
+  version: '1.79'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -356,7 +356,8 @@ paths:
       operationId: checkoutPage
       summary: 通用收款页面（公开）
       description: '`POST /v1/payins` 使用 `method: "checkout"` 返回的 `checkout_url` 背后的公开品牌化
-        HTML 页面。付款人无需凭证即可打开，选择支付方式（二维码、银行卡、银行转账或加密货币），付款确认后页面自动更新。
+        HTML 页面。付款人无需凭证即可打开，选择国家和法币方式、加密货币选项（专属充值地址 + 可扫描二维码），
+        或通过商户的 CBPay 二维码/别名直接从 CBPay 应用付款；付款确认后页面自动更新。
         令牌经加密派生；无效令牌返回 404。按 IP 限流。'
       parameters:
       - name: token
@@ -393,7 +394,8 @@ paths:
       operationId: checkoutState
       summary: 通用收款状态（公开）
       description: 通用收款链接的 JSON 状态 — 供页面自身轮询，也供在同一链接上渲染自有支付前端的集成方使用。
-        显示状态、支付完成后的获胜方式，以及为该链接生成的每个加密货币充值地址的实时进度（应付金额与已收金额）。
+        显示状态、结算资产与金额、支付完成后的获胜方式、已冻结的法币报价（`fiat_methods`）、每个加密货币
+        充值地址的实时进度（应付金额与已收金额）以及自动兑换的 `conversion_status`。
         无需凭证；按 IP 限流。
       parameters:
       - name: token
@@ -409,30 +411,34 @@ paths:
             application/json:
               examples:
                 pending:
-                  summary: 待支付（含加密货币进度）
+                  summary: 待支付（含冻结法币报价与加密货币进度）
                   value:
                     status: pending
-                    country: MX
-                    currency: MXN
-                    local_amount: '250.00'
+                    settlement_asset: USDT
+                    asset_amount: '50'
                     description: Order 8841
                     expires_at: '2026-07-17T17:57:44Z'
+                    fiat_methods:
+                    - method: qr
+                      country: MX
+                      currency: MXN
+                      local_amount: '941.00'
                     crypto:
                     - method: crypto:tron:usdt
                       chain: tron
                       asset: USDT
                       address: TWkfyUCXSdRfNHrRc9CJisFLYd6Ha3XWvS
-                      due: '13.400000'
+                      due: '50.000000'
                       received: '5.000000'
                 paid:
-                  summary: 通过加密货币支付
+                  summary: 通过加密货币支付，兑换已完成
                   value:
                     status: paid
-                    country: MX
-                    currency: MXN
-                    local_amount: '250.00'
+                    settlement_asset: GOLD
+                    asset_amount: '2'
                     description: Order 8841
                     expires_at: '2026-07-17T17:57:44Z'
+                    conversion_status: done
                     paid_method: crypto:tron:usdt
                     paid_at: '2026-07-16T18:03:11Z'
                     redirect_url: https://your-app.com/payment/ok
@@ -450,6 +456,102 @@ paths:
               example:
                 error: too_many_attempts
                 message: too many requests; wait a moment and retry
+  /pay/{token}/quote:
+    get:
+      security: []
+      tags:
+      - Payins
+      operationId: checkoutQuote
+      summary: 选择前报价收款链接（公开）
+      description: 在生成支付选项前获取通用收款链接的指示性报价 — 有可用法币方式的国家目录、每个加密货币
+        选项的应付金额（付款资产与结算资产不同时已含兑换成本），以及按已启用余额列出的 CBPay 直接付款
+        金额。传 `?country=XX` 时额外返回该国家的本地报价。最终报价在生成支付选项时冻结。
+        无需凭证；按 IP 限流。
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+        description: 嵌入在 `checkout_url` 中的不透明结账令牌。
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+        description: 可选的 ISO-3166 alpha-2 国家代码，用于报价本地金额。
+      responses:
+        '200':
+          description: 链接的指示性报价。
+          content:
+            application/json:
+              example:
+                status: pending
+                settlement_asset: USDT
+                asset_amount: '50'
+                countries:
+                - country: BO
+                  currency: BOB
+                  methods:
+                  - qr
+                  - card
+                - country: CL
+                  currency: CLP
+                  methods:
+                  - bank_transfer
+                  - fintoc
+                crypto:
+                - method: crypto:tron:usdt
+                  chain: tron
+                  asset: USDT
+                  due: '50.000000'
+                - method: crypto:btc:btc
+                  chain: btc
+                  asset: BTC
+                  due: '0.00046120'
+                  quote_ttl_seconds: 900
+                cbpay:
+                  alias: tayl.code
+                  dues:
+                    USDT: '50.000000'
+                    USDC: '50.100200'
+                    BTC: '0.00046120'
+                    GOLD: '0.462100'
+                country_quote:
+                  country: CL
+                  currency: CLP
+                  methods:
+                  - bank_transfer
+                  - fintoc
+                  local_amount: '47180'
+        '404':
+          description: 令牌无效或收款链接不存在。
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: payment link not found
+        '422':
+          description: 请求的国家没有可用的支付方式。
+          content:
+            application/json:
+              example:
+                error: country_unavailable
+                message: no payment methods are available for that country
+        '429':
+          description: 来自此 IP 的请求过多。
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many requests; wait a moment and retry
+        '503':
+          description: 报价暂时不可用。
+          content:
+            application/json:
+              example:
+                error: pricing_unavailable
+                message: pricing is temporarily unavailable; retry in a moment
   /pay/{token}/methods/{method}:
     post:
       security: []
@@ -458,8 +560,10 @@ paths:
       operationId: checkoutMaterialize
       summary: 生成结账支付选项（公开）
       description: 延迟创建付款人在通用收款链接上选择的支付选项并返回其指引 — 银行卡/托管方式的支付
-        URL、二维码方式的二维码、银行转账的申报参考码，或带精确报价金额的专属加密货币充值地址。
-        对同一方式重复 POST 返回相同的结果；在无人支付前，选择某个方式不会锁定其他方式。
+        URL、二维码方式的二维码、银行转账的申报参考码，或带精确报价金额和可扫描二维码的专属加密货币
+        充值地址（`qr_payload` + `qr_png_base64` — BTC 为 BIP-21 URI，TRON/ETH 代币为原始地址，
+        外部钱包可直接读取）。法币方式必须传 `?country=XX`；本地金额在此刻报价并冻结。
+        对同一国家+方式重复 POST 返回相同的结果；在无人支付前，选择某个方式不会锁定其他方式。
         无需凭证；按 IP 限流。
       parameters:
       - name: token
@@ -473,8 +577,15 @@ paths:
         required: true
         schema:
           type: string
-        description: 要生成的方式 — 走廊目录中的法币方式（`qr`、`card`、`fintoc`、`bank_transfer`）
-          或加密货币选项（`crypto:tron:usdt`、`crypto:eth:usdt`、`crypto:eth:usdc`、`crypto:btc:btc`）。
+        description: 要生成的方式 — 多国目录中的法币方式（`qr`、`card`、`fintoc`、`bank_transfer`，
+          必须传 `?country=XX`）或加密货币选项（`crypto:tron:usdt`、`crypto:eth:usdt`、
+          `crypto:eth:usdc`、`crypto:btc:btc`，不带国家）。
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+        description: 要生成的法币方式的 ISO-3166 alpha-2 国家代码。法币方式必填，加密货币忽略。
       responses:
         '200':
           description: 所选支付方式的指引。
@@ -482,21 +593,27 @@ paths:
             application/json:
               examples:
                 crypto:
-                  summary: 加密货币 — 专属充值地址
+                  summary: 加密货币 — 专属充值地址与可扫描二维码
                   value:
-                    method: crypto:tron:usdt
+                    method: crypto:btc:btc
                     payload:
-                      chain: tron
-                      asset: USDT
-                      address: TWkfyUCXSdRfNHrRc9CJisFLYd6Ha3XWvS
-                      due: '13.400000'
-                      received: '0.000000'
+                      chain: btc
+                      asset: BTC
+                      address: bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
+                      due: '0.00046120'
+                      received: '0.00000000'
+                      qr_payload: bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh?amount=0.00046120
+                      qr_png_base64: iVBORw0KGgo…
+                      quote_expires_at: '2026-07-16T18:15:00Z'
                       note: send the exact amount to the address; the payment is confirmed on-chain
                         automatically
                 bank_transfer:
-                  summary: 银行转账 — 申报参考码
+                  summary: 银行转账 — 申报参考码（报价已冻结）
                   value:
                     method: bank_transfer
+                    country: CL
+                    currency: CLP
+                    local_amount: '47180'
                     payload:
                       reference: CB68JZCT46QE
                       note: include the reference in the transfer description so the payment is
@@ -522,13 +639,28 @@ paths:
               example:
                 error: checkout_expired
                 message: this payment link expired
-        '422':
-          description: 该方式对此链接的走廊不可用。
+        '400':
+          description: 法币方式缺少必填的国家参数。
           content:
             application/json:
               example:
-                error: method_unavailable
-                message: this payment method is not available for this link
+                error: country_required
+                message: 'pass ?country=XX to materialize a fiat method'
+        '422':
+          description: 该方式对此链接或国家不可用。
+          content:
+            application/json:
+              examples:
+                method_unavailable:
+                  summary: 未提供的方式
+                  value:
+                    error: method_unavailable
+                    message: this payment method is not available for this link
+                country_unavailable:
+                  summary: 国家没有可用方式
+                  value:
+                    error: country_unavailable
+                    message: no payment methods are available for that country
         '429':
           description: 来自此 IP 的请求过多。
           content:
@@ -536,6 +668,13 @@ paths:
               example:
                 error: too_many_attempts
                 message: too many requests; wait a moment and retry
+        '503':
+          description: 报价暂时不可用。
+          content:
+            application/json:
+              example:
+                error: pricing_unavailable
+                message: pricing is temporarily unavailable; retry in a moment
   /v1/branding:
     get:
       tags:
@@ -2835,7 +2974,9 @@ paths:
         携带 QR 图片和 "copia e cola" 载荷。使用 `method: "bank_transfer"` 会预告存款,响应携带付款人必须附上的参考号,以便到账转账被自动匹配入账——一个
         12 位字母数字短码,适配任何银行附言字段(部分通道上限 20 个字符且不允许特殊字符)。使用 `method: "fintoc"`(智利)响应携带托管 `payment_url`:付款人打开后可从任意智利银行或钱包转账;存款会被自动检测、校验并入账。使用
         `method: "card"`(玻利维亚)响应携带一个托管 3-D Secure 银行卡收银台的 `payment_url`,页面带有您组织的品牌 —— 银行卡数据绝不经过您的集成。使用
-        `method: "checkout"` 响应携带一个公开的 `checkout_url` —— 带品牌的通用收款链接,付款人在页面上自行选择支付方式(QR、银行卡、银行转账或加密货币,并为该笔收款生成专属充值地址);最先完成支付的方式生效。创建收款免费;存款入账时收取
+        `method: "checkout"` 响应携带一个公开的 `checkout_url` —— 以您选择的虚拟余额计价的通用收款链接(`settlement_asset`:USDT、USDC、BTC
+        或 GOLD)。付款人可选择任何有可用 payin 走廊的国家(本地金额实时报价)、四个加密货币选项之一(带可扫描二维码的专属充值地址),或通过商户的
+        CBPay 二维码/别名从 CBPay 应用即时付款;每笔付款自动兑换为结算资产(以相同资产付款则不兑换)。最先完成支付的方式生效。创建收款免费;存款入账时收取
         payin 费用。'
       requestBody:
         required: true
@@ -2851,12 +2992,14 @@ paths:
                 country:
                   type: string
                   example: BO
+                  description: 走廊国家。除 `checkout` 外所有方式必填;对 `checkout` 为可选,仅用于在页面上预选付款人的国家。
                 currency:
                   type: string
                   example: BOB
+                  description: 走廊货币。除 `checkout` 外所有方式必填;`checkout` 会以 400 拒绝该字段 —— 收款以 `settlement_asset` 计价。
                 amount:
                   type: string
-                  description: 本地货币金额,正数十进制字符串。
+                  description: 正数十进制字符串。走廊方式为本地货币金额;`checkout` 以 `settlement_asset` 计价("50" USDT、"0.001" BTC、"2" 克黄金)。
                 description:
                   type: string
                 channel:
@@ -2896,6 +3039,16 @@ paths:
                   type: string
                   format: date-time
                   description: 银行卡支付会话的可选 RFC3339 过期时间(`card` 方式,至少提前 15 分钟;默认 24 小时)。
+                settlement_asset:
+                  type: string
+                  enum:
+                  - USDT
+                  - USDC
+                  - BTC
+                  - GOLD
+                  default: USDT
+                  description: 仅 checkout —— 收款计价与结算的虚拟余额。每笔付款入账时自动兑换为该资产(以相同资产付款则不兑换)。须为您的组织启用(否则返回
+                    `422 settlement_asset_disabled`)。
             examples:
               bo_qr:
                 summary: 玻利维亚 — QR 收款(BOB)
@@ -2953,18 +3106,26 @@ paths:
                   success_url: https://your-app.com/payment/ok
                   failure_url: https://your-app.com/payment/error
                   idempotency_key: topup-7719
-              cl_checkout:
-                summary: 智利 — 通用收款链接(CLP)
+              checkout_usdt:
+                summary: 通用收款链接 — 50 USDT(多国,预选智利)
                 value:
-                  country: CL
-                  currency: CLP
                   method: checkout
-                  amount: '15000'
+                  amount: '50'
+                  settlement_asset: USDT
+                  country: CL
                   description: Order 8841
                   success_url: https://your-app.com/payment/ok
                   failure_url: https://your-app.com/payment/error
                   expires_in: 86400
                   idempotency_key: order-8841
+              checkout_btc:
+                summary: 通用收款链接 — 0.001 BTC(以 BTC 结算)
+                value:
+                  method: checkout
+                  amount: '0.001'
+                  settlement_asset: BTC
+                  description: Invoice 1204
+                  idempotency_key: invoice-1204
       responses:
         '201':
           description: 收款已创建。
@@ -3027,9 +3188,9 @@ paths:
                     payin_id: d0135ed5-8e9c-4f8b-a522-8ec100470426
                     kind: checkout
                     status: pending
+                    settlement_asset: USDT
+                    asset_amount: '50'
                     country: CL
-                    currency: CLP
-                    local_amount: '15000'
                     description: Order 8841
                     reference: CB68JZCT46QE
                     checkout_url: https://api.qbank.cl/platform/pay/fc4981b8e7c7…
@@ -3246,6 +3407,13 @@ paths:
                   type: string
                   format: uuid
                   description: 直接发送给通讯录中的联系人(使用其关联的 CBPay 账户,或其已验证的手机号)。
+                to_qr_token:
+                  type: string
+                  description: 目标账户的个人资料二维码令牌(从其 CBPay 二维码扫描)。也接受扩展的结账二维码载荷(`cbpay:pay?to=…&checkout=…`)——嵌入的结账令牌会自动生效。
+                checkout_token:
+                  type: string
+                  description: 可选的通用收款链接令牌,用于直接支付该链接。目的账户被强制为链接的账户,金额必须覆盖服务端以所选资产报价的应付额(否则返回
+                    `422 checkout_amount_mismatch` 并附最新应付额)。完成后链接结清并自动兑换为其 `settlement_asset`。
                 asset:
                   type: string
                   enum:
@@ -12798,7 +12966,9 @@ webhooks:
   payin_credited:
     post:
       summary: payin 已入账
-      description: '已收到一笔法币收款并以 USDT 入账到账户。
+      description: '已收到一笔法币收款并以 USDT 入账到账户。对于通用收款链接(`kind: checkout`),载荷还携带
+        `settled_via`(如 `qr`、`crypto:tron:usdt`、`cbpay`)、`settlement_asset` 与 `asset_amount`;加密货币支付附加
+        `crypto_amount`,CBPay 应用支付附加 `transfer_id`、`asset` 与 `amount`。
 
 
         每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和

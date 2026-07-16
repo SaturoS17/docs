@@ -508,26 +508,39 @@ payment, exact amount embedded). Announced bank transfers will come later.
 
 ## Universal checkout link (`checkout`)
 
-If you don't want to pick the collection mode for your customer, create a
-**universal checkout link**: a single `POST /v1/payins` with
+Create a **universal checkout link**: a single `POST /v1/payins` with
 `method: "checkout"` returns a branded public URL where the payer chooses
-how to pay — QR, card, bank transfer or **crypto** (USDT on TRON, USDT/USDC
-on Ethereum and BTC, with a deposit address generated exclusively for that
-charge).
+how to pay. The charge is denominated in the **virtual balance you
+choose** (`settlement_asset`: `USDT`, `USDC`, `BTC` or `GOLD`, default
+`USDT`) and every payment is converted **automatically** to that balance
+when it credits — unless the payer pays in the same asset, in which case
+there is no conversion.
+
+The payer sees on a single page:
+
+- **Every country with a live payin corridor** — they pick their country
+  and see the available methods (QR, card, bank transfer, hosted payment)
+  with the local amount quoted on the spot.
+- **The 4 crypto options** (USDT on TRON, USDT/USDC on Ethereum and BTC)
+  with a deposit address exclusive to that charge and a **scannable QR**
+  compatible with external wallets (Trust Wallet, MetaMask, Binance and
+  similar apps).
+- **Direct payment with the CBPay app**: the merchant's alias and QR are
+  always visible — scanning with the app pays instantly through an
+  internal transfer, in any of the 4 balances.
 
 ```mermaid
-sequenceDiagram
-    participant I as Your integration
-    participant C as CBPay
-    participant P as Payer
-    I->>C: POST /v1/payins (method checkout)
-    C-->>I: checkout_url
-    I->>P: share the link
-    P->>C: opens the page and picks a method
-    C-->>P: instructions (QR, payment URL, reference or crypto address)
-    P->>C: pays through the chosen method
-    C-->>I: payin_credited webhook
-    C-->>P: the page flips to "paid" on its own
+flowchart LR
+    M[You create the link: 50 USDT or 0.001 BTC] --> P[Public page]
+    P --> C1[Crypto: address + QR with the quoted due]
+    P --> C2[Country + fiat method: quoted local amount]
+    P --> C3[CBPay app: merchant alias + QR]
+    C1 --> S{same asset as settlement?}
+    C2 --> S
+    C3 --> S
+    S -->|yes| FIN[Stays in the chosen balance]
+    S -->|no| SW[Automatic conversion to the settlement_asset]
+    SW --> FIN
 ```
 
 ```bash
@@ -536,16 +549,26 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
   -H "Content-Type: application/json" \
   -d '{
     "method": "checkout",
-    "country": "CL",
-    "currency": "CLP",
-    "amount": "15000",
+    "amount": "50",
+    "settlement_asset": "USDT",
     "description": "Order 8841",
+    "country": "CL",
     "success_url": "https://your-app.com/payment/ok",
     "failure_url": "https://your-app.com/payment/error",
     "expires_in": 86400,
     "idempotency_key": "order-8841"
   }'
 ```
+
+- `amount` is denominated **in the `settlement_asset`**: `"50"` with
+  `USDT` means 50 USDT; `"0.001"` with `BTC` means 0.001 BTC; `"2"` with
+  `GOLD` means 2 grams of gold. Do not send `currency` — that is the old
+  contract and responds `400` (the charge is no longer tied to a local
+  currency).
+- `country` is **optional** and only preselects the country on the page;
+  the payer can change it.
+- `GOLD` has no payment rail of its own: the charge is always reached
+  through automatic conversion from whatever the customer pays with.
 
 Response `201`:
 
@@ -554,9 +577,9 @@ Response `201`:
   "payin_id": "d0135ed5-8e9c-4f8b-a522-8ec100470426",
   "kind": "checkout",
   "status": "pending",
+  "settlement_asset": "USDT",
+  "asset_amount": "50",
   "country": "CL",
-  "currency": "CLP",
-  "local_amount": "15000",
   "description": "Order 8841",
   "reference": "CB68JZCT46QE",
   "checkout_url": "https://api.qbank.cl/platform/pay/fc4981b8e7c7…",
@@ -570,47 +593,96 @@ requires no login, carries your organization's branding and updates by
 itself: once the payment is confirmed through any method it shows "paid"
 and redirects to your `success_url` if you set one.
 
-How each method works inside the link:
+### How each rail pays
 
-- **Fiat methods**: the page offers the catalog methods
-  (`GET /v1/payins/methods`) available for the charge's country and
-  currency — QR, card, hosted payment page or announced bank transfer with
-  the payin's `reference`. The credit arrives with the normal payin
-  conversion and fees.
-- **Crypto (wallet per charge)**: choosing a currency generates a
-  **deposit address exclusive to that charge** with the exact quoted
-  amount (USDT/USDC at the current USD equivalent; BTC with a quote that
-  refreshes every 15 minutes). Partial payments accumulate and the page
-  shows what's missing; once the target is reached the charge is paid.
-  The credit arrives in the received asset minus your funding fee.
+- **Multi-country fiat**: the payer picks a country and a method; the
+  local amount is quoted on the spot (target → USD → local currency using
+  your corridor's `payin_rate`, rounded up) and is **frozen** when the
+  method is chosen. The credit arrives with the normal payin conversion
+  and fees, and is then converted to the `settlement_asset`. An announced
+  payment SMALLER than the frozen quote still credits (the money is real)
+  but does **not** mark the link as paid.
+- **Crypto (wallet per charge)**: choosing a currency generates an
+  exclusive address with its `qr_payload` and `qr_png_base64` — BTC uses
+  a BIP-21 URI (`bitcoin:<address>?amount=…`, autofills the amount);
+  TRON/ETH carry the raw address in the QR (maximum compatibility) with
+  the amount next to it to copy. If the paid asset differs from the
+  `settlement_asset`, the quoted due **already includes the conversion**
+  (the payer covers it; you receive your exact target). Partial payments
+  accumulate and the page shows what's missing. Quotes involving BTC/GOLD
+  refresh every 15 minutes.
+- **CBPay app**: the merchant QR embeds the link
+  (`cbpay:pay?to=…&checkout=…`). The app pays through an internal
+  transfer in any of the 4 balances: same asset ⇒ exact target; different
+  ⇒ due with the conversion included. The amount is validated server-side
+  against a fresh quote — if it does not cover the charge it responds
+  `422 checkout_amount_mismatch` with the current due. Integrators:
+  `POST /v1/transfers` accepts the optional `checkout_token` field (or
+  the extended QR in `to_qr_token`); the destination is forced to the
+  link's account.
 
-Link rules:
+### Automatic conversion to the chosen balance
+
+Every credit in an asset different from the `settlement_asset` is
+converted with your account's conversion engine (same spreads and limits
+as `POST /v1/swaps`). The aggregate state travels in `conversion_status`:
+
+| `conversion_status` | Meaning |
+|---|---|
+| _(absent)_ | No conversion happened (you were paid in the same asset) |
+| `done` | Every conversion of the link executed |
+| `pending_retry` | A conversion failed temporarily (price unavailable or limit); funds stay in the received asset and it retries automatically |
+
+### Public link endpoints (no auth, rate-limited)
+
+- `GET {checkout_url}/state` — link state: `status`, `paid_method`,
+  `settlement_asset`, `asset_amount`, frozen fiat materializations
+  (`fiat_methods`), crypto progress (`crypto` with `due`/`received`) and
+  `conversion_status`.
+- `GET {checkout_url}/quote` — quotes BEFORE choosing: `countries`
+  (catalog with currency and methods per country), `crypto` (indicative
+  due per pair) and `cbpay` (alias + dues per asset). With `?country=XX`
+  it adds `country_quote` with that country's local amount.
+- `POST {checkout_url}/methods/{method}` — materializes the chosen
+  option. Fiat methods require `?country=XX`; crypto uses
+  `crypto:<chain>:<asset>` (e.g. `crypto:tron:usdt`) without a country.
+  Re-POSTing the same country+method returns the SAME materialization.
+
+Useful if you prefer to render your own payment page on top of the same
+link.
+
+### Link rules
 
 - **One link = one charge**: the first method that completes the payment
-  wins; the remaining options become unusable (picking a method does NOT
-  lock the others while nobody has paid).
+  wins; a later payment through another rail is not credited (picking a
+  method does NOT lock the others while nobody has paid).
 - `expires_in` accepts 600 to 604800 seconds (10 minutes to 7 days;
   default 24 hours). If it expires unpaid the payin flips to `expired`
   and you receive the `payin_expired` webhook.
 - A retry with the same `idempotency_key` returns the **same link** (the
   URL never changes); a second charge is never opened.
-- The state is queryable without auth at `GET {checkout_url}/state`
-  (JSON with `status`, `paid_method` and the crypto progress) — useful if
-  you prefer to render your own payment page on top of the same link.
-- When the charge is paid you receive the normal `payin_credited`; if it
-  was paid with crypto the event adds `settled_via` (e.g.
-  `crypto:tron:usdt`) and `crypto_amount` with the on-chain amount
-  received.
+- The `settlement_asset` must be enabled for your organization; if it is
+  disabled the creation responds `422 settlement_asset_disabled`.
+
+When the charge is paid you receive the `payin_credited` with
+`settled_via` (e.g. `crypto:tron:usdt`, `qr`, `cbpay`),
+`settlement_asset` and `asset_amount`; crypto payments add
+`crypto_amount` and CBPay app payments add `transfer_id`, `asset` and
+`amount`.
 
 Link-specific errors (seen by whoever opens the page):
 
 | HTTP | `error` | Meaning |
 |---|---|---|
 | 404 | `not_found` | Invalid token or non-existent link |
+| 400 | `country_required` | Fiat method without `?country=XX` |
 | 409 | `already_paid` | The link was already paid through another method |
 | 410 | `checkout_expired` | The link expired unpaid |
-| 422 | `method_unavailable` | That method is not available for the charge's corridor |
+| 422 | `method_unavailable` | That method is not available for this link or country |
+| 422 | `country_unavailable` | That country has no available payment methods |
+| 422 | `checkout_amount_mismatch` | The CBPay transfer does not cover the charge's current due |
 | 429 | `too_many_attempts` | Per-IP rate limit of the public page |
+| 503 | `pricing_unavailable` | Pricing temporarily unavailable; retry in a moment |
 
 ## 3. Receiving the credit
 

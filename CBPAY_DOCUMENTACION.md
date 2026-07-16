@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-16 21:39 UTC · versión `4b4a7601ad4d`
+> **Documento actualizado:** 2026-07-16 23:48 UTC · versión `03f8b750c46b`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.78 (16 de julio de 2026) |
+| Versión de la documentación | v1.79 (16 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -2760,11 +2760,12 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
 
 ### Payout QR
 
-En Bolivia (QR interoperable local) también puedes **pagar a un QR de
-cobro** en dos pasos: escanear y confirmar. El escaneo es **gratis**; solo
-se cobra al confirmar, igual que un payout normal (tu tasa + fijo). Si no
-envías `country`/`currency`, se asume Bolivia (BOB). El pago a QR PIX de
-Brasil llegará próximamente (mientras tanto usa `pix` por llave o cuenta).
+En Bolivia (QR interoperable local) y en Brasil (**QR PIX**, incluido el
+código "copia e cola") también puedes **pagar a un QR de cobro** en dos
+pasos: escanear y confirmar. El escaneo es **gratis**; solo se cobra al
+confirmar, igual que un payout normal (tu tasa + fijo). Si no envías
+`country`/`currency`, se asume Bolivia (BOB); para Brasil envía
+`country: "BR"` y `currency: "BRL"`.
 
 ```mermaid
 flowchart LR
@@ -2778,6 +2779,8 @@ flowchart LR
 ```
 
 #### 1. Escanea el QR (gratis)
+
+#### Bolivia
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/scan \
@@ -2805,7 +2808,51 @@ paga:
 }
 ```
 
+#### Brasil (QR PIX)
+
+`qr_payload` acepta el contenido crudo del QR PIX (BR Code EMV) **o el
+código "copia e cola"** — son el mismo string:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/scan \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BR",
+    "currency": "BRL",
+    "qr_payload": "00020126360014br.gov.bcb.pix0114+5511998765432520400005303986540575.005802BR5913LOJA DA MARIA6009SAO PAULO62110507PED42316304…"
+  }'
+```
+
+El escaneo decodifica el BR Code localmente (valida su checksum) y
+devuelve la llave PIX de destino, el nombre del comercio y el monto si el
+QR lo trae fijo:
+
+```json
+{
+  "scan_id": "PIXSCAN-…",
+  "provider_reference": "<el mismo payload EMV>",
+  "beneficiary_name": "LOJA DA MARIA",
+  "destination_account": "+5511998765432",
+  "amount": "75.00",
+  "currency": "BRL",
+  "glosa": "",
+  "status": "scanned"
+}
+```
+
+- `amount` vacío = QR de **monto abierto**: tú decides cuánto pagar en el
+  confirm. Con monto fijo, el confirm debe enviar exactamente ese monto.
+- Se soportan QR PIX **estáticos** (los impresos/reutilizables, con la
+  llave embebida). Un QR **dinámico** (payload con URL del PSP en vez de
+  llave) responde `400` con el mensaje
+  `dynamic pix qr codes are not supported yet` — pídele al beneficiario su
+  llave PIX y usa el método [`pix`](#crear-un-payout).
+- Un payload alterado o incompleto responde `400` (checksum CRC inválido).
+
 #### 2. Confirma el pago (se cobra aquí)
+
+#### Bolivia
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
@@ -2820,14 +2867,34 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
   }'
 ```
 
+#### Brasil (QR PIX)
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BR",
+    "currency": "BRL",
+    "provider_reference": "<del scan>",
+    "amount": "75.00",
+    "description": "Pedido 4231",
+    "idempotency_key": "qr-br-2026-07-16-a"
+  }'
+```
+
+- `amount` siempre es obligatorio: si el QR trae monto fijo debe coincidir
+  exacto (si no, `400` con `amount mismatch: the qr requires exactly
+  75.00 BRL`); si es de monto abierto, el que envíes es el que se paga.
+- El pago sale por el mismo riel PIX del método `pix` (24/7); el `txid`
+  del QR viaja con el pago para que el comercio concilie automático.
+
 - Se debita `usdt_amount + fijo` a **tu tasa**, igual que un
   `bank_transfer`.
 - El resultado es **síncrono**: la respuesta ya trae el estado final
   (`completed` o `failed` con reembolso automático) — sin esperas.
 - Un mismo QR escaneado solo puede pagarse una vez; reintentos con la misma
   `idempotency_key` devuelven el payout original.
-- Cuando el pago a QR PIX de Brasil esté disponible, `qr_payload` aceptará
-  el contenido del QR o el código "copia e cola" con este mismo flujo.
 
 ### Errores frecuentes
 
@@ -3356,25 +3423,38 @@ En Brasil el cobro es únicamente por QR PIX dinámico (un QR = un pago, con
 monto exacto embebido). La transferencia anunciada llegará más adelante.
 ### Link de cobro universal (`checkout`)
 
-Si no quieres elegir la modalidad por tu cliente, crea un **link de cobro
-universal**: un solo `POST /v1/payins` con `method: "checkout"` devuelve una
-URL pública brandeada donde el pagador elige cómo pagar — QR, tarjeta,
-transferencia bancaria o **crypto** (USDT en TRON, USDT/USDC en Ethereum y
-BTC, con una dirección de depósito única generada para ese cobro).
+Crea un **link de cobro universal**: un solo `POST /v1/payins` con
+`method: "checkout"` devuelve una URL pública brandeada donde el pagador
+elige cómo pagar. El cobro se denomina en el **saldo virtual que tú
+elijas** (`settlement_asset`: `USDT`, `USDC`, `BTC` o `GOLD`, default
+`USDT`) y todo pago se convierte **automáticamente** a ese saldo al
+acreditarse — salvo que te paguen en el mismo asset, ahí no hay
+conversión.
+
+El pagador ve en una sola página:
+
+- **Todos los países con corredor de payin vivo** — elige su país y ve los
+  métodos disponibles (QR, tarjeta, transferencia bancaria, pago hosted)
+  con el monto local cotizado al momento.
+- **Las 4 opciones crypto** (USDT en TRON, USDT/USDC en Ethereum y BTC)
+  con una dirección de depósito exclusiva de ese cobro y **QR escaneable**
+  por wallets externas (Trust Wallet, MetaMask, Binance y similares).
+- **Pago directo con la app CBPay**: el alias y el QR del comercio siempre
+  visibles — quien escanea con la app paga al instante por transferencia
+  interna, en cualquiera de los 4 saldos.
 
 ```mermaid
-sequenceDiagram
-    participant I as Tu integración
-    participant C as CBPay
-    participant P as Pagador
-    I->>C: POST /v1/payins (method checkout)
-    C-->>I: checkout_url
-    I->>P: comparte el link
-    P->>C: abre la página y elige el método
-    C-->>P: instrucciones (QR, URL de pago, referencia o dirección crypto)
-    P->>C: paga por el método elegido
-    C-->>I: webhook payin_credited
-    C-->>P: la página cambia sola a "pagado"
+flowchart LR
+    M[Creas el link: 50 USDT o 0.001 BTC] --> P[Página pública]
+    P --> C1[Crypto: dirección + QR con el due cotizado]
+    P --> C2[País + método fiat: monto local cotizado]
+    P --> C3[App CBPay: alias + QR del comercio]
+    C1 --> S{¿mismo asset que settlement?}
+    C2 --> S
+    C3 --> S
+    S -->|sí| FIN[Queda en el saldo elegido]
+    S -->|no| SW[Conversión automática al settlement_asset]
+    SW --> FIN
 ```
 
 ```bash
@@ -3383,16 +3463,25 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
   -H "Content-Type: application/json" \
   -d '{
     "method": "checkout",
-    "country": "CL",
-    "currency": "CLP",
-    "amount": "15000",
+    "amount": "50",
+    "settlement_asset": "USDT",
     "description": "Pedido 8841",
+    "country": "CL",
     "success_url": "https://tu-app.com/pago/ok",
     "failure_url": "https://tu-app.com/pago/error",
     "expires_in": 86400,
     "idempotency_key": "orden-8841"
   }'
 ```
+
+- `amount` se denomina **en el `settlement_asset`**: `"50"` con `USDT` son
+  50 USDT; `"0.001"` con `BTC` son 0.001 BTC; `"2"` con `GOLD` son 2
+  gramos de oro. No envíes `currency` — es el contrato viejo y responde
+  `400` (el cobro ya no se ata a una moneda local).
+- `country` es **opcional** y solo preselecciona el país en la página; el
+  pagador puede cambiarlo.
+- `GOLD` no tiene riel de pago propio: el cobro se alcanza siempre por
+  conversión automática desde lo que pague el cliente.
 
 Respuesta `201`:
 
@@ -3401,9 +3490,9 @@ Respuesta `201`:
   "payin_id": "d0135ed5-8e9c-4f8b-a522-8ec100470426",
   "kind": "checkout",
   "status": "pending",
+  "settlement_asset": "USDT",
+  "asset_amount": "50",
   "country": "CL",
-  "currency": "CLP",
-  "local_amount": "15000",
   "description": "Pedido 8841",
   "reference": "CB68JZCT46QE",
   "checkout_url": "https://api.qbank.cl/platform/pay/fc4981b8e7c7…",
@@ -3417,47 +3506,94 @@ no exige login, lleva el branding de tu organización y se actualiza sola:
 cuando el pago se confirma por cualquiera de los métodos, muestra "pagado"
 y redirige a tu `success_url` si la configuraste.
 
-Cómo funciona cada método dentro del link:
+#### Cómo paga cada rail
 
-- **Métodos fiat**: la página ofrece los métodos del catálogo
-  (`GET /v1/payins/methods`) disponibles para el país y la moneda del
-  cobro — QR, tarjeta, página de pago hosted o transferencia anunciada con
-  la `reference` del payin. El abono llega con la conversión y comisiones
-  normales de payin.
+- **Fiat multi-país**: el pagador elige país y método; el monto local se
+  cotiza al momento (meta → USD → moneda local con tu `payin_rate` del
+  corredor, redondeado hacia arriba) y queda **congelado** al elegir el
+  método. El abono acredita con la conversión y comisiones normales de
+  payin y después se convierte al `settlement_asset`. Un pago anunciado
+  MENOR a la cotización congelada se acredita igual (la plata es real)
+  pero **no** marca el link como pagado.
 - **Crypto (wallet por cobro)**: al elegir una moneda se genera una
-  **dirección de depósito exclusiva de ese cobro** con el monto exacto
-  cotizado (USDT/USDC al equivalente USD del momento; BTC con cotización
-  que se refresca cada 15 minutos). Los pagos parciales se acumulan y la
-  página muestra cuánto falta; al completar la meta el cobro queda pagado.
-  El abono llega en el asset recibido menos tu comisión de funding.
+  dirección exclusiva con su `qr_payload` y `qr_png_base64` — BTC usa URI
+  BIP-21 (`bitcoin:<address>?amount=…`, autocompleta el monto); TRON/ETH
+  llevan la dirección cruda en el QR (máxima compatibilidad) con el monto
+  al lado para copiar. Si el asset pagado difiere del `settlement_asset`,
+  el due cotizado **ya incluye la conversión** (la cubre el pagador; tú
+  recibes tu meta exacta). Los pagos parciales se acumulan y la página
+  muestra cuánto falta. Cotizaciones con BTC/GOLD se refrescan cada 15
+  minutos.
+- **App CBPay**: el QR del comercio embebe el link
+  (`cbpay:pay?to=…&checkout=…`). La app paga por transferencia interna en
+  cualquiera de los 4 saldos: mismo asset ⇒ meta exacta; distinto ⇒ due
+  con la conversión incluida. El monto se valida server-side contra una
+  cotización fresca — si no cubre el cobro responde `422
+  checkout_amount_mismatch` con el monto vigente. Integradores: `POST
+  /v1/transfers` acepta el campo opcional `checkout_token` (o el QR
+  extendido en `to_qr_token`); el destino se fuerza a la cuenta del link.
 
-Reglas del link:
+#### Conversión automática al saldo elegido
 
-- **Un link = un cobro**: el primer método que completa el pago gana; el
-  resto de las opciones queda inutilizado (elegir un método NO bloquea los
-  demás mientras nadie pague).
+Todo abono en un asset distinto al `settlement_asset` se convierte con el
+motor de conversiones de tu cuenta (mismos spreads y límites que
+`POST /v1/swaps`). El estado agregado viaja en `conversion_status`:
+
+| `conversion_status` | Significado |
+|---|---|
+| _(ausente)_ | No hubo conversión (te pagaron en el mismo asset) |
+| `done` | Todas las conversiones del link quedaron ejecutadas |
+| `pending_retry` | Una conversión falló temporalmente (precio no disponible o límite); los fondos quedan en el asset recibido y se reintenta automático |
+
+#### Endpoints públicos del link (sin auth, rate-limited)
+
+- `GET {checkout_url}/state` — estado del link: `status`, `paid_method`,
+  `settlement_asset`, `asset_amount`, materializaciones fiat congeladas
+  (`fiat_methods`), progreso crypto (`crypto` con `due`/`received`) y
+  `conversion_status`.
+- `GET {checkout_url}/quote` — cotizaciones ANTES de elegir: `countries`
+  (catálogo con moneda y métodos por país), `crypto` (due indicativo por
+  par) y `cbpay` (alias + dues por asset). Con `?country=XX` agrega
+  `country_quote` con el monto local de ese país.
+- `POST {checkout_url}/methods/{method}` — materializa la opción elegida.
+  Métodos fiat exigen `?country=XX`; crypto usa
+  `crypto:<chain>:<asset>` (ej. `crypto:tron:usdt`) sin país. Re-POST del
+  mismo país+método devuelve la MISMA materialización.
+
+Útil si prefieres renderizar tu propia página de pago sobre el mismo
+link.
+
+#### Reglas del link
+
+- **Un link = un cobro**: el primer método que completa el pago gana; un
+  pago posterior por otro rail no se acredita (elegir un método NO bloquea
+  los demás mientras nadie pague).
 - `expires_in` acepta de 600 a 604800 segundos (10 minutos a 7 días;
   default 24 horas). Al vencer sin pago el payin pasa a `expired` y
   recibes el webhook `payin_expired`.
 - El retry con la misma `idempotency_key` devuelve el **mismo link** (la
   URL no cambia); jamás se abre un segundo cobro.
-- Estado consultable sin auth en `GET {checkout_url}/state` (JSON con
-  `status`, `paid_method` y el progreso crypto) — útil si prefieres
-  renderizar tu propia página de pago sobre el mismo link.
+- El `settlement_asset` debe estar habilitado para tu organización; si
+  está apagado la creación responde `422 settlement_asset_disabled`.
 
-Cuando el cobro se paga recibes el `payin_credited` normal; si se pagó por
-crypto el evento agrega `settled_via` (ej. `crypto:tron:usdt`) y
-`crypto_amount` con el monto on-chain recibido.
+Cuando el cobro se paga recibes el `payin_credited` con `settled_via`
+(ej. `crypto:tron:usdt`, `qr`, `cbpay`), `settlement_asset` y
+`asset_amount`; los pagos crypto agregan `crypto_amount` y los pagos con
+la app CBPay agregan `transfer_id`, `asset` y `amount`.
 
 Errores propios del link (los ve quien abre la página):
 
 | HTTP | `error` | Significado |
 |---|---|---|
 | 404 | `not_found` | Token inválido o link inexistente |
+| 400 | `country_required` | Método fiat sin `?country=XX` |
 | 409 | `already_paid` | El link ya se pagó por otro método |
 | 410 | `checkout_expired` | El link venció sin pago |
-| 422 | `method_unavailable` | Ese método no está disponible para el corredor del cobro |
+| 422 | `method_unavailable` | Ese método no está disponible para este link o país |
+| 422 | `country_unavailable` | Ese país no tiene métodos de pago disponibles |
+| 422 | `checkout_amount_mismatch` | La transferencia CBPay no cubre el monto vigente del cobro |
 | 429 | `too_many_attempts` | Rate limit por IP de la página pública |
+| 503 | `pricing_unavailable` | Cotización temporalmente no disponible; reintentar en un momento |
 
 ### 3. Recibe el abono
 
@@ -8742,7 +8878,11 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | 400 | `swap_asset_disabled` | Una de las monedas del swap está deshabilitada para tu organización |
 | 409 | `already_paid` | El [link de cobro universal](#payins) ya se pagó por otro método |
 | 410 | `checkout_expired` | El link de cobro universal venció sin pago |
-| 422 | `method_unavailable` | El método elegido en el link de cobro no está disponible para el corredor del cobro |
+| 422 | `method_unavailable` | El método elegido en el link de cobro no está disponible para ese link o país |
+| 400 | `country_required` | Materialización fiat del link de cobro sin `?country=XX` |
+| 422 | `country_unavailable` | Ese país no tiene métodos de pago disponibles en el link de cobro |
+| 422 | `settlement_asset_disabled` | El `settlement_asset` del link de cobro está deshabilitado para tu organización |
+| 422 | `checkout_amount_mismatch` | La transferencia CBPay no cubre el monto vigente del link de cobro; el mensaje trae el monto actualizado |
 
 #### Cumplimiento (403 / 503)
 
@@ -8972,9 +9112,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-16 18:35 UTC · 237 requests · versión `20ebebf5e563`
+> **Colección actualizada:** 2026-07-16 23:47 UTC · 239 requests · versión `66e212bcfdd6`
 
-<PostmanFreshness iso="2026-07-16T18:35:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-16T23:47:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -9145,6 +9285,31 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.79 — 16 de julio de 2026
+
+**Cambiado**
+
+- **Link de cobro universal v2 — multi-país + liquidación en el saldo
+  elegido** (**Breaking** sobre el shape v1 de ayer): el cobro ahora se
+  denomina en cualquiera de tus 4 saldos virtuales con
+  `settlement_asset` (`USDT` default, `USDC`, `BTC`, `GOLD`) y `amount`
+  EN ese asset ("50" USDT, "0.001" BTC, "2" g de oro); enviar `currency`
+  responde `400` (los links v1 existentes siguen operando). El pagador ve
+  **todos los países con corredor de payin vivo** (elige país → métodos con
+  el monto local cotizado y congelado al materializar), las 4 opciones
+  crypto con **QR escaneable** (`qr_payload` + `qr_png_base64`; BIP-21 en
+  BTC, dirección cruda en tokens TRON/ETH — legible por Trust Wallet,
+  MetaMask, Binance y wallets externas), y el **QR + alias CBPay del
+  comercio** para pagar al instante desde la app (deeplink
+  `cbpay:pay?to=…&checkout=…`; `POST /v1/transfers` acepta
+  `checkout_token` y valida el due server-side). Todo pago se
+  **auto-convierte** al `settlement_asset` al acreditar (mismo asset no
+  convierte); `conversion_status` visible en `/state`. Endpoint público
+  nuevo `GET {checkout_url}/quote` con el catálogo de países, dues crypto
+  y dues CBPay. Errores nuevos `country_required`, `country_unavailable`,
+  `settlement_asset_disabled` y `checkout_amount_mismatch`. Detalle en la
+  [guía de payins](#payins).
 
 ### v1.78 — 16 de julio de 2026
 
@@ -10638,6 +10803,7 @@ está en la API Reference interactiva y en la colección Postman.
 |---|---|---|
 | `GET` | `/pay/{token}` | Página de cobro universal (pública) |
 | `GET` | `/pay/{token}/state` | Estado del cobro universal (público) |
+| `GET` | `/pay/{token}/quote` | Cotizar un link de cobro antes de elegir (público) |
 | `POST` | `/pay/{token}/methods/{method}` | Materializar una opción de pago del checkout (público) |
 | `GET` | `/v1/payins` | Listar payins |
 | `POST` | `/v1/payins` | Crear un payin (cobro de recarga) |

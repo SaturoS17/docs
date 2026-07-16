@@ -7,6 +7,30 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月16日" description="v1.79">
+
+**变更**
+
+- **通用收款链接 v2 —— 多国家 + 结算到您选择的余额**（相对昨天 v1 形态为
+  **Breaking**）：收款现在通过 `settlement_asset` 以您 4 个虚拟余额中的任意
+  一个计价（默认 `USDT`，可选 `USDC`、`BTC`、`GOLD`），`amount` 以该资产
+  计（"50" USDT、"0.001" BTC、"2" 克黄金）；传 `currency` 将返回 `400`
+  （已存在的 v1 链接继续有效）。付款人可以看到**所有有可用收款通道的国家**
+  （选择国家 → 显示该国方式及物化时冻结的本地金额报价）、4 个加密货币选项
+  及**可扫描的二维码**（`qr_payload` + `qr_png_base64`；BTC 用 BIP-21，
+  TRON/ETH 代币用原始地址 —— Trust Wallet、MetaMask、Binance 等外部钱包
+  可直接识别），以及商户的 **CBPay 二维码 + 别名**，用 App 扫码即刻付款
+  （深链 `cbpay:pay?to=…&checkout=…`；`POST /v1/transfers` 接受
+  `checkout_token` 并在服务端校验应付额）。每笔付款入账时**自动兑换**为
+  `settlement_asset`（相同资产则不兑换）；`/state` 可见
+  `conversion_status`。新增公开端点 `GET {checkout_url}/quote`，返回国家
+  目录、加密货币应付额与 CBPay 应付额。新增错误 `country_required`、
+  `country_unavailable`、`settlement_asset_disabled` 与
+  `checkout_amount_mismatch`。详见
+  [收款指南](/zh/guides/payins#通用收款链接checkout)。
+
+</Update>
+
 <Update label="2026年7月16日" description="v1.78">
 
 **新增**

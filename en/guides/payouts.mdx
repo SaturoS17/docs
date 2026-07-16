@@ -808,11 +808,12 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
 
 ## QR payout
 
-In Bolivia (the local interoperable QR) you can also **pay a collection
-QR** in two steps: scan and confirm. Scanning is **free**; you are only
-charged on confirm, exactly like a regular payout (your rate + fixed fee).
-Without `country`/`currency` Bolivia (BOB) is assumed. Paying Brazilian
-PIX QRs is coming soon (meanwhile use `pix` by key or account).
+In Bolivia (the local interoperable QR) and Brazil (**PIX QR**, including
+the "copia e cola" code) you can also **pay a collection QR** in two
+steps: scan and confirm. Scanning is **free**; you are only charged on
+confirm, exactly like a regular payout (your rate + fixed fee). Without
+`country`/`currency` Bolivia (BOB) is assumed; for Brazil send
+`country: "BR"` and `currency: "BRL"`.
 
 ```mermaid
 flowchart LR

@@ -136,7 +136,11 @@ Detalle y flujo completo en [login social](/es/guias/login-social).
 | 400 | `swap_asset_disabled` | Una de las monedas del swap está deshabilitada para tu organización |
 | 409 | `already_paid` | El [link de cobro universal](/es/guias/payins#link-de-cobro-universal-checkout) ya se pagó por otro método |
 | 410 | `checkout_expired` | El link de cobro universal venció sin pago |
-| 422 | `method_unavailable` | El método elegido en el link de cobro no está disponible para el corredor del cobro |
+| 422 | `method_unavailable` | El método elegido en el link de cobro no está disponible para ese link o país |
+| 400 | `country_required` | Materialización fiat del link de cobro sin `?country=XX` |
+| 422 | `country_unavailable` | Ese país no tiene métodos de pago disponibles en el link de cobro |
+| 422 | `settlement_asset_disabled` | El `settlement_asset` del link de cobro está deshabilitado para tu organización |
+| 422 | `checkout_amount_mismatch` | La transferencia CBPay no cubre el monto vigente del link de cobro; el mensaje trae el monto actualizado |
 
 ### Cumplimiento (403 / 503)
 
