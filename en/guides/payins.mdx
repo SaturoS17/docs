@@ -306,7 +306,31 @@ Response `200` (charge approved and credited):
 ```
 
 If the payer declines or the authorization fails, `paid` is `false`, the
-payin is marked `failed`, and nothing is charged.
+payin is marked `failed`, and nothing is charged. The exact rejection
+reason is persisted on the payin and exposed in the `failure` object (in
+the synchronous response, in `GET /v1/payins/{payin_id}`, and on the
+idempotent replay):
+
+```json
+{
+  "payin_id": "7b3c…",
+  "kind": "collect",
+  "method": "c2p",
+  "status": "failed",
+  "paid": false,
+  "failure": {
+    "source": "provider",
+    "code": "provider_rejected",
+    "message": "Documento de identidad del receptor errado"
+  }
+}
+```
+
+- `source` tells you where the rejection originated (`provider` = the
+  payer's bank declined; `core` = the pre-charge validation).
+- `code` and `message` carry the concrete reason (invalid or expired OTP,
+  wrong document, insufficient payer funds, etc.) so you can tell the
+  payer what to fix before retrying with a new idempotency key.
 
 </Tab>
 <Tab title="Bolivia">

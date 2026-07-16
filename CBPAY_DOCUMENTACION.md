@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-16 18:35 UTC · versión `195e7d7102f4`
+> **Documento actualizado:** 2026-07-16 21:39 UTC · versión `4b4a7601ad4d`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.77 (16 de julio de 2026) |
+| Versión de la documentación | v1.78 (16 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -3166,7 +3166,31 @@ Respuesta `200` (cobro aprobado y acreditado):
 ```
 
 Si el pagador rechaza o falla la autorización, `paid` es `false`, el payin
-queda `failed` y no se cobra nada.
+queda `failed` y no se cobra nada. La causa exacta del rechazo queda
+persistida en el payin y se expone en el objeto `failure` (en la respuesta
+síncrona, en `GET /v1/payins/{payin_id}` y en el replay idempotente):
+
+```json
+{
+  "payin_id": "7b3c…",
+  "kind": "collect",
+  "method": "c2p",
+  "status": "failed",
+  "paid": false,
+  "failure": {
+    "source": "provider",
+    "code": "provider_rejected",
+    "message": "Documento de identidad del receptor errado"
+  }
+}
+```
+
+- `source` indica dónde se originó el rechazo (`provider` = el banco del
+  pagador rechazó; `core` = la validación previa al cobro).
+- `code` y `message` traen el motivo concreto (OTP inválida o expirada,
+  documento errado, fondos insuficientes del pagador, etc.), útil para
+  mostrarle al pagador qué corregir antes de reintentar con una clave
+  de idempotencia nueva.
 
 #### Bolivia
 
@@ -9121,6 +9145,19 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.78 — 16 de julio de 2026
+
+**Agregado**
+
+- **Detalle del rechazo en cobros activos fallidos**: cuando un cobro
+  activo (`collect`, C2P o débito inmediato) queda `failed`, el payin ahora
+  incluye un objeto `failure` con el origen del rechazo (`provider` = el
+  banco del pagador, `core` = la validación previa al cobro), el código y
+  el mensaje concretos — visible en la respuesta síncrona del `POST`, en
+  `GET /v1/payins/{id}` y en el webhook. Antes solo se veía el estado
+  `failed` genérico. Detalle en la
+  [guía de payins](#payins).
 
 ### v1.77 — 16 de julio de 2026
 

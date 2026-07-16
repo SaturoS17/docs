@@ -7,6 +7,19 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月16日" description="v1.78">
+
+**新增**
+
+- **主动收款失败的拒绝详情**：当主动收款（`collect`，C2P 或即时扣款）
+  变为 `failed` 时，payin 现在包含 `failure` 对象，说明拒绝来源
+  （`provider` = 付款人的银行，`core` = 扣款前校验）以及具体的代码和
+  消息——在 `POST` 的同步响应、`GET /v1/payins/{id}` 和 webhook 中均可
+  见。此前仅暴露通用的 `failed` 状态。详见
+  [payins 指南](/zh/guides/payins)。
+
+</Update>
+
 <Update label="2026年7月16日" description="v1.77">
 
 **新增**

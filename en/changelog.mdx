@@ -7,6 +7,21 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 16, 2026" description="v1.78">
+
+**Added**
+
+- **Rejection detail on failed active collections**: when an active
+  collection (`collect`, C2P or immediate debit) ends up `failed`, the
+  payin now includes a `failure` object with where the rejection
+  originated (`provider` = the payer's bank, `core` = pre-charge
+  validation), plus the concrete code and message — visible in the
+  synchronous `POST` response, in `GET /v1/payins/{id}` and in the
+  webhook. Previously only the generic `failed` status was exposed. See
+  the [payins guide](/en/guides/payins).
+
+</Update>
+
 <Update label="July 16, 2026" description="v1.77">
 
 **Added**

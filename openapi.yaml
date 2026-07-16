@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.77'
+  version: '1.78'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -8316,6 +8316,16 @@ paths:
                     type: string
                   status_message:
                     type: string
+                  failure:
+                    type: object
+                    description: 'Present only when the payin is `failed` on active collections: where the rejection originated (`provider` = the payer''s bank, `core` = pre-charge validation) plus the concrete code and message.'
+                    properties:
+                      source:
+                        type: string
+                      code:
+                        type: string
+                      message:
+                        type: string
               example:
                 payin_id: 7b3c9e2f-1a2b-3c4d-5e6f-7a8b9c0d1e2f
                 account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -12891,6 +12901,16 @@ components:
           type: string
         usdt_credited:
           type: string
+        failure:
+          type: object
+          description: 'Present only when the payin is `failed` on active collections: where the rejection originated (`provider` = the payer''s bank, `core` = pre-charge validation) plus the concrete code and message.'
+          properties:
+            source:
+              type: string
+            code:
+              type: string
+            message:
+              type: string
     Transfer:
       type: object
       properties:

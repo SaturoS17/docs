@@ -308,7 +308,31 @@ Respuesta `200` (cobro aprobado y acreditado):
 ```
 
 Si el pagador rechaza o falla la autorización, `paid` es `false`, el payin
-queda `failed` y no se cobra nada.
+queda `failed` y no se cobra nada. La causa exacta del rechazo queda
+persistida en el payin y se expone en el objeto `failure` (en la respuesta
+síncrona, en `GET /v1/payins/{payin_id}` y en el replay idempotente):
+
+```json
+{
+  "payin_id": "7b3c…",
+  "kind": "collect",
+  "method": "c2p",
+  "status": "failed",
+  "paid": false,
+  "failure": {
+    "source": "provider",
+    "code": "provider_rejected",
+    "message": "Documento de identidad del receptor errado"
+  }
+}
+```
+
+- `source` indica dónde se originó el rechazo (`provider` = el banco del
+  pagador rechazó; `core` = la validación previa al cobro).
+- `code` y `message` traen el motivo concreto (OTP inválida o expirada,
+  documento errado, fondos insuficientes del pagador, etc.), útil para
+  mostrarle al pagador qué corregir antes de reintentar con una clave
+  de idempotencia nueva.
 
 </Tab>
 <Tab title="Bolivia">

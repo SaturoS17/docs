@@ -294,7 +294,30 @@ curl -X POST https://api.qbank.cl/platform/v1/payins/collect \
 ```
 
 如果付款人拒绝或授权失败，`paid` 为 `false`，该入金被标记为
-`failed`，且不会产生任何扣款。
+`failed`，且不会产生任何扣款。确切的拒绝原因会持久化在该 payin 上，
+并通过 `failure` 对象暴露（在同步响应、`GET /v1/payins/{payin_id}`
+以及幂等重放中均可见）：
+
+```json
+{
+  "payin_id": "7b3c…",
+  "kind": "collect",
+  "method": "c2p",
+  "status": "failed",
+  "paid": false,
+  "failure": {
+    "source": "provider",
+    "code": "provider_rejected",
+    "message": "Documento de identidad del receptor errado"
+  }
+}
+```
+
+- `source` 表示拒绝的来源（`provider` = 付款人的银行拒绝；`core` =
+  扣款前的校验）。
+- `code` 和 `message` 携带具体原因（OTP 无效或已过期、证件号错误、
+  付款人余额不足等），便于告知付款人需要修正什么，然后使用新的幂等键
+  重试。
 
 </Tab>
 <Tab title="玻利维亚">
