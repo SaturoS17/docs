@@ -7972,8 +7972,8 @@ paths:
       operationId: payoutQrConfirm
       summary: 确认 QR payout(玻利维亚、巴西)
       description: QR payout 第 2 步(玻利维亚与巴西/PIX),计费方式与常规 payout 完全相同:本地金额按**你账户的汇率**转换,扣除 `usdt_amount
-        + 固定费用`。结果为**同步**——响应携带最终状态(`completed`,或 `failed` 并自动退款)。已扫描的 QR 只能支付一次;与所有资金操作一样需要幂等键。在巴西,若
-        PIX 二维码带固定金额,则必须与您发送的 `amount` 一致(或省略 `amount` 以支付该固定值);开放金额的二维码则必须提供 `amount`。
+        + 固定费用`。结果为**同步**——响应携带最终状态(`completed`,或 `failed` 并自动退款)。已扫描的 QR 只能支付一次;与所有资金操作一样需要幂等键。`amount`
+        始终必填;在巴西,若 PIX 二维码带固定金额,则必须与之完全一致(开放金额的二维码按您发送的金额支付)。
       parameters:
       - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:

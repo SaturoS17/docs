@@ -8255,9 +8255,9 @@ paths:
         payout normal: el monto local se convierte a **la tasa de tu cuenta** y se debita `usdt_amount
         + comisión fija`. El resultado es **síncrono** — la respuesta trae el estado final (`completed`,
         o `failed` con reembolso automático). Un QR escaneado solo puede pagarse una vez; requiere una
-        llave de idempotencia como toda operación que mueve dinero. En Brasil, si el QR PIX trae monto
-        fijo debe coincidir con el `amount` que envíes (u omite `amount` para pagar exactamente ese
-        valor); los QR de monto abierto exigen `amount`.'
+        llave de idempotencia como toda operación que mueve dinero. `amount` es siempre obligatorio; en
+        Brasil, si el QR PIX trae monto fijo debe coincidir exacto (los QR de monto abierto pagan lo que
+        envíes).'
       parameters:
       - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:

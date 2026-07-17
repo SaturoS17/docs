@@ -8243,8 +8243,8 @@ paths:
         the local amount converts at **your account''s rate** and `usdt_amount + fixed fee` is debited.
         The result is **synchronous** — the response carries the final state (`completed`, or `failed`
         with an automatic refund). A scanned QR can only be paid once; requires an idempotency key like
-        every money-moving operation. In Brazil, if the PIX QR carries a fixed amount it must match the
-        `amount` you send (or omit `amount` to pay exactly that value); open-amount QRs require `amount`.'
+        every money-moving operation. `amount` is always required; in Brazil, if the PIX QR carries a
+        fixed amount it must match exactly (open-amount QRs pay whatever you send).'
       parameters:
       - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:

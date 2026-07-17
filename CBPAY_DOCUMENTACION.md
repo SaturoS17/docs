@@ -8,7 +8,7 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-17 00:09 UTC · versión `4ff8070cb80b`
+> **Documento actualizado:** 2026-07-17 00:20 UTC · versión `48e641473df7`
 
 **Datos clave**
 
@@ -9132,9 +9132,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-17 00:09 UTC · 239 requests · versión `fbb906a85be6`
+> **Colección actualizada:** 2026-07-17 00:20 UTC · 239 requests · versión `908108b9d9c8`
 
-<PostmanFreshness iso="2026-07-17T00:09:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-17T00:20:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
