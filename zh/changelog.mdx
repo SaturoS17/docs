@@ -7,6 +7,20 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月17日" description="v1.85">
+
+**新增**
+
+- **每个收款链接的专属 CLABE（墨西哥）**：在通用收款链接上生成墨西哥
+  `bank_transfer` 支付选项时，现在会签发（或从可回收池中取出）一个
+  **该链接专属**的 CLABE。付款人只需转账精确金额，**无需填写参考码**：
+  入账会按收款账户自动检测并路由到该链接。支付选项的 payload 中
+  `destination` 带有 `dedicated: true`；若无法签发专属账户，则降级为
+  传统方式（商户账户 + 转账附言中必填 `reference`）。链接结清后
+  （已支付或已过期），CLABE 经过冷却期后回收再用。
+
+</Update>
+
 <Update label="2026年7月17日" description="v1.84">
 
 **新增**

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.84'
+  version: '1.85'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -602,8 +602,10 @@ paths:
         充值地址（`qr_payload` + `qr_png_base64` — BTC 为 BIP-21 URI，TRON/ETH 代币为原始地址，
         外部钱包可直接读取）。法币方式必须传 `?country=XX`；本地金额在此刻报价并冻结。当国家以多种
         币种提供同一方式时（见报价的 `options[]` — 例如 BOB 和 USD 的二维码，或银行卡通道）还须传
-        `&currency=YYY`；每种币种是独立的支付选项。当通道使用专属收款账户时（例如墨西哥的 CLABE），
-        银行转账会返回商户的目标账户。拉取式方式（报价中 `collect: true`，例如委内瑞拉的 `c2p` 和
+        `&currency=YYY`；每种币种是独立的支付选项。墨西哥的银行转账会为该链接签发一个专属 CLABE
+        （`destination` 中 `dedicated: true`）：付款人只需转账精确金额，无需填写参考码 —
+        入账自动路由到该链接。若无法签发专属账户，payload 会降级为传统方式（商户账户 +
+        转账附言中必填 `reference`）。拉取式方式（报价中 `collect: true`，例如委内瑞拉的 `c2p` 和
         `debito_inmediato`）冻结报价并返回付款人需填写的表单定义（`banks[]` 目录、
         `requires_otp_request`）；实际扣款通过 `POST /pay/{token}/collect` 执行。对同一
         国家+币种+方式重复 POST 返回相同的结果；在无人支付前，选择某个方式不会锁定其他方式。
@@ -670,20 +672,20 @@ paths:
                       note: include the reference in the transfer description so the payment is
                         detected automatically
                 bank_transfer_dedicated_account:
-                  summary: 带专属收款账户的银行转账（墨西哥 CLABE）
+                  summary: 银行转账 — 链接专属 CLABE（墨西哥）
                   value:
                     method: bank_transfer
                     country: MX
                     currency: MXN
                     local_amount: '941.00'
                     payload:
-                      reference: CB9PFKECTFV9
                       destination:
                         type: clabe
                         account: '710969000012345678'
                         beneficiary: Acme Store S.A.
-                      note: include the reference in the transfer description so the payment is
-                        detected automatically
+                        dedicated: true
+                      note: transfer the exact amount to this dedicated account; no reference
+                        is needed — the payment is detected automatically
                 collect:
                   summary: 拉取式方式（委内瑞拉 C2P）— 冻结报价 + 付款人表单定义
                   value:

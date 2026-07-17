@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.84'
+  version: '1.85'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -651,8 +651,11 @@ paths:
         local se cotiza y CONGELA en ese momento. Cuando el país ofrece el método en más de una
         moneda (ver `options[]` del quote — ej. QR en BOB y USD, o los corredores de tarjeta)
         exige además `&currency=YYY`; cada moneda es una materialización independiente. Las
-        transferencias bancarias incluyen la cuenta de destino del comercio cuando el corredor
-        usa cuenta de depósito dedicada (ej. la CLABE en México). Los métodos pull
+        transferencias bancarias en México emiten una CLABE dedicada exclusiva del link
+        (`destination` con `dedicated: true`): el pagador transfiere el monto exacto SIN
+        referencia — el abono se rutea al link automáticamente. Si la cuenta dedicada no puede
+        emitirse, el payload degrada al camino clásico (cuenta del comercio + `reference`
+        obligatoria en la glosa). Los métodos pull
         (`collect: true` en el quote, ej. `c2p` y `debito_inmediato` en Venezuela) congelan la
         cotización y devuelven el formulario que el pagador debe llenar (catálogo `banks[]`,
         `requires_otp_request`); el cargo corre por `POST /pay/{token}/collect`. Re-POST del
@@ -722,20 +725,20 @@ paths:
                       note: include the reference in the transfer description so the payment is
                         detected automatically
                 bank_transfer_dedicated_account:
-                  summary: Transferencia bancaria con cuenta de destino dedicada (CLABE MX)
+                  summary: Transferencia bancaria con CLABE dedicada exclusiva del link (MX)
                   value:
                     method: bank_transfer
                     country: MX
                     currency: MXN
                     local_amount: '941.00'
                     payload:
-                      reference: CB9PFKECTFV9
                       destination:
                         type: clabe
                         account: '710969000012345678'
                         beneficiary: Acme Store S.A.
-                      note: include the reference in the transfer description so the payment is
-                        detected automatically
+                        dedicated: true
+                      note: transfer the exact amount to this dedicated account; no reference
+                        is needed — the payment is detected automatically
                 collect:
                   summary: Método pull (C2P VE) — cotización congelada + formulario del pagador
                   value:

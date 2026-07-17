@@ -7,6 +7,23 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 17, 2026" description="v1.85">
+
+**Added**
+
+- **Dedicated CLABE per checkout link (Mexico)**: materializing
+  `bank_transfer` MX on a universal checkout link now issues (or takes
+  from a recyclable pool) a CLABE **exclusive to that link**. The payer
+  transfers the exact amount **with no reference**: the deposit is
+  detected and routed to the link automatically by destination account.
+  The materialization payload carries `destination` with
+  `dedicated: true`; if the dedicated account cannot be issued, it
+  degrades to the classic path (merchant account + mandatory `reference`
+  in the transfer description). CLABEs are recycled with a cooldown once
+  the link resolves (paid or expired).
+
+</Update>
+
 <Update label="July 17, 2026" description="v1.84">
 
 **Added**

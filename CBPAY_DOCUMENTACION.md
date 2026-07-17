@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-17 12:56 UTC · versión `d1f5a0d09047`
+> **Documento actualizado:** 2026-07-17 15:30 UTC · versión `24073ed200cb`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.84 (17 de julio de 2026) |
+| Versión de la documentación | v1.85 (17 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -3553,9 +3553,12 @@ y redirige a tu `success_url` si la configuraste.
   pero **no** marca el link como pagado. Si un país ofrece el mismo
   método en **varias monedas** (ej. Bolivia con QR en BOB y en USD), la
   página lista cada moneda como opción independiente. En transferencias
-  bancarias con cuenta de depósito dedicada (la CLABE en México), la
-  página muestra además el **número de cuenta y beneficiario** adonde
-  transferir.
+  bancarias en México el link genera una **CLABE dedicada y exclusiva de
+  ese cobro**: el pagador transfiere el monto exacto **sin poner
+  referencia** — el abono se detecta y liquida automático porque la
+  cuenta identifica al link. Si la cuenta dedicada no puede emitirse en
+  ese momento, la página degrada al camino clásico (cuenta general del
+  comercio + referencia obligatoria en la glosa).
 - **Cobros pull (Venezuela)**: `c2p` y `debito_inmediato` cobran directo
   en la cuenta del pagador. La página le pide banco, documento, teléfono
   (C2P) o cuenta (débito inmediato) y la clave OTP — generada en su app
@@ -9188,9 +9191,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-17 12:56 UTC · 242 requests · versión `f4f8efe3994b`
+> **Colección actualizada:** 2026-07-17 15:30 UTC · 242 requests · versión `eb0303d10441`
 
-<PostmanFreshness iso="2026-07-17T12:56:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-17T15:30:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -9361,6 +9364,20 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.85 — 17 de julio de 2026
+
+**Agregado**
+
+- **CLABE dedicada por link de cobro (México)**: materializar
+  `bank_transfer` MX en un link de cobro universal ahora emite (o toma de
+  un pool reciclable) una CLABE **exclusiva de ese link**. El pagador
+  transfiere el monto exacto **sin poner referencia**: el abono se detecta
+  y rutea al link automáticamente por la cuenta de destino. El payload de
+  la materialización lleva `destination` con `dedicated: true`; si la
+  cuenta dedicada no puede emitirse, degrada al camino clásico (cuenta del
+  comercio + `reference` obligatoria en la glosa). Las CLABEs se reciclan
+  con período de enfriamiento al resolverse el link (pagado o expirado).
 
 ### v1.84 — 17 de julio de 2026
 

@@ -611,9 +611,12 @@ y redirige a tu `success_url` si la configuraste.
   pero **no** marca el link como pagado. Si un país ofrece el mismo
   método en **varias monedas** (ej. Bolivia con QR en BOB y en USD), la
   página lista cada moneda como opción independiente. En transferencias
-  bancarias con cuenta de depósito dedicada (la CLABE en México), la
-  página muestra además el **número de cuenta y beneficiario** adonde
-  transferir.
+  bancarias en México el link genera una **CLABE dedicada y exclusiva de
+  ese cobro**: el pagador transfiere el monto exacto **sin poner
+  referencia** — el abono se detecta y liquida automático porque la
+  cuenta identifica al link. Si la cuenta dedicada no puede emitirse en
+  ese momento, la página degrada al camino clásico (cuenta general del
+  comercio + referencia obligatoria en la glosa).
 - **Cobros pull (Venezuela)**: `c2p` y `debito_inmediato` cobran directo
   en la cuenta del pagador. La página le pide banco, documento, teléfono
   (C2P) o cuenta (débito inmediato) y la clave OTP — generada en su app

@@ -611,8 +611,13 @@ and redirects to your `success_url` if you set one.
   but does **not** mark the link as paid. When a country offers the same
   method in **several currencies** (e.g. Bolivia with QR in BOB and in
   USD), the page lists each currency as an independent option. On bank
-  transfers with a dedicated deposit account (the CLABE in Mexico), the
-  page also shows the **account number and beneficiary** to transfer to.
+  transfers in Mexico the link issues a **dedicated CLABE exclusive to
+  that charge**: the payer transfers the exact amount **with no reference
+  needed** — the deposit is detected and settled automatically because
+  the account itself identifies the link. If a dedicated account cannot
+  be issued at that moment, the page degrades to the classic path (the
+  merchant's general account plus a mandatory reference in the transfer
+  description).
 - **Pull collections (Venezuela)**: `c2p` and `debito_inmediato` charge
   the payer's account directly. The page asks for bank, document, phone
   (C2P) or account (immediate debit) and the OTP — generated in their
