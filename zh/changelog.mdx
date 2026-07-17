@@ -7,6 +7,33 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月16日" description="v1.83">
+
+**新增**
+
+- **通用收款链接新增"银行卡"标签页**：银行卡支付从 Fiat 标签页移到
+  独立的标签页，按**扣款币种**列出（目前为 BOB 和 USD；未来收单机构
+  的币种会自动出现）。`GET /pay/{token}/quote` 返回新的 `cards[]`
+  目录（每个选项含国家、币种和 `local_amount`），`countries[]` 的
+  方式列表不再包含 `card`。物化银行卡须指定币种：
+  `POST /pay/{token}/methods/card?country=XX&currency=YYY` —— 缺失时
+  返回新错误 `400 currency_required`。每种币种是独立的物化，各自有
+  托管支付页面。
+
+**变更**
+
+- **支付页面视觉升级**：金额旁及加密货币分组显示资产 Logo（USDT、
+  USDC、BTC、GOLD），Fiat 选择器和银行卡行显示国旗，各方式带图标，
+  并新增**醒目的到期计时器**（带时钟的胶囊；1 小时内显示倒计时，
+  10 分钟内变红）。
+
+**修复**
+
+- 结账页面不再每隔几秒自动滚动到当前面板：自动刷新仅在数据变化时
+  重新渲染且不移动滚动条（只有手动选择支付方式才会将详情滚入视图）。
+
+</Update>
+
 <Update label="2026年7月16日" description="v1.82">
 
 **变更**

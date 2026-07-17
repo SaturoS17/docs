@@ -8,6 +8,39 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="16 de julio de 2026" description="v1.83">
+
+**Agregado**
+
+- **Pestaña Tarjeta en el link de cobro universal**: el pago con tarjeta
+  sale de la pestaña Fiat y ahora tiene su propia pestaña, listada **por
+  moneda de cargo** (hoy BOB y USD; monedas de adquirentes futuros
+  aparecen solas). `GET /pay/{token}/quote` responde el catálogo nuevo
+  `cards[]` (país, moneda y `local_amount` por opción) y `countries[]`
+  deja de listar `card` entre los métodos. Materializar una tarjeta
+  exige la moneda: `POST /pay/{token}/methods/card?country=XX&currency=YYY`
+  — sin ella responde el error nuevo `400 currency_required`. Cada
+  moneda es una materialización independiente con su propia página de
+  pago hosted.
+
+**Cambiado**
+
+- **Página de pago con identidad visual reforzada**: logos de los assets
+  (USDT, USDC, BTC, GOLD) junto al monto y en los grupos crypto,
+  banderas por país en el selector Fiat y en las filas de tarjeta,
+  íconos por método, y un **timer de expiración prominente** (pill con
+  reloj; bajo 1 hora muestra cuenta regresiva y bajo 10 minutos cambia a
+  rojo).
+
+**Corregido**
+
+- La página del checkout ya no se desplaza sola hacia el panel activo
+  cada pocos segundos: el refresco automático re-renderiza solo cuando
+  cambia la data y nunca mueve el scroll (solo la selección manual de un
+  método lleva la vista al detalle).
+
+</Update>
+
 <Update label="16 de julio de 2026" description="v1.82">
 
 **Cambiado**

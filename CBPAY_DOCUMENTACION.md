@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-17 02:12 UTC · versión `57b9a3427446`
+> **Documento actualizado:** 2026-07-17 03:34 UTC · versión `34bd50ed68c4`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.82 (16 de julio de 2026) |
+| Versión de la documentación | v1.83 (16 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -3458,7 +3458,7 @@ elijas** (`settlement_asset`: `USDT`, `USDC`, `BTC` o `GOLD`, default
 acreditarse — salvo que te paguen en el mismo asset, ahí no hay
 conversión.
 
-La página organiza el pago en **tres pestañas**:
+La página organiza el pago en **cuatro pestañas**:
 
 - **CBPay** — pago directo con la app: el alias y el QR del comercio;
   quien escanea con la app paga al instante por transferencia interna,
@@ -3469,9 +3469,13 @@ La página organiza el pago en **tres pestañas**:
   ese cobro y **QR escaneable** por wallets externas (Trust Wallet,
   MetaMask, Binance y similares).
 - **Fiat** — el pagador elige su país entre **todos los que tienen
-  corredor de payin vivo** y ve los métodos disponibles (QR, tarjeta,
+  corredor de payin vivo** y ve los métodos disponibles (QR,
   transferencia bancaria, pago hosted) con el monto local cotizado al
   momento.
+- **Tarjeta** — pago con tarjeta de crédito o débito en una página
+  segura, listado **por moneda de cargo** (hoy BOB y USD; monedas de
+  adquirentes futuros aparecen solas). Cada moneda es una opción de pago
+  independiente con su propio monto cotizado.
 
 ```mermaid
 flowchart LR
@@ -3479,9 +3483,11 @@ flowchart LR
     P --> C1[Crypto: dirección + QR con el due cotizado]
     P --> C2[País + método fiat: monto local cotizado]
     P --> C3[App CBPay: alias + QR del comercio]
+    P --> C4[Tarjeta: página hosted en la moneda elegida]
     C1 --> S{¿mismo asset que settlement?}
     C2 --> S
     C3 --> S
+    C4 --> S
     S -->|sí| FIN[Queda en el saldo elegido]
     S -->|no| SW[Conversión automática al settlement_asset]
     SW --> FIN
@@ -3545,6 +3551,11 @@ y redirige a tu `success_url` si la configuraste.
   payin y después se convierte al `settlement_asset`. Un pago anunciado
   MENOR a la cotización congelada se acredita igual (la plata es real)
   pero **no** marca el link como pagado.
+- **Tarjeta (multi-moneda)**: la pestaña lista cada moneda de cargo
+  disponible con su monto cotizado; al elegir una se abre la página de
+  pago hosted en esa moneda. Cada moneda es una materialización
+  independiente (puedes cotizar en BOB y en USD sobre el mismo link; paga
+  la primera que complete).
 - **Crypto (wallet por cobro)**: al elegir una moneda se genera una
   dirección exclusiva con su `qr_payload` y `qr_png_base64` — BTC usa URI
   BIP-21 (`bitcoin:<address>?amount=…`, autocompleta el monto); TRON/ETH
@@ -3582,13 +3593,16 @@ motor de conversiones de tu cuenta (mismos spreads y límites que
   (`fiat_methods`), progreso crypto (`crypto` con `due`/`received`) y
   `conversion_status`.
 - `GET {checkout_url}/quote` — cotizaciones ANTES de elegir: `countries`
-  (catálogo con moneda y métodos por país), `crypto` (due indicativo por
-  par) y `cbpay` (alias + dues por asset). Con `?country=XX` agrega
-  `country_quote` con el monto local de ese país.
+  (catálogo con moneda y métodos por país, sin tarjeta), `cards` (opciones
+  de tarjeta por país y moneda con su `local_amount`), `crypto` (due
+  indicativo por par) y `cbpay` (alias + dues por asset). Con
+  `?country=XX` agrega `country_quote` con el monto local de ese país.
 - `POST {checkout_url}/methods/{method}` — materializa la opción elegida.
-  Métodos fiat exigen `?country=XX`; crypto usa
-  `crypto:<chain>:<asset>` (ej. `crypto:tron:usdt`) sin país. Re-POST del
-  mismo país+método devuelve la MISMA materialización.
+  Métodos fiat exigen `?country=XX`; `card` exige además
+  `&currency=YYY` (tomada del catálogo `cards` — un mismo país puede
+  aceptar tarjeta en más de una moneda); crypto usa
+  `crypto:<chain>:<asset>` (ej. `crypto:tron:usdt`) sin país. Re-POST de
+  la misma combinación devuelve la MISMA materialización.
 
 Útil si prefieres renderizar tu propia página de pago sobre el mismo
 link.
@@ -9143,9 +9157,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-17 01:20 UTC · 239 requests · versión `c986bc32a1f9`
+> **Colección actualizada:** 2026-07-17 03:34 UTC · 239 requests · versión `195c4dbe7c0a`
 
-<PostmanFreshness iso="2026-07-17T01:20:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-17T03:34:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -9316,6 +9330,37 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.83 — 16 de julio de 2026
+
+**Agregado**
+
+- **Pestaña Tarjeta en el link de cobro universal**: el pago con tarjeta
+  sale de la pestaña Fiat y ahora tiene su propia pestaña, listada **por
+  moneda de cargo** (hoy BOB y USD; monedas de adquirentes futuros
+  aparecen solas). `GET /pay/{token}/quote` responde el catálogo nuevo
+  `cards[]` (país, moneda y `local_amount` por opción) y `countries[]`
+  deja de listar `card` entre los métodos. Materializar una tarjeta
+  exige la moneda: `POST /pay/{token}/methods/card?country=XX&currency=YYY`
+  — sin ella responde el error nuevo `400 currency_required`. Cada
+  moneda es una materialización independiente con su propia página de
+  pago hosted.
+
+**Cambiado**
+
+- **Página de pago con identidad visual reforzada**: logos de los assets
+  (USDT, USDC, BTC, GOLD) junto al monto y en los grupos crypto,
+  banderas por país en el selector Fiat y en las filas de tarjeta,
+  íconos por método, y un **timer de expiración prominente** (pill con
+  reloj; bajo 1 hora muestra cuenta regresiva y bajo 10 minutos cambia a
+  rojo).
+
+**Corregido**
+
+- La página del checkout ya no se desplaza sola hacia el panel activo
+  cada pocos segundos: el refresco automático re-renderiza solo cuando
+  cambia la data y nunca mueve el scroll (solo la selección manual de un
+  método lleva la vista al detalle).
 
 ### v1.82 — 16 de julio de 2026
 

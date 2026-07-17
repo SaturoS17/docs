@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.82'
+  version: '1.83'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -463,10 +463,11 @@ paths:
       - Payins
       operationId: checkoutQuote
       summary: 选择前报价收款链接（公开）
-      description: 在生成支付选项前获取通用收款链接的指示性报价 — 有可用法币方式的国家目录、每个加密货币
-        选项的应付金额（付款资产与结算资产不同时已含兑换成本），以及按已启用余额列出的 CBPay 直接付款
-        金额。传 `?country=XX` 时额外返回该国家的本地报价。最终报价在生成支付选项时冻结。
-        无需凭证；按 IP 限流。
+      description: 在生成支付选项前获取通用收款链接的指示性报价 — 有可用法币方式的国家目录（不含银行卡，
+        见 `cards`）、在 `cards[]` 中按国家+币种单独列出的银行卡选项及其报价应付金额（同一通道可能接受
+        多种扣款币种，例如 BOB 和 USD）、每个加密货币选项的应付金额（付款资产与结算资产不同时已含兑换
+        成本），以及按已启用余额列出的 CBPay 直接付款金额。传 `?country=XX` 时额外返回该国家的本地报价。
+        最终报价在生成支付选项时冻结。无需凭证；按 IP 限流。
       parameters:
       - name: token
         in: path
@@ -494,12 +495,18 @@ paths:
                   currency: BOB
                   methods:
                   - qr
-                  - card
                 - country: CL
                   currency: CLP
                   methods:
                   - bank_transfer
                   - fintoc
+                cards:
+                - country: BO
+                  currency: BOB
+                  local_amount: '543.30'
+                - country: BO
+                  currency: USD
+                  local_amount: '50.75'
                 crypto:
                 - method: crypto:tron:usdt
                   chain: tron
@@ -562,9 +569,10 @@ paths:
       description: 延迟创建付款人在通用收款链接上选择的支付选项并返回其指引 — 银行卡/托管方式的支付
         URL、二维码方式的二维码、银行转账的申报参考码，或带精确报价金额和可扫描二维码的专属加密货币
         充值地址（`qr_payload` + `qr_png_base64` — BTC 为 BIP-21 URI，TRON/ETH 代币为原始地址，
-        外部钱包可直接读取）。法币方式必须传 `?country=XX`；本地金额在此刻报价并冻结。
-        对同一国家+方式重复 POST 返回相同的结果；在无人支付前，选择某个方式不会锁定其他方式。
-        无需凭证；按 IP 限流。
+        外部钱包可直接读取）。法币方式必须传 `?country=XX`；本地金额在此刻报价并冻结。银行卡还须传
+        `&currency=YYY`，从报价的 `cards[]` 目录中选取（同一通道可能支持多种扣款币种 — 每种币种是
+        独立的支付选项，各自有托管支付页面）。对同一国家+币种+方式重复 POST 返回相同的结果；在无人
+        支付前，选择某个方式不会锁定其他方式。无需凭证；按 IP 限流。
       parameters:
       - name: token
         in: path
@@ -586,6 +594,13 @@ paths:
         schema:
           type: string
         description: 要生成的法币方式的 ISO-3166 alpha-2 国家代码。法币方式必填，加密货币忽略。
+      - name: currency
+        in: query
+        required: false
+        schema:
+          type: string
+        description: '`card` 的扣款币种，从报价的 `cards[]` 目录中选取（例如 `BOB` 或 `USD`）。
+          当通道提供多种币种时银行卡必填；其他方式忽略（其币种由国家决定）。'
       responses:
         '200':
           description: 所选支付方式的指引。
@@ -618,6 +633,17 @@ paths:
                       reference: CB68JZCT46QE
                       note: include the reference in the transfer description so the payment is
                         detected automatically
+                card:
+                  summary: 银行卡 — 所选币种的托管支付页面
+                  value:
+                    method: card
+                    country: BO
+                    currency: USD
+                    local_amount: '50.75'
+                    payload:
+                      charge_id: 8f6a2c1e-4b7d-4a1e-9c3f-2d5e6f7a8b9c
+                      payment_url: https://api.qbank.cl/pay/cards/9f3XkT2m…
+                      expires_at: '2026-07-17T18:15:00Z'
         '404':
           description: 令牌无效或收款链接不存在。
           content:
@@ -640,12 +666,20 @@ paths:
                 error: checkout_expired
                 message: this payment link expired
         '400':
-          description: 法币方式缺少必填的国家参数。
+          description: 法币方式缺少必填的国家参数，或银行卡缺少扣款币种。
           content:
             application/json:
-              example:
-                error: country_required
-                message: 'pass ?country=XX to materialize a fiat method'
+              examples:
+                country_required:
+                  summary: 法币方式缺少国家
+                  value:
+                    error: country_required
+                    message: 'send ?country=XX to choose the payment corridor'
+                currency_required:
+                  summary: 银行卡缺少扣款币种
+                  value:
+                    error: currency_required
+                    message: 'this country accepts cards in more than one currency; send ?currency=XXX'
         '422':
           description: 该方式对此链接或国家不可用。
           content:

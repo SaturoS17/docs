@@ -490,7 +490,7 @@ base64 或 `charge.qr_image_url`，即公共 CDN URL）。二维码按
 `GOLD`，默认 `USDT`），每笔付款在入账时**自动转换**为该余额——除非付款
 人用同一资产支付，此时不发生转换。
 
-页面将支付方式组织为**三个标签页**：
+页面将支付方式组织为**四个标签页**：
 
 - **CBPay** —— 使用应用直接支付：显示商户别名和二维码；用应用扫码
   即可通过内部转账即时付款，支持 4 种余额中的任意一种。
@@ -499,8 +499,11 @@ base64 或 `charge.qr_image_url`，即公共 CDN URL）。二维码按
   充值地址，并附带**可扫描二维码**，兼容外部钱包（Trust Wallet、
   MetaMask、Binance 等）。
 - **Fiat** —— 付款人在**所有有可用代收走廊的国家**中选择自己的国家，
-  即可看到可用方式（二维码、银行卡、银行转账、托管支付页）及即时报出
-  的当地金额。
+  即可看到可用方式（二维码、银行转账、托管支付页）及即时报出的当地
+  金额。
+- **银行卡** —— 在安全的托管页面用信用卡或借记卡支付，按**扣款币种**
+  列出（目前为 BOB 和 USD；未来收单机构的币种会自动出现）。每种币种
+  都是独立的支付选项，各自有报出的金额。
 
 ```mermaid
 flowchart LR
@@ -508,9 +511,11 @@ flowchart LR
     P --> C1[加密货币：地址 + 含应付额的二维码]
     P --> C2[国家 + 法币方式：报出的当地金额]
     P --> C3[CBPay 应用：商户别名 + 二维码]
+    P --> C4[银行卡：所选币种的托管支付页]
     C1 --> S{与 settlement 同一资产？}
     C2 --> S
     C3 --> S
+    C4 --> S
     S -->|是| FIN[留在所选余额]
     S -->|否| SW[自动转换为 settlement_asset]
     SW --> FIN
@@ -570,6 +575,9 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
   **冻结**。入账按正常 payin 汇率与手续费结算，随后转换为
   `settlement_asset`。付款金额**小于**冻结报价时照常入账（钱是真实的），
   但**不会**将链接标记为已支付。
+- **银行卡（多币种）**：标签页按扣款币种列出每个可用选项及其报价金额；
+  选择后打开该币种的托管支付页面。每种币种是独立的物化（同一链接可
+  同时以 BOB 和 USD 报价；最先完成支付的生效）。
 - **加密货币（每笔收款一个钱包）**：选择币种后生成专属地址及其
   `qr_payload` 和 `qr_png_base64`——BTC 使用 BIP-21 URI
   （`bitcoin:<address>?amount=…`，自动填充金额）；TRON/ETH 的二维码为
@@ -604,13 +612,15 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
   （`fiat_methods`）、加密进度（`crypto`，含 `due`/`received`）及
   `conversion_status`。
 - `GET {checkout_url}/quote`——选择前的报价：`countries`（含各国货币
-  与方式的目录）、`crypto`（各币对的参考应付额）和 `cbpay`（别名 +
+  与方式的目录，不含银行卡）、`cards`（按国家与币种的银行卡选项，含
+  `local_amount`）、`crypto`（各币对的参考应付额）和 `cbpay`（别名 +
   各资产应付额）。带 `?country=XX` 时额外返回该国当地金额的
   `country_quote`。
 - `POST {checkout_url}/methods/{method}`——物化所选支付选项。法币方式
-  要求 `?country=XX`；加密货币使用 `crypto:<chain>:<asset>`
-  （如 `crypto:tron:usdt`），不带国家。对同一国家+方式重复 POST 返回
-  **同一个**物化结果。
+  要求 `?country=XX`；`card` 还须传 `&currency=YYY`（取自 `cards`
+  目录——同一国家可能支持多种扣款币种）；加密货币使用
+  `crypto:<chain>:<asset>`（如 `crypto:tron:usdt`），不带国家。对同一
+  组合重复 POST 返回**同一个**物化结果。
 
 如果你想在同一链接上渲染自己的支付页面，这些端点会很有用。
 

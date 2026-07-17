@@ -7,6 +7,38 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 16, 2026" description="v1.83">
+
+**Added**
+
+- **Card tab on the universal payment link**: card payments move out of
+  the Fiat tab into their own tab, listed **by charge currency** (today
+  BOB and USD; currencies from future acquirers show up on their own).
+  `GET /pay/{token}/quote` returns the new `cards[]` catalog (country,
+  currency and `local_amount` per option) and `countries[]` no longer
+  lists `card` among the methods. Materializing a card requires the
+  currency: `POST /pay/{token}/methods/card?country=XX&currency=YYY` —
+  without it the new `400 currency_required` error is returned. Each
+  currency is an independent materialization with its own hosted payment
+  page.
+
+**Changed**
+
+- **Payment page with a stronger visual identity**: asset logos (USDT,
+  USDC, BTC, GOLD) next to the amount and on the crypto groups, country
+  flags on the Fiat selector and the card rows, per-method icons, and a
+  **prominent expiry timer** (clock pill; under 1 hour it shows a
+  countdown and under 10 minutes it turns red).
+
+**Fixed**
+
+- The checkout page no longer scrolls by itself to the active panel
+  every few seconds: the automatic refresh re-renders only when the data
+  changed and never moves the scroll (only manually selecting a method
+  brings the detail into view).
+
+</Update>
+
 <Update label="July 16, 2026" description="v1.82">
 
 **Changed**

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.82'
+  version: '1.83'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -505,11 +505,13 @@ paths:
       operationId: checkoutQuote
       summary: Cotizar un link de cobro antes de elegir (público)
       description: Cotizaciones indicativas de un link de cobro universal ANTES de materializar —
-        el catálogo de países con métodos fiat vivos, el monto adeudado por opción crypto (con el
-        costo de conversión incluido cuando el asset de pago difiere del de settlement) y los
-        montos de pago directo CBPay por saldo habilitado. Con `?country=XX` devuelve además el
-        monto local cotizado de ese país. La materialización congela la cotización definitiva.
-        Sin credenciales; rate limit por IP.
+        el catálogo de países con métodos fiat vivos (tarjeta excluida — ver `cards`), las
+        opciones de tarjeta listadas aparte por país+moneda en `cards[]` con el monto adeudado
+        cotizado (un corredor puede aceptar varias monedas de cargo, ej. BOB y USD), el monto
+        adeudado por opción crypto (con el costo de conversión incluido cuando el asset de pago
+        difiere del de settlement) y los montos de pago directo CBPay por saldo habilitado. Con
+        `?country=XX` devuelve además el monto local cotizado de ese país. La materialización
+        congela la cotización definitiva. Sin credenciales; rate limit por IP.
       parameters:
       - name: token
         in: path
@@ -537,12 +539,18 @@ paths:
                   currency: BOB
                   methods:
                   - qr
-                  - card
                 - country: CL
                   currency: CLP
                   methods:
                   - bank_transfer
                   - fintoc
+                cards:
+                - country: BO
+                  currency: BOB
+                  local_amount: '543.30'
+                - country: BO
+                  currency: USD
+                  local_amount: '50.75'
                 crypto:
                 - method: crypto:tron:usdt
                   chain: tron
@@ -608,9 +616,11 @@ paths:
         depósito crypto exclusiva con el monto exacto cotizado más un QR escaneable
         (`qr_payload` + `qr_png_base64` — URI BIP-21 para BTC, dirección cruda para tokens
         TRON/ETH, legibles por wallets externas). Los métodos fiat exigen `?country=XX`; el monto
-        local se cotiza y CONGELA en ese momento. Re-POST del mismo país+método devuelve la MISMA
-        materialización; elegir un método nunca bloquea los demás mientras nadie pague.
-        Sin credenciales; rate limit por IP.
+        local se cotiza y CONGELA en ese momento. Tarjeta exige además `&currency=YYY` elegida
+        del catálogo `cards[]` del quote (un corredor puede cobrar en varias monedas — cada
+        moneda es una materialización independiente con su propia página de pago hosted).
+        Re-POST del mismo país+moneda+método devuelve la MISMA materialización; elegir un método
+        nunca bloquea los demás mientras nadie pague. Sin credenciales; rate limit por IP.
       parameters:
       - name: token
         in: path
@@ -633,6 +643,14 @@ paths:
           type: string
         description: País ISO-3166 alpha-2 del método fiat a materializar. Obligatorio para
           métodos fiat, ignorado para crypto.
+      - name: currency
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Moneda del cargo para `card`, elegida del catálogo `cards[]` del quote
+          (ej. `BOB` o `USD`). Obligatoria para tarjeta cuando el corredor ofrece más de una
+          moneda; ignorada en los demás métodos (su moneda la determina el país).
       responses:
         '200':
           description: Instrucciones del método de pago elegido.
@@ -665,6 +683,17 @@ paths:
                       reference: CB68JZCT46QE
                       note: include the reference in the transfer description so the payment is
                         detected automatically
+                card:
+                  summary: Tarjeta — página de pago hosted en la moneda elegida
+                  value:
+                    method: card
+                    country: BO
+                    currency: USD
+                    local_amount: '50.75'
+                    payload:
+                      charge_id: 8f6a2c1e-4b7d-4a1e-9c3f-2d5e6f7a8b9c
+                      payment_url: https://api.qbank.cl/pay/cards/9f3XkT2m…
+                      expires_at: '2026-07-17T18:15:00Z'
         '404':
           description: Token inválido o link de cobro desconocido.
           content:
@@ -687,12 +716,20 @@ paths:
                 error: checkout_expired
                 message: this payment link expired
         '400':
-          description: Método fiat sin el país obligatorio.
+          description: Método fiat sin el país obligatorio, o tarjeta sin la moneda del cargo.
           content:
             application/json:
-              example:
-                error: country_required
-                message: 'pass ?country=XX to materialize a fiat method'
+              examples:
+                country_required:
+                  summary: Método fiat sin país
+                  value:
+                    error: country_required
+                    message: 'send ?country=XX to choose the payment corridor'
+                currency_required:
+                  summary: Tarjeta sin la moneda del cargo
+                  value:
+                    error: currency_required
+                    message: 'this country accepts cards in more than one currency; send ?currency=XXX'
         '422':
           description: El método no está disponible para este link o país.
           content:

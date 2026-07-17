@@ -516,7 +516,7 @@ choose** (`settlement_asset`: `USDT`, `USDC`, `BTC` or `GOLD`, default
 when it credits — unless the payer pays in the same asset, in which case
 there is no conversion.
 
-The page organizes the payment into **three tabs**:
+The page organizes the payment into **four tabs**:
 
 - **CBPay** — direct payment with the app: the merchant's alias and QR;
   scanning with the app pays instantly through an internal transfer, in
@@ -527,8 +527,12 @@ The page organizes the payment into **three tabs**:
   charge and a **scannable QR** compatible with external wallets (Trust
   Wallet, MetaMask, Binance and similar apps).
 - **Fiat** — the payer picks their country among **every country with a
-  live payin corridor** and sees the available methods (QR, card, bank
+  live payin corridor** and sees the available methods (QR, bank
   transfer, hosted payment) with the local amount quoted on the spot.
+- **Card** — credit or debit card payment on a secure hosted page,
+  listed **by charge currency** (today BOB and USD; currencies from
+  future acquirers show up on their own). Each currency is an
+  independent payment option with its own quoted amount.
 
 ```mermaid
 flowchart LR
@@ -536,9 +540,11 @@ flowchart LR
     P --> C1[Crypto: address + QR with the quoted due]
     P --> C2[Country + fiat method: quoted local amount]
     P --> C3[CBPay app: merchant alias + QR]
+    P --> C4[Card: hosted page in the chosen currency]
     C1 --> S{same asset as settlement?}
     C2 --> S
     C3 --> S
+    C4 --> S
     S -->|yes| FIN[Stays in the chosen balance]
     S -->|no| SW[Automatic conversion to the settlement_asset]
     SW --> FIN
@@ -603,6 +609,11 @@ and redirects to your `success_url` if you set one.
   and fees, and is then converted to the `settlement_asset`. An announced
   payment SMALLER than the frozen quote still credits (the money is real)
   but does **not** mark the link as paid.
+- **Card (multi-currency)**: the tab lists every available charge
+  currency with its quoted amount; picking one opens the hosted payment
+  page in that currency. Each currency is an independent materialization
+  (you can quote BOB and USD on the same link; the first one to complete
+  pays it).
 - **Crypto (wallet per charge)**: choosing a currency generates an
   exclusive address with its `qr_payload` and `qr_png_base64` — BTC uses
   a BIP-21 URI (`bitcoin:<address>?amount=…`, autofills the amount);
@@ -641,13 +652,17 @@ as `POST /v1/swaps`). The aggregate state travels in `conversion_status`:
   (`fiat_methods`), crypto progress (`crypto` with `due`/`received`) and
   `conversion_status`.
 - `GET {checkout_url}/quote` — quotes BEFORE choosing: `countries`
-  (catalog with currency and methods per country), `crypto` (indicative
-  due per pair) and `cbpay` (alias + dues per asset). With `?country=XX`
-  it adds `country_quote` with that country's local amount.
+  (catalog with currency and methods per country, card excluded), `cards`
+  (card options per country and currency with their `local_amount`),
+  `crypto` (indicative due per pair) and `cbpay` (alias + dues per
+  asset). With `?country=XX` it adds `country_quote` with that country's
+  local amount.
 - `POST {checkout_url}/methods/{method}` — materializes the chosen
-  option. Fiat methods require `?country=XX`; crypto uses
+  option. Fiat methods require `?country=XX`; `card` also requires
+  `&currency=YYY` (taken from the `cards` catalog — one country can
+  accept cards in more than one currency); crypto uses
   `crypto:<chain>:<asset>` (e.g. `crypto:tron:usdt`) without a country.
-  Re-POSTing the same country+method returns the SAME materialization.
+  Re-POSTing the same combination returns the SAME materialization.
 
 Useful if you prefer to render your own payment page on top of the same
 link.
