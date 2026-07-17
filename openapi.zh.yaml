@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.83'
+  version: '1.84'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -463,11 +463,15 @@ paths:
       - Payins
       operationId: checkoutQuote
       summary: 选择前报价收款链接（公开）
-      description: 在生成支付选项前获取通用收款链接的指示性报价 — 有可用法币方式的国家目录（不含银行卡，
+      description: >-
+        在生成支付选项前获取通用收款链接的指示性报价 — 有可用法币方式的国家目录（不含银行卡，
         见 `cards`）、在 `cards[]` 中按国家+币种单独列出的银行卡选项及其报价应付金额（同一通道可能接受
         多种扣款币种，例如 BOB 和 USD）、每个加密货币选项的应付金额（付款资产与结算资产不同时已含兑换
-        成本），以及按已启用余额列出的 CBPay 直接付款金额。传 `?country=XX` 时额外返回该国家的本地报价。
-        最终报价在生成支付选项时冻结。无需凭证；按 IP 限流。
+        成本），以及按已启用余额列出的 CBPay 直接付款金额。每个国家在 `options[]` 中列出其通道 —
+        每个方式+币种一行（同一国家可能以多种币种提供同一方式，例如 BOB 和 USD 的二维码），拉取式
+        方式带 `collect: true`（需要付款人在页面上填写数据，见 `POST /pay/{token}/collect`）。
+        传 `?country=XX` 时额外返回该国家每个选项的本地报价金额。最终报价在生成支付选项时冻结。
+        无需凭证；按 IP 限流。
       parameters:
       - name: token
         in: path
@@ -495,11 +499,31 @@ paths:
                   currency: BOB
                   methods:
                   - qr
+                  options:
+                  - method: qr
+                    currency: BOB
+                  - method: qr
+                    currency: USD
+                - country: VE
+                  currency: VES
+                  methods: []
+                  options:
+                  - method: c2p
+                    currency: VES
+                    collect: true
+                  - method: debito_inmediato
+                    currency: VES
+                    collect: true
                 - country: CL
                   currency: CLP
                   methods:
                   - bank_transfer
                   - fintoc
+                  options:
+                  - method: bank_transfer
+                    currency: CLP
+                  - method: fintoc
+                    currency: CLP
                 cards:
                 - country: BO
                   currency: BOB
@@ -525,12 +549,18 @@ paths:
                     BTC: '0.00046120'
                     GOLD: '0.462100'
                 country_quote:
-                  country: CL
-                  currency: CLP
+                  country: BO
+                  currency: BOB
                   methods:
-                  - bank_transfer
-                  - fintoc
-                  local_amount: '47180'
+                  - qr
+                  local_amount: '543.30'
+                  options:
+                  - method: qr
+                    currency: BOB
+                    local_amount: '543.30'
+                  - method: qr
+                    currency: USD
+                    local_amount: '50.75'
         '404':
           description: 令牌无效或收款链接不存在。
           content:
@@ -566,13 +596,18 @@ paths:
       - Payins
       operationId: checkoutMaterialize
       summary: 生成结账支付选项（公开）
-      description: 延迟创建付款人在通用收款链接上选择的支付选项并返回其指引 — 银行卡/托管方式的支付
+      description: >-
+        延迟创建付款人在通用收款链接上选择的支付选项并返回其指引 — 银行卡/托管方式的支付
         URL、二维码方式的二维码、银行转账的申报参考码，或带精确报价金额和可扫描二维码的专属加密货币
         充值地址（`qr_payload` + `qr_png_base64` — BTC 为 BIP-21 URI，TRON/ETH 代币为原始地址，
-        外部钱包可直接读取）。法币方式必须传 `?country=XX`；本地金额在此刻报价并冻结。银行卡还须传
-        `&currency=YYY`，从报价的 `cards[]` 目录中选取（同一通道可能支持多种扣款币种 — 每种币种是
-        独立的支付选项，各自有托管支付页面）。对同一国家+币种+方式重复 POST 返回相同的结果；在无人
-        支付前，选择某个方式不会锁定其他方式。无需凭证；按 IP 限流。
+        外部钱包可直接读取）。法币方式必须传 `?country=XX`；本地金额在此刻报价并冻结。当国家以多种
+        币种提供同一方式时（见报价的 `options[]` — 例如 BOB 和 USD 的二维码，或银行卡通道）还须传
+        `&currency=YYY`；每种币种是独立的支付选项。当通道使用专属收款账户时（例如墨西哥的 CLABE），
+        银行转账会返回商户的目标账户。拉取式方式（报价中 `collect: true`，例如委内瑞拉的 `c2p` 和
+        `debito_inmediato`）冻结报价并返回付款人需填写的表单定义（`banks[]` 目录、
+        `requires_otp_request`）；实际扣款通过 `POST /pay/{token}/collect` 执行。对同一
+        国家+币种+方式重复 POST 返回相同的结果；在无人支付前，选择某个方式不会锁定其他方式。
+        无需凭证；按 IP 限流。
       parameters:
       - name: token
         in: path
@@ -585,9 +620,9 @@ paths:
         required: true
         schema:
           type: string
-        description: 要生成的方式 — 多国目录中的法币方式（`qr`、`card`、`fintoc`、`bank_transfer`，
-          必须传 `?country=XX`）或加密货币选项（`crypto:tron:usdt`、`crypto:eth:usdt`、
-          `crypto:eth:usdc`、`crypto:btc:btc`，不带国家）。
+        description: 要生成的方式 — 多国目录中的法币方式（`qr`、`card`、`fintoc`、`bank_transfer`、
+          `c2p`、`debito_inmediato`，必须传 `?country=XX`）或加密货币选项（`crypto:tron:usdt`、
+          `crypto:eth:usdt`、`crypto:eth:usdc`、`crypto:btc:btc`，不带国家）。
       - name: country
         in: query
         required: false
@@ -599,8 +634,9 @@ paths:
         required: false
         schema:
           type: string
-        description: '`card` 的扣款币种，从报价的 `cards[]` 目录中选取（例如 `BOB` 或 `USD`）。
-          当通道提供多种币种时银行卡必填；其他方式忽略（其币种由国家决定）。'
+        description: 本次支付选项的扣款币种，从报价的 `options[]`（或 `cards[]`）目录中选取
+          （例如 `BOB` 或 `USD`）。当国家以多种币种提供该方式时必填；只有一种币种时忽略
+          （其币种由国家决定）。
       responses:
         '200':
           description: 所选支付方式的指引。
@@ -633,6 +669,38 @@ paths:
                       reference: CB68JZCT46QE
                       note: include the reference in the transfer description so the payment is
                         detected automatically
+                bank_transfer_dedicated_account:
+                  summary: 带专属收款账户的银行转账（墨西哥 CLABE）
+                  value:
+                    method: bank_transfer
+                    country: MX
+                    currency: MXN
+                    local_amount: '941.00'
+                    payload:
+                      reference: CB9PFKECTFV9
+                      destination:
+                        type: clabe
+                        account: '710969000012345678'
+                        beneficiary: Acme Store S.A.
+                      note: include the reference in the transfer description so the payment is
+                        detected automatically
+                collect:
+                  summary: 拉取式方式（委内瑞拉 C2P）— 冻结报价 + 付款人表单定义
+                  value:
+                    method: c2p
+                    country: VE
+                    currency: VES
+                    local_amount: '4266.77'
+                    payload:
+                      collect: true
+                      currency: VES
+                      amount: '4266.77'
+                      requires_otp_request: false
+                      banks:
+                      - code: '0102'
+                        name: Banco de Venezuela
+                      - code: '0134'
+                        name: Banesco
                 card:
                   summary: 银行卡 — 所选币种的托管支付页面
                   value:
@@ -676,10 +744,10 @@ paths:
                     error: country_required
                     message: 'send ?country=XX to choose the payment corridor'
                 currency_required:
-                  summary: 银行卡缺少扣款币种
+                  summary: 方式提供多种币种但未选择
                   value:
                     error: currency_required
-                    message: 'this country accepts cards in more than one currency; send ?currency=XXX'
+                    message: 'this country accepts this method in more than one currency; send ?currency=XXX'
         '422':
           description: 该方式对此链接或国家不可用。
           content:
@@ -709,6 +777,196 @@ paths:
               example:
                 error: pricing_unavailable
                 message: pricing is temporarily unavailable; retry in a moment
+  /pay/{token}/collect/otp:
+    post:
+      security: []
+      tags:
+      - Payins
+      operationId: checkoutCollectOTP
+      summary: 请求拉取式收款的 OTP（公开）
+      description: >-
+        用于通道按需向付款人发送一次性密码的拉取式方式（生成的支付选项中
+        `requires_otp_request: true`，例如委内瑞拉的即时扣款）。触发向付款人发送 OTP，并返回
+        必须随最终 `POST /pay/{token}/collect` 一起提交的 `otp_reference`。必须先生成该拉取式
+        支付选项；金额始终是那时冻结的金额。按 IP 严格限流（每次调用都是发给付款人的真实短信/推送）。
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+        description: 嵌入在 `checkout_url` 中的不透明结账令牌。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              country: VE
+              currency: VES
+              method: debito_inmediato
+              payer_document: V12345678
+              payer_bank: '0102'
+              payer_account: '01020123456789012345'
+      responses:
+        '200':
+          description: OTP 已发送给付款人。
+          content:
+            application/json:
+              example:
+                otp_reference: '783412'
+                status: sent
+        '404':
+          description: 令牌无效或收款链接不存在。
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: payment link not found
+        '409':
+          description: 该链接已通过其他方式支付。
+          content:
+            application/json:
+              example:
+                error: already_paid
+                message: this payment link was already paid
+        '410':
+          description: 该链接已过期且未支付。
+          content:
+            application/json:
+              example:
+                error: checkout_expired
+                message: this payment link expired
+        '422':
+          description: 拉取式选项尚未生成，或通道拒绝了 OTP 请求。
+          content:
+            application/json:
+              examples:
+                not_materialized:
+                  summary: 拉取式选项尚未准备
+                  value:
+                    error: method_unavailable
+                    message: prepare this payment option first (POST /methods/{method})
+                rail_rejected:
+                  summary: 通道拒绝了 OTP 请求
+                  value:
+                    error: collect_otp_failed
+                    message: the destination account does not accept immediate debit
+        '429':
+          description: 来自此 IP 的请求过多。
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many requests; wait a moment and retry
+  /pay/{token}/collect:
+    post:
+      security: []
+      tags:
+      - Payins
+      operationId: checkoutCollect
+      summary: 用付款人数据执行拉取式收款（公开）
+      description: >-
+        使用付款人在结账页面填写的数据执行已生成的拉取式选项（`c2p` /
+        `debito_inmediato`）的扣款 — 银行、证件号、电话或账户，以及 OTP（C2P 由付款人在其银行
+        App 中生成；即时扣款通过 `POST /pay/{token}/collect/otp` 请求并回传其 `otp_reference`）。
+        金额始终是生成支付选项时冻结的金额 — 付款人从不发送金额。若通道同步确认，链接在同一次调用
+        中完成结算（`paid: true`）；被拒绝不会终结链接 — 付款人可以修正数据或改用其他方式。用相同
+        数据重试绝不会重复扣款。按 IP 严格限流。
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+        description: 嵌入在 `checkout_url` 中的不透明结账令牌。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            examples:
+              c2p:
+                summary: C2P — 付款人在其银行 App 中生成 OTP
+                value:
+                  country: VE
+                  currency: VES
+                  method: c2p
+                  payer_document: V12345678
+                  payer_phone: '04141234567'
+                  payer_bank: '0102'
+                  otp: '123456'
+              immediate_debit:
+                summary: 即时扣款 — 通过 /collect/otp 请求的 OTP
+                value:
+                  country: VE
+                  currency: VES
+                  method: debito_inmediato
+                  payer_document: V12345678
+                  payer_bank: '0102'
+                  payer_account: '01020123456789012345'
+                  otp: '654321'
+                  otp_reference: '783412'
+      responses:
+        '200':
+          description: 收款尝试的结果。
+          content:
+            application/json:
+              examples:
+                paid:
+                  summary: 通道同步确认 — 链接已结算
+                  value:
+                    paid: true
+                    status: paid
+                    status_message: approved
+                rejected_soft:
+                  summary: 通道在响应体中报告可恢复的拒绝
+                  value:
+                    paid: false
+                    status: failed
+                    status_code: '05'
+                    status_message: the document does not match the C2P registration
+        '404':
+          description: 令牌无效或收款链接不存在。
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: payment link not found
+        '409':
+          description: 该链接已通过其他方式支付。
+          content:
+            application/json:
+              example:
+                error: already_paid
+                message: this payment link was already paid
+        '410':
+          description: 该链接已过期且未支付。
+          content:
+            application/json:
+              example:
+                error: checkout_expired
+                message: this payment link expired
+        '422':
+          description: 拉取式选项尚未生成，或通道拒绝了扣款（链接保持待支付，付款人可重试）。
+          content:
+            application/json:
+              examples:
+                not_materialized:
+                  summary: 拉取式选项尚未准备
+                  value:
+                    error: method_unavailable
+                    message: prepare this payment option first (POST /methods/{method})
+                rail_rejected:
+                  summary: 通道拒绝了扣款
+                  value:
+                    error: collect_rejected
+                    message: invalid or expired OTP
+        '429':
+          description: 来自此 IP 的请求过多。
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many requests; wait a moment and retry
   /v1/branding:
     get:
       tags:

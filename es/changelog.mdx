@@ -8,6 +8,48 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="17 de julio de 2026" description="v1.84">
+
+**Agregado**
+
+- **Cobros pull en el link de cobro universal (Venezuela)**: la página del
+  checkout ahora ofrece los métodos que cobran directo en la cuenta del
+  pagador (`c2p` y `debito_inmediato` en VE). El pagador completa banco,
+  documento, teléfono o cuenta y la clave OTP en la misma página; el monto
+  siempre es el congelado en la cotización. Endpoints públicos nuevos:
+  `POST /pay/{token}/collect/otp` (solicita la clave cuando el rail la
+  envía a demanda) y `POST /pay/{token}/collect` (ejecuta el cobro; si el
+  rail confirma síncrono el link queda pagado en la misma llamada). En el
+  catálogo de `GET /pay/{token}/quote` estos métodos llegan con
+  `collect: true`.
+- **Fiat multi-moneda por país**: cada país del quote lista sus corredores
+  en `options[]` — una fila por método+moneda (ej. Bolivia con QR en BOB
+  **y** en USD) con su `local_amount` en `country_quote`. Materializar un
+  método ofrecido en varias monedas exige `&currency=YYY` (el error
+  `400 currency_required` ahora aplica a cualquier método, no solo
+  tarjetas).
+- **Cuenta de destino en transferencias bancarias**: cuando el corredor
+  usa una cuenta de depósito dedicada (la CLABE en México), la
+  materialización de `bank_transfer` incluye `destination` (tipo, número
+  de cuenta y beneficiario) además de la referencia — el pagador ya sabe
+  adónde transferir sin salir de la página.
+
+**Cambiado**
+
+- **Banderas SVG en la página de pago**: las banderas de países y monedas
+  ahora son imágenes SVG (se ven igual en Windows, macOS y móviles; antes
+  algunos sistemas mostraban el código del país en texto). En la pestaña
+  Tarjeta, la bandera se deriva de la **moneda del cargo** (USD → bandera
+  de Estados Unidos, aunque el adquirente sea de otro país).
+
+**Corregido**
+
+- La página del checkout ya no responde `429 too_many_attempts` por el
+  solo hecho de estar abierta: los límites de tráfico de lectura,
+  materialización, OTP y cobro ahora son independientes entre sí.
+
+</Update>
+
 <Update label="16 de julio de 2026" description="v1.83">
 
 **Agregado**

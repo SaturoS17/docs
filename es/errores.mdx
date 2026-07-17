@@ -139,7 +139,10 @@ Detalle y flujo completo en [login social](/es/guias/login-social).
 | 410 | `checkout_expired` | El link de cobro universal venció sin pago |
 | 422 | `method_unavailable` | El método elegido en el link de cobro no está disponible para ese link o país |
 | 400 | `country_required` | Materialización fiat del link de cobro sin `?country=XX` |
+| 400 | `currency_required` | El país ofrece el método del link de cobro en varias monedas; falta `?currency=YYY` |
 | 422 | `country_unavailable` | Ese país no tiene métodos de pago disponibles en el link de cobro |
+| 422 | `collect_otp_failed` | El rail rechazó el envío de la clave OTP del cobro pull del link |
+| 422 | `collect_rejected` | El rail rechazó el cobro pull del link (OTP inválida o datos incorrectos); el link sigue pendiente |
 | 422 | `settlement_asset_disabled` | El `settlement_asset` del link de cobro está deshabilitado para tu organización |
 | 422 | `checkout_amount_mismatch` | La transferencia CBPay no cubre el monto vigente del link de cobro; el mensaje trae el monto actualizado |
 

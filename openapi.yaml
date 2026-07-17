@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.83'
+  version: '1.84'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -499,14 +499,18 @@ paths:
       - Payins
       operationId: checkoutQuote
       summary: Quote a checkout link before choosing (public)
-      description: Indicative quotes for a universal checkout link BEFORE materializing — the
+      description: >-
+        Indicative quotes for a universal checkout link BEFORE materializing — the
         catalog of countries with live fiat methods (card excluded — see `cards`), the card
         options listed separately per country+currency in `cards[]` with the quoted due amount
         (a corridor may accept several charge currencies, e.g. BOB and USD), the due amount per
         crypto option (conversion cost included when the pay asset differs from the settlement
-        asset), and the CBPay direct payment dues per enabled balance. With `?country=XX` it
-        also returns the quoted local amount for that country. Materializing freezes the
-        definitive quote. No credentials; rate limited per IP.
+        asset), and the CBPay direct payment dues per enabled balance. Each country lists its
+        corridors in `options[]` — one row per method+currency (a country may offer the same
+        method in several currencies, e.g. QR in BOB and USD) with `collect: true` on pull
+        methods that ask for the payer's data on the page (see `POST /pay/{token}/collect`).
+        With `?country=XX` it also returns the quoted local amount per option for that country.
+        Materializing freezes the definitive quote. No credentials; rate limited per IP.
       parameters:
       - name: token
         in: path
@@ -534,11 +538,31 @@ paths:
                   currency: BOB
                   methods:
                   - qr
+                  options:
+                  - method: qr
+                    currency: BOB
+                  - method: qr
+                    currency: USD
+                - country: VE
+                  currency: VES
+                  methods: []
+                  options:
+                  - method: c2p
+                    currency: VES
+                    collect: true
+                  - method: debito_inmediato
+                    currency: VES
+                    collect: true
                 - country: CL
                   currency: CLP
                   methods:
                   - bank_transfer
                   - fintoc
+                  options:
+                  - method: bank_transfer
+                    currency: CLP
+                  - method: fintoc
+                    currency: CLP
                 cards:
                 - country: BO
                   currency: BOB
@@ -564,12 +588,18 @@ paths:
                     BTC: '0.00046120'
                     GOLD: '0.462100'
                 country_quote:
-                  country: CL
-                  currency: CLP
+                  country: BO
+                  currency: BOB
                   methods:
-                  - bank_transfer
-                  - fintoc
-                  local_amount: '47180'
+                  - qr
+                  local_amount: '543.30'
+                  options:
+                  - method: qr
+                    currency: BOB
+                    local_amount: '543.30'
+                  - method: qr
+                    currency: USD
+                    local_amount: '50.75'
         '404':
           description: Invalid token or unknown payment link.
           content:
@@ -605,18 +635,23 @@ paths:
       - Payins
       operationId: checkoutMaterialize
       summary: Materialize a checkout payment option (public)
-      description: Creates (lazily) the payment option the payer picked on a universal checkout
+      description: >-
+        Creates (lazily) the payment option the payer picked on a universal checkout
         link and returns its instructions — the payment URL for card/hosted methods, the QR for
         QR methods, the announce reference for bank transfers, or an exclusive crypto deposit
         address with the exact quoted amount plus a scannable QR (`qr_payload` +
         `qr_png_base64` — BIP-21 URI for BTC, raw address for TRON/ETH tokens, readable by
         external wallets). Fiat methods require `?country=XX`; the local amount is quoted and
-        FROZEN at this moment. Card additionally requires `&currency=YYY` picked from the
-        `cards[]` catalog of the quote (a corridor may charge in several currencies — each
-        currency is an independent materialization with its own hosted payment page).
-        Re-POSTing the same country+currency+method returns the SAME materialization; picking
-        a method never blocks the others while nobody has paid. No credentials; rate limited
-        per IP.
+        FROZEN at this moment. When the country offers the method in more than one currency
+        (see `options[]` of the quote — e.g. QR in BOB and USD, or card corridors) it also
+        requires `&currency=YYY`; each currency is an independent materialization. Bank
+        transfers include the merchant's destination account when the corridor uses a
+        dedicated deposit account (e.g. the CLABE in Mexico). Pull methods (`collect: true`
+        in the quote, e.g. `c2p` and `debito_inmediato` in Venezuela) freeze the quote and
+        return the form the payer must fill (`banks[]` catalog, `requires_otp_request`); the
+        charge itself runs through `POST /pay/{token}/collect`. Re-POSTing the same
+        country+currency+method returns the SAME materialization; picking a method never
+        blocks the others while nobody has paid. No credentials; rate limited per IP.
       parameters:
       - name: token
         in: path
@@ -630,9 +665,9 @@ paths:
         schema:
           type: string
         description: Method to materialize — a fiat method from the multi-country catalog (`qr`,
-          `card`, `fintoc`, `bank_transfer`; requires `?country=XX`) or a crypto option
-          (`crypto:tron:usdt`, `crypto:eth:usdt`, `crypto:eth:usdc`, `crypto:btc:btc`; no
-          country).
+          `card`, `fintoc`, `bank_transfer`, `c2p`, `debito_inmediato`; requires `?country=XX`)
+          or a crypto option (`crypto:tron:usdt`, `crypto:eth:usdt`, `crypto:eth:usdc`,
+          `crypto:btc:btc`; no country).
       - name: country
         in: query
         required: false
@@ -645,10 +680,10 @@ paths:
         required: false
         schema:
           type: string
-        description: Charge currency for `card`, picked from the `cards[]` catalog of the
-          quote (e.g. `BOB` or `USD`). Required for card when the corridor offers more than
-          one currency; ignored for the other methods (their currency is determined by the
-          country).
+        description: Charge currency of the materialization, picked from the `options[]` (or
+          `cards[]`) catalog of the quote (e.g. `BOB` or `USD`). Required when the country
+          offers the method in more than one currency; ignored when there is a single one
+          (it is determined by the country).
       responses:
         '200':
           description: Instructions for the chosen payment method.
@@ -681,6 +716,38 @@ paths:
                       reference: CB68JZCT46QE
                       note: include the reference in the transfer description so the payment is
                         detected automatically
+                bank_transfer_dedicated_account:
+                  summary: Bank transfer with a dedicated destination account (MX CLABE)
+                  value:
+                    method: bank_transfer
+                    country: MX
+                    currency: MXN
+                    local_amount: '941.00'
+                    payload:
+                      reference: CB9PFKECTFV9
+                      destination:
+                        type: clabe
+                        account: '710969000012345678'
+                        beneficiary: Acme Store S.A.
+                      note: include the reference in the transfer description so the payment is
+                        detected automatically
+                collect:
+                  summary: Pull method (VE C2P) — frozen quote + payer form definition
+                  value:
+                    method: c2p
+                    country: VE
+                    currency: VES
+                    local_amount: '4266.77'
+                    payload:
+                      collect: true
+                      currency: VES
+                      amount: '4266.77'
+                      requires_otp_request: false
+                      banks:
+                      - code: '0102'
+                        name: Banco de Venezuela
+                      - code: '0134'
+                        name: Banesco
                 card:
                   summary: Card — hosted payment page in the chosen currency
                   value:
@@ -724,10 +791,10 @@ paths:
                     error: country_required
                     message: 'send ?country=XX to choose the payment corridor'
                 currency_required:
-                  summary: Card without the charge currency
+                  summary: Method offered in several currencies without picking one
                   value:
                     error: currency_required
-                    message: 'this country accepts cards in more than one currency; send ?currency=XXX'
+                    message: 'this country accepts this method in more than one currency; send ?currency=XXX'
         '422':
           description: The method is not available for this link or country.
           content:
@@ -757,6 +824,202 @@ paths:
               example:
                 error: pricing_unavailable
                 message: pricing is temporarily unavailable; retry in a moment
+  /pay/{token}/collect/otp:
+    post:
+      security: []
+      tags:
+      - Payins
+      operationId: checkoutCollectOTP
+      summary: Request the OTP of a pull collection (public)
+      description: >-
+        For pull methods whose rail sends the payer a one-time key on demand
+        (`requires_otp_request: true` in the materialization, e.g. Venezuela immediate
+        debit). Triggers the OTP delivery to the payer and returns the `otp_reference` that
+        must accompany the final `POST /pay/{token}/collect`. The pull option must be
+        materialized first; the amount is ALWAYS the one frozen there. Strictly rate
+        limited per IP (each call is a real SMS/push to the payer).
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Opaque checkout token embedded in the `checkout_url`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              country: VE
+              currency: VES
+              method: debito_inmediato
+              payer_document: V12345678
+              payer_bank: '0102'
+              payer_account: '01020123456789012345'
+      responses:
+        '200':
+          description: OTP sent to the payer.
+          content:
+            application/json:
+              example:
+                otp_reference: '783412'
+                status: sent
+        '404':
+          description: Invalid token or unknown payment link.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: payment link not found
+        '409':
+          description: The link was already paid via another method.
+          content:
+            application/json:
+              example:
+                error: already_paid
+                message: this payment link was already paid
+        '410':
+          description: The link expired without payment.
+          content:
+            application/json:
+              example:
+                error: checkout_expired
+                message: this payment link expired
+        '422':
+          description: The pull option is not materialized, or the rail rejected the OTP request.
+          content:
+            application/json:
+              examples:
+                not_materialized:
+                  summary: Pull option not prepared yet
+                  value:
+                    error: method_unavailable
+                    message: prepare this payment option first (POST /methods/{method})
+                rail_rejected:
+                  summary: Rail rejected the OTP request
+                  value:
+                    error: collect_otp_failed
+                    message: the destination account does not accept immediate debit
+        '429':
+          description: Too many requests from this IP.
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many requests; wait a moment and retry
+  /pay/{token}/collect:
+    post:
+      security: []
+      tags:
+      - Payins
+      operationId: checkoutCollect
+      summary: Execute a pull collection with the payer's data (public)
+      description: >-
+        Runs the pull charge of a materialized collect option (`c2p` /
+        `debito_inmediato`) with the data the payer typed on the checkout page — bank,
+        document, phone or account, and the OTP (generated in the payer's banking app for
+        C2P, or requested via `POST /pay/{token}/collect/otp` for immediate debit, sending
+        back its `otp_reference`). The amount is ALWAYS the one frozen at materialization —
+        the payer never sends it. If the rail confirms synchronously the link is settled in
+        the same call (`paid: true`); a rejection does NOT kill the link — the payer can fix
+        the data or pick another method. Retrying with the same data never charges twice.
+        Strictly rate limited per IP.
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Opaque checkout token embedded in the `checkout_url`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            examples:
+              c2p:
+                summary: C2P — OTP generated by the payer in their banking app
+                value:
+                  country: VE
+                  currency: VES
+                  method: c2p
+                  payer_document: V12345678
+                  payer_phone: '04141234567'
+                  payer_bank: '0102'
+                  otp: '123456'
+              immediate_debit:
+                summary: Immediate debit — OTP requested via /collect/otp
+                value:
+                  country: VE
+                  currency: VES
+                  method: debito_inmediato
+                  payer_document: V12345678
+                  payer_bank: '0102'
+                  payer_account: '01020123456789012345'
+                  otp: '654321'
+                  otp_reference: '783412'
+      responses:
+        '200':
+          description: Result of the collection attempt.
+          content:
+            application/json:
+              examples:
+                paid:
+                  summary: Rail confirmed synchronously — link settled
+                  value:
+                    paid: true
+                    status: paid
+                    status_message: approved
+                rejected_soft:
+                  summary: Rail reported a recoverable rejection in the response body
+                  value:
+                    paid: false
+                    status: failed
+                    status_code: '05'
+                    status_message: the document does not match the C2P registration
+        '404':
+          description: Invalid token or unknown payment link.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: payment link not found
+        '409':
+          description: The link was already paid via another method.
+          content:
+            application/json:
+              example:
+                error: already_paid
+                message: this payment link was already paid
+        '410':
+          description: The link expired without payment.
+          content:
+            application/json:
+              example:
+                error: checkout_expired
+                message: this payment link expired
+        '422':
+          description: The pull option is not materialized, or the rail rejected the charge
+            (the link stays pending so the payer can retry).
+          content:
+            application/json:
+              examples:
+                not_materialized:
+                  summary: Pull option not prepared yet
+                  value:
+                    error: method_unavailable
+                    message: prepare this payment option first (POST /methods/{method})
+                rail_rejected:
+                  summary: Rail rejected the charge
+                  value:
+                    error: collect_rejected
+                    message: invalid or expired OTP
+        '429':
+          description: Too many requests from this IP.
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many requests; wait a moment and retry
   /v1/branding:
     get:
       tags:

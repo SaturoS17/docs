@@ -608,7 +608,20 @@ y redirige a tu `success_url` si la configuraste.
   método. El abono acredita con la conversión y comisiones normales de
   payin y después se convierte al `settlement_asset`. Un pago anunciado
   MENOR a la cotización congelada se acredita igual (la plata es real)
-  pero **no** marca el link como pagado.
+  pero **no** marca el link como pagado. Si un país ofrece el mismo
+  método en **varias monedas** (ej. Bolivia con QR en BOB y en USD), la
+  página lista cada moneda como opción independiente. En transferencias
+  bancarias con cuenta de depósito dedicada (la CLABE en México), la
+  página muestra además el **número de cuenta y beneficiario** adonde
+  transferir.
+- **Cobros pull (Venezuela)**: `c2p` y `debito_inmediato` cobran directo
+  en la cuenta del pagador. La página le pide banco, documento, teléfono
+  (C2P) o cuenta (débito inmediato) y la clave OTP — generada en su app
+  bancaria para C2P, o enviada a demanda para débito inmediato (botón
+  "Solicitar clave"). El monto SIEMPRE es el congelado en la cotización;
+  si el rail confirma síncrono, el link queda pagado al instante. Un
+  rechazo no mata el link: el pagador corrige los datos o elige otro
+  método.
 - **Tarjeta (multi-moneda)**: la pestaña lista cada moneda de cargo
   disponible con su monto cotizado; al elegir una se abre la página de
   pago hosted en esa moneda. Cada moneda es una materialización
@@ -651,16 +664,28 @@ motor de conversiones de tu cuenta (mismos spreads y límites que
   (`fiat_methods`), progreso crypto (`crypto` con `due`/`received`) y
   `conversion_status`.
 - `GET {checkout_url}/quote` — cotizaciones ANTES de elegir: `countries`
-  (catálogo con moneda y métodos por país, sin tarjeta), `cards` (opciones
-  de tarjeta por país y moneda con su `local_amount`), `crypto` (due
-  indicativo por par) y `cbpay` (alias + dues por asset). Con
-  `?country=XX` agrega `country_quote` con el monto local de ese país.
+  (catálogo por país; cada país lista sus corredores en `options[]` —
+  una fila por método+moneda, con `collect: true` en los métodos pull),
+  `cards` (opciones de tarjeta por país y moneda con su `local_amount`),
+  `crypto` (due indicativo por par) y `cbpay` (alias + dues por asset).
+  Con `?country=XX` agrega `country_quote` con el monto local por opción
+  de ese país.
 - `POST {checkout_url}/methods/{method}` — materializa la opción elegida.
-  Métodos fiat exigen `?country=XX`; `card` exige además
-  `&currency=YYY` (tomada del catálogo `cards` — un mismo país puede
-  aceptar tarjeta en más de una moneda); crypto usa
-  `crypto:<chain>:<asset>` (ej. `crypto:tron:usdt`) sin país. Re-POST de
-  la misma combinación devuelve la MISMA materialización.
+  Métodos fiat exigen `?country=XX`; si el país ofrece el método en más
+  de una moneda (tarjetas, QR BOB/USD en Bolivia) exige además
+  `&currency=YYY`; crypto usa `crypto:<chain>:<asset>` (ej.
+  `crypto:tron:usdt`) sin país. Los métodos pull devuelven el formulario
+  del pagador (`banks[]`, `requires_otp_request`) con la cotización
+  congelada. Re-POST de la misma combinación devuelve la MISMA
+  materialización.
+- `POST {checkout_url}/collect/otp` — solicita la clave OTP de un cobro
+  pull cuando el rail la envía a demanda (`requires_otp_request: true`,
+  ej. débito inmediato VE). Devuelve el `otp_reference` que acompaña al
+  cobro final. Rate limit estricto (cada llamada es un SMS/push real).
+- `POST {checkout_url}/collect` — ejecuta el cobro pull con los datos del
+  pagador (banco, documento, teléfono o cuenta, OTP). El monto siempre es
+  el congelado; si el rail confirma síncrono responde `paid: true` y el
+  link queda liquidado en la misma llamada.
 
 Útil si prefieres renderizar tu propia página de pago sobre el mismo
 link.
@@ -689,11 +714,14 @@ Errores propios del link (los ve quien abre la página):
 |---|---|---|
 | 404 | `not_found` | Token inválido o link inexistente |
 | 400 | `country_required` | Método fiat sin `?country=XX` |
+| 400 | `currency_required` | El país ofrece el método en varias monedas; falta `?currency=YYY` |
 | 409 | `already_paid` | El link ya se pagó por otro método |
 | 410 | `checkout_expired` | El link venció sin pago |
 | 422 | `method_unavailable` | Ese método no está disponible para este link o país |
 | 422 | `country_unavailable` | Ese país no tiene métodos de pago disponibles |
 | 422 | `checkout_amount_mismatch` | La transferencia CBPay no cubre el monto vigente del cobro |
+| 422 | `collect_otp_failed` | El rail rechazó el envío de la clave OTP (revisar los datos) |
+| 422 | `collect_rejected` | El rail rechazó el cobro pull (OTP inválida o datos incorrectos); el link sigue pendiente |
 | 429 | `too_many_attempts` | Rate limit por IP de la página pública |
 | 503 | `pricing_unavailable` | Cotización temporalmente no disponible; reintentar en un momento |
 

@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — that never mix or convert automatically.\nPayouts and service fees can be paid from any of the four balances:\nset a default with `PUT /v1/settlement` or override per payout with\n`settlement_asset`.\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-17 03:34 UTC",
-    "_content_sha256": "195c4dbe7c0a19d625d8bb030bd69f5edfea4bc3831fe5278eef48dec50ae8ad"
+    "_generated_at": "2026-07-17 12:56 UTC",
+    "_content_sha256": "f4f8efe3994b9dad303e295accbd535df165788dfa43be14df79b73559752375"
   },
   "auth": {
     "type": "bearer",
@@ -499,7 +499,7 @@
                 }
               ]
             },
-            "description": "Indicative quotes for a universal checkout link BEFORE materializing — the catalog of countries with live fiat methods (card excluded — see `cards`), the card options listed separately per country+currency in `cards[]` with the quoted due amount (a corridor may accept several charge currencies, e.g. BOB and USD), the due amount per crypto option (conversion cost included when the pay asset differs from the settlement asset), and the CBPay direct payment dues per enabled balance. With `?country=XX` it also returns the quoted local amount for that country. Materializing freezes the definitive quote. No credentials; rate limited per IP.",
+            "description": "Indicative quotes for a universal checkout link BEFORE materializing — the catalog of countries with live fiat methods (card excluded — see `cards`), the card options listed separately per country+currency in `cards[]` with the quoted due amount (a corridor may accept several charge currencies, e.g. BOB and USD), the due amount per crypto option (conversion cost included when the pay asset differs from the settlement asset), and the CBPay direct payment dues per enabled balance. Each country lists its corridors in `options[]` — one row per method+currency (a country may offer the same method in several currencies, e.g. QR in BOB and USD) with `collect: true` on pull methods that ask for the payer's data on the page (see `POST /pay/{token}/collect`). With `?country=XX` it also returns the quoted local amount per option for that country. Materializing freezes the definitive quote. No credentials; rate limited per IP.",
             "auth": {
               "type": "noauth"
             }
@@ -544,7 +544,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"status\": \"pending\",\n  \"settlement_asset\": \"USDT\",\n  \"asset_amount\": \"50\",\n  \"countries\": [\n    {\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"methods\": [\n        \"qr\"\n      ]\n    },\n    {\n      \"country\": \"CL\",\n      \"currency\": \"CLP\",\n      \"methods\": [\n        \"bank_transfer\",\n        \"fintoc\"\n      ]\n    }\n  ],\n  \"cards\": [\n    {\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"local_amount\": \"543.30\"\n    },\n    {\n      \"country\": \"BO\",\n      \"currency\": \"USD\",\n      \"local_amount\": \"50.75\"\n    }\n  ],\n  \"crypto\": [\n    {\n      \"method\": \"crypto:tron:usdt\",\n      \"chain\": \"tron\",\n      \"asset\": \"USDT\",\n      \"due\": \"50.000000\"\n    },\n    {\n      \"method\": \"crypto:btc:btc\",\n      \"chain\": \"btc\",\n      \"asset\": \"BTC\",\n      \"due\": \"0.00046120\",\n      \"quote_ttl_seconds\": 900\n    }\n  ],\n  \"cbpay\": {\n    \"alias\": \"tayl.code\",\n    \"dues\": {\n      \"USDT\": \"50.000000\",\n      \"USDC\": \"50.100200\",\n      \"BTC\": \"0.00046120\",\n      \"GOLD\": \"0.462100\"\n    }\n  },\n  \"country_quote\": {\n    \"country\": \"CL\",\n    \"currency\": \"CLP\",\n    \"methods\": [\n      \"bank_transfer\",\n      \"fintoc\"\n    ],\n    \"local_amount\": \"47180\"\n  }\n}"
+              "body": "{\n  \"status\": \"pending\",\n  \"settlement_asset\": \"USDT\",\n  \"asset_amount\": \"50\",\n  \"countries\": [\n    {\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"methods\": [\n        \"qr\"\n      ],\n      \"options\": [\n        {\n          \"method\": \"qr\",\n          \"currency\": \"BOB\"\n        },\n        {\n          \"method\": \"qr\",\n          \"currency\": \"USD\"\n        }\n      ]\n    },\n    {\n      \"country\": \"VE\",\n      \"currency\": \"VES\",\n      \"methods\": [],\n      \"options\": [\n        {\n          \"method\": \"c2p\",\n          \"currency\": \"VES\",\n          \"collect\": true\n        },\n        {\n          \"method\": \"debito_inmediato\",\n          \"currency\": \"VES\",\n          \"collect\": true\n        }\n      ]\n    },\n    {\n      \"country\": \"CL\",\n      \"currency\": \"CLP\",\n      \"methods\": [\n        \"bank_transfer\",\n        \"fintoc\"\n      ],\n      \"options\": [\n        {\n          \"method\": \"bank_transfer\",\n          \"currency\": \"CLP\"\n        },\n        {\n          \"method\": \"fintoc\",\n          \"currency\": \"CLP\"\n        }\n      ]\n    }\n  ],\n  \"cards\": [\n    {\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"local_amount\": \"543.30\"\n    },\n    {\n      \"country\": \"BO\",\n      \"currency\": \"USD\",\n      \"local_amount\": \"50.75\"\n    }\n  ],\n  \"crypto\": [\n    {\n      \"method\": \"crypto:tron:usdt\",\n      \"chain\": \"tron\",\n      \"asset\": \"USDT\",\n      \"due\": \"50.000000\"\n    },\n    {\n      \"method\": \"crypto:btc:btc\",\n      \"chain\": \"btc\",\n      \"asset\": \"BTC\",\n      \"due\": \"0.00046120\",\n      \"quote_ttl_seconds\": 900\n    }\n  ],\n  \"cbpay\": {\n    \"alias\": \"tayl.code\",\n    \"dues\": {\n      \"USDT\": \"50.000000\",\n      \"USDC\": \"50.100200\",\n      \"BTC\": \"0.00046120\",\n      \"GOLD\": \"0.462100\"\n    }\n  },\n  \"country_quote\": {\n    \"country\": \"BO\",\n    \"currency\": \"BOB\",\n    \"methods\": [\n      \"qr\"\n    ],\n    \"local_amount\": \"543.30\",\n    \"options\": [\n      {\n        \"method\": \"qr\",\n        \"currency\": \"BOB\",\n        \"local_amount\": \"543.30\"\n      },\n      {\n        \"method\": \"qr\",\n        \"currency\": \"USD\",\n        \"local_amount\": \"50.75\"\n      }\n    ]\n  }\n}"
             }
           ]
         },
@@ -575,7 +575,7 @@
                   "key": "currency",
                   "value": "",
                   "disabled": true,
-                  "description": "Charge currency for `card`, picked from the `cards[]` catalog of the quote (e.g. `BOB` or `USD`). Required for card when the corridor offers more than one currency; ignored for the other methods (their currency is determined by the country)."
+                  "description": "Charge currency of the materialization, picked from the `options[]` (or `cards[]`) catalog of the quote (e.g. `BOB` or `USD`). Required when the country offers the method in more than one currency; ignored when there is a single one (it is determined by the country)."
                 }
               ],
               "variable": [
@@ -589,7 +589,7 @@
                 }
               ]
             },
-            "description": "Creates (lazily) the payment option the payer picked on a universal checkout link and returns its instructions — the payment URL for card/hosted methods, the QR for QR methods, the announce reference for bank transfers, or an exclusive crypto deposit address with the exact quoted amount plus a scannable QR (`qr_payload` + `qr_png_base64` — BIP-21 URI for BTC, raw address for TRON/ETH tokens, readable by external wallets). Fiat methods require `?country=XX`; the local amount is quoted and FROZEN at this moment. Card additionally requires `&currency=YYY` picked from the `cards[]` catalog of the quote (a corridor may charge in several currencies — each currency is an independent materialization with its own hosted payment page). Re-POSTing the same country+currency+method returns the SAME materialization; picking a method never blocks the others while nobody has paid. No credentials; rate limited per IP.",
+            "description": "Creates (lazily) the payment option the payer picked on a universal checkout link and returns its instructions — the payment URL for card/hosted methods, the QR for QR methods, the announce reference for bank transfers, or an exclusive crypto deposit address with the exact quoted amount plus a scannable QR (`qr_payload` + `qr_png_base64` — BIP-21 URI for BTC, raw address for TRON/ETH tokens, readable by external wallets). Fiat methods require `?country=XX`; the local amount is quoted and FROZEN at this moment. When the country offers the method in more than one currency (see `options[]` of the quote — e.g. QR in BOB and USD, or card corridors) it also requires `&currency=YYY`; each currency is an independent materialization. Bank transfers include the merchant's destination account when the corridor uses a dedicated deposit account (e.g. the CLABE in Mexico). Pull methods (`collect: true` in the quote, e.g. `c2p` and `debito_inmediato` in Venezuela) freeze the quote and return the form the payer must fill (`banks[]` catalog, `requires_otp_request`); the charge itself runs through `POST /pay/{token}/collect`. Re-POSTing the same country+currency+method returns the SAME materialization; picking a method never blocks the others while nobody has paid. No credentials; rate limited per IP.",
             "auth": {
               "type": "noauth"
             }
@@ -621,7 +621,7 @@
                       "key": "currency",
                       "value": "",
                       "disabled": true,
-                      "description": "Charge currency for `card`, picked from the `cards[]` catalog of the quote (e.g. `BOB` or `USD`). Required for card when the corridor offers more than one currency; ignored for the other methods (their currency is determined by the country)."
+                      "description": "Charge currency of the materialization, picked from the `options[]` (or `cards[]`) catalog of the quote (e.g. `BOB` or `USD`). Required when the country offers the method in more than one currency; ignored when there is a single one (it is determined by the country)."
                     }
                   ],
                   "variable": [
@@ -646,6 +646,239 @@
                 }
               ],
               "body": "{\n  \"method\": \"crypto:btc:btc\",\n  \"payload\": {\n    \"chain\": \"btc\",\n    \"asset\": \"BTC\",\n    \"address\": \"bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh\",\n    \"due\": \"0.00046120\",\n    \"received\": \"0.00000000\",\n    \"qr_payload\": \"bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh?amount=0.00046120\",\n    \"qr_png_base64\": \"iVBORw0KGgo…\",\n    \"quote_expires_at\": \"2026-07-16T18:15:00Z\",\n    \"note\": \"send the exact amount to the address; the payment is confirmed on-chain automatically\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Request the OTP of a pull collection (public)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pay/:token/collect/otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pay",
+                ":token",
+                "collect",
+                "otp"
+              ],
+              "variable": [
+                {
+                  "key": "token",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "For pull methods whose rail sends the payer a one-time key on demand (`requires_otp_request: true` in the materialization, e.g. Venezuela immediate debit). Triggers the OTP delivery to the payer and returns the `otp_reference` that must accompany the final `POST /pay/{token}/collect`. The pull option must be materialized first; the amount is ALWAYS the one frozen there. Strictly rate limited per IP (each call is a real SMS/push to the payer).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country\": \"VE\",\n  \"currency\": \"VES\",\n  \"method\": \"debito_inmediato\",\n  \"payer_document\": \"V12345678\",\n  \"payer_bank\": \"0102\",\n  \"payer_account\": \"01020123456789012345\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 OTP sent to the payer.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/pay/:token/collect/otp",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "pay",
+                    ":token",
+                    "collect",
+                    "otp"
+                  ],
+                  "variable": [
+                    {
+                      "key": "token",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "OTP sent to the payer.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"otp_reference\": \"783412\",\n  \"status\": \"sent\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Execute a pull collection with the payer's data (public) — C2P — OTP generated by the payer in their banking app",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pay/:token/collect",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pay",
+                ":token",
+                "collect"
+              ],
+              "variable": [
+                {
+                  "key": "token",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Runs the pull charge of a materialized collect option (`c2p` / `debito_inmediato`) with the data the payer typed on the checkout page — bank, document, phone or account, and the OTP (generated in the payer's banking app for C2P, or requested via `POST /pay/{token}/collect/otp` for immediate debit, sending back its `otp_reference`). The amount is ALWAYS the one frozen at materialization — the payer never sends it. If the rail confirms synchronously the link is settled in the same call (`paid: true`); a rejection does NOT kill the link — the payer can fix the data or pick another method. Retrying with the same data never charges twice. Strictly rate limited per IP.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country\": \"VE\",\n  \"currency\": \"VES\",\n  \"method\": \"c2p\",\n  \"payer_document\": \"V12345678\",\n  \"payer_phone\": \"04141234567\",\n  \"payer_bank\": \"0102\",\n  \"otp\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 Result of the collection attempt.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/pay/:token/collect",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "pay",
+                    ":token",
+                    "collect"
+                  ],
+                  "variable": [
+                    {
+                      "key": "token",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Result of the collection attempt.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"paid\": true,\n  \"status\": \"paid\",\n  \"status_message\": \"approved\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Execute a pull collection with the payer's data (public) — Immediate debit — OTP requested via /collect/otp",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pay/:token/collect",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pay",
+                ":token",
+                "collect"
+              ],
+              "variable": [
+                {
+                  "key": "token",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Runs the pull charge of a materialized collect option (`c2p` / `debito_inmediato`) with the data the payer typed on the checkout page — bank, document, phone or account, and the OTP (generated in the payer's banking app for C2P, or requested via `POST /pay/{token}/collect/otp` for immediate debit, sending back its `otp_reference`). The amount is ALWAYS the one frozen at materialization — the payer never sends it. If the rail confirms synchronously the link is settled in the same call (`paid: true`); a rejection does NOT kill the link — the payer can fix the data or pick another method. Retrying with the same data never charges twice. Strictly rate limited per IP.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country\": \"VE\",\n  \"currency\": \"VES\",\n  \"method\": \"debito_inmediato\",\n  \"payer_document\": \"V12345678\",\n  \"payer_bank\": \"0102\",\n  \"payer_account\": \"01020123456789012345\",\n  \"otp\": \"654321\",\n  \"otp_reference\": \"783412\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 Result of the collection attempt.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/pay/:token/collect",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "pay",
+                    ":token",
+                    "collect"
+                  ],
+                  "variable": [
+                    {
+                      "key": "token",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Result of the collection attempt.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"paid\": true,\n  \"status\": \"paid\",\n  \"status_message\": \"approved\"\n}"
             }
           ]
         },

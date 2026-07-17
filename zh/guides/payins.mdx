@@ -574,7 +574,16 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
   美元 → 当地货币，按你走廊的 `payin_rate`，向上取整），在选定方式时
   **冻结**。入账按正常 payin 汇率与手续费结算，随后转换为
   `settlement_asset`。付款金额**小于**冻结报价时照常入账（钱是真实的），
-  但**不会**将链接标记为已支付。
+  但**不会**将链接标记为已支付。当一个国家以**多种币种**提供同一方式
+  （例如玻利维亚同时提供 BOB 和 USD 的二维码）时，页面把每种币种列为
+  独立选项。使用专属收款账户的银行转账（墨西哥的 CLABE），页面还会
+  显示**账号和收款人**。
+- **拉取式收款（委内瑞拉）**：`c2p` 和 `debito_inmediato` 直接从付款人
+  账户扣款。页面要求填写银行、证件号、电话（C2P）或账户（即时扣款）
+  以及 OTP —— C2P 由付款人在其银行 App 中生成；即时扣款则按需发送
+  （"请求密码"按钮）。金额始终是报价时冻结的金额；若通道同步确认，
+  链接即刻支付完成。被拒绝不会终结链接：付款人可修正数据或改用其他
+  方式。
 - **银行卡（多币种）**：标签页按扣款币种列出每个可用选项及其报价金额；
   选择后打开该币种的托管支付页面。每种币种是独立的物化（同一链接可
   同时以 BOB 和 USD 报价；最先完成支付的生效）。
@@ -611,16 +620,25 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
   `settlement_asset`、`asset_amount`、冻结的法币物化
   （`fiat_methods`）、加密进度（`crypto`，含 `due`/`received`）及
   `conversion_status`。
-- `GET {checkout_url}/quote`——选择前的报价：`countries`（含各国货币
-  与方式的目录，不含银行卡）、`cards`（按国家与币种的银行卡选项，含
-  `local_amount`）、`crypto`（各币对的参考应付额）和 `cbpay`（别名 +
-  各资产应付额）。带 `?country=XX` 时额外返回该国当地金额的
-  `country_quote`。
+- `GET {checkout_url}/quote`——选择前的报价：`countries`（按国家的
+  目录；每个国家在 `options[]` 中列出其通道——每个方式+币种一行，
+  拉取式方式带 `collect: true`）、`cards`（按国家与币种的银行卡选项，
+  含 `local_amount`）、`crypto`（各币对的参考应付额）和 `cbpay`
+  （别名 + 各资产应付额）。带 `?country=XX` 时额外返回该国每个选项
+  当地金额的 `country_quote`。
 - `POST {checkout_url}/methods/{method}`——物化所选支付选项。法币方式
-  要求 `?country=XX`；`card` 还须传 `&currency=YYY`（取自 `cards`
-  目录——同一国家可能支持多种扣款币种）；加密货币使用
-  `crypto:<chain>:<asset>`（如 `crypto:tron:usdt`），不带国家。对同一
-  组合重复 POST 返回**同一个**物化结果。
+  要求 `?country=XX`；当国家以多种币种提供该方式时（银行卡、玻利维亚
+  的 QR BOB/USD）还须传 `&currency=YYY`；加密货币使用
+  `crypto:<chain>:<asset>`（如 `crypto:tron:usdt`），不带国家。拉取式
+  方式返回付款人表单定义（`banks[]`、`requires_otp_request`）和冻结的
+  报价。对同一组合重复 POST 返回**同一个**物化结果。
+- `POST {checkout_url}/collect/otp`——当通道按需发送密码时
+  （`requires_otp_request: true`，如委内瑞拉即时扣款），请求拉取式
+  收款的 OTP。返回随最终扣款一起提交的 `otp_reference`。严格限流
+  （每次调用都是真实的短信/推送）。
+- `POST {checkout_url}/collect`——用付款人数据（银行、证件号、电话或
+  账户、OTP）执行拉取式扣款。金额始终是冻结的金额；若通道同步确认，
+  返回 `paid: true`，链接在同一次调用中完成结算。
 
 如果你想在同一链接上渲染自己的支付页面，这些端点会很有用。
 
@@ -646,11 +664,14 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
 |---|---|---|
 | 404 | `not_found` | 令牌无效或链接不存在 |
 | 400 | `country_required` | 法币方式缺少 `?country=XX` |
+| 400 | `currency_required` | 该国家以多种币种提供此方式；缺少 `?currency=YYY` |
 | 409 | `already_paid` | 链接已通过其他方式支付 |
 | 410 | `checkout_expired` | 链接到期未支付 |
 | 422 | `method_unavailable` | 该方式对此链接或国家不可用 |
 | 422 | `country_unavailable` | 该国家没有可用的支付方式 |
 | 422 | `checkout_amount_mismatch` | CBPay 转账不足以覆盖收款的当前应付额 |
+| 422 | `collect_otp_failed` | 通道拒绝发送 OTP（请检查数据） |
+| 422 | `collect_rejected` | 通道拒绝了拉取式扣款（OTP 无效或数据错误）；链接保持待支付 |
 | 429 | `too_many_attempts` | 公开页面的按 IP 限流 |
 | 503 | `pricing_unavailable` | 报价暂时不可用；请稍后重试 |
 

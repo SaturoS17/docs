@@ -139,7 +139,10 @@ description: "错误格式与完整的错误码目录"
 | 410 | `checkout_expired` | 通用收款链接到期未支付 |
 | 422 | `method_unavailable` | 收款链接上所选方式对该链接或国家不可用 |
 | 400 | `country_required` | 收款链接的法币物化缺少 `?country=XX` |
+| 400 | `currency_required` | 该国家以多种币种提供收款链接的方式；缺少 `?currency=YYY` |
 | 422 | `country_unavailable` | 该国家在收款链接上没有可用的支付方式 |
+| 422 | `collect_otp_failed` | 通道拒绝发送链接拉取式收款的 OTP |
+| 422 | `collect_rejected` | 通道拒绝了链接的拉取式扣款（OTP 无效或数据错误）；链接保持待支付 |
 | 422 | `settlement_asset_disabled` | 收款链接的 `settlement_asset` 已被您的组织禁用 |
 | 422 | `checkout_amount_mismatch` | CBPay 转账不足以覆盖收款链接的当前应付额；错误消息附带最新金额 |
 

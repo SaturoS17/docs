@@ -7,6 +7,48 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 17, 2026" description="v1.84">
+
+**Added**
+
+- **Pull collections on the universal checkout link (Venezuela)**: the
+  checkout page now offers methods that charge the payer's account
+  directly (`c2p` and `debito_inmediato` in VE). The payer fills in bank,
+  document, phone or account and the OTP on the same page; the amount is
+  always the one frozen at quote time. New public endpoints:
+  `POST /pay/{token}/collect/otp` (requests the key when the rail sends
+  it on demand) and `POST /pay/{token}/collect` (runs the charge; if the
+  rail confirms synchronously the link is settled in the same call).
+  These methods arrive with `collect: true` in the
+  `GET /pay/{token}/quote` catalog.
+- **Multi-currency fiat per country**: each country in the quote lists
+  its corridors in `options[]` — one row per method+currency (e.g.
+  Bolivia with QR in BOB **and** USD) with its `local_amount` in
+  `country_quote`. Materializing a method offered in several currencies
+  requires `&currency=YYY` (the `400 currency_required` error now applies
+  to any method, not just cards).
+- **Destination account on bank transfers**: when the corridor uses a
+  dedicated deposit account (the CLABE in Mexico), the `bank_transfer`
+  materialization includes `destination` (type, account number and
+  beneficiary) besides the reference — the payer knows where to send the
+  transfer without leaving the page.
+
+**Changed**
+
+- **SVG flags on the payment page**: country and currency flags are now
+  SVG images (consistent across Windows, macOS and mobile; some systems
+  used to render the country code as plain text). On the Card tab the
+  flag is derived from the **charge currency** (USD → United States
+  flag, even when the acquirer sits in another country).
+
+**Fixed**
+
+- The checkout page no longer replies `429 too_many_attempts` just for
+  being open: the read, materialization, OTP and collect traffic limits
+  are now independent from each other.
+
+</Update>
+
 <Update label="July 16, 2026" description="v1.83">
 
 **Added**

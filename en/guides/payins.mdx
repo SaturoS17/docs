@@ -608,7 +608,19 @@ and redirects to your `success_url` if you set one.
   method is chosen. The credit arrives with the normal payin conversion
   and fees, and is then converted to the `settlement_asset`. An announced
   payment SMALLER than the frozen quote still credits (the money is real)
-  but does **not** mark the link as paid.
+  but does **not** mark the link as paid. When a country offers the same
+  method in **several currencies** (e.g. Bolivia with QR in BOB and in
+  USD), the page lists each currency as an independent option. On bank
+  transfers with a dedicated deposit account (the CLABE in Mexico), the
+  page also shows the **account number and beneficiary** to transfer to.
+- **Pull collections (Venezuela)**: `c2p` and `debito_inmediato` charge
+  the payer's account directly. The page asks for bank, document, phone
+  (C2P) or account (immediate debit) and the OTP — generated in their
+  banking app for C2P, or sent on demand for immediate debit ("Request
+  key" button). The amount is ALWAYS the one frozen at quote time; if
+  the rail confirms synchronously the link is paid instantly. A
+  rejection does not kill the link: the payer fixes the data or picks
+  another method.
 - **Card (multi-currency)**: the tab lists every available charge
   currency with its quoted amount; picking one opens the hosted payment
   page in that currency. Each currency is an independent materialization
@@ -652,17 +664,29 @@ as `POST /v1/swaps`). The aggregate state travels in `conversion_status`:
   (`fiat_methods`), crypto progress (`crypto` with `due`/`received`) and
   `conversion_status`.
 - `GET {checkout_url}/quote` — quotes BEFORE choosing: `countries`
-  (catalog with currency and methods per country, card excluded), `cards`
-  (card options per country and currency with their `local_amount`),
-  `crypto` (indicative due per pair) and `cbpay` (alias + dues per
-  asset). With `?country=XX` it adds `country_quote` with that country's
-  local amount.
+  (catalog per country; each country lists its corridors in `options[]`
+  — one row per method+currency, with `collect: true` on pull methods),
+  `cards` (card options per country and currency with their
+  `local_amount`), `crypto` (indicative due per pair) and `cbpay`
+  (alias + dues per asset). With `?country=XX` it adds `country_quote`
+  with that country's local amount per option.
 - `POST {checkout_url}/methods/{method}` — materializes the chosen
-  option. Fiat methods require `?country=XX`; `card` also requires
-  `&currency=YYY` (taken from the `cards` catalog — one country can
-  accept cards in more than one currency); crypto uses
+  option. Fiat methods require `?country=XX`; when the country offers
+  the method in more than one currency (cards, QR BOB/USD in Bolivia)
+  it also requires `&currency=YYY`; crypto uses
   `crypto:<chain>:<asset>` (e.g. `crypto:tron:usdt`) without a country.
-  Re-POSTing the same combination returns the SAME materialization.
+  Pull methods return the payer form (`banks[]`,
+  `requires_otp_request`) with the frozen quote. Re-POSTing the same
+  combination returns the SAME materialization.
+- `POST {checkout_url}/collect/otp` — requests the OTP of a pull
+  collection when the rail sends it on demand
+  (`requires_otp_request: true`, e.g. VE immediate debit). Returns the
+  `otp_reference` that accompanies the final charge. Strictly rate
+  limited (each call is a real SMS/push).
+- `POST {checkout_url}/collect` — runs the pull charge with the payer's
+  data (bank, document, phone or account, OTP). The amount is always
+  the frozen one; if the rail confirms synchronously it responds
+  `paid: true` and the link is settled in the same call.
 
 Useful if you prefer to render your own payment page on top of the same
 link.
@@ -692,11 +716,14 @@ Link-specific errors (seen by whoever opens the page):
 |---|---|---|
 | 404 | `not_found` | Invalid token or non-existent link |
 | 400 | `country_required` | Fiat method without `?country=XX` |
+| 400 | `currency_required` | The country offers the method in several currencies; `?currency=YYY` is missing |
 | 409 | `already_paid` | The link was already paid through another method |
 | 410 | `checkout_expired` | The link expired unpaid |
 | 422 | `method_unavailable` | That method is not available for this link or country |
 | 422 | `country_unavailable` | That country has no available payment methods |
 | 422 | `checkout_amount_mismatch` | The CBPay transfer does not cover the charge's current due |
+| 422 | `collect_otp_failed` | The rail rejected the OTP delivery (check the data) |
+| 422 | `collect_rejected` | The rail rejected the pull charge (invalid OTP or wrong data); the link stays pending |
 | 429 | `too_many_attempts` | Per-IP rate limit of the public page |
 | 503 | `pricing_unavailable` | Pricing temporarily unavailable; retry in a moment |
 

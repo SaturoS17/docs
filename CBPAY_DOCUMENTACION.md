@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-17 03:34 UTC · versión `34bd50ed68c4`
+> **Documento actualizado:** 2026-07-17 12:56 UTC · versión `d1f5a0d09047`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.83 (16 de julio de 2026) |
+| Versión de la documentación | v1.84 (17 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -3550,7 +3550,20 @@ y redirige a tu `success_url` si la configuraste.
   método. El abono acredita con la conversión y comisiones normales de
   payin y después se convierte al `settlement_asset`. Un pago anunciado
   MENOR a la cotización congelada se acredita igual (la plata es real)
-  pero **no** marca el link como pagado.
+  pero **no** marca el link como pagado. Si un país ofrece el mismo
+  método en **varias monedas** (ej. Bolivia con QR en BOB y en USD), la
+  página lista cada moneda como opción independiente. En transferencias
+  bancarias con cuenta de depósito dedicada (la CLABE en México), la
+  página muestra además el **número de cuenta y beneficiario** adonde
+  transferir.
+- **Cobros pull (Venezuela)**: `c2p` y `debito_inmediato` cobran directo
+  en la cuenta del pagador. La página le pide banco, documento, teléfono
+  (C2P) o cuenta (débito inmediato) y la clave OTP — generada en su app
+  bancaria para C2P, o enviada a demanda para débito inmediato (botón
+  "Solicitar clave"). El monto SIEMPRE es el congelado en la cotización;
+  si el rail confirma síncrono, el link queda pagado al instante. Un
+  rechazo no mata el link: el pagador corrige los datos o elige otro
+  método.
 - **Tarjeta (multi-moneda)**: la pestaña lista cada moneda de cargo
   disponible con su monto cotizado; al elegir una se abre la página de
   pago hosted en esa moneda. Cada moneda es una materialización
@@ -3593,16 +3606,28 @@ motor de conversiones de tu cuenta (mismos spreads y límites que
   (`fiat_methods`), progreso crypto (`crypto` con `due`/`received`) y
   `conversion_status`.
 - `GET {checkout_url}/quote` — cotizaciones ANTES de elegir: `countries`
-  (catálogo con moneda y métodos por país, sin tarjeta), `cards` (opciones
-  de tarjeta por país y moneda con su `local_amount`), `crypto` (due
-  indicativo por par) y `cbpay` (alias + dues por asset). Con
-  `?country=XX` agrega `country_quote` con el monto local de ese país.
+  (catálogo por país; cada país lista sus corredores en `options[]` —
+  una fila por método+moneda, con `collect: true` en los métodos pull),
+  `cards` (opciones de tarjeta por país y moneda con su `local_amount`),
+  `crypto` (due indicativo por par) y `cbpay` (alias + dues por asset).
+  Con `?country=XX` agrega `country_quote` con el monto local por opción
+  de ese país.
 - `POST {checkout_url}/methods/{method}` — materializa la opción elegida.
-  Métodos fiat exigen `?country=XX`; `card` exige además
-  `&currency=YYY` (tomada del catálogo `cards` — un mismo país puede
-  aceptar tarjeta en más de una moneda); crypto usa
-  `crypto:<chain>:<asset>` (ej. `crypto:tron:usdt`) sin país. Re-POST de
-  la misma combinación devuelve la MISMA materialización.
+  Métodos fiat exigen `?country=XX`; si el país ofrece el método en más
+  de una moneda (tarjetas, QR BOB/USD en Bolivia) exige además
+  `&currency=YYY`; crypto usa `crypto:<chain>:<asset>` (ej.
+  `crypto:tron:usdt`) sin país. Los métodos pull devuelven el formulario
+  del pagador (`banks[]`, `requires_otp_request`) con la cotización
+  congelada. Re-POST de la misma combinación devuelve la MISMA
+  materialización.
+- `POST {checkout_url}/collect/otp` — solicita la clave OTP de un cobro
+  pull cuando el rail la envía a demanda (`requires_otp_request: true`,
+  ej. débito inmediato VE). Devuelve el `otp_reference` que acompaña al
+  cobro final. Rate limit estricto (cada llamada es un SMS/push real).
+- `POST {checkout_url}/collect` — ejecuta el cobro pull con los datos del
+  pagador (banco, documento, teléfono o cuenta, OTP). El monto siempre es
+  el congelado; si el rail confirma síncrono responde `paid: true` y el
+  link queda liquidado en la misma llamada.
 
 Útil si prefieres renderizar tu propia página de pago sobre el mismo
 link.
@@ -3631,11 +3656,14 @@ Errores propios del link (los ve quien abre la página):
 |---|---|---|
 | 404 | `not_found` | Token inválido o link inexistente |
 | 400 | `country_required` | Método fiat sin `?country=XX` |
+| 400 | `currency_required` | El país ofrece el método en varias monedas; falta `?currency=YYY` |
 | 409 | `already_paid` | El link ya se pagó por otro método |
 | 410 | `checkout_expired` | El link venció sin pago |
 | 422 | `method_unavailable` | Ese método no está disponible para este link o país |
 | 422 | `country_unavailable` | Ese país no tiene métodos de pago disponibles |
 | 422 | `checkout_amount_mismatch` | La transferencia CBPay no cubre el monto vigente del cobro |
+| 422 | `collect_otp_failed` | El rail rechazó el envío de la clave OTP (revisar los datos) |
+| 422 | `collect_rejected` | El rail rechazó el cobro pull (OTP inválida o datos incorrectos); el link sigue pendiente |
 | 429 | `too_many_attempts` | Rate limit por IP de la página pública |
 | 503 | `pricing_unavailable` | Cotización temporalmente no disponible; reintentar en un momento |
 
@@ -8925,7 +8953,10 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | 410 | `checkout_expired` | El link de cobro universal venció sin pago |
 | 422 | `method_unavailable` | El método elegido en el link de cobro no está disponible para ese link o país |
 | 400 | `country_required` | Materialización fiat del link de cobro sin `?country=XX` |
+| 400 | `currency_required` | El país ofrece el método del link de cobro en varias monedas; falta `?currency=YYY` |
 | 422 | `country_unavailable` | Ese país no tiene métodos de pago disponibles en el link de cobro |
+| 422 | `collect_otp_failed` | El rail rechazó el envío de la clave OTP del cobro pull del link |
+| 422 | `collect_rejected` | El rail rechazó el cobro pull del link (OTP inválida o datos incorrectos); el link sigue pendiente |
 | 422 | `settlement_asset_disabled` | El `settlement_asset` del link de cobro está deshabilitado para tu organización |
 | 422 | `checkout_amount_mismatch` | La transferencia CBPay no cubre el monto vigente del link de cobro; el mensaje trae el monto actualizado |
 
@@ -9157,9 +9188,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-17 03:34 UTC · 239 requests · versión `195c4dbe7c0a`
+> **Colección actualizada:** 2026-07-17 12:56 UTC · 242 requests · versión `f4f8efe3994b`
 
-<PostmanFreshness iso="2026-07-17T03:34:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-17T12:56:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -9330,6 +9361,46 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.84 — 17 de julio de 2026
+
+**Agregado**
+
+- **Cobros pull en el link de cobro universal (Venezuela)**: la página del
+  checkout ahora ofrece los métodos que cobran directo en la cuenta del
+  pagador (`c2p` y `debito_inmediato` en VE). El pagador completa banco,
+  documento, teléfono o cuenta y la clave OTP en la misma página; el monto
+  siempre es el congelado en la cotización. Endpoints públicos nuevos:
+  `POST /pay/{token}/collect/otp` (solicita la clave cuando el rail la
+  envía a demanda) y `POST /pay/{token}/collect` (ejecuta el cobro; si el
+  rail confirma síncrono el link queda pagado en la misma llamada). En el
+  catálogo de `GET /pay/{token}/quote` estos métodos llegan con
+  `collect: true`.
+- **Fiat multi-moneda por país**: cada país del quote lista sus corredores
+  en `options[]` — una fila por método+moneda (ej. Bolivia con QR en BOB
+  **y** en USD) con su `local_amount` en `country_quote`. Materializar un
+  método ofrecido en varias monedas exige `&currency=YYY` (el error
+  `400 currency_required` ahora aplica a cualquier método, no solo
+  tarjetas).
+- **Cuenta de destino en transferencias bancarias**: cuando el corredor
+  usa una cuenta de depósito dedicada (la CLABE en México), la
+  materialización de `bank_transfer` incluye `destination` (tipo, número
+  de cuenta y beneficiario) además de la referencia — el pagador ya sabe
+  adónde transferir sin salir de la página.
+
+**Cambiado**
+
+- **Banderas SVG en la página de pago**: las banderas de países y monedas
+  ahora son imágenes SVG (se ven igual en Windows, macOS y móviles; antes
+  algunos sistemas mostraban el código del país en texto). En la pestaña
+  Tarjeta, la bandera se deriva de la **moneda del cargo** (USD → bandera
+  de Estados Unidos, aunque el adquirente sea de otro país).
+
+**Corregido**
+
+- La página del checkout ya no responde `429 too_many_attempts` por el
+  solo hecho de estar abierta: los límites de tráfico de lectura,
+  materialización, OTP y cobro ahora son independientes entre sí.
 
 ### v1.83 — 16 de julio de 2026
 
@@ -10931,6 +11002,8 @@ está en la API Reference interactiva y en la colección Postman.
 | `GET` | `/pay/{token}/state` | Estado del cobro universal (público) |
 | `GET` | `/pay/{token}/quote` | Cotizar un link de cobro antes de elegir (público) |
 | `POST` | `/pay/{token}/methods/{method}` | Materializar una opción de pago del checkout (público) |
+| `POST` | `/pay/{token}/collect/otp` | Solicitar la clave OTP de un cobro pull (público) |
+| `POST` | `/pay/{token}/collect` | Ejecutar un cobro pull con los datos del pagador (público) |
 | `GET` | `/v1/payins` | Listar payins |
 | `POST` | `/v1/payins` | Crear un payin (cobro de recarga) |
 | `GET` | `/v1/payins/{payinID}` | Obtener un payin |

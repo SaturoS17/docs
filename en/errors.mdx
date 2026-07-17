@@ -139,7 +139,10 @@ Full flow and details in [social login](/en/guides/social-login).
 | 410 | `checkout_expired` | The universal checkout link expired unpaid |
 | 422 | `method_unavailable` | The method chosen on the checkout link is not available for that link or country |
 | 400 | `country_required` | Fiat materialization on the checkout link is missing `?country=XX` |
+| 400 | `currency_required` | The country offers the checkout link method in several currencies; `?currency=YYY` is missing |
 | 422 | `country_unavailable` | That country has no payment methods available on the checkout link |
+| 422 | `collect_otp_failed` | The rail rejected the OTP delivery for the link's pull collection |
+| 422 | `collect_rejected` | The rail rejected the link's pull charge (invalid OTP or wrong data); the link stays pending |
 | 422 | `settlement_asset_disabled` | The checkout link's `settlement_asset` is disabled for your organization |
 | 422 | `checkout_amount_mismatch` | The CBPay transfer does not cover the checkout link's current due; the message carries the updated amount |
 
