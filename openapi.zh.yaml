@@ -45,7 +45,7 @@ tags:
   description: 链上充值与提现(TRON、Ethereum 和 Bitcoin)。
 - name: 隔离钱包
   description: 拥有自身余额的链上钱包(企业不限数量;个人每个网络+资产组合 1 个)——创建、导入、发送、导出私钥与自动转发。余额存在于链上,从不进入账本。
-- name: QR POS
+- name: QR Crypto POS
   description: "面向拥有实体 POS 终端的处理商（企业账户）的定额加密货币二维码收款：已验证商户、每笔收款专属地址 + 二维码、支付早期检测、按商户对账，以及经加密货币提现通道的退款。"
 - name: KYC / KYB
 - name: AML 筛查
@@ -6824,7 +6824,7 @@ paths:
   /v1/pos/merchants:
     get:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: listPosMerchants
       summary: "列出 POS 商户"
       description: "账户（处理商）注册的商户分页列表。"
@@ -6874,7 +6874,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
     post:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: createPosMerchant
       summary: "注册 POS 商户"
       description: "注册一个商户（餐厅、酒店、门店），绑定一份已批准的第三方 KYC/KYB 验证 — 身份来自验证。fee_percent/fee_fixed 是处理商向商户收取的信息性佣金（按已支付收款和汇总计算；平台从不收取）。"
@@ -6936,7 +6936,7 @@ paths:
   /v1/pos/merchants/{merchantID}:
     get:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: getPosMerchant
       summary: "获取 POS 商户"
       description: "商户详情。仅归属账户（或组织管理员）可读取。"
@@ -6971,7 +6971,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
     patch:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: patchPosMerchant
       summary: "更新 POS 商户"
       description: "更新 status（active/disabled — 停用的商户无法生成新收款）、信息性佣金与外部参考。身份不可编辑：以验证为准。"
@@ -7027,7 +7027,7 @@ paths:
   /v1/pos/charges:
     get:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: listPosCharges
       summary: "列出 POS 收款"
       description: "账户的收款，支持 merchant_id/status 筛选，日期范围必填 — 按客户对账的视图。"
@@ -7111,7 +7111,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
     post:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: createPosCharge
       summary: "创建 POS 收款（带金额的加密货币二维码）"
       description: "为商户创建带金额的加密货币二维码收款。契约与通用收款链接一致：amount + settlement_asset（缺省时用账户默认值）；顾客支付的应付额在创建时按二维码的加密货币报价（付款人承担兑换 — 你收到精确的目标金额）。响应携带专属充值地址、裸地址二维码（qr_payload + qr_png_base64）和冻结的应付额，POS 可直接使用。idempotency_key 必填：重试返回同一笔收款与同一地址。"
@@ -7216,7 +7216,7 @@ paths:
   /v1/pos/charges/{chargeID}:
     get:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: getPosCharge
       summary: "获取 POS 收款（POS 轮询）"
       description: "供 POS 轮询的收款详情。pending 期间，若链上入账已检测到但尚未确认，响应附加 confirming:true + detected_amount（仅 UX 信号 — 入账在确认后发生）。部分支付累计在 received；过期收款收到的迟到支付同样入账并在此显示。"
@@ -7287,7 +7287,7 @@ paths:
   /v1/pos/charges/{chargeID}/refund:
     post:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: refundPosCharge
       summary: "退款 POS 收款"
       description: "把（部分）已收资金退还给付款人，作为从账户余额发出的普通加密货币提现（持有、提现手续费与该通道全部合规控制）。to_address 必须显式提供 — 绝不自动退回入账来源。硬上限：退款总额绝不超过已收金额。idempotency_key 必填。"
@@ -7362,7 +7362,7 @@ paths:
   /v1/pos/charges/{chargeID}/refunds:
     get:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: listPosChargeRefunds
       summary: "列出 POS 收款的退款"
       description: "该收款的退款；每条状态跟随其提现生命周期（失败的提现退回扣款并释放上限）。"
@@ -7406,7 +7406,7 @@ paths:
   /v1/pos/summary:
     get:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: getPosSummary
       summary: "按商户的 POS 对账汇总"
       description: "日期范围内按商户的汇总：收款计数、收款总额（已支付收款的目标金额）、处理商的信息性佣金、退款总额与应分配给每个商户的净额。"

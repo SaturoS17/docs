@@ -1,10 +1,10 @@
 ---
-title: "QR POS"
+title: "QR Crypto POS"
 description: "面向拥有实体 POS 终端的收单处理商的定额加密货币二维码收款：注册已验证商户、生成二维码、检测支付并按客户对账"
 icon: "store"
 ---
 
-QR POS 是面向**拥有企业账户的处理商/收单机构**的产品，适用于运营实体
+QR Crypto POS 是面向**拥有企业账户的处理商/收单机构**的产品，适用于运营实体
 POS 终端的场景：将你的商户（餐厅、酒店、门店）注册为已验证的
 *merchant*，并生成**带精确金额的加密货币二维码收款**（USDT、USDC、
 BTC）。POS 显示或打印二维码，顾客用钱包或交易所应用扫码支付，API 检测
@@ -13,7 +13,7 @@ BTC）。POS 显示或打印二维码，顾客用钱包或交易所应用扫码�
 （内部转账、法币出金、加密货币）与他们结算。
 
 <Note>
-QR POS 面向已启用 `pos` 服务的**已验证企业账户**。每笔收款使用
+QR Crypto POS 面向已启用 `pos` 服务的**已验证企业账户**。每笔收款使用
 **专属地址**（来自[通用收款链接](/zh/guides/payins#universal-checkout-link)
 引擎的临时钱包）：不同收款之间的支付绝不会串单。
 </Note>
@@ -285,7 +285,7 @@ curl -X POST "https://api.qbank.cl/platform/v1/pos/charges/66773a3a-…/refund" 
 | 422 | `refund_exceeds_received` | 降低金额：已收 − 已退是上限 |
 | 400 | `to_address_required` | 显式提供退款地址（绝不自动退回来源） |
 | 402 | `insufficient_funds` | 该收款加密货币的余额不足以退款：先兑换回来 |
-| 403 | `company_required` | QR POS 仅面向企业账户 |
+| 403 | `company_required` | QR Crypto POS 仅面向企业账户 |
 
 ## 常见问题
 

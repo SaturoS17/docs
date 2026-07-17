@@ -57,7 +57,7 @@ tags:
   description: On-chain wallets with their own balance (companies unlimited; persons 1 per network+asset
     pair) — create, import, send, export the private key and auto-forward. The balance lives on-chain,
     never in the ledger.
-- name: QR POS
+- name: QR Crypto POS
   description: "Amount-bearing crypto QR charges for processors with physical POS terminals (company accounts): verified merchants, exclusive address + QR per charge, early payment detection, per-merchant reconciliation and refunds over the crypto withdrawal rail."
 - name: KYC / KYB
 - name: AML screening
@@ -7078,7 +7078,7 @@ paths:
   /v1/pos/merchants:
     get:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: listPosMerchants
       summary: "List POS merchants"
       description: "Paginated list of the merchants registered by the account (processor)."
@@ -7128,7 +7128,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
     post:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: createPosMerchant
       summary: "Register a POS merchant"
       description: "Registers a merchant (restaurant, hotel, store) bound to an APPROVED third-party KYC/KYB verification — the identity comes from the verification. fee_percent/fee_fixed are the processor's informative commission to the merchant (computed per paid charge and in the summary; never charged by the platform)."
@@ -7190,7 +7190,7 @@ paths:
   /v1/pos/merchants/{merchantID}:
     get:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: getPosMerchant
       summary: "Get a POS merchant"
       description: "Merchant detail. Only the owning account (or the org admin) can read it."
@@ -7225,7 +7225,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
     patch:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: patchPosMerchant
       summary: "Update a POS merchant"
       description: "Updates status (active/disabled — a disabled merchant cannot generate new charges), the informative commission and the external reference. Identity is never edited: it comes from the verification."
@@ -7281,7 +7281,7 @@ paths:
   /v1/pos/charges:
     get:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: listPosCharges
       summary: "List POS charges"
       description: "Charges of the account with merchant_id/status filters and a mandatory date range — the per-client reconciliation view."
@@ -7365,7 +7365,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
     post:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: createPosCharge
       summary: "Create a POS charge (crypto QR with amount)"
       description: "Creates an amount-bearing crypto QR charge for a merchant. Same contract as the universal checkout link: amount + settlement_asset (account default when omitted); the due the customer pays is quoted in the QR's crypto at creation (the payer covers any conversion — you receive your exact target). The response carries the exclusive deposit address, the raw-address QR (qr_payload + qr_png_base64) and the frozen due, ready for the POS. idempotency_key is required: a retry returns the SAME charge and address."
@@ -7470,7 +7470,7 @@ paths:
   /v1/pos/charges/{chargeID}:
     get:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: getPosCharge
       summary: "Get a POS charge (POS polling)"
       description: "Charge detail for the POS polling loop. While pending, if an on-chain deposit is already detected but not yet confirmed, the response adds confirming:true + detected_amount (UX signal only — credit happens on confirmation). Partial payments accumulate in received; late payments into an expired charge still credit and show here."
@@ -7541,7 +7541,7 @@ paths:
   /v1/pos/charges/{chargeID}/refund:
     post:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: refundPosCharge
       summary: "Refund a POS charge"
       description: "Returns (part of) what the charge received to the payer as a regular crypto withdrawal from the account balance (hold, withdrawal fee and every compliance control of the rail). to_address is always explicit — never auto-refunded to the deposit origin. Hard cap: the sum of refunds can never exceed what the charge received. idempotency_key required."
@@ -7616,7 +7616,7 @@ paths:
   /v1/pos/charges/{chargeID}/refunds:
     get:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: listPosChargeRefunds
       summary: "List the refunds of a POS charge"
       description: "Refunds of the charge; each status follows its withdrawal lifecycle (a failed withdrawal refunds the debit and releases the cap)."
@@ -7660,7 +7660,7 @@ paths:
   /v1/pos/summary:
     get:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: getPosSummary
       summary: "POS reconciliation summary per merchant"
       description: "Per-merchant aggregate over a date range: charge counts, gross collected (target of paid charges), the processor's informative commission, refunded totals and the net to distribute to each merchant."

@@ -1,10 +1,10 @@
 ---
-title: "QR POS"
+title: "QR Crypto POS"
 description: "Cobros QR crypto con monto para procesadores con POS físicos: registra tus comercios verificados, genera el QR, detecta el pago y concilia por cliente"
 icon: "store"
 ---
 
-QR POS es el producto para **procesadores/adquirentes con cuenta empresa**
+QR Crypto POS es el producto para **procesadores/adquirentes con cuenta empresa**
 que operan POS físicos: registras a tus comercios (restaurantes, hoteles,
 tiendas) como *merchants* verificados y generas **cobros QR crypto con monto
 exacto** (USDT, USDC, BTC). El POS muestra o imprime el QR, el cliente lo
@@ -15,7 +15,7 @@ recaudó cada comercio para repartirle después por cualquiera de los rieles
 (transferencias, payouts fiat, crypto).
 
 <Note>
-QR POS está disponible para **cuentas empresa verificadas** con el servicio
+QR Crypto POS está disponible para **cuentas empresa verificadas** con el servicio
 `pos` habilitado. Cada cobro usa una **dirección exclusiva** (wallet efímera
 del motor del [link de cobro universal](/es/guias/payins#link-de-cobro-universal-checkout)):
 no hay riesgo de cruzar pagos entre cobros.
@@ -301,7 +301,7 @@ Reglas clave:
 | 422 | `refund_exceeds_received` | Baja el monto: recibido − ya devuelto es el máximo |
 | 400 | `to_address_required` | Manda la dirección de devolución explícita (jamás se auto-devuelve al origen) |
 | 402 | `insufficient_funds` | Te falta saldo en el crypto del cobro para la devolución: haz un swap de vuelta primero |
-| 403 | `company_required` | QR POS es para cuentas empresa |
+| 403 | `company_required` | QR Crypto POS es para cuentas empresa |
 
 ## FAQ
 

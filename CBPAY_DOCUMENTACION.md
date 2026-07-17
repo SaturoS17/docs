@@ -8,7 +8,7 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-17 20:23 UTC · versión `19762cf6f436`
+> **Documento actualizado:** 2026-07-17 20:49 UTC · versión `675be92ac8f8`
 
 **Datos clave**
 
@@ -41,7 +41,7 @@ solo saldo.
 - **Productos**
   - [Payouts](#payouts)
   - [Payins](#payins)
-  - [QR POS](#qr-pos)
+  - [QR Crypto POS](#qr-crypto-pos)
   - [Transferencias internas](#transferencias-internas)
   - [Swaps](#swaps)
   - [Contactos](#contactos)
@@ -3758,11 +3758,11 @@ curl "https://api.qbank.cl/platform/v1/payins?from=2026-07-01&to=2026-07-08&stat
 | 502 | `core_unavailable` | No se pudo crear el cargo; reintenta la creación (no se cobró nada) |
 
 
-## QR POS
+## QR Crypto POS
 
 *Cobros QR crypto con monto para procesadores con POS físicos: registra tus comercios verificados, genera el QR, detecta el pago y concilia por cliente*
 
-QR POS es el producto para **procesadores/adquirentes con cuenta empresa**
+QR Crypto POS es el producto para **procesadores/adquirentes con cuenta empresa**
 que operan POS físicos: registras a tus comercios (restaurantes, hoteles,
 tiendas) como *merchants* verificados y generas **cobros QR crypto con monto
 exacto** (USDT, USDC, BTC). El POS muestra o imprime el QR, el cliente lo
@@ -3773,7 +3773,7 @@ recaudó cada comercio para repartirle después por cualquiera de los rieles
 (transferencias, payouts fiat, crypto).
 
 > **Nota**
-QR POS está disponible para **cuentas empresa verificadas** con el servicio
+QR Crypto POS está disponible para **cuentas empresa verificadas** con el servicio
 `pos` habilitado. Cada cobro usa una **dirección exclusiva** (wallet efímera
 del motor del [link de cobro universal](#payins)):
 no hay riesgo de cruzar pagos entre cobros.
@@ -4055,7 +4055,7 @@ Reglas clave:
 | 422 | `refund_exceeds_received` | Baja el monto: recibido − ya devuelto es el máximo |
 | 400 | `to_address_required` | Manda la dirección de devolución explícita (jamás se auto-devuelve al origen) |
 | 402 | `insufficient_funds` | Te falta saldo en el crypto del cobro para la devolución: haz un swap de vuelta primero |
-| 403 | `company_required` | QR POS es para cuentas empresa |
+| 403 | `company_required` | QR Crypto POS es para cuentas empresa |
 
 ### FAQ
 
@@ -9296,11 +9296,11 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | 422 | `collect_rejected` | El rail rechazó el cobro pull del link (OTP inválida o datos incorrectos); el link sigue pendiente |
 | 422 | `settlement_asset_disabled` | El `settlement_asset` del link de cobro está deshabilitado para tu organización |
 | 422 | `checkout_amount_mismatch` | La transferencia CBPay no cubre el monto vigente del link de cobro; el mensaje trae el monto actualizado |
-| 422 | `verification_required` | [QR POS](#qr-pos): registra al merchant con el `verification_id` de su KYC/KYB de terceros aprobado |
-| 422 | `merchant_disabled` | El merchant [QR POS](#qr-pos) está deshabilitado; reactívalo antes de generar cobros |
-| 422 | `nothing_received` | El cobro [QR POS](#qr-pos) no ha recibido ningún pago on-chain: no hay nada que devolver |
-| 422 | `refund_exceeds_received` | La devolución supera lo recibido menos lo ya devuelto del cobro [QR POS](#qr-pos) |
-| 400 | `to_address_required` | La devolución [QR POS](#qr-pos) (y el retiro crypto) exige la dirección destino explícita |
+| 422 | `verification_required` | [QR Crypto POS](#qr-crypto-pos): registra al merchant con el `verification_id` de su KYC/KYB de terceros aprobado |
+| 422 | `merchant_disabled` | El merchant [QR Crypto POS](#qr-crypto-pos) está deshabilitado; reactívalo antes de generar cobros |
+| 422 | `nothing_received` | El cobro [QR Crypto POS](#qr-crypto-pos) no ha recibido ningún pago on-chain: no hay nada que devolver |
+| 422 | `refund_exceeds_received` | La devolución supera lo recibido menos lo ya devuelto del cobro [QR Crypto POS](#qr-crypto-pos) |
+| 400 | `to_address_required` | La devolución [QR Crypto POS](#qr-crypto-pos) (y el retiro crypto) exige la dirección destino explícita |
 
 #### Cumplimiento (403 / 503)
 
@@ -9530,9 +9530,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-17 20:23 UTC · 252 requests · versión `9aea960484ad`
+> **Colección actualizada:** 2026-07-17 20:49 UTC · 252 requests · versión `bb285920f4ea`
 
-<PostmanFreshness iso="2026-07-17T20:23:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-17T20:49:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -9708,7 +9708,7 @@ con anticipación y quedan marcados como **Breaking**.
 
 **Agregado**
 
-- **QR POS — cobros QR crypto con monto para procesadores** ([guía](#qr-pos)):
+- **QR Crypto POS — cobros QR crypto con monto para procesadores** ([guía](#qr-crypto-pos)):
   las cuentas empresa con POS físicos registran a sus comercios como
   merchants verificados (KYB/KYC de terceros aprobado) y generan cobros
   crypto (USDT, USDC, BTC) con dirección exclusiva y QR por venta.
@@ -9717,7 +9717,7 @@ con anticipación y quedan marcados como **Breaking**.
   merchant en cobros/webhooks, resumen de conciliación
   (`GET /v1/pos/summary`) con comisión informativa por merchant y neto a
   repartir, y devoluciones por el riel de retiro crypto con tope duro
-  (jamás más de lo recibido). Rutas nuevas bajo `/v1/pos/*` (tag QR POS
+  (jamás más de lo recibido). Rutas nuevas bajo `/v1/pos/*` (tag QR Crypto POS
   del API Reference); pagos parciales acumulan y los pagos tardíos a un
   cobro expirado se acreditan igual.
 
@@ -11585,7 +11585,7 @@ está en la API Reference interactiva y en la colección Postman.
 | `GET` | `/v1/swaps/{swapID}` | Consultar un swap |
 
 
-## QR POS
+## QR Crypto POS
 
 | Método | Ruta | Qué hace |
 |---|---|---|

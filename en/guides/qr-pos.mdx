@@ -1,10 +1,10 @@
 ---
-title: "QR POS"
+title: "QR Crypto POS"
 description: "Amount-bearing crypto QR charges for processors with physical POS terminals: register your verified merchants, generate the QR, detect the payment and reconcile per client"
 icon: "store"
 ---
 
-QR POS is the product for **processors/acquirers with a company account**
+QR Crypto POS is the product for **processors/acquirers with a company account**
 operating physical POS terminals: you register your merchants (restaurants,
 hotels, stores) as verified *merchants* and generate **crypto QR charges
 with an exact amount** (USDT, USDC, BTC). The POS shows or prints the QR,
@@ -15,7 +15,7 @@ on every charge — so you know exactly how much each merchant collected and
 can settle with them later over any rail (transfers, fiat payouts, crypto).
 
 <Note>
-QR POS is available to **verified company accounts** with the `pos` service
+QR Crypto POS is available to **verified company accounts** with the `pos` service
 enabled. Every charge uses an **exclusive address** (an ephemeral wallet
 from the [universal checkout link](/en/guides/payins#universal-checkout-link)
 engine): payments can never cross between charges.
@@ -299,7 +299,7 @@ Key rules:
 | 422 | `refund_exceeds_received` | Lower the amount: received − already refunded is the maximum |
 | 400 | `to_address_required` | Send the explicit refund address (never auto-refunded to the origin) |
 | 402 | `insufficient_funds` | Not enough balance in the charge's crypto for the refund: swap back first |
-| 403 | `company_required` | QR POS is for company accounts |
+| 403 | `company_required` | QR Crypto POS is for company accounts |
 
 ## FAQ
 

@@ -57,7 +57,7 @@ tags:
   description: Wallets on-chain con saldo propio (empresas ilimitadas; personas 1 por combinación red+activo)
     — crear, importar, enviar, exportar la llave privada y auto-forward. El saldo vive on-chain, nunca
     en el ledger.
-- name: QR POS
+- name: QR Crypto POS
   description: "Cobros QR crypto con monto para procesadores con POS físicos (cuentas empresa): merchants verificados, dirección exclusiva + QR por cobro, detección temprana del pago, conciliación por merchant y devoluciones por el riel de retiro crypto."
 - name: KYC / KYB
 - name: Screening de wallets
@@ -7091,7 +7091,7 @@ paths:
   /v1/pos/merchants:
     get:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: listPosMerchants
       summary: "Listar merchants POS"
       description: "Listado paginado de los merchants registrados por la cuenta (procesador)."
@@ -7141,7 +7141,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
     post:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: createPosMerchant
       summary: "Registrar un merchant POS"
       description: "Registra un merchant (restaurant, hotel, tienda) amarrado a una verificación KYC/KYB de terceros APROBADA — la identidad sale de la verificación. fee_percent/fee_fixed son la comisión informativa del procesador a su merchant (se calcula por cobro pagado y en el resumen; la plataforma jamás la cobra)."
@@ -7203,7 +7203,7 @@ paths:
   /v1/pos/merchants/{merchantID}:
     get:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: getPosMerchant
       summary: "Obtener un merchant POS"
       description: "Detalle del merchant. Solo la cuenta dueña (o el org admin) puede leerlo."
@@ -7238,7 +7238,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
     patch:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: patchPosMerchant
       summary: "Actualizar un merchant POS"
       description: "Actualiza status (active/disabled — un merchant deshabilitado no puede generar cobros nuevos), la comisión informativa y la referencia externa. La identidad no se edita: viene de la verificación."
@@ -7294,7 +7294,7 @@ paths:
   /v1/pos/charges:
     get:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: listPosCharges
       summary: "Listar cobros POS"
       description: "Cobros de la cuenta con filtros merchant_id/status y rango de fechas obligatorio — la vista de conciliación por cliente."
@@ -7378,7 +7378,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
     post:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: createPosCharge
       summary: "Crear un cobro POS (QR crypto con monto)"
       description: "Crea un cobro QR crypto con monto para un merchant. Mismo contrato del link de cobro universal: amount + settlement_asset (default de la cuenta si se omite); el due que paga el cliente se cotiza en el crypto del QR al crearlo (el pagador cubre la conversión — tú recibes tu meta exacta). La respuesta trae la dirección de depósito exclusiva, el QR de dirección cruda (qr_payload + qr_png_base64) y el due congelado, listos para el POS. idempotency_key es obligatoria: el retry devuelve el MISMO cobro y la misma dirección."
@@ -7483,7 +7483,7 @@ paths:
   /v1/pos/charges/{chargeID}:
     get:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: getPosCharge
       summary: "Obtener un cobro POS (polling del POS)"
       description: "Detalle del cobro para el loop de polling del POS. Mientras está pending, si ya hay un depósito on-chain detectado pero sin confirmar, la respuesta agrega confirming:true + detected_amount (señal de UX — el crédito llega con la confirmación). Los pagos parciales acumulan en received; los pagos tardíos a un cobro expirado igual acreditan y se ven aquí."
@@ -7554,7 +7554,7 @@ paths:
   /v1/pos/charges/{chargeID}/refund:
     post:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: refundPosCharge
       summary: "Devolver un cobro POS"
       description: "Devuelve (parte de) lo recibido al pagador como un retiro crypto normal desde el saldo de la cuenta (hold, fee de retiro y todos los controles de compliance del riel). to_address es siempre explícita — jamás se auto-devuelve al origen del depósito. Tope duro: la suma de devoluciones jamás supera lo recibido. idempotency_key obligatoria."
@@ -7629,7 +7629,7 @@ paths:
   /v1/pos/charges/{chargeID}/refunds:
     get:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: listPosChargeRefunds
       summary: "Listar las devoluciones de un cobro POS"
       description: "Devoluciones del cobro; cada estado sigue el ciclo de su retiro (un retiro fallido reembolsa el débito y libera el tope)."
@@ -7673,7 +7673,7 @@ paths:
   /v1/pos/summary:
     get:
       tags:
-      - QR POS
+      - QR Crypto POS
       operationId: getPosSummary
       summary: "Resumen de conciliación POS por merchant"
       description: "Agregado por merchant en un rango de fechas: conteos de cobros, bruto recaudado (meta de los cobros pagados), la comisión informativa del procesador, lo devuelto y el neto a repartir a cada merchant."
