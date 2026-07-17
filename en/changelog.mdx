@@ -7,6 +7,20 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 17, 2026" description="v1.86">
+
+**Fixed**
+
+- **Bitcoin crypto QR**: the checkout QR now carries the raw bech32
+  address (same as TRON/ETH). Exchange apps like Binance rejected the
+  BIP-21 URI (`bitcoin:…?amount=…`) as "invalid QR"; the exact amount
+  remains shown next to it with a copy button.
+- **Checkout page**: white-label favicon (org symbol) and panel copy no
+  longer splits Spanish words mid-word ("momento" → "moment"/"o") — the
+  aggressive `word-break` now applies only to monospace addresses.
+
+</Update>
+
 <Update label="July 17, 2026" description="v1.85">
 
 **Added**

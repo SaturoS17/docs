@@ -590,9 +590,9 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
   选择后打开该币种的托管支付页面。每种币种是独立的物化（同一链接可
   同时以 BOB 和 USD 报价；最先完成支付的生效）。
 - **加密货币（每笔收款一个钱包）**：选择币种后生成专属地址及其
-  `qr_payload` 和 `qr_png_base64`——BTC 使用 BIP-21 URI
-  （`bitcoin:<address>?amount=…`，自动填充金额）；TRON/ETH 的二维码为
-  裸地址（兼容性最高），金额显示在旁边可复制。若支付资产与
+  `qr_payload` 和 `qr_png_base64`——二维码始终为裸地址（BTC bech32、
+  TRON base58、ETH hex），以兼容钱包与交易所（Binance 等会拒绝
+  BIP-21/EIP-681 URI）；精确金额显示在旁边可复制。若支付资产与
   `settlement_asset` 不同，报出的应付额**已包含转换成本**（由付款人
   承担；你收到精确的目标金额）。部分支付会累加，页面显示剩余金额。
   涉及 BTC/GOLD 的报价每 15 分钟刷新。

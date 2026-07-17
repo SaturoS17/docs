@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.85'
+  version: '1.86'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -640,8 +640,9 @@ paths:
         link and returns its instructions — the payment URL for card/hosted methods, the QR for
         QR methods, the announce reference for bank transfers, or an exclusive crypto deposit
         address with the exact quoted amount plus a scannable QR (`qr_payload` +
-        `qr_png_base64` — BIP-21 URI for BTC, raw address for TRON/ETH tokens, readable by
-        external wallets). Fiat methods require `?country=XX`; the local amount is quoted and
+        `qr_png_base64` — always the raw address for BTC/TRON/ETH, readable by
+        external wallets and exchanges; BIP-21/EIP-681 URIs are rejected by apps
+        like Binance). Fiat methods require `?country=XX`; the local amount is quoted and
         FROZEN at this moment. When the country offers the method in more than one currency
         (see `options[]` of the quote — e.g. QR in BOB and USD, or card corridors) it also
         requires `&currency=YYY`; each currency is an independent materialization. Bank
@@ -703,7 +704,7 @@ paths:
                       address: bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
                       due: '0.00046120'
                       received: '0.00000000'
-                      qr_payload: bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh?amount=0.00046120
+                      qr_payload: bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
                       qr_png_base64: iVBORw0KGgo…
                       quote_expires_at: '2026-07-16T18:15:00Z'
                       note: send the exact amount to the address; the payment is confirmed on-chain

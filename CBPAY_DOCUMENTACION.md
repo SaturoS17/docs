@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-17 15:30 UTC · versión `24073ed200cb`
+> **Documento actualizado:** 2026-07-17 17:21 UTC · versión `a667eb994775`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.85 (17 de julio de 2026) |
+| Versión de la documentación | v1.86 (17 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -3573,10 +3573,11 @@ y redirige a tu `success_url` si la configuraste.
   independiente (puedes cotizar en BOB y en USD sobre el mismo link; paga
   la primera que complete).
 - **Crypto (wallet por cobro)**: al elegir una moneda se genera una
-  dirección exclusiva con su `qr_payload` y `qr_png_base64` — BTC usa URI
-  BIP-21 (`bitcoin:<address>?amount=…`, autocompleta el monto); TRON/ETH
-  llevan la dirección cruda en el QR (máxima compatibilidad) con el monto
-  al lado para copiar. Si el asset pagado difiere del `settlement_asset`,
+  dirección exclusiva con su `qr_payload` y `qr_png_base64` — el QR lleva
+  SIEMPRE la dirección cruda (BTC bech32, TRON base58, ETH hex) para máxima
+  compatibilidad con wallets y exchanges (Binance y similares rechazan
+  URIs BIP-21/EIP-681); el monto exacto se muestra al lado con botón
+  copiar. Si el asset pagado difiere del `settlement_asset`,
   el due cotizado **ya incluye la conversión** (la cubre el pagador; tú
   recibes tu meta exacta). Los pagos parciales se acumulan y la página
   muestra cuánto falta. Cotizaciones con BTC/GOLD se refrescan cada 15
@@ -9191,9 +9192,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-17 15:30 UTC · 242 requests · versión `eb0303d10441`
+> **Colección actualizada:** 2026-07-17 17:21 UTC · 242 requests · versión `32df1331b037`
 
-<PostmanFreshness iso="2026-07-17T15:30:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-17T17:21:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -9364,6 +9365,18 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.86 — 17 de julio de 2026
+
+**Corregido**
+
+- **QR crypto de Bitcoin**: el QR del checkout ahora lleva la dirección
+  bech32 cruda (igual que TRON/ETH). Las apps de exchanges como Binance
+  rechazaban el URI BIP-21 (`bitcoin:…?amount=…`) como "invalid QR"; el
+  monto exacto sigue visible al lado con botón copiar.
+- **Página de cobro**: favicon white-label (símbolo de la org) y el texto
+  del panel ya no parte palabras a mitad ("momento" → "moment"/"o") —
+  el `word-break` agresivo quedó solo en las direcciones monospace.
 
 ### v1.85 — 17 de julio de 2026
 

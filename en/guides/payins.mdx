@@ -632,10 +632,11 @@ and redirects to your `success_url` if you set one.
   (you can quote BOB and USD on the same link; the first one to complete
   pays it).
 - **Crypto (wallet per charge)**: choosing a currency generates an
-  exclusive address with its `qr_payload` and `qr_png_base64` — BTC uses
-  a BIP-21 URI (`bitcoin:<address>?amount=…`, autofills the amount);
-  TRON/ETH carry the raw address in the QR (maximum compatibility) with
-  the amount next to it to copy. If the paid asset differs from the
+  exclusive address with its `qr_payload` and `qr_png_base64` — the QR
+  always carries the raw address (BTC bech32, TRON base58, ETH hex) for
+  maximum wallet and exchange compatibility (Binance and similar apps
+  reject BIP-21/EIP-681 URIs); the exact amount is shown next to it with
+  a copy button. If the paid asset differs from the
   `settlement_asset`, the quoted due **already includes the conversion**
   (the payer covers it; you receive your exact target). Partial payments
   accumulate and the page shows what's missing. Quotes involving BTC/GOLD

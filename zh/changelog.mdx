@@ -7,6 +7,20 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月17日" description="v1.86">
+
+**修复**
+
+- **比特币加密货币二维码**：结账页二维码现在使用裸 bech32 地址（与
+  TRON/ETH 相同）。Binance 等交易所应用会将 BIP-21 URI
+  （`bitcoin:…?amount=…`）判为「无效二维码」；精确金额仍显示在旁边
+  并可复制。
+- **收款页**：白标 favicon（组织符号），面板文案不再在词中间断行
+  （「momento」被拆成「moment」/「o」）— 激进的 `word-break` 仅保留
+  在等宽地址上。
+
+</Update>
+
 <Update label="2026年7月17日" description="v1.85">
 
 **新增**

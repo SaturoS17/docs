@@ -631,10 +631,11 @@ y redirige a tu `success_url` si la configuraste.
   independiente (puedes cotizar en BOB y en USD sobre el mismo link; paga
   la primera que complete).
 - **Crypto (wallet por cobro)**: al elegir una moneda se genera una
-  dirección exclusiva con su `qr_payload` y `qr_png_base64` — BTC usa URI
-  BIP-21 (`bitcoin:<address>?amount=…`, autocompleta el monto); TRON/ETH
-  llevan la dirección cruda en el QR (máxima compatibilidad) con el monto
-  al lado para copiar. Si el asset pagado difiere del `settlement_asset`,
+  dirección exclusiva con su `qr_payload` y `qr_png_base64` — el QR lleva
+  SIEMPRE la dirección cruda (BTC bech32, TRON base58, ETH hex) para máxima
+  compatibilidad con wallets y exchanges (Binance y similares rechazan
+  URIs BIP-21/EIP-681); el monto exacto se muestra al lado con botón
+  copiar. Si el asset pagado difiere del `settlement_asset`,
   el due cotizado **ya incluye la conversión** (la cubre el pagador; tú
   recibes tu meta exacta). Los pagos parciales se acumulan y la página
   muestra cuánto falta. Cotizaciones con BTC/GOLD se refrescan cada 15

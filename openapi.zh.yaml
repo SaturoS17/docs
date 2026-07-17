@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.85'
+  version: '1.86'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -599,8 +599,8 @@ paths:
       description: >-
         延迟创建付款人在通用收款链接上选择的支付选项并返回其指引 — 银行卡/托管方式的支付
         URL、二维码方式的二维码、银行转账的申报参考码，或带精确报价金额和可扫描二维码的专属加密货币
-        充值地址（`qr_payload` + `qr_png_base64` — BTC 为 BIP-21 URI，TRON/ETH 代币为原始地址，
-        外部钱包可直接读取）。法币方式必须传 `?country=XX`；本地金额在此刻报价并冻结。当国家以多种
+        充值地址（`qr_payload` + `qr_png_base64` — 始终为 BTC/TRON/ETH 的裸地址，
+        钱包与交易所可直接读取；Binance 等会拒绝 BIP-21/EIP-681 URI）。法币方式必须传 `?country=XX`；本地金额在此刻报价并冻结。当国家以多种
         币种提供同一方式时（见报价的 `options[]` — 例如 BOB 和 USD 的二维码，或银行卡通道）还须传
         `&currency=YYY`；每种币种是独立的支付选项。墨西哥的银行转账会为该链接签发一个专属 CLABE
         （`destination` 中 `dedicated: true`）：付款人只需转账精确金额，无需填写参考码 —
@@ -655,7 +655,7 @@ paths:
                       address: bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
                       due: '0.00046120'
                       received: '0.00000000'
-                      qr_payload: bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh?amount=0.00046120
+                      qr_payload: bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
                       qr_png_base64: iVBORw0KGgo…
                       quote_expires_at: '2026-07-16T18:15:00Z'
                       note: send the exact amount to the address; the payment is confirmed on-chain
