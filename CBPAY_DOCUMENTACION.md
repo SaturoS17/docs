@@ -8,7 +8,7 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-17 01:20 UTC · versión `3021df2074ea`
+> **Documento actualizado:** 2026-07-17 01:49 UTC · versión `2248a2598bde`
 
 **Datos clave**
 
@@ -8854,7 +8854,8 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | `recipient_required` / `self_transfer` | Destino de transferencia inválido |
 | `invalid_chain` / `invalid_asset` | Red o activo no soportado |
 | `to_address_required` | Falta dirección destino del retiro |
-| `invalid_payload` | Falta un campo requerido (ej. `enabled` en monitoreo AML, `external_customer_id` en verificaciones), o el QR del payout es ilegible/no soportado (BR Code corrupto o QR PIX dinámico) |
+| `invalid_payload` | Falta un campo requerido (ej. `enabled` en monitoreo AML, `external_customer_id` en verificaciones) |
+| `invalid_qr_payload` | QR de payout ilegible o no soportado (BR Code corrupto, checksum inválido o QR PIX dinámico); el `message` explica la razón exacta |
 | `liveness_already_completed` | La prueba de vida de esa verificación ya fue superada |
 | `invalid_event_type` / `weak_secret` / `invalid_callback_url` | Suscripción de webhook inválida |
 | `invalid_phone` | Teléfono no normalizable a E.164 (contactos y `to_phone`) |
@@ -9319,7 +9320,7 @@ con anticipación y quedan marcados como **Breaking**.
 
 - **Payout QR — validación antes de crear el payout**: un
   `POST /v1/payouts/qr/scan` con un QR ilegible o dinámico ahora responde
-  `400 invalid_payload` con el motivo concreto (antes devolvía un `502`
+  `400 invalid_qr_payload` con el motivo concreto (antes devolvía un `502`
   genérico). En el confirm de Brasil, un monto que no coincide con un QR
   PIX de monto fijo responde `422` con el payout `failed` y el **reembolso
   ya aplicado** — y el QR queda intacto para reintentarlo con el monto
@@ -9343,7 +9344,7 @@ con anticipación y quedan marcados como **Breaking**.
   exacta (un mismatch responde `422` con el payout `failed` y reembolso
   automático — el QR **no** se inutiliza). Un QR PIX estático es
   **reutilizable**: cada pago lleva su propia `idempotency_key`. Los QR
-  dinámicos o corruptos responden `400 invalid_payload` — usa el método
+  dinámicos o corruptos responden `400 invalid_qr_payload` — usa el método
   `pix` con la llave del beneficiario.
   Disponible en el ambiente de pruebas con QRs de ejemplo y valores mágicos
   (montos `.99` fallan) — ver

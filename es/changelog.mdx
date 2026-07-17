@@ -14,7 +14,7 @@ con anticipación y quedan marcados como **Breaking**.
 
 - **Payout QR — validación antes de crear el payout**: un
   `POST /v1/payouts/qr/scan` con un QR ilegible o dinámico ahora responde
-  `400 invalid_payload` con el motivo concreto (antes devolvía un `502`
+  `400 invalid_qr_payload` con el motivo concreto (antes devolvía un `502`
   genérico). En el confirm de Brasil, un monto que no coincide con un QR
   PIX de monto fijo responde `422` con el payout `failed` y el **reembolso
   ya aplicado** — y el QR queda intacto para reintentarlo con el monto
@@ -40,7 +40,7 @@ con anticipación y quedan marcados como **Breaking**.
   exacta (un mismatch responde `422` con el payout `failed` y reembolso
   automático — el QR **no** se inutiliza). Un QR PIX estático es
   **reutilizable**: cada pago lleva su propia `idempotency_key`. Los QR
-  dinámicos o corruptos responden `400 invalid_payload` — usa el método
+  dinámicos o corruptos responden `400 invalid_qr_payload` — usa el método
   `pix` con la llave del beneficiario.
   Disponible en el ambiente de pruebas con QRs de ejemplo y valores mágicos
   (montos `.99` fallan) — ver

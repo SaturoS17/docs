@@ -7945,16 +7945,16 @@ paths:
                 glosa: ''
                 status: scanned
         '400':
-          description: 缺少 qr_payload(invalid_request),或二维码不可读/不受支持(invalid_payload——BR Code 损坏、校验和无效或动态
-            PIX 二维码)。
+          description: 缺少 qr_payload(invalid_request),或二维码不可读/不受支持(invalid_qr_payload——BR Code 损坏、校验和无效或动态
+            PIX 二维码;message 说明具体原因)。
           content:
             application/json:
               schema: &id010
                 $ref: '#/components/schemas/Error'
               example:
-                error: invalid_payload
-                message: 'dynamic pix qr (url payload) is not supported yet: ask the beneficiary for their
-                  pix key and use the pix method'
+                error: invalid_qr_payload
+                message: 'dynamic pix qr codes are not supported yet: pay with method pix using the beneficiary
+                  pix key'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
