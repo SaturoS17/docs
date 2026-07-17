@@ -516,18 +516,19 @@ choose** (`settlement_asset`: `USDT`, `USDC`, `BTC` or `GOLD`, default
 when it credits — unless the payer pays in the same asset, in which case
 there is no conversion.
 
-The payer sees on a single page:
+The page organizes the payment into **three tabs**:
 
-- **Every country with a live payin corridor** — they pick their country
-  and see the available methods (QR, card, bank transfer, hosted payment)
-  with the local amount quoted on the spot.
-- **The 4 crypto options** (USDT on TRON, USDT/USDC on Ethereum and BTC)
-  with a deposit address exclusive to that charge and a **scannable QR**
-  compatible with external wallets (Trust Wallet, MetaMask, Binance and
-  similar apps).
-- **Direct payment with the CBPay app**: the merchant's alias and QR are
-  always visible — scanning with the app pays instantly through an
-  internal transfer, in any of the 4 balances.
+- **CBPay** — direct payment with the app: the merchant's alias and QR;
+  scanning with the app pays instantly through an internal transfer, in
+  any of the 4 balances.
+- **Crypto** — the available coins grouped by network (today USDT on
+  TRON and Ethereum, USDC on Ethereum and BTC; new networks show up on
+  their own once enabled), each with a deposit address exclusive to that
+  charge and a **scannable QR** compatible with external wallets (Trust
+  Wallet, MetaMask, Binance and similar apps).
+- **Fiat** — the payer picks their country among **every country with a
+  live payin corridor** and sees the available methods (QR, card, bank
+  transfer, hosted payment) with the local amount quoted on the spot.
 
 ```mermaid
 flowchart LR

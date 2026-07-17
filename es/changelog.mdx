@@ -8,6 +8,21 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="16 de julio de 2026" description="v1.82">
+
+**Cambiado**
+
+- **Página de pago del checkout universal rediseñada**: las opciones ahora
+  se organizan en tres pestañas — **CBPay** (QR + alias del comercio, con
+  botón de copiar), **Crypto** (monedas agrupadas por red; las redes
+  nuevas aparecen solas al habilitarse) y **Fiat** (selector de país +
+  métodos con el monto local cotizado). Botones de copiar en alias,
+  direcciones, montos y referencias. Sin cambios de API: la URL, el
+  contrato de creación y los endpoints públicos (`/state`, `/quote`,
+  `/methods/{method}`) son los mismos.
+
+</Update>
+
 <Update label="16 de julio de 2026" description="v1.81">
 
 **Corregido**

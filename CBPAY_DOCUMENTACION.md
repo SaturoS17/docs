@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-17 01:49 UTC · versión `2248a2598bde`
+> **Documento actualizado:** 2026-07-17 02:12 UTC · versión `57b9a3427446`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.81 (16 de julio de 2026) |
+| Versión de la documentación | v1.82 (16 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -3458,17 +3458,20 @@ elijas** (`settlement_asset`: `USDT`, `USDC`, `BTC` o `GOLD`, default
 acreditarse — salvo que te paguen en el mismo asset, ahí no hay
 conversión.
 
-El pagador ve en una sola página:
+La página organiza el pago en **tres pestañas**:
 
-- **Todos los países con corredor de payin vivo** — elige su país y ve los
-  métodos disponibles (QR, tarjeta, transferencia bancaria, pago hosted)
-  con el monto local cotizado al momento.
-- **Las 4 opciones crypto** (USDT en TRON, USDT/USDC en Ethereum y BTC)
-  con una dirección de depósito exclusiva de ese cobro y **QR escaneable**
-  por wallets externas (Trust Wallet, MetaMask, Binance y similares).
-- **Pago directo con la app CBPay**: el alias y el QR del comercio siempre
-  visibles — quien escanea con la app paga al instante por transferencia
-  interna, en cualquiera de los 4 saldos.
+- **CBPay** — pago directo con la app: el alias y el QR del comercio;
+  quien escanea con la app paga al instante por transferencia interna,
+  en cualquiera de los 4 saldos.
+- **Crypto** — las monedas disponibles agrupadas por red (hoy USDT en
+  TRON y Ethereum, USDC en Ethereum y BTC; redes nuevas aparecen solas
+  al habilitarse), cada una con una dirección de depósito exclusiva de
+  ese cobro y **QR escaneable** por wallets externas (Trust Wallet,
+  MetaMask, Binance y similares).
+- **Fiat** — el pagador elige su país entre **todos los que tienen
+  corredor de payin vivo** y ve los métodos disponibles (QR, tarjeta,
+  transferencia bancaria, pago hosted) con el monto local cotizado al
+  momento.
 
 ```mermaid
 flowchart LR
@@ -9313,6 +9316,19 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.82 — 16 de julio de 2026
+
+**Cambiado**
+
+- **Página de pago del checkout universal rediseñada**: las opciones ahora
+  se organizan en tres pestañas — **CBPay** (QR + alias del comercio, con
+  botón de copiar), **Crypto** (monedas agrupadas por red; las redes
+  nuevas aparecen solas al habilitarse) y **Fiat** (selector de país +
+  métodos con el monto local cotizado). Botones de copiar en alias,
+  direcciones, montos y referencias. Sin cambios de API: la URL, el
+  contrato de creación y los endpoints públicos (`/state`, `/quote`,
+  `/methods/{method}`) son los mismos.
 
 ### v1.81 — 16 de julio de 2026
 
