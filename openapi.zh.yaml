@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.86'
+  version: '1.87'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -45,6 +45,8 @@ tags:
   description: 链上充值与提现(TRON、Ethereum 和 Bitcoin)。
 - name: 隔离钱包
   description: 拥有自身余额的链上钱包(企业不限数量;个人每个网络+资产组合 1 个)——创建、导入、发送、导出私钥与自动转发。余额存在于链上,从不进入账本。
+- name: QR POS
+  description: "面向拥有实体 POS 终端的处理商（企业账户）的定额加密货币二维码收款：已验证商户、每笔收款专属地址 + 二维码、支付早期检测、按商户对账，以及经加密货币提现通道的退款。"
 - name: KYC / KYB
 - name: AML 筛查
   description: 身份验证:个人 KYC、企业 KYB,含 AML 筛查、重新筛查与持续监控。
@@ -6819,6 +6821,654 @@ paths:
                 message: execution price is unavailable or stale; retry later
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/pos/merchants:
+    get:
+      tags:
+      - QR POS
+      operationId: listPosMerchants
+      summary: "列出 POS 商户"
+      description: "账户（处理商）注册的商户分页列表。"
+      parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  merchants:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PosMerchant'
+              example:
+                page: 1
+                page_size: 50
+                merchants:
+                - merchant_id: d2875683-fc80-4c7b-876a-fb585d7c6982
+                  account_id: 5138e8dd-64bd-43ef-aafe-8d9ef23bec9e
+                  name: La Terraza Restaurant
+                  verification_id: 9e2f41d0-6b3e-4b57-9d5c-2f2f0a97c001
+                  external_ref: resto-001
+                  fee_percent: '1'
+                  fee_fixed: '0'
+                  status: active
+                  created_at: '2026-07-17T19:40:00Z'
+                  updated_at: '2026-07-17T19:40:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+      - QR POS
+      operationId: createPosMerchant
+      summary: "注册 POS 商户"
+      description: "注册一个商户（餐厅、酒店、门店），绑定一份已批准的第三方 KYC/KYB 验证 — 身份来自验证。fee_percent/fee_fixed 是处理商向商户收取的信息性佣金（按已支付收款和汇总计算；平台从不收取）。"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - verification_id
+              properties:
+                verification_id:
+                  type: string
+                  format: uuid
+                name:
+                  type: string
+                external_ref:
+                  type: string
+                fee_percent:
+                  type: string
+                fee_fixed:
+                  type: string
+            example:
+              verification_id: 9e2f41d0-6b3e-4b57-9d5c-2f2f0a97c001
+              name: La Terraza Restaurant
+              external_ref: resto-001
+              fee_percent: '1'
+              fee_fixed: '0'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PosMerchant'
+              example:
+                merchant_id: d2875683-fc80-4c7b-876a-fb585d7c6982
+                account_id: 5138e8dd-64bd-43ef-aafe-8d9ef23bec9e
+                name: La Terraza Restaurant
+                verification_id: 9e2f41d0-6b3e-4b57-9d5c-2f2f0a97c001
+                external_ref: resto-001
+                fee_percent: '1'
+                fee_fixed: '0'
+                status: active
+                created_at: '2026-07-17T19:40:00Z'
+                updated_at: '2026-07-17T19:40:00Z'
+        '422':
+          description: verification_required / verification_not_approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: verification_required
+                message: an approved identity verification of the third party is required
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/pos/merchants/{merchantID}:
+    get:
+      tags:
+      - QR POS
+      operationId: getPosMerchant
+      summary: "获取 POS 商户"
+      description: "商户详情。仅归属账户（或组织管理员）可读取。"
+      parameters:
+      - name: merchantID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PosMerchant'
+              example:
+                merchant_id: d2875683-fc80-4c7b-876a-fb585d7c6982
+                account_id: 5138e8dd-64bd-43ef-aafe-8d9ef23bec9e
+                name: La Terraza Restaurant
+                verification_id: 9e2f41d0-6b3e-4b57-9d5c-2f2f0a97c001
+                external_ref: resto-001
+                fee_percent: '1'
+                fee_fixed: '0'
+                status: active
+                created_at: '2026-07-17T19:40:00Z'
+                updated_at: '2026-07-17T19:40:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags:
+      - QR POS
+      operationId: patchPosMerchant
+      summary: "更新 POS 商户"
+      description: "更新 status（active/disabled — 停用的商户无法生成新收款）、信息性佣金与外部参考。身份不可编辑：以验证为准。"
+      parameters:
+      - name: merchantID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                  - active
+                  - disabled
+                fee_percent:
+                  type: string
+                fee_fixed:
+                  type: string
+                external_ref:
+                  type: string
+            example:
+              status: disabled
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PosMerchant'
+              example:
+                merchant_id: d2875683-fc80-4c7b-876a-fb585d7c6982
+                account_id: 5138e8dd-64bd-43ef-aafe-8d9ef23bec9e
+                name: La Terraza Restaurant
+                verification_id: 9e2f41d0-6b3e-4b57-9d5c-2f2f0a97c001
+                external_ref: resto-001
+                fee_percent: '1'
+                fee_fixed: '0'
+                status: active
+                created_at: '2026-07-17T19:40:00Z'
+                updated_at: '2026-07-17T19:40:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/pos/charges:
+    get:
+      tags:
+      - QR POS
+      operationId: listPosCharges
+      summary: "列出 POS 收款"
+      description: "账户的收款，支持 merchant_id/status 筛选，日期范围必填 — 按客户对账的视图。"
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: Start date (YYYY-MM-DD, UTC, inclusive).
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: End date (YYYY-MM-DD, UTC, inclusive).
+      - name: merchant_id
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - pending
+          - paid
+          - expired
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  charges:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PosCharge'
+              example:
+                page: 1
+                page_size: 50
+                charges:
+                - charge_id: 66773a3a-9911-4482-ae3c-09a481aba018
+                  payin_id: bd3d88ca-af9c-4c05-a6f8-0982a2d187d5
+                  status: paid
+                  amount: '25'
+                  settlement_asset: USDT
+                  crypto: tron:usdt
+                  due: '25.000000'
+                  received: '25.000000'
+                  merchant:
+                    id: d2875683-fc80-4c7b-876a-fb585d7c6982
+                    name: La Terraza Restaurant
+                    external_ref: resto-001
+                  paid_at: '2026-07-17T19:42:00Z'
+                  expires_at: '2026-07-17T19:55:00Z'
+                  created_at: '2026-07-17T19:40:00Z'
+        '400':
+          $ref: '#/components/responses/InvalidRange'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+      - QR POS
+      operationId: createPosCharge
+      summary: "创建 POS 收款（带金额的加密货币二维码）"
+      description: "为商户创建带金额的加密货币二维码收款。契约与通用收款链接一致：amount + settlement_asset（缺省时用账户默认值）；顾客支付的应付额在创建时按二维码的加密货币报价（付款人承担兑换 — 你收到精确的目标金额）。响应携带专属充值地址、裸地址二维码（qr_payload + qr_png_base64）和冻结的应付额，POS 可直接使用。idempotency_key 必填：重试返回同一笔收款与同一地址。"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - merchant_id
+              - amount
+              - crypto
+              - idempotency_key
+              properties:
+                merchant_id:
+                  type: string
+                  format: uuid
+                amount:
+                  type: string
+                settlement_asset:
+                  type: string
+                  enum:
+                  - USDT
+                  - USDC
+                  - BTC
+                  - GOLD
+                crypto:
+                  type: string
+                  enum:
+                  - tron:usdt
+                  - eth:usdt
+                  - eth:usdc
+                  - btc:btc
+                reference:
+                  type: string
+                expires_in:
+                  type: integer
+                  minimum: 300
+                  maximum: 86400
+                  default: 900
+                idempotency_key:
+                  type: string
+            example:
+              merchant_id: d2875683-fc80-4c7b-876a-fb585d7c6982
+              amount: '25'
+              crypto: tron:usdt
+              reference: TICKET-0451
+              expires_in: 900
+              idempotency_key: pos-0451-1
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PosCharge'
+              example:
+                charge_id: 66773a3a-9911-4482-ae3c-09a481aba018
+                payin_id: bd3d88ca-af9c-4c05-a6f8-0982a2d187d5
+                account_id: 5138e8dd-64bd-43ef-aafe-8d9ef23bec9e
+                status: pending
+                amount: '25'
+                settlement_asset: USDT
+                crypto: tron:usdt
+                chain: tron
+                asset: USDT
+                address: TC5SToDEigQtie7Crf9et7ui7zDsvdDHeG
+                due: '25.000000'
+                received: '0.000000'
+                qr_payload: TC5SToDEigQtie7Crf9et7ui7zDsvdDHeG
+                qr_png_base64: iVBORw0KGgo...
+                merchant:
+                  id: d2875683-fc80-4c7b-876a-fb585d7c6982
+                  name: La Terraza Restaurant
+                  external_ref: resto-001
+                reference: TICKET-0451
+                expires_at: '2026-07-17T19:55:00Z'
+                receipt_url: https://api.qbank.cl/platform/v1/payins/bd3d88ca-af9c-4c05-a6f8-0982a2d187d5/receipt
+                created_at: '2026-07-17T19:40:00Z'
+                updated_at: '2026-07-17T19:40:00Z'
+        '422':
+          description: merchant_disabled / settlement_asset_disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: merchant_disabled
+                message: this merchant is disabled; re-enable it before charging
+        '503':
+          description: pricing_unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: pricing_unavailable
+                message: crypto pricing is temporarily unavailable
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/pos/charges/{chargeID}:
+    get:
+      tags:
+      - QR POS
+      operationId: getPosCharge
+      summary: "获取 POS 收款（POS 轮询）"
+      description: "供 POS 轮询的收款详情。pending 期间，若链上入账已检测到但尚未确认，响应附加 confirming:true + detected_amount（仅 UX 信号 — 入账在确认后发生）。部分支付累计在 received；过期收款收到的迟到支付同样入账并在此显示。"
+      parameters:
+      - name: chargeID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PosCharge'
+              examples:
+                confirming:
+                  summary: Deposit detected on-chain, awaiting confirmations
+                  value:
+                    charge_id: 66773a3a-9911-4482-ae3c-09a481aba018
+                    payin_id: bd3d88ca-af9c-4c05-a6f8-0982a2d187d5
+                    status: pending
+                    confirming: true
+                    detected_amount: '25.000000'
+                    amount: '25'
+                    settlement_asset: USDT
+                    crypto: tron:usdt
+                    due: '25.000000'
+                    received: '0.000000'
+                    address: TC5SToDEigQtie7Crf9et7ui7zDsvdDHeG
+                    qr_payload: TC5SToDEigQtie7Crf9et7ui7zDsvdDHeG
+                    merchant:
+                      id: d2875683-fc80-4c7b-876a-fb585d7c6982
+                      name: La Terraza Restaurant
+                    expires_at: '2026-07-17T19:55:00Z'
+                paid:
+                  summary: Target reached and credited
+                  value:
+                    charge_id: 66773a3a-9911-4482-ae3c-09a481aba018
+                    payin_id: bd3d88ca-af9c-4c05-a6f8-0982a2d187d5
+                    status: paid
+                    amount: '25'
+                    settlement_asset: USDT
+                    crypto: tron:usdt
+                    due: '25.000000'
+                    received: '25.000000'
+                    refunded_total: '2.000000'
+                    refunds:
+                    - refund_id: b92b1ac0-3f38-4613-89e4-3788c53c9778
+                      charge_id: 66773a3a-9911-4482-ae3c-09a481aba018
+                      withdrawal_id: 4630fe8c-1346-4baf-94f9-8b56c9dbd352
+                      amount: '2.000000'
+                      asset: USDT
+                      to_address: TXHkw6bYtL2jExampleDest
+                      status: completed
+                      created_at: '2026-07-17T20:01:00Z'
+                    merchant:
+                      id: d2875683-fc80-4c7b-876a-fb585d7c6982
+                      name: La Terraza Restaurant
+                    paid_at: '2026-07-17T19:42:00Z'
+                    expires_at: '2026-07-17T19:55:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/pos/charges/{chargeID}/refund:
+    post:
+      tags:
+      - QR POS
+      operationId: refundPosCharge
+      summary: "退款 POS 收款"
+      description: "把（部分）已收资金退还给付款人，作为从账户余额发出的普通加密货币提现（持有、提现手续费与该通道全部合规控制）。to_address 必须显式提供 — 绝不自动退回入账来源。硬上限：退款总额绝不超过已收金额。idempotency_key 必填。"
+      parameters:
+      - name: chargeID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - amount
+              - to_address
+              - idempotency_key
+              properties:
+                amount:
+                  type: string
+                to_address:
+                  type: string
+                idempotency_key:
+                  type: string
+                wallet_type:
+                  type: string
+                  enum:
+                  - self_hosted
+                  - vasp
+                beneficiary_name:
+                  type: string
+                travel_address:
+                  type: string
+            example:
+              amount: '25'
+              to_address: TXHkw6bYtL2jExampleDest
+              idempotency_key: pos-ref-0451-1
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PosChargeRefund'
+              example:
+                refund_id: b92b1ac0-3f38-4613-89e4-3788c53c9778
+                charge_id: 66773a3a-9911-4482-ae3c-09a481aba018
+                withdrawal_id: 4630fe8c-1346-4baf-94f9-8b56c9dbd352
+                amount: '25.000000'
+                asset: USDT
+                to_address: TXHkw6bYtL2jExampleDest
+                status: processing
+                tx_id: 7f1f2a3b4c...
+                created_at: '2026-07-17T20:01:00Z'
+                updated_at: '2026-07-17T20:01:00Z'
+        '422':
+          description: refund_exceeds_received / nothing_received
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: refund_exceeds_received
+                message: the refund amount exceeds what this charge received minus prior refunds
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/pos/charges/{chargeID}/refunds:
+    get:
+      tags:
+      - QR POS
+      operationId: listPosChargeRefunds
+      summary: "列出 POS 收款的退款"
+      description: "该收款的退款；每条状态跟随其提现生命周期（失败的提现退回扣款并释放上限）。"
+      parameters:
+      - name: chargeID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  charge_id:
+                    type: string
+                  refunds:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PosChargeRefund'
+              example:
+                charge_id: 66773a3a-9911-4482-ae3c-09a481aba018
+                refunds:
+                - refund_id: b92b1ac0-3f38-4613-89e4-3788c53c9778
+                  charge_id: 66773a3a-9911-4482-ae3c-09a481aba018
+                  withdrawal_id: 4630fe8c-1346-4baf-94f9-8b56c9dbd352
+                  amount: '2.000000'
+                  asset: USDT
+                  to_address: TXHkw6bYtL2jExampleDest
+                  status: completed
+                  created_at: '2026-07-17T20:01:00Z'
+                  updated_at: '2026-07-17T20:05:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/pos/summary:
+    get:
+      tags:
+      - QR POS
+      operationId: getPosSummary
+      summary: "按商户的 POS 对账汇总"
+      description: "日期范围内按商户的汇总：收款计数、收款总额（已支付收款的目标金额）、处理商的信息性佣金、退款总额与应分配给每个商户的净额。"
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: Start date (YYYY-MM-DD, UTC, inclusive).
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: End date (YYYY-MM-DD, UTC, inclusive).
+      - name: merchant_id
+        in: query
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  from:
+                    type: string
+                  to:
+                    type: string
+                  merchants:
+                    type: array
+                    items:
+                      type: object
+              example:
+                from: '2026-07-01'
+                to: '2026-07-17'
+                merchants:
+                - merchant_id: d2875683-fc80-4c7b-876a-fb585d7c6982
+                  name: La Terraza Restaurant
+                  external_ref: resto-001
+                  charges_count: 214
+                  paid_count: 201
+                  fee_percent: '1'
+                  fee_fixed: '0'
+                  totals:
+                  - settlement_asset: USDT
+                    gross: '5025.000000'
+                    processor_fee: '50.250000'
+                    net_for_merchant: '4972.750000'
+                  refunded:
+                  - asset: USDT
+                    amount: '2.000000'
+        '400':
+          $ref: '#/components/responses/InvalidRange'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/swaps:
     post:
       tags:
@@ -12272,6 +12922,142 @@ components:
             error: unauthorized
             message: invalid or missing credentials
   schemas:
+    PosMerchant:
+      type: object
+      properties:
+        merchant_id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        verification_id:
+          type: string
+          format: uuid
+        external_ref:
+          type: string
+        fee_percent:
+          type: string
+        fee_fixed:
+          type: string
+        status:
+          type: string
+          enum:
+          - active
+          - disabled
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PosCharge:
+      type: object
+      properties:
+        charge_id:
+          type: string
+          format: uuid
+        payin_id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - pending
+          - paid
+          - expired
+        amount:
+          type: string
+        settlement_asset:
+          type: string
+        crypto:
+          type: string
+        chain:
+          type: string
+        asset:
+          type: string
+        address:
+          type: string
+        due:
+          type: string
+        received:
+          type: string
+        refunded_total:
+          type: string
+        qr_payload:
+          type: string
+        qr_png_base64:
+          type: string
+        confirming:
+          type: boolean
+        detected_amount:
+          type: string
+        merchant:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            external_ref:
+              type: string
+        reference:
+          type: string
+        quote_expires_at:
+          type: string
+          format: date-time
+        paid_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        conversion_status:
+          type: string
+        refunds:
+          type: array
+          items:
+            $ref: '#/components/schemas/PosChargeRefund'
+        receipt_url:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PosChargeRefund:
+      type: object
+      properties:
+        refund_id:
+          type: string
+          format: uuid
+        charge_id:
+          type: string
+          format: uuid
+        withdrawal_id:
+          type: string
+        amount:
+          type: string
+        asset:
+          type: string
+        to_address:
+          type: string
+        status:
+          type: string
+        tx_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
     CatalogItem:
       type: object
       description: 单个目录条目——`value` 是发送给 API 的值,`label` 是展示用的文本。

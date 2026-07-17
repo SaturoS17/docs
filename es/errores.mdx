@@ -145,6 +145,11 @@ Detalle y flujo completo en [login social](/es/guias/login-social).
 | 422 | `collect_rejected` | El rail rechazó el cobro pull del link (OTP inválida o datos incorrectos); el link sigue pendiente |
 | 422 | `settlement_asset_disabled` | El `settlement_asset` del link de cobro está deshabilitado para tu organización |
 | 422 | `checkout_amount_mismatch` | La transferencia CBPay no cubre el monto vigente del link de cobro; el mensaje trae el monto actualizado |
+| 422 | `verification_required` | [QR POS](/es/guias/qr-pos): registra al merchant con el `verification_id` de su KYC/KYB de terceros aprobado |
+| 422 | `merchant_disabled` | El merchant [QR POS](/es/guias/qr-pos) está deshabilitado; reactívalo antes de generar cobros |
+| 422 | `nothing_received` | El cobro [QR POS](/es/guias/qr-pos) no ha recibido ningún pago on-chain: no hay nada que devolver |
+| 422 | `refund_exceeds_received` | La devolución supera lo recibido menos lo ya devuelto del cobro [QR POS](/es/guias/qr-pos) |
+| 400 | `to_address_required` | La devolución [QR POS](/es/guias/qr-pos) (y el retiro crypto) exige la dirección destino explícita |
 
 ### Cumplimiento (403 / 503)
 

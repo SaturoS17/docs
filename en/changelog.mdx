@@ -7,6 +7,25 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 17, 2026" description="v1.87">
+
+**Added**
+
+- **QR POS — amount-bearing crypto QR charges for processors** ([guide](/en/guides/qr-pos)):
+  company accounts operating physical POS terminals register their
+  merchants as verified merchants (approved third-party KYB/KYC) and
+  generate crypto charges (USDT, USDC, BTC) with an exclusive address and
+  QR per sale. Early payment detection for the POS (`confirming` within
+  seconds), credit with automatic conversion to the settlement asset,
+  per-merchant attribution on charges/webhooks, a reconciliation summary
+  (`GET /v1/pos/summary`) with the informative per-merchant commission and
+  the net to distribute, and refunds over the crypto withdrawal rail with
+  a hard cap (never more than received). New routes under `/v1/pos/*`
+  (QR POS tag in the API Reference); partial payments accumulate and late
+  payments into an expired charge are still credited.
+
+</Update>
+
 <Update label="July 17, 2026" description="v1.86">
 
 **Fixed**

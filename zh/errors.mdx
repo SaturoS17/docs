@@ -145,6 +145,11 @@ description: "错误格式与完整的错误码目录"
 | 422 | `collect_rejected` | 通道拒绝了链接的拉取式扣款（OTP 无效或数据错误）；链接保持待支付 |
 | 422 | `settlement_asset_disabled` | 收款链接的 `settlement_asset` 已被您的组织禁用 |
 | 422 | `checkout_amount_mismatch` | CBPay 转账不足以覆盖收款链接的当前应付额；错误消息附带最新金额 |
+| 422 | `verification_required` | [QR POS](/zh/guides/qr-pos)：用商户已批准的第三方 KYC/KYB 的 `verification_id` 注册商户 |
+| 422 | `merchant_disabled` | [QR POS](/zh/guides/qr-pos) 商户已停用；先重新启用再生成收款 |
+| 422 | `nothing_received` | [QR POS](/zh/guides/qr-pos) 收款未收到任何链上支付：无可退款 |
+| 422 | `refund_exceeds_received` | 退款超过 [QR POS](/zh/guides/qr-pos) 收款已收金额减去已退金额 |
+| 400 | `to_address_required` | [QR POS](/zh/guides/qr-pos) 退款（及加密货币提现）必须显式提供目标地址 |
 
 ### 合规（403 / 503）
 

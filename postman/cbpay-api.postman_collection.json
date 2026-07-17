@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — that never mix or convert automatically.\nPayouts and service fees can be paid from any of the four balances:\nset a default with `PUT /v1/settlement` or override per payout with\n`settlement_asset`.\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-17 17:21 UTC",
-    "_content_sha256": "32df1331b037d3079a92321abff30b5534de0d5bc7f49d4b577dafcffebb145b"
+    "_generated_at": "2026-07-17 20:23 UTC",
+    "_content_sha256": "9aea960484ad3e40261699459e87486ec015ff12f84989930b5deba1eb5262aa"
   },
   "auth": {
     "type": "bearer",
@@ -10800,6 +10800,765 @@
                 }
               ],
               "body": "{\n  \"swap_id\": \"8a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"from_asset\": \"BTC\",\n  \"to_asset\": \"GOLD\",\n  \"from_amount\": \"0.01000000\",\n  \"to_amount\": \"4.900990\",\n  \"rate\": \"490.09900990\",\n  \"status\": \"completed\",\n  \"idempotency_key\": \"swap-2026-07-10-b\",\n  \"created_at\": \"2026-07-10T15:05:00Z\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "QR POS",
+      "item": [
+        {
+          "name": "List POS merchants",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/pos/merchants",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "pos",
+                "merchants"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Paginated list of the merchants registered by the account (processor)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/pos/merchants",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "pos",
+                    "merchants"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"merchants\": [\n    {\n      \"merchant_id\": \"d2875683-fc80-4c7b-876a-fb585d7c6982\",\n      \"account_id\": \"5138e8dd-64bd-43ef-aafe-8d9ef23bec9e\",\n      \"name\": \"La Terraza Restaurant\",\n      \"verification_id\": \"9e2f41d0-6b3e-4b57-9d5c-2f2f0a97c001\",\n      \"external_ref\": \"resto-001\",\n      \"fee_percent\": \"1\",\n      \"fee_fixed\": \"0\",\n      \"status\": \"active\",\n      \"created_at\": \"2026-07-17T19:40:00Z\",\n      \"updated_at\": \"2026-07-17T19:40:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Register a POS merchant",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/pos/merchants",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "pos",
+                "merchants"
+              ]
+            },
+            "description": "Registers a merchant (restaurant, hotel, store) bound to an APPROVED third-party KYC/KYB verification — the identity comes from the verification. fee_percent/fee_fixed are the processor's informative commission to the merchant (computed per paid charge and in the summary; never charged by the platform).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"verification_id\": \"9e2f41d0-6b3e-4b57-9d5c-2f2f0a97c001\",\n  \"name\": \"La Terraza Restaurant\",\n  \"external_ref\": \"resto-001\",\n  \"fee_percent\": \"1\",\n  \"fee_fixed\": \"0\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/pos/merchants",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "pos",
+                    "merchants"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"merchant_id\": \"d2875683-fc80-4c7b-876a-fb585d7c6982\",\n  \"account_id\": \"5138e8dd-64bd-43ef-aafe-8d9ef23bec9e\",\n  \"name\": \"La Terraza Restaurant\",\n  \"verification_id\": \"9e2f41d0-6b3e-4b57-9d5c-2f2f0a97c001\",\n  \"external_ref\": \"resto-001\",\n  \"fee_percent\": \"1\",\n  \"fee_fixed\": \"0\",\n  \"status\": \"active\",\n  \"created_at\": \"2026-07-17T19:40:00Z\",\n  \"updated_at\": \"2026-07-17T19:40:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get a POS merchant",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/pos/merchants/:merchantID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "pos",
+                "merchants",
+                ":merchantID"
+              ],
+              "variable": [
+                {
+                  "key": "merchantID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Merchant detail. Only the owning account (or the org admin) can read it."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/pos/merchants/:merchantID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "pos",
+                    "merchants",
+                    ":merchantID"
+                  ],
+                  "variable": [
+                    {
+                      "key": "merchantID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"merchant_id\": \"d2875683-fc80-4c7b-876a-fb585d7c6982\",\n  \"account_id\": \"5138e8dd-64bd-43ef-aafe-8d9ef23bec9e\",\n  \"name\": \"La Terraza Restaurant\",\n  \"verification_id\": \"9e2f41d0-6b3e-4b57-9d5c-2f2f0a97c001\",\n  \"external_ref\": \"resto-001\",\n  \"fee_percent\": \"1\",\n  \"fee_fixed\": \"0\",\n  \"status\": \"active\",\n  \"created_at\": \"2026-07-17T19:40:00Z\",\n  \"updated_at\": \"2026-07-17T19:40:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update a POS merchant",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/pos/merchants/:merchantID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "pos",
+                "merchants",
+                ":merchantID"
+              ],
+              "variable": [
+                {
+                  "key": "merchantID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Updates status (active/disabled — a disabled merchant cannot generate new charges), the informative commission and the external reference. Identity is never edited: it comes from the verification.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"disabled\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PATCH",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/pos/merchants/:merchantID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "pos",
+                    "merchants",
+                    ":merchantID"
+                  ],
+                  "variable": [
+                    {
+                      "key": "merchantID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"merchant_id\": \"d2875683-fc80-4c7b-876a-fb585d7c6982\",\n  \"account_id\": \"5138e8dd-64bd-43ef-aafe-8d9ef23bec9e\",\n  \"name\": \"La Terraza Restaurant\",\n  \"verification_id\": \"9e2f41d0-6b3e-4b57-9d5c-2f2f0a97c001\",\n  \"external_ref\": \"resto-001\",\n  \"fee_percent\": \"1\",\n  \"fee_fixed\": \"0\",\n  \"status\": \"active\",\n  \"created_at\": \"2026-07-17T19:40:00Z\",\n  \"updated_at\": \"2026-07-17T19:40:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List POS charges",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/pos/charges",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "pos",
+                "charges"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": false,
+                  "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": false,
+                  "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                },
+                {
+                  "key": "merchant_id",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Charges of the account with merchant_id/status filters and a mandatory date range — the per-client reconciliation view."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/pos/charges",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "pos",
+                    "charges"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": false,
+                      "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": false,
+                      "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                    },
+                    {
+                      "key": "merchant_id",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"charges\": [\n    {\n      \"charge_id\": \"66773a3a-9911-4482-ae3c-09a481aba018\",\n      \"payin_id\": \"bd3d88ca-af9c-4c05-a6f8-0982a2d187d5\",\n      \"status\": \"paid\",\n      \"amount\": \"25\",\n      \"settlement_asset\": \"USDT\",\n      \"crypto\": \"tron:usdt\",\n      \"due\": \"25.000000\",\n      \"received\": \"25.000000\",\n      \"merchant\": {\n        \"id\": \"d2875683-fc80-4c7b-876a-fb585d7c6982\",\n        \"name\": \"La Terraza Restaurant\",\n        \"external_ref\": \"resto-001\"\n      },\n      \"paid_at\": \"2026-07-17T19:42:00Z\",\n      \"expires_at\": \"2026-07-17T19:55:00Z\",\n      \"created_at\": \"2026-07-17T19:40:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a POS charge (crypto QR with amount)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/pos/charges",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "pos",
+                "charges"
+              ]
+            },
+            "description": "Creates an amount-bearing crypto QR charge for a merchant. Same contract as the universal checkout link: amount + settlement_asset (account default when omitted); the due the customer pays is quoted in the QR's crypto at creation (the payer covers any conversion — you receive your exact target). The response carries the exclusive deposit address, the raw-address QR (qr_payload + qr_png_base64) and the frozen due, ready for the POS. idempotency_key is required: a retry returns the SAME charge and address.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"merchant_id\": \"d2875683-fc80-4c7b-876a-fb585d7c6982\",\n  \"amount\": \"25\",\n  \"crypto\": \"tron:usdt\",\n  \"reference\": \"TICKET-0451\",\n  \"expires_in\": 900,\n  \"idempotency_key\": \"pos-0451-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/pos/charges",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "pos",
+                    "charges"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"charge_id\": \"66773a3a-9911-4482-ae3c-09a481aba018\",\n  \"payin_id\": \"bd3d88ca-af9c-4c05-a6f8-0982a2d187d5\",\n  \"account_id\": \"5138e8dd-64bd-43ef-aafe-8d9ef23bec9e\",\n  \"status\": \"pending\",\n  \"amount\": \"25\",\n  \"settlement_asset\": \"USDT\",\n  \"crypto\": \"tron:usdt\",\n  \"chain\": \"tron\",\n  \"asset\": \"USDT\",\n  \"address\": \"TC5SToDEigQtie7Crf9et7ui7zDsvdDHeG\",\n  \"due\": \"25.000000\",\n  \"received\": \"0.000000\",\n  \"qr_payload\": \"TC5SToDEigQtie7Crf9et7ui7zDsvdDHeG\",\n  \"qr_png_base64\": \"iVBORw0KGgo...\",\n  \"merchant\": {\n    \"id\": \"d2875683-fc80-4c7b-876a-fb585d7c6982\",\n    \"name\": \"La Terraza Restaurant\",\n    \"external_ref\": \"resto-001\"\n  },\n  \"reference\": \"TICKET-0451\",\n  \"expires_at\": \"2026-07-17T19:55:00Z\",\n  \"receipt_url\": \"https://api.qbank.cl/platform/v1/payins/bd3d88ca-af9c-4c05-a6f8-0982a2d187d5/receipt\",\n  \"created_at\": \"2026-07-17T19:40:00Z\",\n  \"updated_at\": \"2026-07-17T19:40:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get a POS charge (POS polling)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/pos/charges/:chargeID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "pos",
+                "charges",
+                ":chargeID"
+              ],
+              "variable": [
+                {
+                  "key": "chargeID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Charge detail for the POS polling loop. While pending, if an on-chain deposit is already detected but not yet confirmed, the response adds confirming:true + detected_amount (UX signal only — credit happens on confirmation). Partial payments accumulate in received; late payments into an expired charge still credit and show here."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/pos/charges/:chargeID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "pos",
+                    "charges",
+                    ":chargeID"
+                  ],
+                  "variable": [
+                    {
+                      "key": "chargeID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"charge_id\": \"66773a3a-9911-4482-ae3c-09a481aba018\",\n  \"payin_id\": \"bd3d88ca-af9c-4c05-a6f8-0982a2d187d5\",\n  \"status\": \"pending\",\n  \"confirming\": true,\n  \"detected_amount\": \"25.000000\",\n  \"amount\": \"25\",\n  \"settlement_asset\": \"USDT\",\n  \"crypto\": \"tron:usdt\",\n  \"due\": \"25.000000\",\n  \"received\": \"0.000000\",\n  \"address\": \"TC5SToDEigQtie7Crf9et7ui7zDsvdDHeG\",\n  \"qr_payload\": \"TC5SToDEigQtie7Crf9et7ui7zDsvdDHeG\",\n  \"merchant\": {\n    \"id\": \"d2875683-fc80-4c7b-876a-fb585d7c6982\",\n    \"name\": \"La Terraza Restaurant\"\n  },\n  \"expires_at\": \"2026-07-17T19:55:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Refund a POS charge",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/pos/charges/:chargeID/refund",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "pos",
+                "charges",
+                ":chargeID",
+                "refund"
+              ],
+              "variable": [
+                {
+                  "key": "chargeID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Returns (part of) what the charge received to the payer as a regular crypto withdrawal from the account balance (hold, withdrawal fee and every compliance control of the rail). to_address is always explicit — never auto-refunded to the deposit origin. Hard cap: the sum of refunds can never exceed what the charge received. idempotency_key required.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"25\",\n  \"to_address\": \"TXHkw6bYtL2jExampleDest\",\n  \"idempotency_key\": \"pos-ref-0451-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "202 Accepted",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/pos/charges/:chargeID/refund",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "pos",
+                    "charges",
+                    ":chargeID",
+                    "refund"
+                  ],
+                  "variable": [
+                    {
+                      "key": "chargeID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Accepted",
+              "code": 202,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"refund_id\": \"b92b1ac0-3f38-4613-89e4-3788c53c9778\",\n  \"charge_id\": \"66773a3a-9911-4482-ae3c-09a481aba018\",\n  \"withdrawal_id\": \"4630fe8c-1346-4baf-94f9-8b56c9dbd352\",\n  \"amount\": \"25.000000\",\n  \"asset\": \"USDT\",\n  \"to_address\": \"TXHkw6bYtL2jExampleDest\",\n  \"status\": \"processing\",\n  \"tx_id\": \"7f1f2a3b4c...\",\n  \"created_at\": \"2026-07-17T20:01:00Z\",\n  \"updated_at\": \"2026-07-17T20:01:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List the refunds of a POS charge",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/pos/charges/:chargeID/refunds",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "pos",
+                "charges",
+                ":chargeID",
+                "refunds"
+              ],
+              "variable": [
+                {
+                  "key": "chargeID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Refunds of the charge; each status follows its withdrawal lifecycle (a failed withdrawal refunds the debit and releases the cap)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/pos/charges/:chargeID/refunds",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "pos",
+                    "charges",
+                    ":chargeID",
+                    "refunds"
+                  ],
+                  "variable": [
+                    {
+                      "key": "chargeID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"charge_id\": \"66773a3a-9911-4482-ae3c-09a481aba018\",\n  \"refunds\": [\n    {\n      \"refund_id\": \"b92b1ac0-3f38-4613-89e4-3788c53c9778\",\n      \"charge_id\": \"66773a3a-9911-4482-ae3c-09a481aba018\",\n      \"withdrawal_id\": \"4630fe8c-1346-4baf-94f9-8b56c9dbd352\",\n      \"amount\": \"2.000000\",\n      \"asset\": \"USDT\",\n      \"to_address\": \"TXHkw6bYtL2jExampleDest\",\n      \"status\": \"completed\",\n      \"created_at\": \"2026-07-17T20:01:00Z\",\n      \"updated_at\": \"2026-07-17T20:05:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "POS reconciliation summary per merchant",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/pos/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "pos",
+                "summary"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": false,
+                  "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": false,
+                  "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                },
+                {
+                  "key": "merchant_id",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Per-merchant aggregate over a date range: charge counts, gross collected (target of paid charges), the processor's informative commission, refunded totals and the net to distribute to each merchant."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/pos/summary",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "pos",
+                    "summary"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": false,
+                      "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": false,
+                      "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                    },
+                    {
+                      "key": "merchant_id",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"from\": \"2026-07-01\",\n  \"to\": \"2026-07-17\",\n  \"merchants\": [\n    {\n      \"merchant_id\": \"d2875683-fc80-4c7b-876a-fb585d7c6982\",\n      \"name\": \"La Terraza Restaurant\",\n      \"external_ref\": \"resto-001\",\n      \"charges_count\": 214,\n      \"paid_count\": 201,\n      \"fee_percent\": \"1\",\n      \"fee_fixed\": \"0\",\n      \"totals\": [\n        {\n          \"settlement_asset\": \"USDT\",\n          \"gross\": \"5025.000000\",\n          \"processor_fee\": \"50.250000\",\n          \"net_for_merchant\": \"4972.750000\"\n        }\n      ],\n      \"refunded\": [\n        {\n          \"asset\": \"USDT\",\n          \"amount\": \"2.000000\"\n        }\n      ]\n    }\n  ]\n}"
             }
           ]
         }

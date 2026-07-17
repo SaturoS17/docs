@@ -145,6 +145,11 @@ Full flow and details in [social login](/en/guides/social-login).
 | 422 | `collect_rejected` | The rail rejected the link's pull charge (invalid OTP or wrong data); the link stays pending |
 | 422 | `settlement_asset_disabled` | The checkout link's `settlement_asset` is disabled for your organization |
 | 422 | `checkout_amount_mismatch` | The CBPay transfer does not cover the checkout link's current due; the message carries the updated amount |
+| 422 | `verification_required` | [QR POS](/en/guides/qr-pos): register the merchant with the `verification_id` of their approved third-party KYC/KYB |
+| 422 | `merchant_disabled` | The [QR POS](/en/guides/qr-pos) merchant is disabled; re-enable it before charging |
+| 422 | `nothing_received` | The [QR POS](/en/guides/qr-pos) charge has not received any on-chain payment: there is nothing to refund |
+| 422 | `refund_exceeds_received` | The refund exceeds what the [QR POS](/en/guides/qr-pos) charge received minus prior refunds |
+| 400 | `to_address_required` | The [QR POS](/en/guides/qr-pos) refund (and crypto withdrawals) require an explicit destination address |
 
 ### Compliance (403 / 503)
 

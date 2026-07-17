@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.86'
+  version: '1.87'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -57,6 +57,8 @@ tags:
   description: On-chain wallets with their own balance (companies unlimited; persons 1 per network+asset
     pair) — create, import, send, export the private key and auto-forward. The balance lives on-chain,
     never in the ledger.
+- name: QR POS
+  description: "Amount-bearing crypto QR charges for processors with physical POS terminals (company accounts): verified merchants, exclusive address + QR per charge, early payment detection, per-merchant reconciliation and refunds over the crypto withdrawal rail."
 - name: KYC / KYB
 - name: AML screening
   description: 'Identity verification: KYC for persons, KYB for companies, with AML screening, rescreening
@@ -7073,6 +7075,654 @@ paths:
                 message: execution price is unavailable or stale; retry later
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/pos/merchants:
+    get:
+      tags:
+      - QR POS
+      operationId: listPosMerchants
+      summary: "List POS merchants"
+      description: "Paginated list of the merchants registered by the account (processor)."
+      parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  merchants:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PosMerchant'
+              example:
+                page: 1
+                page_size: 50
+                merchants:
+                - merchant_id: d2875683-fc80-4c7b-876a-fb585d7c6982
+                  account_id: 5138e8dd-64bd-43ef-aafe-8d9ef23bec9e
+                  name: La Terraza Restaurant
+                  verification_id: 9e2f41d0-6b3e-4b57-9d5c-2f2f0a97c001
+                  external_ref: resto-001
+                  fee_percent: '1'
+                  fee_fixed: '0'
+                  status: active
+                  created_at: '2026-07-17T19:40:00Z'
+                  updated_at: '2026-07-17T19:40:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+      - QR POS
+      operationId: createPosMerchant
+      summary: "Register a POS merchant"
+      description: "Registers a merchant (restaurant, hotel, store) bound to an APPROVED third-party KYC/KYB verification — the identity comes from the verification. fee_percent/fee_fixed are the processor's informative commission to the merchant (computed per paid charge and in the summary; never charged by the platform)."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - verification_id
+              properties:
+                verification_id:
+                  type: string
+                  format: uuid
+                name:
+                  type: string
+                external_ref:
+                  type: string
+                fee_percent:
+                  type: string
+                fee_fixed:
+                  type: string
+            example:
+              verification_id: 9e2f41d0-6b3e-4b57-9d5c-2f2f0a97c001
+              name: La Terraza Restaurant
+              external_ref: resto-001
+              fee_percent: '1'
+              fee_fixed: '0'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PosMerchant'
+              example:
+                merchant_id: d2875683-fc80-4c7b-876a-fb585d7c6982
+                account_id: 5138e8dd-64bd-43ef-aafe-8d9ef23bec9e
+                name: La Terraza Restaurant
+                verification_id: 9e2f41d0-6b3e-4b57-9d5c-2f2f0a97c001
+                external_ref: resto-001
+                fee_percent: '1'
+                fee_fixed: '0'
+                status: active
+                created_at: '2026-07-17T19:40:00Z'
+                updated_at: '2026-07-17T19:40:00Z'
+        '422':
+          description: verification_required / verification_not_approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: verification_required
+                message: an approved identity verification of the third party is required
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/pos/merchants/{merchantID}:
+    get:
+      tags:
+      - QR POS
+      operationId: getPosMerchant
+      summary: "Get a POS merchant"
+      description: "Merchant detail. Only the owning account (or the org admin) can read it."
+      parameters:
+      - name: merchantID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PosMerchant'
+              example:
+                merchant_id: d2875683-fc80-4c7b-876a-fb585d7c6982
+                account_id: 5138e8dd-64bd-43ef-aafe-8d9ef23bec9e
+                name: La Terraza Restaurant
+                verification_id: 9e2f41d0-6b3e-4b57-9d5c-2f2f0a97c001
+                external_ref: resto-001
+                fee_percent: '1'
+                fee_fixed: '0'
+                status: active
+                created_at: '2026-07-17T19:40:00Z'
+                updated_at: '2026-07-17T19:40:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags:
+      - QR POS
+      operationId: patchPosMerchant
+      summary: "Update a POS merchant"
+      description: "Updates status (active/disabled — a disabled merchant cannot generate new charges), the informative commission and the external reference. Identity is never edited: it comes from the verification."
+      parameters:
+      - name: merchantID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                  - active
+                  - disabled
+                fee_percent:
+                  type: string
+                fee_fixed:
+                  type: string
+                external_ref:
+                  type: string
+            example:
+              status: disabled
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PosMerchant'
+              example:
+                merchant_id: d2875683-fc80-4c7b-876a-fb585d7c6982
+                account_id: 5138e8dd-64bd-43ef-aafe-8d9ef23bec9e
+                name: La Terraza Restaurant
+                verification_id: 9e2f41d0-6b3e-4b57-9d5c-2f2f0a97c001
+                external_ref: resto-001
+                fee_percent: '1'
+                fee_fixed: '0'
+                status: active
+                created_at: '2026-07-17T19:40:00Z'
+                updated_at: '2026-07-17T19:40:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/pos/charges:
+    get:
+      tags:
+      - QR POS
+      operationId: listPosCharges
+      summary: "List POS charges"
+      description: "Charges of the account with merchant_id/status filters and a mandatory date range — the per-client reconciliation view."
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: Start date (YYYY-MM-DD, UTC, inclusive).
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: End date (YYYY-MM-DD, UTC, inclusive).
+      - name: merchant_id
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - pending
+          - paid
+          - expired
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  charges:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PosCharge'
+              example:
+                page: 1
+                page_size: 50
+                charges:
+                - charge_id: 66773a3a-9911-4482-ae3c-09a481aba018
+                  payin_id: bd3d88ca-af9c-4c05-a6f8-0982a2d187d5
+                  status: paid
+                  amount: '25'
+                  settlement_asset: USDT
+                  crypto: tron:usdt
+                  due: '25.000000'
+                  received: '25.000000'
+                  merchant:
+                    id: d2875683-fc80-4c7b-876a-fb585d7c6982
+                    name: La Terraza Restaurant
+                    external_ref: resto-001
+                  paid_at: '2026-07-17T19:42:00Z'
+                  expires_at: '2026-07-17T19:55:00Z'
+                  created_at: '2026-07-17T19:40:00Z'
+        '400':
+          $ref: '#/components/responses/InvalidRange'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+      - QR POS
+      operationId: createPosCharge
+      summary: "Create a POS charge (crypto QR with amount)"
+      description: "Creates an amount-bearing crypto QR charge for a merchant. Same contract as the universal checkout link: amount + settlement_asset (account default when omitted); the due the customer pays is quoted in the QR's crypto at creation (the payer covers any conversion — you receive your exact target). The response carries the exclusive deposit address, the raw-address QR (qr_payload + qr_png_base64) and the frozen due, ready for the POS. idempotency_key is required: a retry returns the SAME charge and address."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - merchant_id
+              - amount
+              - crypto
+              - idempotency_key
+              properties:
+                merchant_id:
+                  type: string
+                  format: uuid
+                amount:
+                  type: string
+                settlement_asset:
+                  type: string
+                  enum:
+                  - USDT
+                  - USDC
+                  - BTC
+                  - GOLD
+                crypto:
+                  type: string
+                  enum:
+                  - tron:usdt
+                  - eth:usdt
+                  - eth:usdc
+                  - btc:btc
+                reference:
+                  type: string
+                expires_in:
+                  type: integer
+                  minimum: 300
+                  maximum: 86400
+                  default: 900
+                idempotency_key:
+                  type: string
+            example:
+              merchant_id: d2875683-fc80-4c7b-876a-fb585d7c6982
+              amount: '25'
+              crypto: tron:usdt
+              reference: TICKET-0451
+              expires_in: 900
+              idempotency_key: pos-0451-1
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PosCharge'
+              example:
+                charge_id: 66773a3a-9911-4482-ae3c-09a481aba018
+                payin_id: bd3d88ca-af9c-4c05-a6f8-0982a2d187d5
+                account_id: 5138e8dd-64bd-43ef-aafe-8d9ef23bec9e
+                status: pending
+                amount: '25'
+                settlement_asset: USDT
+                crypto: tron:usdt
+                chain: tron
+                asset: USDT
+                address: TC5SToDEigQtie7Crf9et7ui7zDsvdDHeG
+                due: '25.000000'
+                received: '0.000000'
+                qr_payload: TC5SToDEigQtie7Crf9et7ui7zDsvdDHeG
+                qr_png_base64: iVBORw0KGgo...
+                merchant:
+                  id: d2875683-fc80-4c7b-876a-fb585d7c6982
+                  name: La Terraza Restaurant
+                  external_ref: resto-001
+                reference: TICKET-0451
+                expires_at: '2026-07-17T19:55:00Z'
+                receipt_url: https://api.qbank.cl/platform/v1/payins/bd3d88ca-af9c-4c05-a6f8-0982a2d187d5/receipt
+                created_at: '2026-07-17T19:40:00Z'
+                updated_at: '2026-07-17T19:40:00Z'
+        '422':
+          description: merchant_disabled / settlement_asset_disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: merchant_disabled
+                message: this merchant is disabled; re-enable it before charging
+        '503':
+          description: pricing_unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: pricing_unavailable
+                message: crypto pricing is temporarily unavailable
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/pos/charges/{chargeID}:
+    get:
+      tags:
+      - QR POS
+      operationId: getPosCharge
+      summary: "Get a POS charge (POS polling)"
+      description: "Charge detail for the POS polling loop. While pending, if an on-chain deposit is already detected but not yet confirmed, the response adds confirming:true + detected_amount (UX signal only — credit happens on confirmation). Partial payments accumulate in received; late payments into an expired charge still credit and show here."
+      parameters:
+      - name: chargeID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PosCharge'
+              examples:
+                confirming:
+                  summary: Deposit detected on-chain, awaiting confirmations
+                  value:
+                    charge_id: 66773a3a-9911-4482-ae3c-09a481aba018
+                    payin_id: bd3d88ca-af9c-4c05-a6f8-0982a2d187d5
+                    status: pending
+                    confirming: true
+                    detected_amount: '25.000000'
+                    amount: '25'
+                    settlement_asset: USDT
+                    crypto: tron:usdt
+                    due: '25.000000'
+                    received: '0.000000'
+                    address: TC5SToDEigQtie7Crf9et7ui7zDsvdDHeG
+                    qr_payload: TC5SToDEigQtie7Crf9et7ui7zDsvdDHeG
+                    merchant:
+                      id: d2875683-fc80-4c7b-876a-fb585d7c6982
+                      name: La Terraza Restaurant
+                    expires_at: '2026-07-17T19:55:00Z'
+                paid:
+                  summary: Target reached and credited
+                  value:
+                    charge_id: 66773a3a-9911-4482-ae3c-09a481aba018
+                    payin_id: bd3d88ca-af9c-4c05-a6f8-0982a2d187d5
+                    status: paid
+                    amount: '25'
+                    settlement_asset: USDT
+                    crypto: tron:usdt
+                    due: '25.000000'
+                    received: '25.000000'
+                    refunded_total: '2.000000'
+                    refunds:
+                    - refund_id: b92b1ac0-3f38-4613-89e4-3788c53c9778
+                      charge_id: 66773a3a-9911-4482-ae3c-09a481aba018
+                      withdrawal_id: 4630fe8c-1346-4baf-94f9-8b56c9dbd352
+                      amount: '2.000000'
+                      asset: USDT
+                      to_address: TXHkw6bYtL2jExampleDest
+                      status: completed
+                      created_at: '2026-07-17T20:01:00Z'
+                    merchant:
+                      id: d2875683-fc80-4c7b-876a-fb585d7c6982
+                      name: La Terraza Restaurant
+                    paid_at: '2026-07-17T19:42:00Z'
+                    expires_at: '2026-07-17T19:55:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/pos/charges/{chargeID}/refund:
+    post:
+      tags:
+      - QR POS
+      operationId: refundPosCharge
+      summary: "Refund a POS charge"
+      description: "Returns (part of) what the charge received to the payer as a regular crypto withdrawal from the account balance (hold, withdrawal fee and every compliance control of the rail). to_address is always explicit — never auto-refunded to the deposit origin. Hard cap: the sum of refunds can never exceed what the charge received. idempotency_key required."
+      parameters:
+      - name: chargeID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - amount
+              - to_address
+              - idempotency_key
+              properties:
+                amount:
+                  type: string
+                to_address:
+                  type: string
+                idempotency_key:
+                  type: string
+                wallet_type:
+                  type: string
+                  enum:
+                  - self_hosted
+                  - vasp
+                beneficiary_name:
+                  type: string
+                travel_address:
+                  type: string
+            example:
+              amount: '25'
+              to_address: TXHkw6bYtL2jExampleDest
+              idempotency_key: pos-ref-0451-1
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PosChargeRefund'
+              example:
+                refund_id: b92b1ac0-3f38-4613-89e4-3788c53c9778
+                charge_id: 66773a3a-9911-4482-ae3c-09a481aba018
+                withdrawal_id: 4630fe8c-1346-4baf-94f9-8b56c9dbd352
+                amount: '25.000000'
+                asset: USDT
+                to_address: TXHkw6bYtL2jExampleDest
+                status: processing
+                tx_id: 7f1f2a3b4c...
+                created_at: '2026-07-17T20:01:00Z'
+                updated_at: '2026-07-17T20:01:00Z'
+        '422':
+          description: refund_exceeds_received / nothing_received
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: refund_exceeds_received
+                message: the refund amount exceeds what this charge received minus prior refunds
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/pos/charges/{chargeID}/refunds:
+    get:
+      tags:
+      - QR POS
+      operationId: listPosChargeRefunds
+      summary: "List the refunds of a POS charge"
+      description: "Refunds of the charge; each status follows its withdrawal lifecycle (a failed withdrawal refunds the debit and releases the cap)."
+      parameters:
+      - name: chargeID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  charge_id:
+                    type: string
+                  refunds:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PosChargeRefund'
+              example:
+                charge_id: 66773a3a-9911-4482-ae3c-09a481aba018
+                refunds:
+                - refund_id: b92b1ac0-3f38-4613-89e4-3788c53c9778
+                  charge_id: 66773a3a-9911-4482-ae3c-09a481aba018
+                  withdrawal_id: 4630fe8c-1346-4baf-94f9-8b56c9dbd352
+                  amount: '2.000000'
+                  asset: USDT
+                  to_address: TXHkw6bYtL2jExampleDest
+                  status: completed
+                  created_at: '2026-07-17T20:01:00Z'
+                  updated_at: '2026-07-17T20:05:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/pos/summary:
+    get:
+      tags:
+      - QR POS
+      operationId: getPosSummary
+      summary: "POS reconciliation summary per merchant"
+      description: "Per-merchant aggregate over a date range: charge counts, gross collected (target of paid charges), the processor's informative commission, refunded totals and the net to distribute to each merchant."
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: Start date (YYYY-MM-DD, UTC, inclusive).
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: End date (YYYY-MM-DD, UTC, inclusive).
+      - name: merchant_id
+        in: query
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  from:
+                    type: string
+                  to:
+                    type: string
+                  merchants:
+                    type: array
+                    items:
+                      type: object
+              example:
+                from: '2026-07-01'
+                to: '2026-07-17'
+                merchants:
+                - merchant_id: d2875683-fc80-4c7b-876a-fb585d7c6982
+                  name: La Terraza Restaurant
+                  external_ref: resto-001
+                  charges_count: 214
+                  paid_count: 201
+                  fee_percent: '1'
+                  fee_fixed: '0'
+                  totals:
+                  - settlement_asset: USDT
+                    gross: '5025.000000'
+                    processor_fee: '50.250000'
+                    net_for_merchant: '4972.750000'
+                  refunded:
+                  - asset: USDT
+                    amount: '2.000000'
+        '400':
+          $ref: '#/components/responses/InvalidRange'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/swaps:
     post:
       tags:
@@ -12654,6 +13304,142 @@ components:
             error: unauthorized
             message: invalid or missing credentials
   schemas:
+    PosMerchant:
+      type: object
+      properties:
+        merchant_id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        verification_id:
+          type: string
+          format: uuid
+        external_ref:
+          type: string
+        fee_percent:
+          type: string
+        fee_fixed:
+          type: string
+        status:
+          type: string
+          enum:
+          - active
+          - disabled
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PosCharge:
+      type: object
+      properties:
+        charge_id:
+          type: string
+          format: uuid
+        payin_id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - pending
+          - paid
+          - expired
+        amount:
+          type: string
+        settlement_asset:
+          type: string
+        crypto:
+          type: string
+        chain:
+          type: string
+        asset:
+          type: string
+        address:
+          type: string
+        due:
+          type: string
+        received:
+          type: string
+        refunded_total:
+          type: string
+        qr_payload:
+          type: string
+        qr_png_base64:
+          type: string
+        confirming:
+          type: boolean
+        detected_amount:
+          type: string
+        merchant:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            external_ref:
+              type: string
+        reference:
+          type: string
+        quote_expires_at:
+          type: string
+          format: date-time
+        paid_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        conversion_status:
+          type: string
+        refunds:
+          type: array
+          items:
+            $ref: '#/components/schemas/PosChargeRefund'
+        receipt_url:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PosChargeRefund:
+      type: object
+      properties:
+        refund_id:
+          type: string
+          format: uuid
+        charge_id:
+          type: string
+          format: uuid
+        withdrawal_id:
+          type: string
+        amount:
+          type: string
+        asset:
+          type: string
+        to_address:
+          type: string
+        status:
+          type: string
+        tx_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
     CatalogItem:
       type: object
       description: One catalog entry — `value` is what you send to the API, `label` what you display.

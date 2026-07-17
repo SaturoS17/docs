@@ -7,6 +7,21 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月17日" description="v1.87">
+
+**新增**
+
+- **QR POS — 面向处理商的定额加密货币二维码收款**（[指南](/zh/guides/qr-pos)）：
+  运营实体 POS 终端的企业账户可将其商户注册为已验证商户（已批准的第三方
+  KYB/KYC），并按笔生成带专属地址和二维码的加密货币收款（USDT、USDC、
+  BTC）。面向 POS 的支付早期检测（数秒内 `confirming`）、入账并自动兑换
+  为结算资产、收款/webhook 按商户归属、对账汇总（`GET /v1/pos/summary`，
+  含按商户的信息性佣金与应分配净额），以及经加密货币提现通道的退款并带
+  硬上限（绝不超过已收金额）。新路由位于 `/v1/pos/*`（API 参考中的
+  QR POS 标签）；部分支付会累计，过期收款收到的迟到支付同样入账。
+
+</Update>
+
 <Update label="2026年7月17日" description="v1.86">
 
 **修复**
