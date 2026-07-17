@@ -7,6 +7,23 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月16日" description="v1.80">
+
+**新增**
+
+- **巴西 PIX 二维码出金（BR/BRL）**：两步流程
+  `POST /v1/payouts/qr/scan` → `POST /v1/payouts/qr/confirm` 现已接受巴西的
+  **静态** PIX 二维码（含 "copia e cola" 代码）——传 `country: "BR"` 与
+  `currency: "BRL"`。扫码在本地解码 BR Code（免费），返回商户名称、PIX
+  密钥与金额；确认步骤通过 PIX 付款，计费与常规 payout 完全相同。固定金额
+  二维码要求金额完全一致（或省略 `amount`）；开放金额二维码必须提供
+  `amount`。动态二维码（载荷为 PSP URL）返回 `400`——请改用 `pix` 方式并
+  提供收款人的密钥。测试环境已提供示例二维码与魔法值（`.99` 金额失败）——
+  见[测试环境](/zh/environment-testing#pix-二维码示例巴西-qr-出金)。详见
+  [payouts 指南](/zh/guides/payouts#qr-出金)。
+
+</Update>
+
 <Update label="2026年7月16日" description="v1.79">
 
 **变更**

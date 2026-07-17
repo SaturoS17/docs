@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — that never mix or convert automatically.\nPayouts and service fees can be paid from any of the four balances:\nset a default with `PUT /v1/settlement` or override per payout with\n`settlement_asset`.\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-16 23:47 UTC",
-    "_content_sha256": "66e212bcfdd6a46dd03aeb3bd13cfd0694b68d5a8166d8b47dc23795fece0da0"
+    "_generated_at": "2026-07-17 00:09 UTC",
+    "_content_sha256": "fbb906a85be6d645ce166f05a29877e29cbd39538b426d7e63e2cb1216daa128"
   },
   "auth": {
     "type": "bearer",
@@ -5526,7 +5526,7 @@
                 "scan"
               ]
             },
-            "description": "Step 1 of the QR payout — Bolivia (local interoperable QR) and Brazil (PIX QR, including the \"copia e cola\" code): reads a collection QR and returns the recipient's data plus the `provider_reference` needed to confirm. **Free of charge** — nothing is debited until the confirm step. Defaults to Bolivia; for Brazil send `country: \"BR\"` and `currency: \"BRL\"`.",
+            "description": "Step 1 of the QR payout — Bolivia (local interoperable QR) and Brazil (PIX QR, including the \"copia e cola\" code): reads a collection QR and returns the recipient's data plus the `provider_reference` needed to confirm. **Free of charge** — nothing is debited until the confirm step. Defaults to Bolivia; for Brazil send `country: \"BR\"` and `currency: \"BRL\"`. Brazil supports **static** PIX QRs (key embedded); a dynamic QR (PSP URL payload) answers `400` — ask the beneficiary for their PIX key and use the `pix` method. An empty `amount` in the scan response means an open-amount QR.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"qr_payload\": \"<QR content>\",\n  \"currency\": \"BOB\"\n}",
@@ -5595,7 +5595,7 @@
                 "confirm"
               ]
             },
-            "description": "Step 2 of the QR payout (Bolivia and Brazil/PIX), charged exactly like a regular payout: the local amount converts at **your account's rate** and `usdt_amount + fixed fee` is debited. The result is **synchronous** — the response carries the final state (`completed`, or `failed` with an automatic refund). A scanned QR can only be paid once; requires an idempotency key like every money-moving operation.",
+            "description": "Step 2 of the QR payout (Bolivia and Brazil/PIX), charged exactly like a regular payout: the local amount converts at **your account's rate** and `usdt_amount + fixed fee` is debited. The result is **synchronous** — the response carries the final state (`completed`, or `failed` with an automatic refund). A scanned QR can only be paid once; requires an idempotency key like every money-moving operation. In Brazil, if the PIX QR carries a fixed amount it must match the `amount` you send (or omit `amount` to pay exactly that value); open-amount QRs require `amount`.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"provider_reference\": \"QR-REF-889923\",\n  \"amount\": \"700.00\",\n  \"currency\": \"BOB\",\n  \"description\": \"QR lunch payment\",\n  \"idempotency_key\": \"qr-2026-07-07-a\"\n}",

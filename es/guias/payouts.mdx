@@ -63,7 +63,7 @@ Corredores y métodos disponibles:
 | México | MXN | `bank_transfer` (SPEI: CLABE o tarjeta de débito) |
 | Venezuela | VES | `bank_transfer`, `pago_movil` |
 | Bolivia | BOB / USD | `bank_transfer`, `qr` (ver [Payout QR](#payout-qr)) |
-| Brasil | BRL | `pix` (por llave o a cuenta) |
+| Brasil | BRL | `pix` (por llave o a cuenta), `qr` (QR PIX — ver [Payout QR](#payout-qr)) |
 | Ecuador | USD | `bank_transfer`, `deuna`, `cash_pickup`, `cnb` |
 | Paraguay | PYG | `bank_transfer` |
 
@@ -869,7 +869,7 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/scan \
   -d '{
     "country": "BR",
     "currency": "BRL",
-    "qr_payload": "00020126360014br.gov.bcb.pix0114+5511998765432520400005303986540575.005802BR5913LOJA DA MARIA6009SAO PAULO62110507PED42316304…"
+    "qr_payload": "00020126360014br.gov.bcb.pix0114+5511998765432520400005303986540575.005802BR5913LOJA DA MARIA6009SAO PAULO62110507PED423163040BF9"
   }'
 ```
 

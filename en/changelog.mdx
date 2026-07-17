@@ -7,6 +7,25 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 16, 2026" description="v1.80">
+
+**Added**
+
+- **PIX QR payout in Brazil (BR/BRL)**: the two-step flow
+  `POST /v1/payouts/qr/scan` → `POST /v1/payouts/qr/confirm` now accepts
+  **static** Brazilian PIX QRs (including the "copia e cola" code) — send
+  `country: "BR"` and `currency: "BRL"`. The scan decodes the BR Code
+  locally (free of charge) and returns the merchant name, PIX key and
+  amount; the confirm pays through PIX with the same pricing as a regular
+  payout. Fixed-amount QRs require an exact match (or omit `amount`);
+  open-amount QRs require `amount`. Dynamic QRs (PSP URL payload) answer
+  `400` — use the `pix` method with the beneficiary's key. Available in the
+  test environment with sample QRs and magic values (`.99` amounts fail) —
+  see [Environment & testing](/en/environment-testing#sample-pix-qrs).
+  Details in the [payouts guide](/en/guides/payouts#qr-payout).
+
+</Update>
+
 <Update label="July 16, 2026" description="v1.79">
 
 **Changed**

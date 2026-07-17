@@ -50,6 +50,8 @@ que un tercero esté disponible. Las operaciones se resuelven de forma
 | Payouts | Monto terminado en `.99` (ej. `100.99`) | Falla tras el delay (`failed`, saldo reembolsado) |
 | Payouts | Monto terminado en `.77` | Queda `processing` para siempre (prueba tu manejo de timeouts) |
 | Payouts | Beneficiario con nombre que contenga `REJECT` | Rechazo inmediato |
+| Payout QR (BO y BR/PIX) | Monto (o monto fijo del QR) terminado en `.99` | El confirm falla (`failed`, reembolso automático) |
+| Payout QR Brasil (PIX) | `qr_payload` que no sea un BR Code válido | `400` en el scan (CRC/formato inválido, igual que producción) |
 | Payins (QR / página de pago) | Monto terminado en `.99` | El cobro expira sin pagarse |
 | Payins (QR / página de pago) | Monto terminado en `.77` | Queda `pending` para siempre |
 | Payins (QR / página de pago) | Cualquier otro monto | Se paga solo tras el delay y acredita tu saldo |
@@ -73,6 +75,24 @@ Los **depósitos** crypto en test se acreditan desde el dashboard (o por tu
 administrador de plataforma) — no hay chain real desde dónde enviar. Los
 retiros, saldos, holds y webhooks se comportan exactamente igual que live.
 </Tip>
+
+### QRs PIX de ejemplo (payout QR Brasil)
+
+El scan de test valida el BR Code igual que producción, así que necesitas
+payloads PIX **reales**. Usa estos (o genera los tuyos con cualquier
+generador de QR PIX estático):
+
+```text Monto fijo 75.00 BRL (flujo feliz)
+00020126360014br.gov.bcb.pix0114+5511998765432520400005303986540575.005802BR5913LOJA DA MARIA6009SAO PAULO62110507PED423163040BF9
+```
+
+```text Monto abierto (tú eliges el monto en el confirm)
+00020126380014br.gov.bcb.pix0116loja@example.com5204000053039865802BR5913LOJA DA MARIA6009SAO PAULO62070503***63045EFE
+```
+
+```text Monto fijo 80.99 BRL (el confirm falla — valor mágico .99)
+00020126360014br.gov.bcb.pix0114+5511998765432520400005303986540580.995802BR5913LOJA DA MARIA6009SAO PAULO62110507PEDFAIL63045211
+```
 
 ### Qué difiere de live
 

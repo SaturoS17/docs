@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.79'
+  version: '1.80'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -8148,7 +8148,9 @@ paths:
       description: 'Step 1 of the QR payout — Bolivia (local interoperable QR) and Brazil (PIX QR, including
         the "copia e cola" code): reads a collection QR and returns the recipient''s data plus the `provider_reference`
         needed to confirm. **Free of charge** — nothing is debited until the confirm step. Defaults to
-        Bolivia; for Brazil send `country: "BR"` and `currency: "BRL"`.'
+        Bolivia; for Brazil send `country: "BR"` and `currency: "BRL"`. Brazil supports **static** PIX
+        QRs (key embedded); a dynamic QR (PSP URL payload) answers `400` — ask the beneficiary for their
+        PIX key and use the `pix` method. An empty `amount` in the scan response means an open-amount QR.'
       requestBody:
         required: true
         content:
@@ -8241,7 +8243,8 @@ paths:
         the local amount converts at **your account''s rate** and `usdt_amount + fixed fee` is debited.
         The result is **synchronous** — the response carries the final state (`completed`, or `failed`
         with an automatic refund). A scanned QR can only be paid once; requires an idempotency key like
-        every money-moving operation.'
+        every money-moving operation. In Brazil, if the PIX QR carries a fixed amount it must match the
+        `amount` you send (or omit `amount` to pay exactly that value); open-amount QRs require `amount`.'
       parameters:
       - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:

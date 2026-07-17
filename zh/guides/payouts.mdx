@@ -61,7 +61,7 @@ curl https://api.qbank.cl/platform/v1/payouts/methods \
 | 墨西哥 | MXN | `bank_transfer`（SPEI：CLABE 或借记卡） |
 | 委内瑞拉 | VES | `bank_transfer`、`pago_movil` |
 | 玻利维亚 | BOB / USD | `bank_transfer`、`qr`（参见 [QR 出金](#qr-出金)） |
-| 巴西 | BRL | `pix`（按密钥或到账户） |
+| 巴西 | BRL | `pix`（按密钥或到账户）、`qr`（PIX 二维码 —— 参见 [QR 出金](#qr-出金)） |
 | 厄瓜多尔 | USD | `bank_transfer`、`deuna`、`cash_pickup`、`cnb` |
 | 巴拉圭 | PYG | `bank_transfer` |
 
@@ -794,11 +794,11 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
 
 ## QR 出金
 
-在玻利维亚（本地互操作 QR 标准），您还可以分两步**支付收款二维码**：
-扫码与确认。扫码**免费**；只在确认时收费，与普通出金完全相同（您的
-汇率 + 固定费用）。如未提供 `country`/`currency`，默认按玻利维亚
-（BOB）处理。支付巴西 PIX 二维码即将推出（在此之前请使用按密钥或到
-账户的 `pix`）。
+在玻利维亚（本地互操作 QR 标准）和巴西（**PIX 二维码**，包括
+"copia e cola" 代码），您还可以分两步**支付收款二维码**：扫码与确认。
+扫码**免费**；只在确认时收费，与普通出金完全相同（您的汇率 + 固定
+费用）。如未提供 `country`/`currency`，默认按玻利维亚（BOB）处理；
+巴西请发送 `country: "BR"` 和 `currency: "BRL"`。
 
 ```mermaid
 flowchart LR
@@ -812,6 +812,9 @@ flowchart LR
 ```
 
 ### 1. 扫描二维码（免费）
+
+<Tabs>
+<Tab title="玻利维亚">
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/scan \
@@ -838,7 +841,54 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/scan \
 }
 ```
 
+</Tab>
+<Tab title="巴西（PIX 二维码）">
+
+`qr_payload` 接受 PIX 二维码的原始内容（EMV BR Code）**或
+"copia e cola" 代码** —— 二者是同一个字符串：
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/scan \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BR",
+    "currency": "BRL",
+    "qr_payload": "00020126360014br.gov.bcb.pix0114+5511998765432520400005303986540575.005802BR5913LOJA DA MARIA6009SAO PAULO62110507PED423163040BF9"
+  }'
+```
+
+扫描会在本地解码 BR Code（校验其校验和），返回目标 PIX 密钥、商户
+名称，以及二维码携带固定金额时的金额：
+
+```json
+{
+  "scan_id": "PIXSCAN-…",
+  "provider_reference": "<同一个 EMV payload>",
+  "beneficiary_name": "LOJA DA MARIA",
+  "destination_account": "+5511998765432",
+  "amount": "75.00",
+  "currency": "BRL",
+  "glosa": "",
+  "status": "scanned"
+}
+```
+
+- `amount` 为空表示**开放金额**二维码：由您在确认步骤决定支付多少。
+  固定金额时，确认必须发送完全一致的金额。
+- 支持**静态** PIX 二维码（印刷/可重复使用、密钥内嵌的那种）。
+  **动态**二维码（payload 携带 PSP 的 URL 而非密钥）会返回 `400`
+  和 `dynamic pix qr codes are not supported yet` —— 请向收款方索取其
+  PIX 密钥并使用 [`pix`](#各国示例) 方法。
+- 被篡改或截断的 payload 会返回 `400`（CRC 校验和无效）。
+
+</Tab>
+</Tabs>
+
 ### 2. 确认支付（此步收费）
+
+<Tabs>
+<Tab title="玻利维亚">
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
@@ -853,14 +903,38 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
   }'
 ```
 
+</Tab>
+<Tab title="巴西（PIX 二维码）">
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BR",
+    "currency": "BRL",
+    "provider_reference": "<from the scan>",
+    "amount": "75.00",
+    "description": "Order 4231",
+    "idempotency_key": "qr-br-2026-07-16-a"
+  }'
+```
+
+- `amount` 始终必填：固定金额二维码必须完全一致（否则返回 `400` 和
+  `amount mismatch: the qr requires exactly 75.00 BRL`）；开放金额
+  二维码则按您发送的金额支付。
+- 付款走与 `pix` 方法相同的 PIX 通道（24/7）；二维码中的 `txid`
+  会随付款传递，便于商户自动对账。
+
+</Tab>
+</Tabs>
+
 - 按**您的汇率**扣除 `usdt_amount + 固定费用`，与 `bank_transfer`
   完全一致。
 - 结果为**同步**返回：响应中已包含最终状态（`completed`，或 `failed`
   并自动退款）—— 无需等待。
 - 已扫描的二维码只能支付一次；使用相同 `idempotency_key` 重试会返回
   原始出金。
-- 巴西 PIX 二维码出金上线后，`qr_payload` 将接受二维码内容或 PIX
-  "copia e cola" 代码；同一流程同时覆盖静态和动态二维码。
 
 ## 常见错误
 

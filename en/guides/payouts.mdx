@@ -64,7 +64,7 @@ Available corridors and methods:
 | Mexico | MXN | `bank_transfer` (SPEI: CLABE or debit card) |
 | Venezuela | VES | `bank_transfer`, `pago_movil` |
 | Bolivia | BOB / USD | `bank_transfer`, `qr` (see [QR payout](#qr-payout)) |
-| Brazil | BRL | `pix` (by key or to account) |
+| Brazil | BRL | `pix` (by key or to account), `qr` (PIX QR — see [QR payout](#qr-payout)) |
 | Ecuador | USD | `bank_transfer`, `deuna`, `cash_pickup`, `cnb` |
 | Paraguay | PYG | `bank_transfer` |
 
@@ -828,6 +828,9 @@ flowchart LR
 
 ### 1. Scan the QR (free)
 
+<Tabs>
+<Tab title="Bolivia">
+
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/scan \
   -H "Authorization: Bearer <token>" \
@@ -853,7 +856,57 @@ Returns the recipient's data so the user can confirm who they are paying:
 }
 ```
 
+</Tab>
+<Tab title="Brazil (PIX QR)">
+
+`qr_payload` takes the raw PIX QR content (the EMV BR Code) **or the
+"copia e cola" code** — they are the same string:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/scan \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BR",
+    "currency": "BRL",
+    "qr_payload": "00020126360014br.gov.bcb.pix0114+5511998765432520400005303986540575.005802BR5913LOJA DA MARIA6009SAO PAULO62110507PED423163040BF9"
+  }'
+```
+
+The scan decodes the BR Code locally (validating its checksum) and returns
+the destination PIX key, the merchant name and the amount when the QR
+carries a fixed one:
+
+```json
+{
+  "scan_id": "PIXSCAN-…",
+  "provider_reference": "<the same EMV payload>",
+  "beneficiary_name": "LOJA DA MARIA",
+  "destination_account": "+5511998765432",
+  "amount": "75.00",
+  "currency": "BRL",
+  "glosa": "",
+  "status": "scanned"
+}
+```
+
+- An empty `amount` means an **open-amount** QR: you decide how much to pay
+  on confirm. With a fixed amount, the confirm must send exactly that
+  amount.
+- **Static** PIX QRs are supported (the printed/reusable ones with the key
+  embedded). A **dynamic** QR (payload carrying the PSP's URL instead of a
+  key) answers `400` with
+  `dynamic pix qr codes are not supported yet` — ask the beneficiary for
+  their PIX key and use the [`pix`](#examples-by-country) method.
+- A tampered or truncated payload answers `400` (invalid CRC checksum).
+
+</Tab>
+</Tabs>
+
 ### 2. Confirm the payment (charged here)
+
+<Tabs>
+<Tab title="Bolivia">
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
@@ -868,14 +921,39 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
   }'
 ```
 
+</Tab>
+<Tab title="Brazil (PIX QR)">
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BR",
+    "currency": "BRL",
+    "provider_reference": "<from the scan>",
+    "amount": "75.00",
+    "description": "Order 4231",
+    "idempotency_key": "qr-br-2026-07-16-a"
+  }'
+```
+
+- `amount` is always required: with a fixed-amount QR it must match
+  exactly (otherwise `400` with `amount mismatch: the qr requires exactly
+  75.00 BRL`); with an open-amount QR whatever you send is what gets paid.
+- The payment travels through the same PIX rail as the `pix` method
+  (24/7); the QR's `txid` goes with it so the merchant reconciles
+  automatically.
+
+</Tab>
+</Tabs>
+
 - `usdt_amount + fixed fee` is debited at **your rate**, just like a
   `bank_transfer`.
 - The result is **synchronous**: the response already carries the final
   state (`completed`, or `failed` with an automatic refund) — no waiting.
 - A scanned QR can only be paid once; retries with the same
   `idempotency_key` return the original payout.
-- Once Brazilian PIX QR payouts are available, `qr_payload` will accept the QR content or the PIX "copia e cola"
-  code; the same flow covers static and dynamic QRs.
 
 ## Common errors
 

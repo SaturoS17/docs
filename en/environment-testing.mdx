@@ -49,6 +49,8 @@ Operations resolve **deterministically**:
 | Payouts | Amount ending in `.99` (e.g. `100.99`) | Fails after the settle delay (`failed`, balance refunded) |
 | Payouts | Amount ending in `.77` | Stays `processing` forever (test your timeout handling) |
 | Payouts | Beneficiary name containing `REJECT` | Rejected immediately |
+| QR payout (BO and BR/PIX) | Amount (or the QR's fixed amount) ending in `.99` | The confirm fails (`failed`, automatic refund) |
+| Brazil QR payout (PIX) | A `qr_payload` that is not a valid BR Code | `400` on scan (invalid CRC/format, same as production) |
 | Payins (QR / payment page) | Amount ending in `.99` | The charge expires unpaid |
 | Payins (QR / payment page) | Amount ending in `.77` | Stays `pending` forever |
 | Payins (QR / payment page) | Any other amount | Pays itself after the settle delay and credits your balance |
@@ -72,6 +74,24 @@ Crypto **deposits** in test are credited from the dashboard (or by your
 platform administrator) — there is no real chain to send from. Withdrawals,
 balances, holds and webhooks behave exactly like live.
 </Tip>
+
+### Sample PIX QRs (Brazil QR payout)
+
+The test scan validates the BR Code exactly like production, so you need
+**real** PIX payloads. Use these (or generate your own with any static PIX
+QR generator):
+
+```text Fixed amount 75.00 BRL (happy path)
+00020126360014br.gov.bcb.pix0114+5511998765432520400005303986540575.005802BR5913LOJA DA MARIA6009SAO PAULO62110507PED423163040BF9
+```
+
+```text Open amount (you choose the amount on confirm)
+00020126380014br.gov.bcb.pix0116loja@example.com5204000053039865802BR5913LOJA DA MARIA6009SAO PAULO62070503***63045EFE
+```
+
+```text Fixed amount 80.99 BRL (the confirm fails — magic value .99)
+00020126360014br.gov.bcb.pix0114+5511998765432520400005303986540580.995802BR5913LOJA DA MARIA6009SAO PAULO62110507PEDFAIL63045211
+```
 
 ### What differs from live
 

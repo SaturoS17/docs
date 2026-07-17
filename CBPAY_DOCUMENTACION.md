@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-16 23:48 UTC · versión `03f8b750c46b`
+> **Documento actualizado:** 2026-07-17 00:09 UTC · versión `4ff8070cb80b`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.79 (16 de julio de 2026) |
+| Versión de la documentación | v1.80 (16 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -911,6 +911,8 @@ que un tercero esté disponible. Las operaciones se resuelven de forma
 | Payouts | Monto terminado en `.99` (ej. `100.99`) | Falla tras el delay (`failed`, saldo reembolsado) |
 | Payouts | Monto terminado en `.77` | Queda `processing` para siempre (prueba tu manejo de timeouts) |
 | Payouts | Beneficiario con nombre que contenga `REJECT` | Rechazo inmediato |
+| Payout QR (BO y BR/PIX) | Monto (o monto fijo del QR) terminado en `.99` | El confirm falla (`failed`, reembolso automático) |
+| Payout QR Brasil (PIX) | `qr_payload` que no sea un BR Code válido | `400` en el scan (CRC/formato inválido, igual que producción) |
 | Payins (QR / página de pago) | Monto terminado en `.99` | El cobro expira sin pagarse |
 | Payins (QR / página de pago) | Monto terminado en `.77` | Queda `pending` para siempre |
 | Payins (QR / página de pago) | Cualquier otro monto | Se paga solo tras el delay y acredita tu saldo |
@@ -933,6 +935,24 @@ que un tercero esté disponible. Las operaciones se resuelven de forma
 Los **depósitos** crypto en test se acreditan desde el dashboard (o por tu
 administrador de plataforma) — no hay chain real desde dónde enviar. Los
 retiros, saldos, holds y webhooks se comportan exactamente igual que live.
+#### QRs PIX de ejemplo (payout QR Brasil)
+
+El scan de test valida el BR Code igual que producción, así que necesitas
+payloads PIX **reales**. Usa estos (o genera los tuyos con cualquier
+generador de QR PIX estático):
+
+```text Monto fijo 75.00 BRL (flujo feliz)
+00020126360014br.gov.bcb.pix0114+5511998765432520400005303986540575.005802BR5913LOJA DA MARIA6009SAO PAULO62110507PED423163040BF9
+```
+
+```text Monto abierto (tú eliges el monto en el confirm)
+00020126380014br.gov.bcb.pix0116loja@example.com5204000053039865802BR5913LOJA DA MARIA6009SAO PAULO62070503***63045EFE
+```
+
+```text Monto fijo 80.99 BRL (el confirm falla — valor mágico .99)
+00020126360014br.gov.bcb.pix0114+5511998765432520400005303986540580.995802BR5913LOJA DA MARIA6009SAO PAULO62110507PEDFAIL63045211
+```
+
 #### Qué difiere de live
 
 - Ningún dinero, tarjeta, email ni SMS real sale jamás del ambiente de test.
@@ -2048,7 +2068,7 @@ Corredores y métodos disponibles:
 | México | MXN | `bank_transfer` (SPEI: CLABE o tarjeta de débito) |
 | Venezuela | VES | `bank_transfer`, `pago_movil` |
 | Bolivia | BOB / USD | `bank_transfer`, `qr` (ver [Payout QR](#payout-qr)) |
-| Brasil | BRL | `pix` (por llave o a cuenta) |
+| Brasil | BRL | `pix` (por llave o a cuenta), `qr` (QR PIX — ver [Payout QR](#payout-qr)) |
 | Ecuador | USD | `bank_transfer`, `deuna`, `cash_pickup`, `cnb` |
 | Paraguay | PYG | `bank_transfer` |
 
@@ -2820,7 +2840,7 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/scan \
   -d '{
     "country": "BR",
     "currency": "BRL",
-    "qr_payload": "00020126360014br.gov.bcb.pix0114+5511998765432520400005303986540575.005802BR5913LOJA DA MARIA6009SAO PAULO62110507PED42316304…"
+    "qr_payload": "00020126360014br.gov.bcb.pix0114+5511998765432520400005303986540575.005802BR5913LOJA DA MARIA6009SAO PAULO62110507PED423163040BF9"
   }'
 ```
 
@@ -2846,8 +2866,8 @@ QR lo trae fijo:
 - Se soportan QR PIX **estáticos** (los impresos/reutilizables, con la
   llave embebida). Un QR **dinámico** (payload con URL del PSP en vez de
   llave) responde `400` con el mensaje
-  `dynamic pix qr codes are not supported yet` — pídele al beneficiario su
-  llave PIX y usa el método [`pix`](#crear-un-payout).
+  `dynamic pix qr codes are not supported yet` —   pídele al beneficiario su
+  llave PIX y usa el método [`pix`](#ejemplos-por-pais).
 - Un payload alterado o incompleto responde `400` (checksum CRC inválido).
 
 #### 2. Confirma el pago (se cobra aquí)
@@ -9112,9 +9132,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-16 23:47 UTC · 239 requests · versión `66e212bcfdd6`
+> **Colección actualizada:** 2026-07-17 00:09 UTC · 239 requests · versión `fbb906a85be6`
 
-<PostmanFreshness iso="2026-07-16T23:47:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-17T00:09:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -9285,6 +9305,24 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.80 — 16 de julio de 2026
+
+**Agregado**
+
+- **Payout por QR PIX en Brasil (BR/BRL)**: el flujo de dos pasos
+  `POST /v1/payouts/qr/scan` → `POST /v1/payouts/qr/confirm` ahora acepta
+  QR PIX **estáticos** de Brasil (incluido el código "copia e cola") —
+  envía `country: "BR"` y `currency: "BRL"`. El scan decodifica el BR Code
+  localmente (sin costo) y devuelve nombre del comercio, llave PIX y monto;
+  el confirm paga por PIX con el mismo pricing de un payout normal. Los QR
+  con monto fijo exigen coincidencia exacta (u omite `amount`); los de
+  monto abierto exigen `amount`. Los QR dinámicos (payload con URL del PSP)
+  responden `400` — usa el método `pix` con la llave del beneficiario.
+  Disponible en el ambiente de pruebas con QRs de ejemplo y valores mágicos
+  (montos `.99` fallan) — ver
+  [Entorno y pruebas](#ambientes-y-pruebas). Detalle en
+  la [guía de payouts](#payouts).
 
 ### v1.79 — 16 de julio de 2026
 
