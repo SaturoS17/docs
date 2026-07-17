@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.80'
+  version: '1.81'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -7945,14 +7945,16 @@ paths:
                 glosa: ''
                 status: scanned
         '400':
-          description: 缺少 qr_payload(invalid_request)。
+          description: 缺少 qr_payload(invalid_request),或二维码不可读/不受支持(invalid_payload——BR Code 损坏、校验和无效或动态
+            PIX 二维码)。
           content:
             application/json:
               schema: &id010
                 $ref: '#/components/schemas/Error'
               example:
-                error: invalid_request
-                message: qr_payload is required
+                error: invalid_payload
+                message: 'dynamic pix qr (url payload) is not supported yet: ask the beneficiary for their
+                  pix key and use the pix method'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -7971,9 +7973,10 @@ paths:
       - 付款(Payouts)
       operationId: payoutQrConfirm
       summary: 确认 QR payout(玻利维亚、巴西)
-      description: QR payout 第 2 步(玻利维亚与巴西/PIX),计费方式与常规 payout 完全相同:本地金额按**你账户的汇率**转换,扣除 `usdt_amount
-        + 固定费用`。结果为**同步**——响应携带最终状态(`completed`,或 `failed` 并自动退款)。已扫描的 QR 只能支付一次;与所有资金操作一样需要幂等键。`amount`
-        始终必填;在巴西,若 PIX 二维码带固定金额,则必须与之完全一致(开放金额的二维码按您发送的金额支付)。
+      description: 'QR payout 第 2 步(玻利维亚与巴西/PIX),计费方式与常规 payout 完全相同:本地金额按**你账户的汇率**转换,扣除 `usdt_amount
+        + 固定费用`。结果为**同步**——响应携带最终状态(`completed`,或 `failed` 并自动退款)。与所有资金操作一样需要幂等键。在玻利维亚,扫码引用为一次性(一个
+        QR = 一笔支付);在巴西,**静态 PIX 二维码天生可复用**——用不同的幂等键即可再次支付,失败的尝试绝不会作废该二维码。`amount`
+        始终必填;在巴西,若 PIX 二维码带固定金额,则必须与之完全一致——不一致时返回 `422`,出金处于 `status: failed` 且退款已自动完成(开放金额的二维码按您发送的金额支付)。'
       parameters:
       - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:

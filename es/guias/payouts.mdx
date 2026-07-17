@@ -938,8 +938,13 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
 ```
 
 - `amount` siempre es obligatorio: si el QR trae monto fijo debe coincidir
-  exacto (si no, `400` con `amount mismatch: the qr requires exactly
-  75.00 BRL`); si es de monto abierto, el que envíes es el que se paga.
+  exacto — si no, recibes `422` con el payout en `status: failed`
+  (`status_message: "amount mismatch: the qr requires exactly 75.00 BRL"`)
+  y el **reembolso ya aplicado**; corrige el monto y reintenta con clave
+  nueva. Si es de monto abierto, el que envíes es el que se paga.
+- Un QR PIX **estático es reutilizable por diseño** (el QR impreso de un
+  comercio se paga muchas veces): puedes pagarlo de nuevo con una
+  `idempotency_key` distinta. Un intento fallido **no inutiliza el QR**.
 - El pago sale por el mismo riel PIX del método `pix` (24/7); el `txid`
   del QR viaja con el pago para que el comercio concilie automático.
 
@@ -950,8 +955,10 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
   `bank_transfer`.
 - El resultado es **síncrono**: la respuesta ya trae el estado final
   (`completed` o `failed` con reembolso automático) — sin esperas.
-- Un mismo QR escaneado solo puede pagarse una vez; reintentos con la misma
-  `idempotency_key` devuelven el payout original.
+- Reintentos con la misma `idempotency_key` devuelven el payout original.
+  En Bolivia la referencia del scan es de un solo uso (un QR escaneado solo
+  puede pagarse una vez); en Brasil el QR PIX estático es reutilizable y
+  cada pago lleva su propia clave.
 
 ## Errores frecuentes
 

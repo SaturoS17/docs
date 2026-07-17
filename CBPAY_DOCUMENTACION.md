@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-17 00:20 UTC · versión `48e641473df7`
+> **Documento actualizado:** 2026-07-17 01:20 UTC · versión `3021df2074ea`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.80 (16 de julio de 2026) |
+| Versión de la documentación | v1.81 (16 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -2904,8 +2904,13 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
 ```
 
 - `amount` siempre es obligatorio: si el QR trae monto fijo debe coincidir
-  exacto (si no, `400` con `amount mismatch: the qr requires exactly
-  75.00 BRL`); si es de monto abierto, el que envíes es el que se paga.
+  exacto — si no, recibes `422` con el payout en `status: failed`
+  (`status_message: "amount mismatch: the qr requires exactly 75.00 BRL"`)
+  y el **reembolso ya aplicado**; corrige el monto y reintenta con clave
+  nueva. Si es de monto abierto, el que envíes es el que se paga.
+- Un QR PIX **estático es reutilizable por diseño** (el QR impreso de un
+  comercio se paga muchas veces): puedes pagarlo de nuevo con una
+  `idempotency_key` distinta. Un intento fallido **no inutiliza el QR**.
 - El pago sale por el mismo riel PIX del método `pix` (24/7); el `txid`
   del QR viaja con el pago para que el comercio concilie automático.
 
@@ -2913,8 +2918,10 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
   `bank_transfer`.
 - El resultado es **síncrono**: la respuesta ya trae el estado final
   (`completed` o `failed` con reembolso automático) — sin esperas.
-- Un mismo QR escaneado solo puede pagarse una vez; reintentos con la misma
-  `idempotency_key` devuelven el payout original.
+- Reintentos con la misma `idempotency_key` devuelven el payout original.
+  En Bolivia la referencia del scan es de un solo uso (un QR escaneado solo
+  puede pagarse una vez); en Brasil el QR PIX estático es reutilizable y
+  cada pago lleva su propia clave.
 
 ### Errores frecuentes
 
@@ -8847,7 +8854,7 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | `recipient_required` / `self_transfer` | Destino de transferencia inválido |
 | `invalid_chain` / `invalid_asset` | Red o activo no soportado |
 | `to_address_required` | Falta dirección destino del retiro |
-| `invalid_payload` | Falta un campo requerido (ej. `enabled` en monitoreo AML, `external_customer_id` en verificaciones) |
+| `invalid_payload` | Falta un campo requerido (ej. `enabled` en monitoreo AML, `external_customer_id` en verificaciones), o el QR del payout es ilegible/no soportado (BR Code corrupto o QR PIX dinámico) |
 | `liveness_already_completed` | La prueba de vida de esa verificación ya fue superada |
 | `invalid_event_type` / `weak_secret` / `invalid_callback_url` | Suscripción de webhook inválida |
 | `invalid_phone` | Teléfono no normalizable a E.164 (contactos y `to_phone`) |
@@ -9132,9 +9139,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-17 00:20 UTC · 239 requests · versión `908108b9d9c8`
+> **Colección actualizada:** 2026-07-17 01:20 UTC · 239 requests · versión `c986bc32a1f9`
 
-<PostmanFreshness iso="2026-07-17T00:20:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-17T01:20:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -9306,6 +9313,22 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+### v1.81 — 16 de julio de 2026
+
+**Corregido**
+
+- **Payout QR — validación antes de crear el payout**: un
+  `POST /v1/payouts/qr/scan` con un QR ilegible o dinámico ahora responde
+  `400 invalid_payload` con el motivo concreto (antes devolvía un `502`
+  genérico). En el confirm de Brasil, un monto que no coincide con un QR
+  PIX de monto fijo responde `422` con el payout `failed` y el **reembolso
+  ya aplicado** — y el QR queda intacto para reintentarlo con el monto
+  correcto y una clave nueva.
+- **QR PIX estático reutilizable**: el guard "un QR = un pago" ya no aplica
+  a los QR PIX estáticos de Brasil (se pagan muchas veces por diseño); la
+  protección por pago es tu `idempotency_key`, que en Brasil es
+  obligatoria en cada confirm.
+
 ### v1.80 — 16 de julio de 2026
 
 **Agregado**
@@ -9315,10 +9338,13 @@ con anticipación y quedan marcados como **Breaking**.
   QR PIX **estáticos** de Brasil (incluido el código "copia e cola") —
   envía `country: "BR"` y `currency: "BRL"`. El scan decodifica el BR Code
   localmente (sin costo) y devuelve nombre del comercio, llave PIX y monto;
-  el confirm paga por PIX con el mismo pricing de un payout normal. Los QR
-  con monto fijo exigen coincidencia exacta (u omite `amount`); los de
-  monto abierto exigen `amount`. Los QR dinámicos (payload con URL del PSP)
-  responden `400` — usa el método `pix` con la llave del beneficiario.
+  el confirm paga por PIX con el mismo pricing de un payout normal.
+  `amount` es siempre obligatorio: los QR de monto fijo exigen coincidencia
+  exacta (un mismatch responde `422` con el payout `failed` y reembolso
+  automático — el QR **no** se inutiliza). Un QR PIX estático es
+  **reutilizable**: cada pago lleva su propia `idempotency_key`. Los QR
+  dinámicos o corruptos responden `400 invalid_payload` — usa el método
+  `pix` con la llave del beneficiario.
   Disponible en el ambiente de pruebas con QRs de ejemplo y valores mágicos
   (montos `.99` fallan) — ver
   [Entorno y pruebas](#ambientes-y-pruebas). Detalle en

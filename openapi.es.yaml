@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.80'
+  version: '1.81'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -8225,14 +8225,16 @@ paths:
                 glosa: ''
                 status: scanned
         '400':
-          description: Falta qr_payload (invalid_request).
+          description: Falta qr_payload (invalid_request) o QR ilegible/no soportado (invalid_payload
+            — BR Code corrupto, checksum inválido o QR PIX dinámico).
           content:
             application/json:
               schema: &id010
                 $ref: '#/components/schemas/Error'
               example:
-                error: invalid_request
-                message: qr_payload is required
+                error: invalid_payload
+                message: 'dynamic pix qr (url payload) is not supported yet: ask the beneficiary for their
+                  pix key and use the pix method'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -8254,10 +8256,12 @@ paths:
       description: 'Paso 2 del payout por QR (Bolivia y Brasil/PIX), cobrado exactamente igual que un
         payout normal: el monto local se convierte a **la tasa de tu cuenta** y se debita `usdt_amount
         + comisión fija`. El resultado es **síncrono** — la respuesta trae el estado final (`completed`,
-        o `failed` con reembolso automático). Un QR escaneado solo puede pagarse una vez; requiere una
-        llave de idempotencia como toda operación que mueve dinero. `amount` es siempre obligatorio; en
-        Brasil, si el QR PIX trae monto fijo debe coincidir exacto (los QR de monto abierto pagan lo que
-        envíes).'
+        o `failed` con reembolso automático). Requiere una llave de idempotencia como toda operación que
+        mueve dinero. En Bolivia la referencia escaneada es de un solo uso (un QR = un pago); en Brasil
+        un **QR PIX estático es reutilizable por diseño** — págalo de nuevo con una llave distinta, y un
+        intento fallido jamás inutiliza el QR. `amount` es siempre obligatorio; en Brasil, si el QR PIX
+        trae monto fijo debe coincidir exacto — un mismatch responde `422` con el payout en `status:
+        failed` y el reembolso ya aplicado (los QR de monto abierto pagan lo que envíes).'
       parameters:
       - $ref: '#/components/parameters/idempotencyKeyHeader'
       requestBody:

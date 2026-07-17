@@ -920,9 +920,13 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
   }'
 ```
 
-- `amount` 始终必填：固定金额二维码必须完全一致（否则返回 `400` 和
-  `amount mismatch: the qr requires exactly 75.00 BRL`）；开放金额
-  二维码则按您发送的金额支付。
+- `amount` 始终必填：固定金额二维码必须完全一致 —— 否则返回 `422`，
+  出金处于 `status: failed`（`status_message: "amount mismatch: the qr
+  requires exactly 75.00 BRL"`），且**退款已自动完成**；修正金额后用
+  新的键重试。开放金额二维码则按您发送的金额支付。
+- **静态 PIX 二维码天生可复用**（商户打印的二维码会被支付多次）：
+  可以用不同的 `idempotency_key` 再次支付。失败的尝试**不会作废该
+  二维码**。
 - 付款走与 `pix` 方法相同的 PIX 通道（24/7）；二维码中的 `txid`
   会随付款传递，便于商户自动对账。
 
@@ -933,8 +937,9 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
   完全一致。
 - 结果为**同步**返回：响应中已包含最终状态（`completed`，或 `failed`
   并自动退款）—— 无需等待。
-- 已扫描的二维码只能支付一次；使用相同 `idempotency_key` 重试会返回
-  原始出金。
+- 使用相同 `idempotency_key` 重试会返回原始出金。玻利维亚的扫码引用
+  为一次性（已扫描的二维码只能支付一次）；巴西的静态 PIX 二维码可
+  复用，每笔支付携带自己的键。
 
 ## 常见错误
 

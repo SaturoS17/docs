@@ -7,6 +7,24 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 16, 2026" description="v1.81">
+
+**Fixed**
+
+- **QR payout — validation before the payout is created**: a
+  `POST /v1/payouts/qr/scan` with an unreadable or dynamic QR now answers
+  `400 invalid_payload` with the concrete reason (it used to return a
+  generic `502`). On the Brazilian confirm, an amount that does not match
+  a fixed-amount PIX QR answers `422` with the payout `failed` and the
+  **refund already applied** — and the QR stays intact so you can retry
+  with the right amount and a new key.
+- **Static PIX QR is reusable**: the "one QR = one payment" guard no longer
+  applies to Brazilian static PIX QRs (they are paid many times by
+  design); the per-payment protection is your `idempotency_key`, which is
+  mandatory on every Brazilian confirm.
+
+</Update>
+
 <Update label="July 16, 2026" description="v1.80">
 
 **Added**
@@ -17,9 +35,12 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   `country: "BR"` and `currency: "BRL"`. The scan decodes the BR Code
   locally (free of charge) and returns the merchant name, PIX key and
   amount; the confirm pays through PIX with the same pricing as a regular
-  payout. Fixed-amount QRs require an exact match (or omit `amount`);
-  open-amount QRs require `amount`. Dynamic QRs (PSP URL payload) answer
-  `400` — use the `pix` method with the beneficiary's key. Available in the
+  payout. `amount` is always required: fixed-amount QRs demand an exact
+  match (a mismatch answers `422` with the payout `failed` and an automatic
+  refund — the QR is **not** burned). A static PIX QR is **reusable**: each
+  payment carries its own `idempotency_key`. Dynamic or corrupt QRs answer
+  `400 invalid_payload` — use the `pix` method with the beneficiary's key.
+  Available in the
   test environment with sample QRs and magic values (`.99` amounts fail) —
   see [Environment & testing](/en/environment-testing#sample-pix-qrs).
   Details in the [payouts guide](/en/guides/payouts#qr-payout).
