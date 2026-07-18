@@ -7,6 +7,19 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 18, 2026" description="v1.88">
+
+**Fixed**
+
+- **AML screening person shapes** ([guide](/en/guides/aml)): the screening
+  engine requires `date_of_birth` as a `{year, month, day}` object (the
+  plain `"YYYY-MM-DD"` string returns `422`), `nationality` as an **array**
+  of ISO-3166 codes and `personal_identification[]` as
+  `{ "issuing_country", "number" }` without a `type` field. Guide and spec
+  examples updated with the live-verified shapes.
+
+</Update>
+
 <Update label="July 17, 2026" description="v1.87">
 
 **Added**

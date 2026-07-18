@@ -88,9 +88,9 @@ curl -X POST https://api.qbank.cl/platform/v1/aml/screenings \
     "customer": {
       "person": {
         "full_name": "Ana Pérez Rojas",
-        "date_of_birth": "1990-04-12",
+        "date_of_birth": { "year": 1990, "month": 4, "day": 12 },
         "personal_identification": [
-          { "type": "national_id", "issuing_country": "CL", "number": "12.345.678-5" }
+          { "issuing_country": "CL", "number": "12.345.678-5" }
         ]
       },
       "email": "ana@example.com",
@@ -139,11 +139,11 @@ rule out namesakes and reduce false positives.
 | Field (person) | What it is |
 |---|---|
 | `full_name` — or `first_name` / `middle_name` / `last_name` | Full or split name |
-| `date_of_birth` | `"YYYY-MM-DD"` or `{ "year": 1990, "month": 4, "day": 12 }` |
-| `nationality` / `nationalities` | Nationality(ies), ISO-3166 |
+| `date_of_birth` | ONLY as an object `{ "year": 1990, "month": 4, "day": 12 }` (a plain `"YYYY-MM-DD"` string is rejected with `422`) |
+| `nationality` | Nationalities as an **array** of ISO-3166 codes, e.g. `["CL"]` (a plain string is rejected with `422`) |
 | `country_of_birth` | Country of birth |
 | `residential_information[]` | Residences, each with `country_of_residence` |
-| `personal_identification[]` | Strong documents: `{ "type", "issuing_country", "number" }` (national id, passport…) |
+| `personal_identification[]` | Strong documents: `{ "issuing_country", "number" }` (national id, passport…) — **no** `type` field (the engine rejects it) |
 | `alias` / `aliases` | Other known names |
 
 | Field (company) | What it is |
@@ -156,11 +156,14 @@ rule out namesakes and reduce false positives.
 | `address[]` | Addresses, each with `country` |
 
 <Warning>
-Do not send flat fields like `tax_id`, `registration_number` or
-`country_of_incorporation` inside `company` — the screening engine rejects
-them with `422`. The identifier goes in
+The screening engine is strict about shapes and rejects mismatches with
+`422`: inside `company`, do not send flat fields like `tax_id`,
+`registration_number` or `country_of_incorporation` (the identifier goes in
 `registration_authority_identification` and the country in
-`place_of_registration`.
+`place_of_registration`); inside `person`, `date_of_birth` goes ONLY as a
+`{year, month, day}` object, `nationality` as an array, and
+`personal_identification[]` without a `type` field (verified live
+2026-07-18).
 </Warning>
 
 <Note>

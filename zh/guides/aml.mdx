@@ -82,9 +82,9 @@ curl -X POST https://api.qbank.cl/platform/v1/aml/screenings \
     "customer": {
       "person": {
         "full_name": "Ana Pérez Rojas",
-        "date_of_birth": "1990-04-12",
+        "date_of_birth": { "year": 1990, "month": 4, "day": 12 },
         "personal_identification": [
-          { "type": "national_id", "issuing_country": "CL", "number": "12.345.678-5" }
+          { "issuing_country": "CL", "number": "12.345.678-5" }
         ]
       },
       "email": "ana@example.com",
@@ -132,11 +132,11 @@ curl -X POST https://api.qbank.cl/platform/v1/aml/screenings \
 | 字段（个人） | 含义 |
 |---|---|
 | `full_name` — 或 `first_name` / `middle_name` / `last_name` | 完整姓名或拆分姓名 |
-| `date_of_birth` | `"YYYY-MM-DD"` 或 `{ "year": 1990, "month": 4, "day": 12 }` |
-| `nationality` / `nationalities` | 国籍（可多个），ISO-3166 |
+| `date_of_birth` | 仅接受对象格式 `{ "year": 1990, "month": 4, "day": 12 }`（纯字符串 `"YYYY-MM-DD"` 会被 `422` 拒绝） |
+| `nationality` | 国籍为 ISO-3166 代码的**数组**，如 `["CL"]`（纯字符串会被 `422` 拒绝） |
 | `country_of_birth` | 出生国家/地区 |
 | `residential_information[]` | 居住信息，每项包含 `country_of_residence` |
-| `personal_identification[]` | 强身份证件：`{ "type", "issuing_country", "number" }`（身份证、护照……） |
+| `personal_identification[]` | 强身份证件：`{ "issuing_country", "number" }`（身份证、护照……）——**不要**发送 `type` 字段（引擎会拒绝） |
 | `alias` / `aliases` | 其他已知名称 |
 
 | 字段（企业） | 含义 |
@@ -149,10 +149,12 @@ curl -X POST https://api.qbank.cl/platform/v1/aml/screenings \
 | `address[]` | 地址，每项包含 `country` |
 
 <Warning>
-不要在 `company` 中发送 `tax_id`、`registration_number` 或
-`country_of_incorporation` 等扁平字段——筛查引擎会以 `422` 拒绝。
-标识符放在 `registration_authority_identification`，国家放在
-`place_of_registration`。
+筛查引擎对字段格式非常严格，不匹配会以 `422` 拒绝：在 `company` 中不要发送
+`tax_id`、`registration_number` 或 `country_of_incorporation` 等扁平字段
+（标识符放在 `registration_authority_identification`，国家放在
+`place_of_registration`）；在 `person` 中，`date_of_birth` 仅接受
+`{year, month, day}` 对象、`nationality` 必须是数组、
+`personal_identification[]` 不带 `type` 字段（2026-07-18 实测验证）。
 </Warning>
 
 <Note>

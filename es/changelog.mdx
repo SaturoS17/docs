@@ -8,6 +8,19 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="18 de julio de 2026" description="v1.88">
+
+**Corregido**
+
+- **Shapes de persona del screening AML** ([guía](/es/guias/aml)): el motor
+  de screening exige `date_of_birth` como objeto `{year, month, day}` (el
+  string `"YYYY-MM-DD"` responde `422`), `nationality` como **array** de
+  códigos ISO-3166 y `personal_identification[]` como
+  `{ "issuing_country", "number" }` sin campo `type`. Guía y ejemplos del
+  spec actualizados con los shapes verificados en vivo.
+
+</Update>
+
 <Update label="17 de julio de 2026" description="v1.87">
 
 **Agregado**

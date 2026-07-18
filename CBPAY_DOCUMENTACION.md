@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-17 20:49 UTC · versión `675be92ac8f8`
+> **Documento actualizado:** 2026-07-18 19:19 UTC · versión `509da8fdebb4`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.87 (17 de julio de 2026) |
+| Versión de la documentación | v1.88 (18 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -3762,7 +3762,7 @@ curl "https://api.qbank.cl/platform/v1/payins?from=2026-07-01&to=2026-07-08&stat
 
 *Cobros QR crypto con monto para procesadores con POS físicos: registra tus comercios verificados, genera el QR, detecta el pago y concilia por cliente*
 
-QR Crypto POS es el producto para **procesadores/adquirentes con cuenta empresa**
+QR Crypto POS es el producto para **procesadores y adquirentes con cuenta empresa**
 que operan POS físicos: registras a tus comercios (restaurantes, hoteles,
 tiendas) como *merchants* verificados y generas **cobros QR crypto con monto
 exacto** (USDT, USDC, BTC). El POS muestra o imprime el QR, el cliente lo
@@ -7180,9 +7180,9 @@ curl -X POST https://api.qbank.cl/platform/v1/aml/screenings \
     "customer": {
       "person": {
         "full_name": "Ana Pérez Rojas",
-        "date_of_birth": "1990-04-12",
+        "date_of_birth": { "year": 1990, "month": 4, "day": 12 },
         "personal_identification": [
-          { "type": "national_id", "issuing_country": "CL", "number": "12.345.678-5" }
+          { "issuing_country": "CL", "number": "12.345.678-5" }
         ]
       },
       "email": "ana@ejemplo.com",
@@ -7229,11 +7229,11 @@ los documentos fuertes descartan homónimos y reducen falsos positivos.
 | Campo (persona) | Qué es |
 |---|---|
 | `full_name` — o `first_name` / `middle_name` / `last_name` | Nombre completo o por partes |
-| `date_of_birth` | `"YYYY-MM-DD"` u objeto `{ "year": 1990, "month": 4, "day": 12 }` |
-| `nationality` / `nationalities` | Nacionalidad(es), ISO-3166 |
+| `date_of_birth` | SOLO como objeto `{ "year": 1990, "month": 4, "day": 12 }` (el string `"YYYY-MM-DD"` se rechaza con `422`) |
+| `nationality` | Nacionalidades como **array** de códigos ISO-3166, ej. `["CL"]` (un string suelto se rechaza con `422`) |
 | `country_of_birth` | País de nacimiento |
 | `residential_information[]` | Domicilios, cada uno con `country_of_residence` |
-| `personal_identification[]` | Documentos fuertes: `{ "type", "issuing_country", "number" }` (cédula, pasaporte, RUT…) |
+| `personal_identification[]` | Documentos fuertes: `{ "issuing_country", "number" }` (cédula, pasaporte, RUT…) — **sin** campo `type` (el motor lo rechaza) |
 | `alias` / `aliases` | Otros nombres conocidos |
 
 | Campo (empresa) | Qué es |
@@ -7246,11 +7246,14 @@ los documentos fuertes descartan homónimos y reducen falsos positivos.
 | `address[]` | Domicilios, cada uno con `country` |
 
 > **Importante**
-No envíes campos planos tipo `tax_id`, `registration_number` ni
-`country_of_incorporation` dentro de `company` — el motor de screening los
-rechaza con `422`. El identificador va en
+El motor de screening es estricto con los shapes y rechaza con `422` lo que
+no calza: en `company` no envíes campos planos tipo `tax_id`,
+`registration_number` ni `country_of_incorporation` (el identificador va en
 `registration_authority_identification` y el país en
-`place_of_registration`.
+`place_of_registration`); en `person`, `date_of_birth` va SOLO como objeto
+`{year, month, day}`, `nationality` como array y
+`personal_identification[]` sin campo `type` (verificado en vivo
+2026-07-18).
 > **Nota**
 Una consulta con **exactamente los mismos datos de identidad** reutiliza el
 screening anterior (no se cobra uno nuevo). Agregar o cambiar campos de
@@ -9530,9 +9533,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-17 20:49 UTC · 252 requests · versión `bb285920f4ea`
+> **Colección actualizada:** 2026-07-18 19:19 UTC · 252 requests · versión `a4f0a3b6ae5b`
 
-<PostmanFreshness iso="2026-07-17T20:49:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-18T19:19:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -9703,6 +9706,17 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.88 — 18 de julio de 2026
+
+**Corregido**
+
+- **Shapes de persona del screening AML** ([guía](#aml-screening)): el motor
+  de screening exige `date_of_birth` como objeto `{year, month, day}` (el
+  string `"YYYY-MM-DD"` responde `422`), `nationality` como **array** de
+  códigos ISO-3166 y `personal_identification[]` como
+  `{ "issuing_country", "number" }` sin campo `type`. Guía y ejemplos del
+  spec actualizados con los shapes verificados en vivo.
 
 ### v1.87 — 17 de julio de 2026
 

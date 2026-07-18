@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.87'
+  version: '1.88'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -4433,10 +4433,20 @@ paths:
                         last_name:
                           type: string
                         date_of_birth:
-                          description: '"YYYY-MM-DD" string or an object {year, month, day}.'
+                          type: object
+                          description: 'Date of birth as an object: {year, month, day} (integers). A plain "YYYY-MM-DD" string is rejected by the screening engine.'
+                          properties:
+                            year:
+                              type: integer
+                            month:
+                              type: integer
+                            day:
+                              type: integer
                         nationality:
-                          type: string
-                          description: ISO-3166 country code (or `nationalities` array).
+                          type: array
+                          items:
+                            type: string
+                          description: Nationalities as an ARRAY of ISO-3166 codes (a plain string is rejected by the screening engine).
                         country_of_birth:
                           type: string
                         residential_information:
@@ -4448,12 +4458,10 @@ paths:
                                 type: string
                         personal_identification:
                           type: array
-                          description: Strong identity documents (national ID, passport, ...).
+                          description: 'Strong identity documents (national ID, passport, ...) as {number, issuing_country}. Do not send a `type` field: the screening engine rejects it.'
                           items:
                             type: object
                             properties:
-                              type:
-                                type: string
                               issuing_country:
                                 type: string
                               number:
@@ -4515,10 +4523,12 @@ paths:
                   customer:
                     person:
                       full_name: Ana Perez Rojas
-                      date_of_birth: '1990-04-12'
+                      date_of_birth:
+                        year: 1990
+                        month: 4
+                        day: 12
                       personal_identification:
-                      - type: national_id
-                        issuing_country: CL
+                      - issuing_country: CL
                         number: 12.345.678-5
                     email: ana@example.com
                     country: CL
@@ -4529,17 +4539,19 @@ paths:
                   customer:
                     person:
                       full_name: Ana Perez Rojas
-                      date_of_birth: '1990-04-12'
-                      nationality: CL
+                      date_of_birth:
+                        year: 1990
+                        month: 4
+                        day: 12
+                      nationality:
+                      - CL
                       country_of_birth: CL
                       residential_information:
                       - country_of_residence: CL
                       personal_identification:
-                      - type: national_id
-                        issuing_country: CL
+                      - issuing_country: CL
                         number: 12.345.678-5
-                      - type: passport
-                        issuing_country: CL
+                      - issuing_country: CL
                         number: P0123456
                     email: ana@example.com
                     country: CL

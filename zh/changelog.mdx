@@ -7,6 +7,18 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月18日" description="v1.88">
+
+**修复**
+
+- **AML 筛查的个人字段格式**（[指南](/zh/guides/aml)）：筛查引擎要求
+  `date_of_birth` 为 `{year, month, day}` 对象（纯字符串 `"YYYY-MM-DD"`
+  返回 `422`）、`nationality` 为 ISO-3166 代码的**数组**、
+  `personal_identification[]` 为 `{ "issuing_country", "number" }` 且不带
+  `type` 字段。指南与 spec 示例已按实测验证的格式更新。
+
+</Update>
+
 <Update label="2026年7月17日" description="v1.87">
 
 **新增**
