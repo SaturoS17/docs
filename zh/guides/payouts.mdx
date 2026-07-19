@@ -950,9 +950,11 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
 | 402 | `insufficient_funds` | 为账户充值；该出金未被创建 |
 | 403 | `account_blocked` | 账户未处于激活状态；请联系 CBPay 团队 |
 | 403 | `service_disabled` | 您的账户未启用出金服务 —— 参见[服务](/zh/concepts/services) |
+| 403 | `compliance_hold` | 该出金被平台的合规控制拦截，未被创建（未扣款）。按政策不披露具体原因 —— 请携带时间戳联系支持；参见[错误](/zh/errors) |
 | 422 | `currency_not_supported` | 该货币没有可用的外汇汇率 |
 | 422 | （出金处于 `status: failed`） | 通道拒绝了该数据；扣款已退回 —— 修正 `beneficiary` 后使用新的键重试 |
 | 503 | `channel_unavailable` | 出金通道暂时不可用；请稍后使用**相同的** `idempotency_key` 重试 |
+| 503 | `compliance_check_unavailable` | 合规校验暂时无法完成；该出金未被创建 —— 请使用**相同的** `idempotency_key` 重试 |
 
 ## 立即拒绝与后续失败
 

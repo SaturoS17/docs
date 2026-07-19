@@ -971,9 +971,11 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
 | 402 | `insufficient_funds` | Fund the account; the payout was not created |
 | 403 | `account_blocked` | The account is not active; contact the CBPay team |
 | 403 | `service_disabled` | Payouts is not enabled for your account — see [services](/en/concepts/services) |
+| 403 | `compliance_hold` | The payout was held by the platform's compliance controls and was NOT created (no debit). By policy the exact reason is not disclosed — contact support with the timestamp; see [errors](/en/errors) |
 | 422 | `currency_not_supported` | No FX rate for that currency |
 | 422 | (payout with `status: failed`) | The corridor rejected the data; the debit was already refunded — fix `beneficiary` and retry with a new key |
 | 503 | `channel_unavailable` | The payout channel is temporarily unavailable; retry later with the SAME `idempotency_key` |
+| 503 | `compliance_check_unavailable` | The compliance check could not be evaluated; the payout was NOT created — retry with the SAME `idempotency_key` |
 
 ## Immediate rejection vs later failure
 

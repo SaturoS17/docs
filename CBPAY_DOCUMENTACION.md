@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-18 19:19 UTC · versión `509da8fdebb4`
+> **Documento actualizado:** 2026-07-19 05:57 UTC · versión `2a5641b3a444`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.88 (18 de julio de 2026) |
+| Versión de la documentación | v1.89 (18 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -2933,9 +2933,11 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
 | 402 | `insufficient_funds` | Fondea la cuenta; el payout no se creó |
 | 403 | `account_blocked` | La cuenta no está activa; contacta al equipo de CBPay |
 | 403 | `service_disabled` | Payouts no está habilitado para tu cuenta — ver [servicios](#servicios-habilitados) |
+| 403 | `compliance_hold` | El payout fue retenido por los controles de cumplimiento de la plataforma y NO se creó (sin débito). Por política no se informa la razón exacta — contacta a soporte con el timestamp; ver [errores](#errores) |
 | 422 | `currency_not_supported` | No hay tasa FX para esa moneda |
 | 422 | (payout con `status: failed`) | El corredor rechazó los datos; el débito ya fue reembolsado — corrige `beneficiary` y reintenta con clave nueva |
 | 503 | `channel_unavailable` | El canal de pago está temporalmente no disponible; reintenta más tarde con la MISMA `idempotency_key` |
+| 503 | `compliance_check_unavailable` | La verificación de cumplimiento no se pudo evaluar; el payout NO se creó — reintenta con la MISMA `idempotency_key` |
 
 ### Rechazo inmediato vs fallo posterior
 
@@ -9706,6 +9708,12 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.89 — 18 de julio de 2026
+
+**Agregado**
+
+- **Controles de cumplimiento en pagos salientes** ([guía payouts](#payouts), [errores](#errores)): los payouts, los retiros crypto con nombre de beneficiario y los cobros collect ahora pasan por controles de cumplimiento adicionales **antes de mover fondos**. Errores documentados: `403 compliance_hold` (la operación fue retenida y NO se creó — sin débito; por política no se informa la razón exacta, contacta a soporte con el timestamp) y `503 compliance_check_unavailable` (la verificación no se pudo evaluar; la operación NO se creó — reintenta con la **misma** `idempotency_key`).
 
 ### v1.88 — 18 de julio de 2026
 

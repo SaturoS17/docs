@@ -7,6 +7,14 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月18日" description="v1.89">
+
+**新增**
+
+- **对外支付的合规控制**（[出金指南](/zh/guides/payouts)、[错误](/zh/errors)）：出金、带受益人姓名的加密货币提现以及 collect 收款现在会在**资金移动之前**经过额外的合规控制。已记录的错误：`403 compliance_hold`（操作被拦截且未被创建 —— 未扣款；按政策不披露具体原因，请携带时间戳联系支持）与 `503 compliance_check_unavailable`（合规校验暂时无法完成；操作未被创建 —— 请使用**相同的** `idempotency_key` 重试）。
+
+</Update>
+
 <Update label="2026年7月18日" description="v1.88">
 
 **修复**

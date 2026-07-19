@@ -7,6 +7,14 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 18, 2026" description="v1.89">
+
+**Added**
+
+- **Compliance controls on outgoing payments** ([payouts guide](/en/guides/payouts), [errors](/en/errors)): payouts, crypto withdrawals with a beneficiary name and collect charges now go through additional compliance controls **before money moves**. Documented errors: `403 compliance_hold` (the operation was held and NOT created — no debit; by policy the exact reason is not disclosed, contact support with the timestamp) and `503 compliance_check_unavailable` (the check could not be evaluated; the operation was NOT created — retry with the **same** `idempotency_key`).
+
+</Update>
+
 <Update label="July 18, 2026" description="v1.88">
 
 **Fixed**

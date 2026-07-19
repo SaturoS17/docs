@@ -969,9 +969,11 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
 | 402 | `insufficient_funds` | Fondea la cuenta; el payout no se creó |
 | 403 | `account_blocked` | La cuenta no está activa; contacta al equipo de CBPay |
 | 403 | `service_disabled` | Payouts no está habilitado para tu cuenta — ver [servicios](/es/conceptos/servicios) |
+| 403 | `compliance_hold` | El payout fue retenido por los controles de cumplimiento de la plataforma y NO se creó (sin débito). Por política no se informa la razón exacta — contacta a soporte con el timestamp; ver [errores](/es/errores) |
 | 422 | `currency_not_supported` | No hay tasa FX para esa moneda |
 | 422 | (payout con `status: failed`) | El corredor rechazó los datos; el débito ya fue reembolsado — corrige `beneficiary` y reintenta con clave nueva |
 | 503 | `channel_unavailable` | El canal de pago está temporalmente no disponible; reintenta más tarde con la MISMA `idempotency_key` |
+| 503 | `compliance_check_unavailable` | La verificación de cumplimiento no se pudo evaluar; el payout NO se creó — reintenta con la MISMA `idempotency_key` |
 
 ## Rechazo inmediato vs fallo posterior
 
