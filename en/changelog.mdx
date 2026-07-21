@@ -7,6 +7,14 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 21, 2026" description="v1.93">
+
+**Fixed**
+
+- **Banking webhooks for third parties** ([webhooks](/en/webhooks), [banking guide](/en/guides/banking)): the `banking_customer_status_changed` webhook now also fires when a **third party** registered by your account changes verification state (previously only your own profile's events arrived). The payload adds `customer_kind` (`self` | `third_party`) and, for third parties, `third_party_id` (the same id as `GET /v1/banking/third-parties/{id}`).
+
+</Update>
+
 <Update label="July 21, 2026" description="v1.92">
 
 **Fixed**

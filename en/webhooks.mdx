@@ -79,7 +79,7 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 | `crypto_deposit_held` | An incoming deposit was held due to sender risk ([screening](/en/guides/screenings)) |
 | `crypto_deposit_alert` | A deposit was credited but the sender shows high risk (informational) |
 | `crypto_withdrawal_status_changed` | An on-chain withdrawal changed state |
-| `banking_customer_status_changed` | Your banking profile verification changed |
+| `banking_customer_status_changed` | A banking profile verification changed (your own or a registered third party's — `customer_kind` tells them apart) |
 | `banking_operation_status_changed` | A bank payment changed state |
 | `card_transaction` | A card purchase was authorized, annulled or adjusted |
 | `card_status_changed` | A card changed state (including automatic freezes) |
@@ -199,9 +199,15 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 {
   "account_id": "ae8c…",
   "customer_id": "9f2b…",
+  "customer_kind": "third_party",
+  "third_party_id": "77aa…",
   "kyc_status": "approved"
 }
 ```
+
+In `banking_customer_status_changed`, `customer_kind` tells your own
+profile (`self`) apart from a third party you registered (`third_party`,
+with its `third_party_id` — the same id as `GET /v1/banking/third-parties/{id}`).
 
 ```json banking_operation_status_changed
 {

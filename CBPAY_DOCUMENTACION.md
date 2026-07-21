@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-21 19:26 UTC · versión `7765606998e1`
+> **Documento actualizado:** 2026-07-21 20:06 UTC · versión `357b1e1a384f`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.92 (21 de julio de 2026) |
+| Versión de la documentación | v1.93 (21 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -6461,12 +6461,15 @@ curl -X POST https://api.qbank.cl/platform/v1/banking/customer/submit \
 
 Estados del perfil: `draft` → `submitted` → `under_review` →
 **`approved`** o `rejected`. El webhook
-`banking_customer_status_changed` te avisa cada cambio:
+`banking_customer_status_changed` te avisa cada cambio — del perfil propio
+(`customer_kind: self`) y de los terceros que registres
+(`customer_kind: third_party`, con su `third_party_id`):
 
 ```json
 {
   "account_id": "…",
   "customer_id": "9f2b…",
+  "customer_kind": "self",
   "kyc_status": "approved"
 }
 ```
@@ -9001,7 +9004,7 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 | `crypto_deposit_held` | Un depósito entrante quedó retenido por riesgo del remitente ([screening](#screening-de-wallets)) |
 | `crypto_deposit_alert` | Un depósito se acreditó pero el remitente presenta riesgo alto (informativo) |
 | `crypto_withdrawal_status_changed` | Un retiro on-chain cambió de estado |
-| `banking_customer_status_changed` | Cambió la verificación de tu perfil bancario |
+| `banking_customer_status_changed` | Cambió la verificación de un perfil bancario (propio o de un tercero registrado — `customer_kind` lo distingue) |
 | `banking_operation_status_changed` | Un pago bancario cambió de estado |
 | `card_transaction` | Una compra con tarjeta fue autorizada, anulada o ajustada |
 | `card_status_changed` | Una tarjeta cambió de estado (incluye congelamiento automático) |
@@ -9119,9 +9122,15 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 {
   "account_id": "ae8c…",
   "customer_id": "9f2b…",
+  "customer_kind": "third_party",
+  "third_party_id": "77aa…",
   "kyc_status": "approved"
 }
 ```
+
+En `banking_customer_status_changed`, `customer_kind` distingue tu perfil
+propio (`self`) de un tercero que registraste (`third_party`, con su
+`third_party_id` — el mismo id de `GET /v1/banking/third-parties/{id}`).
 
 ```json banking_operation_status_changed
 {
@@ -9901,6 +9910,12 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.93 — 21 de julio de 2026
+
+**Corregido**
+
+- **Webhooks de banking para terceros** ([webhooks](#webhooks), [guía banking](#banking)): el webhook `banking_customer_status_changed` ahora también se emite cuando cambia la verificación de un **tercero** registrado por tu cuenta (antes solo llegaba el del perfil propio). El payload agrega `customer_kind` (`self` | `third_party`) y, para terceros, `third_party_id` (el mismo id de `GET /v1/banking/third-parties/{id}`).
 
 ### v1.92 — 21 de julio de 2026
 

@@ -108,12 +108,15 @@ curl -X POST https://api.qbank.cl/platform/v1/banking/customer/submit \
 
 Estados del perfil: `draft` → `submitted` → `under_review` →
 **`approved`** o `rejected`. El webhook
-`banking_customer_status_changed` te avisa cada cambio:
+`banking_customer_status_changed` te avisa cada cambio — del perfil propio
+(`customer_kind: self`) y de los terceros que registres
+(`customer_kind: third_party`, con su `third_party_id`):
 
 ```json
 {
   "account_id": "…",
   "customer_id": "9f2b…",
+  "customer_kind": "self",
   "kyc_status": "approved"
 }
 ```

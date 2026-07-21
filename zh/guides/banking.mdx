@@ -94,12 +94,13 @@ curl -X POST https://api.qbank.cl/platform/v1/banking/customer/submit \
   -H "Authorization: Bearer <token>"
 ```
 
-档案状态：`draft` → `submitted` → `under_review` → **`approved`** 或 `rejected`。每次变更都会由 `banking_customer_status_changed` webhook 通知：
+档案状态：`draft` → `submitted` → `under_review` → **`approved`** 或 `rejected`。每次变更都会由 `banking_customer_status_changed` webhook 通知 — 包括自己的档案（`customer_kind: self`）和你注册的第三方（`customer_kind: third_party`，附其 `third_party_id`）：
 
 ```json
 {
   "account_id": "…",
   "customer_id": "9f2b…",
+  "customer_kind": "self",
   "kyc_status": "approved"
 }
 ```

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.92'
+  version: '1.93'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -15396,14 +15396,29 @@ webhooks:
   banking_customer_status_changed:
     post:
       summary: 银行档案验证状态已变更
-      description: 当银行档案验证状态变更(submitted、under_review、approved、rejected)时触发。
+      description: >-
+        当银行档案验证状态变更(submitted、under_review、approved、rejected)时触发 —
+        包括账户自己的银行档案（`customer_kind: self`）和你注册的第三方（`customer_kind: third_party`，
+        其 `third_party_id` 与 GET /v1/banking/third-parties/{id} 一致）。
       requestBody:
         content:
           application/json:
-            example:
-              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
-              customer_id: 9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
-              kyc_status: approved
+            examples:
+              self:
+                summary: 自己的银行档案
+                value:
+                  account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                  customer_id: 9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+                  customer_kind: self
+                  kyc_status: approved
+              third_party:
+                summary: 已注册的第三方
+                value:
+                  account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                  customer_id: 5a6b7c8d-9e0f-1a2b-3c4d-5e6f7a8b9c0d
+                  customer_kind: third_party
+                  third_party_id: 77aa88bb-1c2d-3e4f-5a6b-7c8d9e0f1a2b
+                  kyc_status: approved
       responses:
         '200':
           description: 返回任意 2xx 以确认。

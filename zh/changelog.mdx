@@ -7,6 +7,14 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月21日" description="v1.93">
+
+**修复**
+
+- **第三方的银行 webhook**（[webhooks](/zh/webhooks)、[银行指南](/zh/guides/banking)）：当你账户注册的**第三方**验证状态变化时，`banking_customer_status_changed` webhook 现在也会触发（此前只有自己档案的事件送达）。payload 新增 `customer_kind`（`self` | `third_party`），第三方还附 `third_party_id`（与 `GET /v1/banking/third-parties/{id}` 的 id 相同）。
+
+</Update>
+
 <Update label="2026年7月21日" description="v1.92">
 
 **修复**

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.92'
+  version: '1.93'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -15829,15 +15829,30 @@ webhooks:
   banking_customer_status_changed:
     post:
       summary: Cambió la verificación del perfil bancario
-      description: Se emite cuando cambia el estado de verificación del perfil bancario (submitted, under_review,
-        approved, rejected).
+      description: >-
+        Se emite cuando cambia el estado de verificación del perfil bancario (submitted, under_review,
+        approved, rejected) — tanto del perfil propio de la cuenta (`customer_kind: self`) como de
+        los terceros que registraste (`customer_kind: third_party`, con `third_party_id` igual al de
+        GET /v1/banking/third-parties/{id}).
       requestBody:
         content:
           application/json:
-            example:
-              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
-              customer_id: 9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
-              kyc_status: approved
+            examples:
+              self:
+                summary: Perfil bancario propio
+                value:
+                  account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                  customer_id: 9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+                  customer_kind: self
+                  kyc_status: approved
+              third_party:
+                summary: Tercero registrado
+                value:
+                  account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                  customer_id: 5a6b7c8d-9e0f-1a2b-3c4d-5e6f7a8b9c0d
+                  customer_kind: third_party
+                  third_party_id: 77aa88bb-1c2d-3e4f-5a6b-7c8d9e0f1a2b
+                  kyc_status: approved
       responses:
         '200':
           description: Responde cualquier 2xx para confirmar la recepción.

@@ -75,7 +75,7 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 | `crypto_deposit_held` | 一笔入账充值因发送方风险被暂扣（[筛查](/zh/guides/screenings)） |
 | `crypto_deposit_alert` | 一笔充值已入账，但发送方显示高风险（仅提示） |
 | `crypto_withdrawal_status_changed` | 一笔链上提现状态发生变化 |
-| `banking_customer_status_changed` | 您的银行账户资料验证状态发生变化 |
+| `banking_customer_status_changed` | 银行账户资料验证状态发生变化（自己的或已注册第三方的 — 由 `customer_kind` 区分） |
 | `banking_operation_status_changed` | 一笔银行付款状态发生变化 |
 | `card_transaction` | 一笔卡片消费被授权、撤销或调整 |
 | `card_status_changed` | 卡片状态发生变化（包括自动冻结） |
@@ -195,9 +195,15 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 {
   "account_id": "ae8c…",
   "customer_id": "9f2b…",
+  "customer_kind": "third_party",
+  "third_party_id": "77aa…",
   "kyc_status": "approved"
 }
 ```
+
+在 `banking_customer_status_changed` 中，`customer_kind` 区分自己的档案
+（`self`）和你注册的第三方（`third_party`，附 `third_party_id` — 与
+`GET /v1/banking/third-parties/{id}` 的 id 相同）。
 
 ```json banking_operation_status_changed
 {
