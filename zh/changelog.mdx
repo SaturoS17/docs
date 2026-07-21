@@ -7,6 +7,14 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月21日" description="v1.92">
+
+**修复**
+
+- **payin 历史中的 checkout 收款金额**（[payins 指南](/zh/guides/payins#通用收款链接checkout)）：`GET /v1/payins` 和 `GET /v1/payins/{payin_id}` 现在在所有状态（包括待支付和已过期）都返回 checkout 和 QR POS 收款的计价 — `settlement_asset` + `asset_amount`（适用时还有 `conversion_status`）。此前金额只在入账后出现，待支付的行没有金额。此外，以加密货币或 CBPay 应用结算的收款即使没有 `fx_rate` 也会返回 `usdt_credited`。CSV/XLSX 导出新增 `settlement_asset` 和 `asset_amount` 列。
+
+</Update>
+
 <Update label="2026年7月21日" description="v1.91">
 
 **新增**

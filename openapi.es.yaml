@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.91'
+  version: '1.92'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -636,6 +636,73 @@ paths:
               example:
                 error: pricing_unavailable
                 message: pricing is temporarily unavailable; retry in a moment
+  /pay/{token}/saved-cards:
+    get:
+      security: []
+      tags:
+      - Payins
+      operationId: checkoutSavedCards
+      summary: Tarjetas guardadas del pagador de un checkout (público)
+      description: >-
+        Lookup público (rate limit por IP) de las tarjetas guardadas del pagador con este
+        comercio, filtrado por el email del pagador — la página de checkout lo usa para
+        ofrecer "pagar con una tarjeta guardada" antes de abrir la página hosted. Devuelve
+        solo datos de display (marca, últimos 4, expiración) — jamás tokens ni números de
+        tarjeta. Un email ausente/ inválido, un email desconocido o un link resuelto devuelven
+        la misma lista vacía (anti-enumeración suave).
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Token opaco del checkout embebido en la `checkout_url`.
+      - name: email
+        in: query
+        required: true
+        schema:
+          type: string
+        description: El email del pagador (el usado al guardar la tarjeta).
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Filtro opcional por el país del corredor de la tarjeta.
+      - name: currency
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Filtro opcional por la moneda del corredor de la tarjeta.
+      responses:
+        '200':
+          description: Tarjetas guardadas para ese email (lista vacía si no hay matches).
+          content:
+            application/json:
+              example:
+                stored_cards:
+                - stored_card_id: 3f2b8c1d-4e5a-6789-abcd-ef0123456789
+                  brand: VISA
+                  last4: '1111'
+                  expiry_month: '12'
+                  expiry_year: '2031'
+                  country: BO
+                  currency: BOB
+        '404':
+          description: Token inválido o link de pago inexistente.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: payment link not found
+        '429':
+          description: Demasiadas peticiones desde esta IP.
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many requests; wait a moment and retry
   /pay/{token}/methods/{method}:
     post:
       security: []
@@ -3791,6 +3858,19 @@ paths:
                   usdt_gross: '101.302460'
                   fee: '1.000000'
                   usdt_credited: '100.302460'
+                - payin_id: d0135ed5-8e9c-4f8b-a522-8ec100470426
+                  account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                  kind: checkout
+                  country: ''
+                  currency: ''
+                  method: checkout
+                  local_amount: ''
+                  settlement_asset: USDT
+                  asset_amount: '50'
+                  status: pending
+                  reference: CB68JZCT46QE
+                  created_at: '2026-07-21T12:00:00Z'
+                  updated_at: '2026-07-21T12:00:00Z'
         '403':
           $ref: '#/components/responses/Forbidden'
         '401':
@@ -15125,6 +15205,9 @@ components:
           - qr
           - collect
           - push
+          - card
+          - checkout
+          - pos
         country:
           type: string
         currency:
@@ -15133,6 +15216,28 @@ components:
           type: string
         local_amount:
           type: string
+        settlement_asset:
+          type: string
+          enum:
+          - USDT
+          - USDC
+          - BTC
+          - GOLD
+          description: Solo payins de checkout y POS — el saldo virtual en que se denomina el
+            cobro. Estos payins no llevan `currency`/`local_amount` hasta que se usa un método
+            de pago local; el monto del cobro es `asset_amount` en este asset.
+        asset_amount:
+          type: string
+          description: Solo payins de checkout y POS — el monto del cobro denominado en
+            `settlement_asset` (presente en todo estado, incluidos pendiente y vencido).
+        conversion_status:
+          type: string
+          enum:
+          - pending_retry
+          - done
+          description: Solo payins de checkout y POS — estado de la auto-conversión cuando el
+            pago llegó en un asset distinto de `settlement_asset`. Se omite cuando no aplica
+            conversión.
         status:
           type: string
           enum:
@@ -15159,6 +15264,8 @@ components:
           type: string
         usdt_credited:
           type: string
+          description: Monto abonado al saldo. También presente SIN `fx_rate` en cobros
+            checkout/POS liquidados en crypto o vía transferencia CBPay (no aplica cotización FX).
         failure:
           type: object
           description: 'Presente solo cuando el payin queda `failed` en cobros activos: dónde se originó el rechazo (`provider` = el banco del pagador, `core` = la validación previa al cobro) más el código y mensaje concretos.'

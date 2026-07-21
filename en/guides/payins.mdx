@@ -716,6 +716,13 @@ When the charge is paid you receive the `payin_credited` with
 `crypto_amount` and CBPay app payments add `transfer_id`, `asset` and
 `amount`.
 
+In `GET /v1/payins` and `GET /v1/payins/{payin_id}` checkout payins
+always carry their denomination — `settlement_asset` + `asset_amount` —
+in every status (pending, expired and credited); `currency`/`local_amount`
+stay empty until a local payment method is used. A charge settled in
+crypto or via the CBPay app exposes its `usdt_credited` without an
+`fx_rate` (no FX quote applies).
+
 Link-specific errors (seen by whoever opens the page):
 
 | HTTP | `error` | Meaning |

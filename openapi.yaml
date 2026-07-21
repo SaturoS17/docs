@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.91'
+  version: '1.92'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -630,6 +630,72 @@ paths:
               example:
                 error: pricing_unavailable
                 message: pricing is temporarily unavailable; retry in a moment
+  /pay/{token}/saved-cards:
+    get:
+      security: []
+      tags:
+      - Payins
+      operationId: checkoutSavedCards
+      summary: Saved cards for a checkout payer (public)
+      description: >-
+        Public lookup (rate limited per IP) of the payer's saved cards with this merchant,
+        filtered by the payer's email — the checkout page uses it to offer "pay with a saved
+        card" before opening the hosted card page. Returns display data only (brand, last 4,
+        expiry) — never tokens or card numbers. A missing/invalid email, an unknown email or a
+        resolved link all return the same empty list (soft anti-enumeration).
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Opaque checkout token embedded in the `checkout_url`.
+      - name: email
+        in: query
+        required: true
+        schema:
+          type: string
+        description: The payer's email (the one used when the card was saved).
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Optional filter by the card corridor country.
+      - name: currency
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Optional filter by the card corridor currency.
+      responses:
+        '200':
+          description: Saved cards for that email (empty list when none match).
+          content:
+            application/json:
+              example:
+                stored_cards:
+                - stored_card_id: 3f2b8c1d-4e5a-6789-abcd-ef0123456789
+                  brand: VISA
+                  last4: '1111'
+                  expiry_month: '12'
+                  expiry_year: '2031'
+                  country: BO
+                  currency: BOB
+        '404':
+          description: Invalid token or unknown payment link.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: payment link not found
+        '429':
+          description: Too many requests from this IP.
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many requests; wait a moment and retry
   /pay/{token}/methods/{method}:
     post:
       security: []
@@ -3779,6 +3845,19 @@ paths:
                   usdt_gross: '101.302460'
                   fee: '1.000000'
                   usdt_credited: '100.302460'
+                - payin_id: d0135ed5-8e9c-4f8b-a522-8ec100470426
+                  account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                  kind: checkout
+                  country: ''
+                  currency: ''
+                  method: checkout
+                  local_amount: ''
+                  settlement_asset: USDT
+                  asset_amount: '50'
+                  status: pending
+                  reference: CB68JZCT46QE
+                  created_at: '2026-07-21T12:00:00Z'
+                  updated_at: '2026-07-21T12:00:00Z'
         '403':
           $ref: '#/components/responses/Forbidden'
         '401':
@@ -15106,6 +15185,9 @@ components:
           - qr
           - collect
           - push
+          - card
+          - checkout
+          - pos
         country:
           type: string
         currency:
@@ -15114,6 +15196,28 @@ components:
           type: string
         local_amount:
           type: string
+        settlement_asset:
+          type: string
+          enum:
+          - USDT
+          - USDC
+          - BTC
+          - GOLD
+          description: Checkout and POS payins only — the virtual balance the charge is
+            denominated in. These payins carry no `currency`/`local_amount` until a local
+            payment method is used; the charge amount is `asset_amount` in this asset.
+        asset_amount:
+          type: string
+          description: Checkout and POS payins only — the charge amount denominated in
+            `settlement_asset` (present in every status, including pending and expired).
+        conversion_status:
+          type: string
+          enum:
+          - pending_retry
+          - done
+          description: Checkout and POS payins only — auto-conversion state when the payment
+            arrived in a different asset than `settlement_asset`. Omitted when no conversion
+            applies.
         status:
           type: string
           enum:
@@ -15139,6 +15243,8 @@ components:
           type: string
         usdt_credited:
           type: string
+          description: Amount credited to the balance. Also present WITHOUT `fx_rate` on
+            checkout/POS charges settled in crypto or via a CBPay transfer (no FX quote applies).
         failure:
           type: object
           description: 'Present only when the payin is `failed` on active collections: where the rejection originated (`provider` = the payer''s bank, `core` = pre-charge validation) plus the concrete code and message.'

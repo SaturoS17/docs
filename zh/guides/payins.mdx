@@ -660,6 +660,12 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
 `asset_amount`；加密支付额外附带 `crypto_amount`，CBPay 应用支付额外
 附带 `transfer_id`、`asset` 和 `amount`。
 
+在 `GET /v1/payins` 和 `GET /v1/payins/{payin_id}` 中，checkout 收款在
+所有状态（待支付、已过期、已入账）都会返回其计价 —
+`settlement_asset` + `asset_amount`；在使用本地支付方式之前
+`currency`/`local_amount` 保持为空。以加密货币或 CBPay 应用结算的收款
+会返回 `usdt_credited` 而没有 `fx_rate`（不适用外汇报价）。
+
 链接专属错误（由打开页面的人看到）：
 
 | HTTP | `error` | 含义 |

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.91'
+  version: '1.92'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -591,6 +591,70 @@ paths:
               example:
                 error: pricing_unavailable
                 message: pricing is temporarily unavailable; retry in a moment
+  /pay/{token}/saved-cards:
+    get:
+      security: []
+      tags:
+      - Payins
+      operationId: checkoutSavedCards
+      summary: 结账付款人的已存卡（公开）
+      description: >-
+        按付款人邮箱过滤的公开查询（按 IP 限流），返回付款人在该商户保存的卡片 —
+        结账页面用它在打开托管卡片页之前提供"用已存卡支付"。仅返回展示数据（品牌、末 4
+        位、有效期）— 绝不返回令牌或卡号。邮箱缺失/无效、邮箱未知或链接已结束均返回相同的空列表（软性防枚举）。
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+        description: 嵌在 `checkout_url` 中的不透明结账令牌。
+      - name: email
+        in: query
+        required: true
+        schema:
+          type: string
+        description: 付款人的邮箱（保存卡片时使用的邮箱）。
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+        description: 可选：按卡片走廊国家过滤。
+      - name: currency
+        in: query
+        required: false
+        schema:
+          type: string
+        description: 可选：按卡片走廊货币过滤。
+      responses:
+        '200':
+          description: 该邮箱的已存卡（无匹配时为空列表）。
+          content:
+            application/json:
+              example:
+                stored_cards:
+                - stored_card_id: 3f2b8c1d-4e5a-6789-abcd-ef0123456789
+                  brand: VISA
+                  last4: '1111'
+                  expiry_month: '12'
+                  expiry_year: '2031'
+                  country: BO
+                  currency: BOB
+        '404':
+          description: 令牌无效或付款链接不存在。
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: payment link not found
+        '429':
+          description: 来自此 IP 的请求过多。
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many requests; wait a moment and retry
   /pay/{token}/methods/{method}:
     post:
       security: []
@@ -3611,6 +3675,19 @@ paths:
                   usdt_gross: '101.302460'
                   fee: '1.000000'
                   usdt_credited: '100.302460'
+                - payin_id: d0135ed5-8e9c-4f8b-a522-8ec100470426
+                  account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                  kind: checkout
+                  country: ''
+                  currency: ''
+                  method: checkout
+                  local_amount: ''
+                  settlement_asset: USDT
+                  asset_amount: '50'
+                  status: pending
+                  reference: CB68JZCT46QE
+                  created_at: '2026-07-21T12:00:00Z'
+                  updated_at: '2026-07-21T12:00:00Z'
         '403':
           $ref: '#/components/responses/Forbidden'
         '401':
@@ -14714,6 +14791,9 @@ components:
           - qr
           - collect
           - push
+          - card
+          - checkout
+          - pos
         country:
           type: string
         currency:
@@ -14722,6 +14802,24 @@ components:
           type: string
         local_amount:
           type: string
+        settlement_asset:
+          type: string
+          enum:
+          - USDT
+          - USDC
+          - BTC
+          - GOLD
+          description: 仅 checkout 和 POS 收款 — 收款以该虚拟余额计价。在使用本地支付方式之前，这类收款没有
+            `currency`/`local_amount`；收款金额为以该资产计价的 `asset_amount`。
+        asset_amount:
+          type: string
+          description: 仅 checkout 和 POS 收款 — 以 `settlement_asset` 计价的收款金额（所有状态均返回，包括待支付和已过期）。
+        conversion_status:
+          type: string
+          enum:
+          - pending_retry
+          - done
+          description: 仅 checkout 和 POS 收款 — 当付款资产与 `settlement_asset` 不同时的自动兑换状态。不适用时省略。
         status:
           type: string
           enum:
@@ -14747,6 +14845,8 @@ components:
           type: string
         usdt_credited:
           type: string
+          description: 入账到余额的金额。以加密货币或 CBPay 转账结算的 checkout/POS 收款即使没有 `fx_rate`
+            也会返回该字段（不适用外汇报价）。
         failure:
           type: object
           description: '仅当主动收款的 payin 为 `failed` 时出现：拒绝来源（`provider` = 付款人的银行，`core` = 扣款前校验）以及具体的代码和消息。'

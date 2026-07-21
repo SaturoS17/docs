@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — that never mix or convert automatically.\nPayouts and service fees can be paid from any of the four balances:\nset a default with `PUT /v1/settlement` or override per payout with\n`settlement_asset`.\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-21 15:45 UTC",
-    "_content_sha256": "c1a48e39485e691bb4727db00a5a0939aa054f4127e0e2c29258e54e7c31b53a"
+    "_generated_at": "2026-07-21 19:26 UTC",
+    "_content_sha256": "1b32b3a2dad38c70120670047538ef5f96978aa05679ed75e721eed9031eddfb"
   },
   "auth": {
     "type": "bearer",
@@ -549,6 +549,109 @@
           ]
         },
         {
+          "name": "Saved cards for a checkout payer (public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pay/:token/saved-cards",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pay",
+                ":token",
+                "saved-cards"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "",
+                  "disabled": false,
+                  "description": "The payer's email (the one used when the card was saved)."
+                },
+                {
+                  "key": "country",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Optional filter by the card corridor country."
+                },
+                {
+                  "key": "currency",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Optional filter by the card corridor currency."
+                }
+              ],
+              "variable": [
+                {
+                  "key": "token",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Public lookup (rate limited per IP) of the payer's saved cards with this merchant, filtered by the payer's email — the checkout page uses it to offer \"pay with a saved card\" before opening the hosted card page. Returns display data only (brand, last 4, expiry) — never tokens or card numbers. A missing/invalid email, an unknown email or a resolved link all return the same empty list (soft anti-enumeration).",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 Saved cards for that email (empty list when none match).",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/pay/:token/saved-cards",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "pay",
+                    ":token",
+                    "saved-cards"
+                  ],
+                  "query": [
+                    {
+                      "key": "email",
+                      "value": "",
+                      "disabled": false,
+                      "description": "The payer's email (the one used when the card was saved)."
+                    },
+                    {
+                      "key": "country",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Optional filter by the card corridor country."
+                    },
+                    {
+                      "key": "currency",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Optional filter by the card corridor currency."
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "key": "token",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Saved cards for that email (empty list when none match).",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"stored_cards\": [\n    {\n      \"stored_card_id\": \"3f2b8c1d-4e5a-6789-abcd-ef0123456789\",\n      \"brand\": \"VISA\",\n      \"last4\": \"1111\",\n      \"expiry_month\": \"12\",\n      \"expiry_year\": \"2031\",\n      \"country\": \"BO\",\n      \"currency\": \"BOB\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
           "name": "Materialize a checkout payment option (public)",
           "request": {
             "method": "POST",
@@ -1008,7 +1111,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"payins\": [\n    {\n      \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n      \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n      \"kind\": \"qr\",\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"method\": \"\",\n      \"local_amount\": \"700.00\",\n      \"status\": \"credited\",\n      \"reference\": \"QR-778812\",\n      \"created_at\": \"2026-07-07T12:00:00Z\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\",\n      \"fx_rate\": \"6.91\",\n      \"usdt_gross\": \"101.302460\",\n      \"fee\": \"1.000000\",\n      \"usdt_credited\": \"100.302460\"\n    }\n  ]\n}"
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"payins\": [\n    {\n      \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n      \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n      \"kind\": \"qr\",\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"method\": \"\",\n      \"local_amount\": \"700.00\",\n      \"status\": \"credited\",\n      \"reference\": \"QR-778812\",\n      \"created_at\": \"2026-07-07T12:00:00Z\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\",\n      \"fx_rate\": \"6.91\",\n      \"usdt_gross\": \"101.302460\",\n      \"fee\": \"1.000000\",\n      \"usdt_credited\": \"100.302460\"\n    },\n    {\n      \"payin_id\": \"d0135ed5-8e9c-4f8b-a522-8ec100470426\",\n      \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n      \"kind\": \"checkout\",\n      \"country\": \"\",\n      \"currency\": \"\",\n      \"method\": \"checkout\",\n      \"local_amount\": \"\",\n      \"settlement_asset\": \"USDT\",\n      \"asset_amount\": \"50\",\n      \"status\": \"pending\",\n      \"reference\": \"CB68JZCT46QE\",\n      \"created_at\": \"2026-07-21T12:00:00Z\",\n      \"updated_at\": \"2026-07-21T12:00:00Z\"\n    }\n  ]\n}"
             }
           ]
         },

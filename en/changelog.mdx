@@ -7,6 +7,14 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 21, 2026" description="v1.92">
+
+**Fixed**
+
+- **Checkout charge amounts in the payin history** ([payins guide](/en/guides/payins#universal-checkout-link-checkout)): `GET /v1/payins` and `GET /v1/payins/{payin_id}` now always include the denomination of checkout and QR POS payins — `settlement_asset` + `asset_amount` (plus `conversion_status` when applicable) — in every status, including pending and expired. Previously the amount only appeared once credited, so pending rows showed no amount. Additionally, a charge settled in crypto or via the CBPay app now exposes its `usdt_credited` even without an `fx_rate`. CSV/XLSX exports add the `settlement_asset` and `asset_amount` columns.
+
+</Update>
+
 <Update label="July 21, 2026" description="v1.91">
 
 **Added**

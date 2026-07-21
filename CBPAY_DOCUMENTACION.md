@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-21 15:45 UTC · versión `a29671e14db8`
+> **Documento actualizado:** 2026-07-21 19:26 UTC · versión `7765606998e1`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.91 (21 de julio de 2026) |
+| Versión de la documentación | v1.92 (21 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -3656,6 +3656,13 @@ Cuando el cobro se paga recibes el `payin_credited` con `settled_via`
 (ej. `crypto:tron:usdt`, `qr`, `cbpay`), `settlement_asset` y
 `asset_amount`; los pagos crypto agregan `crypto_amount` y los pagos con
 la app CBPay agregan `transfer_id`, `asset` y `amount`.
+
+En `GET /v1/payins` y `GET /v1/payins/{payin_id}` los payins de checkout
+llevan siempre su denominación — `settlement_asset` + `asset_amount` — en
+todo estado (pendiente, vencido y abonado); `currency`/`local_amount`
+quedan vacíos hasta que se usa un método de pago local. Un cobro
+liquidado en crypto o vía la app CBPay expone su `usdt_credited` sin
+`fx_rate` (no aplica cotización FX).
 
 Errores propios del link (los ve quien abre la página):
 
@@ -9721,9 +9728,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-21 15:45 UTC · 262 requests · versión `c1a48e39485e`
+> **Colección actualizada:** 2026-07-21 19:26 UTC · 263 requests · versión `1b32b3a2dad3`
 
-<PostmanFreshness iso="2026-07-21T15:45:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-21T19:26:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -9894,6 +9901,12 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.92 — 21 de julio de 2026
+
+**Corregido**
+
+- **Monto de los cobros checkout en el historial de payins** ([guía payins](#payins)): `GET /v1/payins` y `GET /v1/payins/{payin_id}` ahora incluyen siempre la denominación de los payins de checkout y QR POS — `settlement_asset` + `asset_amount` (y `conversion_status` cuando aplica) — en todo estado, incluidos pendiente y vencido. Antes el monto solo aparecía al acreditarse y las filas pendientes salían sin monto. Además, un cobro liquidado en crypto o vía la app CBPay expone su `usdt_credited` aunque no lleve `fx_rate`. Los exports CSV/XLSX agregan las columnas `settlement_asset` y `asset_amount`.
 
 ### v1.91 — 21 de julio de 2026
 
@@ -11606,6 +11619,7 @@ está en la API Reference interactiva y en la colección Postman.
 | `GET` | `/pay/{token}` | Página de cobro universal (pública) |
 | `GET` | `/pay/{token}/state` | Estado del cobro universal (público) |
 | `GET` | `/pay/{token}/quote` | Cotizar un link de cobro antes de elegir (público) |
+| `GET` | `/pay/{token}/saved-cards` | Tarjetas guardadas del pagador de un checkout (público) |
 | `POST` | `/pay/{token}/methods/{method}` | Materializar una opción de pago del checkout (público) |
 | `POST` | `/pay/{token}/collect/otp` | Solicitar la clave OTP de un cobro pull (público) |
 | `POST` | `/pay/{token}/collect` | Ejecutar un cobro pull con los datos del pagador (público) |
