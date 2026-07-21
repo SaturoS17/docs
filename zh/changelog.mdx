@@ -7,6 +7,14 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月20日" description="v1.90">
+
+**新增**
+
+- **已保存卡片与循环扣款**（[payins 指南](/zh/guides/payins#已保存卡片与循环扣款card)）：`card` 方式现支持存储凭证（卡组织 COF 规范）。`POST /v1/payins` 接受 `save_card`（托管页面上的同意复选框）、`payer_reference`（你的客户 ID）和 `stored_card_id`（使用已保存的卡支付，免输卡号；3-D Secure 照常运行）。新资源 `GET /v1/stored-cards`（+`/{id}`、`DELETE` 撤销）以及付款人不在场的**商户发起扣款**：`POST /v1/stored-cards/{id}/charges`（`recurring` 用于订阅；必须提供 `idempotency_key` — 重试绝不重复扣款）。卡号从不存在于平台：仅展示数据（卡组织、末四位、有效期）。新增 webhook `card_stored` 和 `stored_card_revoked`；新增错误 `422 stored_card_revoked`（[错误](/zh/errors)）。
+
+</Update>
+
 <Update label="2026年7月18日" description="v1.89">
 
 **新增**

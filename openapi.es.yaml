@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.89'
+  version: '1.90'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -3519,6 +3519,27 @@ paths:
                     cobro. Todo pago se convierte automático a este asset al acreditar (pagos en el
                     mismo asset no convierten). Debe estar habilitado para tu organización
                     (`422 settlement_asset_disabled` si no).
+                save_card:
+                  type: boolean
+                  default: false
+                  description: Solo método card — ofrece al pagador el checkbox "guardar esta tarjeta"
+                    en la página hosted. La credencial se guarda SOLO si el pagador lo marca
+                    (consentimiento explícito) y el pago 3-D Secure se aprueba; el flujo
+                    payin_received/payin_credited lleva entonces un bloque `stored_credential` y la
+                    tarjeta aparece en GET /v1/stored-cards.
+                payer_reference:
+                  type: string
+                  maxLength: 120
+                  description: Solo método card — tu identificador propio del pagador (ej. tu ID de
+                    cliente). Las tarjetas guardadas quedan acotadas a esta referencia para listar y
+                    cobrar las tarjetas del cliente correcto. Texto plano, máx 120 caracteres.
+                stored_card_id:
+                  type: string
+                  format: uuid
+                  description: Solo método card — paga con una tarjeta guardada previamente (ver GET
+                    /v1/stored-cards). La página hosted salta la captura de tarjeta y muestra la
+                    guardada; el 3-D Secure corre igual. Mutuamente excluyente con `save_card`.
+                    Tarjeta desconocida o revocada responde 404.
             examples:
               bo_qr:
                 summary: Bolivia — cobro QR (BOB)
@@ -9389,6 +9410,323 @@ paths:
                 status_message: QR already paid
                 created_at: '2026-07-07T12:00:00Z'
                 updated_at: '2026-07-07T12:00:01Z'
+  /v1/stored-cards:
+    get:
+      tags:
+      - Payins
+      operationId: listStoredCards
+      summary: 'Listar tarjetas guardadas'
+      description: 'Tarjetas guardadas por tus pagadores en el checkout hosted (mandato COF): solo datos de display (marca, últimos 4, expiración) — el número de tarjeta jamás existe en esta plataforma. Filtra por `payer_reference` para mostrarle a un cliente recurrente sus tarjetas. Requiere `from`/`to`.'
+      parameters:
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/pageSize'
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: payer_reference
+        in: query
+        schema:
+          type: string
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - active
+          - revoked
+      responses:
+        '200':
+          description: 'Tarjetas guardadas paginadas.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  stored_cards:
+                    type: array
+                    items:
+                      type: object
+              example:
+                page: 1
+                page_size: 50
+                stored_cards:
+                - stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+                  payer_reference: customer-1042
+                  country: BO
+                  currency: BOB
+                  brand: visa
+                  last4: '2701'
+                  expiry_month: '12'
+                  expiry_year: '2028'
+                  status: active
+                  created_at: '2026-07-20T18:00:00Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/stored-cards/{storedCardID}:
+    get:
+      tags:
+      - Payins
+      operationId: getStoredCard
+      summary: 'Obtener una tarjeta guardada'
+      parameters:
+      - name: storedCardID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: 'La tarjeta guardada.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stored_card_id:
+                    type: string
+                    format: uuid
+                  account_id:
+                    type: string
+                    format: uuid
+                  payer_reference:
+                    type: string
+                  country:
+                    type: string
+                  currency:
+                    type: string
+                  brand:
+                    type: string
+                  last4:
+                    type: string
+                  expiry_month:
+                    type: string
+                  expiry_year:
+                    type: string
+                  seed_payin_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum:
+                    - active
+                    - revoked
+                  revoked_at:
+                    type: string
+                    format: date-time
+                  created_at:
+                    type: string
+                    format: date-time
+              example:
+                stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                payer_reference: customer-1042
+                country: BO
+                currency: BOB
+                brand: visa
+                last4: '2701'
+                expiry_month: '12'
+                expiry_year: '2028'
+                seed_payin_id: 4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b
+                status: active
+                created_at: '2026-07-20T18:00:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      tags:
+      - Payins
+      operationId: revokeStoredCard
+      summary: 'Revocar una tarjeta guardada'
+      description: 'Revoca la credencial upstream y marca el espejo `revoked` (la historia jamás se borra). Los cobros iniciados por el comercio y los pagos con tarjeta guardada dejan de funcionar al instante. Emite el webhook `stored_card_revoked`.'
+      parameters:
+      - name: storedCardID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: 'La tarjeta guardada, ahora revocada.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stored_card_id:
+                    type: string
+                    format: uuid
+                  account_id:
+                    type: string
+                    format: uuid
+                  payer_reference:
+                    type: string
+                  country:
+                    type: string
+                  currency:
+                    type: string
+                  brand:
+                    type: string
+                  last4:
+                    type: string
+                  expiry_month:
+                    type: string
+                  expiry_year:
+                    type: string
+                  seed_payin_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum:
+                    - active
+                    - revoked
+                  revoked_at:
+                    type: string
+                    format: date-time
+                  created_at:
+                    type: string
+                    format: date-time
+              example:
+                stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                payer_reference: customer-1042
+                country: BO
+                currency: BOB
+                brand: visa
+                last4: '2701'
+                expiry_month: '12'
+                expiry_year: '2028'
+                seed_payin_id: 4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b
+                status: revoked
+                created_at: '2026-07-20T18:00:00Z'
+                revoked_at: '2026-07-21T10:00:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/stored-cards/{storedCardID}/charges:
+    post:
+      tags:
+      - Payins
+      operationId: chargeStoredCard
+      summary: 'Cobrar una tarjeta guardada (iniciado por el comercio)'
+      description: 'Cobra la tarjeta guardada SIN el pagador presente (MIT bajo el mandato de las marcas, citando la semilla 3-D Secure consentida original). Usa `recurring: true` para cobros de suscripción a intervalos fijos; false (default) para cobros no programados. Requiere `idempotency_key` — un retry con la misma clave devuelve el payin original y jamás cobra dos veces. El cobro aprobado acredita el saldo automático (webhook `payin_credited`); un cobro declinado responde 422 con el payin marcado failed.'
+      parameters:
+      - name: storedCardID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - amount
+              - idempotency_key
+              properties:
+                amount:
+                  type: string
+                currency:
+                  type: string
+                description:
+                  type: string
+                recurring:
+                  type: boolean
+                  default: false
+                idempotency_key:
+                  type: string
+            example:
+              amount: '45.00'
+              description: Monthly subscription
+              recurring: true
+              idempotency_key: sub-2026-07-cust1042
+      responses:
+        '201':
+          description: 'Cobro aceptado: los aprobados acreditan automático; consulta el estado del payin.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payin_id:
+                    type: string
+                  status:
+                    type: string
+                  reference:
+                    type: string
+                  transaction_id:
+                    type: string
+                  note:
+                    type: string
+              example:
+                payin_id: 3c5b002c-af76-4235-8145-9f07fef073fd
+                status: pending
+                reference: 3c5b002c-af76-4235-8145-9f07fef073fd
+                transaction_id: '7846012604816236704806'
+                note: charge approved; the balance is credited automatically (payin_credited webhook)
+        '200':
+          description: 'Replay idempotente — el payin original.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payin_id:
+                    type: string
+                  status:
+                    type: string
+                  idempotency_hit:
+                    type: boolean
+              example:
+                payin_id: 3c5b002c-af76-4235-8145-9f07fef073fd
+                status: credited
+                reference: 3c5b002c-af76-4235-8145-9f07fef073fd
+                idempotency_hit: true
+        '422':
+          description: 'Tarjeta declinada por el emisor, o tarjeta guardada revocada.'
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                declined:
+                  value:
+                    payin_id: cb781262-a53f-4ec8-a833-013edcf907d3
+                    status: failed
+                    reference: cb781262-a53f-4ec8-a833-013edcf907d3
+                    failure_reason: DECLINED
+                revoked:
+                  value:
+                    error: stored_card_revoked
+                    message: the stored card is revoked
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/payins/collect:
     post:
       tags:
@@ -14509,6 +14847,41 @@ webhooks:
       responses:
         '200':
           description: Devuelve cualquier 2xx para confirmar la entrega.
+  card_stored:
+    post:
+      summary: 'Un pagador guardó una tarjeta en el checkout hosted (consentimiento explícito sobre una semilla 3-D Secure aprobada).'
+      requestBody:
+        content:
+          application/json:
+            example:
+              event_type: card_stored
+              stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              payer_reference: customer-1042
+              brand: visa
+              last4: '2701'
+              country: BO
+              currency: BOB
+              seed_payin_id: 4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b
+      responses:
+        '200':
+          description: ACK
+  stored_card_revoked:
+    post:
+      summary: 'Una tarjeta guardada fue revocada (por ti vía DELETE /v1/stored-cards/{id}).'
+      requestBody:
+        content:
+          application/json:
+            example:
+              event_type: stored_card_revoked
+              stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              payer_reference: customer-1042
+              brand: visa
+              last4: '2701'
+      responses:
+        '200':
+          description: ACK
   payin_expired:
     post:
       summary: Payin expirado

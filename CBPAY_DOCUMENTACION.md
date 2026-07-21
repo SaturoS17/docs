@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-19 05:57 UTC · versión `2a5641b3a444`
+> **Documento actualizado:** 2026-07-21 03:14 UTC · versión `ff3a3dc16851`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.89 (18 de julio de 2026) |
+| Versión de la documentación | v1.90 (20 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -3674,6 +3674,126 @@ Errores propios del link (los ve quien abre la página):
 | 429 | `too_many_attempts` | Rate limit por IP de la página pública |
 | 503 | `pricing_unavailable` | Cotización temporalmente no disponible; reintentar en un momento |
 
+### Tarjetas guardadas y cobros recurrentes (tarjeta)
+
+El método `card` soporta **credencial almacenada** (mandato COF de las
+marcas): tu pagador guarda su tarjeta con consentimiento explícito en el
+primer pago y después puedes ofrecerle pagar sin re-digitar el número — o
+cobrarle tú suscripciones y cargos no programados sin que esté presente.
+El número de tarjeta **jamás existe** en tu integración ni en la
+plataforma: solo se guarda una referencia opaca del procesador más los
+datos de display (marca, últimos 4 dígitos, expiración).
+
+### Semilla: ofrece guardar la tarjeta en el primer pago
+
+Crea el payin `card` con `save_card: true` y tu referencia del pagador:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BO",
+    "currency": "BOB",
+    "method": "card",
+    "amount": "700.00",
+    "save_card": true,
+    "payer_reference": "cliente-1042",
+    "idempotency_key": "recarga-7720"
+  }'
+```
+
+La página hosted muestra el checkbox **"Guardar esta tarjeta para futuros
+pagos"**. La credencial se crea SOLO si el pagador lo marca y el pago
+3-D Secure se aprueba. Al acreditarse recibes el webhook `card_stored` y
+la tarjeta aparece en tu listado.
+### Lista las tarjetas del pagador
+
+```bash
+curl "https://api.qbank.cl/platform/v1/stored-cards?from=2026-07-01&to=2026-07-20&payer_reference=cliente-1042" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "page": 1,
+  "page_size": 50,
+  "stored_cards": [{
+    "stored_card_id": "5f0f2c9e-…",
+    "payer_reference": "cliente-1042",
+    "country": "BO",
+    "currency": "BOB",
+    "brand": "visa",
+    "last4": "2701",
+    "expiry_month": "12",
+    "expiry_year": "2028",
+    "status": "active",
+    "created_at": "2026-07-20T18:00:00Z"
+  }]
+}
+```
+### Pago con tarjeta guardada (el pagador presente)
+
+Crea el payin `card` con `stored_card_id`: la página salta la captura del
+número, muestra la tarjeta guardada (`VISA •••• 2701`) y el 3-D Secure
+corre igual — el pagador solo confirma con su banco.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BO",
+    "currency": "BOB",
+    "method": "card",
+    "amount": "350.00",
+    "stored_card_id": "5f0f2c9e-…",
+    "idempotency_key": "recarga-7721"
+  }'
+```
+### Cobro recurrente / no programado (sin el pagador)
+
+Cobra la tarjeta directamente — suscripciones (`recurring: true`) o cargos
+no programados acordados con tu cliente:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/stored-cards/5f0f2c9e-…/charges \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": "45.00",
+    "description": "Suscripción mensual",
+    "recurring": true,
+    "idempotency_key": "sub-2026-07-cliente1042"
+  }'
+```
+
+Respuesta `201` — el cobro aprobado acredita tu saldo automáticamente
+(webhook `payin_credited`, mismo camino que cualquier payin de tarjeta):
+
+```json
+{
+  "payin_id": "3c5b002c-…",
+  "status": "pending",
+  "reference": "3c5b002c-…",
+  "transaction_id": "7846012604…",
+  "note": "charge approved; the balance is credited automatically (payin_credited webhook)"
+}
+```
+
+Un cobro declinado por el emisor responde `422` con el payin en `failed` y
+`failure_reason`. Un retry con la misma `idempotency_key` devuelve el payin
+original y **jamás cobra dos veces**.
+Para revocar una tarjeta guardada (a pedido del pagador o por sospecha):
+`DELETE /v1/stored-cards/{stored_card_id}` — los cobros dejan de funcionar
+al instante y recibes `stored_card_revoked` (`422 stored_card_revoked` si
+intentas cobrarla después).
+
+> **Importante**
+Los cobros sin el pagador presente viajan **sin 3-D Secure** por definición
+del mandato: el riesgo de contracargo es tuyo. Cobra solo lo acordado
+explícitamente con tu cliente — la plataforma persiste la evidencia del
+consentimiento de la semilla (checkbox, IP y timestamp) para disputas.
 ### 3. Recibe el abono
 
 Cuando el pago llega (por cualquiera de las modalidades), tu cuenta se
@@ -9301,6 +9421,7 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | 422 | `collect_rejected` | El rail rechazó el cobro pull del link (OTP inválida o datos incorrectos); el link sigue pendiente |
 | 422 | `settlement_asset_disabled` | El `settlement_asset` del link de cobro está deshabilitado para tu organización |
 | 422 | `checkout_amount_mismatch` | La transferencia CBPay no cubre el monto vigente del link de cobro; el mensaje trae el monto actualizado |
+| 422 | `stored_card_revoked` | La [tarjeta guardada](#payins) está revocada; no acepta más cobros |
 | 422 | `verification_required` | [QR Crypto POS](#qr-crypto-pos): registra al merchant con el `verification_id` de su KYC/KYB de terceros aprobado |
 | 422 | `merchant_disabled` | El merchant [QR Crypto POS](#qr-crypto-pos) está deshabilitado; reactívalo antes de generar cobros |
 | 422 | `nothing_received` | El cobro [QR Crypto POS](#qr-crypto-pos) no ha recibido ningún pago on-chain: no hay nada que devolver |
@@ -9535,9 +9656,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-18 19:19 UTC · 252 requests · versión `a4f0a3b6ae5b`
+> **Colección actualizada:** 2026-07-21 03:14 UTC · 256 requests · versión `788006df0c83`
 
-<PostmanFreshness iso="2026-07-18T19:19:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-21T03:14:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -9708,6 +9829,12 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.90 — 20 de julio de 2026
+
+**Agregado**
+
+- **Tarjetas guardadas y cobros recurrentes** ([guía payins](#payins)): el método `card` ahora soporta credencial almacenada (mandato COF de las marcas). `POST /v1/payins` acepta `save_card` (checkbox de consentimiento en la página hosted), `payer_reference` (tu ID del cliente) y `stored_card_id` (pagar con una tarjeta guardada sin re-digitar el número; el 3-D Secure corre igual). Recurso nuevo `GET /v1/stored-cards` (+`/{id}`, `DELETE` para revocar) y **cobros iniciados por el comercio** sin el pagador presente: `POST /v1/stored-cards/{id}/charges` (`recurring` para suscripciones; `idempotency_key` obligatoria — un retry jamás cobra dos veces). El número de tarjeta jamás existe en la plataforma: solo display (marca, últimos 4, expiración). Webhooks nuevos `card_stored` y `stored_card_revoked`; error nuevo `422 stored_card_revoked` ([errores](#errores)).
 
 ### v1.89 — 18 de julio de 2026
 
@@ -11415,6 +11542,10 @@ está en la API Reference interactiva y en la colección Postman.
 | `POST` | `/v1/payins` | Crear un payin (cobro de recarga) |
 | `GET` | `/v1/payins/{payinID}` | Obtener un payin |
 | `GET` | `/v1/payins/methods` | Listar métodos de payin |
+| `GET` | `/v1/stored-cards` | Listar tarjetas guardadas |
+| `GET` | `/v1/stored-cards/{storedCardID}` | Obtener una tarjeta guardada |
+| `DELETE` | `/v1/stored-cards/{storedCardID}` | Revocar una tarjeta guardada |
+| `POST` | `/v1/stored-cards/{storedCardID}/charges` | Cobrar una tarjeta guardada (iniciado por el comercio) |
 | `POST` | `/v1/payins/collect` | Cobro activo (pull) |
 | `POST` | `/v1/payins/collect/otp` | Solicitar un OTP de cobro |
 | `GET` | `/v1/payins/deposit-accounts` | Listar mis cuentas de depósito |

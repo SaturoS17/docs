@@ -729,6 +729,139 @@ Errores propios del link (los ve quien abre la página):
 | 429 | `too_many_attempts` | Rate limit por IP de la página pública |
 | 503 | `pricing_unavailable` | Cotización temporalmente no disponible; reintentar en un momento |
 
+## Tarjetas guardadas y cobros recurrentes (tarjeta)
+
+El método `card` soporta **credencial almacenada** (mandato COF de las
+marcas): tu pagador guarda su tarjeta con consentimiento explícito en el
+primer pago y después puedes ofrecerle pagar sin re-digitar el número — o
+cobrarle tú suscripciones y cargos no programados sin que esté presente.
+El número de tarjeta **jamás existe** en tu integración ni en la
+plataforma: solo se guarda una referencia opaca del procesador más los
+datos de display (marca, últimos 4 dígitos, expiración).
+
+<Steps>
+<Step title="Semilla: ofrece guardar la tarjeta en el primer pago">
+
+Crea el payin `card` con `save_card: true` y tu referencia del pagador:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BO",
+    "currency": "BOB",
+    "method": "card",
+    "amount": "700.00",
+    "save_card": true,
+    "payer_reference": "cliente-1042",
+    "idempotency_key": "recarga-7720"
+  }'
+```
+
+La página hosted muestra el checkbox **"Guardar esta tarjeta para futuros
+pagos"**. La credencial se crea SOLO si el pagador lo marca y el pago
+3-D Secure se aprueba. Al acreditarse recibes el webhook `card_stored` y
+la tarjeta aparece en tu listado.
+
+</Step>
+<Step title="Lista las tarjetas del pagador">
+
+```bash
+curl "https://api.qbank.cl/platform/v1/stored-cards?from=2026-07-01&to=2026-07-20&payer_reference=cliente-1042" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "page": 1,
+  "page_size": 50,
+  "stored_cards": [{
+    "stored_card_id": "5f0f2c9e-…",
+    "payer_reference": "cliente-1042",
+    "country": "BO",
+    "currency": "BOB",
+    "brand": "visa",
+    "last4": "2701",
+    "expiry_month": "12",
+    "expiry_year": "2028",
+    "status": "active",
+    "created_at": "2026-07-20T18:00:00Z"
+  }]
+}
+```
+
+</Step>
+<Step title="Pago con tarjeta guardada (el pagador presente)">
+
+Crea el payin `card` con `stored_card_id`: la página salta la captura del
+número, muestra la tarjeta guardada (`VISA •••• 2701`) y el 3-D Secure
+corre igual — el pagador solo confirma con su banco.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BO",
+    "currency": "BOB",
+    "method": "card",
+    "amount": "350.00",
+    "stored_card_id": "5f0f2c9e-…",
+    "idempotency_key": "recarga-7721"
+  }'
+```
+
+</Step>
+<Step title="Cobro recurrente / no programado (sin el pagador)">
+
+Cobra la tarjeta directamente — suscripciones (`recurring: true`) o cargos
+no programados acordados con tu cliente:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/stored-cards/5f0f2c9e-…/charges \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": "45.00",
+    "description": "Suscripción mensual",
+    "recurring": true,
+    "idempotency_key": "sub-2026-07-cliente1042"
+  }'
+```
+
+Respuesta `201` — el cobro aprobado acredita tu saldo automáticamente
+(webhook `payin_credited`, mismo camino que cualquier payin de tarjeta):
+
+```json
+{
+  "payin_id": "3c5b002c-…",
+  "status": "pending",
+  "reference": "3c5b002c-…",
+  "transaction_id": "7846012604…",
+  "note": "charge approved; the balance is credited automatically (payin_credited webhook)"
+}
+```
+
+Un cobro declinado por el emisor responde `422` con el payin en `failed` y
+`failure_reason`. Un retry con la misma `idempotency_key` devuelve el payin
+original y **jamás cobra dos veces**.
+
+</Step>
+</Steps>
+
+Para revocar una tarjeta guardada (a pedido del pagador o por sospecha):
+`DELETE /v1/stored-cards/{stored_card_id}` — los cobros dejan de funcionar
+al instante y recibes `stored_card_revoked` (`422 stored_card_revoked` si
+intentas cobrarla después).
+
+<Warning>
+Los cobros sin el pagador presente viajan **sin 3-D Secure** por definición
+del mandato: el riesgo de contracargo es tuyo. Cobra solo lo acordado
+explícitamente con tu cliente — la plataforma persiste la evidencia del
+consentimiento de la semilla (checkbox, IP y timestamp) para disputas.
+</Warning>
+
 ## 3. Recibe el abono
 
 Cuando el pago llega (por cualquiera de las modalidades), tu cuenta se

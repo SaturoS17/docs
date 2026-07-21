@@ -733,6 +733,139 @@ Link-specific errors (seen by whoever opens the page):
 | 429 | `too_many_attempts` | Per-IP rate limit of the public page |
 | 503 | `pricing_unavailable` | Pricing temporarily unavailable; retry in a moment |
 
+## Saved cards and recurring charges (card)
+
+The `card` method supports **stored credentials** (the card brands' COF
+mandate): your payer saves their card with explicit consent on the first
+payment, and afterwards you can offer one-click payment without re-typing
+the number — or charge subscriptions and unscheduled amounts yourself
+without the payer present. The card number **never exists** in your
+integration or on the platform: only an opaque processor reference plus
+display data (brand, last 4 digits, expiry) is stored.
+
+<Steps>
+<Step title="Seed: offer to save the card on the first payment">
+
+Create the `card` payin with `save_card: true` and your payer reference:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BO",
+    "currency": "BOB",
+    "method": "card",
+    "amount": "700.00",
+    "save_card": true,
+    "payer_reference": "customer-1042",
+    "idempotency_key": "topup-7720"
+  }'
+```
+
+The hosted page shows a **"Save this card for future payments"** checkbox.
+The credential is stored ONLY if the payer ticks it and the 3-D Secure
+payment is approved. On credit you receive the `card_stored` webhook and
+the card appears in your list.
+
+</Step>
+<Step title="List the payer's cards">
+
+```bash
+curl "https://api.qbank.cl/platform/v1/stored-cards?from=2026-07-01&to=2026-07-20&payer_reference=customer-1042" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "page": 1,
+  "page_size": 50,
+  "stored_cards": [{
+    "stored_card_id": "5f0f2c9e-…",
+    "payer_reference": "customer-1042",
+    "country": "BO",
+    "currency": "BOB",
+    "brand": "visa",
+    "last4": "2701",
+    "expiry_month": "12",
+    "expiry_year": "2028",
+    "status": "active",
+    "created_at": "2026-07-20T18:00:00Z"
+  }]
+}
+```
+
+</Step>
+<Step title="Pay with a saved card (payer present)">
+
+Create the `card` payin with `stored_card_id`: the page skips card entry,
+shows the saved card (`VISA •••• 2701`) and 3-D Secure still runs — the
+payer only confirms with their bank.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BO",
+    "currency": "BOB",
+    "method": "card",
+    "amount": "350.00",
+    "stored_card_id": "5f0f2c9e-…",
+    "idempotency_key": "topup-7721"
+  }'
+```
+
+</Step>
+<Step title="Recurring / unscheduled charge (payer not present)">
+
+Charge the card directly — subscriptions (`recurring: true`) or
+unscheduled amounts your customer agreed to:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/stored-cards/5f0f2c9e-…/charges \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": "45.00",
+    "description": "Monthly subscription",
+    "recurring": true,
+    "idempotency_key": "sub-2026-07-cust1042"
+  }'
+```
+
+Response `201` — an approved charge credits your balance automatically
+(`payin_credited` webhook, same path as any card payin):
+
+```json
+{
+  "payin_id": "3c5b002c-…",
+  "status": "pending",
+  "reference": "3c5b002c-…",
+  "transaction_id": "7846012604…",
+  "note": "charge approved; the balance is credited automatically (payin_credited webhook)"
+}
+```
+
+An issuer decline responds `422` with the payin in `failed` and a
+`failure_reason`. A retry with the same `idempotency_key` returns the
+original payin and **never charges twice**.
+
+</Step>
+</Steps>
+
+To revoke a saved card (at the payer's request or on suspicion):
+`DELETE /v1/stored-cards/{stored_card_id}` — charges stop working
+immediately and you receive `stored_card_revoked`
+(`422 stored_card_revoked` if you try to charge it afterwards).
+
+<Warning>
+Charges without the payer present travel **without 3-D Secure** by
+definition of the mandate: the chargeback risk is yours. Charge only what
+your customer explicitly agreed to — the platform persists the seed's
+consent evidence (checkbox, IP and timestamp) for disputes.
+</Warning>
+
 ## 3. Receiving the credit
 
 When the payment arrives (through any of the modes), your account is

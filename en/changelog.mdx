@@ -7,6 +7,14 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 20, 2026" description="v1.90">
+
+**Added**
+
+- **Saved cards and recurring charges** ([payins guide](/en/guides/payins#saved-cards-and-recurring-charges-card)): the `card` method now supports stored credentials (the card brands' COF mandate). `POST /v1/payins` accepts `save_card` (consent checkbox on the hosted page), `payer_reference` (your customer ID) and `stored_card_id` (pay with a saved card without re-typing the number; 3-D Secure still runs). New resource `GET /v1/stored-cards` (+`/{id}`, `DELETE` to revoke) and **merchant-initiated charges** without the payer present: `POST /v1/stored-cards/{id}/charges` (`recurring` for subscriptions; `idempotency_key` required — a retry never charges twice). The card number never exists on the platform: display data only (brand, last 4, expiry). New webhooks `card_stored` and `stored_card_revoked`; new error `422 stored_card_revoked` ([errors](/en/errors)).
+
+</Update>
+
 <Update label="July 18, 2026" description="v1.89">
 
 **Added**
