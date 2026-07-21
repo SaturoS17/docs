@@ -7,6 +7,14 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 21, 2026" description="v1.91">
+
+**Added**
+
+- **Subscriptions (scheduled recurring charges)** ([payins guide](/en/guides/payins#subscriptions-scheduled-recurring-charges)): the platform runs the schedule for charges on a saved card. `POST /v1/subscriptions` (`interval` daily/weekly/monthly/yearly, optional `start_at` for a trial, required `idempotency_key`) charges the first period on creation and fires the rest automatically. Full resource `GET /v1/subscriptions` (+`/{id}`, filters status/stored_card_id/payer_reference) and lifecycle `POST .../pause` · `/resume` · `/cancel`. Dunning on declines (daily retry ×3 ⇒ `past_due`), no catch-up on resume, and automatic cancellation when the card is revoked. Each successful charge credits like a card payin (`payin_credited` with `subscription_id`). New webhook `subscription_status_changed`.
+
+</Update>
+
 <Update label="July 20, 2026" description="v1.90">
 
 **Added**

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.90'
+  version: '1.91'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -9727,6 +9727,608 @@ paths:
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/subscriptions:
+    post:
+      tags:
+      - Payins
+      operationId: createSubscription
+      summary: 'Crear una suscripción'
+      description: 'Cobros recurrentes sobre una tarjeta guardada (la plataforma lleva el calendario por ti). El primer período se cobra síncrono en la creación salvo que start_at sea futuro (trial). Cada cobro es un payin de tarjeta normal (se acredita por payin_credited); un decline reintenta diario hasta 3 veces y luego la suscripción pasa a past_due. idempotency_key es obligatoria (un retry devuelve la suscripción original). Requiere una tarjeta guardada activa del pagador.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - stored_card_id
+              - amount
+              - interval
+              - idempotency_key
+              properties:
+                stored_card_id:
+                  type: string
+                  format: uuid
+                amount:
+                  type: string
+                currency:
+                  type: string
+                interval:
+                  type: string
+                  enum:
+                  - daily
+                  - weekly
+                  - monthly
+                  - yearly
+                description:
+                  type: string
+                start_at:
+                  type: string
+                  format: date-time
+                idempotency_key:
+                  type: string
+            example:
+              stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+              amount: '45.00'
+              interval: monthly
+              description: Monthly plan
+              idempotency_key: plan-cust1042-monthly
+      responses:
+        '201':
+          description: 'Suscripción creada (first_charge presente cuando el primer período se cobró en la creación).'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscription_id:
+                    type: string
+                    format: uuid
+                  account_id:
+                    type: string
+                    format: uuid
+                  stored_card_id:
+                    type: string
+                    format: uuid
+                  payer_reference:
+                    type: string
+                  amount:
+                    type: string
+                  currency:
+                    type: string
+                  description:
+                    type: string
+                  interval:
+                    type: string
+                    enum:
+                    - daily
+                    - weekly
+                    - monthly
+                    - yearly
+                  status:
+                    type: string
+                    enum:
+                    - active
+                    - paused
+                    - past_due
+                    - canceled
+                  period:
+                    type: integer
+                  next_charge_at:
+                    type: string
+                    format: date-time
+                  failed_attempts:
+                    type: integer
+                  last_payin_id:
+                    type: string
+                    format: uuid
+                  cancel_reason:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+              example:
+                subscription_id: 7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+                payer_reference: customer-1042
+                amount: '45.00'
+                currency: BOB
+                description: Monthly plan
+                interval: monthly
+                status: active
+                period: 1
+                next_charge_at: '2026-08-20T18:00:00Z'
+                created_at: '2026-07-20T18:00:00Z'
+        '200':
+          description: 'Replay idempotente — la suscripción original.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscription_id:
+                    type: string
+                    format: uuid
+                  account_id:
+                    type: string
+                    format: uuid
+                  stored_card_id:
+                    type: string
+                    format: uuid
+                  payer_reference:
+                    type: string
+                  amount:
+                    type: string
+                  currency:
+                    type: string
+                  description:
+                    type: string
+                  interval:
+                    type: string
+                    enum:
+                    - daily
+                    - weekly
+                    - monthly
+                    - yearly
+                  status:
+                    type: string
+                    enum:
+                    - active
+                    - paused
+                    - past_due
+                    - canceled
+                  period:
+                    type: integer
+                  next_charge_at:
+                    type: string
+                    format: date-time
+                  failed_attempts:
+                    type: integer
+                  last_payin_id:
+                    type: string
+                    format: uuid
+                  cancel_reason:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+              example:
+                subscription_id: 7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+                payer_reference: customer-1042
+                amount: '45.00'
+                currency: BOB
+                description: Monthly plan
+                interval: monthly
+                status: active
+                period: 1
+                next_charge_at: '2026-08-20T18:00:00Z'
+                created_at: '2026-07-20T18:00:00Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags:
+      - Payins
+      operationId: listSubscriptions
+      summary: 'Listar suscripciones'
+      description: 'Tus suscripciones (los org admin ven toda la org con account_id). Filtra por status, stored_card_id o payer_reference. Requiere from/to.'
+      parameters:
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/pageSize'
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - active
+          - paused
+          - past_due
+          - canceled
+      - name: stored_card_id
+        in: query
+        schema:
+          type: string
+      - name: payer_reference
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 'Tus suscripciones (los org admin ven toda la org con account_id). Filtra por status, stored_card_id o payer_reference. Requiere from/to.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  subscriptions:
+                    type: array
+                    items:
+                      type: object
+              example:
+                page: 1
+                page_size: 50
+                subscriptions:
+                - subscription_id: 7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f
+                  stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+                  payer_reference: customer-1042
+                  amount: '45.00'
+                  currency: BOB
+                  interval: monthly
+                  status: active
+                  period: 1
+                  next_charge_at: '2026-08-20T18:00:00Z'
+                  created_at: '2026-07-20T18:00:00Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/subscriptions/{subscriptionID}:
+    get:
+      tags:
+      - Payins
+      operationId: getSubscription
+      summary: 'Obtener una suscripción'
+      parameters:
+      - name: subscriptionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: 'La suscripción.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscription_id:
+                    type: string
+                    format: uuid
+                  account_id:
+                    type: string
+                    format: uuid
+                  stored_card_id:
+                    type: string
+                    format: uuid
+                  payer_reference:
+                    type: string
+                  amount:
+                    type: string
+                  currency:
+                    type: string
+                  description:
+                    type: string
+                  interval:
+                    type: string
+                    enum:
+                    - daily
+                    - weekly
+                    - monthly
+                    - yearly
+                  status:
+                    type: string
+                    enum:
+                    - active
+                    - paused
+                    - past_due
+                    - canceled
+                  period:
+                    type: integer
+                  next_charge_at:
+                    type: string
+                    format: date-time
+                  failed_attempts:
+                    type: integer
+                  last_payin_id:
+                    type: string
+                    format: uuid
+                  cancel_reason:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+              example:
+                subscription_id: 7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+                payer_reference: customer-1042
+                amount: '45.00'
+                currency: BOB
+                description: Monthly plan
+                interval: monthly
+                status: active
+                period: 1
+                next_charge_at: '2026-08-20T18:00:00Z'
+                created_at: '2026-07-20T18:00:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/subscriptions/{subscriptionID}/pause:
+    post:
+      tags:
+      - Payins
+      operationId: pauseSubscription
+      summary: 'Pausar una suscripción'
+      description: 'Detiene los cobros (desde active). Reanudar NO recupera los períodos perdidos.'
+      parameters:
+      - name: subscriptionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: 'La suscripción.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscription_id:
+                    type: string
+                    format: uuid
+                  account_id:
+                    type: string
+                    format: uuid
+                  stored_card_id:
+                    type: string
+                    format: uuid
+                  payer_reference:
+                    type: string
+                  amount:
+                    type: string
+                  currency:
+                    type: string
+                  description:
+                    type: string
+                  interval:
+                    type: string
+                    enum:
+                    - daily
+                    - weekly
+                    - monthly
+                    - yearly
+                  status:
+                    type: string
+                    enum:
+                    - active
+                    - paused
+                    - past_due
+                    - canceled
+                  period:
+                    type: integer
+                  next_charge_at:
+                    type: string
+                    format: date-time
+                  failed_attempts:
+                    type: integer
+                  last_payin_id:
+                    type: string
+                    format: uuid
+                  cancel_reason:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+              example:
+                subscription_id: 7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+                payer_reference: customer-1042
+                amount: '45.00'
+                currency: BOB
+                description: Monthly plan
+                interval: monthly
+                status: active
+                period: 1
+                next_charge_at: '2026-08-20T18:00:00Z'
+                created_at: '2026-07-20T18:00:00Z'
+        '409':
+          description: The subscription state does not allow the transition.
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/subscriptions/{subscriptionID}/resume:
+    post:
+      tags:
+      - Payins
+      operationId: resumeSubscription
+      summary: 'Reanudar una suscripción'
+      description: 'Reactiva desde paused o past_due. Desde past_due reintenta el período pendiente una vez (un nuevo decline vuelve a past_due). Desde paused con fecha futura conserva el calendario original (sin cobro anticipado).'
+      parameters:
+      - name: subscriptionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: 'La suscripción.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscription_id:
+                    type: string
+                    format: uuid
+                  account_id:
+                    type: string
+                    format: uuid
+                  stored_card_id:
+                    type: string
+                    format: uuid
+                  payer_reference:
+                    type: string
+                  amount:
+                    type: string
+                  currency:
+                    type: string
+                  description:
+                    type: string
+                  interval:
+                    type: string
+                    enum:
+                    - daily
+                    - weekly
+                    - monthly
+                    - yearly
+                  status:
+                    type: string
+                    enum:
+                    - active
+                    - paused
+                    - past_due
+                    - canceled
+                  period:
+                    type: integer
+                  next_charge_at:
+                    type: string
+                    format: date-time
+                  failed_attempts:
+                    type: integer
+                  last_payin_id:
+                    type: string
+                    format: uuid
+                  cancel_reason:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+              example:
+                subscription_id: 7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+                payer_reference: customer-1042
+                amount: '45.00'
+                currency: BOB
+                description: Monthly plan
+                interval: monthly
+                status: active
+                period: 1
+                next_charge_at: '2026-08-20T18:00:00Z'
+                created_at: '2026-07-20T18:00:00Z'
+        '409':
+          description: The subscription state does not allow the transition.
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/subscriptions/{subscriptionID}/cancel:
+    post:
+      tags:
+      - Payins
+      operationId: cancelSubscription
+      summary: 'Cancelar una suscripción'
+      description: 'Terminal. Revocar la tarjeta guardada cancela también sus suscripciones automáticamente.'
+      parameters:
+      - name: subscriptionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: 'La suscripción.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscription_id:
+                    type: string
+                    format: uuid
+                  account_id:
+                    type: string
+                    format: uuid
+                  stored_card_id:
+                    type: string
+                    format: uuid
+                  payer_reference:
+                    type: string
+                  amount:
+                    type: string
+                  currency:
+                    type: string
+                  description:
+                    type: string
+                  interval:
+                    type: string
+                    enum:
+                    - daily
+                    - weekly
+                    - monthly
+                    - yearly
+                  status:
+                    type: string
+                    enum:
+                    - active
+                    - paused
+                    - past_due
+                    - canceled
+                  period:
+                    type: integer
+                  next_charge_at:
+                    type: string
+                    format: date-time
+                  failed_attempts:
+                    type: integer
+                  last_payin_id:
+                    type: string
+                    format: uuid
+                  cancel_reason:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+              example:
+                subscription_id: 7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+                payer_reference: customer-1042
+                amount: '45.00'
+                currency: BOB
+                description: Monthly plan
+                interval: monthly
+                status: active
+                period: 1
+                next_charge_at: '2026-08-20T18:00:00Z'
+                created_at: '2026-07-20T18:00:00Z'
+        '409':
+          description: The subscription state does not allow the transition.
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/payins/collect:
     post:
       tags:
@@ -14847,6 +15449,23 @@ webhooks:
       responses:
         '200':
           description: Devuelve cualquier 2xx para confirmar la entrega.
+  subscription_status_changed:
+    post:
+      summary: 'Una suscripción cambió de estado (active, paused, past_due tras el dunning, o canceled).'
+      requestBody:
+        content:
+          application/json:
+            example:
+              event_type: subscription_status_changed
+              subscription_id: 7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+              status: past_due
+              period: 3
+              reason: dunning_exhausted
+      responses:
+        '200':
+          description: ACK
   card_stored:
     post:
       summary: 'Un pagador guardó una tarjeta en el checkout hosted (consentimiento explícito sobre una semilla 3-D Secure aprobada).'

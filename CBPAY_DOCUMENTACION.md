@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-21 03:14 UTC · versión `ff3a3dc16851`
+> **Documento actualizado:** 2026-07-21 15:45 UTC · versión `a29671e14db8`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.90 (20 de julio de 2026) |
+| Versión de la documentación | v1.91 (21 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -3794,6 +3794,71 @@ Los cobros sin el pagador presente viajan **sin 3-D Secure** por definición
 del mandato: el riesgo de contracargo es tuyo. Cobra solo lo acordado
 explícitamente con tu cliente — la plataforma persiste la evidencia del
 consentimiento de la semilla (checkbox, IP y timestamp) para disputas.
+#### Suscripciones (cobros recurrentes agendados)
+
+Si en vez de cobrar tú manualmente cada mes quieres que **la plataforma
+lleve el calendario**, crea una suscripción sobre la tarjeta guardada: el
+primer período se cobra al crearla (salvo `start_at` futuro) y los
+siguientes se disparan solos según el `interval`.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/subscriptions \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stored_card_id": "5f0f2c9e-…",
+    "amount": "45.00",
+    "interval": "monthly",
+    "description": "Plan mensual",
+    "idempotency_key": "plan-cliente1042-mensual"
+  }'
+```
+
+Respuesta `201` (el `first_charge` aparece cuando se cobró el primer
+período al crear):
+
+```json
+{
+  "subscription_id": "7a1c9e2d-…",
+  "stored_card_id": "5f0f2c9e-…",
+  "amount": "45.00",
+  "currency": "BOB",
+  "interval": "monthly",
+  "status": "active",
+  "period": 1,
+  "next_charge_at": "2026-08-20T18:00:00Z",
+  "first_charge": { "outcome": "approved", "payin_id": "3c5b002c-…" }
+}
+```
+
+- `interval`: `daily`, `weekly`, `monthly` o `yearly`. El día del mes se
+  conserva y se ajusta al último día en meses cortos (un plan del 31 cobra
+  el 28/29 de febrero y vuelve al 31 en marzo).
+- `start_at` (opcional, RFC3339 futuro): difiere el primer cobro (trial /
+  fecha de inicio); sin él, cobra al crear.
+- **Dunning**: si el emisor declina, la plataforma reintenta cada 24 h
+  hasta 3 veces; agotados, la suscripción pasa a `past_due` y recibes el
+  webhook `subscription_status_changed`. `resume` la reactiva con un
+  intento fresco.
+- Cada cobro exitoso acredita tu saldo como cualquier payin de tarjeta
+  (webhook `payin_credited`, con `subscription_id` para enlazarlo al plan).
+
+Gestión del ciclo de vida:
+
+```bash
+# Pausar (deja de cobrar; reanudar NO recupera períodos perdidos)
+curl -X POST https://api.qbank.cl/platform/v1/subscriptions/7a1c9e2d-…/pause -H "Authorization: Bearer <token>"
+# Reanudar
+curl -X POST https://api.qbank.cl/platform/v1/subscriptions/7a1c9e2d-…/resume -H "Authorization: Bearer <token>"
+# Cancelar (terminal)
+curl -X POST https://api.qbank.cl/platform/v1/subscriptions/7a1c9e2d-…/cancel -H "Authorization: Bearer <token>"
+# Listar / consultar
+curl "https://api.qbank.cl/platform/v1/subscriptions?from=2026-07-01&to=2026-07-31&status=active" -H "Authorization: Bearer <token>"
+```
+
+Revocar la tarjeta guardada (`DELETE /v1/stored-cards/{id}`) cancela
+automáticamente sus suscripciones (`cancel_reason: card_revoked`).
+
 ### 3. Recibe el abono
 
 Cuando el pago llega (por cualquiera de las modalidades), tu cuenta se
@@ -9656,9 +9721,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-21 03:14 UTC · 256 requests · versión `788006df0c83`
+> **Colección actualizada:** 2026-07-21 15:45 UTC · 262 requests · versión `c1a48e39485e`
 
-<PostmanFreshness iso="2026-07-21T03:14:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-21T15:45:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -9829,6 +9894,12 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.91 — 21 de julio de 2026
+
+**Agregado**
+
+- **Suscripciones (cobros recurrentes agendados)** ([guía payins](#payins)): la plataforma lleva el calendario de los cobros sobre una tarjeta guardada. `POST /v1/subscriptions` (`interval` daily/weekly/monthly/yearly, `start_at` opcional para trial, `idempotency_key` obligatoria) cobra el primer período al crear y dispara los siguientes solos. Recurso completo `GET /v1/subscriptions` (+`/{id}`, filtros status/stored_card_id/payer_reference) y ciclo de vida `POST .../pause` · `/resume` · `/cancel`. Dunning ante declines (reintento diario ×3 ⇒ `past_due`), sin catch-up al reanudar, y cancelación automática al revocar la tarjeta. Cada cobro exitoso acredita como payin de tarjeta (`payin_credited` con `subscription_id`). Webhook nuevo `subscription_status_changed`.
 
 ### v1.90 — 20 de julio de 2026
 
@@ -11546,6 +11617,12 @@ está en la API Reference interactiva y en la colección Postman.
 | `GET` | `/v1/stored-cards/{storedCardID}` | Obtener una tarjeta guardada |
 | `DELETE` | `/v1/stored-cards/{storedCardID}` | Revocar una tarjeta guardada |
 | `POST` | `/v1/stored-cards/{storedCardID}/charges` | Cobrar una tarjeta guardada (iniciado por el comercio) |
+| `GET` | `/v1/subscriptions` | Listar suscripciones |
+| `POST` | `/v1/subscriptions` | Crear una suscripción |
+| `GET` | `/v1/subscriptions/{subscriptionID}` | Obtener una suscripción |
+| `POST` | `/v1/subscriptions/{subscriptionID}/pause` | Pausar una suscripción |
+| `POST` | `/v1/subscriptions/{subscriptionID}/resume` | Reanudar una suscripción |
+| `POST` | `/v1/subscriptions/{subscriptionID}/cancel` | Cancelar una suscripción |
 | `POST` | `/v1/payins/collect` | Cobro activo (pull) |
 | `POST` | `/v1/payins/collect/otp` | Solicitar un OTP de cobro |
 | `GET` | `/v1/payins/deposit-accounts` | Listar mis cuentas de depósito |

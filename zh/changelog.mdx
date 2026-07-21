@@ -7,6 +7,14 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月21日" description="v1.91">
+
+**新增**
+
+- **订阅（计划性循环扣款）**（[payins 指南](/zh/guides/payins#订阅计划性循环扣款)）：平台为已存卡的扣款执行排期。`POST /v1/subscriptions`（`interval` daily/weekly/monthly/yearly、可选 `start_at` 用于试用、必填 `idempotency_key`）在创建时扣款首个周期并自动触发其余周期。完整资源 `GET /v1/subscriptions`（+`/{id}`，过滤 status/stored_card_id/payer_reference）及生命周期 `POST .../pause` · `/resume` · `/cancel`。被拒时催收（每天重试 ×3 ⇒ `past_due`），恢复时不补扣，撤销卡片时自动取消。每次成功扣款像普通卡 payin 一样入账（`payin_credited` 带 `subscription_id`）。新增 webhook `subscription_status_changed`。
+
+</Update>
+
 <Update label="2026年7月20日" description="v1.90">
 
 **新增**

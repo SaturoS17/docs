@@ -796,6 +796,62 @@ payin，**绝不重复扣款**。
 同意证据（复选框、IP 和时间戳）用于争议处理。
 </Warning>
 
+### 订阅（计划性循环扣款）
+
+与其每月手动扣款，不如让**平台执行排期**：在已存卡上创建订阅 — 首个周期在创建时扣款（除非 `start_at` 为将来时间），
+其余按 `interval` 自动触发。
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/subscriptions \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stored_card_id": "5f0f2c9e-…",
+    "amount": "45.00",
+    "interval": "monthly",
+    "description": "Monthly plan",
+    "idempotency_key": "plan-cust1042-monthly"
+  }'
+```
+
+响应 `201`（在创建时扣款首个周期时包含 `first_charge`）：
+
+```json
+{
+  "subscription_id": "7a1c9e2d-…",
+  "stored_card_id": "5f0f2c9e-…",
+  "amount": "45.00",
+  "currency": "BOB",
+  "interval": "monthly",
+  "status": "active",
+  "period": 1,
+  "next_charge_at": "2026-08-20T18:00:00Z",
+  "first_charge": { "outcome": "approved", "payin_id": "3c5b002c-…" }
+}
+```
+
+- `interval`：`daily`、`weekly`、`monthly` 或 `yearly`。保留每月的日期并在短月份夹到最后一天（31 号的计划在 2 月
+  28/29 日扣款，3 月回到 31 号）。
+- `start_at`（可选，将来的 RFC3339）：推迟首次扣款（试用 / 开始日期）；不填则在创建时扣款。
+- **催收（dunning）**：发卡行拒绝时，平台每 24 小时重试最多 3 次；用尽后订阅变为 `past_due`，你会收到
+  `subscription_status_changed` webhook。`resume` 以一次新的尝试重新激活。
+- 每次成功扣款都像普通卡 payin 一样入账（`payin_credited` webhook，携带 `subscription_id` 以关联到计划）。
+
+生命周期管理：
+
+```bash
+# 暂停（停止扣款；恢复不会补扣错过的周期）
+curl -X POST https://api.qbank.cl/platform/v1/subscriptions/7a1c9e2d-…/pause -H "Authorization: Bearer <token>"
+# 恢复
+curl -X POST https://api.qbank.cl/platform/v1/subscriptions/7a1c9e2d-…/resume -H "Authorization: Bearer <token>"
+# 取消（终态）
+curl -X POST https://api.qbank.cl/platform/v1/subscriptions/7a1c9e2d-…/cancel -H "Authorization: Bearer <token>"
+# 列出 / 查询
+curl "https://api.qbank.cl/platform/v1/subscriptions?from=2026-07-01&to=2026-07-31&status=active" -H "Authorization: Bearer <token>"
+```
+
+撤销已存卡（`DELETE /v1/stored-cards/{id}`）会自动取消其订阅（`cancel_reason: card_revoked`）。
+
 ## 3. 接收入账
 
 当付款到达（无论通过哪种模式），您的账户会自动入账，并触发

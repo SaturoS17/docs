@@ -862,6 +862,71 @@ explícitamente con tu cliente — la plataforma persiste la evidencia del
 consentimiento de la semilla (checkbox, IP y timestamp) para disputas.
 </Warning>
 
+### Suscripciones (cobros recurrentes agendados)
+
+Si en vez de cobrar tú manualmente cada mes quieres que **la plataforma
+lleve el calendario**, crea una suscripción sobre la tarjeta guardada: el
+primer período se cobra al crearla (salvo `start_at` futuro) y los
+siguientes se disparan solos según el `interval`.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/subscriptions \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stored_card_id": "5f0f2c9e-…",
+    "amount": "45.00",
+    "interval": "monthly",
+    "description": "Plan mensual",
+    "idempotency_key": "plan-cliente1042-mensual"
+  }'
+```
+
+Respuesta `201` (el `first_charge` aparece cuando se cobró el primer
+período al crear):
+
+```json
+{
+  "subscription_id": "7a1c9e2d-…",
+  "stored_card_id": "5f0f2c9e-…",
+  "amount": "45.00",
+  "currency": "BOB",
+  "interval": "monthly",
+  "status": "active",
+  "period": 1,
+  "next_charge_at": "2026-08-20T18:00:00Z",
+  "first_charge": { "outcome": "approved", "payin_id": "3c5b002c-…" }
+}
+```
+
+- `interval`: `daily`, `weekly`, `monthly` o `yearly`. El día del mes se
+  conserva y se ajusta al último día en meses cortos (un plan del 31 cobra
+  el 28/29 de febrero y vuelve al 31 en marzo).
+- `start_at` (opcional, RFC3339 futuro): difiere el primer cobro (trial /
+  fecha de inicio); sin él, cobra al crear.
+- **Dunning**: si el emisor declina, la plataforma reintenta cada 24 h
+  hasta 3 veces; agotados, la suscripción pasa a `past_due` y recibes el
+  webhook `subscription_status_changed`. `resume` la reactiva con un
+  intento fresco.
+- Cada cobro exitoso acredita tu saldo como cualquier payin de tarjeta
+  (webhook `payin_credited`, con `subscription_id` para enlazarlo al plan).
+
+Gestión del ciclo de vida:
+
+```bash
+# Pausar (deja de cobrar; reanudar NO recupera períodos perdidos)
+curl -X POST https://api.qbank.cl/platform/v1/subscriptions/7a1c9e2d-…/pause -H "Authorization: Bearer <token>"
+# Reanudar
+curl -X POST https://api.qbank.cl/platform/v1/subscriptions/7a1c9e2d-…/resume -H "Authorization: Bearer <token>"
+# Cancelar (terminal)
+curl -X POST https://api.qbank.cl/platform/v1/subscriptions/7a1c9e2d-…/cancel -H "Authorization: Bearer <token>"
+# Listar / consultar
+curl "https://api.qbank.cl/platform/v1/subscriptions?from=2026-07-01&to=2026-07-31&status=active" -H "Authorization: Bearer <token>"
+```
+
+Revocar la tarjeta guardada (`DELETE /v1/stored-cards/{id}`) cancela
+automáticamente sus suscripciones (`cancel_reason: card_revoked`).
+
 ## 3. Recibe el abono
 
 Cuando el pago llega (por cualquiera de las modalidades), tu cuenta se

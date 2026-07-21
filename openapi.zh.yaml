@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.90'
+  version: '1.91'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -9422,6 +9422,608 @@ paths:
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/subscriptions:
+    post:
+      tags:
+      - Payins
+      operationId: createSubscription
+      summary: '创建订阅'
+      description: '对已保存卡片的循环扣款（平台为你执行排期）。除非 start_at 为将来时间（试用），首个周期在创建时同步扣款。每笔扣款都是普通卡 payin（通过 payin_credited 入账）；被拒后每天重试最多 3 次，随后订阅变为 past_due。必须提供 idempotency_key（重试返回原订阅）。需要付款人的一张有效已存卡。'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - stored_card_id
+              - amount
+              - interval
+              - idempotency_key
+              properties:
+                stored_card_id:
+                  type: string
+                  format: uuid
+                amount:
+                  type: string
+                currency:
+                  type: string
+                interval:
+                  type: string
+                  enum:
+                  - daily
+                  - weekly
+                  - monthly
+                  - yearly
+                description:
+                  type: string
+                start_at:
+                  type: string
+                  format: date-time
+                idempotency_key:
+                  type: string
+            example:
+              stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+              amount: '45.00'
+              interval: monthly
+              description: Monthly plan
+              idempotency_key: plan-cust1042-monthly
+      responses:
+        '201':
+          description: '订阅已创建（在创建时扣款首个周期时包含 first_charge）。'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscription_id:
+                    type: string
+                    format: uuid
+                  account_id:
+                    type: string
+                    format: uuid
+                  stored_card_id:
+                    type: string
+                    format: uuid
+                  payer_reference:
+                    type: string
+                  amount:
+                    type: string
+                  currency:
+                    type: string
+                  description:
+                    type: string
+                  interval:
+                    type: string
+                    enum:
+                    - daily
+                    - weekly
+                    - monthly
+                    - yearly
+                  status:
+                    type: string
+                    enum:
+                    - active
+                    - paused
+                    - past_due
+                    - canceled
+                  period:
+                    type: integer
+                  next_charge_at:
+                    type: string
+                    format: date-time
+                  failed_attempts:
+                    type: integer
+                  last_payin_id:
+                    type: string
+                    format: uuid
+                  cancel_reason:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+              example:
+                subscription_id: 7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+                payer_reference: customer-1042
+                amount: '45.00'
+                currency: BOB
+                description: Monthly plan
+                interval: monthly
+                status: active
+                period: 1
+                next_charge_at: '2026-08-20T18:00:00Z'
+                created_at: '2026-07-20T18:00:00Z'
+        '200':
+          description: '幂等重放 — 原订阅。'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscription_id:
+                    type: string
+                    format: uuid
+                  account_id:
+                    type: string
+                    format: uuid
+                  stored_card_id:
+                    type: string
+                    format: uuid
+                  payer_reference:
+                    type: string
+                  amount:
+                    type: string
+                  currency:
+                    type: string
+                  description:
+                    type: string
+                  interval:
+                    type: string
+                    enum:
+                    - daily
+                    - weekly
+                    - monthly
+                    - yearly
+                  status:
+                    type: string
+                    enum:
+                    - active
+                    - paused
+                    - past_due
+                    - canceled
+                  period:
+                    type: integer
+                  next_charge_at:
+                    type: string
+                    format: date-time
+                  failed_attempts:
+                    type: integer
+                  last_payin_id:
+                    type: string
+                    format: uuid
+                  cancel_reason:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+              example:
+                subscription_id: 7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+                payer_reference: customer-1042
+                amount: '45.00'
+                currency: BOB
+                description: Monthly plan
+                interval: monthly
+                status: active
+                period: 1
+                next_charge_at: '2026-08-20T18:00:00Z'
+                created_at: '2026-07-20T18:00:00Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags:
+      - Payins
+      operationId: listSubscriptions
+      summary: '列出订阅'
+      description: '你的订阅（org 管理员用 account_id 查看整个组织）。可按 status、stored_card_id 或 payer_reference 过滤。需要 from/to。'
+      parameters:
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/pageSize'
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - active
+          - paused
+          - past_due
+          - canceled
+      - name: stored_card_id
+        in: query
+        schema:
+          type: string
+      - name: payer_reference
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: '你的订阅（org 管理员用 account_id 查看整个组织）。可按 status、stored_card_id 或 payer_reference 过滤。需要 from/to。'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  subscriptions:
+                    type: array
+                    items:
+                      type: object
+              example:
+                page: 1
+                page_size: 50
+                subscriptions:
+                - subscription_id: 7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f
+                  stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+                  payer_reference: customer-1042
+                  amount: '45.00'
+                  currency: BOB
+                  interval: monthly
+                  status: active
+                  period: 1
+                  next_charge_at: '2026-08-20T18:00:00Z'
+                  created_at: '2026-07-20T18:00:00Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/subscriptions/{subscriptionID}:
+    get:
+      tags:
+      - Payins
+      operationId: getSubscription
+      summary: '获取订阅'
+      parameters:
+      - name: subscriptionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: '该订阅。'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscription_id:
+                    type: string
+                    format: uuid
+                  account_id:
+                    type: string
+                    format: uuid
+                  stored_card_id:
+                    type: string
+                    format: uuid
+                  payer_reference:
+                    type: string
+                  amount:
+                    type: string
+                  currency:
+                    type: string
+                  description:
+                    type: string
+                  interval:
+                    type: string
+                    enum:
+                    - daily
+                    - weekly
+                    - monthly
+                    - yearly
+                  status:
+                    type: string
+                    enum:
+                    - active
+                    - paused
+                    - past_due
+                    - canceled
+                  period:
+                    type: integer
+                  next_charge_at:
+                    type: string
+                    format: date-time
+                  failed_attempts:
+                    type: integer
+                  last_payin_id:
+                    type: string
+                    format: uuid
+                  cancel_reason:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+              example:
+                subscription_id: 7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+                payer_reference: customer-1042
+                amount: '45.00'
+                currency: BOB
+                description: Monthly plan
+                interval: monthly
+                status: active
+                period: 1
+                next_charge_at: '2026-08-20T18:00:00Z'
+                created_at: '2026-07-20T18:00:00Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/subscriptions/{subscriptionID}/pause:
+    post:
+      tags:
+      - Payins
+      operationId: pauseSubscription
+      summary: '暂停订阅'
+      description: '停止扣款（从 active）。恢复不会补扣错过的周期。'
+      parameters:
+      - name: subscriptionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: '该订阅。'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscription_id:
+                    type: string
+                    format: uuid
+                  account_id:
+                    type: string
+                    format: uuid
+                  stored_card_id:
+                    type: string
+                    format: uuid
+                  payer_reference:
+                    type: string
+                  amount:
+                    type: string
+                  currency:
+                    type: string
+                  description:
+                    type: string
+                  interval:
+                    type: string
+                    enum:
+                    - daily
+                    - weekly
+                    - monthly
+                    - yearly
+                  status:
+                    type: string
+                    enum:
+                    - active
+                    - paused
+                    - past_due
+                    - canceled
+                  period:
+                    type: integer
+                  next_charge_at:
+                    type: string
+                    format: date-time
+                  failed_attempts:
+                    type: integer
+                  last_payin_id:
+                    type: string
+                    format: uuid
+                  cancel_reason:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+              example:
+                subscription_id: 7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+                payer_reference: customer-1042
+                amount: '45.00'
+                currency: BOB
+                description: Monthly plan
+                interval: monthly
+                status: active
+                period: 1
+                next_charge_at: '2026-08-20T18:00:00Z'
+                created_at: '2026-07-20T18:00:00Z'
+        '409':
+          description: The subscription state does not allow the transition.
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/subscriptions/{subscriptionID}/resume:
+    post:
+      tags:
+      - Payins
+      operationId: resumeSubscription
+      summary: '恢复订阅'
+      description: '从 paused 或 past_due 重新激活。从 past_due 会重试一次待处理周期（再次被拒则回到 past_due）。从 paused 且日期为将来则保留原排期（不提前扣款）。'
+      parameters:
+      - name: subscriptionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: '该订阅。'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscription_id:
+                    type: string
+                    format: uuid
+                  account_id:
+                    type: string
+                    format: uuid
+                  stored_card_id:
+                    type: string
+                    format: uuid
+                  payer_reference:
+                    type: string
+                  amount:
+                    type: string
+                  currency:
+                    type: string
+                  description:
+                    type: string
+                  interval:
+                    type: string
+                    enum:
+                    - daily
+                    - weekly
+                    - monthly
+                    - yearly
+                  status:
+                    type: string
+                    enum:
+                    - active
+                    - paused
+                    - past_due
+                    - canceled
+                  period:
+                    type: integer
+                  next_charge_at:
+                    type: string
+                    format: date-time
+                  failed_attempts:
+                    type: integer
+                  last_payin_id:
+                    type: string
+                    format: uuid
+                  cancel_reason:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+              example:
+                subscription_id: 7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+                payer_reference: customer-1042
+                amount: '45.00'
+                currency: BOB
+                description: Monthly plan
+                interval: monthly
+                status: active
+                period: 1
+                next_charge_at: '2026-08-20T18:00:00Z'
+                created_at: '2026-07-20T18:00:00Z'
+        '409':
+          description: The subscription state does not allow the transition.
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/subscriptions/{subscriptionID}/cancel:
+    post:
+      tags:
+      - Payins
+      operationId: cancelSubscription
+      summary: '取消订阅'
+      description: '终态。撤销已存卡也会自动取消其订阅。'
+      parameters:
+      - name: subscriptionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: '该订阅。'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscription_id:
+                    type: string
+                    format: uuid
+                  account_id:
+                    type: string
+                    format: uuid
+                  stored_card_id:
+                    type: string
+                    format: uuid
+                  payer_reference:
+                    type: string
+                  amount:
+                    type: string
+                  currency:
+                    type: string
+                  description:
+                    type: string
+                  interval:
+                    type: string
+                    enum:
+                    - daily
+                    - weekly
+                    - monthly
+                    - yearly
+                  status:
+                    type: string
+                    enum:
+                    - active
+                    - paused
+                    - past_due
+                    - canceled
+                  period:
+                    type: integer
+                  next_charge_at:
+                    type: string
+                    format: date-time
+                  failed_attempts:
+                    type: integer
+                  last_payin_id:
+                    type: string
+                    format: uuid
+                  cancel_reason:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+              example:
+                subscription_id: 7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+                payer_reference: customer-1042
+                amount: '45.00'
+                currency: BOB
+                description: Monthly plan
+                interval: monthly
+                status: active
+                period: 1
+                next_charge_at: '2026-08-20T18:00:00Z'
+                created_at: '2026-07-20T18:00:00Z'
+        '409':
+          description: The subscription state does not allow the transition.
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/payins/collect:
     post:
       tags:
@@ -14431,6 +15033,23 @@ webhooks:
       responses:
         '200':
           description: 返回任意 2xx 以确认投递。
+  subscription_status_changed:
+    post:
+      summary: '订阅状态发生变化（active、paused、经催收后 past_due，或 canceled）。'
+      requestBody:
+        content:
+          application/json:
+            example:
+              event_type: subscription_status_changed
+              subscription_id: 7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              stored_card_id: 5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70
+              status: past_due
+              period: 3
+              reason: dunning_exhausted
+      responses:
+        '200':
+          description: ACK
   card_stored:
     post:
       summary: '付款人在托管收银台保存了卡片（在获批的 3-D Secure 种子支付上明确同意）。'
