@@ -40,7 +40,10 @@ arithmetic. There are no floats and no accumulated rounding errors.
 **USDT is the operating currency**: payouts, fiat payins and service fees
 are always priced in USDT. But the **payment** can come from any of the
 four balances — see [Choose which balance pays](#choose-which-balance-pays).
-Payins always credit the USDT balance; the other balances are funded via
+Payins credit in USDT and, if you configure `default_payin_asset`, the net
+amount auto-converts into the balance you choose — see
+[Choose which balance receives your payins](#choose-which-balance-receives-your-payins).
+The other balances are also funded via
 [internal transfers](/en/guides/transfers) (always between balances of the
 same currency), on-chain deposits (USDC and BTC) or credits from your
 operator (GOLD).
@@ -83,6 +86,30 @@ The `settlement` block of `GET /v1/rates` shows the effective per-asset
 price (spread included) so you can estimate before operating, and the
 payout response records `settlement_asset`, `settlement_amount` and
 `settlement_rate` for auditability.
+
+## Choose which balance receives your payins
+
+By default **payins** (QR, bank transfer, collect, card) credit the USDT
+balance. If you would rather hold another asset, configure
+`default_payin_asset`: the credit still lands in USDT (pricing, FX spread
+and fees untouched) and the **net credited amount** auto-converts into
+your asset through the swap engine — same spread and same limits as a
+regular swap.
+
+```bash
+# Credit my payins in USDC
+curl -X PUT "https://api.qbank.cl/platform/v1/settlement" \
+  -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+  -d '{"default_payin_asset": "USDC"}'
+```
+
+| Rule | Detail |
+|---|---|
+| Post-credit conversion | The payin credits in USDT and the conversion runs right after, as a swap (you will see `swap_out`/`swap_in` in your statement). |
+| Spread and limits | The configured swap spread applies, plus the per-operation/24h limits of volatile assets (BTC/GOLD). |
+| If the conversion fails | The payin stays credited in USDT with `conversion_status: pending_retry` and the system retries automatically — funds are never lost or double-converted. |
+| Checkout and POS | Each link keeps the `settlement_asset` chosen at creation; this setting never re-converts them. A link created **without** `settlement_asset` uses your `default_payin_asset`. |
+| Surfaces | `GET /v1/payins`, the detail and the `payin_credited` webhook expose `settlement_asset` and `conversion_status` when a conversion applies. |
 
 ## `available` and `held`
 

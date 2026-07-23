@@ -8,6 +8,29 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="23 de julio de 2026" description="v2.00">
+
+**Agregado**
+
+- **Saldo predeterminado para payins (`default_payin_asset`)**
+  ([modelo de dinero](/es/conceptos/modelo-de-dinero)): configura en qué
+  saldo quieres quedarte con tus cobros. `PUT /v1/settlement` acepta
+  ahora `default_payin_asset` (USDT, USDC, BTC o GOLD) y `GET
+  /v1/settlement` lo expone. El payin sigue acreditando en USDT
+  (pricing y comisiones intactos) y el neto se auto-convierte a tu
+  asset con el motor de swaps (mismo spread y límites de un swap). Si
+  la conversión falla queda `conversion_status: pending_retry` y se
+  reintenta automático. `GET /v1/payins`, el detalle y el webhook
+  `payin_credited` exponen `settlement_asset` y `conversion_status`
+  cuando hay conversión.
+
+**Cambiado**
+
+- Un link de checkout creado **sin** `settlement_asset` ahora usa el
+  `default_payin_asset` de la cuenta (antes siempre USDT).
+
+</Update>
+
 <Update label="23 de julio de 2026" description="v1.99">
 
 **Agregado**

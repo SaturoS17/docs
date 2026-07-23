@@ -61,7 +61,9 @@ curl https://api.qbank.cl/platform/v1/payins/methods \
 
 可用性可能变化；目录（`GET /v1/payins/methods`）始终是唯一可信来源。
 在所有情况下入账方式相同：按您当前的 `payin_rate` 折算为 USDT，并在
-扣除固定入金费用后净额入账。
+扣除固定入金费用后净额入账。如果您希望将收款保留在其他余额（USDC、BTC
+或 GOLD），请配置 `default_payin_asset` — 参见
+[资金模型](/zh/concepts/money-model)。
 
 ## 2. 选择模式并创建收款
 

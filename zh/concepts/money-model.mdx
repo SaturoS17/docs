@@ -39,7 +39,10 @@ description: "按币种划分的虚拟余额、外汇换算、资金冻结与不
 **USDT 是运营币种**：出款（payout）、法币收款（payin）与服务费始终
 以 USDT 计价。但**付款**可以来自四个余额中的任意一个 — 参见
 [选择用哪个余额付款](#选择用哪个余额付款)。
-收款始终入账到 USDT 余额；其他余额通过
+收款先入账到 USDT；若配置了 `default_payin_asset`，净额会自动兑换为您
+选择的余额 — 参见
+[选择收款入账到哪个余额](#选择收款入账到哪个余额)。
+其他余额也可通过
 [内部转账](/zh/guides/transfers)（始终在相同币种的余额之间进行）、
 链上充值（USDC 和 BTC）或由您的运营方入账（GOLD）来充值。
 
@@ -76,6 +79,28 @@ curl -X PUT "https://api.qbank.cl/platform/v1/settlement" \
 `GET /v1/rates` 的 `settlement` 区块显示每个资产的有效价格（已含点差），
 供您在操作前估算；出款响应中会记录 `settlement_asset`、
 `settlement_amount` 和 `settlement_rate` 以供审计。
+
+## 选择收款入账到哪个余额
+
+默认情况下，**收款**（QR、银行转账、collect、银行卡）入账到 USDT 余额。
+若您希望持有其他资产，可配置 `default_payin_asset`：入账仍然先以 USDT
+完成（定价、汇率点差与手续费均不变），随后**净入账金额**通过兑换引擎
+自动兑换为您选择的资产 — 与普通兑换相同的点差和限额。
+
+```bash
+# Credit my payins in USDC
+curl -X PUT "https://api.qbank.cl/platform/v1/settlement" \
+  -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+  -d '{"default_payin_asset": "USDC"}'
+```
+
+| 规则 | 详情 |
+|---|---|
+| 入账后兑换 | 收款以 USDT 入账，兑换随即以一笔兑换（swap）执行（对账单中显示为 `swap_out`/`swap_in`）。 |
+| 点差与限额 | 适用已配置的兑换点差，以及波动性资产（BTC/GOLD）的单笔/24 小时限额。 |
+| 兑换失败时 | 收款保持以 USDT 入账，`conversion_status: pending_retry`，系统自动重试 — 资金绝不丢失、绝不重复兑换。 |
+| Checkout 与 POS | 每个链接保留创建时选择的 `settlement_asset`；此配置不会再次兑换它们。**未**指定 `settlement_asset` 创建的链接会使用您的 `default_payin_asset`。 |
+| 展示范围 | 当发生兑换时，`GET /v1/payins`、详情接口与 `payin_credited` webhook 会包含 `settlement_asset` 和 `conversion_status`。 |
 
 ## `available` 与 `held`
 

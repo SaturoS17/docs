@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.99'
+  version: '2.00'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -12785,8 +12785,9 @@ paths:
       operationId: getSettlement
       summary: Get my settlement settings
       description: Returns which virtual balance your operations (payouts and service fees) debit from
-        by default, which assets your organization allows, and the per-operation limit (USDT equivalent)
-        applied to volatile assets (BTC/GOLD).
+        by default, the balance your payins settle into by default (`default_payin_asset`), which assets
+        your organization allows, and the per-operation limit (USDT equivalent) applied to volatile
+        assets (BTC/GOLD).
       responses:
         '200':
           description: Current settlement settings.
@@ -12796,6 +12797,7 @@ paths:
                 $ref: '#/components/schemas/SettlementSettings'
               example:
                 default_settlement_asset: USDT
+                default_payin_asset: USDT
                 enabled_assets:
                 - USDT
                 - USDC
@@ -12811,18 +12813,20 @@ paths:
       tags:
       - Account
       operationId: updateSettlement
-      summary: Set my default settlement asset
-      description: Changes the balance your payouts and service fees debit from when a request does not
-        send an explicit `settlement_asset`. Any of USDT, USDC, BTC or GOLD (if enabled for your organization).
-        The change applies to new operations only; nothing in flight is re-quoted.
+      summary: Set my default balances (payouts and payins)
+      description: Changes your default balances. `default_settlement_asset` is the balance your payouts
+        and service fees debit from when a request does not send an explicit `settlement_asset`.
+        `default_payin_asset` is the balance your payins settle into — credits still enter in USDT and
+        the net amount is auto-converted through the swap engine (regular swap spread applies; checkout
+        and POS payins keep their per-link asset). Any of USDT, USDC, BTC or GOLD (if enabled for your
+        organization). Send one or both fields. The change applies to new operations only; nothing in
+        flight is re-quoted.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-              - default_settlement_asset
               properties:
                 default_settlement_asset:
                   type: string
@@ -12831,8 +12835,19 @@ paths:
                   - USDC
                   - BTC
                   - GOLD
+                  description: Balance payouts and service fees debit from by default. Optional.
+                default_payin_asset:
+                  type: string
+                  enum:
+                  - USDT
+                  - USDC
+                  - BTC
+                  - GOLD
+                  description: Balance payins settle into by default. Credits enter in USDT and the
+                    net amount is auto-converted via the swap engine (regular swap spread). Optional.
             example:
               default_settlement_asset: BTC
+              default_payin_asset: USDC
       responses:
         '200':
           description: Updated settlement settings.
@@ -12842,6 +12857,7 @@ paths:
                 $ref: '#/components/schemas/SettlementSettings'
               example:
                 default_settlement_asset: BTC
+                default_payin_asset: USDC
                 enabled_assets:
                 - USDT
                 - USDC
@@ -15184,6 +15200,16 @@ components:
           - BTC
           - GOLD
           description: Balance operations debit from when no per-request override is sent.
+        default_payin_asset:
+          type: string
+          enum:
+          - USDT
+          - USDC
+          - BTC
+          - GOLD
+          description: Balance payins settle into by default. Credits enter in USDT and the net amount
+            is auto-converted via the swap engine (regular swap spread). Checkout/POS payins keep their
+            per-link asset.
         enabled_assets:
           type: array
           items:
@@ -15197,6 +15223,7 @@ components:
           description: Rolling 24h volume cap (USDT equivalent) per account for volatile assets (BTC/GOLD).
       example:
         default_settlement_asset: USDT
+        default_payin_asset: USDT
         enabled_assets:
         - USDT
         - USDC
@@ -15305,9 +15332,11 @@ components:
           - USDC
           - BTC
           - GOLD
-          description: Checkout and POS payins only — the virtual balance the charge is
-            denominated in. These payins carry no `currency`/`local_amount` until a local
-            payment method is used; the charge amount is `asset_amount` in this asset.
+          description: The virtual balance the payin settles into. Checkout and POS payins
+            denominate the charge in this per-link asset (no `currency`/`local_amount` until a
+            local payment method is used; the charge amount is `asset_amount` in this asset).
+            Other credited payins carry it when the account configured a `default_payin_asset`
+            other than USDT — the net credit is auto-converted into this asset.
         asset_amount:
           type: string
           description: Checkout and POS payins only — the charge amount denominated in
@@ -15317,9 +15346,10 @@ components:
           enum:
           - pending_retry
           - done
-          description: Checkout and POS payins only — auto-conversion state when the payment
-            arrived in a different asset than `settlement_asset`. Omitted when no conversion
-            applies.
+          description: Auto-conversion state — for checkout/POS payins when the payment arrived
+            in a different asset than `settlement_asset`, and for other payins when the account
+            configured a `default_payin_asset` other than USDT. `pending_retry` is retried
+            automatically. Omitted when no conversion applies.
         status:
           type: string
           enum:
@@ -15604,7 +15634,9 @@ webhooks:
       description: 'A fiat collection was received and credited to the account in USDT. For universal
         checkout links (`kind: checkout`) the payload also carries `settled_via` (e.g. `qr`,
         `crypto:tron:usdt`, `cbpay`), `settlement_asset` and `asset_amount`; crypto payments add
-        `crypto_amount` and CBPay app payments add `transfer_id`, `asset` and `amount`.
+        `crypto_amount` and CBPay app payments add `transfer_id`, `asset` and `amount`. When the
+        account configured a `default_payin_asset` other than USDT the payload also carries
+        `settlement_asset` and `conversion_status` for the automatic post-credit conversion.
 
 
         Every delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
@@ -15625,6 +15657,8 @@ webhooks:
                 fx_rate: *id017
                 usdt_credited: *id017
                 fee: *id017
+                settlement_asset: *id017
+                conversion_status: *id017
             example:
               payin_id: 4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -15634,6 +15668,8 @@ webhooks:
               fx_rate: '6.91'
               usdt_credited: '100.302460'
               fee: '1.000000'
+              settlement_asset: USDC
+              conversion_status: done
       responses:
         '200':
           description: Return any 2xx to acknowledge the delivery.

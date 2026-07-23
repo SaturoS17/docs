@@ -7,6 +7,27 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月23日" description="v2.00">
+
+**新增**
+
+- **收款默认余额（`default_payin_asset`）**
+  （[资金模型](/zh/concepts/money-model)）：选择收款最终入账到哪个
+  余额。`PUT /v1/settlement` 现接受 `default_payin_asset`（USDT、
+  USDC、BTC 或 GOLD），`GET /v1/settlement` 会返回该字段。收款仍先以
+  USDT 入账（定价与手续费不变），净额随后通过兑换引擎自动兑换为您
+  选择的资产（与普通兑换相同的点差和限额）。兑换失败时保持
+  `conversion_status: pending_retry` 并自动重试。发生兑换时，
+  `GET /v1/payins`、详情接口与 `payin_credited` webhook 会包含
+  `settlement_asset` 和 `conversion_status`。
+
+**变更**
+
+- **未**指定 `settlement_asset` 创建的 checkout 链接现使用账户的
+  `default_payin_asset`（此前始终为 USDT）。
+
+</Update>
+
 <Update label="2026年7月23日" description="v1.99">
 
 **新增**

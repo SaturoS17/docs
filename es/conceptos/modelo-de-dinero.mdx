@@ -42,7 +42,10 @@ racional exacta. Nunca hay floats ni errores de redondeo acumulados.
 comisiones de servicios se cotizan siempre en USDT. Pero el **pago** puede
 salir de cualquiera de los cuatro saldos — ver
 [Elige desde qué saldo pagas](#elige-desde-que-saldo-pagas). Los payins
-siempre acreditan al saldo USDT; los otros saldos se fondean con
+acreditan en USDT y, si configuras `default_payin_asset`, el neto se
+auto-convierte al saldo que elijas — ver
+[Elige en qué saldo se acreditan tus payins](#elige-en-que-saldo-se-acreditan-tus-payins).
+Los otros saldos también se fondean con
 [transferencias internas](/es/guias/transferencias) (siempre entre saldos
 de la misma moneda), depósitos on-chain (USDC y BTC) o abonos de tu
 operador (GOLD).
@@ -85,6 +88,30 @@ El bloque `settlement` de `GET /v1/rates` muestra el precio efectivo por
 asset (spread incluido) para estimar antes de operar, y la respuesta del
 payout registra `settlement_asset`, `settlement_amount` y
 `settlement_rate` para auditoría.
+
+## Elige en qué saldo se acreditan tus payins
+
+Por defecto los **payins** (QR, transferencia, collect, tarjeta) acreditan
+al saldo USDT. Si prefieres quedarte en otro asset, configura
+`default_payin_asset`: el crédito sigue entrando en USDT (pricing, spread
+FX y comisiones intactos) y el **neto acreditado** se auto-convierte a tu
+asset con el motor de swaps — mismo spread y mismos límites que un swap
+normal.
+
+```bash
+# Acreditar mis payins en USDC
+curl -X PUT "https://api.qbank.cl/platform/v1/settlement" \
+  -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+  -d '{"default_payin_asset": "USDC"}'
+```
+
+| Regla | Detalle |
+|---|---|
+| Conversión post-crédito | El payin acredita en USDT y la conversión corre inmediatamente después como un swap (verás `swap_out`/`swap_in` en tu cartola). |
+| Spread y límites | Aplica el spread de swap configurado y los límites por operación/24 h de los assets volátiles (BTC/GOLD). |
+| Si la conversión falla | El payin queda acreditado en USDT con `conversion_status: pending_retry` y el sistema reintenta automático — el saldo jamás se pierde ni se convierte doble. |
+| Checkout y POS | Cada link conserva el `settlement_asset` elegido al crearlo; esta configuración no los re-convierte. Un link creado **sin** `settlement_asset` usa tu `default_payin_asset`. |
+| Superficies | `GET /v1/payins`, el detalle y el webhook `payin_credited` exponen `settlement_asset` y `conversion_status` cuando hay conversión. |
 
 ## `available` y `held`
 

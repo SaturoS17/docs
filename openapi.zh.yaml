@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.99'
+  version: '2.00'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -12443,7 +12443,7 @@ paths:
       - 账户
       operationId: getSettlement
       summary: 获取我的结算设置
-      description: 返回你的操作(payouts 与服务费)默认从哪个虚拟余额扣款、组织允许哪些资产,以及适用于波动性资产(BTC/GOLD)的单笔限额(USDT 等值)。
+      description: 返回你的操作(payouts 与服务费)默认从哪个虚拟余额扣款、payins 默认入账到哪个余额(`default_payin_asset`)、组织允许哪些资产,以及适用于波动性资产(BTC/GOLD)的单笔限额(USDT 等值)。
       responses:
         '200':
           description: 当前结算设置。
@@ -12453,6 +12453,7 @@ paths:
                 $ref: '#/components/schemas/SettlementSettings'
               example:
                 default_settlement_asset: USDT
+                default_payin_asset: USDT
                 enabled_assets:
                 - USDT
                 - USDC
@@ -12468,16 +12469,14 @@ paths:
       tags:
       - 账户
       operationId: updateSettlement
-      summary: 设置我的默认结算资产
-      description: 更改当请求未显式传 `settlement_asset` 时,payout 和服务费默认扣款的余额。可为 USDT、USDC、BTC 或 GOLD(需组织启用)。仅对新操作生效;进行中的操作不会重新计价。
+      summary: 设置我的默认余额(payouts 与 payins)
+      description: 更改你的默认余额。`default_settlement_asset` 是当请求未显式传 `settlement_asset` 时,payout 和服务费默认扣款的余额。`default_payin_asset` 是 payins 默认入账的余额——入账仍以 USDT 进行,净额通过 swap 引擎自动兑换(适用常规 swap 价差;checkout 与 POS 收款保留其链接资产)。可为 USDT、USDC、BTC 或 GOLD(需组织启用)。可发送其中一个或两个字段。仅对新操作生效;进行中的操作不会重新计价。
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-              - default_settlement_asset
               properties:
                 default_settlement_asset:
                   type: string
@@ -12486,8 +12485,18 @@ paths:
                   - USDC
                   - BTC
                   - GOLD
+                  description: payouts 与服务费默认扣款的余额。可选。
+                default_payin_asset:
+                  type: string
+                  enum:
+                  - USDT
+                  - USDC
+                  - BTC
+                  - GOLD
+                  description: payins 默认入账的余额。入账仍以 USDT 进行,净额通过 swap 引擎自动兑换(常规 swap 价差)。可选。
             example:
               default_settlement_asset: BTC
+              default_payin_asset: USDC
       responses:
         '200':
           description: 更新后的结算设置。
@@ -12497,6 +12506,7 @@ paths:
                 $ref: '#/components/schemas/SettlementSettings'
               example:
                 default_settlement_asset: BTC
+                default_payin_asset: USDC
                 enabled_assets:
                 - USDT
                 - USDC
@@ -14793,6 +14803,14 @@ components:
           - BTC
           - GOLD
           description: 未提供单次覆盖时,余额操作默认扣款的资产。
+        default_payin_asset:
+          type: string
+          enum:
+          - USDT
+          - USDC
+          - BTC
+          - GOLD
+          description: payins 默认入账的余额。入账仍以 USDT 进行,净额通过 swap 引擎自动兑换(常规 swap 价差)。checkout/POS 保留其链接资产。
         enabled_assets:
           type: array
           items:
@@ -14806,6 +14824,7 @@ components:
           description: 波动性资产(BTC/GOLD)每账户滚动 24 小时交易量上限(USDT 等值)。
       example:
         default_settlement_asset: USDT
+        default_payin_asset: USDT
         enabled_assets:
         - USDT
         - USDC
@@ -14911,8 +14930,9 @@ components:
           - USDC
           - BTC
           - GOLD
-          description: 仅 checkout 和 POS 收款 — 收款以该虚拟余额计价。在使用本地支付方式之前，这类收款没有
-            `currency`/`local_amount`；收款金额为以该资产计价的 `asset_amount`。
+          description: payin 入账的虚拟余额。checkout 和 POS 收款以其链接资产计价(在使用本地支付方式之前没有
+            `currency`/`local_amount`;收款金额为以该资产计价的 `asset_amount`)。其他已入账的 payins
+            在账户配置了非 USDT 的 `default_payin_asset` 时携带该字段——净入账金额会自动兑换为该资产。
         asset_amount:
           type: string
           description: 仅 checkout 和 POS 收款 — 以 `settlement_asset` 计价的收款金额（所有状态均返回，包括待支付和已过期）。
@@ -14921,7 +14941,8 @@ components:
           enum:
           - pending_retry
           - done
-          description: 仅 checkout 和 POS 收款 — 当付款资产与 `settlement_asset` 不同时的自动兑换状态。不适用时省略。
+          description: 自动兑换状态——checkout/POS 收款在付款资产与 `settlement_asset` 不同时出现;其他 payins
+            在账户配置了非 USDT 的 `default_payin_asset` 时出现。`pending_retry` 会自动重试。不适用时省略。
         status:
           type: string
           enum:
@@ -15203,7 +15224,8 @@ webhooks:
       summary: payin 已入账
       description: '已收到一笔法币收款并以 USDT 入账到账户。对于通用收款链接(`kind: checkout`),载荷还携带
         `settled_via`(如 `qr`、`crypto:tron:usdt`、`cbpay`)、`settlement_asset` 与 `asset_amount`;加密货币支付附加
-        `crypto_amount`,CBPay 应用支付附加 `transfer_id`、`asset` 与 `amount`。
+        `crypto_amount`,CBPay 应用支付附加 `transfer_id`、`asset` 与 `amount`。当账户配置了非 USDT 的
+        `default_payin_asset` 时,载荷还携带入账后自动兑换的 `settlement_asset` 与 `conversion_status`。
 
 
         每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和
@@ -15223,6 +15245,8 @@ webhooks:
                 fx_rate: *id017
                 usdt_credited: *id017
                 fee: *id017
+                settlement_asset: *id017
+                conversion_status: *id017
             example:
               payin_id: 4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -15232,6 +15256,8 @@ webhooks:
               fx_rate: '6.91'
               usdt_credited: '100.302460'
               fee: '1.000000'
+              settlement_asset: USDC
+              conversion_status: done
       responses:
         '200':
           description: 返回任意 2xx 以确认投递。

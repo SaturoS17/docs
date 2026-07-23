@@ -66,6 +66,9 @@ Collection corridors and modes:
 Availability may vary; the catalog (`GET /v1/payins/methods`) is always the
 source of truth. In every case the credit works the same way: converted to
 USDT at your current `payin_rate` and credited net of the fixed payin fee.
+If you'd rather keep your collections in another balance (USDC, BTC or
+GOLD), configure `default_payin_asset` — see
+[the money model](/en/concepts/money-model#choose-which-balance-receives-your-payins).
 
 ## 2. Pick the mode and create the charge
 

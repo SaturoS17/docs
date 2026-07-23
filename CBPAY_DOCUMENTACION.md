@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-23 21:44 UTC · versión `1a1042960528`
+> **Documento actualizado:** 2026-07-23 23:18 UTC · versión `55e7446d8be1`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.99 (23 de julio de 2026) |
+| Versión de la documentación | v2.00 (23 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -1109,7 +1109,10 @@ racional exacta. Nunca hay floats ni errores de redondeo acumulados.
 comisiones de servicios se cotizan siempre en USDT. Pero el **pago** puede
 salir de cualquiera de los cuatro saldos — ver
 [Elige desde qué saldo pagas](#elige-desde-que-saldo-pagas). Los payins
-siempre acreditan al saldo USDT; los otros saldos se fondean con
+acreditan en USDT y, si configuras `default_payin_asset`, el neto se
+auto-convierte al saldo que elijas — ver
+[Elige en qué saldo se acreditan tus payins](#elige-en-que-saldo-se-acreditan-tus-payins).
+Los otros saldos también se fondean con
 [transferencias internas](#transferencias-internas) (siempre entre saldos
 de la misma moneda), depósitos on-chain (USDC y BTC) o abonos de tu
 operador (GOLD).
@@ -1152,6 +1155,30 @@ El bloque `settlement` de `GET /v1/rates` muestra el precio efectivo por
 asset (spread incluido) para estimar antes de operar, y la respuesta del
 payout registra `settlement_asset`, `settlement_amount` y
 `settlement_rate` para auditoría.
+
+### Elige en qué saldo se acreditan tus payins
+
+Por defecto los **payins** (QR, transferencia, collect, tarjeta) acreditan
+al saldo USDT. Si prefieres quedarte en otro asset, configura
+`default_payin_asset`: el crédito sigue entrando en USDT (pricing, spread
+FX y comisiones intactos) y el **neto acreditado** se auto-convierte a tu
+asset con el motor de swaps — mismo spread y mismos límites que un swap
+normal.
+
+```bash
+# Acreditar mis payins en USDC
+curl -X PUT "https://api.qbank.cl/platform/v1/settlement" \
+  -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+  -d '{"default_payin_asset": "USDC"}'
+```
+
+| Regla | Detalle |
+|---|---|
+| Conversión post-crédito | El payin acredita en USDT y la conversión corre inmediatamente después como un swap (verás `swap_out`/`swap_in` en tu cartola). |
+| Spread y límites | Aplica el spread de swap configurado y los límites por operación/24 h de los assets volátiles (BTC/GOLD). |
+| Si la conversión falla | El payin queda acreditado en USDT con `conversion_status: pending_retry` y el sistema reintenta automático — el saldo jamás se pierde ni se convierte doble. |
+| Checkout y POS | Cada link conserva el `settlement_asset` elegido al crearlo; esta configuración no los re-convierte. Un link creado **sin** `settlement_asset` usa tu `default_payin_asset`. |
+| Superficies | `GET /v1/payins`, el detalle y el webhook `payin_credited` exponen `settlement_asset` y `conversion_status` cuando hay conversión. |
 
 ### `available` y `held`
 
@@ -3104,7 +3131,9 @@ Corredores y modalidades de cobro:
 La disponibilidad puede variar; el catálogo (`GET /v1/payins/methods`) es
 siempre la fuente de verdad. En todos los casos el abono llega igual: se
 convierte a USDT a tu `payin_rate` del momento y se acredita neto de la
-comisión fija de payin.
+comisión fija de payin. Si prefieres quedarte con tus cobros en otro saldo
+(USDC, BTC o GOLD), configura `default_payin_asset` — ver
+[el modelo de dinero](#modelo-de-dinero).
 
 ### 2. Elige la modalidad y crea el cobro
 
@@ -9887,9 +9916,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-23 19:07 UTC · 267 requests · versión `feb6453c56c5`
+> **Colección actualizada:** 2026-07-23 23:18 UTC · 267 requests · versión `4d90b5bc193b`
 
-<PostmanFreshness iso="2026-07-23T19:07:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-23T23:18:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -10060,6 +10089,27 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v2.00 — 23 de julio de 2026
+
+**Agregado**
+
+- **Saldo predeterminado para payins (`default_payin_asset`)**
+  ([modelo de dinero](#modelo-de-dinero)): configura en qué
+  saldo quieres quedarte con tus cobros. `PUT /v1/settlement` acepta
+  ahora `default_payin_asset` (USDT, USDC, BTC o GOLD) y `GET
+  /v1/settlement` lo expone. El payin sigue acreditando en USDT
+  (pricing y comisiones intactos) y el neto se auto-convierte a tu
+  asset con el motor de swaps (mismo spread y límites de un swap). Si
+  la conversión falla queda `conversion_status: pending_retry` y se
+  reintenta automático. `GET /v1/payins`, el detalle y el webhook
+  `payin_credited` exponen `settlement_asset` y `conversion_status`
+  cuando hay conversión.
+
+**Cambiado**
+
+- Un link de checkout creado **sin** `settlement_asset` ahora usa el
+  `default_payin_asset` de la cuenta (antes siempre USDT).
 
 ### v1.99 — 23 de julio de 2026
 
@@ -11884,7 +11934,7 @@ está en la API Reference interactiva y en la colección Postman.
 | `GET` | `/v1/branding` | Obtener el branding de la plataforma |
 | `GET` | `/v1/services` | Servicios habilitados |
 | `GET` | `/v1/settlement` | Obtener mi configuración de settlement |
-| `PUT` | `/v1/settlement` | Definir mi asset de settlement predeterminado |
+| `PUT` | `/v1/settlement` | Definir mis saldos predeterminados (payouts y payins) |
 
 
 ## Autenticación

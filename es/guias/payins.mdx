@@ -66,7 +66,9 @@ Corredores y modalidades de cobro:
 La disponibilidad puede variar; el catálogo (`GET /v1/payins/methods`) es
 siempre la fuente de verdad. En todos los casos el abono llega igual: se
 convierte a USDT a tu `payin_rate` del momento y se acredita neto de la
-comisión fija de payin.
+comisión fija de payin. Si prefieres quedarte con tus cobros en otro saldo
+(USDC, BTC o GOLD), configura `default_payin_asset` — ver
+[el modelo de dinero](/es/conceptos/modelo-de-dinero#elige-en-que-saldo-se-acreditan-tus-payins).
 
 ## 2. Elige la modalidad y crea el cobro
 
