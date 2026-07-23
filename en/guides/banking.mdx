@@ -145,15 +145,47 @@ number/IBAN, routing, bank):
 }
 ```
 
-List your accounts and check balances:
+List your accounts, fetch the detail of a specific account, and check
+balances:
 
 ```bash
 curl https://api.qbank.cl/platform/v1/banking/accounts \
   -H "Authorization: Bearer <token>"
 
+curl https://api.qbank.cl/platform/v1/banking/accounts/c4d1… \
+  -H "Authorization: Bearer <token>"
+
 curl https://api.qbank.cl/platform/v1/banking/accounts/c4d1…/balance \
   -H "Authorization: Bearer <token>"
 ```
+
+The detail endpoint (`GET /v1/banking/accounts/{id}`) returns the account
+LIVE — name, currency, status, and under `data` the **requirements to
+receive funds** (wire and local rails: bank, account number/IBAN,
+routing). Use it to show the deposit instructions of a specific account
+without walking the list:
+
+```json
+{
+  "account_id": "c4d1…",
+  "provider_id": "…",
+  "data": {
+    "name": "Operativa USD",
+    "currencyCode": "USD",
+    "status": "ACCEPT",
+    "requisites": [
+      { "type": "SWIFT", "…": "…" },
+      { "type": "LOCAL", "…": "…" }
+    ]
+  }
+}
+```
+
+<Note>
+The list exposes only the accounts **enabled for your operation**
+according to the corridor configuration. A non-enabled account does not
+appear in the list and its by-id queries respond `404 not_found`.
+</Note>
 
 <Note>
 **Limit for person accounts**: a person account can hold **at most 1 bank

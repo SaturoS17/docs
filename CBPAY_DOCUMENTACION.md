@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-23 18:34 UTC · versión `f5a3340d8a42`
+> **Documento actualizado:** 2026-07-23 18:41 UTC · versión `e43954e20332`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.97 (23 de julio de 2026) |
+| Versión de la documentación | v1.98 (23 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -6620,16 +6620,45 @@ cuenta/IBAN, routing, banco):
 }
 ```
 
-Lista tus cuentas y consulta saldo:
+Lista tus cuentas, consulta el detalle de una cuenta puntual y su saldo:
 
 ```bash
 curl https://api.qbank.cl/platform/v1/banking/accounts \
+  -H "Authorization: Bearer <token>"
+
+curl https://api.qbank.cl/platform/v1/banking/accounts/c4d1… \
   -H "Authorization: Bearer <token>"
 
 curl https://api.qbank.cl/platform/v1/banking/accounts/c4d1…/balance \
   -H "Authorization: Bearer <token>"
 ```
 
+El detalle (`GET /v1/banking/accounts/{id}`) devuelve la cuenta EN VIVO —
+nombre, moneda, estado y bajo `data` los **requisitos para recibir
+fondos** (rieles wire y locales: banco, número de cuenta/IBAN, routing).
+Úsalo para mostrar las instrucciones de depósito de una cuenta específica
+sin recorrer el listado:
+
+```json
+{
+  "account_id": "c4d1…",
+  "provider_id": "…",
+  "data": {
+    "name": "Operativa USD",
+    "currencyCode": "USD",
+    "status": "ACCEPT",
+    "requisites": [
+      { "type": "SWIFT", "…": "…" },
+      { "type": "LOCAL", "…": "…" }
+    ]
+  }
+}
+```
+
+> **Nota**
+El listado expone solo las cuentas **habilitadas para tu operación** según
+la configuración del corredor. Una cuenta no habilitada no aparece en el
+listado y sus consultas por id responden `404 not_found`.
 > **Nota**
 **Límite para cuentas persona**: una cuenta persona puede tener **máximo 1
 cuenta bancaria**. Al intentar la segunda recibirás `409
@@ -10024,6 +10053,23 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.98 — 23 de julio de 2026
+
+**Agregado**
+
+- **`GET /v1/banking/accounts/{bankAccountID}`** ([guía banking](#banking)):
+  detalle en vivo de una cuenta bancaria — nombre, moneda, estado y los
+  requisitos para recibir fondos (rieles wire y locales) bajo `data`.
+  Úsalo para mostrar las instrucciones de depósito de una cuenta
+  específica sin recorrer el listado.
+
+**Cambiado**
+
+- **Listado de cuentas bancarias**: la API ahora expone solo las cuentas
+  habilitadas para tu operación según la configuración del corredor. Las
+  cuentas no habilitadas dejan de aparecer en `GET /v1/banking/accounts`
+  y sus consultas por id responden `404`.
 
 ### v1.97 — 23 de julio de 2026
 

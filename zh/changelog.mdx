@@ -7,6 +7,23 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月23日" description="v1.98">
+
+**新增**
+
+- **`GET /v1/banking/accounts/{bankAccountID}`**（[银行服务指南](/zh/guides/banking)）：
+  获取您某个银行账户的实时详情 — 名称、币种、状态以及接收资金所需的
+  要件（电汇与本地轨道），位于 `data` 字段下。用于展示特定账户的入金
+  指引，无需遍历列表。
+
+**变更**
+
+- **银行账户列表**：API 现在只返回根据通道配置为您的业务启用的账户。
+  未启用的账户不再出现在 `GET /v1/banking/accounts` 中，按 id 查询时
+  返回 `404`。
+
+</Update>
+
 <Update label="2026年7月23日" description="v1.97">
 
 **修复**

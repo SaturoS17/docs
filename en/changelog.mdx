@@ -7,6 +7,25 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 23, 2026" description="v1.98">
+
+**Added**
+
+- **`GET /v1/banking/accounts/{bankAccountID}`** ([banking guide](/en/guides/banking)):
+  live details of one of your bank accounts — name, currency, status and
+  the receiving requisites (wire and local rails) under `data`. Use it to
+  render the deposit instructions of a specific account without walking
+  the list.
+
+**Changed**
+
+- **Bank account listing**: the API now exposes only the accounts enabled
+  for your operation per the corridor configuration. Accounts that are
+  not enabled no longer appear in `GET /v1/banking/accounts` and their
+  by-id lookups return `404`.
+
+</Update>
+
 <Update label="July 23, 2026" description="v1.97">
 
 **Fixed**

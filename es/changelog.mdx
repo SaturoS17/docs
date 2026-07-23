@@ -8,6 +8,25 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="23 de julio de 2026" description="v1.98">
+
+**Agregado**
+
+- **`GET /v1/banking/accounts/{bankAccountID}`** ([guía banking](/es/guias/banking)):
+  detalle en vivo de una cuenta bancaria — nombre, moneda, estado y los
+  requisitos para recibir fondos (rieles wire y locales) bajo `data`.
+  Úsalo para mostrar las instrucciones de depósito de una cuenta
+  específica sin recorrer el listado.
+
+**Cambiado**
+
+- **Listado de cuentas bancarias**: la API ahora expone solo las cuentas
+  habilitadas para tu operación según la configuración del corredor. Las
+  cuentas no habilitadas dejan de aparecer en `GET /v1/banking/accounts`
+  y sus consultas por id responden `404`.
+
+</Update>
+
 <Update label="23 de julio de 2026" description="v1.97">
 
 **Corregido**

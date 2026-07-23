@@ -157,15 +157,46 @@ cuenta/IBAN, routing, banco):
 }
 ```
 
-Lista tus cuentas y consulta saldo:
+Lista tus cuentas, consulta el detalle de una cuenta puntual y su saldo:
 
 ```bash
 curl https://api.qbank.cl/platform/v1/banking/accounts \
   -H "Authorization: Bearer <token>"
 
+curl https://api.qbank.cl/platform/v1/banking/accounts/c4d1… \
+  -H "Authorization: Bearer <token>"
+
 curl https://api.qbank.cl/platform/v1/banking/accounts/c4d1…/balance \
   -H "Authorization: Bearer <token>"
 ```
+
+El detalle (`GET /v1/banking/accounts/{id}`) devuelve la cuenta EN VIVO —
+nombre, moneda, estado y bajo `data` los **requisitos para recibir
+fondos** (rieles wire y locales: banco, número de cuenta/IBAN, routing).
+Úsalo para mostrar las instrucciones de depósito de una cuenta específica
+sin recorrer el listado:
+
+```json
+{
+  "account_id": "c4d1…",
+  "provider_id": "…",
+  "data": {
+    "name": "Operativa USD",
+    "currencyCode": "USD",
+    "status": "ACCEPT",
+    "requisites": [
+      { "type": "SWIFT", "…": "…" },
+      { "type": "LOCAL", "…": "…" }
+    ]
+  }
+}
+```
+
+<Note>
+El listado expone solo las cuentas **habilitadas para tu operación** según
+la configuración del corredor. Una cuenta no habilitada no aparece en el
+listado y sus consultas por id responden `404 not_found`.
+</Note>
 
 <Note>
 **Límite para cuentas persona**: una cuenta persona puede tener **máximo 1

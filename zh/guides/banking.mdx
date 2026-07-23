@@ -128,15 +128,44 @@ curl -X POST https://api.qbank.cl/platform/v1/banking/accounts \
 }
 ```
 
-列出您的账户并查询余额：
+列出您的账户、查询单个账户的详情及余额：
 
 ```bash
 curl https://api.qbank.cl/platform/v1/banking/accounts \
   -H "Authorization: Bearer <token>"
 
+curl https://api.qbank.cl/platform/v1/banking/accounts/c4d1… \
+  -H "Authorization: Bearer <token>"
+
 curl https://api.qbank.cl/platform/v1/banking/accounts/c4d1…/balance \
   -H "Authorization: Bearer <token>"
 ```
+
+详情端点（`GET /v1/banking/accounts/{id}`）返回账户的实时数据 —
+名称、币种、状态，以及 `data` 下的**接收资金所需要件**（电汇与本地
+轨道：银行、账号/IBAN、routing）。用于展示特定账户的入金指引，无需
+遍历列表：
+
+```json
+{
+  "account_id": "c4d1…",
+  "provider_id": "…",
+  "data": {
+    "name": "Operativa USD",
+    "currencyCode": "USD",
+    "status": "ACCEPT",
+    "requisites": [
+      { "type": "SWIFT", "…": "…" },
+      { "type": "LOCAL", "…": "…" }
+    ]
+  }
+}
+```
+
+<Note>
+列表仅暴露根据通道配置**为您的业务启用**的账户。未启用的账户不会出现
+在列表中，其按 id 的查询返回 `404 not_found`。
+</Note>
 
 <Note>
 **个人账户限制**：个人账户**最多持有 1 个银行账户**。尝试开立第二个会返回 `409 banking_account_limit`。企业账户没有限制。
