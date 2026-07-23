@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-23 05:58 UTC · versión `f16cd5207f22`
+> **Documento actualizado:** 2026-07-23 14:24 UTC · versión `2c89df6a5a43`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.96 (22 de julio de 2026) |
+| Versión de la documentación | v1.97 (23 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -10024,6 +10024,18 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.97 — 23 de julio de 2026
+
+**Corregido**
+
+- **Página de cobro — tarjeta guardada por defecto**: con tarjetas
+  guardadas para el correo ingresado, el botón principal ahora paga con
+  la tarjeta guardada (el texto cambia a "Pagar con VISA ···· 1234") en
+  vez de iniciar un pago con tarjeta nueva. Usar una tarjeta distinta
+  queda como acción explícita ("Usar otra tarjeta"). Antes, presionar el
+  botón principal con la tarjeta listada llevaba a la página de pago
+  pidiendo todos los datos de nuevo.
 
 ### v1.96 — 22 de julio de 2026
 

@@ -7,6 +7,19 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 23, 2026" description="v1.97">
+
+**Fixed**
+
+- **Checkout page — saved card by default**: when the entered email has
+  saved cards, the primary button now pays with the saved card (its label
+  changes to "Pay with VISA ···· 1234") instead of starting a new-card
+  payment. Using a different card is now an explicit action ("Use another
+  card"). Previously, pressing the primary button while a saved card was
+  listed led to the payment page asking for all card details again.
+
+</Update>
+
 <Update label="July 22, 2026" description="v1.96">
 
 **Added**
