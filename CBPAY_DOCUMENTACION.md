@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-23 04:53 UTC · versión `975332163e82`
+> **Documento actualizado:** 2026-07-23 05:58 UTC · versión `f16cd5207f22`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.95 (22 de julio de 2026) |
+| Versión de la documentación | v1.96 (22 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -79,7 +79,7 @@ cuenta mantiene **cuatro saldos virtuales independientes** — `USDT` (la
 moneda operativa), `USDC`, `BTC` y `GOLD` (gramos de oro) — y opera sobre
 ellos:
 
-- **Payouts fiat** — Dispersa dinero a cuentas bancarias locales en Chile, Perú, México, Venezuela, Bolivia, Brasil, Paraguay y Ecuador, debitado de tu saldo USDT.
+- **Payouts fiat** — Dispersa dinero a cuentas bancarias locales en Chile, Perú, México, Venezuela, Bolivia, Brasil, Paraguay, Ecuador y Argentina, debitado de tu saldo USDT.
 - **Payins fiat** — Cobra en moneda local (QR, transferencias, página de pago y cobro pull) y recibe el abono automáticamente en USDT.
 - **Transferencias internas** — Mueve saldo a cualquier otra cuenta CBPay, al instante y sin comisión.
 - **Crypto on-chain** — Fondea con USDT por TRON o Ethereum y retira on-chain a cualquier dirección.
@@ -2072,6 +2072,7 @@ Corredores y métodos disponibles:
 | Brasil | BRL | `pix` (por llave o a cuenta), `qr` (QR PIX — ver [Payout QR](#payout-qr)) |
 | Ecuador | USD | `bank_transfer`, `deuna`, `cash_pickup`, `cnb` |
 | Paraguay | PYG | `bank_transfer` |
+| Argentina | ARS / USD | `bank_transfer` (CBU o CVU) |
 
 La disponibilidad puede variar; el catálogo (`GET /v1/payouts/methods`) es
 siempre la fuente de verdad. Si un país tiene un solo método, `method` es
@@ -2293,6 +2294,7 @@ las de tu cuenta en `GET /v1/rates`; el débito es `usdt_amount + fee`
 | EC | `deuna` | `name`, `document_value`, `sender_name`, `phone` (celular de la billetera) |
 | EC | `cash_pickup` / `cnb` | `name`, `document_value`, `sender_name` — el beneficiario retira con su documento |
 | PY | `bank_transfer` | `name` (≤35), `tax_id`, `bank_code`, `account_number` |
+| AR | `bank_transfer` | `name`, `tax_id` (CUIT/CUIL de 11 dígitos), `account_number` (CBU o CVU de 22 dígitos; USD solo CBU) |
 
 #### Chile
 
@@ -2779,6 +2781,76 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
 
 `name` acepta hasta 35 caracteres en este corredor.
 
+#### Argentina
+
+Transferencia bancaria en **ARS** o **USD** a cualquier **CBU o CVU** de
+22 dígitos (cuentas bancarias y billeteras virtuales). No necesitas
+`bank_code`: el CBU/CVU identifica el banco por sí solo.
+
+```bash ARS (CBU o CVU)
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "AR",
+    "currency": "ARS",
+    "method": "bank_transfer",
+    "amount": "50000.00",
+    "beneficiary": {
+      "name": "Julieta Fernandez",
+      "tax_id": "27-23456789-1",
+      "account_number": "2850590940090418135201"
+    },
+    "idempotency_key": "ar-ars-3311"
+  }'
+```
+
+```bash USD (solo CBU)
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "AR",
+    "currency": "USD",
+    "method": "bank_transfer",
+    "amount": "100.00",
+    "beneficiary": {
+      "name": "Julieta Fernandez",
+      "tax_id": "27-23456789-1",
+      "account_number": "2850590940090418135201"
+    },
+    "idempotency_key": "ar-usd-3312"
+  }'
+```
+
+```json
+{
+  "payout_id": "b7c1…",
+  "country": "AR",
+  "currency": "ARS",
+  "method": "bank_transfer",
+  "local_amount": "50000.00",
+  "fx_rate": "1250.00",
+  "usdt_amount": "40.000000",
+  "fee": "0.300000",
+  "total_debit": "40.300000",
+  "status": "completed"
+}
+```
+
+- `tax_id` es el **CUIT/CUIL** del titular de la cuenta destino (11
+  dígitos; los guiones se aceptan y se normalizan).
+- **USD opera solo de cuenta bancaria a cuenta bancaria (CBU)**: una CVU
+  (billetera virtual) no admite dólares — el payout se rechaza antes de
+  enviarse.
+- La mayoría de los payouts se confirma en la misma llamada
+  (`status: "completed"`); si el rail queda en `processing`, el estado
+  final llega por webhook `payout_status_changed`.
+- Excepcional: el rail puede **reversar** una transferencia ya acreditada
+  (por ejemplo, por orden del banco receptor). Si ocurre, el payout pasa a
+  `failed`, el débito se reembolsa completo y recibes el webhook
+  `payout_status_changed`.
+
 ### Payout QR
 
 En Bolivia (QR interoperable local) y en Brasil (**QR PIX**, incluido el
@@ -2984,7 +3056,7 @@ flowchart LR
     card["Pago con tarjeta 3-D Secure<br/>(BO: card)"] --> pago
     anunciada["Transferencia anunciada<br/>(CL, PE, MX, PY)"] --> pago
     pull["Cobro activo pull<br/>(VE: c2p, débito)"] --> pago
-    clabe["Cuenta CLABE dedicada<br/>(MX)"] --> pago
+    clabe["Cuenta dedicada CLABE / CVU<br/>(MX, AR)"] --> pago
     pago --> conv["Conversión FX a tu<br/>payin_rate − fee fijo"]
     conv --> credito(("Abono USDT<br/>a tu saldo"))
     credito --> wh["Webhook payin_credited"]
@@ -3026,6 +3098,7 @@ Corredores y modalidades de cobro:
 | Bolivia | BOB / USD | QR de cobro, página de pago con tarjeta (`card`) |
 | Paraguay | PYG | Transferencia anunciada |
 | Brasil | BRL | QR PIX dinámico |
+| Argentina | ARS | Cuenta CVU dedicada |
 
 La disponibilidad puede variar; el catálogo (`GET /v1/payins/methods`) es
 siempre la fuente de verdad. En todos los casos el abono llega igual: se
@@ -3451,6 +3524,41 @@ hora); el pago se acredita automáticamente al confirmarse en el rail
 > **Nota**
 En Brasil el cobro es únicamente por QR PIX dinámico (un QR = un pago, con
 monto exacto embebido). La transferencia anunciada llegará más adelante.
+#### Argentina
+
+**Cuenta CVU dedicada**: creas una CVU fija vinculada a tu cuenta — toda
+transferencia en ARS que llegue a ella (desde cualquier CBU o CVU del
+sistema argentino) se acredita automáticamente, sin referencias:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins/deposit-accounts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "country": "AR", "currency": "ARS" }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "instrument_id": "f2b8…",
+  "account_id": "…",
+  "country": "AR",
+  "currency": "ARS",
+  "method": "bank_transfer",
+  "instrument": "0000079900000000132537",
+  "status": "active"
+}
+```
+
+`instrument` es la CVU de 22 dígitos que compartes con tus pagadores. La
+creación es gratis; cada depósito paga la comisión de payin normal. Lista
+tus cuentas con `GET /v1/payins/deposit-accounts`.
+
+> **Nota**
+La CVU opera **solo en ARS** y es de depósito (receive-only): ningún
+tercero puede debitarla. Los intentos de débito directo (DEBIN) contra
+una CVU de depósito se rechazan automáticamente.
 ### Link de cobro universal (`checkout`)
 
 Crea un **link de cobro universal**: un solo `POST /v1/payins` con
@@ -9743,9 +9851,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-23 04:53 UTC · 263 requests · versión `c969f9699dac`
+> **Colección actualizada:** 2026-07-23 05:58 UTC · 266 requests · versión `a8cb69d7f65e`
 
-<PostmanFreshness iso="2026-07-23T04:53:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-23T05:58:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -9916,6 +10024,15 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.96 — 22 de julio de 2026
+
+**Agregado**
+
+- **Nuevo corredor: Argentina** 🇦🇷 ([guía payouts](#payouts) · [guía payins](#payins)):
+  - **Payouts** en **ARS** y **USD** por `bank_transfer` a cualquier **CBU o CVU** de 22 dígitos (cuentas bancarias y billeteras virtuales; USD solo CBU→CBU). Beneficiario con `name`, `tax_id` (CUIT/CUIL) y `account_number` — sin `bank_code`.
+  - **Payins** en **ARS** con **cuenta CVU dedicada** por cuenta (`POST /v1/payins/deposit-accounts` con `country: "AR"`): toda transferencia entrante se acredita automáticamente, sin referencias. Las CVU son receive-only: los intentos de débito directo se rechazan automáticamente.
+  - Disponible ya en el **ambiente de pruebas** (staging) con el simulador; la activación en producción se anunciará al completarse la certificación bancaria — el catálogo (`GET /v1/payouts/methods` y `GET /v1/payins/methods`) es siempre la fuente de verdad.
 
 ### v1.95 — 22 de julio de 2026
 

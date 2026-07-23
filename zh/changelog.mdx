@@ -7,6 +7,17 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月22日" description="v1.96">
+
+**新增**
+
+- **新通道：阿根廷** 🇦🇷（[出金指南](/zh/guides/payouts) · [入金指南](/zh/guides/payins)）：
+  - **出金**支持 **ARS** 和 **USD**，通过 `bank_transfer` 转账到任何 22 位的 **CBU 或 CVU**（银行账户和虚拟钱包；USD 仅支持 CBU 到 CBU）。收款人只需 `name`、`tax_id`（CUIT/CUIL）和 `account_number` —— 无需 `bank_code`。
+  - **入金**支持 **ARS**，每个账户可创建**专属 CVU 账户**（`POST /v1/payins/deposit-accounts`，`country: "AR"`）：每笔到账转账自动入账，无需参考号。CVU 为只收不付：直接扣款尝试会被自动拒绝。
+  - 现已在**测试环境**（staging）通过模拟器提供；生产环境的启用将在银行认证完成后公布 —— 目录（`GET /v1/payouts/methods` 和 `GET /v1/payins/methods`）始终是唯一可信来源。
+
+</Update>
+
 <Update label="2026年7月22日" description="v1.95">
 
 **新增**

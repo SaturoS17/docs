@@ -19,7 +19,7 @@ flowchart LR
     card["Pago con tarjeta 3-D Secure<br/>(BO: card)"] --> pago
     anunciada["Transferencia anunciada<br/>(CL, PE, MX, PY)"] --> pago
     pull["Cobro activo pull<br/>(VE: c2p, débito)"] --> pago
-    clabe["Cuenta CLABE dedicada<br/>(MX)"] --> pago
+    clabe["Cuenta dedicada CLABE / CVU<br/>(MX, AR)"] --> pago
     pago --> conv["Conversión FX a tu<br/>payin_rate − fee fijo"]
     conv --> credito(("Abono USDT<br/>a tu saldo"))
     credito --> wh["Webhook payin_credited"]
@@ -61,6 +61,7 @@ Corredores y modalidades de cobro:
 | Bolivia | BOB / USD | QR de cobro, página de pago con tarjeta (`card`) |
 | Paraguay | PYG | Transferencia anunciada |
 | Brasil | BRL | QR PIX dinámico |
+| Argentina | ARS | Cuenta CVU dedicada |
 
 La disponibilidad puede variar; el catálogo (`GET /v1/payins/methods`) es
 siempre la fuente de verdad. En todos los casos el abono llega igual: se
@@ -501,6 +502,44 @@ hora); el pago se acredita automáticamente al confirmarse en el rail
 <Note>
 En Brasil el cobro es únicamente por QR PIX dinámico (un QR = un pago, con
 monto exacto embebido). La transferencia anunciada llegará más adelante.
+</Note>
+
+</Tab>
+<Tab title="Argentina">
+
+**Cuenta CVU dedicada**: creas una CVU fija vinculada a tu cuenta — toda
+transferencia en ARS que llegue a ella (desde cualquier CBU o CVU del
+sistema argentino) se acredita automáticamente, sin referencias:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins/deposit-accounts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "country": "AR", "currency": "ARS" }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "instrument_id": "f2b8…",
+  "account_id": "…",
+  "country": "AR",
+  "currency": "ARS",
+  "method": "bank_transfer",
+  "instrument": "0000079900000000132537",
+  "status": "active"
+}
+```
+
+`instrument` es la CVU de 22 dígitos que compartes con tus pagadores. La
+creación es gratis; cada depósito paga la comisión de payin normal. Lista
+tus cuentas con `GET /v1/payins/deposit-accounts`.
+
+<Note>
+La CVU opera **solo en ARS** y es de depósito (receive-only): ningún
+tercero puede debitarla. Los intentos de débito directo (DEBIN) contra
+una CVU de depósito se rechazan automáticamente.
 </Note>
 
 </Tab>

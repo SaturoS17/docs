@@ -66,6 +66,7 @@ Corredores y métodos disponibles:
 | Brasil | BRL | `pix` (por llave o a cuenta), `qr` (QR PIX — ver [Payout QR](#payout-qr)) |
 | Ecuador | USD | `bank_transfer`, `deuna`, `cash_pickup`, `cnb` |
 | Paraguay | PYG | `bank_transfer` |
+| Argentina | ARS / USD | `bank_transfer` (CBU o CVU) |
 
 La disponibilidad puede variar; el catálogo (`GET /v1/payouts/methods`) es
 siempre la fuente de verdad. Si un país tiene un solo método, `method` es
@@ -291,6 +292,7 @@ las de tu cuenta en `GET /v1/rates`; el débito es `usdt_amount + fee`
 | EC | `deuna` | `name`, `document_value`, `sender_name`, `phone` (celular de la billetera) |
 | EC | `cash_pickup` / `cnb` | `name`, `document_value`, `sender_name` — el beneficiario retira con su documento |
 | PY | `bank_transfer` | `name` (≤35), `tax_id`, `bank_code`, `account_number` |
+| AR | `bank_transfer` | `name`, `tax_id` (CUIT/CUIL de 11 dígitos), `account_number` (CBU o CVU de 22 dígitos; USD solo CBU) |
 
 
 <Tabs>
@@ -801,6 +803,81 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
 ```
 
 `name` acepta hasta 35 caracteres en este corredor.
+
+</Tab>
+<Tab title="Argentina">
+
+Transferencia bancaria en **ARS** o **USD** a cualquier **CBU o CVU** de
+22 dígitos (cuentas bancarias y billeteras virtuales). No necesitas
+`bank_code`: el CBU/CVU identifica el banco por sí solo.
+
+<CodeGroup>
+
+```bash ARS (CBU o CVU)
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "AR",
+    "currency": "ARS",
+    "method": "bank_transfer",
+    "amount": "50000.00",
+    "beneficiary": {
+      "name": "Julieta Fernandez",
+      "tax_id": "27-23456789-1",
+      "account_number": "2850590940090418135201"
+    },
+    "idempotency_key": "ar-ars-3311"
+  }'
+```
+
+```bash USD (solo CBU)
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "AR",
+    "currency": "USD",
+    "method": "bank_transfer",
+    "amount": "100.00",
+    "beneficiary": {
+      "name": "Julieta Fernandez",
+      "tax_id": "27-23456789-1",
+      "account_number": "2850590940090418135201"
+    },
+    "idempotency_key": "ar-usd-3312"
+  }'
+```
+
+</CodeGroup>
+
+```json
+{
+  "payout_id": "b7c1…",
+  "country": "AR",
+  "currency": "ARS",
+  "method": "bank_transfer",
+  "local_amount": "50000.00",
+  "fx_rate": "1250.00",
+  "usdt_amount": "40.000000",
+  "fee": "0.300000",
+  "total_debit": "40.300000",
+  "status": "completed"
+}
+```
+
+- `tax_id` es el **CUIT/CUIL** del titular de la cuenta destino (11
+  dígitos; los guiones se aceptan y se normalizan).
+- **USD opera solo de cuenta bancaria a cuenta bancaria (CBU)**: una CVU
+  (billetera virtual) no admite dólares — el payout se rechaza antes de
+  enviarse.
+- La mayoría de los payouts se confirma en la misma llamada
+  (`status: "completed"`); si el rail queda en `processing`, el estado
+  final llega por webhook `payout_status_changed`.
+- Excepcional: el rail puede **reversar** una transferencia ya acreditada
+  (por ejemplo, por orden del banco receptor). Si ocurre, el payout pasa a
+  `failed`, el débito se reembolsa completo y recibes el webhook
+  `payout_status_changed`.
 
 </Tab>
 </Tabs>

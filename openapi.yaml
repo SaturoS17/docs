@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.95'
+  version: '1.96'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -2900,6 +2900,10 @@ paths:
 
                     take precedence over the automatic split of `name`.
 
+                    Argentina: `tax_id` (11-digit CUIT/CUIL) + `account_number`
+
+                    (22-digit CBU or CVU; USD is CBU-only) — no `bank_code`.
+
                     '
                 beneficiary_contact_id:
                   type: string
@@ -3103,6 +3107,30 @@ paths:
                     bank_code: '0011'
                     account_number: '600123456'
                   idempotency_key: py-bank-9917
+              ar_bank_transfer:
+                summary: Argentina — bank transfer to a CBU/CVU (ARS)
+                value:
+                  country: AR
+                  currency: ARS
+                  method: bank_transfer
+                  amount: '50000.00'
+                  beneficiary:
+                    name: Julieta Fernandez
+                    tax_id: 27-23456789-1
+                    account_number: '2850590940090418135201'
+                  idempotency_key: ar-ars-3311
+              ar_usd_cbu:
+                summary: Argentina — USD transfer (CBU only)
+                value:
+                  country: AR
+                  currency: USD
+                  method: bank_transfer
+                  amount: '100.00'
+                  beneficiary:
+                    name: Julieta Fernandez
+                    tax_id: 27-23456789-1
+                    account_number: '2850590940090418135201'
+                  idempotency_key: ar-usd-3312
               cl_paid_from_btc:
                 summary: Chile — paid from the BTC balance (settlement_asset)
                 value:
@@ -10642,8 +10670,8 @@ paths:
       operationId: createDepositAccount
       summary: Create a dedicated deposit account
       description: Provisions a fixed deposit destination bound to your account in corridors that support
-        it (e.g. a Mexican CLABE). Every transfer arriving to it is credited automatically, net of the
-        payin fee. Creation is free.
+        it (e.g. a Mexican CLABE or an Argentine CVU). Every transfer arriving to it is credited automatically,
+        net of the payin fee. Creation is free.
       requestBody:
         required: true
         content:
@@ -10660,9 +10688,17 @@ paths:
                 method:
                   type: string
                   default: bank_transfer
-            example:
-              country: MX
-              currency: MXN
+            examples:
+              mx_clabe:
+                summary: Mexico — dedicated CLABE (MXN)
+                value:
+                  country: MX
+                  currency: MXN
+              ar_cvu:
+                summary: Argentina — dedicated CVU (ARS)
+                value:
+                  country: AR
+                  currency: ARS
       responses:
         '201':
           description: Deposit account created and bound to the calling account.

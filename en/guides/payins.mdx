@@ -19,7 +19,7 @@ flowchart LR
     card["3-D Secure card payment<br/>(BO: card)"] --> pay
     announced["Announced transfer<br/>(CL, PE, MX, PY)"] --> pay
     pull["Active pull collection<br/>(VE: c2p, debit)"] --> pay
-    clabe["Dedicated CLABE account<br/>(MX)"] --> pay
+    clabe["Dedicated CLABE / CVU account<br/>(MX, AR)"] --> pay
     pay --> conv["FX conversion at your<br/>payin_rate − fixed fee"]
     conv --> credit(("USDT credit<br/>to your balance"))
     credit --> wh["Webhook payin_credited"]
@@ -61,6 +61,7 @@ Collection corridors and modes:
 | Bolivia | BOB / USD | Collection QR, card payment page (`card`) |
 | Paraguay | PYG | Announced bank transfer |
 | Brazil | BRL | Dynamic PIX QR |
+| Argentina | ARS | Dedicated CVU account |
 
 Availability may vary; the catalog (`GET /v1/payins/methods`) is always the
 source of truth. In every case the credit works the same way: converted to
@@ -501,6 +502,44 @@ hour); the payment is credited automatically once confirmed on the rail
 <Note>
 In Brazil collections work exclusively through dynamic PIX QR (one QR = one
 payment, exact amount embedded). Announced bank transfers will come later.
+</Note>
+
+</Tab>
+<Tab title="Argentina">
+
+**Dedicated CVU account**: create a fixed CVU bound to your account —
+every ARS transfer arriving to it (from any CBU or CVU in the Argentine
+system) is credited automatically, no references needed:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins/deposit-accounts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "country": "AR", "currency": "ARS" }'
+```
+
+Response `201`:
+
+```json
+{
+  "instrument_id": "f2b8…",
+  "account_id": "…",
+  "country": "AR",
+  "currency": "ARS",
+  "method": "bank_transfer",
+  "instrument": "0000079900000000132537",
+  "status": "active"
+}
+```
+
+`instrument` is the 22-digit CVU you share with your payers. Creation is
+free; every deposit pays the regular payin fee. List your accounts with
+`GET /v1/payins/deposit-accounts`.
+
+<Note>
+The CVU works in **ARS only** and is deposit-only (receive-only): no
+third party can debit it. Direct debit attempts (DEBIN) against a deposit
+CVU are rejected automatically.
 </Note>
 
 </Tab>

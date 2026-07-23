@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.95'
+  version: '1.96'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -2770,6 +2770,10 @@ paths:
 
                     优先于对 `name` 的自动拆分。
 
+                    阿根廷:`tax_id`(11 位 CUIT/CUIL)+ `account_number`
+
+                    (22 位 CBU 或 CVU;USD 仅支持 CBU)—— 无需 `bank_code`。
+
                     '
                 beneficiary_contact_id:
                   type: string
@@ -2970,6 +2974,30 @@ paths:
                     bank_code: '0011'
                     account_number: '600123456'
                   idempotency_key: py-bank-9917
+              ar_bank_transfer:
+                summary: 阿根廷 — 银行转账到 CBU/CVU(ARS)
+                value:
+                  country: AR
+                  currency: ARS
+                  method: bank_transfer
+                  amount: '50000.00'
+                  beneficiary:
+                    name: Julieta Fernandez
+                    tax_id: 27-23456789-1
+                    account_number: '2850590940090418135201'
+                  idempotency_key: ar-ars-3311
+              ar_usd_cbu:
+                summary: 阿根廷 — USD 转账(仅 CBU)
+                value:
+                  country: AR
+                  currency: USD
+                  method: bank_transfer
+                  amount: '100.00'
+                  beneficiary:
+                    name: Julieta Fernandez
+                    tax_id: 27-23456789-1
+                    account_number: '2850590940090418135201'
+                  idempotency_key: ar-usd-3312
               cl_paid_from_btc:
                 summary: 智利 — 从 BTC 余额支付(settlement_asset)
                 value:
@@ -10345,7 +10373,7 @@ paths:
       - 收款(Payins)
       operationId: createDepositAccount
       summary: 创建专属充值账户
-      description: 在支持的通道(例如墨西哥 CLABE)为你的账户开通固定充值目的地。到达该目的地的每笔转账都会自动入账,已扣除 payin 费用。创建免费。
+      description: 在支持的通道(例如墨西哥 CLABE 或阿根廷 CVU)为你的账户开通固定充值目的地。到达该目的地的每笔转账都会自动入账,已扣除 payin 费用。创建免费。
       requestBody:
         required: true
         content:
@@ -10362,9 +10390,17 @@ paths:
                 method:
                   type: string
                   default: bank_transfer
-            example:
-              country: MX
-              currency: MXN
+            examples:
+              mx_clabe:
+                summary: 墨西哥 — 专属 CLABE(MXN)
+                value:
+                  country: MX
+                  currency: MXN
+              ar_cvu:
+                summary: 阿根廷 — 专属 CVU(ARS)
+                value:
+                  country: AR
+                  currency: ARS
       responses:
         '201':
           description: 充值账户已创建并绑定到调用账户。

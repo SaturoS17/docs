@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.95'
+  version: '1.96'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -2910,6 +2910,10 @@ paths:
 
                     mandan sobre la separación automática de `name`.
 
+                    Argentina: `tax_id` (CUIT/CUIL de 11 dígitos) + `account_number`
+
+                    (CBU o CVU de 22 dígitos; USD solo CBU) — sin `bank_code`.
+
                     '
                 beneficiary_contact_id:
                   type: string
@@ -3113,6 +3117,30 @@ paths:
                     bank_code: '0011'
                     account_number: '600123456'
                   idempotency_key: py-bank-9917
+              ar_bank_transfer:
+                summary: Argentina — transferencia bancaria a CBU/CVU (ARS)
+                value:
+                  country: AR
+                  currency: ARS
+                  method: bank_transfer
+                  amount: '50000.00'
+                  beneficiary:
+                    name: Julieta Fernandez
+                    tax_id: 27-23456789-1
+                    account_number: '2850590940090418135201'
+                  idempotency_key: ar-ars-3311
+              ar_usd_cbu:
+                summary: Argentina — transferencia en USD (solo CBU)
+                value:
+                  country: AR
+                  currency: USD
+                  method: bank_transfer
+                  amount: '100.00'
+                  beneficiary:
+                    name: Julieta Fernandez
+                    tax_id: 27-23456789-1
+                    account_number: '2850590940090418135201'
+                  idempotency_key: ar-usd-3312
               cl_paid_from_btc:
                 summary: Chile — pagado desde el saldo BTC (settlement_asset)
                 value:
@@ -10658,8 +10686,8 @@ paths:
       operationId: createDepositAccount
       summary: Crear una cuenta de depósito dedicada
       description: Aprovisiona un destino de depósito fijo ligado a tu cuenta en los corredores que lo
-        soportan (ej. una CLABE mexicana). Cada transferencia que llega a él se acredita automáticamente,
-        neta de la comisión de payin. La creación es gratuita.
+        soportan (ej. una CLABE mexicana o una CVU argentina). Cada transferencia que llega a él se acredita
+        automáticamente, neta de la comisión de payin. La creación es gratuita.
       requestBody:
         required: true
         content:
@@ -10676,9 +10704,17 @@ paths:
                 method:
                   type: string
                   default: bank_transfer
-            example:
-              country: MX
-              currency: MXN
+            examples:
+              mx_clabe:
+                summary: México — CLABE dedicada (MXN)
+                value:
+                  country: MX
+                  currency: MXN
+              ar_cvu:
+                summary: Argentina — CVU dedicada (ARS)
+                value:
+                  country: AR
+                  currency: ARS
       responses:
         '201':
           description: Cuenta de depósito creada y ligada a la cuenta que llama.

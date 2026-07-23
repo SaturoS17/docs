@@ -7,6 +7,17 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 22, 2026" description="v1.96">
+
+**Added**
+
+- **New corridor: Argentina** 🇦🇷 ([payouts guide](/en/guides/payouts) · [payins guide](/en/guides/payins)):
+  - **Payouts** in **ARS** and **USD** via `bank_transfer` to any 22-digit **CBU or CVU** (bank accounts and virtual wallets; USD is CBU-to-CBU only). Beneficiary takes `name`, `tax_id` (CUIT/CUIL) and `account_number` — no `bank_code` needed.
+  - **Payins** in **ARS** with a **dedicated CVU account** per account (`POST /v1/payins/deposit-accounts` with `country: "AR"`): every incoming transfer is credited automatically, no references needed. CVUs are receive-only: direct debit attempts are rejected automatically.
+  - Available now in the **test environment** (staging) with the simulator; production activation will be announced once bank certification completes — the catalog (`GET /v1/payouts/methods` and `GET /v1/payins/methods`) is always the source of truth.
+
+</Update>
+
 <Update label="July 22, 2026" description="v1.95">
 
 **Added**

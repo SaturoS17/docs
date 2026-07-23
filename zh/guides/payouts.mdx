@@ -64,6 +64,7 @@ curl https://api.qbank.cl/platform/v1/payouts/methods \
 | 巴西 | BRL | `pix`（按密钥或到账户）、`qr`（PIX 二维码 —— 参见 [QR 出金](#qr-出金)） |
 | 厄瓜多尔 | USD | `bank_transfer`、`deuna`、`cash_pickup`、`cnb` |
 | 巴拉圭 | PYG | `bank_transfer` |
+| 阿根廷 | ARS / USD | `bank_transfer`（CBU 或 CVU） |
 
 可用性可能变化；目录（`GET /v1/payouts/methods`）始终是唯一可信来源。
 如果某个国家只有一种方式，`method` 为可选。每种方式的计费方式相同：
@@ -284,6 +285,7 @@ curl "https://api.qbank.cl/platform/v1/payouts?from=2026-07-01&to=2026-07-08&sta
 | EC | `deuna` | `name`、`document_value`、`sender_name`、`phone`（钱包手机号） |
 | EC | `cash_pickup` / `cnb` | `name`、`document_value`、`sender_name` — 收款人凭证件领取现金 |
 | PY | `bank_transfer` | `name`（最多 35 个字符）、`tax_id`、`bank_code`、`account_number` |
+| AR | `bank_transfer` | `name`、`tax_id`（11 位 CUIT/CUIL）、`account_number`（22 位 CBU 或 CVU；USD 仅支持 CBU） |
 
 
 <Tabs>
@@ -788,6 +790,77 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
 ```
 
 在此通道中，`name` 最多接受 35 个字符。
+
+</Tab>
+<Tab title="阿根廷">
+
+以 **ARS** 或 **USD** 银行转账到任何 22 位的 **CBU 或 CVU**（银行账户和
+虚拟钱包）。无需 `bank_code`：CBU/CVU 本身即可识别银行。
+
+<CodeGroup>
+
+```bash ARS（CBU 或 CVU）
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "AR",
+    "currency": "ARS",
+    "method": "bank_transfer",
+    "amount": "50000.00",
+    "beneficiary": {
+      "name": "Julieta Fernandez",
+      "tax_id": "27-23456789-1",
+      "account_number": "2850590940090418135201"
+    },
+    "idempotency_key": "ar-ars-3311"
+  }'
+```
+
+```bash USD（仅 CBU）
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "AR",
+    "currency": "USD",
+    "method": "bank_transfer",
+    "amount": "100.00",
+    "beneficiary": {
+      "name": "Julieta Fernandez",
+      "tax_id": "27-23456789-1",
+      "account_number": "2850590940090418135201"
+    },
+    "idempotency_key": "ar-usd-3312"
+  }'
+```
+
+</CodeGroup>
+
+```json
+{
+  "payout_id": "b7c1…",
+  "country": "AR",
+  "currency": "ARS",
+  "method": "bank_transfer",
+  "local_amount": "50000.00",
+  "fx_rate": "1250.00",
+  "usdt_amount": "40.000000",
+  "fee": "0.300000",
+  "total_debit": "40.300000",
+  "status": "completed"
+}
+```
+
+- `tax_id` 是目标账户持有人的 **CUIT/CUIL**（11 位数字；接受带连字符的
+  格式并自动规范化）。
+- **USD 仅支持银行账户到银行账户（CBU）**：CVU（虚拟钱包）不支持美元 ——
+  该出金会在发送前被拒绝。
+- 大多数出金在同一次调用中确认（`status: "completed"`）；如果通道返回
+  `processing`，最终状态会通过 `payout_status_changed` webhook 送达。
+- 极少数情况下，通道可能**冲正**一笔已入账的转账（例如接收银行的指令）。
+  此时该出金变为 `failed`，扣款全额退还，并且你会收到
+  `payout_status_changed` webhook。
 
 </Tab>
 </Tabs>
