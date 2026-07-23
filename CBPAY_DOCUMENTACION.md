@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-21 20:06 UTC · versión `357b1e1a384f`
+> **Documento actualizado:** 2026-07-23 03:39 UTC · versión `de8102bc9ca8`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.93 (21 de julio de 2026) |
+| Versión de la documentación | v1.94 (22 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -9910,6 +9910,13 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.94 — 22 de julio de 2026
+
+**Corregido**
+
+- **Página de checkout — pago con tarjeta en 1 clic** ([guía payins](#payins)): al continuar con tarjeta, la página pública ahora redirige directo a la página segura de pago — se eliminó el botón intermedio que exigía un segundo clic. Elegir una tarjeta guardada de la lista inicia el pago de inmediato.
+- **Tarjeta guardada en el checkout**: elegir una tarjeta guardada ahora llega siempre a la página segura con la credencial aplicada (muestra marca y últimos 4 dígitos, sin pedir el número de nuevo). Antes, la re-validación del correo podía descartar la selección en silencio y la página pedía todos los datos otra vez. Además, cambiar la elección en el mismo link (guardada ↔ tarjeta nueva) regenera la sesión de pago correcta en vez de reusar la anterior.
 
 ### v1.93 — 21 de julio de 2026
 

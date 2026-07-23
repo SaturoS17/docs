@@ -7,6 +7,15 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 22, 2026" description="v1.94">
+
+**Fixed**
+
+- **Checkout page — 1-click card payment** ([payins guide](/en/guides/payins#universal-payment-link-checkout)): continuing with a card on the public page now redirects straight to the secure payment page — the intermediate button that required a second click was removed. Picking a saved card from the list starts the payment immediately.
+- **Saved card on checkout**: picking a saved card now always reaches the secure page with the credential applied (it shows brand and last 4 digits and never asks for the number again). Previously, the email re-validation could silently drop the selection and the page asked for every field again. Also, switching the choice on the same link (saved ↔ new card) regenerates the right payment session instead of reusing the previous one.
+
+</Update>
+
 <Update label="July 21, 2026" description="v1.93">
 
 **Fixed**
