@@ -80,6 +80,7 @@ Full flow and details in [social login](/en/guides/social-login).
 | `unknown_org` | Wrong organization slug (use `cbpay`) |
 | `invalid_request` | Missing `country`/`currency` |
 | `idempotency_key_required` | Missing idempotency key |
+| `reserved_idempotency_key` | The key uses a system-reserved prefix (`payin-convert:` or `checkout-swap:`, owned by auto-conversions) — pick another key |
 | `beneficiary_required` | Missing payout beneficiary |
 | `invalid_amount` | Amount is not a valid positive decimal |
 | `recipient_required` / `self_transfer` | Invalid transfer destination |

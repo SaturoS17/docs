@@ -80,6 +80,7 @@ description: "错误格式与完整的错误码目录"
 | `unknown_org` | 组织 slug 错误（应使用 `cbpay`） |
 | `invalid_request` | 缺少 `country`/`currency` |
 | `idempotency_key_required` | 缺少幂等键 |
+| `reserved_idempotency_key` | 幂等键使用了系统保留前缀（`payin-convert:` 或 `checkout-swap:`，属于自动转换）——请改用其他键 |
 | `beneficiary_required` | 缺少付款收款人信息 |
 | `invalid_amount` | 金额不是有效的正十进制数 |
 | `recipient_required` / `self_transfer` | 转账目标无效 |

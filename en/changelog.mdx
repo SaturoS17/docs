@@ -7,6 +7,18 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 23, 2026" description="v2.01">
+
+**Added**
+
+- **New error code `reserved_idempotency_key` (400)** on `POST /v1/swaps`
+  ([errors](/en/errors)): idempotency keys prefixed `payin-convert:` or
+  `checkout-swap:` are reserved for system auto-conversions (payin
+  default balance and checkout) and are rejected. Use any other key for
+  your swaps.
+
+</Update>
+
 <Update label="July 23, 2026" description="v2.00">
 
 **Added**

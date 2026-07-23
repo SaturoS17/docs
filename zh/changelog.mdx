@@ -7,6 +7,17 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月23日" description="v2.01">
+
+**新增**
+
+- **新错误码 `reserved_idempotency_key`（400）**：`POST /v1/swaps`
+  （[错误](/zh/errors)）中，前缀为 `payin-convert:` 或 `checkout-swap:`
+  的幂等键保留给系统自动转换（收款默认余额与 checkout）使用，会被拒绝。
+  请为你的兑换使用其他键。
+
+</Update>
+
 <Update label="2026年7月23日" description="v2.00">
 
 **新增**

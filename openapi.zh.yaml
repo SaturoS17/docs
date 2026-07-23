@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.00'
+  version: '2.01'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -7642,6 +7642,8 @@ paths:
                   description: 源货币金额(USDT/USDC/GOLD 为 6 位小数,BTC 为 8 位)。
                 idempotency_key:
                   type: string
+                  description: >-
+                    客户端选择的键。前缀 payin-convert: 和 checkout-swap: 保留给系统自动转换使用，会被拒绝并返回 400 reserved_idempotency_key。
             examples:
               usdt_btc:
                 summary: USDT 兑换 BTC

@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-23 23:18 UTC · versión `55e7446d8be1`
+> **Documento actualizado:** 2026-07-23 23:52 UTC · versión `3bf1d7d99b59`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v2.00 (23 de julio de 2026) |
+| Versión de la documentación | v2.01 (23 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -9616,6 +9616,7 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | `unknown_org` | Slug de organización incorrecto (usa `cbpay`) |
 | `invalid_request` | Faltan `country`/`currency` |
 | `idempotency_key_required` | Falta la clave de idempotencia |
+| `reserved_idempotency_key` | La clave usa un prefijo reservado del sistema (`payin-convert:` o `checkout-swap:`, propios de las auto-conversiones) — usa otra clave |
 | `beneficiary_required` | Falta el beneficiario del payout |
 | `invalid_amount` | Monto no es un decimal positivo válido |
 | `recipient_required` / `self_transfer` | Destino de transferencia inválido |
@@ -10089,6 +10090,16 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v2.01 — 23 de julio de 2026
+
+**Agregado**
+
+- **Código de error `reserved_idempotency_key` (400)** en `POST /v1/swaps`
+  ([errores](#errores)): las claves de idempotencia con prefijo
+  `payin-convert:` o `checkout-swap:` están reservadas para las
+  auto-conversiones del sistema (saldo predeterminado de payins y
+  checkout) y se rechazan. Usa cualquier otra clave para tus swaps.
 
 ### v2.00 — 23 de julio de 2026
 
