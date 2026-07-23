@@ -8,7 +8,7 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-23 14:24 UTC · versión `2c89df6a5a43`
+> **Documento actualizado:** 2026-07-23 18:34 UTC · versión `f5a3340d8a42`
 
 **Datos clave**
 
@@ -9851,9 +9851,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-23 05:58 UTC · 266 requests · versión `a8cb69d7f65e`
+> **Colección actualizada:** 2026-07-23 18:34 UTC · 267 requests · versión `71b15ca273e2`
 
-<PostmanFreshness iso="2026-07-23T05:58:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-23T18:34:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -12056,6 +12056,7 @@ está en la API Reference interactiva y en la colección Postman.
 | `POST` | `/v1/banking/customer/submit` | Enviar mi perfil a revisión |
 | `GET` | `/v1/banking/accounts` | Listar mis cuentas bancarias |
 | `POST` | `/v1/banking/accounts` | Abrir una cuenta bancaria |
+| `GET` | `/v1/banking/accounts/{bankAccountID}` | Consultar una cuenta bancaria |
 | `GET` | `/v1/banking/accounts/{bankAccountID}/balance` | Consultar el saldo de una cuenta bancaria |
 | `GET` | `/v1/banking/counterparties` | Listar mis beneficiarios |
 | `POST` | `/v1/banking/counterparties` | Registrar un beneficiario |

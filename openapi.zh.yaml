@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.97'
+  version: '1.98'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -10767,6 +10767,65 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '409':
           description: 尚无银行档案(no_banking_customer)。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no_banking_customer
+                message: create your banking customer first (POST /v1/banking/customer)
+  /v1/banking/accounts/{bankAccountID}:
+    get:
+      tags:
+      - 银行服务
+      operationId: getBankingAccount
+      summary: 获取银行账户详情
+      description: >-
+        返回您某个银行账户的实时详情（名称、币种、状态以及接收资金所需的
+        要件 — 电汇与本地轨道 — 位于 `data` 字段下）。用于展示特定账户的
+        入金指引。
+      parameters:
+      - name: bankAccountID
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 银行账户实时详情。
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                account_id: c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5
+                provider_id: BNK-ACC-4471
+                data:
+                  name: Operating USD
+                  currencyCode: USD
+                  status: ACCEPT
+                  requisites:
+                  - transferMethod: SWIFT
+                    accountNumber: '0532013000'
+                    bankName: Example Bank N.A.
+                    swiftCode: EXAMUS33
+                  - transferMethod: ACH
+                    accountNumber: '0532013000'
+                    routingNumber: '011000138'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: 该银行账户不属于此档案。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: not_found
+                message: resource not found
+        '409':
+          description: 尚未创建银行档案（no_banking_customer）。
           content:
             application/json:
               schema:

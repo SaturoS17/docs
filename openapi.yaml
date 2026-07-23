@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.97'
+  version: '1.98'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -11068,6 +11068,65 @@ paths:
                   retrieved: 1
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: No banking profile yet (no_banking_customer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no_banking_customer
+                message: create your banking customer first (POST /v1/banking/customer)
+  /v1/banking/accounts/{bankAccountID}:
+    get:
+      tags:
+      - Banking
+      operationId: getBankingAccount
+      summary: Get a bank account
+      description: >-
+        Returns the live details of one of your bank accounts (name, currency,
+        status and the receiving requisites — wire/local rails — under `data`).
+        Use it to render the deposit instructions of a specific account.
+      parameters:
+      - name: bankAccountID
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Live bank account details.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                account_id: c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5
+                provider_id: BNK-ACC-4471
+                data:
+                  name: Operating USD
+                  currencyCode: USD
+                  status: ACCEPT
+                  requisites:
+                  - transferMethod: SWIFT
+                    accountNumber: '0532013000'
+                    bankName: Example Bank N.A.
+                    swiftCode: EXAMUS33
+                  - transferMethod: ACH
+                    accountNumber: '0532013000'
+                    routingNumber: '011000138'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: The bank account does not belong to this profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: not_found
+                message: resource not found
         '409':
           description: No banking profile yet (no_banking_customer).
           content:
