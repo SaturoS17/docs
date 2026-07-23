@@ -180,6 +180,7 @@ sin recorrer el listado:
 {
   "account_id": "c4d1…",
   "provider_id": "…",
+  "source": "live",
   "data": {
     "name": "Operativa USD",
     "currencyCode": "USD",
@@ -191,6 +192,11 @@ sin recorrer el listado:
   }
 }
 ```
+
+`source` indica de dónde salió el detalle: `live` (el banco respondió en
+vivo) o `mirror` (el banco no pudo servir la cuenta en ese momento y se
+devuelve el último snapshot conocido — los requisitos de depósito siguen
+disponibles).
 
 <Note>
 El listado expone solo las cuentas **habilitadas para tu operación** según

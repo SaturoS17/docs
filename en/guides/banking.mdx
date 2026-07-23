@@ -169,8 +169,9 @@ without walking the list:
 {
   "account_id": "c4d1…",
   "provider_id": "…",
+  "source": "live",
   "data": {
-    "name": "Operativa USD",
+    "name": "Operating USD",
     "currencyCode": "USD",
     "status": "ACCEPT",
     "requisites": [
@@ -180,6 +181,11 @@ without walking the list:
   }
 }
 ```
+
+`source` tells you where the detail came from: `live` (the bank answered
+in real time) or `mirror` (the bank could not serve the account at that
+moment and the last known snapshot is returned — deposit requirements
+remain available).
 
 <Note>
 The list exposes only the accounts **enabled for your operation**

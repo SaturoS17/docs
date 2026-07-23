@@ -10784,6 +10784,7 @@ paths:
         返回您某个银行账户的实时详情（名称、币种、状态以及接收资金所需的
         要件 — 电汇与本地轨道 — 位于 `data` 字段下）。用于展示特定账户的
         入金指引。
+        若银行无法实时返回该账户，接口将返回最近一次镜像快照，此时 `source` 为 `mirror`（正常情况为 `live`）。
       parameters:
       - name: bankAccountID
         in: path
@@ -10801,6 +10802,7 @@ paths:
               example:
                 account_id: c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5
                 provider_id: BNK-ACC-4471
+                source: live
                 data:
                   name: Operating USD
                   currencyCode: USD

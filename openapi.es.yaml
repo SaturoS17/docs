@@ -11104,6 +11104,7 @@ paths:
         moneda, estado y los requisitos para recibir fondos — rieles wire y
         locales — bajo `data`). Úsalo para mostrar las instrucciones de
         depósito de una cuenta específica.
+        Si el banco no puede servir la cuenta en vivo, el endpoint devuelve el último snapshot espejado y `source` es `mirror` (en caso normal, `live`).
       parameters:
       - name: bankAccountID
         in: path
@@ -11121,6 +11122,7 @@ paths:
               example:
                 account_id: c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5
                 provider_id: BNK-ACC-4471
+                source: live
                 data:
                   name: Operating USD
                   currencyCode: USD

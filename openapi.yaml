@@ -11087,6 +11087,7 @@ paths:
         Returns the live details of one of your bank accounts (name, currency,
         status and the receiving requisites — wire/local rails — under `data`).
         Use it to render the deposit instructions of a specific account.
+        If the bank cannot serve the account live, the endpoint returns the last mirrored snapshot and `source` is `mirror` (normally `live`).
       parameters:
       - name: bankAccountID
         in: path
@@ -11104,6 +11105,7 @@ paths:
               example:
                 account_id: c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5
                 provider_id: BNK-ACC-4471
+                source: live
                 data:
                   name: Operating USD
                   currencyCode: USD

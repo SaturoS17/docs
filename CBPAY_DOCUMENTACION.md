@@ -8,7 +8,7 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-23 18:41 UTC · versión `e43954e20332`
+> **Documento actualizado:** 2026-07-23 19:07 UTC · versión `68ac0ca32011`
 
 **Datos clave**
 
@@ -6643,6 +6643,7 @@ sin recorrer el listado:
 {
   "account_id": "c4d1…",
   "provider_id": "…",
+  "source": "live",
   "data": {
     "name": "Operativa USD",
     "currencyCode": "USD",
@@ -6654,6 +6655,11 @@ sin recorrer el listado:
   }
 }
 ```
+
+`source` indica de dónde salió el detalle: `live` (el banco respondió en
+vivo) o `mirror` (el banco no pudo servir la cuenta en ese momento y se
+devuelve el último snapshot conocido — los requisitos de depósito siguen
+disponibles).
 
 > **Nota**
 El listado expone solo las cuentas **habilitadas para tu operación** según
@@ -9880,9 +9886,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-23 18:34 UTC · 267 requests · versión `71b15ca273e2`
+> **Colección actualizada:** 2026-07-23 19:07 UTC · 267 requests · versión `feb6453c56c5`
 
-<PostmanFreshness iso="2026-07-23T18:34:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-23T19:07:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla

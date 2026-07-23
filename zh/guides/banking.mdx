@@ -150,8 +150,9 @@ curl https://api.qbank.cl/platform/v1/banking/accounts/c4d1…/balance \
 {
   "account_id": "c4d1…",
   "provider_id": "…",
+  "source": "live",
   "data": {
-    "name": "Operativa USD",
+    "name": "Operating USD",
     "currencyCode": "USD",
     "status": "ACCEPT",
     "requisites": [
@@ -161,6 +162,9 @@ curl https://api.qbank.cl/platform/v1/banking/accounts/c4d1…/balance \
   }
 }
 ```
+
+`source` 表示详情的来源：`live`（银行实时返回）或 `mirror`（银行当时
+无法返回该账户，返回最近一次已知快照——入金要件仍然可用）。
 
 <Note>
 列表仅暴露根据通道配置**为您的业务启用**的账户。未启用的账户不会出现
