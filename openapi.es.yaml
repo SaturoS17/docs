@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.94'
+  version: '1.95'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -649,7 +649,7 @@ paths:
         ofrecer "pagar con una tarjeta guardada" antes de abrir la página hosted. Devuelve
         solo datos de display (marca, últimos 4, expiración) — jamás tokens ni números de
         tarjeta. Un email ausente/ inválido, un email desconocido o un link resuelto devuelven
-        la misma lista vacía (anti-enumeración suave).
+        la misma lista vacía (anti-enumeración suave). Materializar el método card con `stored_card_id` exige este mismo email del titular — si no calza responde 404.
       parameters:
       - name: token
         in: path
@@ -3606,7 +3606,7 @@ paths:
                   description: Solo método card — paga con una tarjeta guardada previamente (ver GET
                     /v1/stored-cards). La página hosted salta la captura de tarjeta y muestra la
                     guardada; el 3-D Secure corre igual. Mutuamente excluyente con `save_card`.
-                    Tarjeta desconocida o revocada responde 404.
+                    Tarjeta desconocida o revocada responde 404. Los datos de facturación guardados con la credencial se aplican automáticamente en la página hosted (resumen enmascarado con enlace para editar — el pagador no re-tipea nada).
             examples:
               bo_qr:
                 summary: Bolivia — cobro QR (BOB)

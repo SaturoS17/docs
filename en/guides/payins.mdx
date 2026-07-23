@@ -807,7 +807,13 @@ curl "https://api.qbank.cl/platform/v1/stored-cards?from=2026-07-01&to=2026-07-2
 
 Create the `card` payin with `stored_card_id`: the page skips card entry,
 shows the saved card (`VISA •••• 2701`) and 3-D Secure still runs — the
-payer only confirms with their bank.
+payer only confirms with their bank. The **billing details** the payer
+entered when saving the card are also kept on file: the page applies them
+automatically and shows only a masked summary (name, partial email, city)
+with a "use different details" link in case they want to change them —
+nothing is retyped. On the public checkout page, paying with a saved card
+additionally requires entering the **same cardholder email** it was saved
+with (a mismatch responds `404`).
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/payins \

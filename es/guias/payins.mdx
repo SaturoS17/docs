@@ -803,7 +803,13 @@ curl "https://api.qbank.cl/platform/v1/stored-cards?from=2026-07-01&to=2026-07-2
 
 Crea el payin `card` con `stored_card_id`: la página salta la captura del
 número, muestra la tarjeta guardada (`VISA •••• 2701`) y el 3-D Secure
-corre igual — el pagador solo confirma con su banco.
+corre igual — el pagador solo confirma con su banco. Los **datos de
+facturación** que el pagador ingresó al guardar la tarjeta también quedan
+en archivo: la página los aplica sola y muestra solo un resumen enmascarado
+(nombre, correo parcial y ciudad) con un enlace "usar otros datos" por si
+quiere cambiarlos — no se re-tipea nada. En la página pública del checkout,
+usar una tarjeta guardada exige además ingresar el **mismo correo del
+titular** con el que se guardó (si no calza, responde `404`).
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/payins \

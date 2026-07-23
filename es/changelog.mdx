@@ -8,6 +8,18 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="22 de julio de 2026" description="v1.95">
+
+**Agregado**
+
+- **Facturación en archivo con la tarjeta guardada** ([guía payins](/es/guias/payins#tarjetas-guardadas-y-cobros-recurrentes-tarjeta)): los datos de facturación que el pagador ingresa al guardar su tarjeta (nombre, dirección, ciudad, correo, teléfono) quedan guardados junto con la credencial. Al pagar de nuevo con esa tarjeta la página segura los aplica automáticamente — el pagador no re-tipea nada — y muestra solo un **resumen enmascarado** (nombre, correo parcial y ciudad) con un enlace "usar otros datos" por si quiere cambiarlos. Los datos completos jamás bajan al navegador: el servidor los aplica al autorizar.
+
+**Cambiado**
+
+- **Correo del titular obligatorio con tarjeta guardada**: en la página pública del checkout, usar una tarjeta guardada ahora exige presentar el mismo correo del titular con el que se guardó — si no calza, responde `404` (protección anti-enumeración de datos personales).
+
+</Update>
+
 <Update label="22 de julio de 2026" description="v1.94">
 
 **Corregido**

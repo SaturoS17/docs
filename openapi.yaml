@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.94'
+  version: '1.95'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -642,7 +642,7 @@ paths:
         filtered by the payer's email — the checkout page uses it to offer "pay with a saved
         card" before opening the hosted card page. Returns display data only (brand, last 4,
         expiry) — never tokens or card numbers. A missing/invalid email, an unknown email or a
-        resolved link all return the same empty list (soft anti-enumeration).
+        resolved link all return the same empty list (soft anti-enumeration). Materializing the card method with a `stored_card_id` requires this same cardholder email — a mismatch responds 404.
       parameters:
       - name: token
         in: path
@@ -3593,7 +3593,7 @@ paths:
                   description: Card method only — pay with a previously saved card (see GET
                     /v1/stored-cards). The hosted page skips card entry and shows the saved card;
                     3-D Secure still runs. Mutually exclusive with `save_card`. Unknown or revoked
-                    card responds 404.
+                    card responds 404. The billing details saved with the credential are applied automatically on the hosted page (masked summary with an edit link — the payer retypes nothing).
             examples:
               bo_qr:
                 summary: Bolivia — QR charge (BOB)

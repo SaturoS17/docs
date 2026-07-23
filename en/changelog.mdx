@@ -7,6 +7,18 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 22, 2026" description="v1.95">
+
+**Added**
+
+- **Billing on file with the saved card** ([payins guide](/en/guides/payins#saved-cards-and-recurring-charges-card)): the billing details the payer enters when saving their card (name, address, city, email, phone) are stored alongside the credential. When paying again with that card, the secure page applies them automatically — the payer retypes nothing — and shows only a **masked summary** (name, partial email and city) with a "use different details" link in case they want to change them. The full details never reach the browser: the server applies them at authorization time.
+
+**Changed**
+
+- **Cardholder email required with a saved card**: on the public checkout page, paying with a saved card now requires presenting the same cardholder email it was saved with — a mismatch responds `404` (anti-enumeration protection for personal data).
+
+</Update>
+
 <Update label="July 22, 2026" description="v1.94">
 
 **Fixed**

@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-23 03:39 UTC · versión `de8102bc9ca8`
+> **Documento actualizado:** 2026-07-23 04:53 UTC · versión `975332163e82`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.94 (22 de julio de 2026) |
+| Versión de la documentación | v1.95 (22 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -3743,7 +3743,13 @@ curl "https://api.qbank.cl/platform/v1/stored-cards?from=2026-07-01&to=2026-07-2
 
 Crea el payin `card` con `stored_card_id`: la página salta la captura del
 número, muestra la tarjeta guardada (`VISA •••• 2701`) y el 3-D Secure
-corre igual — el pagador solo confirma con su banco.
+corre igual — el pagador solo confirma con su banco. Los **datos de
+facturación** que el pagador ingresó al guardar la tarjeta también quedan
+en archivo: la página los aplica sola y muestra solo un resumen enmascarado
+(nombre, correo parcial y ciudad) con un enlace "usar otros datos" por si
+quiere cambiarlos — no se re-tipea nada. En la página pública del checkout,
+usar una tarjeta guardada exige además ingresar el **mismo correo del
+titular** con el que se guardó (si no calza, responde `404`).
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/payins \
@@ -9737,9 +9743,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-21 19:26 UTC · 263 requests · versión `1b32b3a2dad3`
+> **Colección actualizada:** 2026-07-23 04:53 UTC · 263 requests · versión `c969f9699dac`
 
-<PostmanFreshness iso="2026-07-21T19:26:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-23T04:53:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -9910,6 +9916,16 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.95 — 22 de julio de 2026
+
+**Agregado**
+
+- **Facturación en archivo con la tarjeta guardada** ([guía payins](#payins)): los datos de facturación que el pagador ingresa al guardar su tarjeta (nombre, dirección, ciudad, correo, teléfono) quedan guardados junto con la credencial. Al pagar de nuevo con esa tarjeta la página segura los aplica automáticamente — el pagador no re-tipea nada — y muestra solo un **resumen enmascarado** (nombre, correo parcial y ciudad) con un enlace "usar otros datos" por si quiere cambiarlos. Los datos completos jamás bajan al navegador: el servidor los aplica al autorizar.
+
+**Cambiado**
+
+- **Correo del titular obligatorio con tarjeta guardada**: en la página pública del checkout, usar una tarjeta guardada ahora exige presentar el mismo correo del titular con el que se guardó — si no calza, responde `404` (protección anti-enumeración de datos personales).
 
 ### v1.94 — 22 de julio de 2026
 

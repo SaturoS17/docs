@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.94'
+  version: '1.95'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -601,7 +601,7 @@ paths:
       description: >-
         按付款人邮箱过滤的公开查询（按 IP 限流），返回付款人在该商户保存的卡片 —
         结账页面用它在打开托管卡片页之前提供"用已存卡支付"。仅返回展示数据（品牌、末 4
-        位、有效期）— 绝不返回令牌或卡号。邮箱缺失/无效、邮箱未知或链接已结束均返回相同的空列表（软性防枚举）。
+        位、有效期）— 绝不返回令牌或卡号。邮箱缺失/无效、邮箱未知或链接已结束均返回相同的空列表（软性防枚举）。使用 `stored_card_id` 物化 card 方式时须提供同一持卡人邮箱 — 不匹配返回 404。
       parameters:
       - name: token
         in: path
@@ -3424,7 +3424,7 @@ paths:
                   type: string
                   format: uuid
                   description: 仅 card 方式 — 使用之前保存的卡支付（见 GET /v1/stored-cards）。托管页面跳过卡片
-                    录入并显示已保存的卡；3-D Secure 照常运行。与 `save_card` 互斥。未知或已撤销的卡返回 404。
+                    录入并显示已保存的卡；3-D Secure 照常运行。与 `save_card` 互斥。未知或已撤销的卡返回 404。随凭证保存的账单信息会在托管页面自动应用（脱敏摘要 + 编辑链接 — 付款人无需重新输入）。
             examples:
               bo_qr:
                 summary: 玻利维亚 — QR 收款(BOB)

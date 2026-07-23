@@ -743,7 +743,9 @@ curl "https://api.qbank.cl/platform/v1/stored-cards?from=2026-07-01&to=2026-07-2
 <Step title="使用已保存的卡支付（付款人在场）">
 
 创建带 `stored_card_id` 的 `card` payin：页面跳过卡片录入，显示已保存的卡（`VISA •••• 2701`），3-D Secure 照常
-运行 — 付款人只需与其银行确认。
+运行 — 付款人只需与其银行确认。付款人保存卡片时填写的**账单信息**也会一并存档：页面自动应用这些信息，只显示脱敏摘要
+（姓名、部分邮箱和城市），并提供"使用其他信息"链接以便修改 — 无需重新输入任何内容。在公开的 checkout 页面上，
+使用已保存的卡还需要输入保存时的**同一持卡人邮箱**（不匹配则返回 `404`）。
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/payins \
