@@ -36,6 +36,7 @@ de las tasas de tu cuenta para ese país. Cotizado = cobrado, siempre.
 |---|---|---|
 | `payout` | Fijo por operación (el pricing FX ya está en tu tasa) | Al crear el payout (incluido en `total_debit`) |
 | `payin` | Fijo por operación (el pricing FX ya está en tu `payin_rate`) | Al acreditar (recibes `usdt_gross − fee`) |
+| `payin_card` | `%` sobre el cobro + fijo, con `%` propio por moneda procesada (ej. BOB vs USD). Si tu cuenta no lo tiene configurado, aplica el fee `payin` genérico | Al acreditar un cobro pagado con tarjeta (payin directo `method: "card"`, link de checkout pagado con tarjeta o cobro de suscripción) |
 | `funding` | `%` sobre el depósito + fijo | Al acreditar el depósito on-chain |
 | `withdrawal` | `%` sobre el retiro + fijo | Al crear el retiro (incluido en `total_debit`) |
 | `wallet_creation` | Fijo por wallet | Al crear cada wallet (personas: 1 por red; empresas: ilimitadas). Consultar wallets existentes es siempre gratis |

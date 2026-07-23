@@ -36,6 +36,7 @@ depends on your account's rates for that country. Quoted = charged, always.
 |---|---|---|
 | `payout` | Fixed per operation (FX pricing is already in your rate) | At payout creation (included in `total_debit`) |
 | `payin` | Fixed per operation (FX pricing is already in your `payin_rate`) | On credit (you receive `usdt_gross − fee`) |
+| `payin_card` | `%` over the collection + fixed, with its own `%` per processed currency (e.g. BOB vs USD). If your account has none configured, the generic `payin` fee applies | When a card-paid collection is credited (direct `method: "card"` payin, checkout link paid with card, or subscription charge) |
 | `funding` | `%` over the deposit + fixed | When the on-chain deposit is credited |
 | `withdrawal` | `%` over the withdrawal + fixed | At creation (included in `total_debit`) |
 | `wallet_creation` | Fixed per wallet | On every wallet creation (persons: 1 per network; companies: unlimited). Fetching existing wallets is always free |

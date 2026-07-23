@@ -34,6 +34,7 @@ payin:   usdt_gross    = local_amount / payin_rate
 |---|---|---|
 | `payout` | 每笔固定费用（外汇定价已包含在您的汇率中） | 创建出款时（包含在 `total_debit` 中） |
 | `payin` | 每笔固定费用（外汇定价已包含在您的 `payin_rate` 中） | 入账时（您收到 `usdt_gross − fee`） |
+| `payin_card` | 按收款金额的 `%` + 固定费用，可按处理币种设置不同的 `%`（例如 BOB 与 USD）。若您的账户未配置该服务，则适用通用的 `payin` 费用 | 银行卡支付的收款入账时（`method: "card"` 直接收款、用卡支付的收款链接或订阅扣款） |
 | `funding` | 按充值金额的 `%` + 固定费用 | 链上充值入账时 |
 | `withdrawal` | 按提现金额的 `%` + 固定费用 | 创建时（包含在 `total_debit` 中） |
 | `wallet_creation` | 每个钱包固定费用 | 每次创建钱包时（个人：每条网络 1 个；企业：不限）。查询已有钱包始终免费 |

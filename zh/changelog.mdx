@@ -7,6 +7,19 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月23日" description="v1.99">
+
+**新增**
+
+- **银行卡收款专属佣金（`payin_card`）**
+  ([佣金](/zh/concepts/fees))：通过银行卡入账的收款（`method: card` 的
+  直接 payin、用卡支付的收款链接、以及绑定卡的周期扣款）可以配置独立的
+  百分比佣金，并支持**按币种**区分（例如 BOB 与 USD 各自的费率）。若账户
+  未配置 `payin_card`，则继续按通用 `payin` 佣金计费 — 未显式配置时行为
+  不变。可通过 `GET /v1/fees` 查询生效佣金（行中新增 `currency` 字段）。
+
+</Update>
+
 <Update label="2026年7月23日" description="v1.98">
 
 **新增**

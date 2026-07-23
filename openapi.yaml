@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '1.98'
+  version: '1.99'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -15144,6 +15144,7 @@ components:
           enum:
           - payout
           - payin
+          - payin_card
           - funding
           - withdrawal
           - compliance_person
@@ -15153,6 +15154,10 @@ components:
           - compliance_monitoring
         country:
           type: string
+        currency:
+          type: string
+          description: >-
+            Optional ISO-4217 currency dimension. Only supported by payin_card — the same account can carry a different % per processed currency (e.g. BOB vs USD). Empty applies to any currency.
         asset:
           type: string
           example: USDT

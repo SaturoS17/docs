@@ -8,6 +8,22 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="23 de julio de 2026" description="v1.99">
+
+**Agregado**
+
+- **Comisión propia para cobros con tarjeta (`payin_card`)**
+  ([comisiones](/es/conceptos/comisiones)): los cobros acreditados con
+  tarjeta (payin directo `method: card`, links de checkout pagados con
+  tarjeta y cobros recurrentes con tarjeta guardada) pueden llevar una
+  comisión porcentual propia, configurable **por moneda** (ej. un % para
+  BOB y otro para USD). Si tu cuenta no tiene `payin_card` configurado,
+  sigue aplicando la comisión `payin` de siempre — nada cambia sin
+  configuración explícita. Consulta tus comisiones vigentes en
+  `GET /v1/fees` (las filas ahora incluyen el campo `currency`).
+
+</Update>
+
 <Update label="23 de julio de 2026" description="v1.98">
 
 **Agregado**

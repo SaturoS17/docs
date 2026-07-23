@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-23 19:07 UTC · versión `68ac0ca32011`
+> **Documento actualizado:** 2026-07-23 21:44 UTC · versión `1a1042960528`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v1.98 (23 de julio de 2026) |
+| Versión de la documentación | v1.99 (23 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -1312,6 +1312,7 @@ de las tasas de tu cuenta para ese país. Cotizado = cobrado, siempre.
 |---|---|---|
 | `payout` | Fijo por operación (el pricing FX ya está en tu tasa) | Al crear el payout (incluido en `total_debit`) |
 | `payin` | Fijo por operación (el pricing FX ya está en tu `payin_rate`) | Al acreditar (recibes `usdt_gross − fee`) |
+| `payin_card` | `%` sobre el cobro + fijo, con `%` propio por moneda procesada (ej. BOB vs USD). Si tu cuenta no lo tiene configurado, aplica el fee `payin` genérico | Al acreditar un cobro pagado con tarjeta (payin directo `method: "card"`, link de checkout pagado con tarjeta o cobro de suscripción) |
 | `funding` | `%` sobre el depósito + fijo | Al acreditar el depósito on-chain |
 | `withdrawal` | `%` sobre el retiro + fijo | Al crear el retiro (incluido en `total_debit`) |
 | `wallet_creation` | Fijo por wallet | Al crear cada wallet (personas: 1 por red; empresas: ilimitadas). Consultar wallets existentes es siempre gratis |
@@ -10059,6 +10060,20 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v1.99 — 23 de julio de 2026
+
+**Agregado**
+
+- **Comisión propia para cobros con tarjeta (`payin_card`)**
+  ([comisiones](#comisiones)): los cobros acreditados con
+  tarjeta (payin directo `method: card`, links de checkout pagados con
+  tarjeta y cobros recurrentes con tarjeta guardada) pueden llevar una
+  comisión porcentual propia, configurable **por moneda** (ej. un % para
+  BOB y otro para USD). Si tu cuenta no tiene `payin_card` configurado,
+  sigue aplicando la comisión `payin` de siempre — nada cambia sin
+  configuración explícita. Consulta tus comisiones vigentes en
+  `GET /v1/fees` (las filas ahora incluyen el campo `currency`).
 
 ### v1.98 — 23 de julio de 2026
 

@@ -7,6 +7,22 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 23, 2026" description="v1.99">
+
+**Added**
+
+- **Dedicated fee for card payments (`payin_card`)**
+  ([fees](/en/concepts/fees)): payments credited via card (direct payin
+  with `method: card`, checkout links paid with card, and recurring
+  charges on stored cards) can carry their own percentage fee,
+  configurable **per currency** (e.g. one rate for BOB and another for
+  USD). If your account has no `payin_card` configured, the regular
+  `payin` fee keeps applying — nothing changes without explicit
+  configuration. Check your effective fees in `GET /v1/fees` (rows now
+  include the `currency` field).
+
+</Update>
+
 <Update label="July 23, 2026" description="v1.98">
 
 **Added**
