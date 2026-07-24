@@ -1,15 +1,15 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.02'
+  version: '2.03'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
-    和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
+    和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
-    payout 和服务费可从四个余额中的任意一个支付:
+    payout 和服务费可从四个余额中的任意一个支付(用 `PUT /v1/settlement`
 
-    用 `PUT /v1/settlement` 设置默认值,或在单笔 payout 中用
+    设置默认值,或在单笔 payout 中用 `settlement_asset` 覆盖);payin
 
-    `settlement_asset` 覆盖。
+    可自动兑换为你选择的资产(`default_payin_asset`)。
 
 
     所有金额均为十进制字符串,遵循各货币的精度(USDT/USDC/GOLD 为 6 位小数,BTC 为 8 位)。错误始终返回
@@ -36,11 +36,13 @@ tags:
 - name: 付款(Payouts)
   description: 从你选择的结算余额扣款的法币派发(默认 USDT)。
 - name: 收款(Payins)
-  description: 入账到 USDT 余额的法币充值。
+  description: 法币充值(二维码、转账、专属账户、pull 收款、卡片、checkout 链接)自动入账——默认入账 USDT,也可自动兑换为你选择的结算资产。
 - name: 转账
-- name: 联系人
-- name: 兑换(Swaps)
   description: CBPay 账户之间的免费内部转账(个人或企业,任意组合)。
+- name: 联系人
+  description: 按账户维护的收款人通讯录(CBPay、银行与加密货币目的地),支持手机号匹配与每次发送时自动保存。
+- name: 兑换(Swaps)
+  description: 按账户报价即时兑换账户的 USDT、USDC、BTC 与 GOLD 余额。
 - name: 加密货币
   description: 链上充值与提现(TRON、Ethereum 和 Bitcoin)。
 - name: 隔离钱包
@@ -48,8 +50,9 @@ tags:
 - name: QR Crypto POS
   description: "面向拥有实体 POS 终端的处理商（企业账户）的定额加密货币二维码收款：已验证商户、每笔收款专属地址 + 二维码、支付早期检测、按商户对账，以及经加密货币提现通道的退款。"
 - name: KYC / KYB
+  description: 身份验证:个人 KYC、企业 KYB——你自己的入驻验证,以及企业账户的第三方验证。
 - name: AML 筛查
-  description: 身份验证:个人 KYC、企业 KYB,含 AML 筛查、重新筛查与持续监控。
+  description: 针对个人与企业的独立 AML 筛查(制裁、PEP 与负面媒体名单),含重新筛查、持续监控与可下载的 PDF 报告。
 - name: 钱包筛查
   description: 区块链地址的 AML 风险评估(制裁、非法资金暴露),按次收费;另附提现与充值的免费自动防护。
 - name: 分析
@@ -60,7 +63,7 @@ tags:
 - name: 银行服务
   description: 真实银行账户:通过国际银行通道接收、持有与发送资金。
 - name: 卡片
-  description: 以 Just-In-Time 方式从账户 USDT 余额消费的虚拟卡与实体卡,支持按卡设置消费限额。
+  description: 以 Just-In-Time 方式从你选择的余额(USDT、USDC、BTC 或 GOLD)消费的虚拟卡与实体卡,支持按卡设置消费限额。
 - name: 安全(OTP)
   description: 通过 SMS/WhatsApp/email 发送的一次性验证码,保护敏感操作;并提供自助 2FA 偏好设置。仅适用于用户会话——API key 豁免。
 - name: 通行密钥
@@ -10470,7 +10473,7 @@ paths:
       operationId: createBankingCustomer
       summary: 创建我的银行档案
       description: 开通账户的银行档案(每个账户一次)。省略的 `type`/`name`/`email` 从 CBPay 账户自动填充。按固定 `banking_customer` 费用从
-        USDT 余额计费;若通道拒绝则退款。
+        你的结算资产(默认 USDT)计费;若通道拒绝则退款。
       requestBody:
         required: true
         content:

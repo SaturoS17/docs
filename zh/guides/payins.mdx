@@ -4,6 +4,10 @@ icon: "qrcode"
 description: "以当地货币收款，自动入账 USDT"
 ---
 
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="zh" />
+
 入金（payin）是一笔法币收款：您的客户以当地货币付款，您的账户自动获得
 USDT 入账，按**您的入金汇率**（`GET /v1/rates` 中的 `payin_rate`）折算，
 并在您的账户配置了固定入金费用时予以扣除。

@@ -9,17 +9,21 @@ description: "The typical integration questions, answered upfront"
 <AccordionGroup>
 
 <Accordion title="What is the API base URL?">
-`https://api.qbank.cl/platform` — every endpoint in this
-documentation hangs from it (for example
+There is one per environment: **live** uses
+`https://api.qbank.cl/platform` and **test** uses
+`https://cryptobank.qbank.cl/platform`. Every endpoint in this
+documentation hangs from them (for example
 `https://api.qbank.cl/platform/v1/balances`).
 </Accordion>
 
 <Accordion title="Is there a sandbox environment?">
-No. The API runs directly in production. To test your integration use
-**small real amounts**: deposit a few USDT, run a minimal payout and
-verify the full cycle (debit → webhook → final state). If anything fails,
-the debit is refunded automatically — a data mistake cannot "lose" your
-balance.
+Yes. CBPay runs two fully isolated environments: **test**
+(`https://cryptobank.qbank.cl/platform`, `pk_test_...` keys, simulated
+money) and **live** (`https://api.qbank.cl/platform`, `pk_...` keys, real
+money). Build against test first: every corridor is served by a
+deterministic simulator with magic values to force every failure path,
+and going live is just swapping the base URL and the key. Full guide in
+[environments and testing](/en/environment-testing).
 </Accordion>
 
 <Accordion title="How do I fund my account to get started?">
@@ -61,9 +65,12 @@ Both travel in `Authorization: Bearer <token>` (or `X-API-Key`).
 <AccordionGroup>
 
 <Accordion title="What currency is my balance in?">
-Only **USDT with 6 decimals**. Every fiat operation (payouts in CLP,
-collections in BOB…) converts to/from USDT at your account's rates at
-execution time (`rate` for payouts, `payin_rate` for payins). See the
+Your account holds **four independent balances**: USDT (the operating
+currency, 6 decimals), USDC, BTC and GOLD. Fiat operations (payouts in
+CLP, collections in BOB…) convert to/from USDT at your account's rates at
+execution time (`rate` for payouts, `payin_rate` for payins); you can
+also settle payouts from another balance (`settlement_asset`) and keep
+your payins in the asset you choose (`default_payin_asset`). See the
 [money model](/en/concepts/money-model).
 </Accordion>
 

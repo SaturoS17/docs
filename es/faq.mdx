@@ -9,17 +9,21 @@ description: "Las dudas típicas al integrar, respondidas de una"
 <AccordionGroup>
 
 <Accordion title="¿Cuál es la URL base de la API?">
-`https://api.qbank.cl/platform` — todos los endpoints de esta
-documentación cuelgan de ahí (por ejemplo
+Hay una por ambiente: **live** usa
+`https://api.qbank.cl/platform` y **test** usa
+`https://cryptobank.qbank.cl/platform`. Todos los endpoints de esta
+documentación cuelgan de ellas (por ejemplo
 `https://api.qbank.cl/platform/v1/balances`).
 </Accordion>
 
 <Accordion title="¿Hay un ambiente sandbox de pruebas?">
-No. La API opera directo en producción. Para probar tu integración usa
-**montos pequeños reales**: deposita unos pocos USDT, haz un payout mínimo
-y verifica el ciclo completo (débito → webhook → estado final). Si algo
-falla, el débito se reembolsa automáticamente — no puedes "perder" saldo
-por un error de datos.
+Sí. CBPay opera dos ambientes totalmente aislados: **test**
+(`https://cryptobank.qbank.cl/platform`, keys `pk_test_...`, dinero
+simulado) y **live** (`https://api.qbank.cl/platform`, keys `pk_...`,
+dinero real). Integra primero contra test: todos los corredores los sirve
+un simulador determinista con valores mágicos para forzar cada camino de
+falla, y pasar a live es solo cambiar la URL base y la key. Guía completa
+en [entorno y pruebas](/es/entorno-y-pruebas).
 </Accordion>
 
 <Accordion title="¿Cómo pongo saldo en mi cuenta para empezar?">
@@ -62,9 +66,13 @@ inician sesión. Ambas van en `Authorization: Bearer <token>` (o
 <AccordionGroup>
 
 <Accordion title="¿En qué moneda está mi saldo?">
-Solo **USDT con 6 decimales**. Todas las operaciones fiat (payouts en CLP,
-cobros en BOB…) se convierten a/desde USDT con las tasas de tu cuenta al
-momento de ejecutar (`rate` para payouts, `payin_rate` para payins). Ver
+Tu cuenta mantiene **cuatro saldos independientes**: USDT (la moneda
+operativa, 6 decimales), USDC, BTC y GOLD. Las operaciones fiat (payouts
+en CLP, cobros en BOB…) se convierten a/desde USDT con las tasas de tu
+cuenta al momento de ejecutar (`rate` para payouts, `payin_rate` para
+payins); también puedes liquidar payouts desde otro saldo
+(`settlement_asset`) y quedarte con tus payins en el asset que elijas
+(`default_payin_asset`). Ver
 [modelo de dinero](/es/conceptos/modelo-de-dinero).
 </Accordion>
 

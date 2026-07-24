@@ -4,6 +4,10 @@ icon: "user-shield"
 description: "密码、已验证邮箱、用于收款的别名和二维码、头像、双重验证（短信/WhatsApp/邮箱/应用）、通行密钥，以及会话与安全活动管理"
 ---
 
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="zh" />
+
 终端用户可管理的与**自己账户**相关的一切：登录凭据（密码和邮箱）、用于收款的公开身份（别名、二维码和头像）、双重验证（2FA）因子，以及对会话和安全活动的控制。这些功能全部位于 `/v1/me/*` 和 `/v1/auth/*` 下，并要求**用户会话**（JWT）；API key 不适用。
 
 ```mermaid

@@ -4,6 +4,10 @@ icon: "chart-line"
 description: "One endpoint with every series and statistic of your account to build your dashboard: volume, transactions, users, per-service sections, countries, spending and balances"
 ---
 
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="en" />
+
 `GET /v1/analytics/summary` returns in **a single call** everything the
 summary page of your account (person or company) needs: chart-ready time
 series, the detail of every service with all its dimensions (country,

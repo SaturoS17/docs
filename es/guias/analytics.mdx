@@ -4,6 +4,10 @@ icon: "chart-line"
 description: "Un solo endpoint con todas las series y estadísticas de tu cuenta para armar tu dashboard: volumen, transacciones, usuarios, secciones por servicio, países, consumo y saldos"
 ---
 
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="es" />
+
 `GET /v1/analytics/summary` entrega en **una sola llamada** todo lo que
 necesita la página de resumen de tu cuenta (persona o empresa): series
 temporales listas para graficar, el detalle de cada servicio con todas sus

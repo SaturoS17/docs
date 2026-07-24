@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.02'
+  version: '2.03'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -10,13 +10,13 @@ info:
 
     virtual balances — USDT (the operating currency), USDC, BTC and GOLD
 
-    (grams of fine gold) — that never mix or convert automatically.
+    (grams of fine gold) — convertible on demand with swaps.
 
-    Payouts and service fees can be paid from any of the four balances:
+    Payouts and service fees can be paid from any of the four balances
 
-    set a default with `PUT /v1/settlement` or override per payout with
+    (`PUT /v1/settlement` or per-payout `settlement_asset`), and payins
 
-    `settlement_asset`.
+    can auto-convert to the asset of your choice (`default_payin_asset`).
 
 
     All amounts are decimal strings in each currency''s precision (6 decimals
@@ -46,11 +46,16 @@ tags:
 - name: Payouts
   description: Fiat dispersals debited from the settlement balance of your choice (USDT by default).
 - name: Payins
-  description: Fiat top-ups credited to the USDT balance.
+  description: Fiat top-ups (QR, transfers, dedicated accounts, pull collections, cards, checkout links)
+    credited automatically — in USDT by default, or auto-converted to the settlement asset of your choice.
 - name: Transfers
-- name: Contacts
-- name: Swaps
   description: Free internal transfers between CBPay accounts (person or company, any combination).
+- name: Contacts
+  description: Per-account address book of beneficiaries (CBPay, bank and crypto destinations) with
+    phone matching and auto-save on every send.
+- name: Swaps
+  description: Instant conversion between the account's USDT, USDC, BTC and GOLD balances at the
+    account's quoted rate.
 - name: Crypto
   description: On-chain funding and withdrawals (TRON, Ethereum and Bitcoin).
 - name: Segregated wallets
@@ -60,9 +65,11 @@ tags:
 - name: QR Crypto POS
   description: "Amount-bearing crypto QR charges for processors with physical POS terminals (company accounts): verified merchants, exclusive address + QR per charge, early payment detection, per-merchant reconciliation and refunds over the crypto withdrawal rail."
 - name: KYC / KYB
+  description: 'Identity verification: KYC for persons, KYB for companies — your own onboarding and
+    third-party verifications for company accounts.'
 - name: AML screening
-  description: 'Identity verification: KYC for persons, KYB for companies, with AML screening, rescreening
-    and continuous monitoring.'
+  description: Standalone AML screening of persons and companies against sanctions, PEP and adverse
+    media lists, with rescreening, continuous monitoring and a downloadable PDF report.
 - name: Wallet screening
   description: AML risk assessment of blockchain addresses (sanctions, illicit-fund exposure) with a per-scan
     fee, plus free automatic protection on withdrawals and deposits.
@@ -74,8 +81,8 @@ tags:
 - name: Banking
   description: 'Real bank accounts: receive, hold and send money over international banking rails.'
 - name: Cards
-  description: Virtual and physical cards that spend Just-In-Time from the account's USDT balance, with
-    per-card spending limits.
+  description: Virtual and physical cards that spend Just-In-Time from the balance of your choice
+    (USDT, USDC, BTC or GOLD), with per-card spending limits.
 - name: Security (OTP)
   description: One-time verification codes over SMS/WhatsApp/email protecting sensitive actions, plus
     self-service 2FA preferences. Applies to user sessions only — API keys are exempt.
@@ -10768,8 +10775,8 @@ paths:
       operationId: createBankingCustomer
       summary: Create my banking profile
       description: Opens the account's banking profile (once per account). Omitted `type`/`name`/`email`
-        autofill from the CBPay account. Billed as the fixed `banking_customer` fee from the USDT balance;
-        refunded if the corridor rejects.
+        autofill from the CBPay account. Billed as the fixed `banking_customer` fee from your settlement
+        asset (USDT by default); refunded if the corridor rejects.
       requestBody:
         required: true
         content:

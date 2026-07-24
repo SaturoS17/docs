@@ -9,12 +9,18 @@ description: "提前解答集成中的典型问题"
 <AccordionGroup>
 
 <Accordion title="API 的基础 URL 是什么？">
-`https://api.qbank.cl/platform` —— 本文档中的所有端点都挂载在它之下（例如
+每个环境各有一个：**live（生产）** 使用
+`https://api.qbank.cl/platform`，**test（测试）** 使用
+`https://cryptobank.qbank.cl/platform`。本文档中的所有端点都挂载在它们之下（例如
 `https://api.qbank.cl/platform/v1/balances`）。
 </Accordion>
 
 <Accordion title="有沙箱环境吗？">
-没有。API 直接运行在生产环境。测试集成时请使用**小额真实资金**：充值少量 USDT，执行一笔最小金额的付款（payout），并验证完整周期（扣款 → webhook → 最终状态）。如果任何环节失败，扣款会自动退还——数据填写错误不会"丢失"您的余额。
+有。CBPay 运营两个完全隔离的环境：**test**
+（`https://cryptobank.qbank.cl/platform`，`pk_test_...` 密钥，模拟资金）和
+**live**（`https://api.qbank.cl/platform`，`pk_...` 密钥，真实资金）。
+请先在 test 环境完成集成：所有通道都由确定性的模拟器提供服务，并支持用魔法值触发每一条失败路径；切换到 live 只需更换基础
+URL 和密钥。完整指南见[环境与测试](/zh/environment-testing)。
 </Accordion>
 
 <Accordion title="如何为账户充值以便开始使用？">
@@ -40,7 +46,9 @@ description: "提前解答集成中的典型问题"
 <AccordionGroup>
 
 <Accordion title="我的余额是什么货币？">
-仅为**6 位小数的 USDT**。每笔法币操作（CLP 付款、BOB 代收……）都会在执行时按您账户的汇率与 USDT 互相转换（付款用 `rate`，代收用 `payin_rate`）。参见[资金模型](/zh/concepts/money-model)。
+您的账户持有**四个相互独立的余额**：USDT（运营货币，6 位小数）、USDC、BTC 和
+GOLD。每笔法币操作（CLP 付款、BOB 代收……）都会在执行时按您账户的汇率与 USDT
+互相转换（付款用 `rate`，代收用 `payin_rate`）；您也可以从其他余额结算付款（`settlement_asset`），并让代收自动兑换为您选择的资产（`default_payin_asset`）。参见[资金模型](/zh/concepts/money-model)。
 </Accordion>
 
 <Accordion title="创建付款之前如何知道它的成本？">

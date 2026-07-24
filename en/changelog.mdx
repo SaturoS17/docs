@@ -7,6 +7,33 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 24, 2026" description="v2.03">
+
+**Added**
+
+- **Test environment surfaced across the whole site**: every product guide
+  now opens with the test and live base URLs (shared snippet), and the
+  [FAQ](/en/faq), [quickstart](/en/quickstart) and
+  [introduction](/en/introduction) correctly describe the test environment
+  (`https://cryptobank.qbank.cl/platform`, `pk_test_` keys) — earlier
+  copies incorrectly said no sandbox existed. Full details in
+  [Environments and testing](/en/environment-testing).
+
+**Changed**
+
+- **Introduction product catalog completed**: checkout, cards and
+  subscriptions, QR POS, swaps, segregated wallets, Bitcoin and analytics
+  are now listed with their guides.
+
+**Fixed**
+
+- Spec descriptions that predated multi-asset balances: tag descriptions
+  realigned (Swaps, AML screening, Cards) and legacy wording like
+  "credited to the USDT balance" corrected to the settlement-asset
+  semantics (`default_payin_asset`, `settlement_asset`).
+
+</Update>
+
 <Update label="July 23, 2026" description="v2.02">
 
 **Changed**

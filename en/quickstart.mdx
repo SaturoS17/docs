@@ -20,11 +20,20 @@ Before you start, the data you will need everywhere:
 
 | Item | Value |
 |---|---|
-| **Base URL** | `https://api.qbank.cl/platform` |
+| **Base URL (live)** | `https://api.qbank.cl/platform` |
+| **Base URL (test)** | `https://cryptobank.qbank.cl/platform` — simulated money, `pk_test_` keys |
 | **Authentication** | `Authorization: Bearer <token>` header (or `X-API-Key`) |
 | **Organization slug** | `cbpay` (for register and login) |
 | **Balance currencies** | 4 independent balances: USDT (operating), USDC, BTC and GOLD — amounts always as strings (`"52.618258"`) |
-| **Environment** | Direct production — no sandbox; test with small amounts |
+| **Environments** | Two isolated environments, same API: build in **test** first, then swap URL + key to go live — [guide](/en/environment-testing) |
+
+<Tip>
+Run this quickstart against the **test environment** first
+(`https://cryptobank.qbank.cl/platform`): accounts are born verified and
+funded with demo history, every payout completes in seconds, and nothing
+real moves. The steps below show live URLs — they work identically on
+test.
+</Tip>
 
 <Info>
 If CBPay already created your account and handed you a `pk_...` API key,

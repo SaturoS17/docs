@@ -4,6 +4,10 @@ icon: "chart-line"
 description: "一个端点提供账户的全部时间序列与统计数据，用于构建您的仪表板：交易量、交易笔数、用户数、按服务划分的板块、国家、服务支出与余额"
 ---
 
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="zh" />
+
 `GET /v1/analytics/summary` 通过**一次调用**返回您账户（个人或企业）
 概览页所需的全部数据：可直接绘图的时间序列、每个服务及其所有维度
 （国家、货币、方式、状态、链、商户）的明细、您在服务上的支出以及

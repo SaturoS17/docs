@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-24 00:17 UTC · versión `94a16611074b`
+> **Documento actualizado:** 2026-07-24 19:17 UTC · versión `31b5da3cb958`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v2.02 (23 de julio de 2026) |
+| Versión de la documentación | v2.03 (24 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -79,22 +79,28 @@ cuenta mantiene **cuatro saldos virtuales independientes** — `USDT` (la
 moneda operativa), `USDC`, `BTC` y `GOLD` (gramos de oro) — y opera sobre
 ellos:
 
-- **Payouts fiat** — Dispersa dinero a cuentas bancarias locales en Chile, Perú, México, Venezuela, Bolivia, Brasil, Paraguay, Ecuador y Argentina, debitado de tu saldo USDT.
-- **Payins fiat** — Cobra en moneda local (QR, transferencias, página de pago y cobro pull) y recibe el abono automáticamente en USDT.
-- **Transferencias internas** — Mueve saldo a cualquier otra cuenta CBPay, al instante y sin comisión.
-- **Crypto on-chain** — Fondea con USDT por TRON o Ethereum y retira on-chain a cualquier dirección.
-- **Tarjetas** — Emite tarjetas virtuales y físicas que gastan directo de cualquier saldo de la cuenta (USDT, USDC, BTC o GOLD), en tiempo real.
-- **Banking** — Cuentas bancarias reales a tu nombre: recibe, mantén y envía dinero por rieles internacionales (SEPA, SWIFT, ACH).
-- **KYC/KYB** — Verificación de personas y empresas con screening AML, rescreening y monitoreo continuo.
-- **Cartola** — Estado de cuenta completo por período en JSON, PDF o Excel, con cuadratura contable garantizada.
+- **Payouts fiat** — Dispersa dinero a cuentas bancarias locales en Chile, Perú, México, Venezuela, Bolivia, Brasil, Paraguay, Ecuador y Argentina — incluido pagar QRs PIX escaneados.
+- **Payins fiat** — Cobra en moneda local (QR, transferencias, cuentas dedicadas, cobros pull) y recibe el abono automáticamente.
+- **Checkout** — Un link de pago universal: tu pagador elige su país, método o crypto en una página hosted y tú liquidas en el asset que elijas.
+- **Tarjetas y suscripciones** — Emite tarjetas que gastan de cualquier saldo en tiempo real, acepta pagos con tarjeta, guarda tarjetas y agenda cobros recurrentes.
+- **QR POS** — Registra merchants verificados y genera cobros QR crypto con monto para puntos de venta físicos.
+- **Crypto on-chain** — Fondea y retira USDT/USDC por TRON y Ethereum, y BTC nativo por Bitcoin — toda cuenta nace con sus wallets de depósito.
+- **Swaps** — Convierte entre tus saldos USDT, USDC, BTC y GOLD a la tasa de tu cuenta, al instante.
+- **Transferencias internas** — Mueve saldo a cualquier otra cuenta CBPay — por ID, alias, QR o teléfono verificado — al instante y sin comisión.
+- **Banking** — Cuentas bancarias reales a tu nombre: recibe, mantén y envía dinero por rieles internacionales (SEPA, SWIFT, ACH), incluidas cuentas de terceros.
+- **Wallets segregadas** — Wallets on-chain dedicadas con saldo propio, aisladas del ledger — créalas, impórtalas y expórtalas.
+- **KYC/KYB y compliance** — Verificación de personas y empresas, más [screening AML](#aml-screening) standalone y [screening de direcciones crypto](#screening-de-wallets).
+- **Cartola y analytics** — Estado de cuenta completo por período (JSON, PDF, Excel) con cuadratura garantizada, [comprobantes](#comprobantes) por operación y un [resumen analytics](#resumen-de-tu-cuenta-analytics) listo para graficar.
 Todos los eventos llegan a tus **webhooks firmados**
 ([guía](#webhooks)).
 
 ### Cómo funciona
 
-La operación fiat gira alrededor del saldo USDT (los saldos USDC, BTC y
-GOLD se mueven con transferencias internas, depósitos on-chain y abonos del
-operador) — el dinero entra por un lado, se convierte, y sale por el otro:
+La operación fiat gira alrededor del saldo USDT — el dinero entra por un
+lado, se convierte, y sale por el otro. Los saldos USDC, BTC y GOLD se
+mueven con [swaps](#swaps), depósitos y retiros on-chain,
+transferencias internas, settlement de payouts (`settlement_asset`) y
+conversión automática de payins (`default_payin_asset`):
 
 ```mermaid
 flowchart LR
@@ -129,13 +135,19 @@ flowchart LR
 4. Te enteras de todo: cada movimiento queda en un historial inmutable
    (`GET /v1/movements`) y los eventos llegan a tus webhooks.
 
-### URL base
+### URLs base y ambientes
 
-```
-https://api.qbank.cl/platform
-```
+CBPay corre dos ambientes totalmente aislados con exactamente la misma API:
 
-Todas las rutas de esta documentación son relativas a esa URL base.
+| Ambiente | URL base | API keys | Dinero |
+|---|---|---|---|
+| **Test** | `https://cryptobank.qbank.cl/platform` | `pk_test_...` | Simulado — cada riel lo sirve un simulador determinista |
+| **Live** | `https://api.qbank.cl/platform` | `pk_...` | Real e irreversible |
+
+Todas las rutas de esta documentación son relativas a esas URLs base.
+Construye primero contra **test** y pasa a live cambiando la URL y la key —
+detalles, valores mágicos y checklist de salida a producción en
+[entorno y pruebas](#ambientes-y-pruebas).
 
 > **Nota**
 Los montos son siempre **strings decimales** (ej. `"10.500000"`), nunca
@@ -176,12 +188,19 @@ Antes de empezar, los datos que vas a necesitar en todos lados:
 
 | Dato | Valor |
 |---|---|
-| **URL base** | `https://api.qbank.cl/platform` |
+| **URL base (live)** | `https://api.qbank.cl/platform` |
+| **URL base (test)** | `https://cryptobank.qbank.cl/platform` — dinero simulado, keys `pk_test_` |
 | **Autenticación** | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | **Slug de organización** | `cbpay` (para registro y login) |
 | **Monedas del saldo** | 4 saldos independientes: USDT (operativa), USDC, BTC y GOLD — montos siempre como string (`"52.618258"`) |
-| **Ambiente** | Producción directa — no hay sandbox; prueba con montos pequeños |
+| **Ambientes** | Dos ambientes aislados, misma API: integra primero en **test** y pasa a live cambiando URL + key — [guía](#ambientes-y-pruebas) |
 
+> **Tip**
+Corre este inicio rápido primero contra el **ambiente de test**
+(`https://cryptobank.qbank.cl/platform`): las cuentas nacen verificadas y
+con historia demo, cada payout se completa en segundos y nada real se
+mueve. Los pasos de abajo muestran URLs live — funcionan idéntico en
+test.
 > **Nota**
 Si CBPay ya te creó la cuenta y te entregó una API key `pk_...`, salta
 directo al paso 3. ¿Dudas típicas? Están respondidas en las
@@ -629,6 +648,10 @@ migró.
 ## Login social (Google, Apple, Microsoft, Meta)
 
 *Registro e inicio de sesión con Google, Apple, Microsoft y Facebook, sin contraseñas*
+
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="es" />
 
 Tus usuarios pueden registrarse e iniciar sesión con **Google, Apple,
 Microsoft o Facebook** — sin crear ni recordar contraseñas. CBPay usa el
@@ -2039,6 +2062,10 @@ payout → webhook) y vuelve aquí cuando agregues productos.
 
 *Dispersa fiat a cuentas bancarias locales debitando tu saldo USDT*
 
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="es" />
+
 Un payout envía dinero en moneda local a una cuenta bancaria del país
 destino. El monto se convierte de moneda local a USDT con **la tasa de tu
 cuenta** (la de `GET /v1/rates`) y se debita `usdt_amount + fee` (el fijo,
@@ -3069,6 +3096,10 @@ automático si falla.
 ## Payins
 
 *Cobra en moneda local y recibe el abono en USDT*
+
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="es" />
 
 Un payin es un cobro fiat: tu cliente paga en moneda local y tu cuenta
 recibe el abono en USDT automáticamente, convertido a **tu tasa de payin**
@@ -4101,6 +4132,10 @@ curl "https://api.qbank.cl/platform/v1/payins?from=2026-07-01&to=2026-07-08&stat
 
 *Cobros QR crypto con monto para procesadores con POS físicos: registra tus comercios verificados, genera el QR, detecta el pago y concilia por cliente*
 
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="es" />
+
 QR Crypto POS es el producto para **procesadores y adquirentes con cuenta empresa**
 que operan POS físicos: registras a tus comercios (restaurantes, hoteles,
 tiendas) como *merchants* verificados y generas **cobros QR crypto con monto
@@ -4433,6 +4468,10 @@ roadmap.
 
 *Mueve USDT, USDC, BTC o GOLD entre cuentas CBPay, gratis y al instante*
 
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="es" />
+
 Las transferencias internas mueven saldo entre dos cuentas **CBPay**, de
 forma atómica en el ledger y **siempre sin comisión** — el dinero nunca sale
 del ecosistema. Funcionan con las cuatro monedas (`USDT`, `USDC`, `BTC`,
@@ -4628,6 +4667,10 @@ Cada fila trae `direction` (`sent` o `received`) desde tu perspectiva.
 
 *Convierte entre tus saldos USDT, USDC, BTC y GOLD al instante, con cotización previa y a la tasa de ejecución del momento*
 
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="es" />
+
 Los **swaps** convierten saldo entre tus cuatro monedas — `USDT`, `USDC`,
 `BTC` y `GOLD` — de forma **síncrona e instantánea**, sin que la plata salga
 de tu cuenta. Cualquier par funciona (también `BTC` ↔ `GOLD` directo). La
@@ -4804,6 +4847,10 @@ USDT/USDC cuando quieras con un swap.
 ## Contactos
 
 *Libreta de contactos: se llena sola con cada envío, importa la agenda del celular, descubre quién tiene CBPay y permite enviar plata por teléfono*
+
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="es" />
 
 La **libreta de contactos** elimina el tipeo repetido de datos: cada envío
 (transferencia interna, payout fiat o retiro crypto) guarda el destino como
@@ -5033,6 +5080,10 @@ poder transferirle).
 
 *Contraseña, email verificado, alias y QR para recibir, foto de perfil, 2FA (SMS/WhatsApp/email/app), passkeys, y gestión de sesiones y actividad de seguridad*
 
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="es" />
+
 Todo lo que un usuario final gestiona sobre **su propia cuenta**: credenciales
 (contraseña y email), su identidad pública para recibir dinero (alias, QR y
 foto), los factores de doble autenticación (2FA) y el control de sus sesiones
@@ -5254,6 +5305,10 @@ email, así que siguen funcionando.
 ## Crypto: wallets, depósitos y retiros
 
 *Crea wallets on-chain, deposita, transfiere y consulta movimientos*
+
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="es" />
 
 Tus saldos crypto viven conectados a la blockchain. Combinaciones
 soportadas:
@@ -5687,6 +5742,10 @@ BTC); las wallets son puertas de entrada, el saldo por moneda es uno solo.
 
 *Wallets on-chain con saldo propio: crear, importar, recibir, enviar, exportar la llave y reenviar automáticamente — el saldo vive en la blockchain, nunca en el ledger*
 
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="es" />
+
 Las **wallets segregadas** son wallets on-chain **propias** de tu cuenta:
 su saldo **es** el saldo on-chain de la dirección, no un saldo
 virtual en el ledger de CBPay. Puedes recibir y
@@ -6051,6 +6110,10 @@ red+activo (una segunda responde `422 wallet_limit_reached`).
 ## Tarjetas: virtuales y físicas
 
 *Emite tarjetas que gastan directo de cualquier saldo de la cuenta (USDT, USDC, BTC o GOLD), con límites por tarjeta*
+
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="es" />
 
 Las tarjetas CBPay gastan **Just-In-Time del saldo central de la cuenta**:
 no hay que prefondearlas ni moverles saldo. Cada tarjeta elige desde qué
@@ -6503,6 +6566,10 @@ emitió.
 ## Banking
 
 *Cuentas bancarias reales para tu cuenta: recibe, mantén y envía dinero por rieles bancarios internacionales*
+
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="es" />
 
 Banking te da **cuentas bancarias reales** a nombre de tu perfil verificado:
 recibes fondos por rieles internacionales (SEPA, SWIFT, ACH según la
@@ -6981,6 +7048,10 @@ curl "https://api.qbank.cl/platform/v1/banking/operations?from=2026-07-01&to=202
 ## Verificación KYC y KYB
 
 *Verificación de identidad con wizard hosteado: formulario, documentos con OCR y prueba de vida en video — para tu cuenta y para tus clientes*
+
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="es" />
 
 La **verificación de identidad** comprueba que una persona (KYC) o empresa
 (KYB) es quien dice ser, con evidencia real: formulario completo, subida de
@@ -7482,6 +7553,10 @@ datos y documentos se completan solos. Ver
 
 *Screening de personas y empresas contra listas de sanciones, PEP y prensa adversa, con rescreening y monitoreo continuo*
 
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="es" />
+
 El **AML screening** contrasta la identidad de una persona o empresa contra
 listas globales — sanciones, PEP, prensa adversa — y devuelve el resultado
 del análisis con su nivel de riesgo. Es un producto de compliance puro:
@@ -7831,6 +7906,10 @@ resultado sin cobrar de nuevo) y descarga su informe.
 
 *Evalúa el riesgo AML de cualquier dirección blockchain — sanciones, fondos ilícitos, exposición — antes de operar con ella*
 
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="es" />
+
 El **screening de wallets** evalúa una dirección blockchain contra
 inteligencia on-chain global y devuelve su nivel de riesgo: si pertenece a
 una entidad sancionada, si recibió fondos de origen ilícito (ransomware,
@@ -8092,6 +8171,10 @@ se acreditan normal.
 
 *El estado de cuenta consolidado: JSON para tu web, PDF y Excel descargables, listos para tu contador*
 
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="es" />
+
 La cartola consolida **todos** los movimientos de una cuenta en un período —
 payouts, payins, depósitos y retiros crypto, transferencias internas,
 compras con tarjeta, conversiones de saldo, operaciones bancarias y
@@ -8259,6 +8342,10 @@ período (detallada en la documentación de administración).
 ## Comprobantes
 
 *PDF brandeado por operación, con QR de verificación de autenticidad, receipt_url en cada respuesta y envío automático por email*
+
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="es" />
 
 Cada operación de tu cuenta — payouts, payins, transferencias, depósitos y
 retiros crypto, conversiones y compras con tarjeta — tiene un **comprobante
@@ -8442,6 +8529,10 @@ curl -X PATCH "https://api.qbank.cl/platform/v1/me" \
 ## Resumen de tu cuenta (analytics)
 
 *Un solo endpoint con todas las series y estadísticas de tu cuenta para armar tu dashboard: volumen, transacciones, usuarios, secciones por servicio, países, consumo y saldos*
+
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="es" />
 
 `GET /v1/analytics/summary` entrega en **una sola llamada** todo lo que
 necesita la página de resumen de tu cuenta (persona o empresa): series
@@ -9736,15 +9827,19 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 ### Empezando
 
 #### ¿Cuál es la URL base de la API?
-`https://api.qbank.cl/platform` — todos los endpoints de esta
-documentación cuelgan de ahí (por ejemplo
+Hay una por ambiente: **live** usa
+`https://api.qbank.cl/platform` y **test** usa
+`https://cryptobank.qbank.cl/platform`. Todos los endpoints de esta
+documentación cuelgan de ellas (por ejemplo
 `https://api.qbank.cl/platform/v1/balances`).
 #### ¿Hay un ambiente sandbox de pruebas?
-No. La API opera directo en producción. Para probar tu integración usa
-**montos pequeños reales**: deposita unos pocos USDT, haz un payout mínimo
-y verifica el ciclo completo (débito → webhook → estado final). Si algo
-falla, el débito se reembolsa automáticamente — no puedes "perder" saldo
-por un error de datos.
+Sí. CBPay opera dos ambientes totalmente aislados: **test**
+(`https://cryptobank.qbank.cl/platform`, keys `pk_test_...`, dinero
+simulado) y **live** (`https://api.qbank.cl/platform`, keys `pk_...`,
+dinero real). Integra primero contra test: todos los corredores los sirve
+un simulador determinista con valores mágicos para forzar cada camino de
+falla, y pasar a live es solo cambiar la URL base y la key. Guía completa
+en [entorno y pruebas](#ambientes-y-pruebas).
 #### ¿Cómo pongo saldo en mi cuenta para empezar?
 Dos caminos: (1) **deposita USDT on-chain** — crea una wallet con
 `POST /v1/crypto/wallets` y envía USDT a esa dirección (TRON o Ethereum);
@@ -9773,9 +9868,13 @@ inician sesión. Ambas van en `Authorization: Bearer <token>` (o
 ### Dinero y tasas
 
 #### ¿En qué moneda está mi saldo?
-Solo **USDT con 6 decimales**. Todas las operaciones fiat (payouts en CLP,
-cobros en BOB…) se convierten a/desde USDT con las tasas de tu cuenta al
-momento de ejecutar (`rate` para payouts, `payin_rate` para payins). Ver
+Tu cuenta mantiene **cuatro saldos independientes**: USDT (la moneda
+operativa, 6 decimales), USDC, BTC y GOLD. Las operaciones fiat (payouts
+en CLP, cobros en BOB…) se convierten a/desde USDT con las tasas de tu
+cuenta al momento de ejecutar (`rate` para payouts, `payin_rate` para
+payins); también puedes liquidar payouts desde otro saldo
+(`settlement_asset`) y quedarte con tus payins en el asset que elijas
+(`default_payin_asset`). Ver
 [modelo de dinero](#modelo-de-dinero).
 #### ¿Cómo sé cuánto me va a costar un payout antes de crearlo?
 Consulta `GET /v1/rates` (devuelve **tu** tasa por país) y calcula:
@@ -9918,9 +10017,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-24 00:17 UTC · 267 requests · versión `52efb88453b5`
+> **Colección actualizada:** 2026-07-24 19:13 UTC · 267 requests · versión `2725edf69e30`
 
-<PostmanFreshness iso="2026-07-24T00:17:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-24T19:13:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -10091,6 +10190,32 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v2.03 — 24 de julio de 2026
+
+**Agregado**
+
+- **Ambiente de pruebas visible en todo el sitio**: cada guía de producto
+  ahora abre con las URLs base de test y live (snippet compartido), y el
+  [FAQ](#preguntas-frecuentes), el [inicio rápido](#inicio-rapido) y la
+  [introducción](#introduccion) describen correctamente el ambiente de
+  pruebas (`https://cryptobank.qbank.cl/platform`, keys `pk_test_`) —
+  copias anteriores decían, erróneamente, que no había sandbox. Detalle
+  completo en [Entorno y pruebas](#ambientes-y-pruebas).
+
+**Cambiado**
+
+- **Catálogo de productos de la introducción completado**: checkout,
+  tarjetas y suscripciones, QR POS, swaps, wallets segregadas, Bitcoin y
+  analytics ahora aparecen con sus guías.
+
+**Corregido**
+
+- Descripciones del spec anteriores a los saldos multi-activo:
+  descripciones de tags realineadas (Swaps, AML screening, Cards) y
+  redacciones antiguas como "se acredita al saldo USDT" corregidas a la
+  semántica de settlement asset (`default_payin_asset`,
+  `settlement_asset`).
 
 ### v2.02 — 23 de julio de 2026
 

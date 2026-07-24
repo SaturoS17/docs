@@ -4,6 +4,10 @@ icon: "credit-card"
 description: "Emite tarjetas que gastan directo de cualquier saldo de la cuenta (USDT, USDC, BTC o GOLD), con límites por tarjeta"
 ---
 
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="es" />
+
 Las tarjetas CBPay gastan **Just-In-Time del saldo central de la cuenta**:
 no hay que prefondearlas ni moverles saldo. Cada tarjeta elige desde qué
 saldo gasta (`spending_asset`: **USDT, USDC, BTC o GOLD**). USDT/USDC van

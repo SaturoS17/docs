@@ -4,6 +4,10 @@ icon: "money-bill-transfer"
 description: "从您的 USDT 余额扣款，向本地银行账户发送法币"
 ---
 
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="zh" />
+
 出金（payout）会以当地货币向目的国的银行账户汇出资金。金额按**您账户的
 汇率**（即 `GET /v1/rates` 返回的汇率）从当地货币折算为 USDT，并从您的
 余额中扣除 `usdt_amount + fee`（如已配置固定费用）。

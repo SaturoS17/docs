@@ -4,6 +4,10 @@ icon: "qrcode"
 description: "Cobra en moneda local y recibe el abono en USDT"
 ---
 
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="es" />
+
 Un payin es un cobro fiat: tu cliente paga en moneda local y tu cuenta
 recibe el abono en USDT automáticamente, convertido a **tu tasa de payin**
 (`payin_rate` en `GET /v1/rates`) menos la comisión fija de payin si tu

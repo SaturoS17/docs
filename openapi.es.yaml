@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.02'
+  version: '2.03'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -10,13 +10,15 @@ info:
 
     independientes — USDT (la moneda operativa), USDC, BTC y GOLD (gramos de
 
-    oro fino) — que nunca se mezclan ni se convierten automáticamente.
+    oro fino) — convertibles a demanda con swaps.
 
     Los payouts y las comisiones de servicios pueden pagarse desde cualquiera
 
-    de los cuatro saldos: define un predeterminado con `PUT /v1/settlement` o
+    de los cuatro saldos (`PUT /v1/settlement` u override por payout con
 
-    haz override por payout con `settlement_asset`.
+    `settlement_asset`), y los payins pueden auto-convertirse al asset que
+
+    elijas (`default_payin_asset`).
 
 
     Todos los montos son strings decimales en la precisión de cada moneda (6
@@ -46,11 +48,17 @@ tags:
 - name: Payouts
   description: Dispersiones fiat que se debitan del saldo de settlement que elijas (USDT por defecto).
 - name: Payins
-  description: Recargas fiat que se acreditan al saldo en USDT.
+  description: Recargas fiat (QR, transferencias, cuentas dedicadas, cobros pull, tarjetas, links de
+    checkout) que se acreditan automáticamente — en USDT por defecto, o convertidas al settlement asset
+    que elijas.
 - name: Transferencias
-- name: Contacts
-- name: Swaps
   description: Transferencias internas gratuitas entre cuentas CBPay (persona o empresa, cualquier combinación).
+- name: Contacts
+  description: Libreta de beneficiarios por cuenta (destinos CBPay, bancarios y crypto) con match por
+    teléfono y auto-guardado en cada envío.
+- name: Swaps
+  description: Conversión instantánea entre los saldos USDT, USDC, BTC y GOLD de la cuenta a la tasa
+    cotizada de la cuenta.
 - name: Crypto
   description: Fondeo y retiros on-chain (TRON, Ethereum y Bitcoin).
 - name: Wallets segregadas
@@ -60,12 +68,14 @@ tags:
 - name: QR Crypto POS
   description: "Cobros QR crypto con monto para procesadores con POS físicos (cuentas empresa): merchants verificados, dirección exclusiva + QR por cobro, detección temprana del pago, conciliación por merchant y devoluciones por el riel de retiro crypto."
 - name: KYC / KYB
+  description: 'Verificación de identidad: KYC para personas, KYB para empresas — tu propio onboarding
+    y verificaciones de terceros para cuentas empresa.'
 - name: Screening de wallets
   description: Evaluación de riesgo AML de direcciones blockchain (sanciones, exposición a fondos ilícitos)
     con comisión por scan, más protección automática gratuita en retiros y depósitos.
 - name: AML screening
-  description: 'Verificación de identidad: KYC para personas, KYB para empresas, con screening AML, re-screening
-    y monitoreo continuo.'
+  description: Screening AML standalone de personas y empresas contra listas de sanciones, PEP y medios
+    adversos, con re-screening, monitoreo continuo e informe PDF descargable.
 - name: Analytics
 - name: Webhooks
   description: Suscripciones para recibir notificaciones de eventos firmadas.
@@ -74,8 +84,8 @@ tags:
 - name: Banking
   description: 'Cuentas bancarias reales: recibe, mantén y envía dinero por rieles bancarios internacionales.'
 - name: Cards
-  description: Tarjetas virtuales y físicas que gastan Just-In-Time del saldo USDT de la cuenta, con límites
-    de gasto por tarjeta.
+  description: Tarjetas virtuales y físicas que gastan Just-In-Time del saldo que elijas (USDT, USDC,
+    BTC o GOLD), con límites de gasto por tarjeta.
 - name: Seguridad (OTP)
   description: Códigos de verificación de un solo uso por SMS/WhatsApp/email que protegen acciones sensibles,
     más las preferencias de 2FA self-service. Aplican solo a sesiones de usuario — las API keys quedan
@@ -10784,8 +10794,8 @@ paths:
       operationId: createBankingCustomer
       summary: Crear mi perfil bancario
       description: Abre el perfil bancario de la cuenta (una vez por cuenta). Si omites `type`/`name`/`email`,
-        se completan desde tu cuenta CBPay. Se cobra la comisión fija `banking_customer` del saldo USDT;
-        se reembolsa si el corredor rechaza.
+        se completan desde tu cuenta CBPay. Se cobra la comisión fija `banking_customer` desde tu settlement
+        asset (USDT por defecto); se reembolsa si el corredor rechaza.
       requestBody:
         required: true
         content:

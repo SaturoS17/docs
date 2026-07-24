@@ -7,6 +7,30 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月24日" description="v2.03">
+
+**新增**
+
+- **测试环境贯穿全站**：每个产品指南现在都在开头展示测试与正式环境的基础
+  URL（共享组件），[常见问题](/zh/faq)、[快速开始](/zh/quickstart)和
+  [介绍](/zh/introduction)也正确描述了测试环境
+  （`https://cryptobank.qbank.cl/platform`、`pk_test_` 密钥）——此前的
+  文案错误地声称不存在沙箱。完整说明见
+  [环境与测试](/zh/environment-testing)。
+
+**变更**
+
+- **介绍页的产品目录已补全**：checkout、卡片与订阅、QR POS、兑换
+  （swaps）、独立钱包、比特币和分析报表现已连同各自指南一并列出。
+
+**修复**
+
+- 早于多币种余额的规格描述：标签描述已重新对齐（Swaps、AML
+  screening、Cards），"入账到 USDT 余额"等旧文案已更正为结算资产语义
+  （`default_payin_asset`、`settlement_asset`）。
+
+</Update>
+
 <Update label="2026年7月23日" description="v2.02">
 
 **变更**

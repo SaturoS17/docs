@@ -14,36 +14,55 @@ them:
 <CardGroup cols={2}>
   <Card title="Fiat payouts" icon="money-bill-transfer" href="/en/guides/payouts">
     Send money to local bank accounts in Chile, Peru, Mexico, Venezuela,
-    Bolivia, Brazil, Paraguay, Ecuador and Argentina, debited from your
-    USDT balance.
+    Bolivia, Brazil, Paraguay, Ecuador and Argentina — including paying
+    scanned PIX QRs.
   </Card>
   <Card title="Fiat payins" icon="qrcode" href="/en/guides/payins">
-    Collect in local currency (QR, transfers, hosted payment page and
-    pull collections) and get credited automatically in USDT.
+    Collect in local currency (QR, transfers, dedicated accounts, pull
+    collections) and get credited automatically.
   </Card>
-  <Card title="Internal transfers" icon="arrows-left-right" href="/en/guides/transfers">
-    Move balance to any other CBPay account, instantly and
-    free of charge.
+  <Card title="Checkout" icon="cart-shopping" href="/en/guides/payins#universal-checkout-link-checkout">
+    A universal payment link: your payer picks their country, method or
+    crypto on a hosted page and you settle in the asset you choose.
+  </Card>
+  <Card title="Cards & subscriptions" icon="credit-card" href="/en/guides/cards">
+    Issue cards that spend from any balance in real time, accept card
+    payments, save cards on file and schedule recurring charges.
+  </Card>
+  <Card title="QR POS" icon="store" href="/en/guides/qr-pos">
+    Register verified merchants and generate amount-bound crypto QR
+    charges for physical points of sale.
   </Card>
   <Card title="On-chain crypto" icon="link" href="/en/guides/crypto">
-    Fund with USDT over TRON or Ethereum and withdraw on-chain to any
-    address.
+    Fund and withdraw USDT/USDC over TRON and Ethereum, and native BTC
+    over Bitcoin — every account is born with its deposit wallets.
   </Card>
-  <Card title="Cards" icon="credit-card" href="/en/guides/cards">
-    Issue virtual and physical cards that spend straight from any of the
-    account's balances (USDT, USDC, BTC or GOLD), in real time.
+  <Card title="Swaps" icon="arrows-rotate" href="/en/guides/swaps">
+    Convert between your USDT, USDC, BTC and GOLD balances at your
+    account's rate, instantly.
+  </Card>
+  <Card title="Internal transfers" icon="arrows-left-right" href="/en/guides/transfers">
+    Move balance to any other CBPay account — by ID, alias, QR or verified
+    phone — instantly and free of charge.
   </Card>
   <Card title="Banking" icon="building-columns" href="/en/guides/banking">
     Real bank accounts in your name: receive, hold and send money over
-    international rails (SEPA, SWIFT, ACH).
+    international rails (SEPA, SWIFT, ACH), including third-party
+    accounts.
   </Card>
-  <Card title="KYC/KYB" icon="user-check" href="/en/guides/kyc">
-    Person and company verification with AML screening, rescreening and
-    continuous monitoring.
+  <Card title="Segregated wallets" icon="wallet" href="/en/guides/segregated-wallets">
+    Dedicated on-chain wallets with their own balance, isolated from the
+    ledger — create, import and export them.
   </Card>
-  <Card title="Statement" icon="file-invoice" href="/en/guides/statement">
-    Full account statement per period in JSON, PDF or Excel, with
-    guaranteed accounting balance.
+  <Card title="KYC/KYB & compliance" icon="user-check" href="/en/guides/kyc">
+    Person and company verification, plus standalone
+    [AML screening](/en/guides/aml) and
+    [crypto address screening](/en/guides/screenings).
+  </Card>
+  <Card title="Statement & analytics" icon="file-invoice" href="/en/guides/statement">
+    Full statement per period (JSON, PDF, Excel) with guaranteed
+    accounting balance, [receipts](/en/guides/receipts) per operation and
+    an [analytics summary](/en/guides/analytics) ready to chart.
   </Card>
 </CardGroup>
 
@@ -51,9 +70,11 @@ Every event reaches your **signed webhooks** ([guide](/en/webhooks)).
 
 ## How it works
 
-Fiat operations revolve around the USDT balance (the USDC, BTC and GOLD
-balances move via internal transfers, on-chain deposits and operator
-credits) — money comes in on one side, converts, and goes out the other:
+Fiat operations revolve around the USDT balance — money comes in on one
+side, converts, and goes out the other. The USDC, BTC and GOLD balances
+move via [swaps](/en/guides/swaps), on-chain deposits and withdrawals,
+internal transfers, payout settlement (`settlement_asset`) and automatic
+payin conversion (`default_payin_asset`):
 
 ```mermaid
 flowchart LR
@@ -88,13 +109,19 @@ flowchart LR
 4. You stay informed: every movement lands in an immutable history
    (`GET /v1/movements`) and events reach your webhooks.
 
-## Base URL
+## Base URLs and environments
 
-```
-https://api.qbank.cl/platform
-```
+CBPay runs two fully isolated environments with the exact same API:
 
-All paths in this documentation are relative to that base URL.
+| Environment | Base URL | API keys | Money |
+|---|---|---|---|
+| **Test** | `https://cryptobank.qbank.cl/platform` | `pk_test_...` | Simulated — every rail served by a deterministic simulator |
+| **Live** | `https://api.qbank.cl/platform` | `pk_...` | Real and irreversible |
+
+All paths in this documentation are relative to those base URLs. Build
+against **test** first and go live by swapping the URL and the key —
+details, magic values and the go-live checklist in
+[environments and testing](/en/environment-testing).
 
 <Note>
 Amounts are always **decimal strings** (e.g. `"10.500000"`), never floating

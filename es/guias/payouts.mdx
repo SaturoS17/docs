@@ -4,6 +4,10 @@ icon: "money-bill-transfer"
 description: "Dispersa fiat a cuentas bancarias locales debitando tu saldo USDT"
 ---
 
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="es" />
+
 Un payout envía dinero en moneda local a una cuenta bancaria del país
 destino. El monto se convierte de moneda local a USDT con **la tasa de tu
 cuenta** (la de `GET /v1/rates`) y se debita `usdt_amount + fee` (el fijo,

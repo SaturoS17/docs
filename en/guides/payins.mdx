@@ -4,6 +4,10 @@ icon: "qrcode"
 description: "Collect in local currency and get credited in USDT"
 ---
 
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="en" />
+
 A payin is a fiat collection: your customer pays in local currency and your
 account gets credited in USDT automatically, converted at **your payin
 rate** (`payin_rate` in `GET /v1/rates`) minus the fixed payin fee when
