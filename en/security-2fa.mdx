@@ -17,6 +17,14 @@ phone on the other side. If your whole operation runs on API keys, this
 page changes nothing in your integration.
 </Note>
 
+<Note>
+This page covers the **per-action OTP flow** your integration must handle
+(`otp_required` → challenge → verify). Everything the end user manages about
+their own factors — enabling 2FA, channels (SMS/WhatsApp/email), the
+authenticator app (TOTP), recovery codes and passkeys — lives in
+[Profile & security](/en/guides/profile).
+</Note>
+
 ## How it works
 
 ```mermaid

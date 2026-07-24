@@ -8,6 +8,32 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="24 de julio de 2026" description="v2.04">
+
+**Agregado**
+
+- **Guías propias por producto**, extraídas de los monolitos de
+  payins/payouts: [Checkout](/es/guias/checkout),
+  [Tarjetas guardadas y suscripciones](/es/guias/stored-cards-subscriptions)
+  y [Payout QR](/es/guias/qr-payout). Las secciones originales conservan sus
+  encabezados y enlazan a las guías nuevas, así los anchors históricos
+  siguen resolviendo.
+- **Flujos end-to-end nuevos** en [Flujos de integración](/es/flujos):
+  checkout, tarjetas guardadas y suscripciones, cobros QR POS y swaps de
+  saldos, cada uno con su diagrama de secuencia.
+
+**Cambiado**
+
+- **Navegación de Productos reorganizada por familia**: Cobrar (money in),
+  Pagar (money out), Saldos y cuenta, Identidad y compliance, y
+  Experiencia — en vez de una lista plana de 17 páginas.
+- [Perfil y seguridad](/es/guias/perfil) y
+  [Seguridad y 2FA (OTP)](/es/seguridad-2fa) ahora se cruzan y declaran sus
+  roles: la guía de perfil es la casa de los factores 2FA del usuario; la
+  página OTP cubre el flujo de desafíos por acción.
+
+</Update>
+
 <Update label="24 de julio de 2026" description="v2.03">
 
 **Agregado**
@@ -149,7 +175,7 @@ con anticipación y quedan marcados como **Breaking**.
 
 **Agregado**
 
-- **Facturación en archivo con la tarjeta guardada** ([guía payins](/es/guias/payins#tarjetas-guardadas-y-cobros-recurrentes-tarjeta)): los datos de facturación que el pagador ingresa al guardar su tarjeta (nombre, dirección, ciudad, correo, teléfono) quedan guardados junto con la credencial. Al pagar de nuevo con esa tarjeta la página segura los aplica automáticamente — el pagador no re-tipea nada — y muestra solo un **resumen enmascarado** (nombre, correo parcial y ciudad) con un enlace "usar otros datos" por si quiere cambiarlos. Los datos completos jamás bajan al navegador: el servidor los aplica al autorizar.
+- **Facturación en archivo con la tarjeta guardada** ([guía payins](/es/guias/stored-cards-subscriptions)): los datos de facturación que el pagador ingresa al guardar su tarjeta (nombre, dirección, ciudad, correo, teléfono) quedan guardados junto con la credencial. Al pagar de nuevo con esa tarjeta la página segura los aplica automáticamente — el pagador no re-tipea nada — y muestra solo un **resumen enmascarado** (nombre, correo parcial y ciudad) con un enlace "usar otros datos" por si quiere cambiarlos. Los datos completos jamás bajan al navegador: el servidor los aplica al autorizar.
 
 **Cambiado**
 
@@ -161,7 +187,7 @@ con anticipación y quedan marcados como **Breaking**.
 
 **Corregido**
 
-- **Página de checkout — pago con tarjeta en 1 clic** ([guía payins](/es/guias/payins#link-de-cobro-universal-checkout)): al continuar con tarjeta, la página pública ahora redirige directo a la página segura de pago — se eliminó el botón intermedio que exigía un segundo clic. Elegir una tarjeta guardada de la lista inicia el pago de inmediato.
+- **Página de checkout — pago con tarjeta en 1 clic** ([guía payins](/es/guias/checkout)): al continuar con tarjeta, la página pública ahora redirige directo a la página segura de pago — se eliminó el botón intermedio que exigía un segundo clic. Elegir una tarjeta guardada de la lista inicia el pago de inmediato.
 - **Tarjeta guardada en el checkout**: elegir una tarjeta guardada ahora llega siempre a la página segura con la credencial aplicada (muestra marca y últimos 4 dígitos, sin pedir el número de nuevo). Antes, la re-validación del correo podía descartar la selección en silencio y la página pedía todos los datos otra vez. Además, cambiar la elección en el mismo link (guardada ↔ tarjeta nueva) regenera la sesión de pago correcta en vez de reusar la anterior.
 
 </Update>
@@ -178,7 +204,7 @@ con anticipación y quedan marcados como **Breaking**.
 
 **Corregido**
 
-- **Monto de los cobros checkout en el historial de payins** ([guía payins](/es/guias/payins#link-de-cobro-universal-checkout)): `GET /v1/payins` y `GET /v1/payins/{payin_id}` ahora incluyen siempre la denominación de los payins de checkout y QR POS — `settlement_asset` + `asset_amount` (y `conversion_status` cuando aplica) — en todo estado, incluidos pendiente y vencido. Antes el monto solo aparecía al acreditarse y las filas pendientes salían sin monto. Además, un cobro liquidado en crypto o vía la app CBPay expone su `usdt_credited` aunque no lleve `fx_rate`. Los exports CSV/XLSX agregan las columnas `settlement_asset` y `asset_amount`.
+- **Monto de los cobros checkout en el historial de payins** ([guía payins](/es/guias/checkout)): `GET /v1/payins` y `GET /v1/payins/{payin_id}` ahora incluyen siempre la denominación de los payins de checkout y QR POS — `settlement_asset` + `asset_amount` (y `conversion_status` cuando aplica) — en todo estado, incluidos pendiente y vencido. Antes el monto solo aparecía al acreditarse y las filas pendientes salían sin monto. Además, un cobro liquidado en crypto o vía la app CBPay expone su `usdt_credited` aunque no lleve `fx_rate`. Los exports CSV/XLSX agregan las columnas `settlement_asset` y `asset_amount`.
 
 </Update>
 
@@ -186,7 +212,7 @@ con anticipación y quedan marcados como **Breaking**.
 
 **Agregado**
 
-- **Suscripciones (cobros recurrentes agendados)** ([guía payins](/es/guias/payins#suscripciones-cobros-recurrentes-agendados)): la plataforma lleva el calendario de los cobros sobre una tarjeta guardada. `POST /v1/subscriptions` (`interval` daily/weekly/monthly/yearly, `start_at` opcional para trial, `idempotency_key` obligatoria) cobra el primer período al crear y dispara los siguientes solos. Recurso completo `GET /v1/subscriptions` (+`/{id}`, filtros status/stored_card_id/payer_reference) y ciclo de vida `POST .../pause` · `/resume` · `/cancel`. Dunning ante declines (reintento diario ×3 ⇒ `past_due`), sin catch-up al reanudar, y cancelación automática al revocar la tarjeta. Cada cobro exitoso acredita como payin de tarjeta (`payin_credited` con `subscription_id`). Webhook nuevo `subscription_status_changed`.
+- **Suscripciones (cobros recurrentes agendados)** ([guía payins](/es/guias/stored-cards-subscriptions#suscripciones-cobros-recurrentes-agendados)): la plataforma lleva el calendario de los cobros sobre una tarjeta guardada. `POST /v1/subscriptions` (`interval` daily/weekly/monthly/yearly, `start_at` opcional para trial, `idempotency_key` obligatoria) cobra el primer período al crear y dispara los siguientes solos. Recurso completo `GET /v1/subscriptions` (+`/{id}`, filtros status/stored_card_id/payer_reference) y ciclo de vida `POST .../pause` · `/resume` · `/cancel`. Dunning ante declines (reintento diario ×3 ⇒ `past_due`), sin catch-up al reanudar, y cancelación automática al revocar la tarjeta. Cada cobro exitoso acredita como payin de tarjeta (`payin_credited` con `subscription_id`). Webhook nuevo `subscription_status_changed`.
 
 </Update>
 
@@ -194,7 +220,7 @@ con anticipación y quedan marcados como **Breaking**.
 
 **Agregado**
 
-- **Tarjetas guardadas y cobros recurrentes** ([guía payins](/es/guias/payins#tarjetas-guardadas-y-cobros-recurrentes-tarjeta)): el método `card` ahora soporta credencial almacenada (mandato COF de las marcas). `POST /v1/payins` acepta `save_card` (checkbox de consentimiento en la página hosted), `payer_reference` (tu ID del cliente) y `stored_card_id` (pagar con una tarjeta guardada sin re-digitar el número; el 3-D Secure corre igual). Recurso nuevo `GET /v1/stored-cards` (+`/{id}`, `DELETE` para revocar) y **cobros iniciados por el comercio** sin el pagador presente: `POST /v1/stored-cards/{id}/charges` (`recurring` para suscripciones; `idempotency_key` obligatoria — un retry jamás cobra dos veces). El número de tarjeta jamás existe en la plataforma: solo display (marca, últimos 4, expiración). Webhooks nuevos `card_stored` y `stored_card_revoked`; error nuevo `422 stored_card_revoked` ([errores](/es/errores)).
+- **Tarjetas guardadas y cobros recurrentes** ([guía payins](/es/guias/stored-cards-subscriptions)): el método `card` ahora soporta credencial almacenada (mandato COF de las marcas). `POST /v1/payins` acepta `save_card` (checkbox de consentimiento en la página hosted), `payer_reference` (tu ID del cliente) y `stored_card_id` (pagar con una tarjeta guardada sin re-digitar el número; el 3-D Secure corre igual). Recurso nuevo `GET /v1/stored-cards` (+`/{id}`, `DELETE` para revocar) y **cobros iniciados por el comercio** sin el pagador presente: `POST /v1/stored-cards/{id}/charges` (`recurring` para suscripciones; `idempotency_key` obligatoria — un retry jamás cobra dos veces). El número de tarjeta jamás existe en la plataforma: solo display (marca, últimos 4, expiración). Webhooks nuevos `card_stored` y `stored_card_revoked`; error nuevo `422 stored_card_revoked` ([errores](/es/errores)).
 
 </Update>
 
@@ -395,7 +421,7 @@ con anticipación y quedan marcados como **Breaking**.
   Disponible en el ambiente de pruebas con QRs de ejemplo y valores mágicos
   (montos `.99` fallan) — ver
   [Entorno y pruebas](/es/entorno-y-pruebas#qrs-pix-de-ejemplo). Detalle en
-  la [guía de payouts](/es/guias/payouts#payout-por-qr).
+  la [guía de payouts](/es/guias/qr-payout).
 
 </Update>
 
@@ -422,7 +448,7 @@ con anticipación y quedan marcados como **Breaking**.
   nuevo `GET {checkout_url}/quote` con el catálogo de países, dues crypto
   y dues CBPay. Errores nuevos `country_required`, `country_unavailable`,
   `settlement_asset_disabled` y `checkout_amount_mismatch`. Detalle en la
-  [guía de payins](/es/guias/payins#link-de-cobro-universal-checkout).
+  [guía de payins](/es/guias/checkout).
 
 </Update>
 
@@ -457,7 +483,7 @@ con anticipación y quedan marcados como **Breaking**.
   (10 minutos a 7 días) e idempotencia (el retry devuelve el mismo link).
   Errores nuevos `already_paid`, `checkout_expired` y
   `method_unavailable`. Detalle en la
-  [guía de payins](/es/guias/payins#link-de-cobro-universal-checkout).
+  [guía de payins](/es/guias/checkout).
 
 </Update>
 

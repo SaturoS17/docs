@@ -14,6 +14,14 @@ foto), los factores de doble autenticación (2FA) y el control de sus sesiones
 y actividad de seguridad. Todo vive bajo `/v1/me/*` y `/v1/auth/*`, y requiere
 una **sesión de usuario** (JWT); las API keys no aplican.
 
+<Note>
+Esta guía es la casa de los **factores y preferencias 2FA** del usuario
+(SMS/WhatsApp/email, app autenticadora, códigos de recuperación, passkeys).
+El **flujo OTP por acción** que tu integración maneja cuando la API responde
+`otp_required` (challenge → verify → `X-OTP-Token`) está documentado en
+[Seguridad y 2FA (OTP)](/es/seguridad-2fa).
+</Note>
+
 ```mermaid
 flowchart LR
     cred["Credenciales<br/>contraseña · email"] --> cuenta["Mi cuenta"]

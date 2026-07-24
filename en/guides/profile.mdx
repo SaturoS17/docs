@@ -14,6 +14,14 @@ photo), two-factor authentication (2FA) factors, and control over their
 sessions and security activity. It all lives under `/v1/me/*` and `/v1/auth/*`
 and requires a **user session** (JWT); API keys do not apply.
 
+<Note>
+This guide is the home of the user's **2FA factors and preferences**
+(SMS/WhatsApp/email, authenticator app, recovery codes, passkeys). The
+**per-action OTP flow** your integration handles when the API answers
+`otp_required` (challenge → verify → `X-OTP-Token`) is documented in
+[Security and 2FA (OTP)](/en/security-2fa).
+</Note>
+
 ```mermaid
 flowchart LR
     cred["Credentials<br/>password · email"] --> acct["My account"]

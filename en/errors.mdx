@@ -136,7 +136,7 @@ Full flow and details in [social login](/en/guides/social-login).
 | 400 | `invalid_pair` | Swap with the same source and destination currency |
 | 400 | `amount_too_small` | The swap amount does not reach the destination currency's minimum unit |
 | 400 | `swap_asset_disabled` | One of the swap currencies is disabled for your organization |
-| 409 | `already_paid` | The [universal checkout link](/en/guides/payins#universal-checkout-link-checkout) was already paid through another method |
+| 409 | `already_paid` | The [universal checkout link](/en/guides/checkout) was already paid through another method |
 | 410 | `checkout_expired` | The universal checkout link expired unpaid |
 | 422 | `method_unavailable` | The method chosen on the checkout link is not available for that link or country |
 | 400 | `country_required` | Fiat materialization on the checkout link is missing `?country=XX` |
@@ -146,7 +146,7 @@ Full flow and details in [social login](/en/guides/social-login).
 | 422 | `collect_rejected` | The rail rejected the link's pull charge (invalid OTP or wrong data); the link stays pending |
 | 422 | `settlement_asset_disabled` | The checkout link's `settlement_asset` is disabled for your organization |
 | 422 | `checkout_amount_mismatch` | The CBPay transfer does not cover the checkout link's current due; the message carries the updated amount |
-| 422 | `stored_card_revoked` | The [saved card](/en/guides/payins#saved-cards-and-recurring-charges-card) is revoked; it no longer accepts charges |
+| 422 | `stored_card_revoked` | The [saved card](/en/guides/stored-cards-subscriptions) is revoked; it no longer accepts charges |
 | 422 | `verification_required` | [QR Crypto POS](/en/guides/qr-pos): register the merchant with the `verification_id` of their approved third-party KYC/KYB |
 | 422 | `merchant_disabled` | The [QR Crypto POS](/en/guides/qr-pos) merchant is disabled; re-enable it before charging |
 | 422 | `nothing_received` | The [QR Crypto POS](/en/guides/qr-pos) charge has not received any on-chain payment: there is nothing to refund |

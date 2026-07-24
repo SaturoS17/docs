@@ -7,6 +7,28 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月24日" description="v2.04">
+
+**新增**
+
+- **独立的产品指南**（从 payins/payouts 长文中拆分）：
+  [Checkout 收款链接](/zh/guides/checkout)、
+  [已保存卡片与订阅](/zh/guides/stored-cards-subscriptions) 和
+  [QR 出金](/zh/guides/qr-payout)。原有章节保留标题并链接到新指南，
+  历史锚点仍然有效。
+- [集成流程](/zh/flows) 新增**端到端流程**：checkout、已保存卡片与订阅、
+  QR POS 收款和余额兑换，均附时序图。
+
+**变更**
+
+- **产品导航按产品族重组**：收款（Money in）、付款（Money out）、
+  余额与账户、身份与合规、体验 — 取代原先 17 页的扁平列表。
+- [个人资料与安全](/zh/guides/profile) 与
+  [安全与双因素认证（OTP）](/zh/security-2fa) 现已互相链接并明确分工：
+  个人资料指南负责用户的 2FA 因子；OTP 页面负责按操作的验证流程。
+
+</Update>
+
 <Update label="2026年7月24日" description="v2.03">
 
 **新增**
@@ -131,7 +153,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
 
 **新增**
 
-- **随已保存卡片存档的账单信息**（[payins 指南](/zh/guides/payins#已保存卡片与循环扣款card)）：付款人保存卡片时填写的账单信息（姓名、地址、城市、邮箱、电话）会与凭证一并保存。再次使用该卡支付时，安全页面自动应用这些信息 — 付款人无需重新输入 — 且只显示**脱敏摘要**（姓名、部分邮箱和城市），并提供"使用其他信息"链接以便修改。完整信息绝不下发到浏览器：由服务器在授权时应用。
+- **随已保存卡片存档的账单信息**（[payins 指南](/zh/guides/stored-cards-subscriptions)）：付款人保存卡片时填写的账单信息（姓名、地址、城市、邮箱、电话）会与凭证一并保存。再次使用该卡支付时，安全页面自动应用这些信息 — 付款人无需重新输入 — 且只显示**脱敏摘要**（姓名、部分邮箱和城市），并提供"使用其他信息"链接以便修改。完整信息绝不下发到浏览器：由服务器在授权时应用。
 
 **变更**
 
@@ -143,7 +165,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
 
 **修复**
 
-- **结账页 — 银行卡一键支付**（[收款指南](/zh/guides/payins#universal-payment-link-checkout)）：在公开页面选择银行卡继续时，现在直接跳转到安全支付页 — 移除了需要二次点击的中间按钮。点击已保存的卡即刻发起支付。
+- **结账页 — 银行卡一键支付**（[收款指南](/zh/guides/checkout)）：在公开页面选择银行卡继续时，现在直接跳转到安全支付页 — 移除了需要二次点击的中间按钮。点击已保存的卡即刻发起支付。
 - **结账页的已保存卡**：选择已保存的卡后，安全支付页现在始终带上该凭据（显示卡组织与末 4 位，不再要求重新输入卡号）。此前邮箱重新校验可能悄悄丢弃所选卡，页面会再次要求填写全部信息。此外，在同一链接上切换选择（已保存 ↔ 新卡）会重新生成正确的支付会话，而不是复用旧会话。
 
 </Update>
@@ -160,7 +182,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
 
 **修复**
 
-- **payin 历史中的 checkout 收款金额**（[payins 指南](/zh/guides/payins#通用收款链接checkout)）：`GET /v1/payins` 和 `GET /v1/payins/{payin_id}` 现在在所有状态（包括待支付和已过期）都返回 checkout 和 QR POS 收款的计价 — `settlement_asset` + `asset_amount`（适用时还有 `conversion_status`）。此前金额只在入账后出现，待支付的行没有金额。此外，以加密货币或 CBPay 应用结算的收款即使没有 `fx_rate` 也会返回 `usdt_credited`。CSV/XLSX 导出新增 `settlement_asset` 和 `asset_amount` 列。
+- **payin 历史中的 checkout 收款金额**（[payins 指南](/zh/guides/checkout)）：`GET /v1/payins` 和 `GET /v1/payins/{payin_id}` 现在在所有状态（包括待支付和已过期）都返回 checkout 和 QR POS 收款的计价 — `settlement_asset` + `asset_amount`（适用时还有 `conversion_status`）。此前金额只在入账后出现，待支付的行没有金额。此外，以加密货币或 CBPay 应用结算的收款即使没有 `fx_rate` 也会返回 `usdt_credited`。CSV/XLSX 导出新增 `settlement_asset` 和 `asset_amount` 列。
 
 </Update>
 
@@ -168,7 +190,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
 
 **新增**
 
-- **订阅（计划性循环扣款）**（[payins 指南](/zh/guides/payins#订阅计划性循环扣款)）：平台为已存卡的扣款执行排期。`POST /v1/subscriptions`（`interval` daily/weekly/monthly/yearly、可选 `start_at` 用于试用、必填 `idempotency_key`）在创建时扣款首个周期并自动触发其余周期。完整资源 `GET /v1/subscriptions`（+`/{id}`，过滤 status/stored_card_id/payer_reference）及生命周期 `POST .../pause` · `/resume` · `/cancel`。被拒时催收（每天重试 ×3 ⇒ `past_due`），恢复时不补扣，撤销卡片时自动取消。每次成功扣款像普通卡 payin 一样入账（`payin_credited` 带 `subscription_id`）。新增 webhook `subscription_status_changed`。
+- **订阅（计划性循环扣款）**（[payins 指南](/zh/guides/stored-cards-subscriptions)）：平台为已存卡的扣款执行排期。`POST /v1/subscriptions`（`interval` daily/weekly/monthly/yearly、可选 `start_at` 用于试用、必填 `idempotency_key`）在创建时扣款首个周期并自动触发其余周期。完整资源 `GET /v1/subscriptions`（+`/{id}`，过滤 status/stored_card_id/payer_reference）及生命周期 `POST .../pause` · `/resume` · `/cancel`。被拒时催收（每天重试 ×3 ⇒ `past_due`），恢复时不补扣，撤销卡片时自动取消。每次成功扣款像普通卡 payin 一样入账（`payin_credited` 带 `subscription_id`）。新增 webhook `subscription_status_changed`。
 
 </Update>
 
@@ -176,7 +198,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
 
 **新增**
 
-- **已保存卡片与循环扣款**（[payins 指南](/zh/guides/payins#已保存卡片与循环扣款card)）：`card` 方式现支持存储凭证（卡组织 COF 规范）。`POST /v1/payins` 接受 `save_card`（托管页面上的同意复选框）、`payer_reference`（你的客户 ID）和 `stored_card_id`（使用已保存的卡支付，免输卡号；3-D Secure 照常运行）。新资源 `GET /v1/stored-cards`（+`/{id}`、`DELETE` 撤销）以及付款人不在场的**商户发起扣款**：`POST /v1/stored-cards/{id}/charges`（`recurring` 用于订阅；必须提供 `idempotency_key` — 重试绝不重复扣款）。卡号从不存在于平台：仅展示数据（卡组织、末四位、有效期）。新增 webhook `card_stored` 和 `stored_card_revoked`；新增错误 `422 stored_card_revoked`（[错误](/zh/errors)）。
+- **已保存卡片与循环扣款**（[payins 指南](/zh/guides/stored-cards-subscriptions)）：`card` 方式现支持存储凭证（卡组织 COF 规范）。`POST /v1/payins` 接受 `save_card`（托管页面上的同意复选框）、`payer_reference`（你的客户 ID）和 `stored_card_id`（使用已保存的卡支付，免输卡号；3-D Secure 照常运行）。新资源 `GET /v1/stored-cards`（+`/{id}`、`DELETE` 撤销）以及付款人不在场的**商户发起扣款**：`POST /v1/stored-cards/{id}/charges`（`recurring` 用于订阅；必须提供 `idempotency_key` — 重试绝不重复扣款）。卡号从不存在于平台：仅展示数据（卡组织、末四位、有效期）。新增 webhook `card_stored` 和 `stored_card_revoked`；新增错误 `422 stored_card_revoked`（[错误](/zh/errors)）。
 
 </Update>
 
@@ -347,7 +369,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   `400 invalid_qr_payload`——请改用 `pix` 方式并提供收款人的密钥。
   测试环境已提供示例二维码与魔法值（`.99` 金额失败）——
   见[测试环境](/zh/environment-testing#pix-二维码示例巴西-qr-出金)。详见
-  [payouts 指南](/zh/guides/payouts#qr-出金)。
+  [payouts 指南](/zh/guides/qr-payout)。
 
 </Update>
 
@@ -371,7 +393,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   目录、加密货币应付额与 CBPay 应付额。新增错误 `country_required`、
   `country_unavailable`、`settlement_asset_disabled` 与
   `checkout_amount_mismatch`。详见
-  [收款指南](/zh/guides/payins#通用收款链接checkout)。
+  [收款指南](/zh/guides/checkout)。
 
 </Update>
 
@@ -401,7 +423,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   事件附带 `settled_via` 和 `crypto_amount`。支持 `success_url`、
   `failure_url`、`expires_in`（10 分钟到 7 天）与幂等（重试返回同一链接）。
   新增错误 `already_paid`、`checkout_expired` 与 `method_unavailable`。
-  详见[收款指南](/zh/guides/payins#通用收款链接checkout)。
+  详见[收款指南](/zh/guides/checkout)。
 
 </Update>
 

@@ -1,7 +1,7 @@
 ---
 title: "Integration flows"
 icon: "route"
-description: "The five end-to-end flows of a typical integration, with step-by-step sequence diagrams"
+description: "The end-to-end flows of a typical integration, with step-by-step sequence diagrams"
 ---
 
 This page connects the products into **complete business flows**: what to
@@ -57,9 +57,10 @@ sequenceDiagram
     App->>CB: GET /v1/payouts/{id} (verify final state)
 ```
 
-**QR** variant (Bolivia): `POST /v1/payouts/qr/scan` (free, decodes) →
-show the data → `POST /v1/payouts/qr/confirm` (charged like a normal
-payout). Details: [payouts](/en/guides/payouts).
+**QR** variant (Bolivia, Brazil PIX): `POST /v1/payouts/qr/scan` (free,
+decodes) → show the data → `POST /v1/payouts/qr/confirm` (charged like a
+normal payout). Details: [payouts](/en/guides/payouts) ·
+[QR payout](/en/guides/qr-payout).
 
 ## 3. Collecting from a customer
 
@@ -70,13 +71,85 @@ Pick the mode based on the country and the experience you want:
 | Hosted payment page | CL | Opens a URL and pays from their bank | Automatic |
 | QR | BO, BR (PIX) | Scans with their banking app | Automatic |
 | Announced transfer | CL, PE, MX, BR | Transfers including the reference | Automatic by reference (or amount) |
-| Dedicated CLABE | MX | Transfers to a fixed CLABE of yours | Automatic, no references |
+| Dedicated CLABE / CVU | MX, AR | Transfers to a fixed account of yours | Automatic, no references |
 | Pull collection (c2p / debit) | VE | Authorizes with OTP and you execute the charge | **Synchronous** in the same call |
+| Card payment | BO (BOB/USD) | Enters their card on a secure hosted page (3DS) | Automatic |
+| Universal checkout link | Every live country + crypto + cards | Opens one link and picks how to pay | Automatic |
 
 All close with `payin_credited` and the net credit in your balance.
-Details: [payins](/en/guides/payins).
+Details: [payins](/en/guides/payins) · [checkout](/en/guides/checkout).
 
-## 4. Reconciling
+## 4. Checkout end-to-end
+
+One link, every rail, settled in the balance you choose:
+
+```mermaid
+sequenceDiagram
+    participant App as Your app
+    participant CB as CBPay
+    participant Pagador as Payer
+    App->>CB: POST /v1/payins (method: checkout, amount, settlement_asset)
+    CB-->>App: checkout_url (branded public page)
+    App->>Pagador: share the link
+    Pagador->>CB: picks fiat / crypto / card / CBPay app and pays
+    CB->>CB: credits and auto-converts to your settlement_asset
+    CB-->>App: webhook payin_credited (settled_via, conversion_status)
+```
+
+Details: [checkout](/en/guides/checkout).
+
+## 5. Saved cards and subscriptions
+
+Save the card once (with the payer's consent) and charge it later —
+one-click, merchant-initiated (MIT) or on a recurring schedule:
+
+```mermaid
+sequenceDiagram
+    participant App as Your app
+    participant CB as CBPay
+    participant Pagador as Payer
+    App->>CB: POST /v1/payins (method: card, save_card: true)
+    Pagador->>CB: pays with 3DS and ticks "save my card"
+    CB-->>App: webhook card_stored (stored_card_id)
+    App->>CB: POST /v1/stored-cards/{id}/charges (MIT, payer absent)
+    CB-->>App: webhook payin_credited
+    App->>CB: POST /v1/subscriptions (interval + amount)
+    CB-->>App: payin_credited per period + subscription_status_changed
+```
+
+Details: [stored cards & subscriptions](/en/guides/stored-cards-subscriptions).
+
+## 6. QR POS charge (processors)
+
+For companies operating physical points of sale:
+
+```mermaid
+sequenceDiagram
+    participant POS as Your POS
+    participant CB as CBPay
+    participant Cliente as Customer
+    POS->>CB: POST /v1/pos/merchants (verified merchant, once)
+    POS->>CB: POST /v1/pos/charges (amount, idempotency_key)
+    CB-->>POS: exclusive crypto address + QR + quoted due
+    Cliente->>CB: pays in crypto (partial payments accumulate)
+    CB-->>POS: webhook payin_credited (pos_merchant attribution)
+```
+
+Details: [QR POS](/en/guides/qr-pos).
+
+## 7. Converting balances (swaps)
+
+```mermaid
+flowchart LR
+    Q["GET /v1/swaps/quote<br/>(indicative, free)"] --> S["POST /v1/swaps<br/>(idempotency_key)"]
+    S --> B["Instant credit in the<br/>target balance"]
+```
+
+One call converts between USDT, USDC, BTC and GOLD at your account's
+rate — no money leaves the account, so no OTP is required. Details:
+[swaps](/en/guides/swaps).
+
+## 8. Reconciling
 
 ```mermaid
 flowchart LR
@@ -90,7 +163,7 @@ Full recipe in
 [movements and reconciliation](/en/concepts/movements-reconciliation) and
 [statement](/en/guides/statement).
 
-## 5. End-to-end international banking
+## 9. End-to-end international banking
 
 ```mermaid
 sequenceDiagram

@@ -10,6 +10,13 @@ import { EnvUrls } from "/snippets/env-urls.jsx";
 
 终端用户可管理的与**自己账户**相关的一切：登录凭据（密码和邮箱）、用于收款的公开身份（别名、二维码和头像）、双重验证（2FA）因子，以及对会话和安全活动的控制。这些功能全部位于 `/v1/me/*` 和 `/v1/auth/*` 下，并要求**用户会话**（JWT）；API key 不适用。
 
+<Note>
+本指南是用户 **2FA 因子与偏好**的归属页（短信/WhatsApp/邮箱、验证器应用、
+恢复代码、通行密钥）。当 API 返回 `otp_required` 时您的集成需要处理的
+**按操作 OTP 流程**（challenge → verify → `X-OTP-Token`）记录在
+[安全与双因素认证（OTP）](/zh/security-2fa)。
+</Note>
+
 ```mermaid
 flowchart LR
     cred["登录凭据<br/>密码 · 邮箱"] --> acct["我的账户"]

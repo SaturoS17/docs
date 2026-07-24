@@ -1,7 +1,7 @@
 ---
 title: "Flujos de integración"
 icon: "route"
-description: "Los cinco flujos end-to-end de una integración típica, con diagramas de secuencia paso a paso"
+description: "Los flujos end-to-end de una integración típica, con diagramas de secuencia paso a paso"
 ---
 
 Esta página conecta los productos en **flujos completos de negocio**: qué
@@ -57,9 +57,10 @@ sequenceDiagram
     App->>CB: GET /v1/payouts/{id} (verifica estado final)
 ```
 
-Variante **QR** (Bolivia): `POST /v1/payouts/qr/scan` (gratis, decodifica)
-→ muestra los datos → `POST /v1/payouts/qr/confirm` (cobra como un payout
-normal). Detalle: [payouts](/es/guias/payouts).
+Variante **QR** (Bolivia, PIX de Brasil): `POST /v1/payouts/qr/scan`
+(gratis, decodifica) → muestra los datos → `POST /v1/payouts/qr/confirm`
+(cobra como un payout normal). Detalle: [payouts](/es/guias/payouts) ·
+[payout QR](/es/guias/qr-payout).
 
 ## 3. Cobrar a un cliente
 
@@ -70,13 +71,86 @@ Elige la modalidad según el país y la experiencia que quieras dar:
 | Página de pago hosted | CL | Abre una URL y paga desde su banco | Automática |
 | QR | BO, BR (PIX) | Escanea con su app bancaria | Automática |
 | Transferencia anunciada | CL, PE, MX, BR | Transfiere incluyendo la referencia | Automática por referencia (o monto) |
-| CLABE dedicada | MX | Transfiere a una CLABE fija tuya | Automática, sin referencias |
+| CLABE / CVU dedicada | MX, AR | Transfiere a una cuenta fija tuya | Automática, sin referencias |
 | Cobro pull (c2p / débito) | VE | Autoriza con OTP y tú ejecutas el cobro | **Síncrona** en la misma llamada |
+| Pago con tarjeta | BO (BOB/USD) | Ingresa su tarjeta en una página hosted segura (3DS) | Automática |
+| Link de cobro universal | Todos los países activos + crypto + tarjetas | Abre un link y elige cómo pagar | Automática |
 
 Todos cierran con `payin_credited` y el abono neto en tu saldo.
-Detalle: [payins](/es/guias/payins).
+Detalle: [payins](/es/guias/payins) · [checkout](/es/guias/checkout).
 
-## 4. Conciliar
+## 4. Checkout end-to-end
+
+Un link, todos los rieles, liquidado en el saldo que elijas:
+
+```mermaid
+sequenceDiagram
+    participant App as Tu app
+    participant CB as CBPay
+    participant Pagador as Pagador
+    App->>CB: POST /v1/payins (method: checkout, amount, settlement_asset)
+    CB-->>App: checkout_url (página pública brandeada)
+    App->>Pagador: comparte el link
+    Pagador->>CB: elige fiat / crypto / tarjeta / app CBPay y paga
+    CB->>CB: acredita y auto-convierte a tu settlement_asset
+    CB-->>App: webhook payin_credited (settled_via, conversion_status)
+```
+
+Detalle: [checkout](/es/guias/checkout).
+
+## 5. Tarjetas guardadas y suscripciones
+
+Guarda la tarjeta una vez (con consentimiento del pagador) y cóbrala
+después — con un clic, sin el pagador presente (MIT) o con un calendario
+recurrente:
+
+```mermaid
+sequenceDiagram
+    participant App as Tu app
+    participant CB as CBPay
+    participant Pagador as Pagador
+    App->>CB: POST /v1/payins (method: card, save_card: true)
+    Pagador->>CB: paga con 3DS y marca "guardar mi tarjeta"
+    CB-->>App: webhook card_stored (stored_card_id)
+    App->>CB: POST /v1/stored-cards/{id}/charges (MIT, sin el pagador)
+    CB-->>App: webhook payin_credited
+    App->>CB: POST /v1/subscriptions (intervalo + monto)
+    CB-->>App: payin_credited por período + subscription_status_changed
+```
+
+Detalle: [tarjetas guardadas y suscripciones](/es/guias/stored-cards-subscriptions).
+
+## 6. Cobro QR POS (procesadores)
+
+Para empresas que operan puntos de venta físicos:
+
+```mermaid
+sequenceDiagram
+    participant POS as Tu POS
+    participant CB as CBPay
+    participant Cliente as Cliente
+    POS->>CB: POST /v1/pos/merchants (merchant verificado, una vez)
+    POS->>CB: POST /v1/pos/charges (monto, idempotency_key)
+    CB-->>POS: dirección crypto exclusiva + QR + due cotizado
+    Cliente->>CB: paga en crypto (los pagos parciales acumulan)
+    CB-->>POS: webhook payin_credited (atribución pos_merchant)
+```
+
+Detalle: [QR POS](/es/guias/qr-pos).
+
+## 7. Convertir saldos (swaps)
+
+```mermaid
+flowchart LR
+    Q["GET /v1/swaps/quote<br/>(indicativa, gratis)"] --> S["POST /v1/swaps<br/>(idempotency_key)"]
+    S --> B["Abono instantáneo en el<br/>saldo destino"]
+```
+
+Una llamada convierte entre USDT, USDC, BTC y GOLD a la tasa de tu
+cuenta — la plata no sale de la cuenta, así que no requiere OTP. Detalle:
+[swaps](/es/guias/swaps).
+
+## 8. Conciliar
 
 ```mermaid
 flowchart LR
@@ -90,7 +164,7 @@ Receta completa en
 [movimientos y conciliación](/es/conceptos/movimientos-y-conciliacion) y
 [cartola](/es/guias/cartola).
 
-## 5. Banking internacional end-to-end
+## 9. Banking internacional end-to-end
 
 ```mermaid
 sequenceDiagram

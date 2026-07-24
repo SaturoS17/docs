@@ -1,0 +1,212 @@
+---
+title: "Stored cards & subscriptions"
+icon: "credit-card"
+description: "Save cards with the payer's consent, charge them one-click or without the payer present (MIT) and schedule recurring subscriptions"
+---
+
+import { EnvUrls } from "/snippets/env-urls.jsx";
+
+<EnvUrls lang="en" />
+
+The `card` method supports **stored credentials** (the card brands' COF
+mandate): your payer saves their card with explicit consent on the first
+payment, and afterwards you can offer one-click payment without re-typing
+the number — or charge subscriptions and unscheduled amounts yourself
+without the payer present. The card number **never exists** in your
+integration or on the platform: only an opaque processor reference plus
+display data (brand, last 4 digits, expiry) is stored.
+
+<Steps>
+<Step title="Seed: offer to save the card on the first payment">
+
+Create the `card` payin with `save_card: true` and your payer reference:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BO",
+    "currency": "BOB",
+    "method": "card",
+    "amount": "700.00",
+    "save_card": true,
+    "payer_reference": "customer-1042",
+    "idempotency_key": "topup-7720"
+  }'
+```
+
+The hosted page shows a **"Save this card for future payments"** checkbox.
+The credential is stored ONLY if the payer ticks it and the 3-D Secure
+payment is approved. On credit you receive the `card_stored` webhook and
+the card appears in your list.
+
+</Step>
+<Step title="List the payer's cards">
+
+```bash
+curl "https://api.qbank.cl/platform/v1/stored-cards?from=2026-07-01&to=2026-07-20&payer_reference=customer-1042" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "page": 1,
+  "page_size": 50,
+  "stored_cards": [{
+    "stored_card_id": "5f0f2c9e-…",
+    "payer_reference": "customer-1042",
+    "country": "BO",
+    "currency": "BOB",
+    "brand": "visa",
+    "last4": "2701",
+    "expiry_month": "12",
+    "expiry_year": "2028",
+    "status": "active",
+    "created_at": "2026-07-20T18:00:00Z"
+  }]
+}
+```
+
+</Step>
+<Step title="Pay with a saved card (payer present)">
+
+Create the `card` payin with `stored_card_id`: the page skips card entry,
+shows the saved card (`VISA •••• 2701`) and 3-D Secure still runs — the
+payer only confirms with their bank. The **billing details** the payer
+entered when saving the card are also kept on file: the page applies them
+automatically and shows only a masked summary (name, partial email, city)
+with a "use different details" link in case they want to change them —
+nothing is retyped. On the public checkout page, paying with a saved card
+additionally requires entering the **same cardholder email** it was saved
+with (a mismatch responds `404`).
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BO",
+    "currency": "BOB",
+    "method": "card",
+    "amount": "350.00",
+    "stored_card_id": "5f0f2c9e-…",
+    "idempotency_key": "topup-7721"
+  }'
+```
+
+</Step>
+<Step title="Recurring / unscheduled charge (payer not present)">
+
+Charge the card directly — subscriptions (`recurring: true`) or
+unscheduled amounts your customer agreed to:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/stored-cards/5f0f2c9e-…/charges \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": "45.00",
+    "description": "Monthly subscription",
+    "recurring": true,
+    "idempotency_key": "sub-2026-07-cust1042"
+  }'
+```
+
+Response `201` — an approved charge credits your balance automatically
+(`payin_credited` webhook, same path as any card payin):
+
+```json
+{
+  "payin_id": "3c5b002c-…",
+  "status": "pending",
+  "reference": "3c5b002c-…",
+  "transaction_id": "7846012604…",
+  "note": "charge approved; the balance is credited automatically (payin_credited webhook)"
+}
+```
+
+An issuer decline responds `422` with the payin in `failed` and a
+`failure_reason`. A retry with the same `idempotency_key` returns the
+original payin and **never charges twice**.
+
+</Step>
+</Steps>
+
+To revoke a saved card (at the payer's request or on suspicion):
+`DELETE /v1/stored-cards/{stored_card_id}` — charges stop working
+immediately and you receive `stored_card_revoked`
+(`422 stored_card_revoked` if you try to charge it afterwards).
+
+<Warning>
+Charges without the payer present travel **without 3-D Secure** by
+definition of the mandate: the chargeback risk is yours. Charge only what
+your customer explicitly agreed to — the platform persists the seed's
+consent evidence (checkbox, IP and timestamp) for disputes.
+</Warning>
+
+## Subscriptions (scheduled recurring charges)
+
+Instead of charging manually every month, let **the platform run the
+schedule**: create a subscription on the saved card — the first period is
+charged on creation (unless `start_at` is in the future) and the rest fire
+automatically per `interval`.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/subscriptions \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stored_card_id": "5f0f2c9e-…",
+    "amount": "45.00",
+    "interval": "monthly",
+    "description": "Monthly plan",
+    "idempotency_key": "plan-cust1042-monthly"
+  }'
+```
+
+Response `201` (`first_charge` is present when the first period was charged
+on creation):
+
+```json
+{
+  "subscription_id": "7a1c9e2d-…",
+  "stored_card_id": "5f0f2c9e-…",
+  "amount": "45.00",
+  "currency": "BOB",
+  "interval": "monthly",
+  "status": "active",
+  "period": 1,
+  "next_charge_at": "2026-08-20T18:00:00Z",
+  "first_charge": { "outcome": "approved", "payin_id": "3c5b002c-…" }
+}
+```
+
+- `interval`: `daily`, `weekly`, `monthly` or `yearly`. The day of month is
+  kept and clamped to the last day in short months (a plan on the 31st
+  charges on Feb 28/29 and returns to the 31st in March).
+- `start_at` (optional, future RFC3339): defers the first charge (trial /
+  start date); without it, it charges on creation.
+- **Dunning**: on an issuer decline the platform retries every 24h up to 3
+  times; exhausted, the subscription becomes `past_due` and you get the
+  `subscription_status_changed` webhook. `resume` reactivates it with a
+  fresh attempt.
+- Each successful charge credits your balance like any card payin
+  (`payin_credited` webhook, carrying `subscription_id` to link it to the
+  plan).
+
+Lifecycle management:
+
+```bash
+# Pause (stops charging; resuming does NOT catch up missed periods)
+curl -X POST https://api.qbank.cl/platform/v1/subscriptions/7a1c9e2d-…/pause -H "Authorization: Bearer <token>"
+# Resume
+curl -X POST https://api.qbank.cl/platform/v1/subscriptions/7a1c9e2d-…/resume -H "Authorization: Bearer <token>"
+# Cancel (terminal)
+curl -X POST https://api.qbank.cl/platform/v1/subscriptions/7a1c9e2d-…/cancel -H "Authorization: Bearer <token>"
+# List / read
+curl "https://api.qbank.cl/platform/v1/subscriptions?from=2026-07-01&to=2026-07-31&status=active" -H "Authorization: Bearer <token>"
+```
+
+Revoking the saved card (`DELETE /v1/stored-cards/{id}`) automatically
+cancels its subscriptions (`cancel_reason: card_revoked`).
