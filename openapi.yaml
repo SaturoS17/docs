@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.01'
+  version: '2.02'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -12819,8 +12819,9 @@ paths:
       description: Changes your default balances. `default_settlement_asset` is the balance your payouts
         and service fees debit from when a request does not send an explicit `settlement_asset`.
         `default_payin_asset` is the balance your payins settle into — credits still enter in USDT and
-        the net amount is auto-converted through the swap engine (regular swap spread applies; checkout
-        and POS payins keep their per-link asset). Any of USDT, USDC, BTC or GOLD (if enabled for your
+        the net amount is auto-converted through the swap engine at the real price, with no extra
+        swap spread (the payin already paid its fee and rate; checkout and POS payins keep their
+        per-link asset). Any of USDT, USDC, BTC or GOLD (if enabled for your
         organization). Send one or both fields. The change applies to new operations only; nothing in
         flight is re-quoted.
       requestBody:
@@ -12846,7 +12847,8 @@ paths:
                   - BTC
                   - GOLD
                   description: Balance payins settle into by default. Credits enter in USDT and the
-                    net amount is auto-converted via the swap engine (regular swap spread). Optional.
+                    net amount is auto-converted via the swap engine at the real price (no extra
+                    swap spread). Optional.
             example:
               default_settlement_asset: BTC
               default_payin_asset: USDC
@@ -15210,7 +15212,8 @@ components:
           - BTC
           - GOLD
           description: Balance payins settle into by default. Credits enter in USDT and the net amount
-            is auto-converted via the swap engine (regular swap spread). Checkout/POS payins keep their
+            is auto-converted via the swap engine at the real price, with no extra swap spread.
+            Checkout/POS payins keep their
             per-link asset.
         enabled_assets:
           type: array

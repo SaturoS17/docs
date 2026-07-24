@@ -93,8 +93,9 @@ By default **payins** (QR, bank transfer, collect, card) credit the USDT
 balance. If you would rather hold another asset, configure
 `default_payin_asset`: the credit still lands in USDT (pricing, FX spread
 and fees untouched) and the **net credited amount** auto-converts into
-your asset through the swap engine — same spread and same limits as a
-regular swap.
+your asset through the swap engine **at the real price, with no extra
+spread** — the payin already paid its fee and rate; the automatic
+conversion never charges twice. The same limits as a regular swap apply.
 
 ```bash
 # Credit my payins in USDC
@@ -106,7 +107,7 @@ curl -X PUT "https://api.qbank.cl/platform/v1/settlement" \
 | Rule | Detail |
 |---|---|
 | Post-credit conversion | The payin credits in USDT and the conversion runs right after, as a swap (you will see `swap_out`/`swap_in` in your statement). |
-| Spread and limits | The configured swap spread applies, plus the per-operation/24h limits of volatile assets (BTC/GOLD). |
+| Price and limits | The conversion executes **at the real price, with no swap spread** (no double cost: the payin already paid its fee and rate). The per-operation/24h limits of volatile assets (BTC/GOLD) apply. |
 | If the conversion fails | The payin stays credited in USDT with `conversion_status: pending_retry` and the system retries automatically — funds are never lost or double-converted. |
 | Checkout and POS | Each link keeps the `settlement_asset` chosen at creation; this setting never re-converts them. A link created **without** `settlement_asset` uses your `default_payin_asset`. |
 | Surfaces | `GET /v1/payins`, the detail and the `payin_credited` webhook expose `settlement_asset` and `conversion_status` when a conversion applies. |

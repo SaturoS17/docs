@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.01'
+  version: '2.02'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——它们绝不混合也不会自动兑换。
 
@@ -12472,7 +12472,7 @@ paths:
       - 账户
       operationId: updateSettlement
       summary: 设置我的默认余额(payouts 与 payins)
-      description: 更改你的默认余额。`default_settlement_asset` 是当请求未显式传 `settlement_asset` 时,payout 和服务费默认扣款的余额。`default_payin_asset` 是 payins 默认入账的余额——入账仍以 USDT 进行,净额通过 swap 引擎自动兑换(适用常规 swap 价差;checkout 与 POS 收款保留其链接资产)。可为 USDT、USDC、BTC 或 GOLD(需组织启用)。可发送其中一个或两个字段。仅对新操作生效;进行中的操作不会重新计价。
+      description: 更改你的默认余额。`default_settlement_asset` 是当请求未显式传 `settlement_asset` 时,payout 和服务费默认扣款的余额。`default_payin_asset` 是 payins 默认入账的余额——入账仍以 USDT 进行,净额通过 swap 引擎按真实价格自动兑换,不收取额外 swap 价差(payin 已支付其手续费与汇率;checkout 与 POS 收款保留其链接资产)。可为 USDT、USDC、BTC 或 GOLD(需组织启用)。可发送其中一个或两个字段。仅对新操作生效;进行中的操作不会重新计价。
       requestBody:
         required: true
         content:
@@ -12495,7 +12495,7 @@ paths:
                   - USDC
                   - BTC
                   - GOLD
-                  description: payins 默认入账的余额。入账仍以 USDT 进行,净额通过 swap 引擎自动兑换(常规 swap 价差)。可选。
+                  description: payins 默认入账的余额。入账仍以 USDT 进行,净额通过 swap 引擎按真实价格自动兑换(不收取额外 swap 价差)。可选。
             example:
               default_settlement_asset: BTC
               default_payin_asset: USDC
@@ -14812,7 +14812,7 @@ components:
           - USDC
           - BTC
           - GOLD
-          description: payins 默认入账的余额。入账仍以 USDT 进行,净额通过 swap 引擎自动兑换(常规 swap 价差)。checkout/POS 保留其链接资产。
+          description: payins 默认入账的余额。入账仍以 USDT 进行,净额通过 swap 引擎按真实价格自动兑换,不收取额外 swap 价差。checkout/POS 保留其链接资产。
         enabled_assets:
           type: array
           items:

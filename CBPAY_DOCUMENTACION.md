@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-23 23:52 UTC · versión `3bf1d7d99b59`
+> **Documento actualizado:** 2026-07-24 00:17 UTC · versión `94a16611074b`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v2.01 (23 de julio de 2026) |
+| Versión de la documentación | v2.02 (23 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -1162,8 +1162,9 @@ Por defecto los **payins** (QR, transferencia, collect, tarjeta) acreditan
 al saldo USDT. Si prefieres quedarte en otro asset, configura
 `default_payin_asset`: el crédito sigue entrando en USDT (pricing, spread
 FX y comisiones intactos) y el **neto acreditado** se auto-convierte a tu
-asset con el motor de swaps — mismo spread y mismos límites que un swap
-normal.
+asset con el motor de swaps **al precio real, sin spread adicional** — el
+payin ya pagó su comisión y su tasa; la conversión automática no cobra una
+segunda vez. Aplican los mismos límites de un swap normal.
 
 ```bash
 # Acreditar mis payins en USDC
@@ -1175,7 +1176,7 @@ curl -X PUT "https://api.qbank.cl/platform/v1/settlement" \
 | Regla | Detalle |
 |---|---|
 | Conversión post-crédito | El payin acredita en USDT y la conversión corre inmediatamente después como un swap (verás `swap_out`/`swap_in` en tu cartola). |
-| Spread y límites | Aplica el spread de swap configurado y los límites por operación/24 h de los assets volátiles (BTC/GOLD). |
+| Precio y límites | La conversión ejecuta **al precio real, sin spread de swap** (no hay doble costo: el payin ya pagó su comisión y su tasa). Aplican los límites por operación/24 h de los assets volátiles (BTC/GOLD). |
 | Si la conversión falla | El payin queda acreditado en USDT con `conversion_status: pending_retry` y el sistema reintenta automático — el saldo jamás se pierde ni se convierte doble. |
 | Checkout y POS | Cada link conserva el `settlement_asset` elegido al crearlo; esta configuración no los re-convierte. Un link creado **sin** `settlement_asset` usa tu `default_payin_asset`. |
 | Superficies | `GET /v1/payins`, el detalle y el webhook `payin_credited` exponen `settlement_asset` y `conversion_status` cuando hay conversión. |
@@ -9917,9 +9918,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-23 23:18 UTC · 267 requests · versión `4d90b5bc193b`
+> **Colección actualizada:** 2026-07-24 00:17 UTC · 267 requests · versión `52efb88453b5`
 
-<PostmanFreshness iso="2026-07-23T23:18:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-24T00:17:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -10090,6 +10091,18 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v2.02 — 23 de julio de 2026
+
+**Cambiado**
+
+- **La auto-conversión al `default_payin_asset` ejecuta al precio real,
+  sin spread de swap** ([modelo de dinero](#modelo-de-dinero)):
+  el payin ya pagó su comisión y su tasa al acreditar, así que la
+  conversión automática al saldo configurado no cobra un costo adicional
+  — no existe doble conversión. Siguen aplicando los límites por
+  operación/24 h de los assets volátiles (BTC/GOLD). Los swaps manuales
+  (`POST /v1/swaps`) mantienen su spread normal.
 
 ### v2.01 — 23 de julio de 2026
 

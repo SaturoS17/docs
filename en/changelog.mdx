@@ -7,6 +7,20 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 23, 2026" description="v2.02">
+
+**Changed**
+
+- **Auto-conversion into `default_payin_asset` now executes at the real
+  price, with no swap spread** ([money model](/en/concepts/money-model)):
+  the payin already paid its fee and rate when it credited, so the
+  automatic conversion into your configured balance adds no extra cost —
+  there is no double conversion. The per-operation/24h limits of volatile
+  assets (BTC/GOLD) still apply. Manual swaps (`POST /v1/swaps`) keep
+  their regular spread.
+
+</Update>
+
 <Update label="July 23, 2026" description="v2.01">
 
 **Added**

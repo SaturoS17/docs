@@ -7,6 +7,18 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年7月23日" description="v2.02">
+
+**变更**
+
+- **自动兑换为 `default_payin_asset` 现按真实价格执行，不收取兑换点差**
+  （[资金模型](/zh/concepts/money-model)）：收款入账时已支付其手续费与
+  汇率，自动兑换为所配置余额不再产生额外成本 — 不存在双重兑换。波动性
+  资产（BTC/GOLD）的单笔/24 小时限额仍然适用。手动兑换
+  （`POST /v1/swaps`）保留其常规点差。
+
+</Update>
+
 <Update label="2026年7月23日" description="v2.01">
 
 **新增**
