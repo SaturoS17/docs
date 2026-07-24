@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.04'
+  version: '2.05'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -37,6 +37,16 @@ tags:
   description: 从你选择的结算余额扣款的法币派发(默认 USDT)。
 - name: 收款(Payins)
   description: 法币充值(二维码、转账、专属账户、pull 收款、卡片、checkout 链接)自动入账——默认入账 USDT,也可自动兑换为你选择的结算资产。
+- name: 收银台(Checkout)
+  description: >-
+    通用收银台链接(`POST /v1/payins`,`method: "checkout"`)与公开支付页端点——多国法币、每个链接专属临时钱包的加密货币支付,以及
+    CBPay 直接支付,按你选择的资产结算。
+- name: 已保存卡片(Stored cards)
+  description: >-
+    在 3-D Secure 支付中经付款人明确同意保存的卡片(COF)。可列出、吊销并按需扣款(MIT),无需再次索要卡片信息。
+- name: 订阅(Subscriptions)
+  description: >-
+    由平台调度器管理的已保存卡片周期性扣款——按日、周、月或年,支持暂停/恢复/取消与自动催收。
 - name: 转账
   description: CBPay 账户之间的免费内部转账(个人或企业,任意组合)。
 - name: 联系人
@@ -357,7 +367,7 @@ paths:
     get:
       security: []
       tags:
-      - Payins
+      - 收银台(Checkout)
       operationId: checkoutPage
       summary: 通用收款页面（公开）
       description: '`POST /v1/payins` 使用 `method: "checkout"` 返回的 `checkout_url` 背后的公开品牌化
@@ -395,7 +405,7 @@ paths:
     get:
       security: []
       tags:
-      - Payins
+      - 收银台(Checkout)
       operationId: checkoutState
       summary: 通用收款状态（公开）
       description: 通用收款链接的 JSON 状态 — 供页面自身轮询，也供在同一链接上渲染自有支付前端的集成方使用。
@@ -465,7 +475,7 @@ paths:
     get:
       security: []
       tags:
-      - Payins
+      - 收银台(Checkout)
       operationId: checkoutQuote
       summary: 选择前报价收款链接（公开）
       description: >-
@@ -598,7 +608,7 @@ paths:
     get:
       security: []
       tags:
-      - Payins
+      - 收银台(Checkout)
       operationId: checkoutSavedCards
       summary: 结账付款人的已存卡（公开）
       description: >-
@@ -662,7 +672,7 @@ paths:
     post:
       security: []
       tags:
-      - Payins
+      - 收银台(Checkout)
       operationId: checkoutMaterialize
       summary: 生成结账支付选项（公开）
       description: >-
@@ -852,7 +862,7 @@ paths:
     post:
       security: []
       tags:
-      - Payins
+      - 收银台(Checkout)
       operationId: checkoutCollectOTP
       summary: 请求拉取式收款的 OTP（公开）
       description: >-
@@ -933,7 +943,7 @@ paths:
     post:
       security: []
       tags:
-      - Payins
+      - 收银台(Checkout)
       operationId: checkoutCollect
       summary: 用付款人数据执行拉取式收款（公开）
       description: >-
@@ -1186,7 +1196,7 @@ paths:
   /v1/auth/environment-handoff:
     post:
       tags:
-      - Authentication
+      - 身份认证
       operationId: createEnvironmentHandoff
       summary: 获取测试模式 handoff 令牌
       description: 签发一个一次性令牌（有效期 60 秒），将当前 member 会话转移到测试 环境 —— 这就是控制台一键 test/live 切换的底层机制，无需再次登录， 也无需新的
@@ -1224,7 +1234,7 @@ paths:
   /v1/auth/handoff:
     post:
       tags:
-      - Authentication
+      - 身份认证
       security: []
       operationId: exchangeEnvironmentHandoff
       summary: 用 handoff 令牌兑换测试会话
@@ -4322,7 +4332,7 @@ paths:
   /v1/aml/screenings:
     post:
       tags:
-      - AML screening
+      - AML 筛查
       operationId: submitAmlScreening
       summary: 提交 AML 筛查
       description: 通过合规服务对个人或企业（由 payload 判定）进行制裁、PEP 与负面媒体名单筛查。仅名单筛查——带证件与活体核验的身份验证见 /v1/kyc 与 /v1/kyb。身份字段均为可选并完整转发；信息越完整结果越精确。若配置合规费用，调用前扣款，失败则退款。结果本地保存供审计（`GET
@@ -4607,7 +4617,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
     get:
       tags:
-      - AML screening
+      - AML 筛查
       operationId: listAmlScreenings
       summary: 列出 AML 筛查记录
       description: 账户 AML 筛查历史（个人、企业及重新筛查），按时间倒序。需要 from/to 日期范围；支持分页与风险筛选。
@@ -4667,7 +4677,7 @@ paths:
   /v1/aml/screenings/{screeningID}:
     get:
       tags:
-      - AML screening
+      - AML 筛查
       operationId: getAmlScreening
       summary: 获取 AML 筛查详情
       description: 筛查详情（含完整存储结果）。其他账户的 ID 返回 404。
@@ -4707,7 +4717,7 @@ paths:
   /v1/aml/screenings/{screeningID}/report:
     get:
       tags:
-      - AML screening
+      - AML 筛查
       operationId: getAmlScreeningReport
       summary: 下载 AML 筛查报告（PDF）
       description: 品牌化的筛查 PDF 报告 — 含决策封面、风险指标（制裁、观察名单、PEP、负面媒体等）、合并匹配、别名、术语表，以及列明所查国际数据源的最终背书章节。通过
@@ -4753,7 +4763,7 @@ paths:
   /v1/aml/rescreen:
     post:
       tags:
-      - AML screening
+      - AML 筛查
       operationId: rescreenAml
       summary: 重新运行 AML 筛查
       description: 重新运行账户筛查，需先有筛查记录。若配置则收取 `compliance_rescreen` 费用，上游失败则退款。每次重新筛查写入历史（`GET /v1/aml/screenings`）。必须提供
@@ -4815,7 +4825,7 @@ paths:
   /v1/aml/monitoring:
     patch:
       tags:
-      - AML screening
+      - AML 筛查
       operationId: setAmlMonitoring
       summary: 启用或停用 AML 监控
       description: 切换账户已验证身份的持续合规监控。启用时若配置则收取 `compliance_monitoring` 费用；停用免费。需先有筛查记录。 每次状态变更写入审计历史（`GET
@@ -9218,7 +9228,7 @@ paths:
   /v1/stored-cards:
     get:
       tags:
-      - Payins
+      - 已保存卡片(Stored cards)
       operationId: listStoredCards
       summary: '列出已保存的卡片'
       description: '付款人在托管收银台保存的卡片（COF 规范）：仅展示数据（卡组织、末四位、有效期）— 卡号从不存在于本平台。按 `payer_reference` 过滤可向回头客展示其卡片。需要 `from`/`to`。'
@@ -9285,7 +9295,7 @@ paths:
   /v1/stored-cards/{storedCardID}:
     get:
       tags:
-      - Payins
+      - 已保存卡片(Stored cards)
       operationId: getStoredCard
       summary: '获取已保存的卡片'
       parameters:
@@ -9356,7 +9366,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
     delete:
       tags:
-      - Payins
+      - 已保存卡片(Stored cards)
       operationId: revokeStoredCard
       summary: '撤销已保存的卡片'
       description: '在上游撤销凭证并将镜像标记为 `revoked`（历史永不删除）。商户发起的扣款和已存卡支付立即失效。发出 `stored_card_revoked` webhook。'
@@ -9430,7 +9440,7 @@ paths:
   /v1/stored-cards/{storedCardID}/charges:
     post:
       tags:
-      - Payins
+      - 已保存卡片(Stored cards)
       operationId: chargeStoredCard
       summary: '对已保存的卡片扣款（商户发起）'
       description: '在付款人不在场的情况下对已存卡扣款（卡组织 MIT 规范，引用原始经同意的 3-D Secure 种子交易）。`recurring: true` 用于固定周期的订阅扣款；false（默认）用于非定期扣款。需要 `idempotency_key` — 相同键的重试返回原 payin，绝不重复扣款。批准的扣款自动入账（`payin_credited` webhook）；被拒绝的扣款返回 422 且 payin 标记为 failed。'
@@ -9535,7 +9545,7 @@ paths:
   /v1/subscriptions:
     post:
       tags:
-      - Payins
+      - 订阅(Subscriptions)
       operationId: createSubscription
       summary: '创建订阅'
       description: '对已保存卡片的循环扣款（平台为你执行排期）。除非 start_at 为将来时间（试用），首个周期在创建时同步扣款。每笔扣款都是普通卡 payin（通过 payin_credited 入账）；被拒后每天重试最多 3 次，随后订阅变为 past_due。必须提供 idempotency_key（重试返回原订阅）。需要付款人的一张有效已存卡。'
@@ -9719,7 +9729,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
     get:
       tags:
-      - Payins
+      - 订阅(Subscriptions)
       operationId: listSubscriptions
       summary: '列出订阅'
       description: '你的订阅（org 管理员用 account_id 查看整个组织）。可按 status、stored_card_id 或 payer_reference 过滤。需要 from/to。'
@@ -9792,7 +9802,7 @@ paths:
   /v1/subscriptions/{subscriptionID}:
     get:
       tags:
-      - Payins
+      - 订阅(Subscriptions)
       operationId: getSubscription
       summary: '获取订阅'
       parameters:
@@ -9876,7 +9886,7 @@ paths:
   /v1/subscriptions/{subscriptionID}/pause:
     post:
       tags:
-      - Payins
+      - 订阅(Subscriptions)
       operationId: pauseSubscription
       summary: '暂停订阅'
       description: '停止扣款（从 active）。恢复不会补扣错过的周期。'
@@ -9963,7 +9973,7 @@ paths:
   /v1/subscriptions/{subscriptionID}/resume:
     post:
       tags:
-      - Payins
+      - 订阅(Subscriptions)
       operationId: resumeSubscription
       summary: '恢复订阅'
       description: '从 paused 或 past_due 重新激活。从 past_due 会重试一次待处理周期（再次被拒则回到 past_due）。从 paused 且日期为将来则保留原排期（不提前扣款）。'
@@ -10050,7 +10060,7 @@ paths:
   /v1/subscriptions/{subscriptionID}/cancel:
     post:
       tags:
-      - Payins
+      - 订阅(Subscriptions)
       operationId: cancelSubscription
       summary: '取消订阅'
       description: '终态。撤销已存卡也会自动取消其订阅。'

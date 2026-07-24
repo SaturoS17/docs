@@ -8,6 +8,20 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="24 de julio de 2026" description="v2.05">
+
+**Cambiado**
+
+- **Overhaul de docs, fase 5 (solo referencia de API, sin cambio de
+  código)**: la referencia de API agrupa las operaciones bajo tres tags
+  nuevos — **Checkout** (páginas públicas `/pay/{token}` y cotizaciones),
+  **Tarjetas guardadas** (`/v1/stored-cards` y consultas de tarjetas
+  guardadas) y **Suscripciones** (`/v1/subscriptions`). Estas operaciones
+  vivían apiladas bajo el tag genérico **Payins**; ningún path ni
+  contrato cambió.
+
+</Update>
+
 <Update label="24 de julio de 2026" description="v2.04">
 
 **Agregado**

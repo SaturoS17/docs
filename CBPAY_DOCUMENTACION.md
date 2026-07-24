@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-24 19:41 UTC · versión `a2614a1a3a34`
+> **Documento actualizado:** 2026-07-24 21:15 UTC · versión `a7a40e6806da`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v2.04 (24 de julio de 2026) |
+| Versión de la documentación | v2.05 (24 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -10147,9 +10147,9 @@ respuesta guardada por operación.
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
 {/* postman-meta:cbpay-api.postman_collection.json */}
-> **Colección actualizada:** 2026-07-24 19:13 UTC · 267 requests · versión `2725edf69e30`
+> **Colección actualizada:** 2026-07-24 21:15 UTC · 267 requests · versión `01edcb62c359`
 
-<PostmanFreshness iso="2026-07-24T19:13:00Z" lang="es" />
+<PostmanFreshness iso="2026-07-24T21:15:00Z" lang="es" />
 {/* /postman-meta */}
 
 ### Cómo usarla
@@ -10320,6 +10320,18 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v2.05 — 24 de julio de 2026
+
+**Cambiado**
+
+- **Overhaul de docs, fase 5 (solo referencia de API, sin cambio de
+  código)**: la referencia de API agrupa las operaciones bajo tres tags
+  nuevos — **Checkout** (páginas públicas `/pay/{token}` y cotizaciones),
+  **Tarjetas guardadas** (`/v1/stored-cards` y consultas de tarjetas
+  guardadas) y **Suscripciones** (`/v1/subscriptions`). Estas operaciones
+  vivían apiladas bajo el tag genérico **Payins**; ningún path ni
+  contrato cambió.
 
 ### v2.04 — 24 de julio de 2026
 
@@ -12199,7 +12211,7 @@ está en la API Reference interactiva y en la colección Postman.
 | `GET` | `/verify/receipts/{code}` | Verificar la autenticidad de un comprobante (público) |
 
 
-## Payins
+## Checkout
 
 | Método | Ruta | Qué hace |
 |---|---|---|
@@ -12210,76 +12222,21 @@ está en la API Reference interactiva y en la colección Postman.
 | `POST` | `/pay/{token}/methods/{method}` | Materializar una opción de pago del checkout (público) |
 | `POST` | `/pay/{token}/collect/otp` | Solicitar la clave OTP de un cobro pull (público) |
 | `POST` | `/pay/{token}/collect` | Ejecutar un cobro pull con los datos del pagador (público) |
-| `GET` | `/v1/payins` | Listar payins |
-| `POST` | `/v1/payins` | Crear un payin (cobro de recarga) |
-| `GET` | `/v1/payins/{payinID}` | Obtener un payin |
-| `GET` | `/v1/payins/methods` | Listar métodos de payin |
-| `GET` | `/v1/stored-cards` | Listar tarjetas guardadas |
-| `GET` | `/v1/stored-cards/{storedCardID}` | Obtener una tarjeta guardada |
-| `DELETE` | `/v1/stored-cards/{storedCardID}` | Revocar una tarjeta guardada |
-| `POST` | `/v1/stored-cards/{storedCardID}/charges` | Cobrar una tarjeta guardada (iniciado por el comercio) |
-| `GET` | `/v1/subscriptions` | Listar suscripciones |
-| `POST` | `/v1/subscriptions` | Crear una suscripción |
-| `GET` | `/v1/subscriptions/{subscriptionID}` | Obtener una suscripción |
-| `POST` | `/v1/subscriptions/{subscriptionID}/pause` | Pausar una suscripción |
-| `POST` | `/v1/subscriptions/{subscriptionID}/resume` | Reanudar una suscripción |
-| `POST` | `/v1/subscriptions/{subscriptionID}/cancel` | Cancelar una suscripción |
-| `POST` | `/v1/payins/collect` | Cobro activo (pull) |
-| `POST` | `/v1/payins/collect/otp` | Solicitar un OTP de cobro |
-| `GET` | `/v1/payins/deposit-accounts` | Listar mis cuentas de depósito |
-| `POST` | `/v1/payins/deposit-accounts` | Crear una cuenta de depósito dedicada |
-
-
-## Account
-
-| Método | Ruta | Qué hace |
-|---|---|---|
-| `GET` | `/v1/branding` | Obtener el branding de la plataforma |
-| `GET` | `/v1/services` | Servicios habilitados |
-| `GET` | `/v1/settlement` | Obtener mi configuración de settlement |
-| `PUT` | `/v1/settlement` | Definir mis saldos predeterminados (payouts y payins) |
-
-
-## Autenticación
-
-| Método | Ruta | Qué hace |
-|---|---|---|
-| `POST` | `/v1/auth/register` | Registrar una cuenta |
-| `POST` | `/v1/auth/login` | Iniciar sesión |
-| `POST` | `/v1/auth/login/otp` | Completar el login en dos pasos |
-| `POST` | `/v1/auth/refresh` | Renovar la sesión |
-| `POST` | `/v1/auth/password/forgot` | Solicitar un código para recuperar la contraseña |
-| `POST` | `/v1/auth/password/reset` | Restablecer la contraseña con un código |
-
-
-## Authentication
-
-| Método | Ruta | Qué hace |
-|---|---|---|
-| `POST` | `/v1/auth/environment-handoff` | Obtener un token de handoff a modo test |
-| `POST` | `/v1/auth/handoff` | Canjear un token de handoff por una sesión de test |
-
-
-## Login social
-
-| Método | Ruta | Qué hace |
-|---|---|---|
-| `POST` | `/v1/auth/oauth` | Iniciar sesión o registrarse con un proveedor social |
-| `GET` | `/v1/auth/oauth/providers` | Listar proveedores sociales habilitados |
-| `GET` | `/v1/me/identities` | Listar mis proveedores vinculados |
-| `POST` | `/v1/me/identities` | Vincular un proveedor a mi cuenta |
-| `DELETE` | `/v1/me/identities/{provider}` | Desvincular un proveedor |
 
 
 ## Cuenta
 
 | Método | Ruta | Qué hace |
 |---|---|---|
+| `GET` | `/v1/branding` | Obtener el branding de la plataforma |
 | `GET` | `/v1/me` | Obtener mi cuenta |
 | `PATCH` | `/v1/me` | Actualizar mi perfil |
 | `GET` | `/v1/members` | Listar miembros |
 | `POST` | `/v1/members` | Agregar un miembro |
 | `POST` | `/v1/api-keys` | Crear una llave de API |
+| `GET` | `/v1/services` | Servicios habilitados |
+| `GET` | `/v1/settlement` | Obtener mi configuración de settlement |
+| `PUT` | `/v1/settlement` | Definir mis saldos predeterminados (payouts y payins) |
 | `POST` | `/v1/me/password` | Cambiar mi contraseña |
 | `POST` | `/v1/me/email/change` | Cambiar mi email de login |
 | `POST` | `/v1/me/email/verify` | Verificar mi email actual |
@@ -12294,6 +12251,31 @@ está en la API Reference interactiva y en la colección Postman.
 | `DELETE` | `/v1/me/sessions/{sessionID}` | Revocar una de mis sesiones |
 | `POST` | `/v1/me/sessions/revoke-all` | Revocar todas mis otras sesiones |
 | `GET` | `/v1/me/security/events` | Mi actividad de seguridad |
+
+
+## Autenticación
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `POST` | `/v1/auth/register` | Registrar una cuenta |
+| `POST` | `/v1/auth/environment-handoff` | Obtener un token de handoff a modo test |
+| `POST` | `/v1/auth/handoff` | Canjear un token de handoff por una sesión de test |
+| `POST` | `/v1/auth/login` | Iniciar sesión |
+| `POST` | `/v1/auth/login/otp` | Completar el login en dos pasos |
+| `POST` | `/v1/auth/refresh` | Renovar la sesión |
+| `POST` | `/v1/auth/password/forgot` | Solicitar un código para recuperar la contraseña |
+| `POST` | `/v1/auth/password/reset` | Restablecer la contraseña con un código |
+
+
+## Login social
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `POST` | `/v1/auth/oauth` | Iniciar sesión o registrarse con un proveedor social |
+| `GET` | `/v1/auth/oauth/providers` | Listar proveedores sociales habilitados |
+| `GET` | `/v1/me/identities` | Listar mis proveedores vinculados |
+| `POST` | `/v1/me/identities` | Vincular un proveedor a mi cuenta |
+| `DELETE` | `/v1/me/identities/{provider}` | Desvincular un proveedor |
 
 
 ## Saldos
@@ -12319,6 +12301,20 @@ está en la API Reference interactiva y en la colección Postman.
 | `GET` | `/v1/payouts/banks` | Listar bancos de destino |
 | `POST` | `/v1/payouts/qr/scan` | Escanear un QR de payout (Bolivia, Brasil) |
 | `POST` | `/v1/payouts/qr/confirm` | Confirmar un payout por QR (Bolivia, Brasil) |
+
+
+## Payins
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/v1/payins` | Listar payins |
+| `POST` | `/v1/payins` | Crear un payin (cobro de recarga) |
+| `GET` | `/v1/payins/{payinID}` | Obtener un payin |
+| `GET` | `/v1/payins/methods` | Listar métodos de payin |
+| `POST` | `/v1/payins/collect` | Cobro activo (pull) |
+| `POST` | `/v1/payins/collect/otp` | Solicitar un OTP de cobro |
+| `GET` | `/v1/payins/deposit-accounts` | Listar mis cuentas de depósito |
+| `POST` | `/v1/payins/deposit-accounts` | Crear una cuenta de depósito dedicada |
 
 
 ## Transferencias
@@ -12464,6 +12460,28 @@ está en la API Reference interactiva y en la colección Postman.
 | `POST` | `/v1/segregated-wallets/{walletID}/export` | Exportar la llave privada |
 | `GET` | `/v1/segregated-wallets/{walletID}/auto-forward` | Obtener la regla de auto-forward |
 | `POST` | `/v1/segregated-wallets/{walletID}/auto-forward` | Configurar auto-forward |
+
+
+## Tarjetas guardadas
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/v1/stored-cards` | Listar tarjetas guardadas |
+| `GET` | `/v1/stored-cards/{storedCardID}` | Obtener una tarjeta guardada |
+| `DELETE` | `/v1/stored-cards/{storedCardID}` | Revocar una tarjeta guardada |
+| `POST` | `/v1/stored-cards/{storedCardID}/charges` | Cobrar una tarjeta guardada (iniciado por el comercio) |
+
+
+## Suscripciones
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/v1/subscriptions` | Listar suscripciones |
+| `POST` | `/v1/subscriptions` | Crear una suscripción |
+| `GET` | `/v1/subscriptions/{subscriptionID}` | Obtener una suscripción |
+| `POST` | `/v1/subscriptions/{subscriptionID}/pause` | Pausar una suscripción |
+| `POST` | `/v1/subscriptions/{subscriptionID}/resume` | Reanudar una suscripción |
+| `POST` | `/v1/subscriptions/{subscriptionID}/cancel` | Cancelar una suscripción |
 
 
 ## Banking

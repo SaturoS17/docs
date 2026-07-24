@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.04'
+  version: '2.05'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -51,6 +51,20 @@ tags:
   description: Recargas fiat (QR, transferencias, cuentas dedicadas, cobros pull, tarjetas, links de
     checkout) que se acreditan automáticamente — en USDT por defecto, o convertidas al settlement asset
     que elijas.
+- name: Checkout
+  description: >-
+    Links de checkout universal (`POST /v1/payins` con `method: "checkout"`) y los endpoints
+    públicos de la página de pago — fiat multi-país, crypto con wallet efímera por link y pago
+    directo CBPay, liquidado en el asset que elijas.
+- name: Tarjetas guardadas
+  description: >-
+    Tarjetas guardadas con el consentimiento explícito del pagador durante un pago 3-D Secure
+    (COF). Listarlas, revocarlas y cobrarlas bajo demanda (MIT) sin pedir la tarjeta de nuevo.
+- name: Suscripciones
+  description: >-
+    Cobros recurrentes sobre una tarjeta guardada gestionados por el scheduler de la plataforma
+    — diarios, semanales, mensuales o anuales, con pausa/reanudación/cancelación y dunning
+    automático.
 - name: Transferencias
   description: Transferencias internas gratuitas entre cuentas CBPay (persona o empresa, cualquier combinación).
 - name: Contacts
@@ -401,7 +415,7 @@ paths:
     get:
       security: []
       tags:
-      - Payins
+      - Checkout
       operationId: checkoutPage
       summary: Página de cobro universal (pública)
       description: 'Página HTML pública brandeada detrás de la `checkout_url` que devuelve `POST /v1/payins`
@@ -441,7 +455,7 @@ paths:
     get:
       security: []
       tags:
-      - Payins
+      - Checkout
       operationId: checkoutState
       summary: Estado del cobro universal (público)
       description: Estado JSON de un link de cobro universal — para el polling de la propia página y
@@ -513,7 +527,7 @@ paths:
     get:
       security: []
       tags:
-      - Payins
+      - Checkout
       operationId: checkoutQuote
       summary: Cotizar un link de cobro antes de elegir (público)
       description: >-
@@ -650,7 +664,7 @@ paths:
     get:
       security: []
       tags:
-      - Payins
+      - Checkout
       operationId: checkoutSavedCards
       summary: Tarjetas guardadas del pagador de un checkout (público)
       description: >-
@@ -717,7 +731,7 @@ paths:
     post:
       security: []
       tags:
-      - Payins
+      - Checkout
       operationId: checkoutMaterialize
       summary: Materializar una opción de pago del checkout (público)
       description: >-
@@ -916,7 +930,7 @@ paths:
     post:
       security: []
       tags:
-      - Payins
+      - Checkout
       operationId: checkoutCollectOTP
       summary: Solicitar la clave OTP de un cobro pull (público)
       description: >-
@@ -999,7 +1013,7 @@ paths:
     post:
       security: []
       tags:
-      - Payins
+      - Checkout
       operationId: checkoutCollect
       summary: Ejecutar un cobro pull con los datos del pagador (público)
       description: >-
@@ -1112,7 +1126,7 @@ paths:
   /v1/branding:
     get:
       tags:
-      - Account
+      - Cuenta
       operationId: getBranding
       summary: Obtener el branding de la plataforma
       description: Branding efectivo de la plataforma donde operas (nombre, colores, logos en base64)
@@ -1261,7 +1275,7 @@ paths:
   /v1/auth/environment-handoff:
     post:
       tags:
-      - Authentication
+      - Autenticación
       operationId: createEnvironmentHandoff
       summary: Obtener un token de handoff a modo test
       description: 'Emite un token de un solo uso (TTL 60 segundos) que traslada la sesión ACTUAL del
@@ -1304,7 +1318,7 @@ paths:
   /v1/auth/handoff:
     post:
       tags:
-      - Authentication
+      - Autenticación
       security: []
       operationId: exchangeEnvironmentHandoff
       summary: Canjear un token de handoff por una sesión de test
@@ -9533,7 +9547,7 @@ paths:
   /v1/stored-cards:
     get:
       tags:
-      - Payins
+      - Tarjetas guardadas
       operationId: listStoredCards
       summary: 'Listar tarjetas guardadas'
       description: 'Tarjetas guardadas por tus pagadores en el checkout hosted (mandato COF): solo datos de display (marca, últimos 4, expiración) — el número de tarjeta jamás existe en esta plataforma. Filtra por `payer_reference` para mostrarle a un cliente recurrente sus tarjetas. Requiere `from`/`to`.'
@@ -9600,7 +9614,7 @@ paths:
   /v1/stored-cards/{storedCardID}:
     get:
       tags:
-      - Payins
+      - Tarjetas guardadas
       operationId: getStoredCard
       summary: 'Obtener una tarjeta guardada'
       parameters:
@@ -9671,7 +9685,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
     delete:
       tags:
-      - Payins
+      - Tarjetas guardadas
       operationId: revokeStoredCard
       summary: 'Revocar una tarjeta guardada'
       description: 'Revoca la credencial upstream y marca el espejo `revoked` (la historia jamás se borra). Los cobros iniciados por el comercio y los pagos con tarjeta guardada dejan de funcionar al instante. Emite el webhook `stored_card_revoked`.'
@@ -9745,7 +9759,7 @@ paths:
   /v1/stored-cards/{storedCardID}/charges:
     post:
       tags:
-      - Payins
+      - Tarjetas guardadas
       operationId: chargeStoredCard
       summary: 'Cobrar una tarjeta guardada (iniciado por el comercio)'
       description: 'Cobra la tarjeta guardada SIN el pagador presente (MIT bajo el mandato de las marcas, citando la semilla 3-D Secure consentida original). Usa `recurring: true` para cobros de suscripción a intervalos fijos; false (default) para cobros no programados. Requiere `idempotency_key` — un retry con la misma clave devuelve el payin original y jamás cobra dos veces. El cobro aprobado acredita el saldo automático (webhook `payin_credited`); un cobro declinado responde 422 con el payin marcado failed.'
@@ -9850,7 +9864,7 @@ paths:
   /v1/subscriptions:
     post:
       tags:
-      - Payins
+      - Suscripciones
       operationId: createSubscription
       summary: 'Crear una suscripción'
       description: 'Cobros recurrentes sobre una tarjeta guardada (la plataforma lleva el calendario por ti). El primer período se cobra síncrono en la creación salvo que start_at sea futuro (trial). Cada cobro es un payin de tarjeta normal (se acredita por payin_credited); un decline reintenta diario hasta 3 veces y luego la suscripción pasa a past_due. idempotency_key es obligatoria (un retry devuelve la suscripción original). Requiere una tarjeta guardada activa del pagador.'
@@ -10034,7 +10048,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
     get:
       tags:
-      - Payins
+      - Suscripciones
       operationId: listSubscriptions
       summary: 'Listar suscripciones'
       description: 'Tus suscripciones (los org admin ven toda la org con account_id). Filtra por status, stored_card_id o payer_reference. Requiere from/to.'
@@ -10107,7 +10121,7 @@ paths:
   /v1/subscriptions/{subscriptionID}:
     get:
       tags:
-      - Payins
+      - Suscripciones
       operationId: getSubscription
       summary: 'Obtener una suscripción'
       parameters:
@@ -10191,7 +10205,7 @@ paths:
   /v1/subscriptions/{subscriptionID}/pause:
     post:
       tags:
-      - Payins
+      - Suscripciones
       operationId: pauseSubscription
       summary: 'Pausar una suscripción'
       description: 'Detiene los cobros (desde active). Reanudar NO recupera los períodos perdidos.'
@@ -10278,7 +10292,7 @@ paths:
   /v1/subscriptions/{subscriptionID}/resume:
     post:
       tags:
-      - Payins
+      - Suscripciones
       operationId: resumeSubscription
       summary: 'Reanudar una suscripción'
       description: 'Reactiva desde paused o past_due. Desde past_due reintenta el período pendiente una vez (un nuevo decline vuelve a past_due). Desde paused con fecha futura conserva el calendario original (sin cobro anticipado).'
@@ -10365,7 +10379,7 @@ paths:
   /v1/subscriptions/{subscriptionID}/cancel:
     post:
       tags:
-      - Payins
+      - Suscripciones
       operationId: cancelSubscription
       summary: 'Cancelar una suscripción'
       description: 'Terminal. Revocar la tarjeta guardada cancela también sus suscripciones automáticamente.'
@@ -12774,7 +12788,7 @@ paths:
   /v1/services:
     get:
       tags:
-      - Account
+      - Cuenta
       operationId: getServices
       summary: Servicios habilitados
       description: Mapa efectivo de qué productos puede usar esta cuenta ahora mismo (payouts, payins,
@@ -12812,7 +12826,7 @@ paths:
   /v1/settlement:
     get:
       tags:
-      - Account
+      - Cuenta
       operationId: getSettlement
       summary: Obtener mi configuración de settlement
       description: Devuelve desde qué saldo virtual se debitan por defecto tus operaciones (payouts y
@@ -12842,7 +12856,7 @@ paths:
           $ref: '#/components/responses/AccountRequired'
     put:
       tags:
-      - Account
+      - Cuenta
       operationId: updateSettlement
       summary: Definir mis saldos predeterminados (payouts y payins)
       description: Cambia tus saldos predeterminados. `default_settlement_asset` es el saldo desde el

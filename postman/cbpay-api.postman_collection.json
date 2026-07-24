@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — convertible on demand with swaps.\nPayouts and service fees can be paid from any of the four balances\n(`PUT /v1/settlement` or per-payout `settlement_asset`), and payins\ncan auto-convert to the asset of your choice (`default_payin_asset`).\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-24 19:13 UTC",
-    "_content_sha256": "2725edf69e3043f0425fa2eeb82d09a08bc1417b77c24d81ff65bddfada62ab1"
+    "_generated_at": "2026-07-24 21:15 UTC",
+    "_content_sha256": "01edcb62c3598f33a8117296681e120f88f569639a22c40d42321ea51438c0f0"
   },
   "auth": {
     "type": "bearer",
@@ -377,7 +377,7 @@
       ]
     },
     {
-      "name": "Payins",
+      "name": "Checkout",
       "item": [
         {
           "name": "Universal checkout page (public)",
@@ -982,1777 +982,6 @@
                 }
               ],
               "body": "{\n  \"paid\": true,\n  \"status\": \"paid\",\n  \"status_message\": \"approved\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "List payins",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/payins",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "payins"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "",
-                  "disabled": true
-                },
-                {
-                  "key": "page_size",
-                  "value": "",
-                  "disabled": true
-                },
-                {
-                  "key": "status",
-                  "value": "",
-                  "disabled": true,
-                  "description": ""
-                },
-                {
-                  "key": "country",
-                  "value": "",
-                  "disabled": true,
-                  "description": "Filter by origin country (ISO 3166-1 alpha-2, e.g. BO, MX, VE)."
-                },
-                {
-                  "key": "from",
-                  "value": "",
-                  "disabled": true,
-                  "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
-                },
-                {
-                  "key": "to",
-                  "value": "",
-                  "disabled": true,
-                  "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
-                },
-                {
-                  "key": "format",
-                  "value": "",
-                  "disabled": true,
-                  "description": "Export the same rows as a file: `csv` or `xlsx` (accounting-grade download, up to 10,000 rows; same filters and date range). Omit for the JSON view."
-                }
-              ]
-            },
-            "description": ""
-          },
-          "response": [
-            {
-              "name": "200 Paged payins.",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/payins",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "payins"
-                  ],
-                  "query": [
-                    {
-                      "key": "page",
-                      "value": "",
-                      "disabled": true
-                    },
-                    {
-                      "key": "page_size",
-                      "value": "",
-                      "disabled": true
-                    },
-                    {
-                      "key": "status",
-                      "value": "",
-                      "disabled": true,
-                      "description": ""
-                    },
-                    {
-                      "key": "country",
-                      "value": "",
-                      "disabled": true,
-                      "description": "Filter by origin country (ISO 3166-1 alpha-2, e.g. BO, MX, VE)."
-                    },
-                    {
-                      "key": "from",
-                      "value": "",
-                      "disabled": true,
-                      "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
-                    },
-                    {
-                      "key": "to",
-                      "value": "",
-                      "disabled": true,
-                      "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
-                    },
-                    {
-                      "key": "format",
-                      "value": "",
-                      "disabled": true,
-                      "description": "Export the same rows as a file: `csv` or `xlsx` (accounting-grade download, up to 10,000 rows; same filters and date range). Omit for the JSON view."
-                    }
-                  ]
-                }
-              },
-              "status": "Paged payins.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"payins\": [\n    {\n      \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n      \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n      \"kind\": \"qr\",\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"method\": \"\",\n      \"local_amount\": \"700.00\",\n      \"status\": \"credited\",\n      \"reference\": \"QR-778812\",\n      \"created_at\": \"2026-07-07T12:00:00Z\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\",\n      \"fx_rate\": \"6.91\",\n      \"usdt_gross\": \"101.302460\",\n      \"fee\": \"1.000000\",\n      \"usdt_credited\": \"100.302460\"\n    },\n    {\n      \"payin_id\": \"d0135ed5-8e9c-4f8b-a522-8ec100470426\",\n      \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n      \"kind\": \"checkout\",\n      \"country\": \"\",\n      \"currency\": \"\",\n      \"method\": \"checkout\",\n      \"local_amount\": \"\",\n      \"settlement_asset\": \"USDT\",\n      \"asset_amount\": \"50\",\n      \"status\": \"pending\",\n      \"reference\": \"CB68JZCT46QE\",\n      \"created_at\": \"2026-07-21T12:00:00Z\",\n      \"updated_at\": \"2026-07-21T12:00:00Z\"\n    }\n  ]\n}"
-            }
-          ]
-        },
-        {
-          "name": "Create a payin (top-up charge) — Bolivia — QR charge (BOB)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/payins",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "payins"
-              ]
-            },
-            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"country\": \"BO\",\n  \"currency\": \"BOB\",\n  \"method\": \"qr\",\n  \"amount\": \"700.00\",\n  \"description\": \"App top-up\",\n  \"expires_in\": 3600\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "201 Charge created.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/payins",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "payins"
-                  ]
-                }
-              },
-              "status": "Charge created.",
-              "code": 201,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
-            }
-          ]
-        },
-        {
-          "name": "Create a payin (top-up charge) — Brazil — dynamic PIX QR (BRL)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/payins",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "payins"
-              ]
-            },
-            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"country\": \"BR\",\n  \"currency\": \"BRL\",\n  \"method\": \"qr\",\n  \"amount\": \"120.00\",\n  \"description\": \"Order 7719\",\n  \"expires_in\": 1800\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "201 Charge created.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/payins",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "payins"
-                  ]
-                }
-              },
-              "status": "Charge created.",
-              "code": 201,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
-            }
-          ]
-        },
-        {
-          "name": "Create a payin (top-up charge) — Chile — announced bank transfer (CLP)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/payins",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "payins"
-              ]
-            },
-            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"country\": \"CL\",\n  \"currency\": \"CLP\",\n  \"method\": \"bank_transfer\",\n  \"amount\": \"500000\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "201 Charge created.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/payins",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "payins"
-                  ]
-                }
-              },
-              "status": "Charge created.",
-              "code": 201,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
-            }
-          ]
-        },
-        {
-          "name": "Create a payin (top-up charge) — Paraguay — announced bank transfer (PYG, integer amounts)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/payins",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "payins"
-              ]
-            },
-            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"country\": \"PY\",\n  \"currency\": \"PYG\",\n  \"method\": \"bank_transfer\",\n  \"amount\": \"596000\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "201 Charge created.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/payins",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "payins"
-                  ]
-                }
-              },
-              "status": "Charge created.",
-              "code": 201,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
-            }
-          ]
-        },
-        {
-          "name": "Create a payin (top-up charge) — Chile — hosted payment page, any bank (CLP)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/payins",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "payins"
-              ]
-            },
-            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"country\": \"CL\",\n  \"currency\": \"CLP\",\n  \"method\": \"fintoc\",\n  \"amount\": \"150000\",\n  \"description\": \"Top-up order 8841\",\n  \"idempotency_key\": \"topup-8841\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "201 Charge created.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/payins",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "payins"
-                  ]
-                }
-              },
-              "status": "Charge created.",
-              "code": 201,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
-            }
-          ]
-        },
-        {
-          "name": "Create a payin (top-up charge) — Bolivia — 3-D Secure card checkout (BOB)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/payins",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "payins"
-              ]
-            },
-            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"country\": \"BO\",\n  \"currency\": \"BOB\",\n  \"method\": \"card\",\n  \"amount\": \"700.00\",\n  \"description\": \"App top-up\",\n  \"customer\": {\n    \"email\": \"payer@example.com\",\n    \"first_name\": \"Ana\",\n    \"last_name\": \"Rojas\"\n  },\n  \"success_url\": \"https://your-app.com/payment/ok\",\n  \"failure_url\": \"https://your-app.com/payment/error\",\n  \"idempotency_key\": \"topup-7719\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "201 Charge created.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/payins",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "payins"
-                  ]
-                }
-              },
-              "status": "Charge created.",
-              "code": 201,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
-            }
-          ]
-        },
-        {
-          "name": "Create a payin (top-up charge) — Universal checkout link — 50 USDT, any country/method",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/payins",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "payins"
-              ]
-            },
-            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"method\": \"checkout\",\n  \"amount\": \"50\",\n  \"settlement_asset\": \"USDT\",\n  \"description\": \"Order 8841\",\n  \"country\": \"CL\",\n  \"success_url\": \"https://your-app.com/payment/ok\",\n  \"failure_url\": \"https://your-app.com/payment/error\",\n  \"expires_in\": 86400,\n  \"idempotency_key\": \"order-8841\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "201 Charge created.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/payins",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "payins"
-                  ]
-                }
-              },
-              "status": "Charge created.",
-              "code": 201,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
-            }
-          ]
-        },
-        {
-          "name": "Create a payin (top-up charge) — Universal checkout link — 0.001 BTC settlement",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/payins",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "payins"
-              ]
-            },
-            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"method\": \"checkout\",\n  \"amount\": \"0.001\",\n  \"settlement_asset\": \"BTC\",\n  \"description\": \"Invoice 2210\",\n  \"idempotency_key\": \"invoice-2210\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "201 Charge created.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/payins",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "payins"
-                  ]
-                }
-              },
-              "status": "Charge created.",
-              "code": 201,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
-            }
-          ]
-        },
-        {
-          "name": "Get a payin",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/payins/:payinID",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "payins",
-                ":payinID"
-              ],
-              "variable": [
-                {
-                  "key": "payinID",
-                  "value": ""
-                }
-              ]
-            },
-            "description": ""
-          },
-          "response": [
-            {
-              "name": "200 The payin.",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/payins/:payinID",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "payins",
-                    ":payinID"
-                  ],
-                  "variable": [
-                    {
-                      "key": "payinID",
-                      "value": ""
-                    }
-                  ]
-                }
-              },
-              "status": "The payin.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"kind\": \"qr\",\n  \"country\": \"BO\",\n  \"currency\": \"BOB\",\n  \"method\": \"\",\n  \"local_amount\": \"700.00\",\n  \"status\": \"credited\",\n  \"reference\": \"QR-778812\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:00Z\",\n  \"fx_rate\": \"6.91\",\n  \"usdt_gross\": \"101.302460\",\n  \"fee\": \"1.000000\",\n  \"usdt_credited\": \"100.302460\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "List payin methods",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/payins/methods",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "payins",
-                "methods"
-              ]
-            },
-            "description": ""
-          },
-          "response": [
-            {
-              "name": "200 Catalog of available payin corridors.",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/payins/methods",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "payins",
-                    "methods"
-                  ]
-                }
-              },
-              "status": "Catalog of available payin corridors.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"items\": [\n    {\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"method\": \"qr\",\n      \"delivery\": \"push\"\n    },\n    {\n      \"country\": \"CL\",\n      \"currency\": \"CLP\",\n      \"method\": \"bank_transfer\",\n      \"delivery\": \"push\"\n    },\n    {\n      \"country\": \"MX\",\n      \"currency\": \"MXN\",\n      \"method\": \"bank_transfer\",\n      \"delivery\": \"push\"\n    },\n    {\n      \"country\": \"PE\",\n      \"currency\": \"PEN\",\n      \"method\": \"bank_transfer\",\n      \"delivery\": \"polling\"\n    },\n    {\n      \"country\": \"PY\",\n      \"currency\": \"PYG\",\n      \"method\": \"bank_transfer\",\n      \"delivery\": \"polling\"\n    },\n    {\n      \"country\": \"VE\",\n      \"currency\": \"VES\",\n      \"method\": \"c2p\",\n      \"delivery\": \"push+polling\"\n    }\n  ],\n  \"meta\": {\n    \"retrieved\": 6\n  }\n}"
-            }
-          ]
-        },
-        {
-          "name": "List stored cards",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/stored-cards",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "stored-cards"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "",
-                  "disabled": true
-                },
-                {
-                  "key": "page_size",
-                  "value": "",
-                  "disabled": true
-                },
-                {
-                  "key": "from",
-                  "value": "",
-                  "disabled": false,
-                  "description": ""
-                },
-                {
-                  "key": "to",
-                  "value": "",
-                  "disabled": false,
-                  "description": ""
-                },
-                {
-                  "key": "payer_reference",
-                  "value": "",
-                  "disabled": true,
-                  "description": ""
-                },
-                {
-                  "key": "status",
-                  "value": "",
-                  "disabled": true,
-                  "description": ""
-                }
-              ]
-            },
-            "description": "Cards saved by your payers on the hosted card checkout (COF mandate): only display data (brand, last 4, expiry) — the card number never exists on this platform. Filter by `payer_reference` to show a returning customer their cards. Requires `from`/`to`."
-          },
-          "response": [
-            {
-              "name": "200 Paged stored cards.",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/stored-cards",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "stored-cards"
-                  ],
-                  "query": [
-                    {
-                      "key": "page",
-                      "value": "",
-                      "disabled": true
-                    },
-                    {
-                      "key": "page_size",
-                      "value": "",
-                      "disabled": true
-                    },
-                    {
-                      "key": "from",
-                      "value": "",
-                      "disabled": false,
-                      "description": ""
-                    },
-                    {
-                      "key": "to",
-                      "value": "",
-                      "disabled": false,
-                      "description": ""
-                    },
-                    {
-                      "key": "payer_reference",
-                      "value": "",
-                      "disabled": true,
-                      "description": ""
-                    },
-                    {
-                      "key": "status",
-                      "value": "",
-                      "disabled": true,
-                      "description": ""
-                    }
-                  ]
-                }
-              },
-              "status": "Paged stored cards.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"stored_cards\": [\n    {\n      \"stored_card_id\": \"5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70\",\n      \"payer_reference\": \"customer-1042\",\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"brand\": \"visa\",\n      \"last4\": \"2701\",\n      \"expiry_month\": \"12\",\n      \"expiry_year\": \"2028\",\n      \"status\": \"active\",\n      \"created_at\": \"2026-07-20T18:00:00Z\"\n    }\n  ]\n}"
-            }
-          ]
-        },
-        {
-          "name": "Get a stored card",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/stored-cards/:storedCardID",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "stored-cards",
-                ":storedCardID"
-              ],
-              "variable": [
-                {
-                  "key": "storedCardID",
-                  "value": ""
-                }
-              ]
-            },
-            "description": ""
-          },
-          "response": [
-            {
-              "name": "200 The stored card.",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/stored-cards/:storedCardID",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "stored-cards",
-                    ":storedCardID"
-                  ],
-                  "variable": [
-                    {
-                      "key": "storedCardID",
-                      "value": ""
-                    }
-                  ]
-                }
-              },
-              "status": "The stored card.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"stored_card_id\": \"5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"payer_reference\": \"customer-1042\",\n  \"country\": \"BO\",\n  \"currency\": \"BOB\",\n  \"brand\": \"visa\",\n  \"last4\": \"2701\",\n  \"expiry_month\": \"12\",\n  \"expiry_year\": \"2028\",\n  \"seed_payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"active\",\n  \"created_at\": \"2026-07-20T18:00:00Z\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "Revoke a stored card",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/stored-cards/:storedCardID",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "stored-cards",
-                ":storedCardID"
-              ],
-              "variable": [
-                {
-                  "key": "storedCardID",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Revokes the stored credential upstream and marks the mirror `revoked` (history is never deleted). Merchant-initiated charges and saved-card payments stop working immediately. Emits the `stored_card_revoked` webhook."
-          },
-          "response": [
-            {
-              "name": "200 The stored card, now revoked.",
-              "originalRequest": {
-                "method": "DELETE",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/stored-cards/:storedCardID",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "stored-cards",
-                    ":storedCardID"
-                  ],
-                  "variable": [
-                    {
-                      "key": "storedCardID",
-                      "value": ""
-                    }
-                  ]
-                }
-              },
-              "status": "The stored card, now revoked.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"stored_card_id\": \"5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"payer_reference\": \"customer-1042\",\n  \"country\": \"BO\",\n  \"currency\": \"BOB\",\n  \"brand\": \"visa\",\n  \"last4\": \"2701\",\n  \"expiry_month\": \"12\",\n  \"expiry_year\": \"2028\",\n  \"seed_payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"revoked\",\n  \"created_at\": \"2026-07-20T18:00:00Z\",\n  \"revoked_at\": \"2026-07-21T10:00:00Z\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "Charge a stored card (merchant-initiated)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/stored-cards/:storedCardID/charges",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "stored-cards",
-                ":storedCardID",
-                "charges"
-              ],
-              "variable": [
-                {
-                  "key": "storedCardID",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Charges the saved card WITHOUT the payer present (MIT under the card-brand mandate, citing the original consented 3-D Secure seed). Use `recurring: true` for fixed-interval subscription charges; false (default) for unscheduled charges. Requires `idempotency_key` — a retry with the same key returns the original payin and never charges twice. The approved charge credits the balance automatically (`payin_credited` webhook); a declined charge responds 422 with the payin marked failed.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"amount\": \"45.00\",\n  \"description\": \"Monthly subscription\",\n  \"recurring\": true,\n  \"idempotency_key\": \"sub-2026-07-cust1042\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "200 Idempotent replay — the original payin.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/stored-cards/:storedCardID/charges",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "stored-cards",
-                    ":storedCardID",
-                    "charges"
-                  ],
-                  "variable": [
-                    {
-                      "key": "storedCardID",
-                      "value": ""
-                    }
-                  ]
-                }
-              },
-              "status": "Idempotent replay — the original payin.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"payin_id\": \"3c5b002c-af76-4235-8145-9f07fef073fd\",\n  \"status\": \"credited\",\n  \"reference\": \"3c5b002c-af76-4235-8145-9f07fef073fd\",\n  \"idempotency_hit\": true\n}"
-            }
-          ]
-        },
-        {
-          "name": "List subscriptions",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/subscriptions",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "subscriptions"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "",
-                  "disabled": true
-                },
-                {
-                  "key": "page_size",
-                  "value": "",
-                  "disabled": true
-                },
-                {
-                  "key": "from",
-                  "value": "",
-                  "disabled": false,
-                  "description": ""
-                },
-                {
-                  "key": "to",
-                  "value": "",
-                  "disabled": false,
-                  "description": ""
-                },
-                {
-                  "key": "status",
-                  "value": "",
-                  "disabled": true,
-                  "description": ""
-                },
-                {
-                  "key": "stored_card_id",
-                  "value": "",
-                  "disabled": true,
-                  "description": ""
-                },
-                {
-                  "key": "payer_reference",
-                  "value": "",
-                  "disabled": true,
-                  "description": ""
-                }
-              ]
-            },
-            "description": "Your subscriptions (org admins see the whole org with account_id). Filter by status, stored_card_id or payer_reference. Requires from/to."
-          },
-          "response": [
-            {
-              "name": "200 Your subscriptions (org admins see the whole org with accoun",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/subscriptions",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "subscriptions"
-                  ],
-                  "query": [
-                    {
-                      "key": "page",
-                      "value": "",
-                      "disabled": true
-                    },
-                    {
-                      "key": "page_size",
-                      "value": "",
-                      "disabled": true
-                    },
-                    {
-                      "key": "from",
-                      "value": "",
-                      "disabled": false,
-                      "description": ""
-                    },
-                    {
-                      "key": "to",
-                      "value": "",
-                      "disabled": false,
-                      "description": ""
-                    },
-                    {
-                      "key": "status",
-                      "value": "",
-                      "disabled": true,
-                      "description": ""
-                    },
-                    {
-                      "key": "stored_card_id",
-                      "value": "",
-                      "disabled": true,
-                      "description": ""
-                    },
-                    {
-                      "key": "payer_reference",
-                      "value": "",
-                      "disabled": true,
-                      "description": ""
-                    }
-                  ]
-                }
-              },
-              "status": "Your subscriptions (org admins see the whole org with accoun",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"subscriptions\": [\n    {\n      \"subscription_id\": \"7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f\",\n      \"stored_card_id\": \"5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70\",\n      \"payer_reference\": \"customer-1042\",\n      \"amount\": \"45.00\",\n      \"currency\": \"BOB\",\n      \"interval\": \"monthly\",\n      \"status\": \"active\",\n      \"period\": 1,\n      \"next_charge_at\": \"2026-08-20T18:00:00Z\",\n      \"created_at\": \"2026-07-20T18:00:00Z\"\n    }\n  ]\n}"
-            }
-          ]
-        },
-        {
-          "name": "Create a subscription",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/subscriptions",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "subscriptions"
-              ]
-            },
-            "description": "Recurring charges on a saved card (the platform runs the schedule for you). The first period is charged synchronously on creation unless start_at is in the future (trial). Each charge is a normal card payin (credited via payin_credited); a decline retries daily up to 3 times, then the subscription becomes past_due. idempotency_key is required (a retry returns the original subscription). Requires an active stored card of the payer.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"stored_card_id\": \"5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70\",\n  \"amount\": \"45.00\",\n  \"interval\": \"monthly\",\n  \"description\": \"Monthly plan\",\n  \"idempotency_key\": \"plan-cust1042-monthly\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "200 Idempotent replay — the original subscription.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/subscriptions",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "subscriptions"
-                  ]
-                }
-              },
-              "status": "Idempotent replay — the original subscription.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"subscription_id\": \"7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"stored_card_id\": \"5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70\",\n  \"payer_reference\": \"customer-1042\",\n  \"amount\": \"45.00\",\n  \"currency\": \"BOB\",\n  \"description\": \"Monthly plan\",\n  \"interval\": \"monthly\",\n  \"status\": \"active\",\n  \"period\": 1,\n  \"next_charge_at\": \"2026-08-20T18:00:00Z\",\n  \"created_at\": \"2026-07-20T18:00:00Z\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "Get a subscription",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/subscriptions/:subscriptionID",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "subscriptions",
-                ":subscriptionID"
-              ],
-              "variable": [
-                {
-                  "key": "subscriptionID",
-                  "value": ""
-                }
-              ]
-            },
-            "description": ""
-          },
-          "response": [
-            {
-              "name": "200 The subscription.",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/subscriptions/:subscriptionID",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "subscriptions",
-                    ":subscriptionID"
-                  ],
-                  "variable": [
-                    {
-                      "key": "subscriptionID",
-                      "value": ""
-                    }
-                  ]
-                }
-              },
-              "status": "The subscription.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"subscription_id\": \"7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"stored_card_id\": \"5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70\",\n  \"payer_reference\": \"customer-1042\",\n  \"amount\": \"45.00\",\n  \"currency\": \"BOB\",\n  \"description\": \"Monthly plan\",\n  \"interval\": \"monthly\",\n  \"status\": \"active\",\n  \"period\": 1,\n  \"next_charge_at\": \"2026-08-20T18:00:00Z\",\n  \"created_at\": \"2026-07-20T18:00:00Z\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "Pause a subscription",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/subscriptions/:subscriptionID/pause",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "subscriptions",
-                ":subscriptionID",
-                "pause"
-              ],
-              "variable": [
-                {
-                  "key": "subscriptionID",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Stops charges (from active). Resuming does NOT catch up missed periods."
-          },
-          "response": [
-            {
-              "name": "200 The subscription.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/subscriptions/:subscriptionID/pause",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "subscriptions",
-                    ":subscriptionID",
-                    "pause"
-                  ],
-                  "variable": [
-                    {
-                      "key": "subscriptionID",
-                      "value": ""
-                    }
-                  ]
-                }
-              },
-              "status": "The subscription.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"subscription_id\": \"7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"stored_card_id\": \"5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70\",\n  \"payer_reference\": \"customer-1042\",\n  \"amount\": \"45.00\",\n  \"currency\": \"BOB\",\n  \"description\": \"Monthly plan\",\n  \"interval\": \"monthly\",\n  \"status\": \"active\",\n  \"period\": 1,\n  \"next_charge_at\": \"2026-08-20T18:00:00Z\",\n  \"created_at\": \"2026-07-20T18:00:00Z\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "Resume a subscription",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/subscriptions/:subscriptionID/resume",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "subscriptions",
-                ":subscriptionID",
-                "resume"
-              ],
-              "variable": [
-                {
-                  "key": "subscriptionID",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Reactivates from paused or past_due. From past_due it retries the pending period once (a fresh decline returns to past_due). From paused with a future date it keeps the original schedule (no early charge)."
-          },
-          "response": [
-            {
-              "name": "200 The subscription.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/subscriptions/:subscriptionID/resume",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "subscriptions",
-                    ":subscriptionID",
-                    "resume"
-                  ],
-                  "variable": [
-                    {
-                      "key": "subscriptionID",
-                      "value": ""
-                    }
-                  ]
-                }
-              },
-              "status": "The subscription.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"subscription_id\": \"7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"stored_card_id\": \"5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70\",\n  \"payer_reference\": \"customer-1042\",\n  \"amount\": \"45.00\",\n  \"currency\": \"BOB\",\n  \"description\": \"Monthly plan\",\n  \"interval\": \"monthly\",\n  \"status\": \"active\",\n  \"period\": 1,\n  \"next_charge_at\": \"2026-08-20T18:00:00Z\",\n  \"created_at\": \"2026-07-20T18:00:00Z\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "Cancel a subscription",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/subscriptions/:subscriptionID/cancel",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "subscriptions",
-                ":subscriptionID",
-                "cancel"
-              ],
-              "variable": [
-                {
-                  "key": "subscriptionID",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Terminal. Revoking the stored card also cancels its subscriptions automatically."
-          },
-          "response": [
-            {
-              "name": "200 The subscription.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/subscriptions/:subscriptionID/cancel",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "subscriptions",
-                    ":subscriptionID",
-                    "cancel"
-                  ],
-                  "variable": [
-                    {
-                      "key": "subscriptionID",
-                      "value": ""
-                    }
-                  ]
-                }
-              },
-              "status": "The subscription.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"subscription_id\": \"7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"stored_card_id\": \"5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70\",\n  \"payer_reference\": \"customer-1042\",\n  \"amount\": \"45.00\",\n  \"currency\": \"BOB\",\n  \"description\": \"Monthly plan\",\n  \"interval\": \"monthly\",\n  \"status\": \"active\",\n  \"period\": 1,\n  \"next_charge_at\": \"2026-08-20T18:00:00Z\",\n  \"created_at\": \"2026-07-20T18:00:00Z\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "Active collection (pull)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Idempotency-Key",
-                "value": "",
-                "disabled": true
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/payins/collect",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "payins",
-                "collect"
-              ]
-            },
-            "description": "Charges the payer directly in corridors that support pull collections (e.g. Venezuela `c2p` / `debito_inmediato`). Synchronous: if the charge is approved the deposit converts at your current `payin_rate` and is credited in the same call, net of the payin fee. If the payer declines, `paid` is false, the payin is marked failed and nothing is charged.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"method\": \"c2p\",\n  \"amount\": \"1200.00\",\n  \"description\": \"Order 5512\",\n  \"payer_document\": \"V12345678\",\n  \"payer_phone\": \"04141234567\",\n  \"payer_bank\": \"0102\",\n  \"otp\": \"12345678\",\n  \"idempotency_key\": \"collect-2026-07-07-a\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "200 Collection result. `paid: true` means the deposit was credit",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/payins/collect",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "payins",
-                    "collect"
-                  ]
-                }
-              },
-              "status": "Collection result. `paid: true` means the deposit was credit",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"payin_id\": \"7b3c9e2f-1a2b-3c4d-5e6f-7a8b9c0d1e2f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"kind\": \"collect\",\n  \"country\": \"VE\",\n  \"currency\": \"VES\",\n  \"method\": \"c2p\",\n  \"local_amount\": \"1200.00\",\n  \"status\": \"credited\",\n  \"reference\": \"REF-102030\",\n  \"fx_rate\": \"36.50\",\n  \"usdt_gross\": \"32.876712\",\n  \"fee\": \"0.300000\",\n  \"usdt_credited\": \"32.576712\",\n  \"paid\": true,\n  \"provider_reference\": \"PRV-889911\",\n  \"status_code\": \"00\",\n  \"status_message\": \"approved\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:02Z\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "Request a collection OTP",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/payins/collect/otp",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "payins",
-                "collect",
-                "otp"
-              ]
-            },
-            "description": "Requests the one-time password some pull methods need before the charge (e.g. immediate debit). Free of charge.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"method\": \"debito_inmediato\",\n  \"amount\": \"1200.00\",\n  \"payer_document\": \"V12345678\",\n  \"payer_phone\": \"04141234567\",\n  \"payer_bank\": \"0102\",\n  \"payer_account\": \"01020123456789012345\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "200 OTP dispatched to the payer.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/payins/collect/otp",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "payins",
-                    "collect",
-                    "otp"
-                  ]
-                }
-              },
-              "status": "OTP dispatched to the payer.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"method\": \"debito_inmediato\",\n  \"result\": {\n    \"status\": \"sent\",\n    \"otp_reference\": \"OTP-5521\"\n  }\n}"
-            }
-          ]
-        },
-        {
-          "name": "List my deposit accounts",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/payins/deposit-accounts",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "payins",
-                "deposit-accounts"
-              ]
-            },
-            "description": "Lists the dedicated deposit destinations bound to the calling account."
-          },
-          "response": [
-            {
-              "name": "200 Deposit accounts of the calling account.",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/payins/deposit-accounts",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "payins",
-                    "deposit-accounts"
-                  ]
-                }
-              },
-              "status": "Deposit accounts of the calling account.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"deposit_accounts\": [\n    {\n      \"instrument_id\": \"a1d4b7c0-1234-5678-9abc-def012345678\",\n      \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n      \"country\": \"MX\",\n      \"currency\": \"MXN\",\n      \"method\": \"bank_transfer\",\n      \"instrument\": \"734180000151000006\",\n      \"details\": {\n        \"clabe\": \"734180000151000006\",\n        \"status\": \"active\"\n      },\n      \"status\": \"active\",\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
-            }
-          ]
-        },
-        {
-          "name": "Create a dedicated deposit account — Mexico — dedicated CLABE (MXN)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/payins/deposit-accounts",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "payins",
-                "deposit-accounts"
-              ]
-            },
-            "description": "Provisions a fixed deposit destination bound to your account in corridors that support it (e.g. a Mexican CLABE or an Argentine CVU). Every transfer arriving to it is credited automatically, net of the payin fee. Creation is free.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"country\": \"MX\",\n  \"currency\": \"MXN\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "201 Deposit account created and bound to the calling account.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/payins/deposit-accounts",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "payins",
-                    "deposit-accounts"
-                  ]
-                }
-              },
-              "status": "Deposit account created and bound to the calling account.",
-              "code": 201,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"instrument_id\": \"a1d4b7c0-1234-5678-9abc-def012345678\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"country\": \"MX\",\n  \"currency\": \"MXN\",\n  \"method\": \"bank_transfer\",\n  \"instrument\": \"734180000151000006\",\n  \"details\": {\n    \"clabe\": \"734180000151000006\",\n    \"status\": \"active\"\n  },\n  \"status\": \"active\",\n  \"created_at\": \"2026-07-07T12:00:00Z\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "Create a dedicated deposit account — Argentina — dedicated CVU (ARS)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/payins/deposit-accounts",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "payins",
-                "deposit-accounts"
-              ]
-            },
-            "description": "Provisions a fixed deposit destination bound to your account in corridors that support it (e.g. a Mexican CLABE or an Argentine CVU). Every transfer arriving to it is credited automatically, net of the payin fee. Creation is free.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"country\": \"AR\",\n  \"currency\": \"ARS\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "201 Deposit account created and bound to the calling account.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/payins/deposit-accounts",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "payins",
-                    "deposit-accounts"
-                  ]
-                }
-              },
-              "status": "Deposit account created and bound to the calling account.",
-              "code": 201,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"instrument_id\": \"a1d4b7c0-1234-5678-9abc-def012345678\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"country\": \"MX\",\n  \"currency\": \"MXN\",\n  \"method\": \"bank_transfer\",\n  \"instrument\": \"734180000151000006\",\n  \"details\": {\n    \"clabe\": \"734180000151000006\",\n    \"status\": \"active\"\n  },\n  \"status\": \"active\",\n  \"created_at\": \"2026-07-07T12:00:00Z\"\n}"
             }
           ]
         }
@@ -6924,6 +5153,1032 @@
                 }
               ],
               "body": "{\n  \"payout_id\": \"8e2a1b0c-9d8e-7f60-5a4b-3c2d1e0f9a8b\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"idempotency_key\": \"qr-2026-07-07-a\",\n  \"country\": \"BO\",\n  \"currency\": \"BOB\",\n  \"method\": \"qr\",\n  \"local_amount\": \"700.00\",\n  \"fx_rate\": \"6.91\",\n  \"usdt_amount\": \"101.302460\",\n  \"fee\": \"0.300000\",\n  \"total_debit\": \"101.602460\",\n  \"settlement_asset\": \"USDT\",\n  \"settlement_amount\": \"101.602460\",\n  \"settlement_rate\": \"1\",\n  \"beneficiary\": {\n    \"qr_reference\": \"QR-REF-889923\"\n  },\n  \"description\": \"QR lunch payment\",\n  \"status\": \"completed\",\n  \"status_code\": \"\",\n  \"status_message\": \"\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:01Z\",\n  \"idempotency_hit\": true\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Payins",
+      "item": [
+        {
+          "name": "List payins",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payins",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payins"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "country",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by origin country (ISO 3166-1 alpha-2, e.g. BO, MX, VE)."
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                },
+                {
+                  "key": "format",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Export the same rows as a file: `csv` or `xlsx` (accounting-grade download, up to 10,000 rows; same filters and date range). Omit for the JSON view."
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 Paged payins.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payins",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payins"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "country",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Filter by origin country (ISO 3166-1 alpha-2, e.g. BO, MX, VE)."
+                    },
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                    },
+                    {
+                      "key": "format",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Export the same rows as a file: `csv` or `xlsx` (accounting-grade download, up to 10,000 rows; same filters and date range). Omit for the JSON view."
+                    }
+                  ]
+                }
+              },
+              "status": "Paged payins.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"payins\": [\n    {\n      \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n      \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n      \"kind\": \"qr\",\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"method\": \"\",\n      \"local_amount\": \"700.00\",\n      \"status\": \"credited\",\n      \"reference\": \"QR-778812\",\n      \"created_at\": \"2026-07-07T12:00:00Z\",\n      \"updated_at\": \"2026-07-07T12:00:00Z\",\n      \"fx_rate\": \"6.91\",\n      \"usdt_gross\": \"101.302460\",\n      \"fee\": \"1.000000\",\n      \"usdt_credited\": \"100.302460\"\n    },\n    {\n      \"payin_id\": \"d0135ed5-8e9c-4f8b-a522-8ec100470426\",\n      \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n      \"kind\": \"checkout\",\n      \"country\": \"\",\n      \"currency\": \"\",\n      \"method\": \"checkout\",\n      \"local_amount\": \"\",\n      \"settlement_asset\": \"USDT\",\n      \"asset_amount\": \"50\",\n      \"status\": \"pending\",\n      \"reference\": \"CB68JZCT46QE\",\n      \"created_at\": \"2026-07-21T12:00:00Z\",\n      \"updated_at\": \"2026-07-21T12:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a payin (top-up charge) — Bolivia — QR charge (BOB)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payins",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payins"
+              ]
+            },
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country\": \"BO\",\n  \"currency\": \"BOB\",\n  \"method\": \"qr\",\n  \"amount\": \"700.00\",\n  \"description\": \"App top-up\",\n  \"expires_in\": 3600\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Charge created.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payins",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payins"
+                  ]
+                }
+              },
+              "status": "Charge created.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a payin (top-up charge) — Brazil — dynamic PIX QR (BRL)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payins",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payins"
+              ]
+            },
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country\": \"BR\",\n  \"currency\": \"BRL\",\n  \"method\": \"qr\",\n  \"amount\": \"120.00\",\n  \"description\": \"Order 7719\",\n  \"expires_in\": 1800\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Charge created.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payins",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payins"
+                  ]
+                }
+              },
+              "status": "Charge created.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a payin (top-up charge) — Chile — announced bank transfer (CLP)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payins",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payins"
+              ]
+            },
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country\": \"CL\",\n  \"currency\": \"CLP\",\n  \"method\": \"bank_transfer\",\n  \"amount\": \"500000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Charge created.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payins",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payins"
+                  ]
+                }
+              },
+              "status": "Charge created.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a payin (top-up charge) — Paraguay — announced bank transfer (PYG, integer amounts)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payins",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payins"
+              ]
+            },
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country\": \"PY\",\n  \"currency\": \"PYG\",\n  \"method\": \"bank_transfer\",\n  \"amount\": \"596000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Charge created.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payins",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payins"
+                  ]
+                }
+              },
+              "status": "Charge created.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a payin (top-up charge) — Chile — hosted payment page, any bank (CLP)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payins",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payins"
+              ]
+            },
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country\": \"CL\",\n  \"currency\": \"CLP\",\n  \"method\": \"fintoc\",\n  \"amount\": \"150000\",\n  \"description\": \"Top-up order 8841\",\n  \"idempotency_key\": \"topup-8841\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Charge created.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payins",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payins"
+                  ]
+                }
+              },
+              "status": "Charge created.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a payin (top-up charge) — Bolivia — 3-D Secure card checkout (BOB)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payins",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payins"
+              ]
+            },
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country\": \"BO\",\n  \"currency\": \"BOB\",\n  \"method\": \"card\",\n  \"amount\": \"700.00\",\n  \"description\": \"App top-up\",\n  \"customer\": {\n    \"email\": \"payer@example.com\",\n    \"first_name\": \"Ana\",\n    \"last_name\": \"Rojas\"\n  },\n  \"success_url\": \"https://your-app.com/payment/ok\",\n  \"failure_url\": \"https://your-app.com/payment/error\",\n  \"idempotency_key\": \"topup-7719\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Charge created.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payins",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payins"
+                  ]
+                }
+              },
+              "status": "Charge created.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a payin (top-up charge) — Universal checkout link — 50 USDT, any country/method",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payins",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payins"
+              ]
+            },
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"method\": \"checkout\",\n  \"amount\": \"50\",\n  \"settlement_asset\": \"USDT\",\n  \"description\": \"Order 8841\",\n  \"country\": \"CL\",\n  \"success_url\": \"https://your-app.com/payment/ok\",\n  \"failure_url\": \"https://your-app.com/payment/error\",\n  \"expires_in\": 86400,\n  \"idempotency_key\": \"order-8841\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Charge created.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payins",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payins"
+                  ]
+                }
+              },
+              "status": "Charge created.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a payin (top-up charge) — Universal checkout link — 0.001 BTC settlement",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payins",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payins"
+              ]
+            },
+            "description": "Creates a fiat top-up. With `method: \"qr\"` (default) an active QR charge is generated through the processor — in Bolivia the local interoperable QR, in Brazil a dynamic PIX QR whose `charge` carries the QR image and the \"copia e cola\" payload. With `method: \"bank_transfer\"` the deposit is announced and the response carries the reference the sender must include so the arriving transfer is matched and credited automatically — a short 12-character alphanumeric code that fits any bank concept field (some rails cap it at 20 characters with no special characters). With `method: \"fintoc\"` (Chile) the response carries a hosted `payment_url`: the payer opens it and transfers from any Chilean bank or wallet; the deposit is detected, validated and credited automatically. With `method: \"card\"` (Bolivia) the response carries a hosted `payment_url` for a 3-D Secure card checkout branded with your organization — card data never touches your integration. With `method: \"checkout\"` the response carries a public `checkout_url` — a branded universal checkout link denominated in the virtual balance of your choice (`settlement_asset`: USDT, USDC, BTC or GOLD). The payer picks any country with a live payin corridor (quoted local amount), any of the 4 crypto options (exclusive deposit address with a scannable QR), or pays instantly from the CBPay app via the merchant QR/alias; every payment is auto-converted to the settlement asset unless paid in the same asset. The first method that completes the payment wins. Charging is free; the payin fee applies when the deposit is credited.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"method\": \"checkout\",\n  \"amount\": \"0.001\",\n  \"settlement_asset\": \"BTC\",\n  \"description\": \"Invoice 2210\",\n  \"idempotency_key\": \"invoice-2210\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Charge created.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payins",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payins"
+                  ]
+                }
+              },
+              "status": "Charge created.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"pending\",\n  \"charge\": {\n    \"charge_id\": \"c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4\",\n    \"our_reference\": \"QR-778812\",\n    \"qr_image\": \"data:image/png;base64,iVBORw0KGgo…\",\n    \"qr_image_url\": \"https://cdn.cbpayapp.com/public/payin-qr/c9d8e7f6-a5b4-c3d2-e1f0-a9b8c7d6e5f4.png\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get a payin",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payins/:payinID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payins",
+                ":payinID"
+              ],
+              "variable": [
+                {
+                  "key": "payinID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 The payin.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payins/:payinID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payins",
+                    ":payinID"
+                  ],
+                  "variable": [
+                    {
+                      "key": "payinID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "The payin.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"kind\": \"qr\",\n  \"country\": \"BO\",\n  \"currency\": \"BOB\",\n  \"method\": \"\",\n  \"local_amount\": \"700.00\",\n  \"status\": \"credited\",\n  \"reference\": \"QR-778812\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:00Z\",\n  \"fx_rate\": \"6.91\",\n  \"usdt_gross\": \"101.302460\",\n  \"fee\": \"1.000000\",\n  \"usdt_credited\": \"100.302460\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List payin methods",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payins/methods",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payins",
+                "methods"
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 Catalog of available payin corridors.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payins/methods",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payins",
+                    "methods"
+                  ]
+                }
+              },
+              "status": "Catalog of available payin corridors.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"items\": [\n    {\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"method\": \"qr\",\n      \"delivery\": \"push\"\n    },\n    {\n      \"country\": \"CL\",\n      \"currency\": \"CLP\",\n      \"method\": \"bank_transfer\",\n      \"delivery\": \"push\"\n    },\n    {\n      \"country\": \"MX\",\n      \"currency\": \"MXN\",\n      \"method\": \"bank_transfer\",\n      \"delivery\": \"push\"\n    },\n    {\n      \"country\": \"PE\",\n      \"currency\": \"PEN\",\n      \"method\": \"bank_transfer\",\n      \"delivery\": \"polling\"\n    },\n    {\n      \"country\": \"PY\",\n      \"currency\": \"PYG\",\n      \"method\": \"bank_transfer\",\n      \"delivery\": \"polling\"\n    },\n    {\n      \"country\": \"VE\",\n      \"currency\": \"VES\",\n      \"method\": \"c2p\",\n      \"delivery\": \"push+polling\"\n    }\n  ],\n  \"meta\": {\n    \"retrieved\": 6\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Active collection (pull)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payins/collect",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payins",
+                "collect"
+              ]
+            },
+            "description": "Charges the payer directly in corridors that support pull collections (e.g. Venezuela `c2p` / `debito_inmediato`). Synchronous: if the charge is approved the deposit converts at your current `payin_rate` and is credited in the same call, net of the payin fee. If the payer declines, `paid` is false, the payin is marked failed and nothing is charged.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"method\": \"c2p\",\n  \"amount\": \"1200.00\",\n  \"description\": \"Order 5512\",\n  \"payer_document\": \"V12345678\",\n  \"payer_phone\": \"04141234567\",\n  \"payer_bank\": \"0102\",\n  \"otp\": \"12345678\",\n  \"idempotency_key\": \"collect-2026-07-07-a\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Collection result. `paid: true` means the deposit was credit",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payins/collect",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payins",
+                    "collect"
+                  ]
+                }
+              },
+              "status": "Collection result. `paid: true` means the deposit was credit",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"payin_id\": \"7b3c9e2f-1a2b-3c4d-5e6f-7a8b9c0d1e2f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"kind\": \"collect\",\n  \"country\": \"VE\",\n  \"currency\": \"VES\",\n  \"method\": \"c2p\",\n  \"local_amount\": \"1200.00\",\n  \"status\": \"credited\",\n  \"reference\": \"REF-102030\",\n  \"fx_rate\": \"36.50\",\n  \"usdt_gross\": \"32.876712\",\n  \"fee\": \"0.300000\",\n  \"usdt_credited\": \"32.576712\",\n  \"paid\": true,\n  \"provider_reference\": \"PRV-889911\",\n  \"status_code\": \"00\",\n  \"status_message\": \"approved\",\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:02Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Request a collection OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payins/collect/otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payins",
+                "collect",
+                "otp"
+              ]
+            },
+            "description": "Requests the one-time password some pull methods need before the charge (e.g. immediate debit). Free of charge.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"method\": \"debito_inmediato\",\n  \"amount\": \"1200.00\",\n  \"payer_document\": \"V12345678\",\n  \"payer_phone\": \"04141234567\",\n  \"payer_bank\": \"0102\",\n  \"payer_account\": \"01020123456789012345\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OTP dispatched to the payer.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payins/collect/otp",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payins",
+                    "collect",
+                    "otp"
+                  ]
+                }
+              },
+              "status": "OTP dispatched to the payer.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"method\": \"debito_inmediato\",\n  \"result\": {\n    \"status\": \"sent\",\n    \"otp_reference\": \"OTP-5521\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "List my deposit accounts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payins/deposit-accounts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payins",
+                "deposit-accounts"
+              ]
+            },
+            "description": "Lists the dedicated deposit destinations bound to the calling account."
+          },
+          "response": [
+            {
+              "name": "200 Deposit accounts of the calling account.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payins/deposit-accounts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payins",
+                    "deposit-accounts"
+                  ]
+                }
+              },
+              "status": "Deposit accounts of the calling account.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"deposit_accounts\": [\n    {\n      \"instrument_id\": \"a1d4b7c0-1234-5678-9abc-def012345678\",\n      \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n      \"country\": \"MX\",\n      \"currency\": \"MXN\",\n      \"method\": \"bank_transfer\",\n      \"instrument\": \"734180000151000006\",\n      \"details\": {\n        \"clabe\": \"734180000151000006\",\n        \"status\": \"active\"\n      },\n      \"status\": \"active\",\n      \"created_at\": \"2026-07-07T12:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a dedicated deposit account — Mexico — dedicated CLABE (MXN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payins/deposit-accounts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payins",
+                "deposit-accounts"
+              ]
+            },
+            "description": "Provisions a fixed deposit destination bound to your account in corridors that support it (e.g. a Mexican CLABE or an Argentine CVU). Every transfer arriving to it is credited automatically, net of the payin fee. Creation is free.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country\": \"MX\",\n  \"currency\": \"MXN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Deposit account created and bound to the calling account.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payins/deposit-accounts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payins",
+                    "deposit-accounts"
+                  ]
+                }
+              },
+              "status": "Deposit account created and bound to the calling account.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"instrument_id\": \"a1d4b7c0-1234-5678-9abc-def012345678\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"country\": \"MX\",\n  \"currency\": \"MXN\",\n  \"method\": \"bank_transfer\",\n  \"instrument\": \"734180000151000006\",\n  \"details\": {\n    \"clabe\": \"734180000151000006\",\n    \"status\": \"active\"\n  },\n  \"status\": \"active\",\n  \"created_at\": \"2026-07-07T12:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a dedicated deposit account — Argentina — dedicated CVU (ARS)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/payins/deposit-accounts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "payins",
+                "deposit-accounts"
+              ]
+            },
+            "description": "Provisions a fixed deposit destination bound to your account in corridors that support it (e.g. a Mexican CLABE or an Argentine CVU). Every transfer arriving to it is credited automatically, net of the payin fee. Creation is free.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country\": \"AR\",\n  \"currency\": \"ARS\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Deposit account created and bound to the calling account.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/payins/deposit-accounts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payins",
+                    "deposit-accounts"
+                  ]
+                }
+              },
+              "status": "Deposit account created and bound to the calling account.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"instrument_id\": \"a1d4b7c0-1234-5678-9abc-def012345678\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"country\": \"MX\",\n  \"currency\": \"MXN\",\n  \"method\": \"bank_transfer\",\n  \"instrument\": \"734180000151000006\",\n  \"details\": {\n    \"clabe\": \"734180000151000006\",\n    \"status\": \"active\"\n  },\n  \"status\": \"active\",\n  \"created_at\": \"2026-07-07T12:00:00Z\"\n}"
             }
           ]
         }
@@ -14152,6 +13407,766 @@
                 }
               ],
               "body": "{\n  \"wallet_id\": \"b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d\",\n  \"auto_forward\": {\n    \"enabled\": true,\n    \"linked_address\": \"TColdWallet00000000000000000000000\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Stored cards",
+      "item": [
+        {
+          "name": "List stored cards",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/stored-cards",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "stored-cards"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "payer_reference",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Cards saved by your payers on the hosted card checkout (COF mandate): only display data (brand, last 4, expiry) — the card number never exists on this platform. Filter by `payer_reference` to show a returning customer their cards. Requires `from`/`to`."
+          },
+          "response": [
+            {
+              "name": "200 Paged stored cards.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/stored-cards",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "stored-cards"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": false,
+                      "description": ""
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": false,
+                      "description": ""
+                    },
+                    {
+                      "key": "payer_reference",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Paged stored cards.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"stored_cards\": [\n    {\n      \"stored_card_id\": \"5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70\",\n      \"payer_reference\": \"customer-1042\",\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"brand\": \"visa\",\n      \"last4\": \"2701\",\n      \"expiry_month\": \"12\",\n      \"expiry_year\": \"2028\",\n      \"status\": \"active\",\n      \"created_at\": \"2026-07-20T18:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get a stored card",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/stored-cards/:storedCardID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "stored-cards",
+                ":storedCardID"
+              ],
+              "variable": [
+                {
+                  "key": "storedCardID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 The stored card.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/stored-cards/:storedCardID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "stored-cards",
+                    ":storedCardID"
+                  ],
+                  "variable": [
+                    {
+                      "key": "storedCardID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "The stored card.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"stored_card_id\": \"5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"payer_reference\": \"customer-1042\",\n  \"country\": \"BO\",\n  \"currency\": \"BOB\",\n  \"brand\": \"visa\",\n  \"last4\": \"2701\",\n  \"expiry_month\": \"12\",\n  \"expiry_year\": \"2028\",\n  \"seed_payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"active\",\n  \"created_at\": \"2026-07-20T18:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Revoke a stored card",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/stored-cards/:storedCardID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "stored-cards",
+                ":storedCardID"
+              ],
+              "variable": [
+                {
+                  "key": "storedCardID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Revokes the stored credential upstream and marks the mirror `revoked` (history is never deleted). Merchant-initiated charges and saved-card payments stop working immediately. Emits the `stored_card_revoked` webhook."
+          },
+          "response": [
+            {
+              "name": "200 The stored card, now revoked.",
+              "originalRequest": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/stored-cards/:storedCardID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "stored-cards",
+                    ":storedCardID"
+                  ],
+                  "variable": [
+                    {
+                      "key": "storedCardID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "The stored card, now revoked.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"stored_card_id\": \"5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"payer_reference\": \"customer-1042\",\n  \"country\": \"BO\",\n  \"currency\": \"BOB\",\n  \"brand\": \"visa\",\n  \"last4\": \"2701\",\n  \"expiry_month\": \"12\",\n  \"expiry_year\": \"2028\",\n  \"seed_payin_id\": \"4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b\",\n  \"status\": \"revoked\",\n  \"created_at\": \"2026-07-20T18:00:00Z\",\n  \"revoked_at\": \"2026-07-21T10:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Charge a stored card (merchant-initiated)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/stored-cards/:storedCardID/charges",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "stored-cards",
+                ":storedCardID",
+                "charges"
+              ],
+              "variable": [
+                {
+                  "key": "storedCardID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Charges the saved card WITHOUT the payer present (MIT under the card-brand mandate, citing the original consented 3-D Secure seed). Use `recurring: true` for fixed-interval subscription charges; false (default) for unscheduled charges. Requires `idempotency_key` — a retry with the same key returns the original payin and never charges twice. The approved charge credits the balance automatically (`payin_credited` webhook); a declined charge responds 422 with the payin marked failed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"45.00\",\n  \"description\": \"Monthly subscription\",\n  \"recurring\": true,\n  \"idempotency_key\": \"sub-2026-07-cust1042\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Idempotent replay — the original payin.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/stored-cards/:storedCardID/charges",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "stored-cards",
+                    ":storedCardID",
+                    "charges"
+                  ],
+                  "variable": [
+                    {
+                      "key": "storedCardID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Idempotent replay — the original payin.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"payin_id\": \"3c5b002c-af76-4235-8145-9f07fef073fd\",\n  \"status\": \"credited\",\n  \"reference\": \"3c5b002c-af76-4235-8145-9f07fef073fd\",\n  \"idempotency_hit\": true\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Subscriptions",
+      "item": [
+        {
+          "name": "List subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/subscriptions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "subscriptions"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "stored_card_id",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "payer_reference",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Your subscriptions (org admins see the whole org with account_id). Filter by status, stored_card_id or payer_reference. Requires from/to."
+          },
+          "response": [
+            {
+              "name": "200 Your subscriptions (org admins see the whole org with accoun",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/subscriptions",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "subscriptions"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": false,
+                      "description": ""
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": false,
+                      "description": ""
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "stored_card_id",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "payer_reference",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Your subscriptions (org admins see the whole org with accoun",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"subscriptions\": [\n    {\n      \"subscription_id\": \"7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f\",\n      \"stored_card_id\": \"5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70\",\n      \"payer_reference\": \"customer-1042\",\n      \"amount\": \"45.00\",\n      \"currency\": \"BOB\",\n      \"interval\": \"monthly\",\n      \"status\": \"active\",\n      \"period\": 1,\n      \"next_charge_at\": \"2026-08-20T18:00:00Z\",\n      \"created_at\": \"2026-07-20T18:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/subscriptions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "subscriptions"
+              ]
+            },
+            "description": "Recurring charges on a saved card (the platform runs the schedule for you). The first period is charged synchronously on creation unless start_at is in the future (trial). Each charge is a normal card payin (credited via payin_credited); a decline retries daily up to 3 times, then the subscription becomes past_due. idempotency_key is required (a retry returns the original subscription). Requires an active stored card of the payer.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stored_card_id\": \"5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70\",\n  \"amount\": \"45.00\",\n  \"interval\": \"monthly\",\n  \"description\": \"Monthly plan\",\n  \"idempotency_key\": \"plan-cust1042-monthly\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Idempotent replay — the original subscription.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/subscriptions",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "subscriptions"
+                  ]
+                }
+              },
+              "status": "Idempotent replay — the original subscription.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"subscription_id\": \"7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"stored_card_id\": \"5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70\",\n  \"payer_reference\": \"customer-1042\",\n  \"amount\": \"45.00\",\n  \"currency\": \"BOB\",\n  \"description\": \"Monthly plan\",\n  \"interval\": \"monthly\",\n  \"status\": \"active\",\n  \"period\": 1,\n  \"next_charge_at\": \"2026-08-20T18:00:00Z\",\n  \"created_at\": \"2026-07-20T18:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get a subscription",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/subscriptions/:subscriptionID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "subscriptions",
+                ":subscriptionID"
+              ],
+              "variable": [
+                {
+                  "key": "subscriptionID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 The subscription.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/subscriptions/:subscriptionID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "subscriptions",
+                    ":subscriptionID"
+                  ],
+                  "variable": [
+                    {
+                      "key": "subscriptionID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "The subscription.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"subscription_id\": \"7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"stored_card_id\": \"5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70\",\n  \"payer_reference\": \"customer-1042\",\n  \"amount\": \"45.00\",\n  \"currency\": \"BOB\",\n  \"description\": \"Monthly plan\",\n  \"interval\": \"monthly\",\n  \"status\": \"active\",\n  \"period\": 1,\n  \"next_charge_at\": \"2026-08-20T18:00:00Z\",\n  \"created_at\": \"2026-07-20T18:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Pause a subscription",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/subscriptions/:subscriptionID/pause",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "subscriptions",
+                ":subscriptionID",
+                "pause"
+              ],
+              "variable": [
+                {
+                  "key": "subscriptionID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Stops charges (from active). Resuming does NOT catch up missed periods."
+          },
+          "response": [
+            {
+              "name": "200 The subscription.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/subscriptions/:subscriptionID/pause",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "subscriptions",
+                    ":subscriptionID",
+                    "pause"
+                  ],
+                  "variable": [
+                    {
+                      "key": "subscriptionID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "The subscription.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"subscription_id\": \"7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"stored_card_id\": \"5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70\",\n  \"payer_reference\": \"customer-1042\",\n  \"amount\": \"45.00\",\n  \"currency\": \"BOB\",\n  \"description\": \"Monthly plan\",\n  \"interval\": \"monthly\",\n  \"status\": \"active\",\n  \"period\": 1,\n  \"next_charge_at\": \"2026-08-20T18:00:00Z\",\n  \"created_at\": \"2026-07-20T18:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Resume a subscription",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/subscriptions/:subscriptionID/resume",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "subscriptions",
+                ":subscriptionID",
+                "resume"
+              ],
+              "variable": [
+                {
+                  "key": "subscriptionID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Reactivates from paused or past_due. From past_due it retries the pending period once (a fresh decline returns to past_due). From paused with a future date it keeps the original schedule (no early charge)."
+          },
+          "response": [
+            {
+              "name": "200 The subscription.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/subscriptions/:subscriptionID/resume",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "subscriptions",
+                    ":subscriptionID",
+                    "resume"
+                  ],
+                  "variable": [
+                    {
+                      "key": "subscriptionID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "The subscription.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"subscription_id\": \"7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"stored_card_id\": \"5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70\",\n  \"payer_reference\": \"customer-1042\",\n  \"amount\": \"45.00\",\n  \"currency\": \"BOB\",\n  \"description\": \"Monthly plan\",\n  \"interval\": \"monthly\",\n  \"status\": \"active\",\n  \"period\": 1,\n  \"next_charge_at\": \"2026-08-20T18:00:00Z\",\n  \"created_at\": \"2026-07-20T18:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Cancel a subscription",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/subscriptions/:subscriptionID/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "subscriptions",
+                ":subscriptionID",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "subscriptionID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Terminal. Revoking the stored card also cancels its subscriptions automatically."
+          },
+          "response": [
+            {
+              "name": "200 The subscription.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/subscriptions/:subscriptionID/cancel",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "subscriptions",
+                    ":subscriptionID",
+                    "cancel"
+                  ],
+                  "variable": [
+                    {
+                      "key": "subscriptionID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "The subscription.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"subscription_id\": \"7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f\",\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"stored_card_id\": \"5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70\",\n  \"payer_reference\": \"customer-1042\",\n  \"amount\": \"45.00\",\n  \"currency\": \"BOB\",\n  \"description\": \"Monthly plan\",\n  \"interval\": \"monthly\",\n  \"status\": \"active\",\n  \"period\": 1,\n  \"next_charge_at\": \"2026-08-20T18:00:00Z\",\n  \"created_at\": \"2026-07-20T18:00:00Z\"\n}"
             }
           ]
         }

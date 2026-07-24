@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.04'
+  version: '2.05'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -48,6 +48,19 @@ tags:
 - name: Payins
   description: Fiat top-ups (QR, transfers, dedicated accounts, pull collections, cards, checkout links)
     credited automatically — in USDT by default, or auto-converted to the settlement asset of your choice.
+- name: Checkout
+  description: >-
+    Universal checkout links (`POST /v1/payins` with `method: "checkout"`) and the public
+    payment-page endpoints — multi-country fiat, crypto with an ephemeral wallet per link and
+    direct CBPay payment, settled in the asset of your choice.
+- name: Stored cards
+  description: >-
+    Cards saved with the payer's explicit consent during a 3-D Secure payment (COF). List,
+    revoke and charge them on demand (MIT) without asking for the card again.
+- name: Subscriptions
+  description: >-
+    Recurring charges on a stored card managed by the platform scheduler — daily, weekly,
+    monthly or yearly, with pause/resume/cancel and automatic dunning.
 - name: Transfers
   description: Free internal transfers between CBPay accounts (person or company, any combination).
 - name: Contacts
@@ -393,7 +406,7 @@ paths:
     get:
       security: []
       tags:
-      - Payins
+      - Checkout
       operationId: checkoutPage
       summary: Universal checkout page (public)
       description: 'Public branded HTML page behind the `checkout_url` returned by `POST /v1/payins`
@@ -433,7 +446,7 @@ paths:
     get:
       security: []
       tags:
-      - Payins
+      - Checkout
       operationId: checkoutState
       summary: Universal checkout state (public)
       description: JSON state of a universal checkout link — for the page's own polling and for
@@ -505,7 +518,7 @@ paths:
     get:
       security: []
       tags:
-      - Payins
+      - Checkout
       operationId: checkoutQuote
       summary: Quote a checkout link before choosing (public)
       description: >-
@@ -641,7 +654,7 @@ paths:
     get:
       security: []
       tags:
-      - Payins
+      - Checkout
       operationId: checkoutSavedCards
       summary: Saved cards for a checkout payer (public)
       description: >-
@@ -707,7 +720,7 @@ paths:
     post:
       security: []
       tags:
-      - Payins
+      - Checkout
       operationId: checkoutMaterialize
       summary: Materialize a checkout payment option (public)
       description: >-
@@ -907,7 +920,7 @@ paths:
     post:
       security: []
       tags:
-      - Payins
+      - Checkout
       operationId: checkoutCollectOTP
       summary: Request the OTP of a pull collection (public)
       description: >-
@@ -990,7 +1003,7 @@ paths:
     post:
       security: []
       tags:
-      - Payins
+      - Checkout
       operationId: checkoutCollect
       summary: Execute a pull collection with the payer's data (public)
       description: >-
@@ -9514,7 +9527,7 @@ paths:
   /v1/stored-cards:
     get:
       tags:
-      - Payins
+      - Stored cards
       operationId: listStoredCards
       summary: 'List stored cards'
       description: 'Cards saved by your payers on the hosted card checkout (COF mandate): only display data (brand, last 4, expiry) — the card number never exists on this platform. Filter by `payer_reference` to show a returning customer their cards. Requires `from`/`to`.'
@@ -9581,7 +9594,7 @@ paths:
   /v1/stored-cards/{storedCardID}:
     get:
       tags:
-      - Payins
+      - Stored cards
       operationId: getStoredCard
       summary: 'Get a stored card'
       parameters:
@@ -9652,7 +9665,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
     delete:
       tags:
-      - Payins
+      - Stored cards
       operationId: revokeStoredCard
       summary: 'Revoke a stored card'
       description: 'Revokes the stored credential upstream and marks the mirror `revoked` (history is never deleted). Merchant-initiated charges and saved-card payments stop working immediately. Emits the `stored_card_revoked` webhook.'
@@ -9726,7 +9739,7 @@ paths:
   /v1/stored-cards/{storedCardID}/charges:
     post:
       tags:
-      - Payins
+      - Stored cards
       operationId: chargeStoredCard
       summary: 'Charge a stored card (merchant-initiated)'
       description: 'Charges the saved card WITHOUT the payer present (MIT under the card-brand mandate, citing the original consented 3-D Secure seed). Use `recurring: true` for fixed-interval subscription charges; false (default) for unscheduled charges. Requires `idempotency_key` — a retry with the same key returns the original payin and never charges twice. The approved charge credits the balance automatically (`payin_credited` webhook); a declined charge responds 422 with the payin marked failed.'
@@ -9831,7 +9844,7 @@ paths:
   /v1/subscriptions:
     post:
       tags:
-      - Payins
+      - Subscriptions
       operationId: createSubscription
       summary: 'Create a subscription'
       description: 'Recurring charges on a saved card (the platform runs the schedule for you). The first period is charged synchronously on creation unless start_at is in the future (trial). Each charge is a normal card payin (credited via payin_credited); a decline retries daily up to 3 times, then the subscription becomes past_due. idempotency_key is required (a retry returns the original subscription). Requires an active stored card of the payer.'
@@ -10015,7 +10028,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
     get:
       tags:
-      - Payins
+      - Subscriptions
       operationId: listSubscriptions
       summary: 'List subscriptions'
       description: 'Your subscriptions (org admins see the whole org with account_id). Filter by status, stored_card_id or payer_reference. Requires from/to.'
@@ -10088,7 +10101,7 @@ paths:
   /v1/subscriptions/{subscriptionID}:
     get:
       tags:
-      - Payins
+      - Subscriptions
       operationId: getSubscription
       summary: 'Get a subscription'
       parameters:
@@ -10172,7 +10185,7 @@ paths:
   /v1/subscriptions/{subscriptionID}/pause:
     post:
       tags:
-      - Payins
+      - Subscriptions
       operationId: pauseSubscription
       summary: 'Pause a subscription'
       description: 'Stops charges (from active). Resuming does NOT catch up missed periods.'
@@ -10259,7 +10272,7 @@ paths:
   /v1/subscriptions/{subscriptionID}/resume:
     post:
       tags:
-      - Payins
+      - Subscriptions
       operationId: resumeSubscription
       summary: 'Resume a subscription'
       description: 'Reactivates from paused or past_due. From past_due it retries the pending period once (a fresh decline returns to past_due). From paused with a future date it keeps the original schedule (no early charge).'
@@ -10346,7 +10359,7 @@ paths:
   /v1/subscriptions/{subscriptionID}/cancel:
     post:
       tags:
-      - Payins
+      - Subscriptions
       operationId: cancelSubscription
       summary: 'Cancel a subscription'
       description: 'Terminal. Revoking the stored card also cancels its subscriptions automatically.'
