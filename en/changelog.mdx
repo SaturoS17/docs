@@ -7,7 +7,9 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-<Update label="July 24, 2026" description="v2.06">
+<Update label="July 24, 2026" description="v2.06 · 4 releases">
+
+### v2.06
 
 **Added**
 
@@ -19,9 +21,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   types that existed in the API but were missing from the reference pages
   are now documented. No contract changes.
 
-</Update>
-
-<Update label="July 24, 2026" description="v2.05">
+### v2.05
 
 **Changed**
 
@@ -32,9 +32,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   (`/v1/subscriptions`). These operations were previously stacked under
   the generic **Payins** tag; every path and contract is unchanged.
 
-</Update>
-
-<Update label="July 24, 2026" description="v2.04">
+### v2.04
 
 **Added**
 
@@ -57,9 +55,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   roles: the profile guide owns the user's 2FA factors; the OTP page owns
   the per-action challenge flow.
 
-</Update>
-
-<Update label="July 24, 2026" description="v2.03">
+### v2.03
 
 **Added**
 
@@ -86,7 +82,9 @@ Breaking changes are announced in advance and flagged as **Breaking**.
 
 </Update>
 
-<Update label="July 23, 2026" description="v2.02">
+<Update label="July 23, 2026" description="v2.02 · 6 releases">
+
+### v2.02
 
 **Changed**
 
@@ -98,9 +96,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   assets (BTC/GOLD) still apply. Manual swaps (`POST /v1/swaps`) keep
   their regular spread.
 
-</Update>
-
-<Update label="July 23, 2026" description="v2.01">
+### v2.01
 
 **Added**
 
@@ -110,9 +106,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   default balance and checkout) and are rejected. Use any other key for
   your swaps.
 
-</Update>
-
-<Update label="July 23, 2026" description="v2.00">
+### v2.00
 
 **Added**
 
@@ -133,9 +127,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
 - A checkout link created **without** `settlement_asset` now uses the
   account's `default_payin_asset` (previously always USDT).
 
-</Update>
-
-<Update label="July 23, 2026" description="v1.99">
+### v1.99
 
 **Added**
 
@@ -149,9 +141,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   configuration. Check your effective fees in `GET /v1/fees` (rows now
   include the `currency` field).
 
-</Update>
-
-<Update label="July 23, 2026" description="v1.98">
+### v1.98
 
 **Added**
 
@@ -168,9 +158,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   not enabled no longer appear in `GET /v1/banking/accounts` and their
   by-id lookups return `404`.
 
-</Update>
-
-<Update label="July 23, 2026" description="v1.97">
+### v1.97
 
 **Fixed**
 
@@ -183,7 +171,9 @@ Breaking changes are announced in advance and flagged as **Breaking**.
 
 </Update>
 
-<Update label="July 22, 2026" description="v1.96">
+<Update label="July 22, 2026" description="v1.96 · 3 releases">
+
+### v1.96
 
 **Added**
 
@@ -192,9 +182,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   - **Payins** in **ARS** with a **dedicated CVU account** per account (`POST /v1/payins/deposit-accounts` with `country: "AR"`): every incoming transfer is credited automatically, no references needed. CVUs are receive-only: direct debit attempts are rejected automatically.
   - Available now in the **test environment** (staging) with the simulator; production activation will be announced once bank certification completes — the catalog (`GET /v1/payouts/methods` and `GET /v1/payins/methods`) is always the source of truth.
 
-</Update>
-
-<Update label="July 22, 2026" description="v1.95">
+### v1.95
 
 **Added**
 
@@ -204,9 +192,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
 
 - **Cardholder email required with a saved card**: on the public checkout page, paying with a saved card now requires presenting the same cardholder email it was saved with — a mismatch responds `404` (anti-enumeration protection for personal data).
 
-</Update>
-
-<Update label="July 22, 2026" description="v1.94">
+### v1.94
 
 **Fixed**
 
@@ -215,23 +201,21 @@ Breaking changes are announced in advance and flagged as **Breaking**.
 
 </Update>
 
-<Update label="July 21, 2026" description="v1.93">
+<Update label="July 21, 2026" description="v1.93 · 3 releases">
+
+### v1.93
 
 **Fixed**
 
 - **Banking webhooks for third parties** ([webhooks](/en/webhooks), [banking guide](/en/guides/banking)): the `banking_customer_status_changed` webhook now also fires when a **third party** registered by your account changes verification state (previously only your own profile's events arrived). The payload adds `customer_kind` (`self` | `third_party`) and, for third parties, `third_party_id` (the same id as `GET /v1/banking/third-parties/{id}`).
 
-</Update>
-
-<Update label="July 21, 2026" description="v1.92">
+### v1.92
 
 **Fixed**
 
 - **Checkout charge amounts in the payin history** ([payins guide](/en/guides/checkout)): `GET /v1/payins` and `GET /v1/payins/{payin_id}` now always include the denomination of checkout and QR POS payins — `settlement_asset` + `asset_amount` (plus `conversion_status` when applicable) — in every status, including pending and expired. Previously the amount only appeared once credited, so pending rows showed no amount. Additionally, a charge settled in crypto or via the CBPay app now exposes its `usdt_credited` even without an `fx_rate`. CSV/XLSX exports add the `settlement_asset` and `asset_amount` columns.
 
-</Update>
-
-<Update label="July 21, 2026" description="v1.91">
+### v1.91
 
 **Added**
 
@@ -247,15 +231,15 @@ Breaking changes are announced in advance and flagged as **Breaking**.
 
 </Update>
 
-<Update label="July 18, 2026" description="v1.89">
+<Update label="July 18, 2026" description="v1.89 · 2 releases">
+
+### v1.89
 
 **Added**
 
 - **Compliance controls on outgoing payments** ([payouts guide](/en/guides/payouts), [errors](/en/errors)): payouts, crypto withdrawals with a beneficiary name and collect charges now go through additional compliance controls **before money moves**. Documented errors: `403 compliance_hold` (the operation was held and NOT created — no debit; by policy the exact reason is not disclosed, contact support with the timestamp) and `503 compliance_check_unavailable` (the check could not be evaluated; the operation was NOT created — retry with the **same** `idempotency_key`).
 
-</Update>
-
-<Update label="July 18, 2026" description="v1.88">
+### v1.88
 
 **Fixed**
 
@@ -268,7 +252,9 @@ Breaking changes are announced in advance and flagged as **Breaking**.
 
 </Update>
 
-<Update label="July 17, 2026" description="v1.87">
+<Update label="July 17, 2026" description="v1.87 · 4 releases">
+
+### v1.87
 
 **Added**
 
@@ -285,9 +271,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   (QR Crypto POS tag in the API Reference); partial payments accumulate and late
   payments into an expired charge are still credited.
 
-</Update>
-
-<Update label="July 17, 2026" description="v1.86">
+### v1.86
 
 **Fixed**
 
@@ -299,9 +283,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   longer splits Spanish words mid-word ("momento" → "moment"/"o") — the
   aggressive `word-break` now applies only to monospace addresses.
 
-</Update>
-
-<Update label="July 17, 2026" description="v1.85">
+### v1.85
 
 **Added**
 
@@ -316,9 +298,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   in the transfer description). CLABEs are recycled with a cooldown once
   the link resolves (paid or expired).
 
-</Update>
-
-<Update label="July 17, 2026" description="v1.84">
+### v1.84
 
 **Added**
 
@@ -360,7 +340,9 @@ Breaking changes are announced in advance and flagged as **Breaking**.
 
 </Update>
 
-<Update label="July 16, 2026" description="v1.83">
+<Update label="July 16, 2026" description="v1.83 · 10 releases">
+
+### v1.83
 
 **Added**
 
@@ -390,9 +372,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   changed and never moves the scroll (only manually selecting a method
   brings the detail into view).
 
-</Update>
-
-<Update label="July 16, 2026" description="v1.82">
+### v1.82
 
 **Changed**
 
@@ -404,9 +384,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   and references. No API changes: the URL, the creation contract and the
   public endpoints (`/state`, `/quote`, `/methods/{method}`) are the same.
 
-</Update>
-
-<Update label="July 16, 2026" description="v1.81">
+### v1.81
 
 **Fixed**
 
@@ -422,9 +400,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   design); the per-payment protection is your `idempotency_key`, which is
   mandatory on every Brazilian confirm.
 
-</Update>
-
-<Update label="July 16, 2026" description="v1.80">
+### v1.80
 
 **Added**
 
@@ -444,9 +420,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   see [Environment & testing](/en/environment-testing#sample-pix-qrs).
   Details in the [payouts guide](/en/guides/qr-payout).
 
-</Update>
-
-<Update label="July 16, 2026" description="v1.79">
+### v1.79
 
 **Changed**
 
@@ -471,9 +445,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   `settlement_asset_disabled` and `checkout_amount_mismatch`. Details in
   the [payins guide](/en/guides/checkout).
 
-</Update>
-
-<Update label="July 16, 2026" description="v1.78">
+### v1.78
 
 **Added**
 
@@ -486,9 +458,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   webhook. Previously only the generic `failed` status was exposed. See
   the [payins guide](/en/guides/payins).
 
-</Update>
-
-<Update label="July 16, 2026" description="v1.77">
+### v1.77
 
 **Added**
 
@@ -506,9 +476,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   Details in the
   [payins guide](/en/guides/checkout).
 
-</Update>
-
-<Update label="July 16, 2026" description="v1.76">
+### v1.76
 
 **Changed**
 
@@ -522,9 +490,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   this filter (full table in
   [Test environment](/en/environment-testing)).
 
-</Update>
-
-<Update label="July 16, 2026" description="v1.75">
+### v1.75
 
 **Added**
 
@@ -538,9 +504,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   `payin_expired` closes the charge. Details in the
   [payins guide](/en/guides/payins).
 
-</Update>
-
-<Update label="July 16, 2026" description="v1.74">
+### v1.74
 
 **Added**
 
@@ -551,7 +515,9 @@ Breaking changes are announced in advance and flagged as **Breaking**.
 
 </Update>
 
-<Update label="July 15, 2026" description="v1.73">
+<Update label="July 15, 2026" description="v1.73 · 5 releases">
+
+### v1.73
 
 **Added**
 
@@ -566,9 +532,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   Travel Rule applies as on the other networks, valuing the amount in USD.
   Details in the [crypto guide](/en/guides/crypto).
 
-</Update>
-
-<Update label="July 15, 2026" description="v1.72">
+### v1.72
 
 **Changed**
 
@@ -581,9 +545,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   never sent to a number linked from the session itself. Details in the
   [security and 2FA guide](/en/security-2fa).
 
-</Update>
-
-<Update label="July 15, 2026" description="v1.71">
+### v1.71
 
 **Changed**
 
@@ -598,9 +560,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   stronger factors were available. Details in the
   [security and 2FA guide](/en/security-2fa).
 
-</Update>
-
-<Update label="July 15, 2026" description="v1.70">
+### v1.70
 
 **Added**
 
@@ -617,9 +577,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   answers `409 identity_locked` (new code on the [errors](/en/errors)
   page). `phone` stays editable with its own verification flow.
 
-</Update>
-
-<Update label="July 15, 2026" description="v1.69">
+### v1.69
 
 **Added**
 
@@ -647,7 +605,9 @@ Breaking changes are announced in advance and flagged as **Breaking**.
 
 </Update>
 
-<Update label="July 14, 2026" description="v1.68">
+<Update label="July 14, 2026" description="v1.68 · 7 releases">
+
+### v1.68
 
 **Added**
 
@@ -662,9 +622,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   payment channel is temporarily unavailable. Retry later with the same
   `idempotency_key`. Documented on the [errors](/en/errors) page.
 
-</Update>
-
-<Update label="July 14, 2026" description="v1.67">
+### v1.67
 
 **Added**
 
@@ -681,9 +639,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   a production snapshot — nothing is copied between environments. Updated
   [environments and testing](/en/environment-testing) guide.
 
-</Update>
-
-<Update label="July 14, 2026" description="v1.66">
+### v1.66
 
 **Added**
 
@@ -693,9 +649,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   catalog, without leaving your editor. Read-only, no authentication. New
   [MCP Server](/en/mcp) page with one-click install and per-client setup.
 
-</Update>
-
-<Update label="July 14, 2026" description="v1.65">
+### v1.65
 
 **Changed**
 
@@ -708,9 +662,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   before money can leave. To test the verification flow in test mode, use
   third-party KYC/KYB verifications.
 
-</Update>
-
-<Update label="July 14, 2026" description="v1.64">
+### v1.64
 
 **Changed**
 
@@ -721,9 +673,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   `409 phone_verification_required`. This safeguard prevents a mistyped
   number from locking you out of your account when enabling login 2FA.
 
-</Update>
-
-<Update label="July 14, 2026" description="v1.63">
+### v1.63
 
 **Fixed**
 
@@ -734,9 +684,7 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   accounts that have one (`403 invalid_password` if missing or wrong);
   social-login-only accounts pass with their session.
 
-</Update>
-
-<Update label="July 14, 2026" description="v1.62">
+### v1.62
 
 **Fixed**
 
@@ -756,7 +704,9 @@ Breaking changes are announced in advance and flagged as **Breaking**.
 
 </Update>
 
-<Update label="July 13, 2026" description="v1.61">
+<Update label="July 13, 2026" description="v1.61 · 6 releases">
+
+### v1.61
 
 **Added — CSV / Excel export on listings**
 
@@ -773,9 +723,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 - Without `format` the response is still the usual paginated JSON — no
   compatibility changes.
 
-</Update>
-
-<Update label="July 13, 2026" description="v1.60">
+### v1.60
 
 **Breaking — Segregated wallets move to `/v1/segregated-wallets`**
 
@@ -807,9 +755,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 - Segregated wallets include `type: "segregated"`.
 - Use it to tell the two products apart defensively — never by route alone.
 
-</Update>
-
-<Update label="July 13, 2026" description="v1.59">
+### v1.59
 
 **Added — `payin_expired` webhook: automatic closure of unpaid collections**
 
@@ -822,9 +768,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   `POST /v1/webhooks/subscriptions`.
 - No funds move in any case: to retry the collection, create a new payin.
 
-</Update>
-
-<Update label="July 13, 2026" description="v1.58">
+### v1.58
 
 **Changed — Redesigned receipts, statement and emails**
 
@@ -845,9 +789,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 - No API changes: same routes, same shapes. Only the documents and emails
   look different.
 
-</Update>
-
-<Update label="July 13, 2026" description="v1.57">
+### v1.57
 
 **Added — Refresh tokens for user sessions**
 
@@ -866,9 +808,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 - New error code: `401 invalid_refresh_token`. API keys `pk_` are
   unchanged: they never expire and don't use refresh.
 
-</Update>
-
-<Update label="July 13, 2026" description="v1.56">
+### v1.56
 
 **Added — Test environment (sandbox) with simulated money**
 
@@ -891,7 +831,9 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 
 </Update>
 
-<Update label="July 12, 2026" description="v1.55">
+<Update label="July 12, 2026" description="v1.55 · 9 releases">
+
+### v1.55
 
 **Added — AML screening audit history**
 
@@ -905,9 +847,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   history (`kind: monitoring`); `idempotency_key` is required when the state
   changes (enable charges a fee).
 
-</Update>
-
-<Update label="July 12, 2026" description="v1.54">
+### v1.54
 
 **Added — Travel Rule on on-chain withdrawals (FATF R.16)**
 
@@ -927,9 +867,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   the [crypto guide](/en/guides/crypto) and the
   [errors page](/en/errors).
 
-</Update>
-
-<Update label="July 12, 2026" description="v1.53">
+### v1.53
 
 **Added — Banking series in the balance history**
 
@@ -940,9 +878,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   only covers the operational balances.
   [Analytics](/en/guides/analytics) guide updated.
 
-</Update>
-
-<Update label="July 12, 2026" description="v1.52">
+### v1.52
 
 **Added — Country filter on payouts and payins**
 
@@ -956,9 +892,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   `fees: []` even when operations had a cost; use this block to quote
   the exact fee before creating an operation.
 
-</Update>
-
-<Update label="July 12, 2026" description="v1.51">
+### v1.51
 
 **Changed — Wallet limits per account type**
 
@@ -977,9 +911,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   companies](/en/concepts/persons-companies) page and
   [errors](/en/errors) updated.
 
-</Update>
-
-<Update label="July 12, 2026" description="v1.50">
+### v1.50
 
 **Added — Continuous transaction monitoring (compliance controls)**
 
@@ -992,9 +924,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   unavailable — the operation did not go out; retry with the same
   idempotency key).
 
-</Update>
-
-<Update label="July 12, 2026" description="v1.49">
+### v1.49
 
 **Added — Documentation in 3 languages (English by default)**
 
@@ -1006,9 +936,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 - The Postman collection and the compiled Markdown guide stay up to date
   from any language of the site.
 
-</Update>
-
-<Update label="July 12, 2026" description="v1.48">
+### v1.48
 
 **Added — Wallet screening (AML risk for blockchain addresses)**
 
@@ -1025,9 +953,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 - New webhooks: `crypto_deposit_held` and `crypto_deposit_alert`.
 - New guide: [Wallet screening](/en/guides/screenings).
 
-</Update>
-
-<Update label="July 12, 2026" description="v1.47">
+### v1.47
 
 **Added — Public assets over CDN (avatars, branding, charge QR codes)**
 
@@ -1048,7 +974,9 @@ Guides: [Profile](/en/guides/profile) and [Payins](/en/guides/payins).
 
 </Update>
 
-<Update label="July 11, 2026" description="v1.46">
+<Update label="July 11, 2026" description="v1.46 · 7 releases">
+
+### v1.46
 
 **Added — Compliance catalogs**
 
@@ -1065,9 +993,7 @@ Guides: [Profile](/en/guides/profile) and [Payins](/en/guides/payins).
 
 Guide: [AML screening](/en/guides/aml).
 
-</Update>
-
-<Update label="July 11, 2026" description="v1.45">
+### v1.45
 
 **Added — Every account is born with its deposit wallets**
 
@@ -1089,9 +1015,7 @@ Guide: [AML screening](/en/guides/aml).
 
 Guide: [crypto](/en/guides/crypto).
 
-</Update>
-
-<Update label="July 11, 2026" description="v1.44">
+### v1.44
 
 **Added — Full traceability: banking in the statement, itemized fees and wallet custody**
 
@@ -1125,9 +1049,7 @@ Guides: [statement](/en/guides/statement), [banking](/en/guides/banking),
 [segregated wallets](/en/guides/segregated-wallets),
 [receipts](/en/guides/receipts) and [analytics](/en/guides/analytics).
 
-</Update>
-
-<Update label="July 11, 2026" description="v1.43">
+### v1.43
 
 **Added — Historical series for your dashboard**
 
@@ -1146,9 +1068,7 @@ Guides: [statement](/en/guides/statement), [banking](/en/guides/banking),
 
 Full examples in [analytics](/en/guides/analytics).
 
-</Update>
-
-<Update label="July 11, 2026" description="v1.42">
+### v1.42
 
 **Added — PDF receipts with authenticity verification**
 
@@ -1182,9 +1102,7 @@ Full examples in [analytics](/en/guides/analytics).
 
 Full guide in [receipts](/en/guides/receipts).
 
-</Update>
-
-<Update label="July 11, 2026" description="v1.41">
+### v1.41
 
 **Added — Segregated wallets (company accounts only)**
 
@@ -1207,9 +1125,7 @@ Full guide in [receipts](/en/guides/receipts).
 
 Full guide at [segregated wallets](/en/guides/segregated-wallets).
 
-</Update>
-
-<Update label="July 11, 2026" description="v1.40">
+### v1.40
 
 **Added — Account profile, credentials and security**
 
@@ -1242,7 +1158,9 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
 
 </Update>
 
-<Update label="July 10, 2026" description="v1.39">
+<Update label="July 10, 2026" description="v1.39 · 7 releases">
+
+### v1.39
 
 **Added — Reusable verified identity (unified KYC/KYB)**
 
@@ -1270,9 +1188,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
   `422 verification_not_approved`, `422 verification_kind_mismatch`,
   `422 verification_invalid`.
 
-</Update>
-
-<Update label="July 10, 2026" description="v1.38">
+### v1.38
 
 **Added — Account summary (analytics) + third-party banking users**
 
@@ -1292,9 +1208,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
 - **New limit**: person accounts can hold at most 1 bank account
   (`409 banking_account_limit`).
 
-</Update>
-
-<Update label="July 10, 2026" description="v1.37">
+### v1.37
 
 **Changed — Bolivia and Venezuela rates**
 
@@ -1307,9 +1221,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
   incorrect rate. We recommend checking `GET /v1/rates` (or subscribing to
   the rates webhook) before quoting payments in `BOB` or `VES`.
 
-</Update>
-
-<Update label="July 10, 2026" description="v1.36">
+### v1.36
 
 **Added — Swaps: convert between your balances**
 
@@ -1325,9 +1237,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
   limits with payouts and card purchases (`GET /v1/settlement`). New
   guide: [Swaps](/en/guides/swaps).
 
-</Update>
-
-<Update label="July 10, 2026" description="v1.35">
+### v1.35
 
 **Added — Contacts and sending by phone number**
 
@@ -1346,9 +1256,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
   (uses its saved address). New guide:
   [Contacts](/en/guides/contacts).
 
-</Update>
-
-<Update label="July 10, 2026" description="v1.34">
+### v1.34
 
 **Added — KYC/KYB identity verification (hosted wizard, OCR documents and video liveness)**
 
@@ -1381,9 +1289,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
   `aml` service flag (the `kyc` flag now gates identity verification).
   Guide: [AML screening](/en/guides/aml).
 
-</Update>
-
-<Update label="July 10, 2026" description="v1.33">
+### v1.33
 
 **Fixed — Banks catalog without `method` in countries with several methods**
 
@@ -1396,7 +1302,9 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
 
 </Update>
 
-<Update label="July 9, 2026" description="v1.32">
+<Update label="July 9, 2026" description="v1.32 · 7 releases">
+
+### v1.32
 
 **Added — Card purchases from BTC and GOLD (at-the-moment conversion)**
 
@@ -1416,9 +1324,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
   payouts: per operation (`settlement_limit_exceeded`) and 24h volume
   (`settlement_daily_limit_exceeded`).
 
-</Update>
-
-<Update label="July 9, 2026" description="v1.31">
+### v1.31
 
 **Added — Choose which balance your cards spend from (USDT or USDC)**
 
@@ -1437,9 +1343,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
   for card purchases) and `spending_asset_disabled` authorization declines
   if your operator disables the asset.
 
-</Update>
-
-<Update label="July 9, 2026" description="v1.30">
+### v1.30
 
 **Changed — Multi-asset settlement hardening**
 
@@ -1451,9 +1355,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
   debited from your default settlement balance, like every other service.
   Card **purchases** still settle in USDT.
 
-</Update>
-
-<Update label="July 9, 2026" description="v1.29">
+### v1.29
 
 **Added — Pay payouts and services from any balance (multi-asset settlement)**
 
@@ -1476,9 +1378,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
   `400 invalid_settlement_asset` and `422 settlement_limit_exceeded`
   (per-operation limit for volatile assets).
 
-</Update>
-
-<Update label="July 9, 2026" description="v1.28">
+### v1.28
 
 **Changed — Short reference for announced bank transfers**
 
@@ -1492,9 +1392,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
 - `GET /v1/payins` and the detail expose the announce reference in
   `reference` while the payin is `pending`.
 
-</Update>
-
-<Update label="July 9, 2026" description="v1.27">
+### v1.27
 
 **Added — Payins in Paraguay (announced bank transfer)**
 
@@ -1508,9 +1406,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
 - The corridor shows up in `GET /v1/payins/methods` with
   `delivery: polling`.
 
-</Update>
-
-<Update label="July 9, 2026" description="v1.26">
+### v1.26
 
 **Added — Multi-currency virtual balances (USDT, USDC, BTC, GOLD)**
 
@@ -1539,7 +1435,9 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
 
 </Update>
 
-<Update label="July 8, 2026" description="v1.25">
+<Update label="July 8, 2026" description="v1.25 · 8 releases">
+
+### v1.25
 
 **Added — Social login (Google, Apple, Microsoft, Meta)**
 
@@ -1564,9 +1462,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
 - The "Collection updated" stamp on the Postman page now correctly shows how
   long ago it was updated (it previously left an empty indicator).
 
-</Update>
-
-<Update label="July 8, 2026" description="v1.24">
+### v1.24
 
 **Added — OTP/2FA over SMS and WhatsApp**
 
@@ -1588,9 +1484,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
   `otp_invalid`, `phone_required`, `phone_binding_cooldown`,
   `too_many_attempts` and more.
 
-</Update>
-
-<Update label="July 8, 2026" description="v1.23">
+### v1.23
 
 **Documentation — person vs company and unified guides**
 
@@ -1612,9 +1506,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
 - The compiled MD now includes the full endpoint reference and the
   documentation version.
 
-</Update>
-
-<Update label="July 8, 2026" description="v1.22">
+### v1.22
 
 **Documentation — full site redesign**
 
@@ -1640,9 +1532,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
   reuse it with no data — the minimal example previously implied data was
   never required.
 
-</Update>
-
-<Update label="July 8, 2026" description="v1.21">
+### v1.21
 
 **Added**
 
@@ -1669,9 +1559,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
   more precise. The [KYC guide](/en/guides/kyc) now documents every field,
   with full-identity examples and the deduplication rule.
 
-</Update>
-
-<Update label="July 8, 2026" description="v1.20">
+### v1.20
 
 **Added**
 
@@ -1683,9 +1571,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
   `400 invalid_kind_of_business` before reaching the issuer. See the
   [cards guide](/en/guides/cards).
 
-</Update>
-
-<Update label="July 8, 2026" description="v1.19">
+### v1.19
 
 **Added**
 
@@ -1696,9 +1582,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
   actions answer the new `403 service_disabled` error (reads and money in
   flight are never blocked).
 
-</Update>
-
-<Update label="July 8, 2026" description="v1.18">
+### v1.18
 
 **Added**
 
@@ -1721,7 +1605,9 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
 
 </Update>
 
-<Update label="July 7, 2026" description="v1.17">
+<Update label="July 7, 2026" description="v1.17 · 16 releases">
+
+### v1.17
 
 **Added**
 
@@ -1734,9 +1620,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
   returns the same payin and the same URL without opening a second payment
   session. See the [payins guide](/en/guides/payins).
 
-</Update>
-
-<Update label="July 7, 2026" description="v1.16">
+### v1.16
 
 **Added**
 
@@ -1766,9 +1650,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
   (`format=json|pdf|xlsx`, `lang=es|en`). The org admin can generate any
   of its accounts' statements. See the [guide](/en/guides/statement).
 
-</Update>
-
-<Update label="July 7, 2026" description="v1.15">
+### v1.15
 
 **Improved**
 
@@ -1779,9 +1661,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
   the full banking lifecycle, KYC states, webhook delivery and retries,
   and the idempotency decision rule ("which key do I retry with?").
 
-</Update>
-
-<Update label="July 7, 2026" description="v1.14">
+### v1.14
 
 **Changed**
 
@@ -1791,9 +1671,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
   everything new. All documentation, the spec and the Postman collection
   already point to the new URL.
 
-</Update>
-
-<Update label="July 7, 2026" description="v1.13">
+### v1.13
 
 **Added**
 
@@ -1814,9 +1692,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
 - Full [Banking guide](/en/guides/banking) with the end-to-end flow and
   examples for every operation.
 
-</Update>
-
-<Update label="July 7, 2026" description="v1.12">
+### v1.12
 
 **Improved**
 
@@ -1847,9 +1723,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
   status table with the effect on your balance. Payins: catalog response
   example with the meaning of `delivery`.
 
-</Update>
-
-<Update label="July 7, 2026" description="v1.11">
+### v1.11
 
 **Improved**
 
@@ -1870,9 +1744,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
   - API Reference: selectable named examples on every endpoint (10 payout
     corridors, 3 payin modes, person/company KYC…).
 
-</Update>
-
-<Update label="July 7, 2026" description="v1.10">
+### v1.10
 
 **Added**
 
@@ -1888,9 +1760,7 @@ Full guide at [segregated wallets](/en/guides/segregated-wallets).
 Corridor enablement is gradual; the catalog (`GET /v1/payouts/methods`,
 `GET /v1/payins/methods`) reflects availability at any given time.
 
-</Update>
-
-<Update label="July 7, 2026" description="v1.9">
+### v1.9
 
 **Added**
 
@@ -1911,9 +1781,7 @@ Corridor enablement is gradual; the catalog (`GET /v1/payouts/methods`,
   Paraguay).
 - Venezuela (VES) joined the `GET /v1/rates` quotes.
 
-</Update>
-
-<Update label="July 7, 2026" description="v1.8">
+### v1.8
 
 **Added**
 
@@ -1924,9 +1792,7 @@ Corridor enablement is gradual; the catalog (`GET /v1/payouts/methods`,
   failure).
 - Bolivia (BOB) joined the `GET /v1/rates` quotes.
 
-</Update>
-
-<Update label="July 7, 2026" description="v1.7">
+### v1.7
 
 **Added**
 
@@ -1941,9 +1807,7 @@ Corridor enablement is gradual; the catalog (`GET /v1/payouts/methods`,
   separate percentage). Dispersing the equivalent of 100 USDT debits
   100 USDT plus your configured fixed fee.
 
-</Update>
-
-<Update label="July 7, 2026" description="v1.6">
+### v1.6
 
 **Improved**
 
@@ -1952,9 +1816,7 @@ Corridor enablement is gradual; the catalog (`GET /v1/payouts/methods`,
   (`local_amount / rate = USDT`), with no difference between what is quoted
   and what is charged.
 
-</Update>
-
-<Update label="July 7, 2026" description="v1.5">
+### v1.5
 
 **Removed (Breaking)**
 
@@ -1962,9 +1824,7 @@ Corridor enablement is gradual; the catalog (`GET /v1/payouts/methods`,
   removed for good. Use `POST /v1/crypto/wallets` to create wallets and
   `GET /v1/crypto/wallets` to list them.
 
-</Update>
-
-<Update label="July 7, 2026" description="v1.4">
+### v1.4
 
 **Added**
 
@@ -1991,9 +1851,7 @@ Corridor enablement is gradual; the catalog (`GET /v1/payouts/methods`,
   includes the `wallet_creation_fee` and `wallet_creation_refund` entry
   types.
 
-</Update>
-
-<Update label="July 7, 2026" description="v1.3">
+### v1.3
 
 **Improved**
 
@@ -2018,9 +1876,7 @@ Corridor enablement is gradual; the catalog (`GET /v1/payouts/methods`,
   combination** of accounts (person↔person, person↔company,
   company↔company) and are **always free**.
 
-</Update>
-
-<Update label="July 7, 2026" description="v1.2">
+### v1.2
 
 **Added**
 
@@ -2043,7 +1899,9 @@ Corridor enablement is gradual; the catalog (`GET /v1/payouts/methods`,
 
 </Update>
 
-<Update label="July 6, 2026" description="v1.1">
+<Update label="July 6, 2026" description="v1.1 · 2 releases">
+
+### v1.1
 
 **Added**
 
@@ -2060,9 +1918,7 @@ Corridor enablement is gradual; the catalog (`GET /v1/payouts/methods`,
 - Administration documentation moved to CBPay's internal portal; this site
   now covers the account API only.
 
-</Update>
-
-<Update label="July 6, 2026" description="v1.0">
+### v1.0
 
 **Initial release**
 

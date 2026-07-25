@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-25 00:02 UTC · versión `f0e8869fc856`
+> **Documento actualizado:** 2026-07-25 01:34 UTC · versión `77ca5ab73915`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v2.06 (24 de julio de 2026) |
+| Versión de la documentación | v2.06 · 4 versiones (24 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -10137,6 +10137,7 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | `error` | Significado |
 |---|---|
 | `invalid_json` | Body no es JSON válido o tiene campos desconocidos |
+| `invalid_settings` | Los settings de la organización no son un objeto JSON válido o no pudieron normalizarse; corrige el payload y reintenta |
 | `invalid_type` | `type` debe ser `person` o `company` |
 | `invalid_email` / `invalid_display_name` | Campo requerido inválido |
 | `weak_password` | Contraseña menor a 8 caracteres |
@@ -10640,7 +10641,9 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-### v2.06 — 24 de julio de 2026
+### v2.06 · 4 versiones — 24 de julio de 2026
+
+#### v2.06
 
 **Agregado**
 
@@ -10652,7 +10655,7 @@ con anticipación y quedan marcados como **Breaking**.
   error y eventos de webhook que existían en la API pero faltaban en las
   páginas de referencia. Sin cambio de contratos.
 
-### v2.05 — 24 de julio de 2026
+#### v2.05
 
 **Cambiado**
 
@@ -10664,7 +10667,7 @@ con anticipación y quedan marcados como **Breaking**.
   vivían apiladas bajo el tag genérico **Payins**; ningún path ni
   contrato cambió.
 
-### v2.04 — 24 de julio de 2026
+#### v2.04
 
 **Agregado**
 
@@ -10688,7 +10691,7 @@ con anticipación y quedan marcados como **Breaking**.
   roles: la guía de perfil es la casa de los factores 2FA del usuario; la
   página OTP cubre el flujo de desafíos por acción.
 
-### v2.03 — 24 de julio de 2026
+#### v2.03
 
 **Agregado**
 
@@ -10714,7 +10717,9 @@ con anticipación y quedan marcados como **Breaking**.
   semántica de settlement asset (`default_payin_asset`,
   `settlement_asset`).
 
-### v2.02 — 23 de julio de 2026
+### v2.02 · 6 versiones — 23 de julio de 2026
+
+#### v2.02
 
 **Cambiado**
 
@@ -10726,7 +10731,7 @@ con anticipación y quedan marcados como **Breaking**.
   operación/24 h de los assets volátiles (BTC/GOLD). Los swaps manuales
   (`POST /v1/swaps`) mantienen su spread normal.
 
-### v2.01 — 23 de julio de 2026
+#### v2.01
 
 **Agregado**
 
@@ -10736,7 +10741,7 @@ con anticipación y quedan marcados como **Breaking**.
   auto-conversiones del sistema (saldo predeterminado de payins y
   checkout) y se rechazan. Usa cualquier otra clave para tus swaps.
 
-### v2.00 — 23 de julio de 2026
+#### v2.00
 
 **Agregado**
 
@@ -10757,7 +10762,7 @@ con anticipación y quedan marcados como **Breaking**.
 - Un link de checkout creado **sin** `settlement_asset` ahora usa el
   `default_payin_asset` de la cuenta (antes siempre USDT).
 
-### v1.99 — 23 de julio de 2026
+#### v1.99
 
 **Agregado**
 
@@ -10771,7 +10776,7 @@ con anticipación y quedan marcados como **Breaking**.
   configuración explícita. Consulta tus comisiones vigentes en
   `GET /v1/fees` (las filas ahora incluyen el campo `currency`).
 
-### v1.98 — 23 de julio de 2026
+#### v1.98
 
 **Agregado**
 
@@ -10788,7 +10793,7 @@ con anticipación y quedan marcados como **Breaking**.
   cuentas no habilitadas dejan de aparecer en `GET /v1/banking/accounts`
   y sus consultas por id responden `404`.
 
-### v1.97 — 23 de julio de 2026
+#### v1.97
 
 **Corregido**
 
@@ -10800,7 +10805,9 @@ con anticipación y quedan marcados como **Breaking**.
   botón principal con la tarjeta listada llevaba a la página de pago
   pidiendo todos los datos de nuevo.
 
-### v1.96 — 22 de julio de 2026
+### v1.96 · 3 versiones — 22 de julio de 2026
+
+#### v1.96
 
 **Agregado**
 
@@ -10809,7 +10816,7 @@ con anticipación y quedan marcados como **Breaking**.
   - **Payins** en **ARS** con **cuenta CVU dedicada** por cuenta (`POST /v1/payins/deposit-accounts` con `country: "AR"`): toda transferencia entrante se acredita automáticamente, sin referencias. Las CVU son receive-only: los intentos de débito directo se rechazan automáticamente.
   - Disponible ya en el **ambiente de pruebas** (staging) con el simulador; la activación en producción se anunciará al completarse la certificación bancaria — el catálogo (`GET /v1/payouts/methods` y `GET /v1/payins/methods`) es siempre la fuente de verdad.
 
-### v1.95 — 22 de julio de 2026
+#### v1.95
 
 **Agregado**
 
@@ -10819,26 +10826,28 @@ con anticipación y quedan marcados como **Breaking**.
 
 - **Correo del titular obligatorio con tarjeta guardada**: en la página pública del checkout, usar una tarjeta guardada ahora exige presentar el mismo correo del titular con el que se guardó — si no calza, responde `404` (protección anti-enumeración de datos personales).
 
-### v1.94 — 22 de julio de 2026
+#### v1.94
 
 **Corregido**
 
 - **Página de checkout — pago con tarjeta en 1 clic** ([guía payins](#checkout)): al continuar con tarjeta, la página pública ahora redirige directo a la página segura de pago — se eliminó el botón intermedio que exigía un segundo clic. Elegir una tarjeta guardada de la lista inicia el pago de inmediato.
 - **Tarjeta guardada en el checkout**: elegir una tarjeta guardada ahora llega siempre a la página segura con la credencial aplicada (muestra marca y últimos 4 dígitos, sin pedir el número de nuevo). Antes, la re-validación del correo podía descartar la selección en silencio y la página pedía todos los datos otra vez. Además, cambiar la elección en el mismo link (guardada ↔ tarjeta nueva) regenera la sesión de pago correcta en vez de reusar la anterior.
 
-### v1.93 — 21 de julio de 2026
+### v1.93 · 3 versiones — 21 de julio de 2026
+
+#### v1.93
 
 **Corregido**
 
 - **Webhooks de banking para terceros** ([webhooks](#webhooks), [guía banking](#banking)): el webhook `banking_customer_status_changed` ahora también se emite cuando cambia la verificación de un **tercero** registrado por tu cuenta (antes solo llegaba el del perfil propio). El payload agrega `customer_kind` (`self` | `third_party`) y, para terceros, `third_party_id` (el mismo id de `GET /v1/banking/third-parties/{id}`).
 
-### v1.92 — 21 de julio de 2026
+#### v1.92
 
 **Corregido**
 
 - **Monto de los cobros checkout en el historial de payins** ([guía payins](#checkout)): `GET /v1/payins` y `GET /v1/payins/{payin_id}` ahora incluyen siempre la denominación de los payins de checkout y QR POS — `settlement_asset` + `asset_amount` (y `conversion_status` cuando aplica) — en todo estado, incluidos pendiente y vencido. Antes el monto solo aparecía al acreditarse y las filas pendientes salían sin monto. Además, un cobro liquidado en crypto o vía la app CBPay expone su `usdt_credited` aunque no lleve `fx_rate`. Los exports CSV/XLSX agregan las columnas `settlement_asset` y `asset_amount`.
 
-### v1.91 — 21 de julio de 2026
+#### v1.91
 
 **Agregado**
 
@@ -10850,13 +10859,15 @@ con anticipación y quedan marcados como **Breaking**.
 
 - **Tarjetas guardadas y cobros recurrentes** ([guía payins](#tarjetas-guardadas-y-suscripciones)): el método `card` ahora soporta credencial almacenada (mandato COF de las marcas). `POST /v1/payins` acepta `save_card` (checkbox de consentimiento en la página hosted), `payer_reference` (tu ID del cliente) y `stored_card_id` (pagar con una tarjeta guardada sin re-digitar el número; el 3-D Secure corre igual). Recurso nuevo `GET /v1/stored-cards` (+`/{id}`, `DELETE` para revocar) y **cobros iniciados por el comercio** sin el pagador presente: `POST /v1/stored-cards/{id}/charges` (`recurring` para suscripciones; `idempotency_key` obligatoria — un retry jamás cobra dos veces). El número de tarjeta jamás existe en la plataforma: solo display (marca, últimos 4, expiración). Webhooks nuevos `card_stored` y `stored_card_revoked`; error nuevo `422 stored_card_revoked` ([errores](#errores)).
 
-### v1.89 — 18 de julio de 2026
+### v1.89 · 2 versiones — 18 de julio de 2026
+
+#### v1.89
 
 **Agregado**
 
 - **Controles de cumplimiento en pagos salientes** ([guía payouts](#payouts), [errores](#errores)): los payouts, los retiros crypto con nombre de beneficiario y los cobros collect ahora pasan por controles de cumplimiento adicionales **antes de mover fondos**. Errores documentados: `403 compliance_hold` (la operación fue retenida y NO se creó — sin débito; por política no se informa la razón exacta, contacta a soporte con el timestamp) y `503 compliance_check_unavailable` (la verificación no se pudo evaluar; la operación NO se creó — reintenta con la **misma** `idempotency_key`).
 
-### v1.88 — 18 de julio de 2026
+#### v1.88
 
 **Corregido**
 
@@ -10867,7 +10878,9 @@ con anticipación y quedan marcados como **Breaking**.
   `{ "issuing_country", "number" }` sin campo `type`. Guía y ejemplos del
   spec actualizados con los shapes verificados en vivo.
 
-### v1.87 — 17 de julio de 2026
+### v1.87 · 4 versiones — 17 de julio de 2026
+
+#### v1.87
 
 **Agregado**
 
@@ -10884,7 +10897,7 @@ con anticipación y quedan marcados como **Breaking**.
   del API Reference); pagos parciales acumulan y los pagos tardíos a un
   cobro expirado se acreditan igual.
 
-### v1.86 — 17 de julio de 2026
+#### v1.86
 
 **Corregido**
 
@@ -10896,7 +10909,7 @@ con anticipación y quedan marcados como **Breaking**.
   del panel ya no parte palabras a mitad ("momento" → "moment"/"o") —
   el `word-break` agresivo quedó solo en las direcciones monospace.
 
-### v1.85 — 17 de julio de 2026
+#### v1.85
 
 **Agregado**
 
@@ -10910,7 +10923,7 @@ con anticipación y quedan marcados como **Breaking**.
   comercio + `reference` obligatoria en la glosa). Las CLABEs se reciclan
   con período de enfriamiento al resolverse el link (pagado o expirado).
 
-### v1.84 — 17 de julio de 2026
+#### v1.84
 
 **Agregado**
 
@@ -10950,7 +10963,9 @@ con anticipación y quedan marcados como **Breaking**.
   solo hecho de estar abierta: los límites de tráfico de lectura,
   materialización, OTP y cobro ahora son independientes entre sí.
 
-### v1.83 — 16 de julio de 2026
+### v1.83 · 10 versiones — 16 de julio de 2026
+
+#### v1.83
 
 **Agregado**
 
@@ -10981,7 +10996,7 @@ con anticipación y quedan marcados como **Breaking**.
   cambia la data y nunca mueve el scroll (solo la selección manual de un
   método lleva la vista al detalle).
 
-### v1.82 — 16 de julio de 2026
+#### v1.82
 
 **Cambiado**
 
@@ -10994,7 +11009,7 @@ con anticipación y quedan marcados como **Breaking**.
   contrato de creación y los endpoints públicos (`/state`, `/quote`,
   `/methods/{method}`) son los mismos.
 
-### v1.81 — 16 de julio de 2026
+#### v1.81
 
 **Corregido**
 
@@ -11010,7 +11025,7 @@ con anticipación y quedan marcados como **Breaking**.
   protección por pago es tu `idempotency_key`, que en Brasil es
   obligatoria en cada confirm.
 
-### v1.80 — 16 de julio de 2026
+#### v1.80
 
 **Agregado**
 
@@ -11031,7 +11046,7 @@ con anticipación y quedan marcados como **Breaking**.
   [Entorno y pruebas](#ambientes-y-pruebas). Detalle en
   la [guía de payouts](#payout-qr).
 
-### v1.79 — 16 de julio de 2026
+#### v1.79
 
 **Cambiado**
 
@@ -11056,7 +11071,7 @@ con anticipación y quedan marcados como **Breaking**.
   `settlement_asset_disabled` y `checkout_amount_mismatch`. Detalle en la
   [guía de payins](#checkout).
 
-### v1.78 — 16 de julio de 2026
+#### v1.78
 
 **Agregado**
 
@@ -11069,7 +11084,7 @@ con anticipación y quedan marcados como **Breaking**.
   `failed` genérico. Detalle en la
   [guía de payins](#payins).
 
-### v1.77 — 16 de julio de 2026
+#### v1.77
 
 **Agregado**
 
@@ -11087,7 +11102,7 @@ con anticipación y quedan marcados como **Breaking**.
   `method_unavailable`. Detalle en la
   [guía de payins](#checkout).
 
-### v1.76 — 16 de julio de 2026
+#### v1.76
 
 **Cambiado**
 
@@ -11102,7 +11117,7 @@ con anticipación y quedan marcados como **Breaking**.
   filtro (tabla completa en
   [Ambiente de pruebas](#ambientes-y-pruebas)).
 
-### v1.75 — 16 de julio de 2026
+#### v1.75
 
 **Agregado**
 
@@ -11116,7 +11131,7 @@ con anticipación y quedan marcados como **Breaking**.
   `payin_expired` cierra el cobro. Detalle en la
   [guía de payins](#payins).
 
-### v1.74 — 16 de julio de 2026
+#### v1.74
 
 **Agregado**
 
@@ -11126,7 +11141,9 @@ con anticipación y quedan marcados como **Breaking**.
   sola cuenta es informativo; en vistas administrativas permite atribuir
   cada registro.
 
-### v1.73 — 15 de julio de 2026
+### v1.73 · 5 versiones — 15 de julio de 2026
+
+#### v1.73
 
 **Agregado**
 
@@ -11141,7 +11158,7 @@ con anticipación y quedan marcados como **Breaking**.
   wallet). Travel Rule aplica igual que en las demás redes, valorando el
   monto a USD. Detalle en la [guía crypto](#crypto-wallets-depositos-y-retiros).
 
-### v1.72 — 15 de julio de 2026
+#### v1.72
 
 **Cambiado**
 
@@ -11154,7 +11171,7 @@ con anticipación y quedan marcados como **Breaking**.
   jamás viaja a un número enlazado desde la propia sesión. Detalle en la
   [guía de seguridad y 2FA](#seguridad-y-2fa-otp).
 
-### v1.71 — 15 de julio de 2026
+#### v1.71
 
 **Cambiado**
 
@@ -11168,7 +11185,7 @@ con anticipación y quedan marcados como **Breaking**.
   (incluso desactivar el canal email) aunque tuvieras factores más fuertes
   disponibles. Detalle en la [guía de seguridad y 2FA](#seguridad-y-2fa-otp).
 
-### v1.70 — 15 de julio de 2026
+#### v1.70
 
 **Agregado**
 
@@ -11186,7 +11203,7 @@ con anticipación y quedan marcados como **Breaking**.
   [errores](#errores)). `phone` sigue editable con su propio flujo de
   verificación.
 
-### v1.69 — 15 de julio de 2026
+#### v1.69
 
 **Agregado**
 
@@ -11212,7 +11229,9 @@ con anticipación y quedan marcados como **Breaking**.
   `place_of_registration` y `incorporation_date` es un objeto
   `{year, month, day}`. Guía y spec corregidos (verificado en producción).
 
-### v1.68 — 14 de julio de 2026
+### v1.68 · 7 versiones — 14 de julio de 2026
+
+#### v1.68
 
 **Agregado**
 
@@ -11229,7 +11248,7 @@ con anticipación y quedan marcados como **Breaking**.
   con la misma `idempotency_key`. Documentado en la página de
   [errores](#errores).
 
-### v1.67 — 14 de julio de 2026
+#### v1.67
 
 **Agregado**
 
@@ -11246,7 +11265,7 @@ con anticipación y quedan marcados como **Breaking**.
   desde un snapshot de producción — nada se copia entre ambientes. Guía de
   [entornos y pruebas](#ambientes-y-pruebas) actualizada.
 
-### v1.66 — 14 de julio de 2026
+#### v1.66
 
 **Agregado**
 
@@ -11257,7 +11276,7 @@ con anticipación y quedan marcados como **Breaking**.
   nueva [Servidor MCP](#servidor-mcp) con instalación de un click e instrucciones
   por cliente.
 
-### v1.65 — 14 de julio de 2026
+#### v1.65
 
 **Cambiado**
 
@@ -11270,7 +11289,7 @@ con anticipación y quedan marcados como **Breaking**.
   siendo obligatorio antes de que salga dinero. Para probar el flujo de
   verificación en test, usa las verificaciones KYC/KYB de terceros.
 
-### v1.64 — 14 de julio de 2026
+#### v1.64
 
 **Cambiado**
 
@@ -11281,7 +11300,7 @@ con anticipación y quedan marcados como **Breaking**.
   `409 phone_verification_required`. Este candado evita que un número mal
   escrito te deje fuera de tu cuenta al activar el 2FA de login.
 
-### v1.63 — 14 de julio de 2026
+#### v1.63
 
 **Corregido**
 
@@ -11292,7 +11311,7 @@ con anticipación y quedan marcados como **Breaking**.
   (`403 invalid_password` si falta o es incorrecta); las cuentas que solo
   usan login social pasan con su sesión.
 
-### v1.62 — 14 de julio de 2026
+#### v1.62
 
 **Corregido**
 
@@ -11310,7 +11329,9 @@ con anticipación y quedan marcados como **Breaking**.
 - Cartola PDF: los estados de las operaciones ahora aparecen coloreados
   (verde completado, ámbar pendiente, rojo fallido) para lectura rápida.
 
-### v1.61 — 13 de julio de 2026
+### v1.61 · 6 versiones — 13 de julio de 2026
+
+#### v1.61
 
 **Agregado — Exportación CSV / Excel en los listados**
 
@@ -11327,7 +11348,7 @@ curl -o movimientos.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-0
 - Sin `format` la respuesta sigue siendo el JSON paginado de siempre —
   no hay cambios de compatibilidad.
 
-### v1.60 — 13 de julio de 2026
+#### v1.60
 
 **Breaking — Las wallets segregadas se mueven a `/v1/segregated-wallets`**
 
@@ -11361,7 +11382,7 @@ curl -o movimientos.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-0
 - Úsalo para distinguir los dos productos de forma defensiva — nunca solo
   por la ruta.
 
-### v1.59 — 13 de julio de 2026
+#### v1.59
 
 **Agregado — Webhook `payin_expired`: cierre automático de cobros no pagados**
 
@@ -11374,7 +11395,7 @@ curl -o movimientos.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-0
 - No se mueve dinero en ningún caso: para reintentar el cobro se crea un
   payin nuevo.
 
-### v1.58 — 13 de julio de 2026
+#### v1.58
 
 **Cambiado — Comprobantes, cartola y emails con diseño renovado**
 
@@ -11396,7 +11417,7 @@ curl -o movimientos.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-0
 - Sin cambios de API: mismas rutas, mismos shapes. Solo cambia el diseño de
   los documentos y correos.
 
-### v1.57 — 13 de julio de 2026
+#### v1.57
 
 **Agregado — Refresh tokens para sesiones de usuario**
 
@@ -11415,7 +11436,7 @@ curl -o movimientos.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-0
 - Código de error nuevo: `401 invalid_refresh_token`. Las API keys `pk_` no
   cambian: no expiran ni usan refresh.
 
-### v1.56 — 13 de julio de 2026
+#### v1.56
 
 **Agregado — Ambiente de test (sandbox) con dinero simulado**
 
@@ -11436,7 +11457,9 @@ curl -o movimientos.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-0
   `POST /v1/auth/handoff` (test) por una sesión del ambiente de test, con
   auto-provisión de la cuenta espejo si no existe.
 
-### v1.55 — 12 de julio de 2026
+### v1.55 · 9 versiones — 12 de julio de 2026
+
+#### v1.55
 
 **Agregado — Historial auditable de screenings AML**
 
@@ -11450,7 +11473,7 @@ curl -o movimientos.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-0
   historial (`kind: monitoring`); `idempotency_key` es obligatoria cuando el
   estado cambia (habilitar cobra comisión).
 
-### v1.54 — 12 de julio de 2026
+#### v1.54
 
 **Agregado — Travel Rule en retiros on-chain (FATF R.16)**
 
@@ -11469,7 +11492,7 @@ curl -o movimientos.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-0
   la [guía crypto](#crypto-wallets-depositos-y-retiros) y la
   [página de errores](#errores).
 
-### v1.53 — 12 de julio de 2026
+#### v1.53
 
 **Agregado — Series banking en el historial de saldos**
 
@@ -11480,7 +11503,7 @@ curl -o movimientos.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-0
   solo los saldos operativos. Guía de
   [analytics](#resumen-de-tu-cuenta-analytics) actualizada.
 
-### v1.52 — 12 de julio de 2026
+#### v1.52
 
 **Agregado — Filtro por país en envíos y depósitos**
 
@@ -11494,7 +11517,7 @@ curl -o movimientos.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-0
   veía `fees: []` aunque sus operaciones tuvieran costo; usa este
   bloque para cotizar la comisión exacta antes de crear la operación.
 
-### v1.51 — 12 de julio de 2026
+#### v1.51
 
 **Cambiado — Límites de wallets por tipo de cuenta**
 
@@ -11513,7 +11536,7 @@ curl -o movimientos.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-0
   empresas](#personas-y-empresas) y
   [errores](#errores) actualizadas.
 
-### v1.50 — 12 de julio de 2026
+#### v1.50
 
 **Agregado — Monitoreo transaccional continuo (controles de cumplimiento)**
 
@@ -11527,7 +11550,7 @@ curl -o movimientos.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-0
   compliance_check_unavailable` (verificación temporalmente no disponible —
   la operación no salió; reintenta con la misma clave de idempotencia).
 
-### v1.49 — 12 de julio de 2026
+#### v1.49
 
 **Agregado — Documentación en 3 idiomas (inglés por defecto)**
 
@@ -11539,7 +11562,7 @@ curl -o movimientos.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-0
 - La colección Postman y la guía compilada en Markdown se mantienen al día
   desde cualquier idioma del sitio.
 
-### v1.48 — 12 de julio de 2026
+#### v1.48
 
 **Agregado — Screening de wallets (riesgo AML de direcciones blockchain)**
 
@@ -11556,7 +11579,7 @@ curl -o movimientos.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-0
 - Webhooks nuevos: `crypto_deposit_held` y `crypto_deposit_alert`.
 - Guía nueva: [Screening de wallets](#screening-de-wallets).
 
-### v1.47 — 12 de julio de 2026
+#### v1.47
 
 **Agregado — Assets públicos por CDN (avatares, branding, QR de cobro)**
 
@@ -11575,7 +11598,9 @@ curl -o movimientos.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-0
 Nada se rompe: todos los campos existentes se conservan; las URLs son
 aditivas. Guías: [Perfil](#perfil-y-seguridad) y [Payins](#payins).
 
-### v1.46 — 11 de julio de 2026
+### v1.46 · 7 versiones — 11 de julio de 2026
+
+#### v1.46
 
 **Agregado — Catálogos de compliance**
 
@@ -11592,7 +11617,7 @@ aditivas. Guías: [Perfil](#perfil-y-seguridad) y [Payins](#payins).
 
 Guía: [AML screening](#aml-screening).
 
-### v1.45 — 11 de julio de 2026
+#### v1.45
 
 **Agregado — Toda cuenta nace con sus wallets de depósito**
 
@@ -11613,7 +11638,7 @@ Guía: [AML screening](#aml-screening).
 
 Guía: [crypto](#crypto-wallets-depositos-y-retiros).
 
-### v1.44 — 11 de julio de 2026
+#### v1.44
 
 **Agregado — Trazabilidad total: banking en la cartola, comisiones desglosadas y custodia de wallets**
 
@@ -11647,7 +11672,7 @@ Guías: [cartola](#cartola-estado-de-cuenta), [banking](#banking),
 [wallets segregadas](#wallets-segregadas),
 [comprobantes](#comprobantes) y [analytics](#resumen-de-tu-cuenta-analytics).
 
-### v1.43 — 11 de julio de 2026
+#### v1.43
 
 **Agregado — Series históricas para tu dashboard**
 
@@ -11666,7 +11691,7 @@ Guías: [cartola](#cartola-estado-de-cuenta), [banking](#banking),
 
 Ejemplos completos en [analytics](#resumen-de-tu-cuenta-analytics).
 
-### v1.42 — 11 de julio de 2026
+#### v1.42
 
 **Agregado — Comprobantes PDF con verificación de autenticidad**
 
@@ -11699,7 +11724,7 @@ Ejemplos completos en [analytics](#resumen-de-tu-cuenta-analytics).
 
 Guía completa en [comprobantes](#comprobantes).
 
-### v1.41 — 11 de julio de 2026
+#### v1.41
 
 **Agregado — Wallets segregadas (solo cuentas empresa)**
 
@@ -11721,7 +11746,7 @@ Guía completa en [comprobantes](#comprobantes).
 
 Guía completa en [wallets segregadas](#wallets-segregadas).
 
-### v1.40 — 11 de julio de 2026
+#### v1.40
 
 **Agregado — Perfil, credenciales y seguridad de la cuenta**
 
@@ -11754,7 +11779,9 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
 - Avisos por email ante eventos sensibles (cambio de contraseña o email,
   alta/baja de un factor).
 
-### v1.39 — 10 de julio de 2026
+### v1.39 · 7 versiones — 10 de julio de 2026
+
+#### v1.39
 
 **Agregado — Identidad verificada reutilizable (KYC/KYB unificado)**
 
@@ -11782,7 +11809,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
   `422 verification_not_approved`, `422 verification_kind_mismatch`,
   `422 verification_invalid`.
 
-### v1.38 — 10 de julio de 2026
+#### v1.38
 
 **Agregado — Resumen de cuenta (analytics) + usuarios banking de terceros**
 
@@ -11802,7 +11829,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
 - **Límite nuevo**: las cuentas persona pueden tener máximo 1 cuenta
   bancaria (`409 banking_account_limit`).
 
-### v1.37 — 10 de julio de 2026
+#### v1.37
 
 **Cambiado — Tasas de Bolivia y Venezuela**
 
@@ -11815,7 +11842,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
   tasa incorrecta. Te recomendamos consultar `GET /v1/rates` (o suscribirte
   al webhook de tasas) antes de cotizar pagos en `BOB` o `VES`.
 
-### v1.36 — 10 de julio de 2026
+#### v1.36
 
 **Agregado — Swaps: conversión entre tus saldos**
 
@@ -11831,7 +11858,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
   y de volumen 24 h con payouts y compras con tarjeta
   (`GET /v1/settlement`). Guía nueva: [Swaps](#swaps).
 
-### v1.35 — 10 de julio de 2026
+#### v1.35
 
 **Agregado — Contactos y envío por teléfono**
 
@@ -11851,7 +11878,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
   (usa su dirección guardada). Guía nueva:
   [Contactos](#contactos).
 
-### v1.34 — 10 de julio de 2026
+#### v1.34
 
 **Agregado — Verificación de identidad KYC/KYB (wizard hosteado, documentos con OCR y prueba de vida)**
 
@@ -11884,7 +11911,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
   `aml` (el flag `kyc` ahora gatea la verificación de identidad). Guía:
   [AML screening](#aml-screening).
 
-### v1.33 — 10 de julio de 2026
+#### v1.33
 
 **Corregido — Catálogo de bancos sin `method` en países con varios métodos**
 
@@ -11895,7 +11922,9 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
   documentación; con `method` se acota al canal específico (parámetro
   documentado en la referencia).
 
-### v1.32 — 9 de julio de 2026
+### v1.32 · 7 versiones — 9 de julio de 2026
+
+#### v1.32
 
 **Agregado — Compras con tarjeta desde BTC y GOLD (conversión al momento)**
 
@@ -11915,7 +11944,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
   cuenta con los payouts: por operación (`settlement_limit_exceeded`) y
   volumen 24 h (`settlement_daily_limit_exceeded`).
 
-### v1.31 — 9 de julio de 2026
+#### v1.31
 
 **Agregado — Elige desde qué saldo gastan tus tarjetas (USDT o USDC)**
 
@@ -11935,7 +11964,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
   disponibles para compras con tarjeta) y rechazos de autorización
   `spending_asset_disabled` si tu operador deshabilita el asset.
 
-### v1.30 — 9 de julio de 2026
+#### v1.30
 
 **Cambiado — Endurecimiento del settlement multi-asset**
 
@@ -11948,7 +11977,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
   el resto de los servicios. Las **compras** con tarjeta siguen liquidando
   en USDT.
 
-### v1.29 — 9 de julio de 2026
+#### v1.29
 
 **Agregado — Paga payouts y servicios desde cualquier saldo (settlement multi-asset)**
 
@@ -11972,7 +12001,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
   `400 invalid_settlement_asset` y `422 settlement_limit_exceeded`
   (límite por operación de los assets volátiles).
 
-### v1.28 — 9 de julio de 2026
+#### v1.28
 
 **Cambiado — Referencia corta en la transferencia anunciada**
 
@@ -11987,7 +12016,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
 - `GET /v1/payins` y el detalle muestran la referencia de anuncio en
   `reference` mientras el payin está `pending`.
 
-### v1.27 — 9 de julio de 2026
+#### v1.27
 
 **Agregado — Payins en Paraguay (transferencia anunciada)**
 
@@ -12000,7 +12029,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
   (ej. `"596000"`). El match de respaldo por monto+moneda aplica igual.
 - El corredor aparece en `GET /v1/payins/methods` con `delivery: polling`.
 
-### v1.26 — 9 de julio de 2026
+#### v1.26
 
 **Agregado — Saldos virtuales multi-moneda (USDT, USDC, BTC, GOLD)**
 
@@ -12027,7 +12056,9 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
 - Los payouts, payins, tarjetas y comisiones de servicios siguen operando
   **exclusivamente contra el saldo USDT**.
 
-### v1.25 — 8 de julio de 2026
+### v1.25 · 8 versiones — 8 de julio de 2026
+
+#### v1.25
 
 **Agregado — Login social (Google, Apple, Microsoft, Meta)**
 
@@ -12053,7 +12084,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
 - El sello de "Colección actualizada" en la página de Postman ahora muestra
   correctamente hace cuánto se actualizó (antes quedaba un indicador vacío).
 
-### v1.24 — 8 de julio de 2026
+#### v1.24
 
 **Agregado — OTP/2FA por SMS y WhatsApp**
 
@@ -12075,7 +12106,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
   `otp_invalid`, `phone_required`, `phone_binding_cooldown`,
   `too_many_attempts` y más.
 
-### v1.23 — 8 de julio de 2026
+#### v1.23
 
 **Documentación — persona vs empresa y guías unificadas**
 
@@ -12097,7 +12128,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
 - El [MD compilado](https://docs.cbpayapp.com) incluye ahora la referencia
   completa de endpoints y la versión de la documentación.
 
-### v1.22 — 8 de julio de 2026
+#### v1.22
 
 **Documentación — rediseño completo del sitio**
 
@@ -12123,7 +12154,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
   las tarjetas **siguientes** lo reutilizan sin pedir datos — antes el
   ejemplo mínimo daba a entender que nunca se pedían.
 
-### v1.21 — 8 de julio de 2026
+#### v1.21
 
 **Agregado**
 
@@ -12152,7 +12183,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
   [guía de KYC](#verificacion-kyc-y-kyb) ahora documenta todos los campos, con
   ejemplos de identidad completa y la regla de deduplicación.
 
-### v1.20 — 8 de julio de 2026
+#### v1.20
 
 **Agregado**
 
@@ -12164,7 +12195,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
   `400 invalid_kind_of_business` antes de tocar el emisor. Ver la
   [guía de tarjetas](#tarjetas-virtuales-y-fisicas).
 
-### v1.19 — 8 de julio de 2026
+#### v1.19
 
 **Agregado**
 
@@ -12175,7 +12206,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
   acciones responden el nuevo error `403 service_disabled` (las lecturas y
   el dinero en tránsito nunca se bloquean).
 
-### v1.18 — 8 de julio de 2026
+#### v1.18
 
 **Agregado**
 
@@ -12197,7 +12228,9 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
 - **Nuevos tipos de movimiento** en el ledger: `card_debit`, `card_refund`,
   `card_fee`, `card_fee_refund`.
 
-### v1.17 — 7 de julio de 2026
+### v1.17 · 16 versiones — 7 de julio de 2026
+
+#### v1.17
 
 **Agregado**
 
@@ -12210,7 +12243,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
   un reintento devuelve el mismo payin y la misma URL sin abrir otra sesión
   de pago. Ver la [guía de payins](#payins).
 
-### v1.16 — 7 de julio de 2026
+#### v1.16
 
 **Agregado**
 
@@ -12241,7 +12274,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
   generar la cartola de cualquiera de sus cuentas. Ver la
   [guía](#cartola-estado-de-cuenta).
 
-### v1.15 — 7 de julio de 2026
+#### v1.15
 
 **Mejorado**
 
@@ -12253,7 +12286,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
   reintentos de webhooks, y la regla de decisión de idempotencia
   ("¿con qué clave reintento?").
 
-### v1.14 — 7 de julio de 2026
+#### v1.14
 
 **Cambiado**
 
@@ -12263,7 +12296,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
   `api.qbank.cl` para todo lo nuevo. Toda la documentación, el spec y el
   Postman ya apuntan a la URL nueva.
 
-### v1.13 — 7 de julio de 2026
+#### v1.13
 
 **Agregado**
 
@@ -12284,7 +12317,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
 - Guía completa de [Banking](#banking) con el flujo end-to-end y
   ejemplos de cada operación.
 
-### v1.12 — 7 de julio de 2026
+#### v1.12
 
 **Mejorado**
 
@@ -12315,7 +12348,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
   tabla de estados con el efecto en tu saldo. Payins: respuesta de ejemplo
   del catálogo con el significado de `delivery`.
 
-### v1.11 — 7 de julio de 2026
+#### v1.11
 
 **Mejorado**
 
@@ -12335,7 +12368,7 @@ Guía completa en [wallets segregadas](#wallets-segregadas).
   - API Reference: ejemplos nombrados seleccionables en cada endpoint (10
     corredores en payouts, 3 modos en payins, persona/empresa en KYC…).
 
-### v1.10 — 7 de julio de 2026
+#### v1.10
 
 **Agregado**
 
@@ -12352,7 +12385,7 @@ La habilitación del corredor es gradual; el catálogo
 (`GET /v1/payouts/methods`, `GET /v1/payins/methods`) refleja la
 disponibilidad en cada momento.
 
-### v1.9 — 7 de julio de 2026
+#### v1.9
 
 **Agregado**
 
@@ -12373,7 +12406,7 @@ disponibilidad en cada momento.
   `qr`, Paraguay).
 - Venezuela (VES) se sumó a las tasas de `GET /v1/rates`.
 
-### v1.8 — 7 de julio de 2026
+#### v1.8
 
 **Agregado**
 
@@ -12384,7 +12417,7 @@ disponibilidad en cada momento.
   automático si falla).
 - Bolivia (BOB) se sumó a las tasas de `GET /v1/rates`.
 
-### v1.7 — 7 de julio de 2026
+#### v1.7
 
 **Agregado**
 
@@ -12399,7 +12432,7 @@ disponibilidad en cada momento.
   (sin porcentaje aparte). Si dispersas el equivalente a 100 USDT, se
   debitan 100 USDT más el fijo configurado.
 
-### v1.6 — 7 de julio de 2026
+#### v1.6
 
 **Mejorado**
 
@@ -12408,7 +12441,7 @@ disponibilidad en cada momento.
   (`monto_local / rate = USDT`), sin diferencias entre lo cotizado y lo
   cobrado.
 
-### v1.5 — 7 de julio de 2026
+#### v1.5
 
 **Eliminado (Breaking)**
 
@@ -12416,7 +12449,7 @@ disponibilidad en cada momento.
   quedó deprecado en v1.4). Usa `POST /v1/crypto/wallets` para crear
   wallets y `GET /v1/crypto/wallets` para consultarlas.
 
-### v1.4 — 7 de julio de 2026
+#### v1.4
 
 **Agregado**
 
@@ -12443,7 +12476,7 @@ disponibilidad en cada momento.
   movimientos ahora incluye los tipos `wallet_creation_fee` y
   `wallet_creation_refund`.
 
-### v1.3 — 7 de julio de 2026
+#### v1.3
 
 **Mejorado**
 
@@ -12467,7 +12500,7 @@ disponibilidad en cada momento.
   **cualquier combinación** de cuentas (persona↔persona, persona↔empresa,
   empresa↔empresa) y son **siempre sin comisión**.
 
-### v1.2 — 7 de julio de 2026
+#### v1.2
 
 **Agregado**
 
@@ -12489,7 +12522,9 @@ disponibilidad en cada momento.
   gratis después), y la API Reference renombra el endpoint a "Create or get
   my wallet (deposit address)".
 
-### v1.1 — 6 de julio de 2026
+### v1.1 · 2 versiones — 6 de julio de 2026
+
+#### v1.1
 
 **Agregado**
 
@@ -12506,7 +12541,7 @@ disponibilidad en cada momento.
 - La documentación de administración se movió a un portal interno de CBPay;
   este sitio contiene solo la API de cuentas.
 
-### v1.0 — 6 de julio de 2026
+#### v1.0
 
 **Lanzamiento inicial**
 

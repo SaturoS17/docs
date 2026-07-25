@@ -7,7 +7,9 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-<Update label="2026年7月24日" description="v2.06">
+<Update label="2026年7月24日" description="v2.06 · 4 个版本">
+
+### v2.06
 
 **新增**
 
@@ -17,9 +19,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
 - **错误与 Webhook 目录补全**：API 中已存在但参考页面缺失的错误码和 Webhook
   事件类型现已完整记录。接口契约无变化。
 
-</Update>
-
-<Update label="2026年7月24日" description="v2.05">
+### v2.05
 
 **变更**
 
@@ -29,9 +29,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   （`/v1/subscriptions`）。这些操作此前堆叠在通用的 **Payins** 标签下；
   所有路径与契约均未改变。
 
-</Update>
-
-<Update label="2026年7月24日" description="v2.04">
+### v2.04
 
 **新增**
 
@@ -51,9 +49,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   [安全与双因素认证（OTP）](/zh/security-2fa) 现已互相链接并明确分工：
   个人资料指南负责用户的 2FA 因子；OTP 页面负责按操作的验证流程。
 
-</Update>
-
-<Update label="2026年7月24日" description="v2.03">
+### v2.03
 
 **新增**
 
@@ -77,7 +73,9 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
 
 </Update>
 
-<Update label="2026年7月23日" description="v2.02">
+<Update label="2026年7月23日" description="v2.02 · 6 个版本">
+
+### v2.02
 
 **变更**
 
@@ -87,9 +85,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   资产（BTC/GOLD）的单笔/24 小时限额仍然适用。手动兑换
   （`POST /v1/swaps`）保留其常规点差。
 
-</Update>
-
-<Update label="2026年7月23日" description="v2.01">
+### v2.01
 
 **新增**
 
@@ -98,9 +94,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   的幂等键保留给系统自动转换（收款默认余额与 checkout）使用，会被拒绝。
   请为你的兑换使用其他键。
 
-</Update>
-
-<Update label="2026年7月23日" description="v2.00">
+### v2.00
 
 **新增**
 
@@ -119,9 +113,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
 - **未**指定 `settlement_asset` 创建的 checkout 链接现使用账户的
   `default_payin_asset`（此前始终为 USDT）。
 
-</Update>
-
-<Update label="2026年7月23日" description="v1.99">
+### v1.99
 
 **新增**
 
@@ -132,9 +124,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   未配置 `payin_card`，则继续按通用 `payin` 佣金计费 — 未显式配置时行为
   不变。可通过 `GET /v1/fees` 查询生效佣金（行中新增 `currency` 字段）。
 
-</Update>
-
-<Update label="2026年7月23日" description="v1.98">
+### v1.98
 
 **新增**
 
@@ -149,9 +139,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   未启用的账户不再出现在 `GET /v1/banking/accounts` 中，按 id 查询时
   返回 `404`。
 
-</Update>
-
-<Update label="2026年7月23日" description="v1.97">
+### v1.97
 
 **修复**
 
@@ -162,7 +150,9 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
 
 </Update>
 
-<Update label="2026年7月22日" description="v1.96">
+<Update label="2026年7月22日" description="v1.96 · 3 个版本">
+
+### v1.96
 
 **新增**
 
@@ -171,9 +161,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   - **入金**支持 **ARS**，每个账户可创建**专属 CVU 账户**（`POST /v1/payins/deposit-accounts`，`country: "AR"`）：每笔到账转账自动入账，无需参考号。CVU 为只收不付：直接扣款尝试会被自动拒绝。
   - 现已在**测试环境**（staging）通过模拟器提供；生产环境的启用将在银行认证完成后公布 —— 目录（`GET /v1/payouts/methods` 和 `GET /v1/payins/methods`）始终是唯一可信来源。
 
-</Update>
-
-<Update label="2026年7月22日" description="v1.95">
+### v1.95
 
 **新增**
 
@@ -183,9 +171,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
 
 - **使用已保存卡片须提供持卡人邮箱**：在公开的 checkout 页面上，使用已保存的卡现在要求提供保存时的同一持卡人邮箱 — 不匹配则返回 `404`（个人数据防枚举保护）。
 
-</Update>
-
-<Update label="2026年7月22日" description="v1.94">
+### v1.94
 
 **修复**
 
@@ -194,23 +180,21 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
 
 </Update>
 
-<Update label="2026年7月21日" description="v1.93">
+<Update label="2026年7月21日" description="v1.93 · 3 个版本">
+
+### v1.93
 
 **修复**
 
 - **第三方的银行 webhook**（[webhooks](/zh/webhooks)、[银行指南](/zh/guides/banking)）：当你账户注册的**第三方**验证状态变化时，`banking_customer_status_changed` webhook 现在也会触发（此前只有自己档案的事件送达）。payload 新增 `customer_kind`（`self` | `third_party`），第三方还附 `third_party_id`（与 `GET /v1/banking/third-parties/{id}` 的 id 相同）。
 
-</Update>
-
-<Update label="2026年7月21日" description="v1.92">
+### v1.92
 
 **修复**
 
 - **payin 历史中的 checkout 收款金额**（[payins 指南](/zh/guides/checkout)）：`GET /v1/payins` 和 `GET /v1/payins/{payin_id}` 现在在所有状态（包括待支付和已过期）都返回 checkout 和 QR POS 收款的计价 — `settlement_asset` + `asset_amount`（适用时还有 `conversion_status`）。此前金额只在入账后出现，待支付的行没有金额。此外，以加密货币或 CBPay 应用结算的收款即使没有 `fx_rate` 也会返回 `usdt_credited`。CSV/XLSX 导出新增 `settlement_asset` 和 `asset_amount` 列。
 
-</Update>
-
-<Update label="2026年7月21日" description="v1.91">
+### v1.91
 
 **新增**
 
@@ -226,15 +210,15 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
 
 </Update>
 
-<Update label="2026年7月18日" description="v1.89">
+<Update label="2026年7月18日" description="v1.89 · 2 个版本">
+
+### v1.89
 
 **新增**
 
 - **对外支付的合规控制**（[出金指南](/zh/guides/payouts)、[错误](/zh/errors)）：出金、带受益人姓名的加密货币提现以及 collect 收款现在会在**资金移动之前**经过额外的合规控制。已记录的错误：`403 compliance_hold`（操作被拦截且未被创建 —— 未扣款；按政策不披露具体原因，请携带时间戳联系支持）与 `503 compliance_check_unavailable`（合规校验暂时无法完成；操作未被创建 —— 请使用**相同的** `idempotency_key` 重试）。
 
-</Update>
-
-<Update label="2026年7月18日" description="v1.88">
+### v1.88
 
 **修复**
 
@@ -246,7 +230,9 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
 
 </Update>
 
-<Update label="2026年7月17日" description="v1.87">
+<Update label="2026年7月17日" description="v1.87 · 4 个版本">
+
+### v1.87
 
 **新增**
 
@@ -259,9 +245,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   硬上限（绝不超过已收金额）。新路由位于 `/v1/pos/*`（API 参考中的
   QR Crypto POS 标签）；部分支付会累计，过期收款收到的迟到支付同样入账。
 
-</Update>
-
-<Update label="2026年7月17日" description="v1.86">
+### v1.86
 
 **修复**
 
@@ -273,9 +257,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   （「momento」被拆成「moment」/「o」）— 激进的 `word-break` 仅保留
   在等宽地址上。
 
-</Update>
-
-<Update label="2026年7月17日" description="v1.85">
+### v1.85
 
 **新增**
 
@@ -287,9 +269,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   传统方式（商户账户 + 转账附言中必填 `reference`）。链接结清后
   （已支付或已过期），CLABE 经过冷却期后回收再用。
 
-</Update>
-
-<Update label="2026年7月17日" description="v1.84">
+### v1.84
 
 **新增**
 
@@ -323,7 +303,9 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
 
 </Update>
 
-<Update label="2026年7月16日" description="v1.83">
+<Update label="2026年7月16日" description="v1.83 · 10 个版本">
+
+### v1.83
 
 **新增**
 
@@ -348,9 +330,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
 - 结账页面不再每隔几秒自动滚动到当前面板：自动刷新仅在数据变化时
   重新渲染且不移动滚动条（只有手动选择支付方式才会将详情滚入视图）。
 
-</Update>
-
-<Update label="2026年7月16日" description="v1.82">
+### v1.82
 
 **变更**
 
@@ -361,9 +341,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   无任何变化：URL、创建契约和公开端点（`/state`、`/quote`、
   `/methods/{method}`）保持不变。
 
-</Update>
-
-<Update label="2026年7月16日" description="v1.81">
+### v1.81
 
 **修复**
 
@@ -376,9 +354,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   静态 PIX 二维码（它们天生会被支付多次）；每笔支付的保护是您的
   `idempotency_key`，在巴西的每次 confirm 中均为必填。
 
-</Update>
-
-<Update label="2026年7月16日" description="v1.80">
+### v1.80
 
 **新增**
 
@@ -395,9 +371,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   见[测试环境](/zh/environment-testing#pix-二维码示例巴西-qr-出金)。详见
   [payouts 指南](/zh/guides/qr-payout)。
 
-</Update>
-
-<Update label="2026年7月16日" description="v1.79">
+### v1.79
 
 **变更**
 
@@ -419,9 +393,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   `checkout_amount_mismatch`。详见
   [收款指南](/zh/guides/checkout)。
 
-</Update>
-
-<Update label="2026年7月16日" description="v1.78">
+### v1.78
 
 **新增**
 
@@ -432,9 +404,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   见。此前仅暴露通用的 `failed` 状态。详见
   [payins 指南](/zh/guides/payins)。
 
-</Update>
-
-<Update label="2026年7月16日" description="v1.77">
+### v1.77
 
 **新增**
 
@@ -449,9 +419,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   新增错误 `already_paid`、`checkout_expired` 与 `method_unavailable`。
   详见[收款指南](/zh/guides/checkout)。
 
-</Update>
-
-<Update label="2026年7月16日" description="v1.76">
+### v1.76
 
 **变更**
 
@@ -462,9 +430,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   模拟被该过滤器拒绝的尝试（完整表格见
   [测试环境](/zh/environment-testing)）。
 
-</Update>
-
-<Update label="2026年7月16日" description="v1.75">
+### v1.75
 
 **新增**
 
@@ -476,9 +442,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   送达并像任何 payin 一样入账；若无人支付，`payin_expired` 会关闭该收款。
   详见[payin 指南](/zh/guides/payins)。
 
-</Update>
-
-<Update label="2026年7月16日" description="v1.74">
+### v1.74
 
 **新增**
 
@@ -488,7 +452,9 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
 
 </Update>
 
-<Update label="2026年7月15日" description="v1.73">
+<Update label="2026年7月15日" description="v1.73 · 5 个版本">
+
+### v1.73
 
 **新增**
 
@@ -501,9 +467,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   组合（没有 gas：费用从钱包余额中扣除）。Travel Rule 与其他网络
   一致，按 USD 估值。详见 [crypto 指南](/zh/guides/crypto)。
 
-</Update>
-
-<Update label="2026年7月15日" description="v1.72">
+### v1.72
 
 **变更**
 
@@ -514,9 +478,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   `403 phone_binding_cooldown`，直到冷却期结束。验证码绝不会发送到
   从当前会话绑定的号码。详见[安全与 2FA 指南](/zh/security-2fa)。
 
-</Update>
-
-<Update label="2026年7月15日" description="v1.71">
+### v1.71
 
 **变更**
 
@@ -528,9 +490,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   即使拥有更强的因素，冷却期也会阻止所有 2FA 放宽操作（甚至包括停用
   email 渠道）。详见[安全与 2FA 指南](/zh/security-2fa)。
 
-</Update>
-
-<Update label="2026年7月15日" description="v1.70">
+### v1.70
 
 **新增**
 
@@ -546,9 +506,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   将返回 `409 identity_locked`（[错误页](/zh/errors)新增该代码）。
   `phone` 仍可通过其专属验证流程修改。
 
-</Update>
-
-<Update label="2026年7月15日" description="v1.69">
+### v1.69
 
 **新增**
 
@@ -573,7 +531,9 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
 
 </Update>
 
-<Update label="2026年7月14日" description="v1.68">
+<Update label="2026年7月14日" description="v1.68 · 7 个版本">
+
+### v1.68
 
 **新增**
 
@@ -587,9 +547,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   暂时不可用。请稍后使用相同的 `idempotency_key` 重试。详见
   [错误页面](/zh/errors)。
 
-</Update>
-
-<Update label="2026年7月14日" description="v1.67">
+### v1.67
 
 **新增**
 
@@ -603,9 +561,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
 - **环境完全独立**:测试数据不再从生产快照刷新 —— 两个环境之间不复制
   任何内容。已更新[环境与测试](/zh/environment-testing)指南。
 
-</Update>
-
-<Update label="2026年7月14日" description="v1.66">
+### v1.66
 
 **新增**
 
@@ -614,9 +570,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   —— 搜索、带真实示例的端点与错误目录,无需离开编辑器。只读、无需身份
   验证。新增 [MCP 服务器](/zh/mcp)页面,支持一键安装与按客户端配置。
 
-</Update>
-
-<Update label="2026年7月14日" description="v1.65">
+### v1.65
 
 **变更**
 
@@ -626,9 +580,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   批准。**live** 环境不变:账户生而未验证,资金转出前 KYC/KYB 仍为
   强制要求。要在测试模式演练验证流程,请使用第三方 KYC/KYB 验证。
 
-</Update>
-
-<Update label="2026年7月14日" description="v1.64">
+### v1.64
 
 **变更**
 
@@ -638,9 +590,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   `409 phone_verification_required`。该保障可防止输错的号码在启用登录
   2FA 时把你锁在账户外。
 
-</Update>
-
-<Update label="2026年7月14日" description="v1.63">
+### v1.63
 
 **修复**
 
@@ -650,9 +600,7 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   必须提供当前密码(缺失或错误时返回 `403 invalid_password`);仅使用
   社交登录的账户凭其会话即可通过。
 
-</Update>
-
-<Update label="2026年7月14日" description="v1.62">
+### v1.62
 
 **修复**
 
@@ -670,7 +618,9 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
 
 </Update>
 
-<Update label="2026年7月13日" description="v1.61">
+<Update label="2026年7月13日" description="v1.61 · 6 个版本">
+
+### v1.61
 
 **新增 — 列表支持 CSV / Excel 导出**
 
@@ -686,9 +636,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 
 - 不带 `format` 时响应仍是常规的分页 JSON —— 无兼容性变更。
 
-</Update>
-
-<Update label="2026年7月13日" description="v1.60">
+### v1.60
 
 **Breaking — 隔离钱包迁移至 `/v1/segregated-wallets`**
 
@@ -718,9 +666,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 - 隔离钱包包含 `type: "segregated"`。
 - 请用它防御性地区分两个产品——不要只依赖路由。
 
-</Update>
-
-<Update label="2026年7月13日" description="v1.59">
+### v1.59
 
 **新增 — `payin_expired` webhook：未支付代收的自动关闭**
 
@@ -732,9 +678,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   `POST /v1/webhooks/subscriptions` 订阅。
 - 任何情况下都不产生资金变动：如需重新收款，请创建新的 payin。
 
-</Update>
-
-<Update label="2026年7月13日" description="v1.58">
+### v1.58
 
 **变更 — 凭证、对账单与邮件全新设计**
 
@@ -748,9 +692,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   会自动解析为银行名称。
 - API 无变化：路由与响应结构不变，仅文档与邮件的外观更新。
 
-</Update>
-
-<Update label="2026年7月13日" description="v1.57">
+### v1.57
 
 **新增 — 用户会话的刷新令牌（refresh tokens）**
 
@@ -766,9 +708,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 - 新错误码：`401 invalid_refresh_token`。API key（`pk_`）不受影响：
   永不过期，也不使用刷新机制。
 
-</Update>
-
-<Update label="2026年7月13日" description="v1.56">
+### v1.56
 
 **新增 — 使用模拟资金的测试环境（沙盒）**
 
@@ -787,7 +727,9 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 
 </Update>
 
-<Update label="2026年7月12日" description="v1.55">
+<Update label="2026年7月12日" description="v1.55 · 9 个版本">
+
+### v1.55
 
 **新增 — AML 筛查审计历史**
 
@@ -798,9 +740,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 - `PATCH /v1/aml/monitoring` 将每次启用/停用写入同一历史（`kind: monitoring`）；
   状态实际变更时须提供 `idempotency_key`（启用会收费）。
 
-</Update>
-
-<Update label="2026年7月12日" description="v1.54">
+### v1.54
 
 **新增 — 链上提现的 Travel Rule（FATF R.16）**
 
@@ -817,9 +757,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   `travel_rule_incomplete_approval`、`travel_rule_unavailable`。详见
   [加密货币指南](/zh/guides/crypto)与[错误页](/zh/errors)。
 
-</Update>
-
-<Update label="2026年7月12日" description="v1.53">
+### v1.53
 
 **新增 — 余额历史中的银行序列**
 
@@ -829,9 +767,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   `total_usd` 聚合——该聚合仅覆盖运营余额。
   [分析](/zh/guides/analytics)指南已更新。
 
-</Update>
-
-<Update label="2026年7月12日" description="v1.52">
+### v1.52
 
 **新增 — 付款与收款列表的国家筛选**
 
@@ -842,9 +778,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 - `GET /v1/rates` 的 `fees` 块现在返回**有效**费用配置（组织默认值已与账户覆盖项解析合并）。
   此前无覆盖项的账户会看到 `fees: []`；请用此块在创建操作前报价确切费用。
 
-</Update>
-
-<Update label="2026年7月12日" description="v1.51">
+### v1.51
 
 **变更 — 按账户类型的钱包限额**
 
@@ -859,9 +793,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   指南、[个人与企业](/zh/concepts/persons-companies)页面及
   [错误](/zh/errors)页面已更新。
 
-</Update>
-
-<Update label="2026年7月12日" description="v1.50">
+### v1.50
 
 **新增 — 持续交易监控（合规控制）**
 
@@ -872,9 +804,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   `503 compliance_check_unavailable`（合规检查暂时不可用 — 操作未发出；
   请使用相同的幂等键重试）。
 
-</Update>
-
-<Update label="2026年7月12日" description="v1.49">
+### v1.49
 
 **新增 — 文档支持 3 种语言（默认英语）**
 
@@ -884,9 +814,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   不同）。
 - Postman 集合与编译版 Markdown 指南在任意语言版本下都保持最新。
 
-</Update>
-
-<Update label="2026年7月12日" description="v1.48">
+### v1.48
 
 **新增 — 钱包筛查（区块链地址的 AML 风险）**
 
@@ -901,9 +829,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 - 新增 webhook：`crypto_deposit_held` 和 `crypto_deposit_alert`。
 - 新增指南：[钱包筛查](/zh/guides/screenings)。
 
-</Update>
-
-<Update label="2026年7月12日" description="v1.47">
+### v1.47
 
 **新增 — 通过 CDN 提供的公开资源（头像、品牌素材、收款二维码）**
 
@@ -923,7 +849,9 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 
 </Update>
 
-<Update label="2026年7月11日" description="v1.46">
+<Update label="2026年7月11日" description="v1.46 · 7 个版本">
+
+### v1.46
 
 **新增 — 合规目录**
 
@@ -939,9 +867,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 
 指南：[AML 筛查](/zh/guides/aml)。
 
-</Update>
-
-<Update label="2026年7月11日" description="v1.45">
+### v1.45
 
 **新增 — 每个账户自创建起即拥有其充值钱包**
 
@@ -959,9 +885,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 
 指南：[加密货币](/zh/guides/crypto)。
 
-</Update>
-
-<Update label="2026年7月11日" description="v1.44">
+### v1.44
 
 **新增 — 完整可追溯性：对账单中的银行业务、费用明细拆分与钱包托管**
 
@@ -993,9 +917,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 [独立钱包](/zh/guides/segregated-wallets)、
 [回执](/zh/guides/receipts) 与 [分析](/zh/guides/analytics)。
 
-</Update>
-
-<Update label="2026年7月11日" description="v1.43">
+### v1.43
 
 **新增 — 面向仪表盘的历史序列**
 
@@ -1010,9 +932,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 
 完整示例见 [分析](/zh/guides/analytics)。
 
-</Update>
-
-<Update label="2026年7月11日" description="v1.42">
+### v1.42
 
 **新增 — 带真实性验证的 PDF 回执**
 
@@ -1042,9 +962,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 
 完整指南见 [回执](/zh/guides/receipts)。
 
-</Update>
-
-<Update label="2026年7月11日" description="v1.41">
+### v1.41
 
 **新增 — 独立钱包（仅限企业账户）**
 
@@ -1066,9 +984,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 
 完整指南见 [独立钱包](/zh/guides/segregated-wallets)。
 
-</Update>
-
-<Update label="2026年7月11日" description="v1.40">
+### v1.40
 
 **新增 — 账户资料、凭证与安全**
 
@@ -1100,7 +1016,9 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 
 </Update>
 
-<Update label="2026年7月10日" description="v1.39">
+<Update label="2026年7月10日" description="v1.39 · 7 个版本">
+
+### v1.39
 
 **新增 — 可复用的已验证身份（统一的 KYC/KYB）**
 
@@ -1126,9 +1044,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   `422 verification_not_approved`、`422 verification_kind_mismatch`、
   `422 verification_invalid`。
 
-</Update>
-
-<Update label="2026年7月10日" description="v1.38">
+### v1.38
 
 **新增 — 账户汇总（分析）+ 第三方银行用户**
 
@@ -1147,9 +1063,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 - **新限制**：个人账户最多只能持有 1 个银行账户
   （`409 banking_account_limit`）。
 
-</Update>
-
-<Update label="2026年7月10日" description="v1.37">
+### v1.37
 
 **变更 — 玻利维亚与委内瑞拉汇率**
 
@@ -1160,9 +1074,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   绝不使用错误的汇率报价。建议在以 `BOB` 或 `VES` 报价前查询
   `GET /v1/rates`（或订阅汇率 webhook）。
 
-</Update>
-
-<Update label="2026年7月10日" description="v1.36">
+### v1.36
 
 **新增 — Swap：在你的余额之间兑换**
 
@@ -1177,9 +1089,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 - 涉及 BTC/GOLD 的兑换与 payout 及卡消费共享单笔与 24 小时交易量
   限额（`GET /v1/settlement`）。新增指南：[Swaps](/zh/guides/swaps)。
 
-</Update>
-
-<Update label="2026年7月10日" description="v1.35">
+### v1.35
 
 **新增 — 联系人与按手机号发送**
 
@@ -1196,9 +1106,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   联系人已保存的收款人信息），加密提现支持 `to_contact_id`（使用其
   已保存的地址）。新增指南：[联系人](/zh/guides/contacts)。
 
-</Update>
-
-<Update label="2026年7月10日" description="v1.34">
+### v1.34
 
 **新增 — KYC/KYB 身份验证（托管向导、OCR 文件与视频活体检测）**
 
@@ -1229,9 +1137,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   `aml_screening_updated` webhook 及新的 `aml` 服务开关（`kyc` 开关
   现在管控身份验证）。指南：[AML 筛查](/zh/guides/aml)。
 
-</Update>
-
-<Update label="2026年7月10日" description="v1.33">
+### v1.33
 
 **修复 — 多方式国家在不带 `method` 时的银行目录**
 
@@ -1243,7 +1149,9 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 
 </Update>
 
-<Update label="2026年7月9日" description="v1.32">
+<Update label="2026年7月9日" description="v1.32 · 7 个版本">
+
+### v1.32
 
 **新增 — 使用 BTC 与 GOLD 进行卡消费（即时兑换）**
 
@@ -1260,9 +1168,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   （`settlement_limit_exceeded`）与 24 小时交易量
   （`settlement_daily_limit_exceeded`）。
 
-</Update>
-
-<Update label="2026年7月9日" description="v1.31">
+### v1.31
 
 **新增 — 选择你的卡从哪个余额消费（USDT 或 USDC）**
 
@@ -1279,9 +1185,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   消费），以及当运营方停用该资产时授权被拒的
   `spending_asset_disabled`。
 
-</Update>
-
-<Update label="2026年7月9日" description="v1.30">
+### v1.30
 
 **变更 — 多资产结算加固**
 
@@ -1291,9 +1195,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 - **卡片**费用（发卡、注销与月费）现在也从你的默认结算余额扣款，
   与其他服务一致。卡**消费**仍以 USDT 结算。
 
-</Update>
-
-<Update label="2026年7月9日" description="v1.29">
+### v1.29
 
 **新增 — 用任意余额支付 payout 与服务费（多资产结算）**
 
@@ -1314,9 +1216,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   `400 settlement_asset_disabled`、`400 invalid_settlement_asset`
   和 `422 settlement_limit_exceeded`（波动性资产的单笔限额）。
 
-</Update>
-
-<Update label="2026年7月9日" description="v1.28">
+### v1.28
 
 **变更 — 预告银行转账的短参考码**
 
@@ -1329,9 +1229,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 - `GET /v1/payins` 与详情接口在 payin 处于 `pending` 期间通过
   `reference` 暴露预告参考码。
 
-</Update>
-
-<Update label="2026年7月9日" description="v1.27">
+### v1.27
 
 **新增 — 巴拉圭收款（预告银行转账）**
 
@@ -1344,9 +1242,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 - 该通道出现在 `GET /v1/payins/methods` 中，且
   `delivery: polling`。
 
-</Update>
-
-<Update label="2026年7月9日" description="v1.26">
+### v1.26
 
 **新增 — 多币种虚拟余额（USDT、USDC、BTC、GOLD）**
 
@@ -1372,7 +1268,9 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 
 </Update>
 
-<Update label="2026年7月8日" description="v1.25">
+<Update label="2026年7月8日" description="v1.25 · 8 个版本">
+
+### v1.25
 
 **新增 — 社交登录（Google、Apple、Microsoft、Meta）**
 
@@ -1397,9 +1295,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 - Postman 页面的"集合已更新"标记现在能正确显示距上次更新的时间
   （此前显示为空指示器）。
 
-</Update>
-
-<Update label="2026年7月8日" description="v1.24">
+### v1.24
 
 **新增 — 通过 SMS 与 WhatsApp 的 OTP/2FA**
 
@@ -1420,9 +1316,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   `phone_required`、`phone_binding_cooldown`、`too_many_attempts`
   等。
 
-</Update>
-
-<Update label="2026年7月8日" description="v1.23">
+### v1.23
 
 **文档 — 个人 vs 企业与统一指南**
 
@@ -1439,9 +1333,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   时长（秒/分钟/天），叠加在日期和版本之上。
 - 编译版 MD 现在包含完整的端点参考及文档版本号。
 
-</Update>
-
-<Update label="2026年7月8日" description="v1.22">
+### v1.22
 
 **文档 — 站点全面改版**
 
@@ -1464,9 +1356,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   而**后续**发卡无需数据即可复用 —— 此前的最简示例曾让人误以为
   永远不需要数据。
 
-</Update>
-
-<Update label="2026年7月8日" description="v1.21">
+### v1.21
 
 **新增**
 
@@ -1492,9 +1382,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   [KYC 指南](/zh/guides/kyc) 现在记录了每个字段，附完整身份示例
   与去重规则。
 
-</Update>
-
-<Update label="2026年7月8日" description="v1.20">
+### v1.20
 
 **新增**
 
@@ -1505,9 +1393,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   之前被 `400 invalid_occupation` / `400 invalid_kind_of_business`
   拒绝。参见 [卡片指南](/zh/guides/cards)。
 
-</Update>
-
-<Update label="2026年7月8日" description="v1.19">
+### v1.19
 
 **新增**
 
@@ -1517,9 +1403,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   服务关闭时，其操作返回新的 `403 service_disabled` 错误（读取与
   在途资金绝不会被阻断）。
 
-</Update>
-
-<Update label="2026年7月8日" description="v1.18">
+### v1.18
 
 **新增**
 
@@ -1540,7 +1424,9 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 
 </Update>
 
-<Update label="2026年7月7日" description="v1.17">
+<Update label="2026年7月7日" description="v1.17 · 16 个版本">
+
+### v1.17
 
 **新增**
 
@@ -1552,9 +1438,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   `idempotency_key`：重试会返回同一笔 payin 和同一个 URL，不会
   开启第二个支付会话。参见 [收款指南](/zh/guides/payins)。
 
-</Update>
-
-<Update label="2026年7月7日" description="v1.16">
+### v1.16
 
 **新增**
 
@@ -1581,9 +1465,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   （`format=json|pdf|xlsx`，`lang=es|en`）。组织管理员可以生成其
   任意账户的对账单。参见 [指南](/zh/guides/statement)。
 
-</Update>
-
-<Update label="2026年7月7日" description="v1.15">
+### v1.15
 
 **改进**
 
@@ -1593,9 +1475,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   KYC 状态、webhook 投递与重试，以及幂等决策规则（"我该用哪个键
   重试？"）。
 
-</Update>
-
-<Update label="2026年7月7日" description="v1.14">
+### v1.14
 
 **变更**
 
@@ -1604,9 +1484,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   现有集成不会中断 —— 但新集成请一律使用 `api.qbank.cl`。全部
   文档、规格与 Postman 集合均已指向新 URL。
 
-</Update>
-
-<Update label="2026年7月7日" description="v1.13">
+### v1.13
 
 **新增**
 
@@ -1626,9 +1504,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 - 完整的 [Banking 指南](/zh/guides/banking)，含端到端流程及每种
   操作的示例。
 
-</Update>
-
-<Update label="2026年7月7日" description="v1.12">
+### v1.12
 
 **改进**
 
@@ -1653,9 +1529,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 - payout：方式与银行目录的响应示例，外加一张标注对余额影响的状态
   表。payin：目录响应示例及 `delivery` 的含义。
 
-</Update>
-
-<Update label="2026年7月7日" description="v1.11">
+### v1.11
 
 **改进**
 
@@ -1674,9 +1548,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   - API 参考：每个端点均可选择命名示例（10 个 payout 通道、3 种
     payin 模式、个人/企业 KYC……）。
 
-</Update>
-
-<Update label="2026年7月7日" description="v1.10">
+### v1.10
 
 **新增**
 
@@ -1692,9 +1564,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 通道的启用是渐进的；目录（`GET /v1/payouts/methods`、
 `GET /v1/payins/methods`）反映任一时刻的可用性。
 
-</Update>
-
-<Update label="2026年7月7日" description="v1.9">
+### v1.9
 
 **新增**
 
@@ -1712,9 +1582,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   墨西哥 SPEI、委内瑞拉含 `pago_movil`、玻利维亚含 `qr`、巴拉圭）。
 - 委内瑞拉（VES）加入 `GET /v1/rates` 报价。
 
-</Update>
-
-<Update label="2026年7月7日" description="v1.8">
+### v1.8
 
 **新增**
 
@@ -1724,9 +1592,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   固定费用，同步返回最终结果，失败时自动退款）。
 - 玻利维亚（BOB）加入 `GET /v1/rates` 报价。
 
-</Update>
-
-<Update label="2026年7月7日" description="v1.7">
+### v1.7
 
 **新增**
 
@@ -1739,9 +1605,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   汇率 + 每笔固定费用**收取（无单独百分比）。派发等值 100 USDT
   会扣除 100 USDT 加上你配置的固定费用。
 
-</Update>
-
-<Update label="2026年7月7日" description="v1.6">
+### v1.6
 
 **改进**
 
@@ -1749,9 +1613,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   实际执行的汇率相同（`local_amount / rate = USDT`），报价与扣款
   之间没有差异。
 
-</Update>
-
-<Update label="2026年7月7日" description="v1.5">
+### v1.5
 
 **移除（Breaking）**
 
@@ -1759,9 +1621,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   移除。请使用 `POST /v1/crypto/wallets` 创建钱包，并用
   `GET /v1/crypto/wallets` 列出它们。
 
-</Update>
-
-<Update label="2026年7月7日" description="v1.4">
+### v1.4
 
 **新增**
 
@@ -1785,9 +1645,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 - 两种语言的文案与翻译润色；流水表现在包含 `wallet_creation_fee`
   与 `wallet_creation_refund` 条目类型。
 
-</Update>
-
-<Update label="2026年7月7日" description="v1.3">
+### v1.3
 
 **改进**
 
@@ -1807,9 +1665,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 - 内部转账：明确记录其可在**任意组合**的账户之间进行（个人↔个人、
   个人↔企业、企业↔企业），且**始终免费**。
 
-</Update>
-
-<Update label="2026年7月7日" description="v1.2">
+### v1.2
 
 **新增**
 
@@ -1828,7 +1684,9 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 
 </Update>
 
-<Update label="2026年7月6日" description="v1.1">
+<Update label="2026年7月6日" description="v1.1 · 2 个版本">
+
+### v1.1
 
 **新增**
 
@@ -1844,9 +1702,7 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
 - CBPay 官方品牌形象已应用于整套文档。
 - 管理相关文档已迁移至 CBPay 内部门户；本站现在仅涵盖账户 API。
 
-</Update>
-
-<Update label="2026年7月6日" description="v1.0">
+### v1.0
 
 **首次发布**
 
