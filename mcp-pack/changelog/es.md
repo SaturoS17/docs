@@ -9,7 +9,21 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-## v2.09 - 25 de julio de 2026
+## v2.10 · 2 versiones - 25 de julio de 2026
+
+### v2.10
+
+**Cambiado**
+
+- **Página pública de estado del servicio rediseñada**
+  ([guía](https://docs.cbpayapp.com/es/estado-del-servicio)): la página que entrega
+  `status_page_url` ahora muestra bandera por país, ícono por método de
+  pago, una barra de disponibilidad día a día de los últimos 90 días, una
+  tarjeta de resumen con el estado general y el uptime promedio, y una línea
+  de tiempo de incidentes con los motivos redactados en lenguaje claro. Toma
+  el logo, los colores y el sitio web de tu organización, sigue sin
+  JavaScript ni recursos externos (se puede embeber o compartir con tus
+  clientes) y el JSON de `/v1/status/{token}` no cambia.
 
 ### v2.09
 

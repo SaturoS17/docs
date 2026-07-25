@@ -8,7 +8,21 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.09 - July 25, 2026
+## v2.10 · 2 releases - July 25, 2026
+
+### v2.10
+
+**Changed**
+
+- **Public service status page redesigned**
+  ([guide](https://docs.cbpayapp.com/en/service-status)): the page returned by
+  `status_page_url` now shows a country flag, a payment-method icon, a
+  day-by-day availability bar for the last 90 days, a summary card with the
+  overall state and average uptime, and an incident timeline with reasons
+  written in plain language. It picks up your organization's logo, colors
+  and website, still ships with no JavaScript and no external resources (so
+  you can embed it or share it with your customers), and the JSON at
+  `/v1/status/{token}` is unchanged.
 
 ### v2.09
 

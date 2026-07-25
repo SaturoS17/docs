@@ -129,6 +129,15 @@ organización y apta para compartir con tus propios clientes.
 - **JSON**: `GET /v1/status/{orgToken}` — la misma data para tu propio
   tooling de status o monitores.
 
+La página muestra el logo, los colores y el sitio web de tu organización, y
+para cada corredor la bandera del país, un ícono del método de pago, una
+barra de disponibilidad día a día de los últimos 90 días y el estado actual.
+Arriba hay una tarjeta de resumen (estado general, corredores operativos,
+degradados, con interrupción y uptime promedio) y abajo la línea de tiempo de
+incidentes con los motivos redactados en lenguaje claro. El HTML no carga
+JavaScript ni recursos externos, así que se puede embeber en un iframe sin
+riesgos.
+
 El `orgToken` es un token opaco que tu operador te comparte (los org admins
 pueden leerlo como `status_page_url` en `GET /v1/org/branding`).
 

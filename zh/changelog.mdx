@@ -7,7 +7,19 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-<Update label="2026年7月25日" description="v2.09">
+<Update label="2026年7月25日" description="v2.10 · 2 个版本">
+
+### v2.10
+
+**变更**
+
+- **公开服务状态页面重新设计**（[指南](/zh/service-status)）：
+  `status_page_url` 返回的页面现在会显示国家国旗、支付方式图标、
+  最近 90 天逐日可用性条、包含总体状态与平均可用率的概览卡片，
+  以及使用通俗语言描述原因的事件时间线。页面会自动使用你组织的
+  logo、颜色和网站，仍然不包含 JavaScript 与外部资源（可以嵌入或分享
+  给客户），`/v1/status/{token}` 的 JSON 保持不变。
+
 
 ### v2.09
 

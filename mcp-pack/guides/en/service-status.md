@@ -125,6 +125,14 @@ share with your own customers.
 - **JSON**: `GET /v1/status/{orgToken}` — the same data for your own status
   tooling or monitors.
 
+The page picks up your organization's logo, colors and website, and shows for
+every corridor the country flag, a payment-method icon, a day-by-day
+availability bar for the last 90 days and the current state. A summary card at
+the top reports the overall state, how many corridors are operational,
+degraded or down, and the average uptime; the incident timeline at the bottom
+spells out each reason in plain language. The HTML loads no JavaScript and no
+external resources, so you can safely embed it in an iframe.
+
 The `orgToken` is an opaque token your operator shares with you (org admins
 can read it as `status_page_url` in `GET /v1/org/branding`).
 

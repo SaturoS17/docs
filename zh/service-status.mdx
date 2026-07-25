@@ -104,6 +104,8 @@ curl "https://api.qbank.cl/platform/v1/payouts/methods" \
 - **HTML**：`GET /status/{orgToken}` —— 自包含页面，可直接链接或嵌入。
 - **JSON**：`GET /v1/status/{orgToken}` —— 同样的数据，供你自己的状态工具或监控使用。
 
+页面会自动使用你机构的 logo、颜色和网站，并为每条通道展示国家国旗、支付方式图标、最近 90 天的逐日可用性条以及当前状态。顶部的概览卡片显示总体状态、正常/降级/中断的通道数量与平均可用率；底部的事件时间线用通俗语言说明每次变更的原因。该 HTML 不加载 JavaScript，也不引用任何外部资源，可以安全地嵌入 iframe。
+
 `orgToken` 是运营方共享给你的不透明令牌（机构管理员可在 `GET /v1/org/branding` 中读取 `status_page_url`）。
 
 ```bash
