@@ -8,6 +8,24 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+## v2.09 - 2026年7月25日
+
+### v2.09
+
+**新增**
+
+- **以美元结算的国际银行卡**（[指南](https://docs.cbpayapp.com/zh/guides/payins)）：`POST /v1/payins`
+  传入 `country: "US"`、`currency: "USD"` 与 `method: "card"`，会返回一个带
+  3-D Secure、使用您机构品牌的托管 checkout `payment_url`，可收取任意国家
+  发行的 Visa、Mastercard、American Express、Discover 与 Diners 卡。契约与
+  玻利维亚的银行卡页面完全相同（`customer` 可选、`success_url`/`failure_url`、
+  `expires_at`、尝试次数受限，幂等重试返回同一个 URL），保存卡片也一样：
+  `save_card` 配合 `payer_reference` 会在获得付款人同意后保存卡片，用于
+  [后续收款与订阅](https://docs.cbpayapp.com/zh/guides/stored-cards-subscriptions)。3-D Secure 在页面
+  内完成（若发卡行要求挑战验证，付款人可直接在页面内完成），卡片数据在处理方
+  的安全字段中录入：绝不经过您的集成。该通道按账户开通 ——
+  `GET /v1/payins/methods` 是您当前可收款方式的唯一可信来源。
+
 ## v2.08 · 6 个版本 - 2026年7月24日
 
 ### v2.08

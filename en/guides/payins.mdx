@@ -66,6 +66,7 @@ Collection corridors and modes:
 | Paraguay | PYG | Announced bank transfer |
 | Brazil | BRL | Dynamic PIX QR |
 | Argentina | ARS | Dedicated CVU account |
+| United States | USD | International card payment page (`card`) |
 
 Availability may vary; the catalog (`GET /v1/payins/methods`) is always the
 source of truth. In every case the credit works the same way: converted to
@@ -547,6 +548,68 @@ free; every deposit pays the regular payin fee. List your accounts with
 The CVU works in **ARS only** and is deposit-only (receive-only): no
 third party can debit it. Direct debit attempts (DEBIN) against a deposit
 CVU are rejected automatically.
+</Note>
+
+</Tab>
+<Tab title="United States">
+
+**International card payment page (`card`)**: charge in US dollars with
+Visa, Mastercard, American Express, Discover and Diners cards issued
+anywhere. You get a `payment_url` for a hosted checkout with 3-D Secure
+branded with your organization; card data is typed into the processor's
+secure fields embedded in that page and **never touches your system or your
+integration**.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "US",
+    "currency": "USD",
+    "method": "card",
+    "amount": "49.90",
+    "description": "Pro plan",
+    "customer": { "email": "payer@example.com", "first_name": "Ana", "last_name": "Rojas" },
+    "success_url": "https://your-app.com/payment/ok",
+    "failure_url": "https://your-app.com/payment/error",
+    "save_card": true,
+    "payer_reference": "customer-7719",
+    "idempotency_key": "pro-plan-7719"
+  }'
+```
+
+Response `201`:
+
+```json
+{
+  "payin_id": "3ab7…",
+  "status": "pending",
+  "reference": "3ab7…",
+  "payment_url": "https://api.qbank.cl/pay/cards/Kt9XmQ…",
+  "expires_at": "2026-07-26T18:30:00Z",
+  "note": "share the payment_url with the payer; the balance is credited automatically once the card payment is approved"
+}
+```
+
+The contract is the **same** as the Bolivian card page (optional `customer`,
+`success_url`/`failure_url`, `expires_at`, limited attempts, an idempotent
+retry returns the same `payment_url`). What is specific to the international
+corridor:
+
+- 3-D Secure runs inside the page: if the issuer asks for a challenge, the
+  payer completes it right there without leaving the checkout.
+- Most charges are approved online; if the issuer leaves the charge under
+  verification, the credit lands as soon as the rail confirms it — you still
+  get `payin_credited`, just a few minutes later.
+- `save_card: true` plus `payer_reference` store the card with the payer's
+  consent for later charges (see
+  [stored cards and subscriptions](/en/guides/stored-cards-subscriptions)).
+
+<Note>
+The international card corridor is enabled per account. Check
+`GET /v1/payins/methods` — it is the source of truth for what your account
+can collect today.
 </Note>
 
 </Tab>

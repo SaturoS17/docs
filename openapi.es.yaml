@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.08'
+  version: '2.09'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -3553,9 +3553,11 @@ paths:
         alfanuméricos que cabe en cualquier concepto bancario (algunos rieles lo limitan a 20 caracteres
         sin caracteres especiales). Con `method: "fintoc"` (Chile) la respuesta trae una `payment_url`
         hosted: el pagador la abre y transfiere desde cualquier banco o billetera chilena; el depósito
-        se detecta, valida y acredita automáticamente. Con `method: "card"` (Bolivia) la respuesta trae
+        se detecta, valida y acredita automáticamente. Con `method: "card"` la respuesta trae
         una `payment_url` hosted de un checkout de tarjeta con 3-D Secure y la marca de tu organización —
-        los datos de la tarjeta jamás tocan tu integración.         Con `method: "checkout"` la respuesta trae
+        Bolivia (BOB) y tarjetas internacionales en USD (`country: "US"`; Visa, Mastercard,
+        American Express, Discover y Diners emitidas en cualquier país); los datos de la tarjeta
+        jamás tocan tu integración. Con `method: "checkout"` la respuesta trae
         una `checkout_url` pública — un link de cobro universal denominado en el saldo virtual que
         elijas (`settlement_asset`: USDT, USDC, BTC o GOLD). El pagador elige cualquier país con
         corredor de payin vivo (monto local cotizado), cualquiera de las 4 opciones crypto (dirección
@@ -3613,8 +3615,9 @@ paths:
                     anuncia un depósito entrante y devuelve la referencia a incluir en la descripción
                     de la transferencia; `fintoc` (solo Chile) devuelve una `payment_url` hosted donde
                     el pagador transfiere desde cualquier banco o billetera chilena y el depósito se detecta
-                    automáticamente; `card` (Bolivia) devuelve una `payment_url` hosted de un checkout de
-                    tarjeta con 3-D Secure; `checkout` devuelve una `checkout_url` pública donde el pagador
+                    automáticamente; `card` devuelve una `payment_url` hosted de un checkout de tarjeta con
+                    3-D Secure (Bolivia en BOB, o tarjetas internacionales en USD cuando `country`
+                    es `US`); `checkout` devuelve una `checkout_url` pública donde el pagador
                     elige el método de pago (QR, tarjeta, transferencia bancaria o crypto). Usa
                     /v1/payins/collect para cobros pull.
                 idempotency_key:
@@ -3730,6 +3733,23 @@ paths:
                   success_url: https://your-app.com/payment/ok
                   failure_url: https://your-app.com/payment/error
                   idempotency_key: topup-7719
+              us_card:
+                summary: Tarjetas internacionales — checkout 3-D Secure (US/USD)
+                value:
+                  country: US
+                  currency: USD
+                  method: card
+                  amount: '49.90'
+                  description: Plan Pro
+                  customer:
+                    email: pagador@ejemplo.com
+                    first_name: Ana
+                    last_name: Rojas
+                  success_url: https://tu-app.com/pago/ok
+                  failure_url: https://tu-app.com/pago/error
+                  save_card: true
+                  payer_reference: cliente-7719
+                  idempotency_key: plan-pro-7719
               checkout_usdt:
                 summary: Link de cobro universal — 50 USDT (multi-país, CL preseleccionado)
                 value:
@@ -3804,6 +3824,16 @@ paths:
                     reference: b41c9a70-1111-2222-3333-444455556666
                     payment_url: https://api.qbank.cl/pay/cards/9f3XkT2m…
                     expires_at: '2026-07-16T18:30:00Z'
+                    note: share the payment_url with the payer; the balance is credited automatically
+                      once the card payment is approved
+                card_international:
+                  summary: 'Página de pago con tarjeta (method: card, internacional USD)'
+                  value:
+                    payin_id: 3ab7c1d2-1111-2222-3333-444455556666
+                    status: pending
+                    reference: 3ab7c1d2-1111-2222-3333-444455556666
+                    payment_url: https://api.qbank.cl/pay/cards/Kt9XmQ7p…
+                    expires_at: '2026-07-26T18:30:00Z'
                     note: share the payment_url with the payer; the balance is credited automatically
                       once the card payment is approved
                 checkout:

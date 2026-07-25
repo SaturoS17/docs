@@ -8,6 +8,28 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+## v2.09 - July 25, 2026
+
+### v2.09
+
+**Added**
+
+- **International cards in US dollars** ([guide](https://docs.cbpayapp.com/en/guides/payins)):
+  `POST /v1/payins` with `country: "US"`, `currency: "USD"` and
+  `method: "card"` returns a hosted checkout `payment_url` with 3-D Secure
+  branded with your organization, to charge Visa, Mastercard, American
+  Express, Discover and Diners cards issued anywhere. The contract is the
+  same as the Bolivian card page (optional `customer`,
+  `success_url`/`failure_url`, `expires_at`, limited attempts and an
+  idempotent retry returning the same URL), and so is card storage:
+  `save_card` plus `payer_reference` store the card with the payer's consent
+  for [later charges and subscriptions](https://docs.cbpayapp.com/en/guides/stored-cards-subscriptions).
+  3-D Secure runs inside the page (if the issuer asks for a challenge the
+  payer completes it right there) and card data is typed into the
+  processor's secure fields: it never touches your integration. The corridor
+  is enabled per account — `GET /v1/payins/methods` is the source of truth
+  for what you can collect today.
+
 ## v2.08 · 6 releases - July 24, 2026
 
 ### v2.08

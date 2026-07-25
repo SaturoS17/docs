@@ -65,6 +65,7 @@ Corredores y modalidades de cobro:
 | Paraguay | PYG | Transferencia anunciada |
 | Brasil | BRL | QR PIX dinámico |
 | Argentina | ARS | Cuenta CVU dedicada |
+| Estados Unidos | USD | Página de pago con tarjeta internacional (`card`) |
 
 La disponibilidad puede variar; el catálogo (`GET /v1/payins/methods`) es
 siempre la fuente de verdad. En todos los casos el abono llega igual: se
@@ -527,6 +528,65 @@ tus cuentas con `GET /v1/payins/deposit-accounts`.
 La CVU opera **solo en ARS** y es de depósito (receive-only): ningún
 tercero puede debitarla. Los intentos de débito directo (DEBIN) contra
 una CVU de depósito se rechazan automáticamente.
+#### Estados Unidos
+
+**Página de pago con tarjeta internacional (`card`)**: cobra en dólares con
+tarjetas Visa, Mastercard, American Express, Discover y Diners emitidas en
+cualquier país. Recibes una `payment_url` de un checkout hosted con 3-D
+Secure y la marca de tu organización; los datos de la tarjeta se ingresan en
+campos seguros del procesador embebidos en esa página y **nunca pasan por tu
+sistema ni por tu integración**.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "US",
+    "currency": "USD",
+    "method": "card",
+    "amount": "49.90",
+    "description": "Plan Pro",
+    "customer": { "email": "pagador@ejemplo.com", "first_name": "Ana", "last_name": "Rojas" },
+    "success_url": "https://tu-app.com/pago/ok",
+    "failure_url": "https://tu-app.com/pago/error",
+    "save_card": true,
+    "payer_reference": "cliente-7719",
+    "idempotency_key": "plan-pro-7719"
+  }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "payin_id": "3ab7…",
+  "status": "pending",
+  "reference": "3ab7…",
+  "payment_url": "https://api.qbank.cl/pay/cards/Kt9XmQ…",
+  "expires_at": "2026-07-26T18:30:00Z",
+  "note": "share the payment_url with the payer; the balance is credited automatically once the card payment is approved"
+}
+```
+
+El contrato es el **mismo** que el de la página de tarjeta de Bolivia
+(`customer` opcional, `success_url`/`failure_url`, `expires_at`, intentos
+limitados, retry idempotente devuelve la misma `payment_url`). Diferencias
+propias del corredor internacional:
+
+- El 3-D Secure lo ejecuta el procesador dentro de la página: si el emisor
+  pide desafío, el pagador lo completa ahí mismo sin salir del checkout.
+- La mayoría de los cargos se aprueba en línea; si el emisor deja el cargo
+  en verificación, el abono se acredita en cuanto el rail lo confirma —
+  recibes `payin_credited` igual, solo con unos minutos de diferencia.
+- `save_card: true` + `payer_reference` guardan la tarjeta con el
+  consentimiento del pagador para cobros posteriores (ver
+  [tarjetas guardadas y suscripciones](https://docs.cbpayapp.com/es/guias/stored-cards-subscriptions)).
+
+> **Nota**
+El corredor de tarjetas internacionales se habilita por cuenta. Consulta
+`GET /v1/payins/methods` — es la fuente de verdad de lo que tu cuenta
+puede cobrar hoy.
 ## Link de cobro universal (`checkout`)
 
 El link de cobro universal ahora tiene su propia guía, con el cotizador,

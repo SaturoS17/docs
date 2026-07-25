@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.08'
+  version: '2.09'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -3386,7 +3386,7 @@ paths:
       description: '创建一笔法币充值。使用 `method: "qr"`(默认)会通过处理方生成主动 QR 收款——在玻利维亚为本地互通 QR,在巴西为动态 PIX QR,其 `charge`
         携带 QR 图片和 "copia e cola" 载荷。使用 `method: "bank_transfer"` 会预告存款,响应携带付款人必须附上的参考号,以便到账转账被自动匹配入账——一个
         12 位字母数字短码,适配任何银行附言字段(部分通道上限 20 个字符且不允许特殊字符)。使用 `method: "fintoc"`(智利)响应携带托管 `payment_url`:付款人打开后可从任意智利银行或钱包转账;存款会被自动检测、校验并入账。使用
-        `method: "card"`(玻利维亚)响应携带一个托管 3-D Secure 银行卡收银台的 `payment_url`,页面带有您组织的品牌 —— 银行卡数据绝不经过您的集成。使用
+        `method: "card"` 响应携带一个托管 3-D Secure 银行卡收银台的 `payment_url`,页面带有您组织的品牌 —— 支持玻利维亚(BOB)与以美元结算的国际银行卡(`country: "US"`;任意国家发行的 Visa、Mastercard、American Express、Discover 与 Diners);银行卡数据绝不经过您的集成。使用
         `method: "checkout"` 响应携带一个公开的 `checkout_url` —— 以您选择的虚拟余额计价的通用收款链接(`settlement_asset`:USDT、USDC、BTC
         或 GOLD)。付款人可选择任何有可用 payin 走廊的国家(本地金额实时报价)、四个加密货币选项之一(带可扫描二维码的专属充值地址),或通过商户的
         CBPay 二维码/别名从 CBPay 应用即时付款;每笔付款自动兑换为结算资产(以相同资产付款则不兑换)。最先完成支付的方式生效。创建收款免费;存款入账时收取
@@ -3431,8 +3431,9 @@ paths:
                   - checkout
                   default: qr
                   description: 收款模式。`qr` 通过处理方创建主动 QR 收款;`bank_transfer` 预告一笔入账存款并返回需附在转账附言中的参考号;`fintoc`(仅智利)返回托管
-                    `payment_url`,付款人可从任意智利银行或钱包转账,存款自动检测;`card`(玻利维亚)返回托管 3-D Secure
-                    银行卡收银台的 `payment_url`;`checkout` 返回一个公开的 `checkout_url`,付款人在页面上自行选择支付方式(QR、银行卡、银行转账或加密货币)。pull
+                    `payment_url`,付款人可从任意智利银行或钱包转账,存款自动检测;`card` 返回托管 3-D Secure 银行卡收银台的 `payment_url`
+                    (玻利维亚用 BOB,或当 `country` 为 `US` 时收取以美元结算的国际银行卡);`checkout`
+                    返回一个公开的 `checkout_url`,付款人在页面上自行选择支付方式(QR、银行卡、银行转账或加密货币)。pull
                     收款请使用 /v1/payins/collect。
                 idempotency_key:
                   type: string
@@ -3535,6 +3536,23 @@ paths:
                   success_url: https://your-app.com/payment/ok
                   failure_url: https://your-app.com/payment/error
                   idempotency_key: topup-7719
+              us_card:
+                summary: 国际银行卡 — 3-D Secure 收银台(US/USD)
+                value:
+                  country: US
+                  currency: USD
+                  method: card
+                  amount: '49.90'
+                  description: Pro plan
+                  customer:
+                    email: payer@example.com
+                    first_name: Ana
+                    last_name: Rojas
+                  success_url: https://your-app.com/payment/ok
+                  failure_url: https://your-app.com/payment/error
+                  save_card: true
+                  payer_reference: customer-7719
+                  idempotency_key: pro-plan-7719
               checkout_usdt:
                 summary: 通用收款链接 — 50 USDT(多国,预选智利)
                 value:
@@ -3609,6 +3627,16 @@ paths:
                     reference: b41c9a70-1111-2222-3333-444455556666
                     payment_url: https://api.qbank.cl/pay/cards/9f3XkT2m…
                     expires_at: '2026-07-16T18:30:00Z'
+                    note: share the payment_url with the payer; the balance is credited automatically
+                      once the card payment is approved
+                card_international:
+                  summary: 银行卡支付页(方式:card,国际美元)
+                  value:
+                    payin_id: 3ab7c1d2-1111-2222-3333-444455556666
+                    status: pending
+                    reference: 3ab7c1d2-1111-2222-3333-444455556666
+                    payment_url: https://api.qbank.cl/pay/cards/Kt9XmQ7p…
+                    expires_at: '2026-07-26T18:30:00Z'
                     note: share the payment_url with the payer; the balance is credited automatically
                       once the card payment is approved
                 checkout:

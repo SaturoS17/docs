@@ -62,6 +62,7 @@ curl https://api.qbank.cl/platform/v1/payins/methods \
 | 巴拉圭 | PYG | 预告银行转账 |
 | 巴西 | BRL | 动态 PIX 二维码 |
 | 阿根廷 | ARS | 专属 CVU 账户 |
+| 美国 | USD | 国际银行卡支付页面（`card`） |
 
 可用性可能变化；目录（`GET /v1/payins/methods`）始终是唯一可信来源。
 在所有情况下入账方式相同：按您当前的 `payin_rate` 折算为 USDT，并在
@@ -520,6 +521,64 @@ curl -X POST https://api.qbank.cl/platform/v1/payins/deposit-accounts \
 <Note>
 CVU **仅支持 ARS**，且为存款专用（只收不付）：任何第三方都无法从中
 扣款。针对存款 CVU 的直接扣款尝试（DEBIN）会被自动拒绝。
+</Note>
+
+</Tab>
+<Tab title="美国">
+
+**国际银行卡支付页面（`card`）**：以美元收款，支持在任意国家发行的
+Visa、Mastercard、American Express、Discover 与 Diners 卡。您会收到一个
+带 3-D Secure 且使用您机构品牌的托管 checkout 的 `payment_url`；卡片
+数据在嵌入该页面的处理方安全字段中录入，**绝不经过您的系统或您的
+集成**。
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "US",
+    "currency": "USD",
+    "method": "card",
+    "amount": "49.90",
+    "description": "Pro 套餐",
+    "customer": { "email": "payer@example.com", "first_name": "Ana", "last_name": "Rojas" },
+    "success_url": "https://your-app.com/payment/ok",
+    "failure_url": "https://your-app.com/payment/error",
+    "save_card": true,
+    "payer_reference": "customer-7719",
+    "idempotency_key": "pro-plan-7719"
+  }'
+```
+
+响应 `201`：
+
+```json
+{
+  "payin_id": "3ab7…",
+  "status": "pending",
+  "reference": "3ab7…",
+  "payment_url": "https://api.qbank.cl/pay/cards/Kt9XmQ…",
+  "expires_at": "2026-07-26T18:30:00Z",
+  "note": "share the payment_url with the payer; the balance is credited automatically once the card payment is approved"
+}
+```
+
+契约与玻利维亚的银行卡页面**完全相同**（`customer` 可选、
+`success_url`/`failure_url`、`expires_at`、尝试次数受限，幂等重试返回
+同一个 `payment_url`）。国际通道特有之处：
+
+- 3-D Secure 在页面内完成：如果发卡行要求挑战验证，付款人可在
+  checkout 内直接完成，无需离开页面。
+- 大多数交易在线获批；如果发卡行将交易置于审核状态，一旦通道确认即
+  自动入账 —— 您仍会收到 `payin_credited`，只是延迟数分钟。
+- `save_card: true` 配合 `payer_reference` 会在获得付款人同意后保存卡片
+  以便后续收款（参见
+  [已保存卡片与订阅](/zh/guides/stored-cards-subscriptions)）。
+
+<Note>
+国际银行卡通道按账户开通。请查询 `GET /v1/payins/methods` —— 它是您账户
+当前可收款方式的唯一可信来源。
 </Note>
 
 </Tab>
