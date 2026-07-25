@@ -601,6 +601,13 @@ su propia guía:
 
 - **Tarjetas guardadas y suscripciones** - Guarda tarjetas con consentimiento del pagador, cóbralas con un clic o sin el pagador presente, y agenda suscripciones recurrentes.
 
+## Devoluciones (tarjeta)
+
+Un cobro con tarjeta ya acreditado se devuelve total o parcialmente desde tu
+saldo, con su asiento en la cartola, comprobante y webhook:
+
+- **Devoluciones de cobros** - Devuelve total o parcialmente un cobro con tarjeta, anula un cargo del día y entiende cómo se aplica un contracargo.
+
 ## 3. Recibe el abono
 
 Cuando el pago llega (por cualquiera de las modalidades), tu cuenta se

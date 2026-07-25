@@ -169,6 +169,10 @@ description: "错误格式与完整的错误码目录"
 | 422 | `stored_card_corridor_mismatch` | 该[已保存卡片](/zh/guides/stored-cards-subscriptions)属于与本次收款不同的国家/货币走廊 |
 | 409 | `subscription_state` | 该[订阅](/zh/guides/stored-cards-subscriptions)当前状态不允许该操作（例如暂停已取消的计划） |
 | 409 | `email_required` | 该登录没有真实邮箱；请通过 `POST /v1/me/email/change` 设置 |
+| 422 | `payin_not_refundable` | 该收款未入账或没有处理机构凭证，无法[退款](/zh/guides/refunds) |
+| 422 | `refund_not_supported` | 该通道不支持[退款](/zh/guides/refunds)（QR、报备转账、专属账户、代扣）。POS 收款通过加密通道退款 |
+| 422 | `refund_exceeds_payin` | [退款](/zh/guides/refunds)超过该收款的剩余可退金额；余额未变动 |
+| 400 | `invalid_amount` | [退款](/zh/guides/refunds)的 `amount` 必须是以收款币种表示的正十进制数 |
 
 ### 合规（403 / 503）
 

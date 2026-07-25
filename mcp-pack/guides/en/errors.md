@@ -170,6 +170,10 @@ Full flow and details in [social login](https://docs.cbpayapp.com/en/guides/soci
 | 422 | `stored_card_corridor_mismatch` | The [saved card](https://docs.cbpayapp.com/en/guides/stored-cards-subscriptions) belongs to a different country/currency corridor than the charge |
 | 409 | `subscription_state` | The [subscription](https://docs.cbpayapp.com/en/guides/stored-cards-subscriptions) is not in a state that allows that action (e.g. pausing a canceled plan) |
 | 409 | `email_required` | The login has no real email address; set one with `POST /v1/me/email/change` |
+| 422 | `payin_not_refundable` | The payin is not credited or has no processor credential; it cannot be [refunded](https://docs.cbpayapp.com/en/guides/refunds) |
+| 422 | `refund_not_supported` | That rail does not support [refunds](https://docs.cbpayapp.com/en/guides/refunds) (QR, announced transfer, dedicated account, collect). POS charges are refunded through the crypto rail |
+| 422 | `refund_exceeds_payin` | The [refund](https://docs.cbpayapp.com/en/guides/refunds) exceeds what is left to refund on the payin; your balance was not touched |
+| 400 | `invalid_amount` | The [refund](https://docs.cbpayapp.com/en/guides/refunds) `amount` must be a positive decimal in the payin currency |
 
 ### Compliance (403 / 503)
 

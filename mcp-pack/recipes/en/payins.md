@@ -602,6 +602,13 @@ guide:
 
 - **Stored cards & subscriptions** - Save cards with the payer's consent, charge them one-click or without the payer present, and schedule recurring subscriptions.
 
+## Refunds (card)
+
+A credited card payin can be refunded in full or in part from your balance,
+with its own ledger entry, receipt and webhook:
+
+- **Payin refunds** - Refund a card payin fully or partially, void a same-day charge, and understand how a chargeback is applied.
+
 ## 3. Receiving the credit
 
 When the payment arrives (through any of the modes), your account is

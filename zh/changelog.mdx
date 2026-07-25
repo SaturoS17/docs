@@ -7,7 +7,32 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-<Update label="2026年7月25日" description="v2.10 · 2 个版本">
+<Update label="2026年7月25日" description="v2.11 · 3 个版本">
+
+### v2.11
+
+**新增**
+
+- **卡收款退款**（[指南](/zh/guides/refunds)）：`POST /v1/payins/{payinID}/refunds`
+  可对卡收款进行全额或部分退款，并立即从你的余额中扣除相应金额。退款必须携带幂等键
+  （使用相同幂等键重试永远不会重复退款），使用会话发起时还需要 OTP 验证码。
+  `GET /v1/payin-refunds` 按账户、状态、类型和日期范围列出退款，
+  `GET /v1/payin-refunds/{id}` 返回详情，
+  `GET /v1/payin-refunds/{id}/receipt` 生成带可校验编码的 PDF 凭证。
+- **收款上的退款状态**：已退款的 payin 会返回 `refund_status`（`partial` 或
+  `full`）、`refunded_amount`（累计扣除的 USDT）与 `refunded_local`
+  （累计退还给持卡人的金额）。
+- **`payin_refunded` webhook**（[webhooks](/zh/webhooks)）：每一笔退款、撤销
+  和拒付都会通知其类型、状态、金额以及结果余额。
+
+**变更**
+
+- **手续费与汇率价差不予退还**：退款时按已入账的毛额扣除，我们为处理该笔支付所收取
+  的费用保持不变。发卡行通知的拒付会自动执行，并可能使你的余额变为负数，直到你完成
+  充值。
+- **新增错误码**（[错误](/zh/errors)）：`payin_not_refundable`、
+  `refund_not_supported`、`refund_exceeds_payin` 与 `invalid_amount`。
+
 
 ### v2.10
 

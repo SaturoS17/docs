@@ -8,7 +8,36 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.10 · 2 releases - July 25, 2026
+## v2.11 · 3 releases - July 25, 2026
+
+### v2.11
+
+**Added**
+
+- **Card payin refunds** ([guide](https://docs.cbpayapp.com/en/guides/refunds)):
+  `POST /v1/payins/{payinID}/refunds` refunds a card payin in full or in part
+  and debits the amount from your balance right away. Refunds require an
+  idempotency key (retrying with the same key never refunds twice) and an OTP
+  code when requested with your session. `GET /v1/payin-refunds` lists your
+  refunds with filters by account, status, kind and date range,
+  `GET /v1/payin-refunds/{id}` returns the detail and
+  `GET /v1/payin-refunds/{id}/receipt` generates the PDF receipt with a
+  verifiable code.
+- **Refund state on the payin**: refunded payins expose `refund_status`
+  (`partial` or `full`), `refunded_amount` (accumulated USDT debited) and
+  `refunded_local` (accumulated amount returned to the cardholder).
+- **`payin_refunded` webhook** ([webhooks](https://docs.cbpayapp.com/en/webhooks)): notifies every
+  refund, void and chargeback with its kind, status, amounts and the
+  resulting balance.
+
+**Changed**
+
+- **Fees and FX margin are not refunded**: refunding a payin debits the gross
+  amount credited; what we charged to process the payment stays. A chargeback
+  notified by the issuer is applied automatically and may leave your balance
+  negative until you fund it.
+- **New error codes** ([errors](https://docs.cbpayapp.com/en/errors)): `payin_not_refundable`,
+  `refund_not_supported`, `refund_exceeds_payin` and `invalid_amount`.
 
 ### v2.10
 

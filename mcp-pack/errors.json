@@ -1,5 +1,5 @@
 {
-  "count": 154,
+  "count": 157,
   "errors": [
     {
       "category": {
@@ -1847,6 +1847,48 @@
         "en": "The login has no real email address; set one with `POST /v1/me/email/change`",
         "es": "El login no tiene un email real; configura uno con `POST /v1/me/email/change`",
         "zh": "该登录没有真实邮箱；请通过 `POST /v1/me/email/change` 设置"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "payin_not_refundable",
+      "http": 422,
+      "meaning": {
+        "en": "The payin is not credited or has no processor credential; it cannot be refunded",
+        "es": "El cobro no está acreditado o no tiene credencial del procesador; no se puede devolver",
+        "zh": "该收款未入账或没有处理机构凭证，无法退款"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "refund_not_supported",
+      "http": 422,
+      "meaning": {
+        "en": "That rail does not support refunds (QR, announced transfer, dedicated account, collect). POS charges are refunded through the crypto rail",
+        "es": "Ese rail no admite devoluciones (QR, transferencia anunciada, cuenta dedicada, collect). Los cobros POS se devuelven por el riel crypto",
+        "zh": "该通道不支持退款（QR、报备转账、专属账户、代扣）。POS 收款通过加密通道退款"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "refund_exceeds_payin",
+      "http": 422,
+      "meaning": {
+        "en": "The refund exceeds what is left to refund on the payin; your balance was not touched",
+        "es": "La devolución supera lo que queda por devolver del cobro; tu saldo no se tocó",
+        "zh": "退款超过该收款的剩余可退金额；余额未变动"
       }
     },
     {

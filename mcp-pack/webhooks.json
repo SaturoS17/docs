@@ -1,5 +1,5 @@
 {
-  "count": 29,
+  "count": 30,
   "events": [
     {
       "description": {
@@ -435,6 +435,36 @@
         "en": "Payin expired",
         "es": "Payin expirado",
         "zh": "payin 已过期"
+      }
+    },
+    {
+      "description": {
+        "en": "A refund of a card payin reached a final state, or the issuer imposed a chargeback. `status: completed` means the money went back to the cardholder and the debit is settled on your balance; `status: failed` means the processor declined it and the debit was reversed in full. A `kind: chargeback` is booked automatically and can leave `balance_after` negative (a debt netted against future credits).\n\nEvery delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Respond 2xx; up to 5 attempts with incremental backoff.",
+        "es": "Una devolución de un cobro con tarjeta alcanzó su estado final, o el emisor impuso un contracargo. `status: completed` significa que la plata volvió al tarjetahabiente y el débito quedó liquidado en tu saldo; `status: failed` significa que el procesador la rechazó y el débito se revirtió completo. Un `kind: chargeback` se asienta automático y puede dejar `balance_after` negativo (deuda que se netea contra abonos futuros).\n\nCada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` y `X-Webhook-Signature = hex(HMAC-SHA256(secreto, timestamp + \".\" + cuerpo))`. Responde 2xx; hasta 5 intentos con backoff incremental.",
+        "zh": "一笔卡收款的退款已到达最终状态，或发卡机构发起了拒付。`status: completed` 表示资金已退回持卡人， 扣款已在你的余额上完成结算；`status: failed` 表示处理方拒绝了该退款，扣款已全额冲回。`kind: chargeback` 会自动记账，并可能使 `balance_after` 为负（与未来入账相抵的欠款）。\n\n每次投递都包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`。请返回 2xx； 最多重试 5 次，采用递增退避。"
+      },
+      "event": "payin_refunded",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "balance_after": "850.000000",
+        "created_at": "2026-07-25T13:10:00Z",
+        "currency": "USD",
+        "event_type": "payin_refunded",
+        "idempotency_key": "refund-order-8842",
+        "kind": "refund",
+        "local_amount": "150.00",
+        "payin_id": "d0135ed5-8e9c-4f8b-a522-8ec100470426",
+        "receipt_url": "https://api.qbank.cl/platform/v1/payin-refunds/6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c/receipt",
+        "refund_id": "6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c",
+        "requested_by": "account",
+        "status": "completed",
+        "updated_at": "2026-07-25T13:10:03Z",
+        "usdt_debited": "150.000000"
+      },
+      "summary": {
+        "en": "Payin refunded",
+        "es": "Cobro devuelto",
+        "zh": "收款已退款"
       }
     },
     {

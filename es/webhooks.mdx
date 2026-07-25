@@ -73,6 +73,7 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 |---|---|
 | `payin_credited` | Un cobro fiat fue recibido y abonado |
 | `payin_expired` | Un cobro activo (QR / checkout) venció o falló sin recibir el pago |
+| `payin_refunded` | Una [devolución](/es/guias/devoluciones) de un cobro con tarjeta llegó a estado final (incluye el contracargo impuesto por el emisor) |
 | `payout_status_changed` | Un payout cambió de estado |
 | `transfer_received` | La cuenta recibió una transferencia interna |
 | `crypto_deposit_credited` | Un depósito on-chain fue confirmado y abonado |
@@ -124,6 +125,20 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
   "currency": "BOB",
   "local_amount": "60.99",
   "reference": "CBK7Q2M4XZ9P"
+}
+```
+
+```json payin_refunded
+{
+  "refund_id": "3a7d…",
+  "payin_id": "9f1c…",
+  "account_id": "c57f…",
+  "kind": "refund",
+  "status": "completed",
+  "currency": "USD",
+  "local_amount": "40.00",
+  "usdt_debited": "40.000000",
+  "receipt_url": "https://api.qbank.cl/platform/v1/payin-refunds/3a7d…/receipt"
 }
 ```
 

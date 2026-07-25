@@ -9,7 +9,37 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-## v2.10 · 2 versiones - 25 de julio de 2026
+## v2.11 · 3 versiones - 25 de julio de 2026
+
+### v2.11
+
+**Agregado**
+
+- **Devoluciones de cobros con tarjeta**
+  ([guía](https://docs.cbpayapp.com/es/guias/devoluciones)): `POST /v1/payins/{payinID}/refunds`
+  devuelve un cobro con tarjeta completo o parcial y descuenta el monto de tu
+  saldo en el momento. La devolución exige clave de idempotencia (el reintento
+  con la misma clave nunca devuelve dos veces) y código OTP cuando la pides
+  con tu sesión. `GET /v1/payin-refunds` lista tus devoluciones con filtros
+  por cuenta, estado, tipo y rango de fechas, `GET /v1/payin-refunds/{id}`
+  trae el detalle y `GET /v1/payin-refunds/{id}/receipt` genera el
+  comprobante PDF con código verificable.
+- **Estado de devolución en el cobro**: los payins devueltos exponen
+  `refund_status` (`partial` o `full`), `refunded_amount` (USDT acumulado
+  descontado) y `refunded_local` (monto acumulado devuelto al tarjetahabiente).
+- **Webhook `payin_refunded`** ([webhooks](https://docs.cbpayapp.com/es/webhooks)): notifica cada
+  devolución, anulación y contracargo con su tipo, estado, montos y el saldo
+  resultante.
+
+**Cambiado**
+
+- **La comisión y el margen de tasa no se reembolsan**: al devolver un cobro
+  se descuenta el bruto acreditado; lo que cobramos por procesar el pago se
+  mantiene. Un contracargo notificado por el emisor se aplica automático y
+  puede dejar tu saldo en negativo hasta que lo fondees.
+- **Códigos de error nuevos** ([errores](https://docs.cbpayapp.com/es/errores)):
+  `payin_not_refundable`, `refund_not_supported`, `refund_exceeds_payin` e
+  `invalid_amount`.
 
 ### v2.10
 

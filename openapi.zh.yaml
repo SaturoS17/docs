@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.10'
+  version: '2.11'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -3794,6 +3794,352 @@ paths:
               schema:
                 $ref: '#/components/schemas/Payin'
               example: *id006
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/payins/{payinID}/refunds:
+    parameters:
+    - name: payinID
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    post:
+      tags:
+      - Payins
+      operationId: createPayinRefund
+      summary: 退款一笔卡片收款
+      description: >-
+        将资金退还给持卡人，并冲销你余额中的入账。仅支持状态为 `credited` 的卡片收款
+        （其他通道返回 `refund_not_supported`）。按毛额扣款：原收款的手续费与汇率点差
+        不可退还。`idempotency_key` 为必填；重放会返回同一笔退款并带 `idempotency_hit`，
+        绝不会向处理方发送第二次退款。调用方为会话时需要 OTP（API key 豁免）。
+      parameters:
+      - name: X-OTP-Token
+        in: header
+        required: false
+        schema:
+          type: string
+        description: 一次性 OTP 令牌（见 OTP 指南）。仅适用于会话调用方。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - idempotency_key
+              properties:
+                amount:
+                  type: string
+                  description: 以原始本地货币计价的金额。省略则退还剩余可退金额的全部。
+                kind:
+                  type: string
+                  enum:
+                  - refund
+                  - void
+                  description: '`refund`（默认）退还已清算的交易；`void` 撤销尚未清算的交易。'
+                reason:
+                  type: string
+                idempotency_key:
+                  type: string
+            example:
+              amount: '150.00'
+              kind: refund
+              reason: customer request
+              idempotency_key: refund-order-8842
+      responses:
+        '200':
+          description: 相同幂等键的重放 —— 返回同一笔退款，并带 `idempotency_hit`。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayinRefund'
+              example:
+                refund_id: 6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c
+                payin_id: d0135ed5-8e9c-4f8b-a522-8ec100470426
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                kind: refund
+                status: completed
+                currency: USD
+                local_amount: '150.00'
+                usdt_debited: '150.000000'
+                requested_by: account
+                idempotency_key: refund-order-8842
+                reason: customer request
+                idempotency_hit: true
+                receipt_url: https://api.qbank.cl/platform/v1/payin-refunds/6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c/receipt
+                created_at: '2026-07-25T13:10:00Z'
+                updated_at: '2026-07-25T13:10:03Z'
+        '201':
+          description: 退款已创建并获处理方批准，余额已扣款。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayinRefund'
+              example:
+                refund_id: 6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c
+                payin_id: d0135ed5-8e9c-4f8b-a522-8ec100470426
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                kind: refund
+                status: completed
+                currency: USD
+                local_amount: '150.00'
+                usdt_debited: '150.000000'
+                requested_by: account
+                idempotency_key: refund-order-8842
+                reason: customer request
+                receipt_url: https://api.qbank.cl/platform/v1/payin-refunds/6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c/receipt
+                created_at: '2026-07-25T13:10:00Z'
+                updated_at: '2026-07-25T13:10:03Z'
+        '202':
+          description: >-
+            结果不确定的下发：处理方可能已经退款。退款保持 `pending`，你的余额继续被冻结，
+            由对账流程解决。我们绝不自行重试 —— 使用相同的 `idempotency_key` 重试，
+            会拿回同一笔退款。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayinRefund'
+              example:
+                refund_id: 6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c
+                payin_id: d0135ed5-8e9c-4f8b-a522-8ec100470426
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                kind: refund
+                status: pending
+                currency: USD
+                local_amount: '150.00'
+                usdt_debited: '150.000000'
+                requested_by: account
+                idempotency_key: refund-order-8842
+                reconciliation_required: true
+                receipt_url: https://api.qbank.cl/platform/v1/payin-refunds/6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c/receipt
+                created_at: '2026-07-25T13:10:00Z'
+                updated_at: '2026-07-25T13:10:00Z'
+        '400':
+          description: '`idempotency_key_required` 或 `invalid_amount` / `invalid_payload`。'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: idempotency_key_required
+                message: idempotency_key is required
+        '402':
+          description: '`insufficient_funds` —— 请先充值余额，再用相同的 `idempotency_key` 重试。'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: insufficient_funds
+                message: the account balance is not enough to fund this refund; top up and retry with the same idempotency_key
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: '`idempotency_conflict` —— 另一笔使用该键的退款正在进行中。'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: idempotency_conflict
+                message: another refund with this key is in flight
+        '422':
+          description: >-
+            `payin_not_refundable`、`refund_not_supported`、`refund_exceeds_payin`，
+            或处理方拒绝的退款（响应体即该退款，`status: failed` 并带 `failure_reason`；
+            扣款已全额冲回）。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: refund_exceeds_payin
+                message: the requested amount exceeds what is left to refund on this payin
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags:
+      - Payins
+      operationId: listPayinRefundsByPayin
+      summary: 列出某笔收款的退款
+      parameters:
+      - name: from
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: page
+        in: query
+        schema:
+          type: integer
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: 退款分页。
+          content:
+            application/json:
+              schema:
+                type: object
+              example: &id_payin_refunds_page
+                page: 1
+                page_size: 50
+                refunds:
+                - refund_id: 6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c
+                  payin_id: d0135ed5-8e9c-4f8b-a522-8ec100470426
+                  account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                  kind: refund
+                  status: completed
+                  currency: USD
+                  local_amount: '150.00'
+                  usdt_debited: '150.000000'
+                  requested_by: account
+                  idempotency_key: refund-order-8842
+                  receipt_url: https://api.qbank.cl/platform/v1/payin-refunds/6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c/receipt
+                  created_at: '2026-07-25T13:10:00Z'
+                  updated_at: '2026-07-25T13:10:03Z'
+        '400':
+          $ref: '#/components/responses/InvalidRange'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/payin-refunds:
+    get:
+      tags:
+      - Payins
+      operationId: listPayinRefunds
+      summary: 列出退款
+      description: 账户的全部退款。可按 `payin_id`、`status`（`pending` | `completed` | `failed`）与 `kind`（`refund` | `void` | `chargeback`）筛选。
+      parameters:
+      - name: from
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: payin_id
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - pending
+          - completed
+          - failed
+      - name: kind
+        in: query
+        schema:
+          type: string
+          enum:
+          - refund
+          - void
+          - chargeback
+      - name: page
+        in: query
+        schema:
+          type: integer
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: 退款分页。
+          content:
+            application/json:
+              schema:
+                type: object
+              example: *id_payin_refunds_page
+        '400':
+          $ref: '#/components/responses/InvalidRange'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/payin-refunds/{refundID}:
+    get:
+      tags:
+      - Payins
+      operationId: getPayinRefund
+      summary: 查询一笔退款
+      parameters:
+      - name: refundID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: 该退款。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayinRefund'
+              example:
+                refund_id: 6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c
+                payin_id: d0135ed5-8e9c-4f8b-a522-8ec100470426
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                kind: chargeback
+                status: completed
+                currency: USD
+                local_amount: '150.00'
+                usdt_debited: '150.000000'
+                requested_by: issuer
+                receipt_url: https://api.qbank.cl/platform/v1/payin-refunds/6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c/receipt
+                created_at: '2026-07-25T13:10:00Z'
+                updated_at: '2026-07-25T13:10:03Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/payin-refunds/{refundID}/receipt:
+    get:
+      tags:
+      - Payins
+      operationId: getPayinRefundReceipt
+      summary: 退款凭证（PDF）
+      description: 带公开验证码的品牌化 PDF 凭证。使用 `?lang=es|en`。
+      parameters:
+      - name: refundID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: lang
+        in: query
+        schema:
+          type: string
+          enum:
+          - es
+          - en
+      responses:
+        '200':
+          description: PDF 凭证。
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
@@ -7934,6 +8280,7 @@ paths:
                   enum:
                   - payin_credited
                   - payin_expired
+                  - payin_refunded
                   - payout_status_changed
                   - transfer_received
                   - crypto_deposit_credited
@@ -15138,6 +15485,18 @@ components:
           type: string
           description: 入账到余额的金额。以加密货币或 CBPay 转账结算的 checkout/POS 收款即使没有 `fx_rate`
             也会返回该字段（不适用外汇报价）。
+        refund_status:
+          type: string
+          enum:
+          - partial
+          - full
+          description: 仅当该收款存在退款或拒付时出现。由累计金额推导 —— 收款的 `status` 永不重写。
+        refunded_amount:
+          type: string
+          description: 该收款因退款与拒付累计扣除的 USDT。
+        refunded_local:
+          type: string
+          description: 以原始本地货币累计退还的金额。
         failure:
           type: object
           description: '仅当主动收款的 payin 为 `failed` 时出现：拒绝来源（`provider` = 付款人的银行，`core` = 扣款前校验）以及具体的代码和消息。'
@@ -15148,6 +15507,68 @@ components:
               type: string
             message:
               type: string
+    PayinRefund:
+      type: object
+      properties:
+        refund_id:
+          type: string
+          format: uuid
+        payin_id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+          - refund
+          - void
+          - chargeback
+          description: '`chargeback` 由发卡机构强制发起 —— 会自动记账，并可能使余额变为负数。'
+        status:
+          type: string
+          enum:
+          - pending
+          - completed
+          - failed
+        currency:
+          type: string
+          description: 原始收款的货币。
+        local_amount:
+          type: string
+        usdt_debited:
+          type: string
+          description: 从 USDT 余额中扣除的金额。原收款的手续费与汇率点差不予退还。
+        requested_by:
+          type: string
+          enum:
+          - account
+          - admin
+          - issuer
+        reason:
+          type: string
+        failure_reason:
+          type: string
+          description: 当 `status` 为 `failed` 时出现 —— 扣款已全额冲回。
+        idempotency_key:
+          type: string
+        idempotency_hit:
+          type: boolean
+        reconciliation_required:
+          type: boolean
+          description: 退款处于 `pending` 期间出现 —— 结果由对账流程解决，绝不会重新下发。
+        balance_after:
+          type: string
+          description: 出现在 `payin_refunded` webhook 中 —— 该笔变动后的 USDT 余额（拒付时可能为负）。
+        receipt_url:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
     Transfer:
       type: object
       properties:
@@ -15521,6 +15942,41 @@ webhooks:
               currency: BOB
               local_amount: '60.99'
               reference: CBK7Q2M4XZ9P
+      responses:
+        '200':
+          description: 返回任意 2xx 以确认投递。
+  payin_refunded:
+    post:
+      summary: 收款已退款
+      description: '一笔卡收款的退款已到达最终状态，或发卡机构发起了拒付。`status: completed` 表示资金已退回持卡人，
+        扣款已在你的余额上完成结算；`status: failed` 表示处理方拒绝了该退款，扣款已全额冲回。`kind: chargeback`
+        会自动记账，并可能使 `balance_after` 为负（与未来入账相抵的欠款）。
+
+
+        每次投递都包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp`
+        和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。请返回 2xx；
+        最多重试 5 次，采用递增退避。'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PayinRefund'
+            example:
+              event_type: payin_refunded
+              refund_id: 6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c
+              payin_id: d0135ed5-8e9c-4f8b-a522-8ec100470426
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              kind: refund
+              status: completed
+              currency: USD
+              local_amount: '150.00'
+              usdt_debited: '150.000000'
+              balance_after: '850.000000'
+              requested_by: account
+              idempotency_key: refund-order-8842
+              receipt_url: https://api.qbank.cl/platform/v1/payin-refunds/6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c/receipt
+              created_at: '2026-07-25T13:10:00Z'
+              updated_at: '2026-07-25T13:10:03Z'
       responses:
         '200':
           description: 返回任意 2xx 以确认投递。

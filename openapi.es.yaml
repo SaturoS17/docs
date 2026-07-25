@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.10'
+  version: '2.11'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -3992,6 +3992,356 @@ paths:
               schema:
                 $ref: '#/components/schemas/Payin'
               example: *id006
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/payins/{payinID}/refunds:
+    parameters:
+    - name: payinID
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    post:
+      tags:
+      - Payins
+      operationId: createPayinRefund
+      summary: Devolver un cobro con tarjeta
+      description: >-
+        Devuelve la plata al tarjetahabiente y reversa el abono en tu saldo. Solo
+        se devuelven cobros con tarjeta en estado `credited` (`refund_not_supported`
+        en los demás rieles). Se debita el bruto: la comisión y el spread FX del
+        cobro original NO son reembolsables. La `idempotency_key` es obligatoria;
+        un reintento devuelve la MISMA devolución con `idempotency_hit` y jamás
+        manda una segunda devolución al procesador. Exige OTP cuando el llamante
+        es una sesión (las API keys están exentas).
+      parameters:
+      - name: X-OTP-Token
+        in: header
+        required: false
+        schema:
+          type: string
+        description: Token OTP de un solo uso (ver la guía de OTP). Solo para llamantes con sesión.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - idempotency_key
+              properties:
+                amount:
+                  type: string
+                  description: Monto en la moneda local original. Omítelo para devolver todo lo que queda por devolver.
+                kind:
+                  type: string
+                  enum:
+                  - refund
+                  - void
+                  description: '`refund` (default) devuelve un cargo ya liquidado; `void` anula uno que aún no liquida.'
+                reason:
+                  type: string
+                idempotency_key:
+                  type: string
+            example:
+              amount: '150.00'
+              kind: refund
+              reason: solicitud del cliente
+              idempotency_key: refund-order-8842
+      responses:
+        '200':
+          description: Reintento con la misma clave de idempotencia — la MISMA devolución, con `idempotency_hit`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayinRefund'
+              example:
+                refund_id: 6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c
+                payin_id: d0135ed5-8e9c-4f8b-a522-8ec100470426
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                kind: refund
+                status: completed
+                currency: USD
+                local_amount: '150.00'
+                usdt_debited: '150.000000'
+                requested_by: account
+                idempotency_key: refund-order-8842
+                reason: solicitud del cliente
+                idempotency_hit: true
+                receipt_url: https://api.qbank.cl/platform/v1/payin-refunds/6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c/receipt
+                created_at: '2026-07-25T13:10:00Z'
+                updated_at: '2026-07-25T13:10:03Z'
+        '201':
+          description: Devolución creada y aprobada por el procesador. El saldo quedó debitado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayinRefund'
+              example:
+                refund_id: 6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c
+                payin_id: d0135ed5-8e9c-4f8b-a522-8ec100470426
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                kind: refund
+                status: completed
+                currency: USD
+                local_amount: '150.00'
+                usdt_debited: '150.000000'
+                requested_by: account
+                idempotency_key: refund-order-8842
+                reason: solicitud del cliente
+                receipt_url: https://api.qbank.cl/platform/v1/payin-refunds/6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c/receipt
+                created_at: '2026-07-25T13:10:00Z'
+                updated_at: '2026-07-25T13:10:03Z'
+        '202':
+          description: >-
+            Despacho ambiguo: el procesador pudo haber devuelto. La devolución
+            queda `pending` con tu saldo reservado y se resuelve por conciliación.
+            NUNCA reintentamos por nuestra cuenta — reintenta con la MISMA
+            `idempotency_key` y recibirás esta misma devolución.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayinRefund'
+              example:
+                refund_id: 6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c
+                payin_id: d0135ed5-8e9c-4f8b-a522-8ec100470426
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                kind: refund
+                status: pending
+                currency: USD
+                local_amount: '150.00'
+                usdt_debited: '150.000000'
+                requested_by: account
+                idempotency_key: refund-order-8842
+                reconciliation_required: true
+                receipt_url: https://api.qbank.cl/platform/v1/payin-refunds/6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c/receipt
+                created_at: '2026-07-25T13:10:00Z'
+                updated_at: '2026-07-25T13:10:00Z'
+        '400':
+          description: '`idempotency_key_required` o `invalid_amount` / `invalid_payload`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: idempotency_key_required
+                message: idempotency_key is required
+        '402':
+          description: '`insufficient_funds` — fondea el saldo y reintenta con la misma `idempotency_key`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: insufficient_funds
+                message: the account balance is not enough to fund this refund; top up and retry with the same idempotency_key
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: '`idempotency_conflict` — otra devolución con esta clave está en vuelo.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: idempotency_conflict
+                message: another refund with this key is in flight
+        '422':
+          description: >-
+            `payin_not_refundable`, `refund_not_supported`, `refund_exceeds_payin`,
+            o una devolución que el procesador rechazó (el cuerpo es la devolución
+            con `status: failed` y `failure_reason`; el débito se reversó completo).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: refund_exceeds_payin
+                message: the requested amount exceeds what is left to refund on this payin
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags:
+      - Payins
+      operationId: listPayinRefundsByPayin
+      summary: Listar devoluciones de un cobro
+      parameters:
+      - name: from
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: page
+        in: query
+        schema:
+          type: integer
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Página de devoluciones.
+          content:
+            application/json:
+              schema:
+                type: object
+              example: &id_payin_refunds_page
+                page: 1
+                page_size: 50
+                refunds:
+                - refund_id: 6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c
+                  payin_id: d0135ed5-8e9c-4f8b-a522-8ec100470426
+                  account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                  kind: refund
+                  status: completed
+                  currency: USD
+                  local_amount: '150.00'
+                  usdt_debited: '150.000000'
+                  requested_by: account
+                  idempotency_key: refund-order-8842
+                  receipt_url: https://api.qbank.cl/platform/v1/payin-refunds/6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c/receipt
+                  created_at: '2026-07-25T13:10:00Z'
+                  updated_at: '2026-07-25T13:10:03Z'
+        '400':
+          $ref: '#/components/responses/InvalidRange'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/payin-refunds:
+    get:
+      tags:
+      - Payins
+      operationId: listPayinRefunds
+      summary: Listar devoluciones
+      description: Todas las devoluciones de la cuenta. Filtra por `payin_id`, `status` (`pending` | `completed` | `failed`) y `kind` (`refund` | `void` | `chargeback`).
+      parameters:
+      - name: from
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: payin_id
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - pending
+          - completed
+          - failed
+      - name: kind
+        in: query
+        schema:
+          type: string
+          enum:
+          - refund
+          - void
+          - chargeback
+      - name: page
+        in: query
+        schema:
+          type: integer
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Página de devoluciones.
+          content:
+            application/json:
+              schema:
+                type: object
+              example: *id_payin_refunds_page
+        '400':
+          $ref: '#/components/responses/InvalidRange'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/payin-refunds/{refundID}:
+    get:
+      tags:
+      - Payins
+      operationId: getPayinRefund
+      summary: Consultar una devolución
+      parameters:
+      - name: refundID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: La devolución.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayinRefund'
+              example:
+                refund_id: 6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c
+                payin_id: d0135ed5-8e9c-4f8b-a522-8ec100470426
+                account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                kind: chargeback
+                status: completed
+                currency: USD
+                local_amount: '150.00'
+                usdt_debited: '150.000000'
+                requested_by: issuer
+                receipt_url: https://api.qbank.cl/platform/v1/payin-refunds/6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c/receipt
+                created_at: '2026-07-25T13:10:00Z'
+                updated_at: '2026-07-25T13:10:03Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/payin-refunds/{refundID}/receipt:
+    get:
+      tags:
+      - Payins
+      operationId: getPayinRefundReceipt
+      summary: Comprobante de la devolución (PDF)
+      description: Comprobante PDF brandeado con código de verificación pública. Usa `?lang=es|en`.
+      parameters:
+      - name: refundID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: lang
+        in: query
+        schema:
+          type: string
+          enum:
+          - es
+          - en
+      responses:
+        '200':
+          description: Comprobante PDF.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
@@ -8228,6 +8578,7 @@ paths:
                   enum:
                   - payin_credited
                   - payin_expired
+                  - payin_refunded
                   - payout_status_changed
                   - transfer_received
                   - crypto_deposit_credited
@@ -15588,6 +15939,18 @@ components:
           type: string
           description: Monto abonado al saldo. También presente SIN `fx_rate` en cobros
             checkout/POS liquidados en crypto o vía transferencia CBPay (no aplica cotización FX).
+        refund_status:
+          type: string
+          enum:
+          - partial
+          - full
+          description: Presente solo cuando el payin tiene devoluciones o un contracargo. Se deriva de los montos acumulados — el `status` del payin nunca se reescribe.
+        refunded_amount:
+          type: string
+          description: USDT acumulado debitado por devoluciones y contracargos de este payin.
+        refunded_local:
+          type: string
+          description: Monto acumulado devuelto en la moneda local original.
         failure:
           type: object
           description: 'Presente solo cuando el payin queda `failed` en cobros activos: dónde se originó el rechazo (`provider` = el banco del pagador, `core` = la validación previa al cobro) más el código y mensaje concretos.'
@@ -15598,6 +15961,68 @@ components:
               type: string
             message:
               type: string
+    PayinRefund:
+      type: object
+      properties:
+        refund_id:
+          type: string
+          format: uuid
+        payin_id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+          - refund
+          - void
+          - chargeback
+          description: '`chargeback` lo impone el emisor de la tarjeta — se asienta automático y puede dejar el saldo negativo.'
+        status:
+          type: string
+          enum:
+          - pending
+          - completed
+          - failed
+        currency:
+          type: string
+          description: Moneda del payin original.
+        local_amount:
+          type: string
+        usdt_debited:
+          type: string
+          description: Monto debitado del saldo USDT. La comisión y el spread FX del payin original NO se devuelven.
+        requested_by:
+          type: string
+          enum:
+          - account
+          - admin
+          - issuer
+        reason:
+          type: string
+        failure_reason:
+          type: string
+          description: Presente cuando `status` es `failed` — el débito se revirtió completo.
+        idempotency_key:
+          type: string
+        idempotency_hit:
+          type: boolean
+        reconciliation_required:
+          type: boolean
+          description: Presente mientras la devolución está `pending` — el resultado lo resuelve la conciliación y jamás se re-despacha.
+        balance_after:
+          type: string
+          description: Presente en el webhook `payin_refunded` — el saldo USDT después del movimiento (puede ser negativo en un contracargo).
+        receipt_url:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
     Transfer:
       type: object
       properties:
@@ -15978,6 +16403,43 @@ webhooks:
               currency: BOB
               local_amount: '60.99'
               reference: CBK7Q2M4XZ9P
+      responses:
+        '200':
+          description: Devuelve cualquier 2xx para confirmar la entrega.
+  payin_refunded:
+    post:
+      summary: Cobro devuelto
+      description: 'Una devolución de un cobro con tarjeta alcanzó su estado final, o el emisor impuso un
+        contracargo. `status: completed` significa que la plata volvió al tarjetahabiente y el débito
+        quedó liquidado en tu saldo; `status: failed` significa que el procesador la rechazó y el débito
+        se revirtió completo. Un `kind: chargeback` se asienta automático y puede dejar `balance_after`
+        negativo (deuda que se netea contra abonos futuros).
+
+
+        Cada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
+        y `X-Webhook-Signature = hex(HMAC-SHA256(secreto, timestamp + "." + cuerpo))`. Responde 2xx;
+        hasta 5 intentos con backoff incremental.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PayinRefund'
+            example:
+              event_type: payin_refunded
+              refund_id: 6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c
+              payin_id: d0135ed5-8e9c-4f8b-a522-8ec100470426
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              kind: refund
+              status: completed
+              currency: USD
+              local_amount: '150.00'
+              usdt_debited: '150.000000'
+              balance_after: '850.000000'
+              requested_by: account
+              idempotency_key: refund-order-8842
+              receipt_url: https://api.qbank.cl/platform/v1/payin-refunds/6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c/receipt
+              created_at: '2026-07-25T13:10:00Z'
+              updated_at: '2026-07-25T13:10:03Z'
       responses:
         '200':
           description: Devuelve cualquier 2xx para confirmar la entrega.

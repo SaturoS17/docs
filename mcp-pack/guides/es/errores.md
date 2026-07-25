@@ -170,6 +170,10 @@ Detalle y flujo completo en [login social](https://docs.cbpayapp.com/es/guias/lo
 | 422 | `stored_card_corridor_mismatch` | La [tarjeta guardada](https://docs.cbpayapp.com/es/guias/stored-cards-subscriptions) pertenece a otro corredor país/moneda distinto del cobro |
 | 409 | `subscription_state` | La [suscripción](https://docs.cbpayapp.com/es/guias/stored-cards-subscriptions) no está en un estado que permita esa acción (ej. pausar un plan cancelado) |
 | 409 | `email_required` | El login no tiene un email real; configura uno con `POST /v1/me/email/change` |
+| 422 | `payin_not_refundable` | El cobro no está acreditado o no tiene credencial del procesador; no se puede [devolver](https://docs.cbpayapp.com/es/guias/devoluciones) |
+| 422 | `refund_not_supported` | Ese rail no admite [devoluciones](https://docs.cbpayapp.com/es/guias/devoluciones) (QR, transferencia anunciada, cuenta dedicada, collect). Los cobros POS se devuelven por el riel crypto |
+| 422 | `refund_exceeds_payin` | La [devolución](https://docs.cbpayapp.com/es/guias/devoluciones) supera lo que queda por devolver del cobro; tu saldo no se tocó |
+| 400 | `invalid_amount` | El `amount` de la [devolución](https://docs.cbpayapp.com/es/guias/devoluciones) debe ser un decimal positivo en la moneda del cobro |
 
 ### Cumplimiento (403 / 503)
 
