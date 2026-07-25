@@ -1,5 +1,5 @@
 {
-  "count": 28,
+  "count": 29,
   "events": [
     {
       "description": {
@@ -123,6 +123,29 @@
         "en": "Card transaction",
         "es": "Transacción de tarjeta",
         "zh": "卡片交易"
+      }
+    },
+    {
+      "description": {
+        "en": "A payment corridor changed availability (`operational` / `degraded` / `down`) — fired on outages AND recoveries. Broadcast event: it is not tied to one of your operations, so it carries no `account_id`. Consume it idempotently (dedupe by delivery id). See the service status guide.",
+        "es": "Un corredor de pago cambió de disponibilidad (`operational` / `degraded` / `down`) — se dispara en caídas Y en recuperaciones. Evento broadcast: no está ligado a una operación tuya, así que no trae `account_id`. Consúmelo de forma idempotente (dedupe por delivery id). Ver la guía de estado del servicio.",
+        "zh": "某个支付通道的可用性发生了变化(`operational` / `degraded` / `down`)——在故障与恢复时 都会触发。广播事件:不与你的某笔操作绑定,因此不带 `account_id`。请以幂等方式消费 (按 delivery id 去重)。见服务状态指南。"
+      },
+      "event": "corridor_status_changed",
+      "payload_example": {
+        "country": "VE",
+        "currency": "VES",
+        "flow": "payout",
+        "method": "bank_transfer",
+        "previous_status": "operational",
+        "reason": "consecutive infrastructure failures",
+        "since": "2026-07-24T22:10:00Z",
+        "status": "down"
+      },
+      "summary": {
+        "en": "Corridor availability changed",
+        "es": "Cambió la disponibilidad de un corredor",
+        "zh": "通道可用性变更"
       }
     },
     {

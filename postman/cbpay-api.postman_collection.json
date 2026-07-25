@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — convertible on demand with swaps.\nPayouts and service fees can be paid from any of the four balances\n(`PUT /v1/settlement` or per-payout `settlement_asset`), and payins\ncan auto-convert to the asset of your choice (`default_payin_asset`).\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-24 21:15 UTC",
-    "_content_sha256": "01edcb62c3598f33a8117296681e120f88f569639a22c40d42321ea51438c0f0"
+    "_generated_at": "2026-07-25 05:27 UTC",
+    "_content_sha256": "e2821eda3d02d976ea33938ba9c8a59cfaab5612a727f7adbcd2550e8d4a212b"
   },
   "auth": {
     "type": "bearer",
@@ -4915,7 +4915,7 @@
                 "methods"
               ]
             },
-            "description": "Available payout corridors (country, currency, method) offered by\nCBPay. Pass-through of the processing core catalog."
+            "description": "Available payout corridors (country, currency, method) offered by CBPay. Pass-through of the processing core catalog. Every item carries `availability` (`operational` | `degraded` | `down`) — the live health of the corridor, so you can decide at render time whether to show, warn about or hide a channel (see the service status guide). A corridor with no recorded incidents is always `operational`."
           },
           "response": [
             {
@@ -4943,7 +4943,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"items\": [\n    {\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"method\": \"bank_transfer\"\n    },\n    {\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"method\": \"qr\"\n    },\n    {\n      \"country\": \"CL\",\n      \"currency\": \"CLP\",\n      \"method\": \"bank_transfer\"\n    },\n    {\n      \"country\": \"EC\",\n      \"currency\": \"USD\",\n      \"method\": \"bank_transfer\"\n    },\n    {\n      \"country\": \"EC\",\n      \"currency\": \"USD\",\n      \"method\": \"deuna\"\n    },\n    {\n      \"country\": \"EC\",\n      \"currency\": \"USD\",\n      \"method\": \"cash_pickup\"\n    },\n    {\n      \"country\": \"EC\",\n      \"currency\": \"USD\",\n      \"method\": \"cnb\"\n    },\n    {\n      \"country\": \"MX\",\n      \"currency\": \"MXN\",\n      \"method\": \"bank_transfer\"\n    },\n    {\n      \"country\": \"PE\",\n      \"currency\": \"PEN\",\n      \"method\": \"bank_transfer\"\n    },\n    {\n      \"country\": \"PE\",\n      \"currency\": \"PEN\",\n      \"method\": \"yape\"\n    },\n    {\n      \"country\": \"PY\",\n      \"currency\": \"PYG\",\n      \"method\": \"bank_transfer\"\n    },\n    {\n      \"country\": \"VE\",\n      \"currency\": \"VES\",\n      \"method\": \"bank_transfer\"\n    },\n    {\n      \"country\": \"VE\",\n      \"currency\": \"VES\",\n      \"method\": \"pago_movil\"\n    }\n  ],\n  \"meta\": {\n    \"retrieved\": 13\n  }\n}"
+              "body": "{\n  \"items\": [\n    {\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"method\": \"bank_transfer\",\n      \"availability\": \"operational\"\n    },\n    {\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"method\": \"qr\",\n      \"availability\": \"operational\"\n    },\n    {\n      \"country\": \"CL\",\n      \"currency\": \"CLP\",\n      \"method\": \"bank_transfer\",\n      \"availability\": \"operational\"\n    },\n    {\n      \"country\": \"EC\",\n      \"currency\": \"USD\",\n      \"method\": \"bank_transfer\",\n      \"availability\": \"operational\"\n    },\n    {\n      \"country\": \"EC\",\n      \"currency\": \"USD\",\n      \"method\": \"deuna\",\n      \"availability\": \"operational\"\n    },\n    {\n      \"country\": \"EC\",\n      \"currency\": \"USD\",\n      \"method\": \"cash_pickup\",\n      \"availability\": \"operational\"\n    },\n    {\n      \"country\": \"EC\",\n      \"currency\": \"USD\",\n      \"method\": \"cnb\",\n      \"availability\": \"operational\"\n    },\n    {\n      \"country\": \"MX\",\n      \"currency\": \"MXN\",\n      \"method\": \"bank_transfer\",\n      \"availability\": \"operational\"\n    },\n    {\n      \"country\": \"PE\",\n      \"currency\": \"PEN\",\n      \"method\": \"bank_transfer\",\n      \"availability\": \"operational\"\n    },\n    {\n      \"country\": \"PE\",\n      \"currency\": \"PEN\",\n      \"method\": \"yape\",\n      \"availability\": \"operational\"\n    },\n    {\n      \"country\": \"PY\",\n      \"currency\": \"PYG\",\n      \"method\": \"bank_transfer\",\n      \"availability\": \"operational\"\n    },\n    {\n      \"country\": \"VE\",\n      \"currency\": \"VES\",\n      \"method\": \"bank_transfer\",\n      \"availability\": \"down\"\n    },\n    {\n      \"country\": \"VE\",\n      \"currency\": \"VES\",\n      \"method\": \"pago_movil\",\n      \"availability\": \"down\"\n    }\n  ],\n  \"meta\": {\n    \"retrieved\": 13\n  }\n}"
             }
           ]
         },
@@ -5847,7 +5847,7 @@
                 "methods"
               ]
             },
-            "description": ""
+            "description": "Available payin corridors. Every item carries `availability` (`operational` | `degraded` | `down`) — the live health of the corridor (see the service status guide)."
           },
           "response": [
             {
@@ -5875,7 +5875,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"items\": [\n    {\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"method\": \"qr\",\n      \"delivery\": \"push\"\n    },\n    {\n      \"country\": \"CL\",\n      \"currency\": \"CLP\",\n      \"method\": \"bank_transfer\",\n      \"delivery\": \"push\"\n    },\n    {\n      \"country\": \"MX\",\n      \"currency\": \"MXN\",\n      \"method\": \"bank_transfer\",\n      \"delivery\": \"push\"\n    },\n    {\n      \"country\": \"PE\",\n      \"currency\": \"PEN\",\n      \"method\": \"bank_transfer\",\n      \"delivery\": \"polling\"\n    },\n    {\n      \"country\": \"PY\",\n      \"currency\": \"PYG\",\n      \"method\": \"bank_transfer\",\n      \"delivery\": \"polling\"\n    },\n    {\n      \"country\": \"VE\",\n      \"currency\": \"VES\",\n      \"method\": \"c2p\",\n      \"delivery\": \"push+polling\"\n    }\n  ],\n  \"meta\": {\n    \"retrieved\": 6\n  }\n}"
+              "body": "{\n  \"items\": [\n    {\n      \"country\": \"BO\",\n      \"currency\": \"BOB\",\n      \"method\": \"qr\",\n      \"delivery\": \"push\",\n      \"availability\": \"operational\"\n    },\n    {\n      \"country\": \"CL\",\n      \"currency\": \"CLP\",\n      \"method\": \"bank_transfer\",\n      \"delivery\": \"push\",\n      \"availability\": \"operational\"\n    },\n    {\n      \"country\": \"MX\",\n      \"currency\": \"MXN\",\n      \"method\": \"bank_transfer\",\n      \"delivery\": \"push\",\n      \"availability\": \"operational\"\n    },\n    {\n      \"country\": \"PE\",\n      \"currency\": \"PEN\",\n      \"method\": \"bank_transfer\",\n      \"delivery\": \"polling\",\n      \"availability\": \"operational\"\n    },\n    {\n      \"country\": \"PY\",\n      \"currency\": \"PYG\",\n      \"method\": \"bank_transfer\",\n      \"delivery\": \"polling\",\n      \"availability\": \"operational\"\n    },\n    {\n      \"country\": \"VE\",\n      \"currency\": \"VES\",\n      \"method\": \"c2p\",\n      \"delivery\": \"push+polling\",\n      \"availability\": \"operational\"\n    }\n  ],\n  \"meta\": {\n    \"retrieved\": 6\n  }\n}"
             }
           ]
         },
@@ -12054,6 +12054,96 @@
                 }
               ],
               "body": "{\n  \"status\": \"ok\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Public status page (HTML)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/status/:orgToken",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "status",
+                ":orgToken"
+              ],
+              "variable": [
+                {
+                  "key": "orgToken",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Hosted, branded status page of the organization: live state of every payment corridor, 90-day uptime and incident history. Public (no credentials), safe to share with your own customers or embed in your product. The `orgToken` is the opaque token shared by the operator (org admins read the full URL as `status_page_url` in `GET /v1/org/branding`). Invalid token answers 404. Rate limited per IP.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Public status feed (JSON)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/status/:orgToken",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "status",
+                ":orgToken"
+              ],
+              "variable": [
+                {
+                  "key": "orgToken",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "The same data behind the status page as JSON, for your own status tooling or monitoring: overall status, per-corridor state with 90-day uptime, and the recent incident history (state transitions). Public, rate limited per IP.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 Current service status.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/status/:orgToken",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "status",
+                    ":orgToken"
+                  ],
+                  "variable": [
+                    {
+                      "key": "orgToken",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Current service status.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"brand\": {\n    \"name\": \"CBPay\"\n  },\n  \"status\": \"degraded\",\n  \"generated_at\": \"2026-07-24T22:15:00Z\",\n  \"corridors\": [\n    {\n      \"flow\": \"payout\",\n      \"country\": \"VE\",\n      \"currency\": \"VES\",\n      \"method\": \"bank_transfer\",\n      \"status\": \"down\",\n      \"since\": \"2026-07-24T22:10:00Z\",\n      \"uptime_90d_pct\": 99.62\n    },\n    {\n      \"flow\": \"payout\",\n      \"country\": \"MX\",\n      \"currency\": \"MXN\",\n      \"method\": \"bank_transfer\",\n      \"status\": \"operational\",\n      \"since\": \"2026-05-02T00:00:00Z\",\n      \"uptime_90d_pct\": 100\n    }\n  ],\n  \"incidents\": [\n    {\n      \"flow\": \"payout\",\n      \"country\": \"VE\",\n      \"currency\": \"VES\",\n      \"method\": \"bank_transfer\",\n      \"from_status\": \"operational\",\n      \"to_status\": \"down\",\n      \"reason\": \"consecutive infrastructure failures\",\n      \"at\": \"2026-07-24T22:10:00Z\"\n    }\n  ]\n}"
             }
           ]
         }

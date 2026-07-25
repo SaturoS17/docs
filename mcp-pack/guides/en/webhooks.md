@@ -97,6 +97,7 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 | `wallet_key_exported` | A segregated wallet's private key was exported (security alert) |
 | `wallet_external_movement` | On-chain movement of a segregated wallet that did not go through the platform (expected under `client` custody) |
 | `wallet_key_compromise_suspected` | **Critical alarm**: external outflow from a `cbpay`-custody wallet — possible key compromise |
+| `corridor_status_changed` | A payment corridor changed availability (`operational` / `degraded` / `down`) — broadcast, see the [service status guide](https://docs.cbpayapp.com/en/service-status) |
 
 ### Payload of each event
 
@@ -394,6 +395,19 @@ with its `third_party_id` — the same id as `GET /v1/banking/third-parties/{id}
   "tx_id": "9a3c1e5f…",
   "amount_raw": "25000000",
   "custody": "cbpay"
+}
+```
+
+```json corridor_status_changed
+{
+  "flow": "payout",
+  "country": "VE",
+  "currency": "VES",
+  "method": "bank_transfer",
+  "status": "down",
+  "previous_status": "operational",
+  "since": "2026-07-24T22:10:00Z",
+  "reason": "consecutive infrastructure failures"
 }
 ```
 

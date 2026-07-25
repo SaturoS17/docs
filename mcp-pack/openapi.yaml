@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.07'
+  version: '2.08'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -440,8 +440,8 @@ paths:
           content:
             application/json:
               example:
-                error: too_many_attempts
-                message: too many requests; wait a moment and retry
+                error: rate_limited
+                message: too many requests
   /pay/{token}/state:
     get:
       security: []
@@ -512,8 +512,8 @@ paths:
           content:
             application/json:
               example:
-                error: too_many_attempts
-                message: too many requests; wait a moment and retry
+                error: rate_limited
+                message: too many requests
   /pay/{token}/quote:
     get:
       security: []
@@ -641,8 +641,8 @@ paths:
           content:
             application/json:
               example:
-                error: too_many_attempts
-                message: too many requests; wait a moment and retry
+                error: rate_limited
+                message: too many requests
         '503':
           description: Pricing temporarily unavailable.
           content:
@@ -714,8 +714,8 @@ paths:
           content:
             application/json:
               example:
-                error: too_many_attempts
-                message: too many requests; wait a moment and retry
+                error: rate_limited
+                message: too many requests
   /pay/{token}/methods/{method}:
     post:
       security: []
@@ -907,8 +907,8 @@ paths:
           content:
             application/json:
               example:
-                error: too_many_attempts
-                message: too many requests; wait a moment and retry
+                error: rate_limited
+                message: too many requests
         '503':
           description: Pricing temporarily unavailable.
           content:
@@ -997,8 +997,8 @@ paths:
           content:
             application/json:
               example:
-                error: too_many_attempts
-                message: too many requests; wait a moment and retry
+                error: rate_limited
+                message: too many requests
   /pay/{token}/collect:
     post:
       security: []
@@ -1110,8 +1110,8 @@ paths:
           content:
             application/json:
               example:
-                error: too_many_attempts
-                message: too many requests; wait a moment and retry
+                error: rate_limited
+                message: too many requests
   /v1/branding:
     get:
       tags:
@@ -3409,11 +3409,12 @@ paths:
       - Payouts
       operationId: getPayoutMethods
       summary: List payout methods
-      description: 'Available payout corridors (country, currency, method) offered by
-
-        CBPay. Pass-through of the processing core catalog.
-
-        '
+      description: >-
+        Available payout corridors (country, currency, method) offered by CBPay.
+        Pass-through of the processing core catalog. Every item carries `availability`
+        (`operational` | `degraded` | `down`) — the live health of the corridor, so you
+        can decide at render time whether to show, warn about or hide a channel (see the
+        service status guide). A corridor with no recorded incidents is always `operational`.
       responses:
         '200':
           description: Methods catalog.
@@ -3427,42 +3428,55 @@ paths:
                 - country: BO
                   currency: BOB
                   method: bank_transfer
+                  availability: operational
                 - country: BO
                   currency: BOB
                   method: qr
+                  availability: operational
                 - country: CL
                   currency: CLP
                   method: bank_transfer
+                  availability: operational
                 - country: EC
                   currency: USD
                   method: bank_transfer
+                  availability: operational
                 - country: EC
                   currency: USD
                   method: deuna
+                  availability: operational
                 - country: EC
                   currency: USD
                   method: cash_pickup
+                  availability: operational
                 - country: EC
                   currency: USD
                   method: cnb
+                  availability: operational
                 - country: MX
                   currency: MXN
                   method: bank_transfer
+                  availability: operational
                 - country: PE
                   currency: PEN
                   method: bank_transfer
+                  availability: operational
                 - country: PE
                   currency: PEN
                   method: yape
+                  availability: operational
                 - country: PY
                   currency: PYG
                   method: bank_transfer
+                  availability: operational
                 - country: VE
                   currency: VES
                   method: bank_transfer
+                  availability: down
                 - country: VE
                   currency: VES
                   method: pago_movil
+                  availability: down
                 meta:
                   retrieved: 13
         '403':
@@ -3941,6 +3955,10 @@ paths:
       - Payins
       operationId: getPayinMethods
       summary: List payin methods
+      description: >-
+        Available payin corridors. Every item carries `availability`
+        (`operational` | `degraded` | `down`) — the live health of the corridor
+        (see the service status guide).
       responses:
         '200':
           description: Catalog of available payin corridors.
@@ -3954,26 +3972,32 @@ paths:
                   currency: BOB
                   method: qr
                   delivery: push
+                  availability: operational
                 - country: CL
                   currency: CLP
                   method: bank_transfer
                   delivery: push
+                  availability: operational
                 - country: MX
                   currency: MXN
                   method: bank_transfer
                   delivery: push
+                  availability: operational
                 - country: PE
                   currency: PEN
                   method: bank_transfer
                   delivery: polling
+                  availability: operational
                 - country: PY
                   currency: PYG
                   method: bank_transfer
                   delivery: polling
+                  availability: operational
                 - country: VE
                   currency: VES
                   method: c2p
                   delivery: push+polling
+                  availability: operational
                 meta:
                   retrieved: 6
         '403':
@@ -8288,6 +8312,113 @@ paths:
               example:
                 error: store_unavailable
                 message: database not reachable
+  /status/{orgToken}:
+    get:
+      security: []
+      tags:
+      - Status
+      operationId: statusPage
+      summary: Public status page (HTML)
+      description: >-
+        Hosted, branded status page of the organization: live state of every payment
+        corridor, 90-day uptime and incident history. Public (no credentials), safe to
+        share with your own customers or embed in your product. The `orgToken` is the
+        opaque token shared by the operator (org admins read the full URL as
+        `status_page_url` in `GET /v1/org/branding`). Invalid token answers 404.
+        Rate limited per IP.
+      parameters:
+      - name: orgToken
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Opaque status-page token of the organization.
+      responses:
+        '200':
+          description: Branded status page (HTML).
+          content:
+            text/html:
+              example: <!doctype html>…
+        '404':
+          description: Invalid or unknown token.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: status page not found
+        '429':
+          description: Too many requests from this IP.
+          content:
+            application/json:
+              example:
+                error: rate_limited
+                message: too many requests
+  /v1/status/{orgToken}:
+    get:
+      security: []
+      tags:
+      - Status
+      operationId: statusJSON
+      summary: Public status feed (JSON)
+      description: >-
+        The same data behind the status page as JSON, for your own status tooling or
+        monitoring: overall status, per-corridor state with 90-day uptime, and the
+        recent incident history (state transitions). Public, rate limited per IP.
+      parameters:
+      - name: orgToken
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Opaque status-page token of the organization.
+      responses:
+        '200':
+          description: Current service status.
+          content:
+            application/json:
+              example:
+                brand:
+                  name: CBPay
+                status: degraded
+                generated_at: '2026-07-24T22:15:00Z'
+                corridors:
+                - flow: payout
+                  country: VE
+                  currency: VES
+                  method: bank_transfer
+                  status: down
+                  since: '2026-07-24T22:10:00Z'
+                  uptime_90d_pct: 99.62
+                - flow: payout
+                  country: MX
+                  currency: MXN
+                  method: bank_transfer
+                  status: operational
+                  since: '2026-05-02T00:00:00Z'
+                  uptime_90d_pct: 100
+                incidents:
+                - flow: payout
+                  country: VE
+                  currency: VES
+                  method: bank_transfer
+                  from_status: operational
+                  to_status: down
+                  reason: consecutive infrastructure failures
+                  at: '2026-07-24T22:10:00Z'
+        '404':
+          description: Invalid or unknown token.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: status page not found
+        '429':
+          description: Too many requests from this IP.
+          content:
+            application/json:
+              example:
+                error: rate_limited
+                message: too many requests
   /v1/crypto/wallets:
     post:
       tags:
@@ -16294,6 +16425,29 @@ webhooks:
               tx_id: 9a3c1e5f7b2d4a6c8e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d
               amount_raw: '25000000'
               custody: cbpay
+      responses:
+        '200':
+          description: Return any 2xx to acknowledge the delivery.
+  corridor_status_changed:
+    post:
+      summary: Corridor availability changed
+      description: >-
+        A payment corridor changed availability (`operational` / `degraded` / `down`) —
+        fired on outages AND recoveries. Broadcast event: it is not tied to one of your
+        operations, so it carries no `account_id`. Consume it idempotently (dedupe by
+        delivery id). See the service status guide.
+      requestBody:
+        content:
+          application/json:
+            example:
+              flow: payout
+              country: VE
+              currency: VES
+              method: bank_transfer
+              status: down
+              previous_status: operational
+              since: '2026-07-24T22:10:00Z'
+              reason: consecutive infrastructure failures
       responses:
         '200':
           description: Return any 2xx to acknowledge the delivery.

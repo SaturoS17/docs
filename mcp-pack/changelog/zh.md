@@ -8,7 +8,19 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-## v2.07 · 5 个版本 - 2026年7月24日
+## v2.08 · 6 个版本 - 2026年7月24日
+
+### v2.08
+
+**新增**
+
+- **实时服务状态**（[指南](https://docs.cbpayapp.com/zh/service-status)）：`GET /v1/payouts/methods`
+  与 `GET /v1/payins/methods` 的每个方式现在都带有新增字段
+  `availability`（`operational` / `degraded` / `down`）；新的广播 Webhook
+  `corridor_status_changed` 会通知每一次可用性变化；每个组织都拥有一个
+  带自有品牌的公开状态页（HTML + JSON，位于 `/status/{orgToken}` 与
+  `/v1/status/{orgToken}`），含 90 天正常运行率与事件历史。状态页 URL 通过
+  `GET /v1/branding` 的 `status_page_url` 字段暴露。
 
 ### v2.07
 

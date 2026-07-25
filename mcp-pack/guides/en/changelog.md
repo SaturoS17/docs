@@ -8,7 +8,20 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.07 · 5 releases - July 24, 2026
+## v2.08 · 6 releases - July 24, 2026
+
+### v2.08
+
+**Added**
+
+- **Real-time service status** ([guide](https://docs.cbpayapp.com/en/service-status)): every method
+  in `GET /v1/payouts/methods` and `GET /v1/payins/methods` now carries an
+  additive `availability` field (`operational` / `degraded` / `down`), a
+  new broadcast webhook `corridor_status_changed` notifies every
+  availability transition, and each organization gets a public,
+  brand-themed status page (HTML + JSON at `/status/{orgToken}` and
+  `/v1/status/{orgToken}`) with 90-day uptime and incident history. The
+  status page URL is exposed in `GET /v1/branding` as `status_page_url`.
 
 ### v2.07
 

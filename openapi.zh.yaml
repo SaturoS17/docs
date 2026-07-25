@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.07'
+  version: '2.08'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -3264,11 +3264,10 @@ paths:
       - 付款(Payouts)
       operationId: getPayoutMethods
       summary: 列出 payout 方式
-      description: 'CBPay 提供的可用 payout 通道(国家、货币、方式)。
-
-        直接透传处理核心的目录。
-
-        '
+      description: >-
+        CBPay 提供的可用 payout 通道(国家、货币、方式)。直接透传处理核心的目录。每一项都带
+        `availability`(`operational` | `degraded` | `down`)——通道的实时健康状态,便于你在渲染时
+        决定展示、提示或隐藏某个渠道(见服务状态指南)。没有事件记录的通道始终为 `operational`。
       responses:
         '200':
           description: 方式目录。
@@ -3282,42 +3281,55 @@ paths:
                 - country: BO
                   currency: BOB
                   method: bank_transfer
+                  availability: operational
                 - country: BO
                   currency: BOB
                   method: qr
+                  availability: operational
                 - country: CL
                   currency: CLP
                   method: bank_transfer
+                  availability: operational
                 - country: EC
                   currency: USD
                   method: bank_transfer
+                  availability: operational
                 - country: EC
                   currency: USD
                   method: deuna
+                  availability: operational
                 - country: EC
                   currency: USD
                   method: cash_pickup
+                  availability: operational
                 - country: EC
                   currency: USD
                   method: cnb
+                  availability: operational
                 - country: MX
                   currency: MXN
                   method: bank_transfer
+                  availability: operational
                 - country: PE
                   currency: PEN
                   method: bank_transfer
+                  availability: operational
                 - country: PE
                   currency: PEN
                   method: yape
+                  availability: operational
                 - country: PY
                   currency: PYG
                   method: bank_transfer
+                  availability: operational
                 - country: VE
                   currency: VES
                   method: bank_transfer
+                  availability: down
                 - country: VE
                   currency: VES
                   method: pago_movil
+                  availability: down
                 meta:
                   retrieved: 13
         '403':
@@ -3764,6 +3776,9 @@ paths:
       - 收款(Payins)
       operationId: getPayinMethods
       summary: 列出 payin 方式
+      description: >-
+        可用的 payin 通道。每一项都带 `availability`(`operational` | `degraded` | `down`)
+        ——通道的实时健康状态(见服务状态指南)。
       responses:
         '200':
           description: 可用 payin 通道目录。
@@ -3777,26 +3792,32 @@ paths:
                   currency: BOB
                   method: qr
                   delivery: push
+                  availability: operational
                 - country: CL
                   currency: CLP
                   method: bank_transfer
                   delivery: push
+                  availability: operational
                 - country: MX
                   currency: MXN
                   method: bank_transfer
                   delivery: push
+                  availability: operational
                 - country: PE
                   currency: PEN
                   method: bank_transfer
                   delivery: polling
+                  availability: operational
                 - country: PY
                   currency: PYG
                   method: bank_transfer
                   delivery: polling
+                  availability: operational
                 - country: VE
                   currency: VES
                   method: c2p
                   delivery: push+polling
+                  availability: operational
                 meta:
                   retrieved: 6
         '403':
@@ -8018,6 +8039,110 @@ paths:
               example:
                 error: store_unavailable
                 message: database not reachable
+  /status/{orgToken}:
+    get:
+      security: []
+      tags:
+      - 状态
+      operationId: statusPage
+      summary: 公开状态页(HTML)
+      description: >-
+        组织的托管品牌化状态页:每个支付通道的实时状态、90 天可用率与事件历史。公开访问(无需凭证),
+        可安全地分享给你自己的客户或嵌入你的产品。`orgToken` 是运营方分享的不透明令牌
+        (组织管理员在 `GET /v1/org/branding` 的 `status_page_url` 中读取完整 URL)。
+        令牌无效时返回 404。按 IP 限流。
+      parameters:
+      - name: orgToken
+        in: path
+        required: true
+        schema:
+          type: string
+        description: 组织状态页的不透明令牌。
+      responses:
+        '200':
+          description: 品牌化状态页(HTML)。
+          content:
+            text/html:
+              example: <!doctype html>…
+        '404':
+          description: 令牌无效或未知。
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: status page not found
+        '429':
+          description: 来自该 IP 的请求过多。
+          content:
+            application/json:
+              example:
+                error: rate_limited
+                message: too many requests
+  /v1/status/{orgToken}:
+    get:
+      security: []
+      tags:
+      - 状态
+      operationId: statusJSON
+      summary: 公开状态数据(JSON)
+      description: >-
+        状态页背后的同一份数据,以 JSON 提供,供你自己的状态工具或监控使用:整体状态、
+        各通道状态及 90 天可用率,以及最近的事件历史(状态迁移)。公开访问,按 IP 限流。
+      parameters:
+      - name: orgToken
+        in: path
+        required: true
+        schema:
+          type: string
+        description: 组织状态页的不透明令牌。
+      responses:
+        '200':
+          description: 当前服务状态。
+          content:
+            application/json:
+              example:
+                brand:
+                  name: CBPay
+                status: degraded
+                generated_at: '2026-07-24T22:15:00Z'
+                corridors:
+                - flow: payout
+                  country: VE
+                  currency: VES
+                  method: bank_transfer
+                  status: down
+                  since: '2026-07-24T22:10:00Z'
+                  uptime_90d_pct: 99.62
+                - flow: payout
+                  country: MX
+                  currency: MXN
+                  method: bank_transfer
+                  status: operational
+                  since: '2026-05-02T00:00:00Z'
+                  uptime_90d_pct: 100
+                incidents:
+                - flow: payout
+                  country: VE
+                  currency: VES
+                  method: bank_transfer
+                  from_status: operational
+                  to_status: down
+                  reason: consecutive infrastructure failures
+                  at: '2026-07-24T22:10:00Z'
+        '404':
+          description: 令牌无效或未知。
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: status page not found
+        '429':
+          description: 来自该 IP 的请求过多。
+          content:
+            application/json:
+              example:
+                error: rate_limited
+                message: too many requests
   /v1/crypto/wallets:
     post:
       tags:
@@ -15850,6 +15975,28 @@ webhooks:
               tx_id: 9a3c1e5f7b2d4a6c8e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d
               amount_raw: '25000000'
               custody: cbpay
+      responses:
+        '200':
+          description: 返回任意 2xx 以确认投递。
+  corridor_status_changed:
+    post:
+      summary: 通道可用性变更
+      description: >-
+        某个支付通道的可用性发生了变化(`operational` / `degraded` / `down`)——在故障与恢复时
+        都会触发。广播事件:不与你的某笔操作绑定,因此不带 `account_id`。请以幂等方式消费
+        (按 delivery id 去重)。见服务状态指南。
+      requestBody:
+        content:
+          application/json:
+            example:
+              flow: payout
+              country: VE
+              currency: VES
+              method: bank_transfer
+              status: down
+              previous_status: operational
+              since: '2026-07-24T22:10:00Z'
+              reason: consecutive infrastructure failures
       responses:
         '200':
           description: 返回任意 2xx 以确认投递。

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.07'
+  version: '2.08'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -3423,11 +3423,12 @@ paths:
       - Payouts
       operationId: getPayoutMethods
       summary: Listar métodos de payout
-      description: 'Corredores de payout disponibles (país, moneda, método) ofrecidos por
-
-        CBPay. Pass-through del catálogo del core de procesamiento.
-
-        '
+      description: >-
+        Corredores de payout disponibles (país, moneda, método) ofrecidos por CBPay.
+        Pass-through del catálogo del core de procesamiento. Cada ítem trae `availability`
+        (`operational` | `degraded` | `down`) — la salud en vivo del corredor, para decidir
+        al renderizar si muestras, adviertes u ocultas un canal (ver la guía de estado del
+        servicio). Un corredor sin incidentes registrados siempre es `operational`.
       responses:
         '200':
           description: Catálogo de métodos.
@@ -3441,42 +3442,55 @@ paths:
                 - country: BO
                   currency: BOB
                   method: bank_transfer
+                  availability: operational
                 - country: BO
                   currency: BOB
                   method: qr
+                  availability: operational
                 - country: CL
                   currency: CLP
                   method: bank_transfer
+                  availability: operational
                 - country: EC
                   currency: USD
                   method: bank_transfer
+                  availability: operational
                 - country: EC
                   currency: USD
                   method: deuna
+                  availability: operational
                 - country: EC
                   currency: USD
                   method: cash_pickup
+                  availability: operational
                 - country: EC
                   currency: USD
                   method: cnb
+                  availability: operational
                 - country: MX
                   currency: MXN
                   method: bank_transfer
+                  availability: operational
                 - country: PE
                   currency: PEN
                   method: bank_transfer
+                  availability: operational
                 - country: PE
                   currency: PEN
                   method: yape
+                  availability: operational
                 - country: PY
                   currency: PYG
                   method: bank_transfer
+                  availability: operational
                 - country: VE
                   currency: VES
                   method: bank_transfer
+                  availability: down
                 - country: VE
                   currency: VES
                   method: pago_movil
+                  availability: down
                 meta:
                   retrieved: 13
         '403':
@@ -3958,6 +3972,10 @@ paths:
       - Payins
       operationId: getPayinMethods
       summary: Listar métodos de payin
+      description: >-
+        Corredores de payin disponibles. Cada ítem trae `availability`
+        (`operational` | `degraded` | `down`) — la salud en vivo del corredor
+        (ver la guía de estado del servicio).
       responses:
         '200':
           description: Catálogo de corredores de payin disponibles.
@@ -3971,26 +3989,32 @@ paths:
                   currency: BOB
                   method: qr
                   delivery: push
+                  availability: operational
                 - country: CL
                   currency: CLP
                   method: bank_transfer
                   delivery: push
+                  availability: operational
                 - country: MX
                   currency: MXN
                   method: bank_transfer
                   delivery: push
+                  availability: operational
                 - country: PE
                   currency: PEN
                   method: bank_transfer
                   delivery: polling
+                  availability: operational
                 - country: PY
                   currency: PYG
                   method: bank_transfer
                   delivery: polling
+                  availability: operational
                 - country: VE
                   currency: VES
                   method: c2p
                   delivery: push+polling
+                  availability: operational
                 meta:
                   retrieved: 6
         '403':
@@ -8307,6 +8331,114 @@ paths:
               example:
                 error: store_unavailable
                 message: database not reachable
+  /status/{orgToken}:
+    get:
+      security: []
+      tags:
+      - Estado
+      operationId: statusPage
+      summary: Página de status pública (HTML)
+      description: >-
+        Página de status hosteada y brandeada de la organización: estado en vivo de cada
+        corredor de pago, uptime de 90 días e historial de incidentes. Pública (sin
+        credenciales), segura para compartir con tus propios clientes o embeber en tu
+        producto. El `orgToken` es el token opaco que comparte el operador (los org admins
+        leen la URL completa como `status_page_url` en `GET /v1/org/branding`). Token
+        inválido responde 404. Con rate limit por IP.
+      parameters:
+      - name: orgToken
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Token opaco de la página de status de la organización.
+      responses:
+        '200':
+          description: Página de status brandeada (HTML).
+          content:
+            text/html:
+              example: <!doctype html>…
+        '404':
+          description: Token inválido o desconocido.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: status page not found
+        '429':
+          description: Demasiadas solicitudes desde esta IP.
+          content:
+            application/json:
+              example:
+                error: rate_limited
+                message: too many requests
+  /v1/status/{orgToken}:
+    get:
+      security: []
+      tags:
+      - Estado
+      operationId: statusJSON
+      summary: Feed de status público (JSON)
+      description: >-
+        Los mismos datos de la página de status en JSON, para tu propio tooling de status
+        o monitoreo: estado general, estado por corredor con uptime de 90 días y el
+        historial reciente de incidentes (transiciones de estado). Público, con rate limit
+        por IP.
+      parameters:
+      - name: orgToken
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Token opaco de la página de status de la organización.
+      responses:
+        '200':
+          description: Estado actual del servicio.
+          content:
+            application/json:
+              example:
+                brand:
+                  name: CBPay
+                status: degraded
+                generated_at: '2026-07-24T22:15:00Z'
+                corridors:
+                - flow: payout
+                  country: VE
+                  currency: VES
+                  method: bank_transfer
+                  status: down
+                  since: '2026-07-24T22:10:00Z'
+                  uptime_90d_pct: 99.62
+                - flow: payout
+                  country: MX
+                  currency: MXN
+                  method: bank_transfer
+                  status: operational
+                  since: '2026-05-02T00:00:00Z'
+                  uptime_90d_pct: 100
+                incidents:
+                - flow: payout
+                  country: VE
+                  currency: VES
+                  method: bank_transfer
+                  from_status: operational
+                  to_status: down
+                  reason: consecutive infrastructure failures
+                  at: '2026-07-24T22:10:00Z'
+        '404':
+          description: Token inválido o desconocido.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: status page not found
+        '429':
+          description: Demasiadas solicitudes desde esta IP.
+          content:
+            application/json:
+              example:
+                error: rate_limited
+                message: too many requests
   /v1/crypto/wallets:
     post:
       tags:
@@ -16321,6 +16453,29 @@ webhooks:
               tx_id: 9a3c1e5f7b2d4a6c8e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d
               amount_raw: '25000000'
               custody: cbpay
+      responses:
+        '200':
+          description: Responde cualquier 2xx para confirmar la entrega.
+  corridor_status_changed:
+    post:
+      summary: Cambió la disponibilidad de un corredor
+      description: >-
+        Un corredor de pago cambió de disponibilidad (`operational` / `degraded` / `down`) —
+        se dispara en caídas Y en recuperaciones. Evento broadcast: no está ligado a una
+        operación tuya, así que no trae `account_id`. Consúmelo de forma idempotente
+        (dedupe por delivery id). Ver la guía de estado del servicio.
+      requestBody:
+        content:
+          application/json:
+            example:
+              flow: payout
+              country: VE
+              currency: VES
+              method: bank_transfer
+              status: down
+              previous_status: operational
+              since: '2026-07-24T22:10:00Z'
+              reason: consecutive infrastructure failures
       responses:
         '200':
           description: Responde cualquier 2xx para confirmar la entrega.

@@ -93,6 +93,7 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 | `wallet_key_exported` | 独立钱包的私钥被导出（安全警报） |
 | `wallet_external_movement` | 独立钱包发生了未经平台的链上资金变动（`client` 托管模式下属正常情况） |
 | `wallet_key_compromise_suspected` | **严重警报**：`cbpay` 托管钱包出现外部转出——私钥可能已泄露 |
+| `corridor_status_changed` | 某条支付通道的可用性发生变化（`operational` / `degraded` / `down`）——广播事件，见[服务状态指南](https://docs.cbpayapp.com/zh/service-status) |
 
 ### 各事件的载荷
 
@@ -390,6 +391,19 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
   "tx_id": "9a3c1e5f…",
   "amount_raw": "25000000",
   "custody": "cbpay"
+}
+```
+
+```json corridor_status_changed
+{
+  "flow": "payout",
+  "country": "VE",
+  "currency": "VES",
+  "method": "bank_transfer",
+  "status": "down",
+  "previous_status": "operational",
+  "since": "2026-07-24T22:10:00Z",
+  "reason": "consecutive infrastructure failures"
 }
 ```
 
