@@ -1,0 +1,472 @@
+---
+title: "Webhooks"
+description: "Receive signed events in real time"
+slug: en/webhooks
+lang: en
+source_url: https://docs.cbpayapp.com/en/webhooks
+---
+Webhooks notify your own HTTPS callback about your account's events,
+cryptographically signed.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant CB as CBPay
+    participant App as Your HTTPS endpoint
+    CB->>App: Signed POST (X-Webhook-Signature, X-Webhook-Event-ID)
+    alt You answer 2xx in time
+        App-->>CB: 200 OK
+        Note over CB: Delivery complete
+    else Timeout or error
+        App-->>CB: 5xx / timeout
+        CB->>App: Retry with backoff (up to 5 attempts)
+        Note over App: The same event can arrive twice —<br/>deduplicate by X-Webhook-Event-ID
+    end
+```
+
+## Create a subscription
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/webhooks/subscriptions \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_type": "payout_status_changed",
+    "callback_url": "https://api.myapp.com/webhooks/cbpay",
+    "secret": "a-secret-of-at-least-16-chars"
+  }'
+```
+
+- `event_type`: one of the events below, or `*` for all.
+- `callback_url`: **HTTPS required**; localhost and private IPs are
+  rejected — for local development use an
+  [HTTPS tunnel](https://docs.cbpayapp.com/en/environment-testing#testing-webhooks-in-local-development).
+- `secret`: at least 16 characters; used to sign every delivery. Stored
+  encrypted and cannot be retrieved.
+
+The subscription receives **your account's** events. You can list active
+subscriptions at any time:
+
+```bash
+curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "page": 1,
+  "page_size": 50,
+  "subscriptions": [
+    {
+      "id": "5f3a…",
+      "event_type": "payout_status_changed",
+      "callback_url": "https://api.myapp.com/webhooks/cbpay",
+      "status": "active",
+      "created_at": "2026-07-01T12:00:00Z"
+    }
+  ]
+}
+```
+
+## Events
+
+| Event | When it fires |
+|---|---|
+| `payin_credited` | A fiat collection was received and credited |
+| `payin_expired` | An active collection (QR / checkout) expired or failed without receiving the payment |
+| `payout_status_changed` | A payout changed state |
+| `transfer_received` | The account received an internal transfer |
+| `crypto_deposit_credited` | An on-chain deposit was confirmed and credited |
+| `crypto_deposit_held` | An incoming deposit was held due to sender risk ([screening](https://docs.cbpayapp.com/en/guides/screenings)) |
+| `crypto_deposit_alert` | A deposit was credited but the sender shows high risk (informational) |
+| `crypto_withdrawal_status_changed` | An on-chain withdrawal changed state |
+| `banking_customer_status_changed` | A banking profile verification changed (your own or a registered third party's — `customer_kind` tells them apart) |
+| `banking_operation_status_changed` | A bank payment changed state |
+| `card_transaction` | A card purchase was authorized, annulled or adjusted |
+| `card_status_changed` | A card changed state (including automatic freezes) |
+| `card_stored` | A payer's card was tokenized and saved with consent ([stored cards](https://docs.cbpayapp.com/en/guides/payins#stored-cards)) |
+| `stored_card_revoked` | A stored card credential was revoked (merchant-initiated charges stop working) |
+| `subscription_status_changed` | A subscription on a stored card changed state (`active` / `paused` / `past_due` / `canceled`) |
+| `kyc_verification_status_changed` / `kyb_verification_status_changed` | An identity verification changed state (including your own onboarding, with `self_onboarding: true`) |
+| `kyc_link_completed` / `kyb_link_completed` | A hosted verification link was completed |
+| `kyc_document_validated` / `kyb_document_validated` | OCR finished for a document uploaded through the API |
+| `kyc_liveness_completed` | A liveness check was completed from a liveness link |
+| `aml_screening_updated` | AML screening updates (result, cases, risk, reviewed transaction) |
+| `wallet_deposit_received` | An on-chain deposit arrived at a [segregated wallet](https://docs.cbpayapp.com/en/guides/segregated-wallets) (does not touch the ledger) |
+| `wallet_send_status_changed` | A send from a segregated wallet changed status |
+| `wallet_key_exported` | A segregated wallet's private key was exported (security alert) |
+| `wallet_external_movement` | On-chain movement of a segregated wallet that did not go through the platform (expected under `client` custody) |
+| `wallet_key_compromise_suspected` | **Critical alarm**: external outflow from a `cbpay`-custody wallet — possible key compromise |
+
+### Payload of each event
+
+```json payin_credited
+{
+  "payin_id": "9c2a…",
+  "account_id": "ae8c…",
+  "country": "BO",
+  "currency": "BOB",
+  "local_amount": "700.00",
+  "fx_rate": "6.91",
+  "usdt_credited": "100.302460",
+  "fee": "1.000000"
+}
+```
+
+```json payin_expired
+{
+  "payin_id": "567d…",
+  "account_id": "ae8c…",
+  "status": "expired",
+  "country": "BO",
+  "currency": "BOB",
+  "local_amount": "60.99",
+  "reference": "CBK7Q2M4XZ9P"
+}
+```
+
+```json payout_status_changed
+{
+  "payout_id": "0d4f…",
+  "account_id": "ae8c…",
+  "country": "MX",
+  "currency": "MXN",
+  "local_amount": "1500.00",
+  "usdt_amount": "85.714286",
+  "total_debit": "86.014286",
+  "status": "completed",
+  "status_code": ""
+}
+```
+
+```json transfer_received
+{
+  "transfer_id": "77b1…",
+  "from_account_id": "389d…",
+  "to_account_id": "ae8c…",
+  "asset": "USDT",
+  "amount": "25.000000",
+  "description": "Expense split",
+  "created_at": "2026-07-06T20:10:00Z"
+}
+```
+
+```json crypto_deposit_credited
+{
+  "account_id": "ae8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "tx_id": "b1946ac9…",
+  "amount": "499.000000",
+  "fee": "1.000000"
+}
+```
+
+```json crypto_deposit_held
+{
+  "account_id": "ae8c…",
+  "hold_id": "c1d2e3f4…",
+  "chain": "tron",
+  "asset": "usdt",
+  "tx_id": "8a5b3c…",
+  "risk": "Severe",
+  "status": "held"
+}
+```
+
+```json crypto_deposit_alert
+{
+  "account_id": "ae8c…",
+  "chain": "tron",
+  "asset": "usdt",
+  "tx_id": "9c6d4e…",
+  "risk": "High",
+  "status": "credited"
+}
+```
+
+```json crypto_withdrawal_status_changed
+{
+  "withdrawal_id": "5e8c…",
+  "account_id": "ae8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "tx_id": "7d3f01aa…",
+  "status": "completed",
+  "amount": "100.000000"
+}
+```
+
+```json banking_customer_status_changed
+{
+  "account_id": "ae8c…",
+  "customer_id": "9f2b…",
+  "customer_kind": "third_party",
+  "third_party_id": "77aa…",
+  "kyc_status": "approved"
+}
+```
+
+In `banking_customer_status_changed`, `customer_kind` tells your own
+profile (`self`) apart from a third party you registered (`third_party`,
+with its `third_party_id` — the same id as `GET /v1/banking/third-parties/{id}`).
+
+```json banking_operation_status_changed
+{
+  "account_id": "ae8c…",
+  "customer_id": "9f2b…",
+  "operation_id": "7e8a…",
+  "type": "withdraw",
+  "status": "completed"
+}
+```
+
+```json card_transaction
+{
+  "account_id": "ae8c…",
+  "card_id": "3c2b…",
+  "transaction_id": "5e4d…",
+  "status": "authorized",
+  "amount_usdt": "16.170000",
+  "merchant": "AMZN Mktp"
+}
+```
+
+```json card_status_changed
+{
+  "account_id": "ae8c…",
+  "card_id": "3c2b…",
+  "status": "frozen",
+  "reason": "monthly_fee_unpaid"
+}
+```
+
+```json card_stored
+{
+  "stored_card_id": "a9b8…",
+  "account_id": "ae8c…",
+  "payer_reference": "payer@email.com",
+  "brand": "VISA",
+  "last4": "1234",
+  "country": "BO",
+  "currency": "BOB",
+  "seed_payin_id": "9c2a…"
+}
+```
+
+```json stored_card_revoked
+{
+  "stored_card_id": "a9b8…",
+  "account_id": "ae8c…",
+  "payer_reference": "payer@email.com",
+  "brand": "VISA",
+  "last4": "1234"
+}
+```
+
+```json subscription_status_changed
+{
+  "subscription_id": "4f1e…",
+  "account_id": "ae8c…",
+  "stored_card_id": "a9b8…",
+  "status": "past_due",
+  "period": 3,
+  "next_charge_at": "2026-08-01T12:00:00Z",
+  "payer_reference": "payer@email.com",
+  "reason": "dunning_exhausted",
+  "failed_attempts": 3
+}
+```
+
+```json kyc_verification_status_changed
+{
+  "account_id": "ae8c…",
+  "kind": "kyc",
+  "event": "approved",
+  "submission_id": "c3d4…",
+  "external_customer_id": "cust_789",
+  "status": "approved",
+  "risk_band": "low",
+  "decision": "approved"
+}
+```
+
+```json kyb_link_completed
+{
+  "account_id": "ae8c…",
+  "kind": "kyb",
+  "event": "link_completed",
+  "link_id": "b2c3…",
+  "submission_id": "d4e5…",
+  "external_customer_id": "cust_456",
+  "status": "completed"
+}
+```
+
+```json kyc_document_validated
+{
+  "account_id": "ae8c…",
+  "kind": "kyc",
+  "submission_id": "c3d4…",
+  "external_customer_id": "cust_789",
+  "category": "identity",
+  "outcome": "MATCH",
+  "score": 0.97,
+  "summary": "Document matches the submitted identity"
+}
+```
+
+```json kyc_liveness_completed
+{
+  "account_id": "ae8c…",
+  "kind": "kyc",
+  "submission_id": "c3d4…",
+  "external_customer_id": "cust_789",
+  "outcome": "PASS",
+  "passed": true
+}
+```
+
+```json aml_screening_updated
+{
+  "account_id": "ae8c…",
+  "screening_event": "compliance_risk_changed",
+  "customer_id": "cus_8f2e…",
+  "data": { "risk_level": "high" }
+}
+```
+
+```json wallet_deposit_received
+{
+  "wallet_id": "b7e3…",
+  "account_id": "ae8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "tx_id": "b1946ac9…",
+  "amount_raw": "125000000",
+  "from_address": "TDonor…"
+}
+```
+
+```json wallet_send_status_changed
+{
+  "send_id": "9c8b…",
+  "wallet_id": "b7e3…",
+  "account_id": "ae8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "tx_id": "b1946ac9…",
+  "status": "completed",
+  "amount_raw": "25500000"
+}
+```
+
+```json wallet_key_exported
+{
+  "wallet_id": "b7e3…",
+  "account_id": "ae8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "address": "TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd"
+}
+```
+
+```json wallet_external_movement
+{
+  "wallet_id": "b7e3…",
+  "account_id": "ae8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "direction": "out",
+  "tx_id": "9a3c1e5f…",
+  "amount_raw": "25000000",
+  "custody": "client"
+}
+```
+
+```json wallet_key_compromise_suspected
+{
+  "wallet_id": "b7e3…",
+  "account_id": "ae8c…",
+  "chain": "tron",
+  "asset": "USDT",
+  "direction": "out",
+  "tx_id": "9a3c1e5f…",
+  "amount_raw": "25000000",
+  "custody": "cbpay"
+}
+```
+
+In `payout_status_changed` and `crypto_withdrawal_status_changed`, `status`
+can be `completed` or `failed` (with `failed`, the debit has already been
+refunded by the time you receive the event).
+
+## Delivery format
+
+Every delivery is a JSON `POST` with these headers:
+
+| Header | Content |
+|---|---|
+| `X-Webhook-Event` | Event type |
+| `X-Webhook-Event-ID` | Unique event ID |
+| `X-Webhook-Delivery-ID` | This delivery's ID (changes across retries) |
+| `X-Webhook-Timestamp` | Unix timestamp (seconds, UTC) |
+| `X-Webhook-Signature` | HMAC signature (see below) |
+
+## Verify the signature
+
+```
+X-Webhook-Signature = hex( HMAC-SHA256( secret, timestamp + "." + body ) )
+```
+
+```javascript Node.js
+const crypto = require("crypto");
+
+function verifyWebhook(req, secret) {
+  const ts = req.headers["x-webhook-timestamp"];
+  const sig = req.headers["x-webhook-signature"];
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(ts + "." + req.rawBody)
+    .digest("hex");
+  return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+}
+```
+
+```python Python
+import hashlib, hmac
+
+def verify_webhook(headers, raw_body: bytes, secret: str) -> bool:
+    ts = headers["X-Webhook-Timestamp"]
+    sig = headers["X-Webhook-Signature"]
+    expected = hmac.new(
+        secret.encode(), f"{ts}.".encode() + raw_body, hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(sig, expected)
+```
+
+> **Important**
+Compute the HMAC over the **raw body** (bytes as received), not over
+re-serialized JSON. Reject old timestamps (> 5 minutes) to prevent replay.
+## Retries and idempotency
+
+- Your endpoint must respond **2xx** within the timeout; anything else is
+  retried.
+- Up to **5 attempts** with incremental backoff:
+
+| Attempt | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|
+| Approx. wait | immediate | ~5s | ~20s | ~45s | ~80s |
+
+- Use `X-Webhook-Event-ID` to deduplicate: the same event can arrive more
+  than once (at-least-once delivery).
+- If all 5 attempts fail the event is not resent — recover the state with
+  the resource's `GET` (which is why no flow should depend ONLY on the
+  webhook).
+
+## Best practices
+
+- Respond `200` immediately and process in the background.
+- Log the `X-Webhook-Delivery-ID` for traceability.
+- Don't rely solely on webhooks for critical states: you can always query
+  the object by API (`GET /v1/payouts/{id}`, etc.).

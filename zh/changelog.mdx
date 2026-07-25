@@ -7,7 +7,23 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-<Update label="2026年7月24日" description="v2.06 · 4 个版本">
+<Update label="2026年7月24日" description="v2.07 · 5 个版本">
+
+### v2.07
+
+**新增**
+
+- **面向 AI/MCP 的文档知识包（Docs Knowledge Pack）**：本文档现在还以结构化、
+  带版本号的包形式发布于
+  [`/mcp-pack/manifest.json`](https://docs.cbpayapp.com/mcp-pack/manifest.json)
+  （3 种语言的 OpenAPI 规范、逐页纯 Markdown 指南、错误与 Webhook 目录、
+  含模拟器魔法值的测试指南、端到端配方以及可直接用于 RAG 的分块）。它是
+  为文档 [MCP 服务器](/zh/mcp)提供数据的官方来源。
+
+**移除**
+
+- **停用编译后的 Markdown `CBPAY_DOCUMENTACION.md`**：这份仅西班牙语的单一
+  文档已过时——其替代品是文档知识包（三语、含完整规范）和 MCP 服务器。
 
 ### v2.06
 

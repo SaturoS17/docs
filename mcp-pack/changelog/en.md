@@ -1,0 +1,1915 @@
+---
+title: "Changelog"
+description: "History of API and documentation changes"
+slug: en/changelog
+lang: en
+source_url: https://docs.cbpayapp.com/en/changelog
+---
+Every change to the CBPay API and this documentation, most recent first.
+Breaking changes are announced in advance and flagged as **Breaking**.
+
+## v2.07 · 5 releases - July 24, 2026
+
+### v2.07
+
+**Added**
+
+- **Docs Knowledge Pack for AI/MCP**: this documentation is now also
+  published as a structured, versioned pack at
+  [`/mcp-pack/manifest.json`](https://docs.cbpayapp.com/mcp-pack/manifest.json)
+  (OpenAPI specs in 3 languages, per-page guides in pure Markdown, error
+  and webhook catalogs, testing guide with the simulator magic values,
+  end-to-end recipes and RAG-ready chunks). It is the official source
+  feeding the documentation [MCP server](https://docs.cbpayapp.com/en/mcp).
+
+**Removed**
+
+- **Compiled Markdown `CBPAY_DOCUMENTACION.md` retired**: the single
+  Spanish-only document is obsolete — its replacement is the Docs
+  Knowledge Pack (trilingual, with complete specs) and the MCP server.
+
+### v2.06
+
+**Added**
+
+- **Anchor FAQ on every product guide**: payouts, payins, checkout,
+  transfers, crypto, banking, cards, statement, QR payout and stored cards
+  + subscriptions now close with frequently asked questions and a direct
+  link to the [error catalog](https://docs.cbpayapp.com/en/errors).
+- **Error and webhook catalogs completed**: error codes and webhook event
+  types that existed in the API but were missing from the reference pages
+  are now documented. No contract changes.
+
+### v2.05
+
+**Changed**
+
+- **Docs overhaul, phase 5 (API reference only, no code change)**: the API
+  reference now groups operations under three new tags — **Checkout**
+  (public `/pay/{token}` pages and quotes), **Stored cards**
+  (`/v1/stored-cards` and saved-card lookups) and **Subscriptions**
+  (`/v1/subscriptions`). These operations were previously stacked under
+  the generic **Payins** tag; every path and contract is unchanged.
+
+### v2.04
+
+**Added**
+
+- **Dedicated product guides**, extracted from the payins/payouts monoliths:
+  [Checkout](https://docs.cbpayapp.com/en/guides/checkout),
+  [Stored cards & subscriptions](https://docs.cbpayapp.com/en/guides/stored-cards-subscriptions) and
+  [QR payout](https://docs.cbpayapp.com/en/guides/qr-payout). The original sections keep their
+  headings and link to the new guides, so historical anchors still resolve.
+- **New end-to-end flows** in [Integration flows](https://docs.cbpayapp.com/en/flows): checkout,
+  saved cards and subscriptions, QR POS charges and balance swaps, each
+  with its sequence diagram.
+
+**Changed**
+
+- **Products navigation reorganized by product family**: Money in, Money
+  out, Balances & account, Identity & compliance, and Experience — instead
+  of a flat 17-page list.
+- [Profile & security](https://docs.cbpayapp.com/en/guides/profile) and
+  [Security and 2FA (OTP)](https://docs.cbpayapp.com/en/security-2fa) now cross-link and state their
+  roles: the profile guide owns the user's 2FA factors; the OTP page owns
+  the per-action challenge flow.
+
+### v2.03
+
+**Added**
+
+- **Test environment surfaced across the whole site**: every product guide
+  now opens with the test and live base URLs (shared snippet), and the
+  [FAQ](https://docs.cbpayapp.com/en/faq), [quickstart](https://docs.cbpayapp.com/en/quickstart) and
+  [introduction](https://docs.cbpayapp.com/en/introduction) correctly describe the test environment
+  (`https://cryptobank.qbank.cl/platform`, `pk_test_` keys) — earlier
+  copies incorrectly said no sandbox existed. Full details in
+  [Environments and testing](https://docs.cbpayapp.com/en/environment-testing).
+
+**Changed**
+
+- **Introduction product catalog completed**: checkout, cards and
+  subscriptions, QR POS, swaps, segregated wallets, Bitcoin and analytics
+  are now listed with their guides.
+
+**Fixed**
+
+- Spec descriptions that predated multi-asset balances: tag descriptions
+  realigned (Swaps, AML screening, Cards) and legacy wording like
+  "credited to the USDT balance" corrected to the settlement-asset
+  semantics (`default_payin_asset`, `settlement_asset`).
+
+## v2.02 · 6 releases - July 23, 2026
+
+### v2.02
+
+**Changed**
+
+- **Auto-conversion into `default_payin_asset` now executes at the real
+  price, with no swap spread** ([money model](https://docs.cbpayapp.com/en/concepts/money-model)):
+  the payin already paid its fee and rate when it credited, so the
+  automatic conversion into your configured balance adds no extra cost —
+  there is no double conversion. The per-operation/24h limits of volatile
+  assets (BTC/GOLD) still apply. Manual swaps (`POST /v1/swaps`) keep
+  their regular spread.
+
+### v2.01
+
+**Added**
+
+- **New error code `reserved_idempotency_key` (400)** on `POST /v1/swaps`
+  ([errors](https://docs.cbpayapp.com/en/errors)): idempotency keys prefixed `payin-convert:` or
+  `checkout-swap:` are reserved for system auto-conversions (payin
+  default balance and checkout) and are rejected. Use any other key for
+  your swaps.
+
+### v2.00
+
+**Added**
+
+- **Default balance for payins (`default_payin_asset`)**
+  ([money model](https://docs.cbpayapp.com/en/concepts/money-model)): choose which balance your
+  incoming payments end up in. `PUT /v1/settlement` now accepts
+  `default_payin_asset` (USDT, USDC, BTC or GOLD) and `GET
+  /v1/settlement` exposes it. The payin still credits in USDT (pricing
+  and fees untouched) and the net amount auto-converts into your asset
+  through the swap engine (same spread and limits as a swap). If the
+  conversion fails it stays `conversion_status: pending_retry` and
+  retries automatically. `GET /v1/payins`, the detail and the
+  `payin_credited` webhook expose `settlement_asset` and
+  `conversion_status` when a conversion applies.
+
+**Changed**
+
+- A checkout link created **without** `settlement_asset` now uses the
+  account's `default_payin_asset` (previously always USDT).
+
+### v1.99
+
+**Added**
+
+- **Dedicated fee for card payments (`payin_card`)**
+  ([fees](https://docs.cbpayapp.com/en/concepts/fees)): payments credited via card (direct payin
+  with `method: card`, checkout links paid with card, and recurring
+  charges on stored cards) can carry their own percentage fee,
+  configurable **per currency** (e.g. one rate for BOB and another for
+  USD). If your account has no `payin_card` configured, the regular
+  `payin` fee keeps applying — nothing changes without explicit
+  configuration. Check your effective fees in `GET /v1/fees` (rows now
+  include the `currency` field).
+
+### v1.98
+
+**Added**
+
+- **`GET /v1/banking/accounts/{bankAccountID}`** ([banking guide](https://docs.cbpayapp.com/en/guides/banking)):
+  live details of one of your bank accounts — name, currency, status and
+  the receiving requisites (wire and local rails) under `data`. Use it to
+  render the deposit instructions of a specific account without walking
+  the list.
+
+**Changed**
+
+- **Bank account listing**: the API now exposes only the accounts enabled
+  for your operation per the corridor configuration. Accounts that are
+  not enabled no longer appear in `GET /v1/banking/accounts` and their
+  by-id lookups return `404`.
+
+### v1.97
+
+**Fixed**
+
+- **Checkout page — saved card by default**: when the entered email has
+  saved cards, the primary button now pays with the saved card (its label
+  changes to "Pay with VISA ···· 1234") instead of starting a new-card
+  payment. Using a different card is now an explicit action ("Use another
+  card"). Previously, pressing the primary button while a saved card was
+  listed led to the payment page asking for all card details again.
+
+## v1.96 · 3 releases - July 22, 2026
+
+### v1.96
+
+**Added**
+
+- **New corridor: Argentina** 🇦🇷 ([payouts guide](https://docs.cbpayapp.com/en/guides/payouts) · [payins guide](https://docs.cbpayapp.com/en/guides/payins)):
+  - **Payouts** in **ARS** and **USD** via `bank_transfer` to any 22-digit **CBU or CVU** (bank accounts and virtual wallets; USD is CBU-to-CBU only). Beneficiary takes `name`, `tax_id` (CUIT/CUIL) and `account_number` — no `bank_code` needed.
+  - **Payins** in **ARS** with a **dedicated CVU account** per account (`POST /v1/payins/deposit-accounts` with `country: "AR"`): every incoming transfer is credited automatically, no references needed. CVUs are receive-only: direct debit attempts are rejected automatically.
+  - Available now in the **test environment** (staging) with the simulator; production activation will be announced once bank certification completes — the catalog (`GET /v1/payouts/methods` and `GET /v1/payins/methods`) is always the source of truth.
+
+### v1.95
+
+**Added**
+
+- **Billing on file with the saved card** ([payins guide](https://docs.cbpayapp.com/en/guides/stored-cards-subscriptions)): the billing details the payer enters when saving their card (name, address, city, email, phone) are stored alongside the credential. When paying again with that card, the secure page applies them automatically — the payer retypes nothing — and shows only a **masked summary** (name, partial email and city) with a "use different details" link in case they want to change them. The full details never reach the browser: the server applies them at authorization time.
+
+**Changed**
+
+- **Cardholder email required with a saved card**: on the public checkout page, paying with a saved card now requires presenting the same cardholder email it was saved with — a mismatch responds `404` (anti-enumeration protection for personal data).
+
+### v1.94
+
+**Fixed**
+
+- **Checkout page — 1-click card payment** ([payins guide](https://docs.cbpayapp.com/en/guides/checkout)): continuing with a card on the public page now redirects straight to the secure payment page — the intermediate button that required a second click was removed. Picking a saved card from the list starts the payment immediately.
+- **Saved card on checkout**: picking a saved card now always reaches the secure page with the credential applied (it shows brand and last 4 digits and never asks for the number again). Previously, the email re-validation could silently drop the selection and the page asked for every field again. Also, switching the choice on the same link (saved ↔ new card) regenerates the right payment session instead of reusing the previous one.
+
+## v1.93 · 3 releases - July 21, 2026
+
+### v1.93
+
+**Fixed**
+
+- **Banking webhooks for third parties** ([webhooks](https://docs.cbpayapp.com/en/webhooks), [banking guide](https://docs.cbpayapp.com/en/guides/banking)): the `banking_customer_status_changed` webhook now also fires when a **third party** registered by your account changes verification state (previously only your own profile's events arrived). The payload adds `customer_kind` (`self` | `third_party`) and, for third parties, `third_party_id` (the same id as `GET /v1/banking/third-parties/{id}`).
+
+### v1.92
+
+**Fixed**
+
+- **Checkout charge amounts in the payin history** ([payins guide](https://docs.cbpayapp.com/en/guides/checkout)): `GET /v1/payins` and `GET /v1/payins/{payin_id}` now always include the denomination of checkout and QR POS payins — `settlement_asset` + `asset_amount` (plus `conversion_status` when applicable) — in every status, including pending and expired. Previously the amount only appeared once credited, so pending rows showed no amount. Additionally, a charge settled in crypto or via the CBPay app now exposes its `usdt_credited` even without an `fx_rate`. CSV/XLSX exports add the `settlement_asset` and `asset_amount` columns.
+
+### v1.91
+
+**Added**
+
+- **Subscriptions (scheduled recurring charges)** ([payins guide](https://docs.cbpayapp.com/en/guides/stored-cards-subscriptions#subscriptions-scheduled-recurring-charges)): the platform runs the schedule for charges on a saved card. `POST /v1/subscriptions` (`interval` daily/weekly/monthly/yearly, optional `start_at` for a trial, required `idempotency_key`) charges the first period on creation and fires the rest automatically. Full resource `GET /v1/subscriptions` (+`/{id}`, filters status/stored_card_id/payer_reference) and lifecycle `POST .../pause` · `/resume` · `/cancel`. Dunning on declines (daily retry ×3 ⇒ `past_due`), no catch-up on resume, and automatic cancellation when the card is revoked. Each successful charge credits like a card payin (`payin_credited` with `subscription_id`). New webhook `subscription_status_changed`.
+
+## v1.90 - July 20, 2026
+
+**Added**
+
+- **Saved cards and recurring charges** ([payins guide](https://docs.cbpayapp.com/en/guides/stored-cards-subscriptions)): the `card` method now supports stored credentials (the card brands' COF mandate). `POST /v1/payins` accepts `save_card` (consent checkbox on the hosted page), `payer_reference` (your customer ID) and `stored_card_id` (pay with a saved card without re-typing the number; 3-D Secure still runs). New resource `GET /v1/stored-cards` (+`/{id}`, `DELETE` to revoke) and **merchant-initiated charges** without the payer present: `POST /v1/stored-cards/{id}/charges` (`recurring` for subscriptions; `idempotency_key` required — a retry never charges twice). The card number never exists on the platform: display data only (brand, last 4, expiry). New webhooks `card_stored` and `stored_card_revoked`; new error `422 stored_card_revoked` ([errors](https://docs.cbpayapp.com/en/errors)).
+
+## v1.89 · 2 releases - July 18, 2026
+
+### v1.89
+
+**Added**
+
+- **Compliance controls on outgoing payments** ([payouts guide](https://docs.cbpayapp.com/en/guides/payouts), [errors](https://docs.cbpayapp.com/en/errors)): payouts, crypto withdrawals with a beneficiary name and collect charges now go through additional compliance controls **before money moves**. Documented errors: `403 compliance_hold` (the operation was held and NOT created — no debit; by policy the exact reason is not disclosed, contact support with the timestamp) and `503 compliance_check_unavailable` (the check could not be evaluated; the operation was NOT created — retry with the **same** `idempotency_key`).
+
+### v1.88
+
+**Fixed**
+
+- **AML screening person shapes** ([guide](https://docs.cbpayapp.com/en/guides/aml)): the screening
+  engine requires `date_of_birth` as a `{year, month, day}` object (the
+  plain `"YYYY-MM-DD"` string returns `422`), `nationality` as an **array**
+  of ISO-3166 codes and `personal_identification[]` as
+  `{ "issuing_country", "number" }` without a `type` field. Guide and spec
+  examples updated with the live-verified shapes.
+
+## v1.87 · 4 releases - July 17, 2026
+
+### v1.87
+
+**Added**
+
+- **QR Crypto POS — amount-bearing crypto QR charges for processors** ([guide](https://docs.cbpayapp.com/en/guides/qr-pos)):
+  company accounts operating physical POS terminals register their
+  merchants as verified merchants (approved third-party KYB/KYC) and
+  generate crypto charges (USDT, USDC, BTC) with an exclusive address and
+  QR per sale. Early payment detection for the POS (`confirming` within
+  seconds), credit with automatic conversion to the settlement asset,
+  per-merchant attribution on charges/webhooks, a reconciliation summary
+  (`GET /v1/pos/summary`) with the informative per-merchant commission and
+  the net to distribute, and refunds over the crypto withdrawal rail with
+  a hard cap (never more than received). New routes under `/v1/pos/*`
+  (QR Crypto POS tag in the API Reference); partial payments accumulate and late
+  payments into an expired charge are still credited.
+
+### v1.86
+
+**Fixed**
+
+- **Bitcoin crypto QR**: the checkout QR now carries the raw bech32
+  address (same as TRON/ETH). Exchange apps like Binance rejected the
+  BIP-21 URI (`bitcoin:…?amount=…`) as "invalid QR"; the exact amount
+  remains shown next to it with a copy button.
+- **Checkout page**: white-label favicon (org symbol) and panel copy no
+  longer splits Spanish words mid-word ("momento" → "moment"/"o") — the
+  aggressive `word-break` now applies only to monospace addresses.
+
+### v1.85
+
+**Added**
+
+- **Dedicated CLABE per checkout link (Mexico)**: materializing
+  `bank_transfer` MX on a universal checkout link now issues (or takes
+  from a recyclable pool) a CLABE **exclusive to that link**. The payer
+  transfers the exact amount **with no reference**: the deposit is
+  detected and routed to the link automatically by destination account.
+  The materialization payload carries `destination` with
+  `dedicated: true`; if the dedicated account cannot be issued, it
+  degrades to the classic path (merchant account + mandatory `reference`
+  in the transfer description). CLABEs are recycled with a cooldown once
+  the link resolves (paid or expired).
+
+### v1.84
+
+**Added**
+
+- **Pull collections on the universal checkout link (Venezuela)**: the
+  checkout page now offers methods that charge the payer's account
+  directly (`c2p` and `debito_inmediato` in VE). The payer fills in bank,
+  document, phone or account and the OTP on the same page; the amount is
+  always the one frozen at quote time. New public endpoints:
+  `POST /pay/{token}/collect/otp` (requests the key when the rail sends
+  it on demand) and `POST /pay/{token}/collect` (runs the charge; if the
+  rail confirms synchronously the link is settled in the same call).
+  These methods arrive with `collect: true` in the
+  `GET /pay/{token}/quote` catalog.
+- **Multi-currency fiat per country**: each country in the quote lists
+  its corridors in `options[]` — one row per method+currency (e.g.
+  Bolivia with QR in BOB **and** USD) with its `local_amount` in
+  `country_quote`. Materializing a method offered in several currencies
+  requires `&currency=YYY` (the `400 currency_required` error now applies
+  to any method, not just cards).
+- **Destination account on bank transfers**: when the corridor uses a
+  dedicated deposit account (the CLABE in Mexico), the `bank_transfer`
+  materialization includes `destination` (type, account number and
+  beneficiary) besides the reference — the payer knows where to send the
+  transfer without leaving the page.
+
+**Changed**
+
+- **SVG flags on the payment page**: country and currency flags are now
+  SVG images (consistent across Windows, macOS and mobile; some systems
+  used to render the country code as plain text). On the Card tab the
+  flag is derived from the **charge currency** (USD → United States
+  flag, even when the acquirer sits in another country).
+
+**Fixed**
+
+- The checkout page no longer replies `429 too_many_attempts` just for
+  being open: the read, materialization, OTP and collect traffic limits
+  are now independent from each other.
+
+## v1.83 · 10 releases - July 16, 2026
+
+### v1.83
+
+**Added**
+
+- **Card tab on the universal payment link**: card payments move out of
+  the Fiat tab into their own tab, listed **by charge currency** (today
+  BOB and USD; currencies from future acquirers show up on their own).
+  `GET /pay/{token}/quote` returns the new `cards[]` catalog (country,
+  currency and `local_amount` per option) and `countries[]` no longer
+  lists `card` among the methods. Materializing a card requires the
+  currency: `POST /pay/{token}/methods/card?country=XX&currency=YYY` —
+  without it the new `400 currency_required` error is returned. Each
+  currency is an independent materialization with its own hosted payment
+  page.
+
+**Changed**
+
+- **Payment page with a stronger visual identity**: asset logos (USDT,
+  USDC, BTC, GOLD) next to the amount and on the crypto groups, country
+  flags on the Fiat selector and the card rows, per-method icons, and a
+  **prominent expiry timer** (clock pill; under 1 hour it shows a
+  countdown and under 10 minutes it turns red).
+
+**Fixed**
+
+- The checkout page no longer scrolls by itself to the active panel
+  every few seconds: the automatic refresh re-renders only when the data
+  changed and never moves the scroll (only manually selecting a method
+  brings the detail into view).
+
+### v1.82
+
+**Changed**
+
+- **Universal checkout payment page redesigned**: the options are now
+  organized into three tabs — **CBPay** (merchant QR + alias, with a copy
+  button), **Crypto** (coins grouped by network; new networks show up on
+  their own once enabled) and **Fiat** (country selector + methods with
+  the quoted local amount). Copy buttons on the alias, addresses, amounts
+  and references. No API changes: the URL, the creation contract and the
+  public endpoints (`/state`, `/quote`, `/methods/{method}`) are the same.
+
+### v1.81
+
+**Fixed**
+
+- **QR payout — validation before the payout is created**: a
+  `POST /v1/payouts/qr/scan` with an unreadable or dynamic QR now answers
+  `400 invalid_qr_payload` with the concrete reason (it used to return a
+  generic `502`). On the Brazilian confirm, an amount that does not match
+  a fixed-amount PIX QR answers `422` with the payout `failed` and the
+  **refund already applied** — and the QR stays intact so you can retry
+  with the right amount and a new key.
+- **Static PIX QR is reusable**: the "one QR = one payment" guard no longer
+  applies to Brazilian static PIX QRs (they are paid many times by
+  design); the per-payment protection is your `idempotency_key`, which is
+  mandatory on every Brazilian confirm.
+
+### v1.80
+
+**Added**
+
+- **PIX QR payout in Brazil (BR/BRL)**: the two-step flow
+  `POST /v1/payouts/qr/scan` → `POST /v1/payouts/qr/confirm` now accepts
+  **static** Brazilian PIX QRs (including the "copia e cola" code) — send
+  `country: "BR"` and `currency: "BRL"`. The scan decodes the BR Code
+  locally (free of charge) and returns the merchant name, PIX key and
+  amount; the confirm pays through PIX with the same pricing as a regular
+  payout. `amount` is always required: fixed-amount QRs demand an exact
+  match (a mismatch answers `422` with the payout `failed` and an automatic
+  refund — the QR is **not** burned). A static PIX QR is **reusable**: each
+  payment carries its own `idempotency_key`. Dynamic or corrupt QRs answer
+  `400 invalid_qr_payload` — use the `pix` method with the beneficiary's key.
+  Available in the
+  test environment with sample QRs and magic values (`.99` amounts fail) —
+  see [Environment & testing](https://docs.cbpayapp.com/en/environment-testing#sample-pix-qrs).
+  Details in the [payouts guide](https://docs.cbpayapp.com/en/guides/qr-payout).
+
+### v1.79
+
+**Changed**
+
+- **Universal checkout link v2 — multi-country + settlement in the asset
+  you choose** (**Breaking** over yesterday's v1 shape): the charge is now
+  denominated in any of your 4 virtual balances via `settlement_asset`
+  (`USDT` default, `USDC`, `BTC`, `GOLD`) with `amount` IN that asset
+  ("50" USDT, "0.001" BTC, "2" g of gold); sending `currency` returns
+  `400` (existing v1 links keep working). The payer sees **every country
+  with a live pay-in corridor** (pick a country → its methods with the
+  local amount quoted and frozen at materialization), the 4 crypto options
+  with a **scannable QR** (`qr_payload` + `qr_png_base64`; BIP-21 for BTC,
+  raw address for TRON/ETH tokens — readable by Trust Wallet, MetaMask,
+  Binance and external wallets), and the merchant's **CBPay QR + alias**
+  to pay instantly from the app (deeplink `cbpay:pay?to=…&checkout=…`;
+  `POST /v1/transfers` accepts `checkout_token` and validates the due
+  server-side). Every payment **auto-converts** into the
+  `settlement_asset` on credit (same asset skips conversion);
+  `conversion_status` is visible on `/state`. New public endpoint
+  `GET {checkout_url}/quote` with the country catalog, crypto dues and
+  CBPay dues. New errors `country_required`, `country_unavailable`,
+  `settlement_asset_disabled` and `checkout_amount_mismatch`. Details in
+  the [payins guide](https://docs.cbpayapp.com/en/guides/checkout).
+
+### v1.78
+
+**Added**
+
+- **Rejection detail on failed active collections**: when an active
+  collection (`collect`, C2P or immediate debit) ends up `failed`, the
+  payin now includes a `failure` object with where the rejection
+  originated (`provider` = the payer's bank, `core` = pre-charge
+  validation), plus the concrete code and message — visible in the
+  synchronous `POST` response, in `GET /v1/payins/{id}` and in the
+  webhook. Previously only the generic `failed` status was exposed. See
+  the [payins guide](https://docs.cbpayapp.com/en/guides/payins).
+
+### v1.77
+
+**Added**
+
+- **Universal checkout link (`checkout`)**: `POST /v1/payins` accepts
+  `method: "checkout"` and returns `checkout_url` — a branded public page
+  where the payer picks how to pay: QR, card, bank transfer or **crypto**
+  (USDT on TRON, USDT/USDC on Ethereum and BTC) with a deposit address
+  exclusive to that charge and accumulation of partial payments. One link
+  = one charge: the first method that completes the payment wins. State
+  queryable without auth at `GET {checkout_url}/state`; the
+  `payin_credited` of a crypto payment adds `settled_via` and
+  `crypto_amount`. Supports `success_url`, `failure_url`, `expires_in`
+  (10 minutes to 7 days) and idempotency (a retry returns the same link).
+  New errors `already_paid`, `checkout_expired` and `method_unavailable`.
+  Details in the
+  [payins guide](https://docs.cbpayapp.com/en/guides/checkout).
+
+### v1.76
+
+**Changed**
+
+- **Pre-capture authentication filter on card payments**: card charges are
+  only sent to the processor when the 3-D Secure verification ended with a
+  successful or attempted authentication and complete authentication data;
+  an attempt without real authentication is rejected before any funds move
+  and the payer can retry. The payment page also extended device data
+  collection (~11 s) to improve issuer approval rates. In the test
+  environment, an amount ending in `.44` simulates an attempt rejected by
+  this filter (full table in
+  [Test environment](https://docs.cbpayapp.com/en/environment-testing)).
+
+### v1.75
+
+**Added**
+
+- **Card payments (`card`) on payins**: `POST /v1/payins` accepts
+  `method: "card"` (Bolivia, BOB or USD) and returns `payment_url` — a
+  hosted payment page with your organization's branding where the payer
+  enters their card in secure fields and completes their bank's 3-D Secure
+  verification. Optional fields `customer`, `success_url`, `failure_url`
+  and `expires_at`. A confirmed payment arrives via the `payin_received`
+  webhook and credits the balance like any payin; if nobody pays,
+  `payin_expired` closes the charge. Details in the
+  [payins guide](https://docs.cbpayapp.com/en/guides/payins).
+
+### v1.74
+
+**Added**
+
+- **`account_id` on swaps and address screenings**: the responses of
+  `POST/GET /v1/swaps` and `POST/GET /v1/screenings/addresses` now include
+  `account_id` (the account that owns the operation). Informational for
+  single-account integrations; admin views use it to attribute each record.
+
+## v1.73 · 5 releases - July 15, 2026
+
+### v1.73
+
+**Added**
+
+- **Bitcoin on-chain (`btc`/`btc`)**: fourth supported network of the
+  crypto product. Every account is now born with **four deposit wallets**
+  (Bitcoin joins, bech32 address `bc1q…`); BTC deposits credit the BTC
+  balance (~30 min confirmation, 3 blocks) and on-chain withdrawals accept
+  `chain: "btc"` (bech32, taproot and legacy destinations; the network fee
+  is covered by the operation — the recipient receives the exact amount).
+  [Segregated wallets](https://docs.cbpayapp.com/en/guides/segregated-wallets) also support the
+  `btc`/`btc` pair (no gas: the fee comes out of the wallet's balance).
+  Travel Rule applies as on the other networks, valuing the amount in USD.
+  Details in the [crypto guide](https://docs.cbpayapp.com/en/guides/crypto).
+
+### v1.72
+
+**Changed**
+
+- **Two-step login also honors the phone binding cooldown**: with login
+  2FA over SMS/WhatsApp and a recently linked, unverified number, the
+  login code is issued over a stronger factor (authenticator app, then
+  login email) instead of the phone — the effective `channel` comes back
+  in the login response. Without an alternative factor the login responds
+  `403 phone_binding_cooldown` until the cooldown expires. The code is
+  never sent to a number linked from the session itself. Details in the
+  [security and 2FA guide](https://docs.cbpayapp.com/en/security-2fa).
+
+### v1.71
+
+**Changed**
+
+- **OTP challenges with the phone in cooldown fall back to a stronger
+  factor**: with a recently linked number (24 h cooldown),
+  `POST /v1/otp/challenges` no longer blocks if you have the authenticator
+  app enrolled or a verified email — the challenge is issued automatically
+  over that channel (hierarchy totp > email) and the response reports the
+  effective channel. The `403 phone_binding_cooldown` remains only for
+  accounts with no alternative factor. Previously the cooldown blocked
+  every 2FA relaxation (even disabling the email channel) even when
+  stronger factors were available. Details in the
+  [security and 2FA guide](https://docs.cbpayapp.com/en/security-2fa).
+
+### v1.70
+
+**Added**
+
+- **Verified identity as the profile's source of truth**: when your
+  KYC/KYB onboarding is approved, `display_name` (person = first + last
+  name; company = legal name), `tax_id` and `country` are backfilled
+  automatically from the verified identity. Documented in the
+  [KYC guide](https://docs.cbpayapp.com/en/guides/kyc) and the [profile guide](https://docs.cbpayapp.com/en/guides/profile).
+
+**Changed**
+
+- **`PATCH /v1/me` locks identity fields once verified**: with
+  `kyc_status: approved`, changing `display_name`, `tax_id` or `country`
+  answers `409 identity_locked` (new code on the [errors](https://docs.cbpayapp.com/en/errors)
+  page). `phone` stays editable with its own verification flow.
+
+### v1.69
+
+**Added**
+
+- **AML screening PDF report**:
+  `GET /v1/aml/screenings/{screeningID}/report` downloads any screening in
+  your history as an executive PDF report with your branding — a cover
+  page with the decision and its risk traffic light, indicators
+  (sanctions, watchlists, PEP, adverse media...), consolidated matches,
+  aliases, a glossary and a final backing section with the international
+  data sources consulted. Trilingual via `lang=en|es|zh` (default
+  English). Pure read, no fee. New section in the
+  [AML guide](https://docs.cbpayapp.com/en/guides/aml#screening-pdf-report).
+- **New error code `invalid_language`** (HTTP 400): the PDF report `lang`
+  is not `en`, `es` or `zh`. Documented on the [errors](https://docs.cbpayapp.com/en/errors) page.
+
+**Fixed**
+
+- **Company fields in the AML screening**: examples and the spec documented
+  `tax_id`/`registration_number`/`country_of_incorporation` as flat fields
+  of `customer.company`, but the screening engine rejects them with `422`.
+  The identifier goes in `registration_authority_identification`, the
+  country in `place_of_registration` and `incorporation_date` is a
+  `{year, month, day}` object. Guide and spec corrected (verified in
+  production).
+
+## v1.68 · 7 releases - July 14, 2026
+
+### v1.68
+
+**Added**
+
+- **New corridor: Ecuador (USD)** with four payout methods —
+  `bank_transfer`, `deuna` (DeUna wallet), `cash_pickup` (over-the-counter
+  withdrawal, no account needed) and `cnb` (non-bank correspondent). The
+  beneficiary accepts structured names (`given_name`/`first_surname`/...)
+  or automatic splitting from `name`, plus an optional sender block
+  (`sender_name` or its structured fields). Per-method examples in the
+  [payouts guide](https://docs.cbpayapp.com/en/guides/payouts) and the spec.
+- **New error code `channel_unavailable`** (HTTP 503): the corridor's
+  payment channel is temporarily unavailable. Retry later with the same
+  `idempotency_key`. Documented on the [errors](https://docs.cbpayapp.com/en/errors) page.
+
+### v1.67
+
+**Added**
+
+- **Test accounts are born populated**: every new account in the test
+  environment starts with ~6 months of realistic demo history across all
+  products (payouts, payins, transfers, crypto, swaps, cards, banking,
+  contacts...), with play balances, a reconciled statement and analytics
+  ready to explore. Applies to every creation path (registration, social
+  login, admin creation and the dashboard's test/live switch).
+
+**Changed**
+
+- **Fully independent environments**: test data is no longer refreshed from
+  a production snapshot — nothing is copied between environments. Updated
+  [environments and testing](https://docs.cbpayapp.com/en/environment-testing) guide.
+
+### v1.66
+
+**Added**
+
+- **Official MCP server** at `https://mcp.cbpayapp.com`: connect your AI
+  editor or assistant (Cursor, VS Code, Claude, ChatGPT and any MCP client)
+  to this documentation — search, endpoints with real examples and the error
+  catalog, without leaving your editor. Read-only, no authentication. New
+  [MCP Server](https://docs.cbpayapp.com/en/mcp) page with one-click install and per-client setup.
+
+### v1.65
+
+**Changed**
+
+- **Test environment**: new accounts are now born with
+  `kyc_status: approved` — you can exercise every product immediately,
+  with no onboarding gate. This applies to every creation path (register,
+  social login, admin creation and the dashboard test/live switch);
+  existing test accounts were approved retroactively. **Live** is
+  unchanged: accounts are born unverified and KYC/KYB remains mandatory
+  before money can leave. To test the verification flow in test mode, use
+  third-party KYC/KYB verifications.
+
+### v1.64
+
+**Changed**
+
+- `PUT /v1/otp/preferences`: enabling 2FA for the `login` action over a
+  phone channel (`sms`/`whatsapp`) now requires the account phone number
+  already **verified** (complete any SMS/WhatsApp OTP challenge first).
+  If the number is not verified the API responds
+  `409 phone_verification_required`. This safeguard prevents a mistyped
+  number from locking you out of your account when enabling login 2FA.
+
+### v1.63
+
+**Fixed**
+
+- `POST /v1/me/passkeys/register/begin` and
+  `DELETE /v1/me/passkeys/{passkeyID}` now accept a request without a
+  body, as the spec documents (optional body). They previously returned
+  `400 invalid_json`. The current password is still required for
+  accounts that have one (`403 invalid_password` if missing or wrong);
+  social-login-only accounts pass with their session.
+
+### v1.62
+
+**Fixed**
+
+- `POST /v1/me/totp/enroll` now accepts a request without a body, as the
+  spec documents (optional body). It previously returned
+  `400 invalid_json`. The current password is still required for
+  accounts that have one (`403 invalid_password` if missing or wrong);
+  social-login-only accounts pass with their session.
+- `PUT /v1/otp/preferences` with channel `email` or `totp` returned a
+  500 error; fixed — all four channels (`sms`, `whatsapp`, `email`,
+  `totp`) now save correctly.
+
+**Changed**
+
+- PDF statement: operation statuses are now color-coded (green
+  completed, amber pending, red failed) for quick scanning.
+
+## v1.61 · 6 releases - July 13, 2026
+
+### v1.61
+
+**Added — CSV / Excel export on listings**
+
+- The `movements`, `payouts`, `payins` and `transfers` listings now accept
+  the `format=csv` or `format=xlsx` parameter to download the rows as an
+  accounting-ready file (up to 10,000 rows per download; the `from`/`to`,
+  `status` and other filters apply the same).
+
+```bash
+curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-01&to=2026-07-13&format=xlsx" \
+  -H "Authorization: Bearer pk_…"
+```
+
+- Without `format` the response is still the usual paginated JSON — no
+  compatibility changes.
+
+### v1.60
+
+**Breaking — Segregated wallets move to `/v1/segregated-wallets`**
+
+- Every segregated-wallet route is renamed from `/v1/wallets*` to
+  `/v1/segregated-wallets*`. Same methods, parameters, response shapes,
+  fees and webhooks — only the path prefix changes. There is **no
+  compatibility alias**: the old `/v1/wallets*` routes now respond `404`.
+- Mapping (the 15 routes follow the same pattern):
+
+| Before | Now |
+|---|---|
+| `POST/GET /v1/wallets` | `POST/GET /v1/segregated-wallets` |
+| `POST /v1/wallets/import` | `POST /v1/segregated-wallets/import` |
+| `GET /v1/wallets/{id}` (+ `/balance`, `/deposits`, `/transactions`) | `GET /v1/segregated-wallets/{id}` (+ same subroutes) |
+| `POST/GET /v1/wallets/{id}/sends` (+ `/{sendID}`, `/receipt`) | `POST/GET /v1/segregated-wallets/{id}/sends` (+ same subroutes) |
+| `GET /v1/wallets/{id}/deposits/{depositID}/receipt` | `GET /v1/segregated-wallets/{id}/deposits/{depositID}/receipt` |
+| `POST /v1/wallets/{id}/export` · `GET/POST .../auto-forward` | `POST /v1/segregated-wallets/{id}/export` · `GET/POST .../auto-forward` |
+
+- The `receipt_url` in responses, webhooks and receipt emails of wallet
+  sends/deposits now points to the new path.
+- Why: the generic `/v1/wallets` prefix was constantly confused with the
+  **deposit wallets** of the [crypto](https://docs.cbpayapp.com/en/guides/crypto) product. Those are
+  untouched and keep living under `/v1/crypto/wallets`.
+
+**Added — `type` discriminator on every wallet response**
+
+- Deposit wallets (`/v1/crypto/wallets`) now include `type: "deposit"` and
+  `receive_only: true`.
+- Segregated wallets include `type: "segregated"`.
+- Use it to tell the two products apart defensively — never by route alone.
+
+### v1.59
+
+**Added — `payin_expired` webhook: automatic closure of unpaid collections**
+
+- When an active charge (QR or hosted checkout) expires or fails without
+  receiving the payment, the payin now moves automatically from `pending`
+  to `expired` (or `failed`) — previously it could stay pending forever.
+- New **`payin_expired`** webhook event carrying the `payin_id`, the final
+  status, the corridor and the reference, so you can close the collection
+  on your side without polling. Subscribable via
+  `POST /v1/webhooks/subscriptions`.
+- No funds move in any case: to retry the collection, create a new payin.
+
+### v1.58
+
+**Changed — Redesigned receipts, statement and emails**
+
+- Every PDF receipt (`GET .../receipt`) ships a banking-grade redesign:
+  header with logo and receipt number, product icon, hero amount,
+  two-column details, a "Verifiable document" strip with the QR code and an
+  institutional footer. The brand symbol appears as a subtle watermark;
+  non-final operations keep the status watermark.
+- The statement PDF (`GET /v1/reports/statement?format=pdf`) adds summary
+  cards with icons, a verified-reconciliation badge and per-section icons;
+  the Excel export keeps its structure.
+- Emails (receipts, verification codes and security notices) now share a
+  branded template with your organization's institutional header and
+  footer.
+- On fiat payout receipts the beneficiary bank is ALWAYS shown by name: if
+  the operation was created with the catalog `bank_code`, it is resolved to
+  the bank's display name automatically.
+- No API changes: same routes, same shapes. Only the documents and emails
+  look different.
+
+### v1.57
+
+**Added — Refresh tokens for user sessions**
+
+- Every login (password, OTP, social, passkey, handoff and register) now
+  returns, alongside the 24-hour `access_token`, a single-use
+  **`refresh_token`** (`rt_…`) to renew the session without re-login:
+  `POST /v1/auth/refresh` issues a fresh pair and rotates the token (30 days
+  per rotation, absolute cap of 90 days from the original login). Details
+  and security rules in
+  [Authentication → Session renewal](https://docs.cbpayapp.com/en/authentication#session-renewal-refresh-tokens).
+- **Strict rotation and theft detection**: exchanging revokes the device's
+  previous access token; presenting an already-exchanged refresh token
+  revokes the entire chain and records a `refresh_token_reuse` event in
+  `GET /v1/me/security/events`. Signing out, revoking sessions or changing
+  the password also invalidates refresh tokens.
+- New error code: `401 invalid_refresh_token`. API keys `pk_` are
+  unchanged: they never expire and don't use refresh.
+
+### v1.56
+
+**Added — Test environment (sandbox) with simulated money**
+
+- New **test** environment at `https://cryptobank.qbank.cl/platform`: the
+  same API, with every corridor served by a deterministic internal
+  simulator — always available, no third-party dependency. Operations
+  complete on their own within seconds and **magic values** (`.99`/`.77`
+  amounts, `REJECT` beneficiary, OTP `000000`, etc.) force every other
+  outcome. Full guide in
+  [Environments and testing](https://docs.cbpayapp.com/en/environment-testing).
+- **Per-environment API keys**: test issues and accepts only `pk_test_`
+  keys; live only `pk_`. A key from the other environment returns `401` —
+  impossible to cross environments by mistake.
+- Every response carries the **`CBPay-Environment`** header
+  (`test` | `live`) and `GET /healthz` exposes `livemode`.
+- **One-click test/live switch**: `POST /v1/auth/environment-handoff`
+  (live) issues a single-use 60-second token exchanged at
+  `POST /v1/auth/handoff` (test) for a test-environment session, with
+  automatic mirror-account provisioning.
+
+## v1.55 · 9 releases - July 12, 2026
+
+### v1.55
+
+**Added — AML screening audit history**
+
+- `GET /v1/aml/screenings` and `GET /v1/aml/screenings/{screeningID}` list and
+  retrieve every AML screening (person, company and rescreen) stored locally for
+  audit — subject, risk, fee and full result.
+- `POST /v1/aml/screenings` and `POST /v1/aml/rescreen` now require
+  `idempotency_key` (the operations charge a fee). Replaying with the same key
+  returns the original record with `idempotency_hit: true` and never double-charges.
+- `PATCH /v1/aml/monitoring` stores each enable/disable toggle in the same
+  history (`kind: monitoring`); `idempotency_key` is required when the state
+  changes (enable charges a fee).
+
+### v1.54
+
+**Added — Travel Rule on on-chain withdrawals (FATF R.16)**
+
+- Crypto withdrawals above the configured threshold (default 1,000 USD)
+  now require declaring the beneficiary before moving funds:
+  `wallet_type: "self_hosted"` + `beneficiary_name` for own wallets, or
+  `travel_address` + `beneficiary_name` for destinations at another
+  institution (the data exchange happens inline and the payment address
+  is provided by the receiving institution). Below the threshold nothing
+  changes.
+- The withdrawal response includes `travel_rule_status`
+  (`not_required` / `self_hosted_attested` / `approved`).
+- New error codes: `travel_rule_required`,
+  `travel_rule_beneficiary_required`, `travel_rule_address_mismatch`,
+  `travel_rule_rejected`, `travel_rule_pending`,
+  `travel_rule_incomplete_approval`, `travel_rule_unavailable`. Details in
+  the [crypto guide](https://docs.cbpayapp.com/en/guides/crypto) and the
+  [errors page](https://docs.cbpayapp.com/en/errors).
+
+### v1.53
+
+**Added — Banking series in the balance history**
+
+- `GET /v1/balances/history` now includes in `assets` the daily series of
+  the banking accounts (`BANK_USD`, `BANK_EUR`), each in its own currency
+  (2 decimals), ready to chart as one more filter next to
+  USDT/USDC/BTC/GOLD. They remain outside the `total_usd` aggregate, which
+  only covers the operational balances.
+  [Analytics](https://docs.cbpayapp.com/en/guides/analytics) guide updated.
+
+### v1.52
+
+**Added — Country filter on payouts and payins**
+
+- `GET /v1/payouts` and `GET /v1/payins` accept the `country` filter
+  (ISO 3166-1 alpha-2, e.g. `?country=MX`), combinable with `status`,
+  `from`/`to` and pagination. [Payouts](https://docs.cbpayapp.com/en/guides/payouts) and
+  [payins](https://docs.cbpayapp.com/en/guides/payins) guides updated.
+- The `fees` block of `GET /v1/rates` now returns the **effective**
+  fee configuration (organization defaults resolved against your
+  account's overrides). Accounts without overrides used to see
+  `fees: []` even when operations had a cost; use this block to quote
+  the exact fee before creating an operation.
+
+### v1.51
+
+**Changed — Wallet limits per account type**
+
+- **Deposit wallets**: every account — person and company — holds exactly
+  **one deposit wallet per supported pair** (`tron`/`usdt`, `eth`/`usdt`,
+  `eth`/`usdc`), provisioned free of charge on registration. `POST
+  /v1/crypto/wallets` now exists only to restore a missing pair; with the
+  pair already provisioned it responds `422 wallet_limit_reached` for every
+  account type (previously companies could create more).
+- **Segregated wallets**: now also available to person accounts, capped at
+  **1 per network/asset pair** (the second attempt responds `422
+  wallet_limit_reached`). Company accounts remain unlimited. The `403
+  company_required` error no longer applies to segregated wallets.
+- [Crypto](https://docs.cbpayapp.com/en/guides/crypto) and [segregated
+  wallets](https://docs.cbpayapp.com/en/guides/segregated-wallets) guides, the [persons and
+  companies](https://docs.cbpayapp.com/en/concepts/persons-companies) page and
+  [errors](https://docs.cbpayapp.com/en/errors) updated.
+
+### v1.50
+
+**Added — Continuous transaction monitoring (compliance controls)**
+
+- The platform now monitors every operation in real time with bank-grade
+  compliance controls. For the vast majority of clients this is invisible:
+  no flow changes and no perceptible latency.
+- New error codes documented in [errors](https://docs.cbpayapp.com/en/errors): `403 compliance_hold`
+  (operation held by compliance), `403 geo_restricted` (unsupported
+  jurisdiction) and `503 compliance_check_unavailable` (check temporarily
+  unavailable — the operation did not go out; retry with the same
+  idempotency key).
+
+### v1.49
+
+**Added — Documentation in 3 languages (English by default)**
+
+- This documentation is now fully available in **English** (default
+  language), **Spanish** and **Simplified Chinese**. Switch languages with
+  the selector at the top of the site.
+- The API Reference is also available in all three languages (same
+  endpoints and examples; only the descriptions change).
+- The Postman collection and the compiled Markdown guide stay up to date
+  from any language of the site.
+
+### v1.48
+
+**Added — Wallet screening (AML risk for blockchain addresses)**
+
+- New product: `POST /v1/screenings/addresses` evaluates any blockchain
+  address against global on-chain intelligence — sanctions, exposure to
+  illicit funds — and returns a `Low`/`Medium`/`High`/`Severe` risk level
+  with the full evidence. Fixed fee per scan (`address_screening`, with
+  automatic refund on failure) and mandatory idempotency. History via
+  `GET /v1/screenings/addresses` (+`/{id}`).
+- **Free automatic protection**: on-chain withdrawals evaluate the
+  destination before signing (severe risk ⇒ rejected with a full refund)
+  and incoming deposits evaluate the sender before crediting (severe ⇒
+  held for compliance review; high ⇒ credited with an alert).
+- New webhooks: `crypto_deposit_held` and `crypto_deposit_alert`.
+- New guide: [Wallet screening](https://docs.cbpayapp.com/en/guides/screenings).
+
+### v1.47
+
+**Added — Public assets over CDN (avatars, branding, charge QR codes)**
+
+- **Avatars over CDN**: `avatar_url` (in `PUT /v1/me/avatar`,
+  `GET /v1/resolve` and contacts) is now an **absolute public URL** that
+  loads without authentication once the image is published to the CDN;
+  `GET /v1/avatars/{accountID}` answers with a `302` redirect to that URL
+  (legacy avatars are still served directly).
+- **Branding URLs**: `GET /v1/branding` adds `logo_url` and `symbol_url` —
+  public CDN URLs for the logos, so the front end can theme itself without
+  decoding base64 (the `*_png_base64` fields remain).
+- **Payin QR codes**: QR charges (`POST /v1/payins`, method `qr`) expose
+  `qr_image_url`, the QR PNG published to the CDN, alongside the usual
+  base64 `qr_image`. Perfect for a direct `` tag.
+
+Nothing breaks: every existing field is preserved; the URLs are additive.
+Guides: [Profile](https://docs.cbpayapp.com/en/guides/profile) and [Payins](https://docs.cbpayapp.com/en/guides/payins).
+
+## v1.46 · 7 releases - July 11, 2026
+
+### v1.46
+
+**Added — Compliance catalogs**
+
+- New `GET /v1/aml/catalogs`: every catalog you need to build compliance
+  and verification forms (genders, legal entity forms per country,
+  income/wealth sources, industry standards, ISO-3166 countries and
+  subdivisions). This data was previously unavailable through the API.
+
+**Changed**
+
+- The `asset_prices` block of `GET /v1/rates` and `GET /v1/rates/history`
+  no longer includes the internal `source` field; use `settlement_grade`
+  and `updated_at` to know whether a price is executable and how fresh it is.
+
+Guide: [AML screening](https://docs.cbpayapp.com/en/guides/aml).
+
+### v1.45
+
+**Added — Every account is born with its deposit wallets**
+
+- When an account is created (person or company), its three crypto deposit
+  wallets are provisioned automatically and **free of charge**:
+  `tron`/`usdt`, `eth`/`usdt` and `eth`/`usdc`. Right after registration,
+  `GET /v1/crypto/wallets` already returns the three addresses
+  (provisioning runs in the background; querying at the very second of
+  registration may take a few moments).
+- `POST /v1/crypto/wallets` is now for **additional** wallets (companies);
+  persons already hold each combination's slot since registration.
+  Accounts created before this change were backfilled with any missing
+  wallets.
+
+**Changed**
+
+- Public account registration is now rate limited per IP
+  (`429 too_many_attempts`).
+
+Guide: [crypto](https://docs.cbpayapp.com/en/guides/crypto).
+
+### v1.44
+
+**Added — Full traceability: banking in the statement, itemized fees and wallet custody**
+
+- **Richer statement**: new `card_transactions` (card purchases), `swaps`
+  (balance conversions) and `banking_operations` sections. If you use
+  Banking, your bank accounts reconcile as `BANK_USD`/`BANK_EUR` mirror
+  balances inside the `assets` section.
+- **Itemized fees**: payouts, payins and crypto withdrawals now split the
+  fee into `fee_percent` and `fee_fixed` (they add up exactly to `fee`);
+  standalone charges carry `fee_model: "fixed"` and are labeled
+  **Fixed Com** in the PDF/Excel.
+- **New receipts**: `GET /v1/banking/operations/{id}/receipt`,
+  `GET /v1/wallets/{walletID}/sends/{sendID}/receipt` and
+  `GET /v1/wallets/{walletID}/deposits/{depositID}/receipt`. The
+  `banking_operation_status_changed` webhook now includes `receipt_url`.
+- **Segregated wallet custody**: `custody` field (`cbpay` | `client`) on
+  every wallet; the platform syncs the complete on-chain activity and emits
+  the `wallet_external_movement` webhook (movement signed outside, expected
+  under `client` custody) and `wallet_key_compromise_suspected` (critical
+  alarm).
+- **Analytics**: `sections.banking.volume` (money moved through your bank
+  accounts, which also adds to `gross_volume`),
+  `sections.verifications.fees_by_kind` (KYC vs KYB spending, separately),
+  `sections.adjustments` and `deposits.wallet_fees_usd`.
+- **Guaranteed per-wallet accounting** (`cbpay` custody): lifetime
+  reconciliation in the statement and `funding_sources` (deposit→send FIFO
+  attribution) on each send's detail. `BANK_*` mirror balances also show up
+  in `GET /v1/balances` with `custody: "banking"`.
+
+Guides: [statement](https://docs.cbpayapp.com/en/guides/statement), [banking](https://docs.cbpayapp.com/en/guides/banking),
+[segregated wallets](https://docs.cbpayapp.com/en/guides/segregated-wallets),
+[receipts](https://docs.cbpayapp.com/en/guides/receipts) and [analytics](https://docs.cbpayapp.com/en/guides/analytics).
+
+### v1.43
+
+**Added — Historical series for your dashboard**
+
+- **`GET /v1/rates/history`**: the evolution of your account's FX rates
+  (payout and payin side per point), with `day` or `hour` granularity and
+  a signed `change_pct` per currency — ready for the rate chart with its
+  "+3.4% / −3.0%" badge. Includes the USD reference series for BTC and
+  GOLD.
+- **`GET /v1/balances/history`**: the daily evolution of your balances —
+  one series per asset with each day's closing balance (no gaps), the
+  aggregated USD series valued at each day's historical price, the
+  period's inflows/outflows and the current snapshot — everything needed
+  for the balance card with a chart.
+- Rate history starts with a ~90-day backfill of daily rates and is
+  recorded continuously going forward.
+
+Full examples in [analytics](https://docs.cbpayapp.com/en/guides/analytics).
+
+### v1.42
+
+**Added — PDF receipts with authenticity verification**
+
+- Every transactional product has its **branded PDF receipt**:
+  `GET .../receipt` on payouts, payins, transfers, crypto withdrawals and
+  deposits (new `deposit_id` in `GET /v1/crypto/transactions`), swaps and
+  card purchases. Languages `?lang=es|en`.
+- **`receipt_url`** on every response of those products and on final-state
+  webhooks: the front end never builds the URL by hand.
+- **Public authenticity verification**: every PDF carries a signed code with
+  a QR that opens `GET /verify/receipts/{code}` (no credentials) — JSON for
+  APIs and a branded web page for browsers, always showing the **real,
+  current** status and amount, never the beneficiary's personal data.
+- Receipts of **non-completed** operations carry a diagonal watermark
+  ("PROCESSING" / "FAILED"): an in-flight PDF can never pass as proof of
+  payment.
+- **Automatic email** with the PDF attached when the operation reaches a
+  final state, with per-account opt-out (`PATCH /v1/me` with
+  `receipt_emails: false`).
+
+**Added — Branding**
+
+- `GET /v1/branding`: the platform's effective branding (logo, colors,
+  name) so a white-label front end can theme itself from the API.
+
+**Changed**
+
+- The PDF [statement](https://docs.cbpayapp.com/en/guides/statement) now renders with the brand's
+  **real logo** and the Inter typeface (previously a typographic wordmark),
+  and the Excel includes the logo on the summary sheet.
+
+Full guide in [receipts](https://docs.cbpayapp.com/en/guides/receipts).
+
+### v1.41
+
+**Added — Segregated wallets (company accounts only)**
+
+- On-chain wallets with **their own balance** (outside the ledger): create
+  (`POST /v1/wallets`), list and get, **import** an external wallet with its
+  key (`POST /v1/wallets/import`), **export** the private key
+  (`POST /v1/wallets/{id}/export`, shared custody) and **send** crypto
+  directly from the wallet (`POST /v1/wallets/{id}/sends`).
+- Live on-chain queries: `GET .../balance` (includes gas), `.../deposits`
+  and `.../transactions`; configurable **auto-forward** (`GET`/`POST
+  .../auto-forward`).
+- Send **gas** is on the client: without gas the send returns
+  `422 insufficient_gas`. Import and export require a signed-in user session
+  with 2FA.
+- New fees: `wallet_import`, `wallet_export`, `wallet_send`.
+- New webhooks: `wallet_deposit_received`, `wallet_send_status_changed`,
+  `wallet_key_exported`. New service flag: `wallets`.
+- The [statement](https://docs.cbpayapp.com/en/guides/statement) and [dashboard](https://docs.cbpayapp.com/en/guides/analytics)
+  include a segregated wallets section.
+
+Full guide at [segregated wallets](https://docs.cbpayapp.com/en/guides/segregated-wallets).
+
+### v1.40
+
+**Added — Account profile, credentials and security**
+
+- **Password**: self-service change (`POST /v1/me/password`, revokes all
+  other sessions) and code-based recovery (`POST /v1/auth/password/forgot` →
+  `POST /v1/auth/password/reset`) via email or verified phone. Forgot always
+  returns 200 (never reveals whether the account exists).
+- **Login email**: verified change (`POST /v1/me/email/change` → `confirm`
+  with the code sent to the **new** email) and verification of the current
+  one (`POST /v1/me/email/verify`).
+- **Permanent alias** (`PUT /v1/me/alias`) and **profile QR**
+  (`GET /v1/me/qr`): identify your account to **receive** transfers.
+  Transfers accept `to_alias` and `to_qr_token`; `GET /v1/resolve` previews
+  the recipient before sending.
+- **Profile photo**: `PUT`/`DELETE /v1/me/avatar` and `GET /v1/avatars/{id}`.
+- **Self-service 2FA** (`GET`/`PUT /v1/otp/preferences`): enable and pick the
+  channel per action — now also **email** and **authenticator app (TOTP)** in
+  addition to SMS/WhatsApp. Harden freely; weakening requires verification.
+- **Authenticator app (TOTP)**: `POST /v1/me/totp/enroll` (QR) → `confirm`
+  (returns 10 one-time backup codes), `DELETE`, and
+  `POST /v1/me/totp/recovery-codes` to regenerate them.
+- **Passkeys (WebAuthn)**: passwordless sign-in with the device's biometrics
+  (Face ID, Touch ID, Windows Hello, security keys). Registration
+  (`/v1/me/passkeys/register/begin|finish`), management (`GET`, `DELETE`) and
+  login (`/v1/auth/passkey/login/begin|finish`).
+- **Sessions and activity**: `GET /v1/me/sessions` + revoke one or all, and
+  `GET /v1/me/security/events` (account security history).
+- Email alerts on sensitive events (password or email change, factor
+  added/removed).
+
+## v1.39 · 7 releases - July 10, 2026
+
+### v1.39
+
+**Added — Reusable verified identity (unified KYC/KYB)**
+
+- A customer's approved KYC/KYB verification becomes their **single
+  identity** inside CBPay: their data and documents are reused across the
+  other products without re-typing or re-uploading. Guide:
+  [reusable identity](https://docs.cbpayapp.com/en/guides/kyc#one-verification-for-everything-reusable-identity).
+- **Cards**: your account's first issuance auto-fills the cardholder's
+  identity and documents **from your approved verification** — you only
+  send `occupation` and `salary_usd`. Explicit fields still win.
+- **Compliance report (KYB)**: `GET /v1/kyb/submissions/{id}/report`
+  downloads the verification's signed compliance report (PDF).
+
+**Changed — Breaking**
+
+- **`POST /v1/banking/third-parties`** now requires the `verification_id`
+  of an **approved** verification of the third party. The `type` comes
+  from the kind (KYC ⇒ INDIVIDUAL, KYB ⇒ COMPANY), identity auto-fills and
+  the already-validated documents are re-delivered to the banking provider
+  (`documents_synced`). Existing third parties keep operating.
+- **`POST /v1/cards`** for designated persons (company accounts) now
+  requires `cardholder.verification_id` of that person's **approved** KYC;
+  their identity and documents come from the verification.
+- New errors: `422 verification_required`,
+  `422 verification_not_approved`, `422 verification_kind_mismatch`,
+  `422 verification_invalid`.
+
+### v1.38
+
+**Added — Account summary (analytics) + third-party banking users**
+
+- **`GET /v1/analytics/summary`**: in a single call, every series and
+  statistic of your account to build your dashboard — gross volume
+  (in/out), transactions and new users per period (day/week/month, with
+  comparison vs the previous period), global per-country view, and a
+  section for EVERY service (payouts, payins, deposits, withdrawals,
+  transfers, swaps, cards, banking, KYC/KYB, AML, contacts) with their
+  dimensions (country, currency, method, status, chain, merchant). Plus
+  `spending` (what you consumed in fees per service) and USD-valued
+  `balances`. New guide: [Your account summary](https://docs.cbpayapp.com/en/guides/analytics).
+- **Third-party banking users (companies only)**: `POST/GET
+  /v1/banking/third-parties` (+documents, submit, accounts, balance) to
+  register your end clients as separate banking users, with their own
+  identity/KYC and accounts in their name. Isolated per account.
+- **New limit**: person accounts can hold at most 1 bank account
+  (`409 banking_account_limit`).
+
+### v1.37
+
+**Changed — Bolivia and Venezuela rates**
+
+- The USD→BOB and USD→VES rates in `GET /v1/rates` now reflect the market
+  we actually operate your payments with (previously a reference rate was
+  published that did not match the applied value).
+- If one of those rates is temporarily unavailable, the country is omitted
+  from `GET /v1/rates` and operations in that currency return
+  `422 currency_not_supported` until it is back — we never quote with an
+  incorrect rate. We recommend checking `GET /v1/rates` (or subscribing to
+  the rates webhook) before quoting payments in `BOB` or `VES`.
+
+### v1.36
+
+**Added — Swaps: convert between your balances**
+
+- New `swaps` product: convert between `USDT`, `USDC`, `BTC` and `GOLD`
+  instantly, without the money leaving your account — any pair, including
+  direct `BTC` ↔ `GOLD`. `POST /v1/swaps` (synchronous, with
+  `idempotency_key`), `GET /v1/swaps/quote` (free indicative quote) and
+  `GET /v1/swaps` (+`/{id}`) for history.
+- The quoted rate is your account's execution rate: quoted = received, no
+  separate fees. Live BTC/GOLD prices (if the price is not fresh the swap
+  is rejected with `503 pricing_unavailable`).
+- Conversions touching BTC/GOLD share the per-operation and 24h volume
+  limits with payouts and card purchases (`GET /v1/settlement`). New
+  guide: [Swaps](https://docs.cbpayapp.com/en/guides/swaps).
+
+### v1.35
+
+**Added — Contacts and sending by phone number**
+
+- **Contact book** (`/v1/contacts`): full CRUD with search and favorites.
+  Every send (transfer, payout, crypto withdrawal) **saves its destination
+  as a contact automatically** — deduplicated; opt out with
+  `"save_contact": false`.
+- **Phone address book import** (`POST /v1/contacts/import`, up to 1,000
+  per request): normalizes phones to E.164 and tells you which contacts
+  **already have CBPay** (`has_cbpay`, matching only within your operator).
+- **Transfer by phone**: `POST /v1/transfers` accepts `to_phone` (only
+  accounts with an **OTP-verified** phone; ambiguity answers
+  `422 recipient_ambiguous`) and `to_contact_id`.
+- **Quick send to contacts**: `beneficiary_contact_id` on payouts (uses the
+  contact's saved beneficiary) and `to_contact_id` on crypto withdrawals
+  (uses its saved address). New guide:
+  [Contacts](https://docs.cbpayapp.com/en/guides/contacts).
+
+### v1.34
+
+**Added — KYC/KYB identity verification (hosted wizard, OCR documents and video liveness)**
+
+- **Mandatory onboarding**: every new account must approve its identity
+  verification (person ⇒ KYC, company ⇒ KYB) before operating. Until then
+  it can only **fund** (payins, crypto deposits, incoming transfers) and
+  read; everything else answers `403 verification_required`. Request your
+  link with `POST /v1/me/verification/link` and check your state with
+  `GET /v1/me/verification` — approval updates your `kyc_status`
+  automatically. Existing accounts were grandfathered as approved.
+- **Third-party verification (company accounts only)**: generate hosted
+  links (`POST /v1/kyc/links`, `POST /v1/kyb/links`) or send data through
+  the API (`POST /v1/{kyc,kyb}/submissions`), upload documents with
+  presign + OCR and close the liveness check with liveness links. New
+  fixed fees `kyc_verification` / `kyb_verification` billed at creation
+  (mandatory `idempotency_key`, automatic refund on failure).
+- 7 new webhooks: `kyc/kyb_verification_status_changed`,
+  `kyc/kyb_link_completed`, `kyc/kyb_document_validated`,
+  `kyc_liveness_completed`. Full guide at
+  [KYC and KYB verification](https://docs.cbpayapp.com/en/guides/kyc).
+
+**Changed (BREAKING) — Screening becomes AML**
+
+- `POST /v1/kyc`, `POST /v1/kyc/rescreen` and `PATCH /v1/kyc/monitoring`
+  were **removed**: list screening now lives at
+  `POST /v1/aml/screenings`, `POST /v1/aml/rescreen` and
+  `PATCH /v1/aml/monitoring` (same semantics, same `compliance_*` fees).
+  The `no_kyc` error becomes `no_screening` and screening no longer
+  touches your `kyc_status`. New `aml_screening_updated` webhook and new
+  `aml` service flag (the `kyc` flag now gates identity verification).
+  Guide: [AML screening](https://docs.cbpayapp.com/en/guides/aml).
+
+### v1.33
+
+**Fixed — Banks catalog without `method` in countries with several methods**
+
+- `GET /v1/payouts/banks?country=VE` answered `400` asking for `method`,
+  and `?country=BO` answered `400 payout_corridor_unsupported`. The catalog
+  **without `method` now returns the union of every payout method's banks
+  for the country** (deduplicated by code), as this documentation promises;
+  passing `method` scopes it to a single channel (parameter now documented
+  in the reference).
+
+## v1.32 · 7 releases - July 9, 2026
+
+### v1.32
+
+**Added — Card purchases from BTC and GOLD (at-the-moment conversion)**
+
+- `spending_asset` now also accepts **BTC and GOLD**: purchases convert at
+  the **effective price of the moment of each event** (the same one in the
+  `settlement` block of `GET /v1/rates`).
+- **Authorization**: the equivalent is reserved plus a small cushion (not a
+  charge; returned at settlement). If the execution price is unavailable,
+  the purchase is declined with `pricing_unavailable` — your balance is
+  never converted with an untrustworthy price.
+- **Settlement**: the final amount is re-quoted at the capture moment's
+  price and the cushion's excess returns automatically. **Reversal** of an
+  authorization: exact amount returned, no conversion.
+  **Refunds/adjustments** after capture: re-converted at the price of the
+  event's moment (your balance takes the price variation).
+- BTC/GOLD purchases share the account's volatile-asset limits with
+  payouts: per operation (`settlement_limit_exceeded`) and 24h volume
+  (`settlement_daily_limit_exceeded`).
+
+### v1.31
+
+**Added — Choose which balance your cards spend from (USDT or USDC)**
+
+- Each card now has a **spending asset** (`spending_asset`): its purchases
+  debit the account's USDT or USDC balance, 1:1 with the USD and with no
+  conversion fee. USDT by default (identical to the historical behavior).
+- Set it when creating the card (`spending_asset` in `POST /v1/cards`) or
+  change it any time with `PATCH /v1/cards/{cardID}`. The change only
+  applies to future purchases: in-flight authorizations keep (and refund
+  to) the asset they debited.
+- Card transactions now expose `spend_asset` and `spend_amount` (the
+  balance and amount actually debited); `amount_usd` / `amount_usdt`
+  remain the USD reference value. Per-card limits are still measured in
+  USD.
+- New errors: `400 spending_asset_unavailable` (BTC/GOLD are not available
+  for card purchases) and `spending_asset_disabled` authorization declines
+  if your operator disables the asset.
+
+### v1.30
+
+**Changed — Multi-asset settlement hardening**
+
+- Payments from BTC/GOLD now have, on top of the per-operation limit, a
+  **rolling 24h per-account volume cap** (`422
+  settlement_daily_limit_exceeded`). It shows in `GET /v1/settlement` as
+  `volatile_daily_limit_usdt`.
+- **Card** fees (issuance, cancellation and the monthly fee) are now also
+  debited from your default settlement balance, like every other service.
+  Card **purchases** still settle in USDT.
+
+### v1.29
+
+**Added — Pay payouts and services from any balance (multi-asset settlement)**
+
+- Payouts and service fees (KYC, wallet creation, banking) can now be
+  debited from **any of your four balances** (USDT, USDC, BTC, GOLD).
+  Pricing is still quoted in USDT; the total translates to the chosen
+  asset at the effective settlement price of the moment. Details in the
+  [money model](https://docs.cbpayapp.com/en/concepts/money-model#choose-which-balance-pays).
+- New `GET/PUT /v1/settlement`: set your account's **default balance**
+  (`default_settlement_asset`). Per-operation override with
+  `settlement_asset` in `POST /v1/payouts` and in the QR confirm.
+- The payout response now records `settlement_asset`, `settlement_amount`
+  (the exact amount debited — also the amount refunded on failure, never
+  re-quoted) and `settlement_rate`.
+- `GET /v1/rates` adds a `settlement` block with the effective price per
+  enabled asset, and `asset_prices` now carries `source`, `updated_at` and
+  `settlement_grade` (whether the price is fit to execute).
+- New errors: `503 pricing_unavailable` (BTC/GOLD execution price
+  unavailable), `400 settlement_asset_disabled`,
+  `400 invalid_settlement_asset` and `422 settlement_limit_exceeded`
+  (per-operation limit for volatile assets).
+
+### v1.28
+
+**Changed — Short reference for announced bank transfers**
+
+- `POST /v1/payins` with `method: "bank_transfer"` now returns a **short
+  12-character alphanumeric `reference`** (e.g. `CBW4N8R2T6P9`) instead of
+  the UUID: bank concept fields have hard limits (Paraguay/SIPAP caps them
+  at 20 characters with no special characters) and the UUID never fit.
+- Automatic matching accepts the new reference **and** keeps accepting the
+  UUID from old announcements — existing `pending` payins are unaffected.
+  The amount+currency fallback is unchanged.
+- `GET /v1/payins` and the detail expose the announce reference in
+  `reference` while the payin is `pending`.
+
+### v1.27
+
+**Added — Payins in Paraguay (announced bank transfer)**
+
+- New collection corridor `PY`/`PYG`/`bank_transfer`: announce the deposit
+  with `POST /v1/payins`, your payer transfers (SIPAP or an internal
+  transfer at the receiving bank) with the `reference` in the concept, and
+  the credit arrives automatically in USDT at your `payin_rate`, like in
+  every country. Guide in [payins](https://docs.cbpayapp.com/en/guides/payins).
+- Guaraníes use no decimals: announce the **exact integer amount**
+  (e.g. `"596000"`). The amount+currency fallback match applies as usual.
+- The corridor shows up in `GET /v1/payins/methods` with
+  `delivery: polling`.
+
+### v1.26
+
+**Added — Multi-currency virtual balances (USDT, USDC, BTC, GOLD)**
+
+- Every account now holds **four independent virtual balances**: `USDT`
+  (the operating currency), `USDC`, `BTC` (8 decimals, satoshis) and
+  `GOLD` (grams of fine gold, 6 decimals, custodian-backed). They never
+  mix and are never converted automatically. Details in
+  [money model](https://docs.cbpayapp.com/en/concepts/money-model).
+- **`GET /v1/balances`** always returns all four balances (zeros if you
+  have not used that currency) and `GET /v1/movements` filters by currency
+  with `?asset=`.
+- **Multi-currency internal transfers**: `POST /v1/transfers` accepts
+  `asset` (`USDT` default, `USDC`, `BTC`, `GOLD`) — always between
+  balances of the **same currency**, with no conversion and no fee.
+- **On-chain USDC**: create `eth`/`usdc` wallets, deposit and withdraw
+  USDC over Ethereum. Every deposit credits its own asset's balance. Guide
+  in [crypto](https://docs.cbpayapp.com/en/guides/crypto).
+- **Reference prices**: `GET /v1/rates` includes `asset_prices` with each
+  currency's USD reference price (BTC per unit, GOLD per gram) — for
+  valuation only, no conversion and no spread.
+- **Multi-currency statement**: new `assets` section with each non-USDT
+  balance reconciled independently (opening/inflows/outflows/closing and
+  its own `balanced` flag), also in the PDF and Excel exports.
+- Payouts, payins, cards and service fees keep operating **exclusively
+  against the USDT balance**.
+
+## v1.25 · 8 releases - July 8, 2026
+
+### v1.25
+
+**Added — Social login (Google, Apple, Microsoft, Meta)**
+
+- **Passwordless sign up and sign in** with Google, Apple, Microsoft and
+  Facebook via token exchange: your front end gets the credential with the
+  provider SDK and exchanges it at `POST /v1/auth/oauth` for the CBPay
+  session. Full guide in [social login](https://docs.cbpayapp.com/en/guides/social-login).
+- **New endpoints**: `POST /v1/auth/oauth` (unified login + registration),
+  `GET /v1/auth/oauth/providers` (enabled providers, public),
+  `GET/POST /v1/me/identities` and `DELETE /v1/me/identities/{provider}`
+  (link/unlink providers from the session).
+- **Integrates 2FA**: if the account enforces OTP on login, social login
+  also returns `otp_required` + `pending_token`.
+- **Multi-method**: one account can have a password and several providers;
+  auto-linking by email only happens if the provider returns it verified.
+- New error codes in the [catalog](https://docs.cbpayapp.com/en/errors): `invalid_provider`,
+  `provider_not_configured`, `invalid_credential`, `email_conflict`,
+  `identity_taken`, `last_login_method`.
+
+**Fixed**
+
+- The "Collection updated" stamp on the Postman page now correctly shows how
+  long ago it was updated (it previously left an empty indicator).
+
+### v1.24
+
+**Added — OTP/2FA over SMS and WhatsApp**
+
+- **Two-step verification for sensitive actions**: your operator can
+  require a one-time code (over SMS or WhatsApp) before login, payouts,
+  crypto withdrawals, transfers, banking operations, revealing a card,
+  issuing API keys, adding members or changing the phone. Full guide in
+  [security and 2FA](https://docs.cbpayapp.com/en/security-2fa).
+- **New endpoints**: `POST /v1/otp/challenges` (sends the code),
+  `POST /v1/otp/challenges/{id}/verify` (returns the single-use `otp_token`
+  for the `X-OTP-Token` header), `GET /v1/otp/challenges` (+ detail) and
+  `GET /v1/otp/settings` (your effective policy).
+- **Two-step login**: with OTP active on `login`, `POST /v1/auth/login`
+  returns `otp_required: true` + `pending_token`, and the session is issued
+  at `POST /v1/auth/login/otp`.
+- **User sessions only**: `pk_` API keys are exempt — your
+  server-to-server integrations do not change.
+- New error codes in the [catalog](https://docs.cbpayapp.com/en/errors): `otp_required`,
+  `otp_invalid`, `phone_required`, `phone_binding_cooldown`,
+  `too_many_attempts` and more.
+
+### v1.23
+
+**Documentation — person vs company and unified guides**
+
+- **New [persons and companies](https://docs.cbpayapp.com/en/concepts/persons-companies) page**:
+  ALL the differences between the two account types (wallets, cards,
+  members, KYC/KYB) in a single table, with the errors each limit
+  produces.
+- **Cards guide reorganized by account type**: "Person account" and
+  "Company account" tabs, each with its complete flow (first card,
+  subsequent ones, and for companies both corporate and employee
+  issuance) — no more assembling the flow from scattered notes.
+- **Country examples back in their guides**: the per-corridor
+  requests/responses for payouts and payins live INSIDE each product's
+  guide again (one page per product, no jumping to a separate reference).
+  Old URLs redirect.
+- **Postman with live freshness**: the Postman page now shows how long ago
+  the collection was updated (seconds/minutes/days), on top of the date
+  and version.
+- The compiled MD now includes the full endpoint reference and the
+  documentation version.
+
+### v1.22
+
+**Documentation — full site redesign**
+
+- **New navigation**: Getting started → Concepts → Integration flows →
+  Products → Integration → Resources, with per-page icons and breadcrumbs.
+- **New pages**: [environment and testing](https://docs.cbpayapp.com/en/environment-testing)
+  (webhook tunnel for local dev + go-live checklist),
+  [enabled services](https://docs.cbpayapp.com/en/concepts/services),
+  [statuses and lifecycle](https://docs.cbpayapp.com/en/concepts/statuses) (including the failed
+  payout `status_code` catalog),
+  [movements and reconciliation](https://docs.cbpayapp.com/en/concepts/movements-reconciliation)
+  and [integration flows](https://docs.cbpayapp.com/en/flows) with end-to-end diagrams.
+- **Payouts and payins split**: general guide + country reference with the
+  real request and response of every corridor.
+- **Expanded guides**: quickstart closes the loop with webhooks; profile
+  (`PATCH /v1/me`) and members with roles; complete idempotency endpoint
+  table; webhook retry schedule; on-chain confirmation times; EUR banking
+  accounts; banking errors in the catalog; FAQ with limits, cancellations
+  and reconciliation.
+- **Cards: when to send `cardholder`, clarified.** The guide and spec now
+  explain that an account's **first issuance** creates and verifies the
+  holder (full data + mandatory documents) and that **subsequent** cards
+  reuse it with no data — the minimal example previously implied data was
+  never required.
+
+### v1.21
+
+**Added**
+
+- **`payin_rate` in `GET /v1/rates`**: each country now carries your two
+  rates — `rate` for payouts (dispersals) and `payin_rate` for payins
+  (fiat collections/deposits). Quoted = credited, always.
+
+**Changed**
+
+- **Payin pricing now works like payouts**: a payin's FX pricing lives in
+  your `payin_rate` (the credit converts at exactly that rate) and the
+  payin fee becomes a **fixed amount per operation** — no separate
+  percentages. Each payin's `fx_rate` field records the rate applied. See
+  [fees](https://docs.cbpayapp.com/en/concepts/fees) and the [payins guide](https://docs.cbpayapp.com/en/guides/payins).
+- Credit conversions round down to the micro-USDT (debits keep rounding
+  up), with at most 1 micro-USDT of difference.
+
+**Documentation**
+
+- **KYC/KYB: full identity field reference.** The `customer` object has
+  always accepted many more optional fields than the examples showed
+  (date of birth, nationalities, documents with issuing country, aliases,
+  residences, company registry data…) and sending them makes the screening
+  more precise. The [KYC guide](https://docs.cbpayapp.com/en/guides/kyc) now documents every field,
+  with full-identity examples and the deduplication rule.
+
+### v1.20
+
+**Added**
+
+- **Card catalogs**: `GET /v1/cards/catalog/occupations` and
+  `GET /v1/cards/catalog/business-activities` (searchable with `?q=`) to
+  populate pickers. When designating a person, `occupation` must be a
+  catalog **code**; for a company, so must `kind_of_business`. An
+  out-of-catalog value is rejected with `400 invalid_occupation` /
+  `400 invalid_kind_of_business` before reaching the issuer. See the
+  [cards guide](https://docs.cbpayapp.com/en/guides/cards).
+
+### v1.19
+
+**Added**
+
+- **`GET /v1/services`**: effective map of the services enabled for your
+  account (`payouts`, `payins`, `transfers`, `crypto`, `banking`, `kyc`,
+  `cards`) — use it to decide what to show in your UI. Services are enabled
+  per account according to your commercial agreement; when one is off, its
+  actions answer the new `403 service_disabled` error (reads and money in
+  flight are never blocked).
+
+### v1.18
+
+**Added**
+
+- **Virtual and physical cards** that spend straight from the account's
+  USDT balance, with no prefunding: every purchase is authorized in real
+  time against the available balance and the card's limits. Persons: 1
+  virtual + 1 physical; companies: unlimited, for the company or for
+  designated persons (e.g. employees). New endpoints `POST/GET /v1/cards`,
+  `GET/PATCH /v1/cards/{id}` (limits and freeze/unfreeze),
+  `POST /v1/cards/{id}/activate|cancel|reveal` and
+  `GET /v1/cards/{id}/transactions`. See the
+  [cards guide](https://docs.cbpayapp.com/en/guides/cards).
+- **New billable services** (fixed, configurable, can be 0):
+  `card_creation_virtual`, `card_creation_physical`, `card_monthly` (with
+  no balance the card is frozen — no debt) and `card_cancellation`.
+- **New webhooks** `card_transaction` (authorized/annulled/adjusted) and
+  `card_status_changed` (state changes, including automatic freezes).
+- **New ledger movement types**: `card_debit`, `card_refund`, `card_fee`,
+  `card_fee_refund`.
+
+## v1.17 · 16 releases - July 7, 2026
+
+### v1.17
+
+**Added**
+
+- **Chile: hosted payment page (`method: "fintoc"`)** on
+  `POST /v1/payins`. The response carries a `payment_url` the payer opens
+  to transfer from **any Chilean bank or wallet** (Banco Estado, Santander,
+  Mach, Tenpo, Mercado Pago, among others); the deposit is detected,
+  validated and credited automatically in USDT with the usual
+  `payin_credited` webhook. Supports an optional `idempotency_key`: a retry
+  returns the same payin and the same URL without opening a second payment
+  session. See the [payins guide](https://docs.cbpayapp.com/en/guides/payins).
+
+### v1.16
+
+**Added**
+
+- **`from`/`to` date filters on every list endpoint**: `/v1/movements`,
+  `/v1/payouts`, `/v1/payins` and `/v1/crypto/transactions` now accept
+  `from`/`to` (YYYY-MM-DD, UTC, inclusive), on top of the usual pagination
+  (`page`, `page_size` up to 200). Invalid dates return
+  `400 invalid_range`.
+- **Query transfers**: `GET /v1/transfers` (list with pagination and date
+  filters) and `GET /v1/transfers/{id}` — previously they could only be
+  created.
+- **List webhook subscriptions**: `GET /v1/webhooks/subscriptions`.
+- **Idempotency on active collections**: `POST /v1/payins/collect` now
+  requires `idempotency_key` (it executes a real charge; a retry never
+  re-charges the payer). Same hardening for wallet creation (no double fee
+  on retries) and admin adjustments.
+- Uniform pagination added to `members`, `crypto/wallets`,
+  `deposit-accounts` and (admin) `orgs`.
+
+- **Account statement** (`GET /v1/reports/statement`): consolidates every
+  movement of the period — payouts, payins, crypto, transfers and fees —
+  into one auditable document with an exact accounting reconciliation
+  (`opening + inflows − outflows = closing`, verified against the
+  ledger). Three formats from the same endpoint: **JSON** for your web,
+  **PDF** with CBPay branding and a multi-sheet **Excel** with numeric
+  cells, filters and a movements sheet for auditors
+  (`format=json|pdf|xlsx`, `lang=es|en`). The org admin can generate any
+  of its accounts' statements. See the [guide](https://docs.cbpayapp.com/en/guides/statement).
+
+### v1.15
+
+**Improved**
+
+- **Visual flow diagrams across the documentation**: the money map in the
+  introduction (everything entering and leaving the USDT balance), the
+  payout lifecycle with debit/hold/refund, the two-step QR flow, the four
+  payin modes converging into the credit, crypto deposit and withdrawal,
+  the full banking lifecycle, KYC states, webhook delivery and retries,
+  and the idempotency decision rule ("which key do I retry with?").
+
+### v1.14
+
+**Changed**
+
+- **New base URL: `https://api.qbank.cl/platform`** (previously
+  `exchange.qbank.cl/platform`). The old domain keeps working as an
+  alias, so no existing integration breaks — but use `api.qbank.cl` for
+  everything new. All documentation, the spec and the Postman collection
+  already point to the new URL.
+
+### v1.13
+
+**Added**
+
+- **Banking**: real bank accounts for your account — receive, hold and
+  send money over international banking rails (SEPA, SWIFT, ACH depending
+  on the currency). 14 new endpoints under `/v1/banking/*`:
+  - Banking profile: create, fetch, upload documents and submit for
+    verification.
+  - Accounts: open per currency, list and check live balances.
+  - Beneficiaries: register, list and attach destination accounts.
+  - Payments: quote (`prepare`, free) and execute `TRANSFER`/`WITHDRAW`
+    with idempotency.
+- New webhooks: `banking_customer_status_changed` and
+  `banking_operation_status_changed`.
+- New fees (fixed, configurable, refunded if the operation fails):
+  `banking_customer`, `banking_account`, `banking_operation` — the
+  `banking_fee` field on each response shows what was charged.
+- Full [Banking guide](https://docs.cbpayapp.com/en/guides/banking) with the end-to-end flow and
+  examples for every operation.
+
+### v1.12
+
+**Improved**
+
+- **Fully localized API Reference**: titles, descriptions, fields and
+  sidebar groups are now translated when browsing the documentation in
+  Spanish (previously only the UI chrome switched languages).
+- Payouts guide reorganized: Brazil PIX now lives only under
+  "Examples by country" (the duplicated section was removed); QR stays as
+  the single separate flow section since it is a distinct flow (scan +
+  confirm).
+- Webhooks: sample payload for **each of the 5 events**.
+- Quickstart: registration examples for both person **and** company.
+- **Postman collection expanded to 53 requests**: endpoints with several
+  use cases now ship one request per case (a payout per country and
+  method, payins per mode, person/company KYC, etc.), each with a
+  ready-to-send body.
+- **Payins guide restructured by country**, matching payouts: a corridor
+  matrix with each country's mode plus Chile / Peru / Mexico / Venezuela /
+  Bolivia / Brazil tabs with their complete examples.
+- **New [FAQ page](https://docs.cbpayapp.com/en/faq)**: sandbox, initial funding, pre-payout cost
+  estimation, rate guarantees, arrival times, safe retries, deposits
+  without a reference and more — day-one questions answered inside the
+  docs.
+- Quickstart opens with the **key facts** table (base URL, auth header,
+  slug, amount format, environment) and the `GET /v1/rates` response
+  example with the cost-estimation formula.
+- Payouts: response examples for the methods and banks catalogs, plus a
+  status table with the effect on your balance. Payins: catalog response
+  example with the meaning of `delivery`.
+
+### v1.11
+
+**Improved**
+
+- **Complete per-use-case examples across the documentation**:
+  - Payouts: an example for every country and method with its real
+    `beneficiary` and response (Chile, Peru CCI + Yape, Mexico CLABE +
+    debit card, Venezuela Pago Móvil + bank transfer, Bolivia ACH, Brazil
+    PIX, Paraguay).
+  - Payins: Bolivia and Brazil QR side by side, active collection `c2p`
+    and `debito_inmediato` with the OTP response, dedicated deposit
+    account.
+  - KYC/KYB: person, company and minimal autofilled requests, with the
+    screening, rescreening and monitoring (enable/disable) responses.
+  - Transfers: by email, by `account_id`, company→person (payroll) and
+    idempotent replay.
+  - Crypto: person vs company wallet creation, and the
+    `wallet_limit_reached` error.
+  - API Reference: selectable named examples on every endpoint (10 payout
+    corridors, 3 payin modes, person/company KYC…).
+
+### v1.10
+
+**Added**
+
+- **Brazil (BRL) with PIX** documented for payouts and payins:
+  - `pix` payout by key (CPF/CNPJ, phone, email or `evp` random key) via
+    `POST /v1/payouts`.
+  - Payout to a PIX QR (static or "copia e cola") via the
+    `qr/scan` + `qr/confirm` flow with `country: "BR"`.
+  - Payin with a dynamic PIX QR via `POST /v1/payins` (`method: "qr"`,
+    `country: "BR"`), carrying the QR image and the "copia e cola" code.
+  - Payin by announced bank transfer (`method: "bank_transfer"`).
+
+Corridor enablement is gradual; the catalog (`GET /v1/payouts/methods`,
+`GET /v1/payins/methods`) reflects availability at any given time.
+
+### v1.9
+
+**Added**
+
+- **Every collection (payin) method now available through the API**:
+  - `POST /v1/payins` now accepts `method`: `qr` (QR charge, as before) or
+    `bank_transfer` (announce an incoming deposit and get the reference the
+    transfer must include to be credited automatically).
+  - `POST /v1/payins/collect` — active pull collection in corridors that
+    support it (e.g. Venezuela `c2p` / `debito_inmediato`), with
+    synchronous crediting; `POST /v1/payins/collect/otp` for the prior OTP
+    when the method requires it.
+  - `POST /v1/payins/deposit-accounts` — fixed dedicated deposit account
+    (e.g. a Mexican CLABE) bound to your account: everything arriving to it
+    is credited automatically. `GET /v1/payins/deposit-accounts` to list
+    them.
+- Full corridor and method matrix for payouts in the guide (Chile, Peru
+  with `yape`, Mexico SPEI, Venezuela with `pago_movil`, Bolivia with `qr`,
+  Paraguay).
+- Venezuela (VES) joined the `GET /v1/rates` quotes.
+
+### v1.8
+
+**Added**
+
+- **Bolivia QR payout**: pay any Bolivian collection QR in two steps —
+  `POST /v1/payouts/qr/scan` (free, returns the recipient's data) and
+  `POST /v1/payouts/qr/confirm` (charged like a regular payout: your rate +
+  fixed fee, with a synchronous final result and automatic refund on
+  failure).
+- Bolivia (BOB) joined the `GET /v1/rates` quotes.
+
+### v1.7
+
+**Added**
+
+- New **[Postman](https://docs.cbpayapp.com/en/postman)** page: official downloadable collection
+  with all 25 endpoints, example bodies and pre-configured authentication.
+  Regenerated with every API version.
+
+**Changed**
+
+- The Fees page and payout examples now reflect the current pricing model:
+  payouts are charged **at your rate + a fixed fee per operation** (no
+  separate percentage). Dispersing the equivalent of 100 USDT debits
+  100 USDT plus your configured fixed fee.
+
+### v1.6
+
+**Improved**
+
+- `GET /v1/rates` now returns **your account's own exchange rate** per
+  country: the same rate your operations execute at
+  (`local_amount / rate = USDT`), with no difference between what is quoted
+  and what is charged.
+
+### v1.5
+
+**Removed (Breaking)**
+
+- `GET /v1/crypto/deposit-address` (the alias deprecated in v1.4) was
+  removed for good. Use `POST /v1/crypto/wallets` to create wallets and
+  `GET /v1/crypto/wallets` to list them.
+
+### v1.4
+
+**Added**
+
+- **Multiple wallets for companies**: company accounts can now create
+  **unlimited wallets per network** (persons keep 1 per network).
+- New endpoints: `POST /v1/crypto/wallets` (create a wallet, with an
+  optional `label` to tell them apart) and `GET /v1/crypto/wallets` (list my
+  wallets). Every creation bills the fixed `wallet_creation` fee when
+  configured.
+- New `422 wallet_limit_reached` error when a person tries to create a
+  second wallet on the same network.
+- Wallet responses now include `wallet_id` and `label`.
+
+**Changed**
+
+- The Crypto guide was reorganized into: **create wallet, view my wallets,
+  deposit, transfer and movements**.
+- `GET /v1/crypto/deposit-address` remains as a deprecated legacy alias:
+  use the wallet endpoints instead.
+
+**Fixed**
+
+- Copy and translation polish in both languages; the movements table now
+  includes the `wallet_creation_fee` and `wallet_creation_refund` entry
+  types.
+
+### v1.3
+
+**Improved**
+
+- Professional-grade API Reference: all 25 endpoints now include request and
+  response examples for **every case** (success, idempotency replay, and
+  each possible error with its real body), ready to try from the docs
+  playground.
+- The 5 webhooks are now documented inside the API Reference itself
+  (standard OpenAPI Webhooks section), with schema and example payload for
+  each event.
+- Methods and banks catalogs documented with the system's real response
+  shapes.
+- `GET /healthz` endpoint documented (service status).
+- The Crypto guide adds **"Wallet balance and activity"**: how to check your
+  balance, on-chain activity with `tx_id`, and the accounting history.
+- Brand-voice copy: the whole documentation now speaks as **CBPay** (it
+  previously used generic wording like "your operator" or "the
+  organization").
+- Identity verification is now named **KYC/KYB** across the documentation
+  (KYC for persons, KYB for companies).
+- Internal transfers: explicitly documented that they work between **any
+  combination** of accounts (person↔person, person↔company,
+  company↔company) and are **always free**.
+
+### v1.2
+
+**Added**
+
+- New `wallet_creation` fee service: the first creation of a deposit address
+  on each chain may carry a fixed charge configured by CBPay
+  (0 = free, the default). The `GET /v1/crypto/deposit-address` response now
+  includes `creation_fee`, and the movements history adds the
+  `wallet_creation_fee` and `wallet_creation_refund` entry types. Fetching
+  an existing address remains always free; if creation fails, the charge is
+  refunded automatically.
+- New **Changelog** page (this page) with the version history of the API
+  and documentation.
+
+**Changed**
+
+- The Crypto guide now has an explicit **"Create your wallet"** section
+  explaining per-network creation (201 on first call with `creation_fee`,
+  free 200 afterwards), and the API Reference renames the endpoint to
+  "Create or get my wallet (deposit address)".
+
+## v1.1 · 2 releases - July 6, 2026
+
+### v1.1
+
+**Added**
+
+- Per-operation compliance fees: `compliance_person`, `compliance_company`,
+  `compliance_rescreen` and `compliance_monitoring` (fixed per-call charge;
+  0 = free). KYC responses now include `compliance_service` and
+  `compliance_fee`.
+- `POST /v1/kyc/rescreen` and `PATCH /v1/kyc/monitoring` endpoints
+  (disabling monitoring is free). Both require a prior KYC (`409 no_kyc`).
+
+**Changed**
+
+- Official CBPay brand identity applied across the documentation.
+- Administration documentation moved to CBPay's internal portal; this site
+  now covers the account API only.
+
+### v1.0
+
+**Initial release**
+
+- Public CBPay API documentation, bilingual (Spanish and English):
+  authentication (JWT sessions and `pk_` API keys), USDT money model, fees,
+  idempotency, multi-country fiat payouts, payins, internal transfers,
+  crypto (on-chain funding and withdrawals), KYC, signed webhooks and the
+  full error catalog.
+- Interactive API Reference generated from OpenAPI 3.1.

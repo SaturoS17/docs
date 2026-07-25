@@ -1,0 +1,139 @@
+---
+title: "费用"
+description: "各项服务如何收费以及在哪里查看您的条款"
+slug: zh/concepts/fees
+lang: zh
+source_url: https://docs.cbpayapp.com/zh/concepts/fees
+---
+费用由 CBPay 按**服务、国家和资产**配置。若某个组合未配置任何费用，
+则费用为 **0**。
+
+## 出款与收款如何收费
+
+外汇定价体现在**您的汇率**中：您在 `GET /v1/rates` 看到的汇率就是
+您的汇率，也正是执行时所使用的汇率 — 没有额外的百分比。每个国家
+都包含两个方向：
+
+- `rate` — 您的**出款**（付款分发）汇率。如果您分发等值 100 USDT
+  的金额，将被扣除 **100 USDT 加上固定费用**（若您的账户配置了该费用）。
+- `payin_rate` — 您的**收款**（法币收款/入金）汇率。入账金额为按该
+  汇率换算的本地金额，**减去固定费用**（若您的账户配置了该费用）。
+
+```
+payout:  usdt_amount   = local_amount / rate
+         total_debit   = usdt_amount + fixed_amount
+payin:   usdt_gross    = local_amount / payin_rate
+         usdt_credited = usdt_gross − fixed_amount
+```
+
+收款人收到的金额（出款）或您获得的入账金额（收款）取决于您账户在
+该国家的汇率。报价即收费，始终如此。
+
+## 收取固定或百分比费用的服务
+
+| 服务 | 收费方式 | 收费时点 |
+|---|---|---|
+| `payout` | 每笔固定费用（外汇定价已包含在您的汇率中） | 创建出款时（包含在 `total_debit` 中） |
+| `payin` | 每笔固定费用（外汇定价已包含在您的 `payin_rate` 中） | 入账时（您收到 `usdt_gross − fee`） |
+| `payin_card` | 按收款金额的 `%` + 固定费用，可按处理币种设置不同的 `%`（例如 BOB 与 USD）。若您的账户未配置该服务，则适用通用的 `payin` 费用 | 银行卡支付的收款入账时（`method: "card"` 直接收款、用卡支付的收款链接或订阅扣款） |
+| `funding` | 按充值金额的 `%` + 固定费用 | 链上充值入账时 |
+| `withdrawal` | 按提现金额的 `%` + 固定费用 | 创建时（包含在 `total_debit` 中） |
+| `wallet_creation` | 每个钱包固定费用 | 每次创建钱包时（个人：每条网络 1 个；企业：不限）。查询已有钱包始终免费 |
+| `wallet_import` | 每次导入固定费用 | 将外部钱包导入为[隔离钱包](https://docs.cbpayapp.com/zh/guides/segregated-wallets)时（`POST /v1/segregated-wallets/import`） |
+| `wallet_export` | 每次导出固定费用 | 导出隔离钱包私钥时（`POST /v1/segregated-wallets/{id}/export`） |
+| `wallet_send` | 每次发送固定费用 | 从隔离钱包发起链上转账时（`POST /v1/segregated-wallets/{id}/sends`）；网络 gas 由客户承担 |
+| `compliance_person` | 每次调用固定费用 | 对个人进行 AML 筛查时（`POST /v1/aml/screenings`） |
+| `compliance_company` | 每次调用固定费用 | 对企业进行 AML 筛查时 |
+| `compliance_rescreen` | 每次调用固定费用 | 重新执行 AML 筛查时 |
+| `compliance_monitoring` | 每次启用固定费用 | 启用持续 AML 监控时（停用免费） |
+| `kyc_verification` | 每次验证固定费用 | 为第三方创建 KYC 链接或提交时（[身份验证](https://docs.cbpayapp.com/zh/guides/kyc)）；您自己的开户验证免费 |
+| `kyb_verification` | 每次验证固定费用 | 为第三方创建 KYB 链接或提交时 |
+| `address_screening` | 每次扫描固定费用 | 评估区块链地址风险时（[钱包筛查](https://docs.cbpayapp.com/zh/guides/screenings)）；自动的提现/充值防护免费 |
+| `banking_customer` | 每个档案固定费用 | 创建您的银行档案时（[银行服务](https://docs.cbpayapp.com/zh/guides/banking)） |
+| `banking_account` | 每个账户固定费用 | 开立每个银行账户时 |
+| `banking_operation` | 每笔付款固定费用 | 发送每笔银行付款时（用 `prepare` 报价免费） |
+| `card_creation_virtual` | 每张卡固定费用 | 发行虚拟卡时（[卡片](https://docs.cbpayapp.com/zh/guides/cards)） |
+| `card_creation_physical` | 每张卡固定费用 | 发行实体卡时 |
+| `card_monthly` | 每月固定费用 | 每张有效卡的月费（无余额时卡片将被冻结 — 不产生欠款） |
+| `card_cancellation` | 每张卡固定费用 | 注销卡片时 |
+
+对于按 `%` 收费的服务，公式为
+`fee = ceil(amount × percent / 100) + fixed_amount`（向上取整到
+微 USDT）。
+
+> **注**
+独立的固定收费（合规、KYC/KYB 验证、钱包创建与银行服务）在上游操作
+失败时会自动退款
+（`compliance_refund` / `verification_fee_refund` / `wallet_creation_refund`
+/ `wallet_service_refund` / `banking_fee_refund`）。
+## 内部转账：始终免费
+
+CBPay 账户之间的转账（`POST /v1/transfers`）**不收取任何费用**，
+无论何种组合：个人↔个人、个人↔企业或企业↔企业。资金在生态系统
+内部流转。
+
+## 您的汇率
+
+`GET /v1/rates` 返回**您账户自己的汇率**（按国家划分）— 与您操作
+执行时使用的汇率完全一致，没有意外：出款使用 `rate`，收款使用
+`payin_rate`（`local_amount / rate = USDT`）。
+
+## 查看您的条款
+
+`GET /v1/rates` 在返回您的汇率的同时，也返回当前应用于您账户的
+费用配置：
+
+```json
+{
+  "base": "USD",
+  "rates": { "chile": { "currency": "CLP", "rate": "950.25", "payin_rate": "955.10" } },
+  "asset_prices": {
+    "USDT": { "currency": "USD", "unit": "usdt", "price": "1" },
+    "USDC": { "currency": "USD", "unit": "usdc", "price": "1" },
+    "BTC": { "currency": "USD", "unit": "btc", "price": "109853.24" },
+    "GOLD": { "currency": "USD", "unit": "gram", "price": "107.5341" }
+  },
+  "fees": [
+    {
+      "service": "payout",
+      "country": "CL",
+      "asset": "USDT",
+      "percent": "0",
+      "fixed_amount": "0.30"
+    }
+  ]
+}
+```
+
+`asset_prices` 是每个虚拟余额的 USD **参考**价格（用于在界面上估值）—
+它不涉及任何换算，也不包含点差。响应中还包含一个 `settlement`
+区块，提供当您用 USDT 之外的余额支付操作时每个资产的**有效价格**
+（[资金模型](https://docs.cbpayapp.com/zh/concepts/money-model#选择用哪个余额付款)）：该价格
+已包含换算差价，所见即所得。
+
+实际收取的费用始终在每笔操作的响应中明确显示（`fee` 字段），
+并记录在账本中。
+
+## 完整示例
+
+一笔等值 100 USDT 的出款，`fixed_amount: "0.30"`：
+
+```
+usdt_amount = 100 USDT           (local_amount / rate)
+fee         = 0.30 USDT          (fixed)
+total_debit = 100.30 USDT
+```
+
+收款人收到您指定的全部本地金额；您被扣除按您的汇率换算的等值金额
+加上固定费用。
+
+一笔等值 100 USDT 的收款，`fixed_amount: "0.30"`：
+
+```
+usdt_gross    = 100 USDT         (local_amount / payin_rate)
+fee           = 0.30 USDT        (fixed)
+usdt_credited = 99.70 USDT
+```
+
+付款人支付您指定的确切本地金额；您获得按您的 `payin_rate` 换算的
+等值金额减去固定费用。

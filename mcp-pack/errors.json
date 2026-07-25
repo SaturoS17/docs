@@ -1,0 +1,2161 @@
+{
+  "count": 154,
+  "errors": [
+    {
+      "category": {
+        "en": "Authentication and permissions",
+        "es": "Autenticación y permisos",
+        "zh": "身份认证与权限"
+      },
+      "code": "unauthorized",
+      "http": 401,
+      "meaning": {
+        "en": "Missing or invalid credential",
+        "es": "Credencial ausente o inválida",
+        "zh": "凭证缺失或无效"
+      }
+    },
+    {
+      "category": {
+        "en": "Authentication and permissions",
+        "es": "Autenticación y permisos",
+        "zh": "身份认证与权限"
+      },
+      "code": "invalid_credentials",
+      "http": 401,
+      "meaning": {
+        "en": "Wrong email or password (login)",
+        "es": "Email o contraseña incorrectos (login)",
+        "zh": "邮箱或密码错误（登录）"
+      }
+    },
+    {
+      "category": {
+        "en": "Authentication and permissions",
+        "es": "Autenticación y permisos",
+        "zh": "身份认证与权限"
+      },
+      "code": "invalid_refresh_token",
+      "http": 401,
+      "meaning": {
+        "en": "Refresh token invalid, expired, already used or revoked — send the user back to login",
+        "es": "Refresh token inválido, expirado, ya usado o revocado — vuelve al login",
+        "zh": "刷新令牌无效、已过期、已被使用或已被吊销 —— 请引导用户重新登录"
+      }
+    },
+    {
+      "category": {
+        "en": "Authentication and permissions",
+        "es": "Autenticación y permisos",
+        "zh": "身份认证与权限"
+      },
+      "code": "account_required",
+      "http": 403,
+      "meaning": {
+        "en": "Endpoint requires an account credential",
+        "es": "El endpoint exige credencial de cuenta",
+        "zh": "该端点需要账户级凭证"
+      }
+    },
+    {
+      "category": {
+        "en": "Authentication and permissions",
+        "es": "Autenticación y permisos",
+        "zh": "身份认证与权限"
+      },
+      "code": "org_admin_required",
+      "http": 403,
+      "meaning": {
+        "en": "Endpoint requires an admin credential",
+        "es": "El endpoint exige credencial de administrador",
+        "zh": "该端点需要管理员凭证"
+      }
+    },
+    {
+      "category": {
+        "en": "Authentication and permissions",
+        "es": "Autenticación y permisos",
+        "zh": "身份认证与权限"
+      },
+      "code": "forbidden",
+      "http": 403,
+      "meaning": {
+        "en": "Credential level not allowed",
+        "es": "Nivel de credencial no permitido",
+        "zh": "凭证级别不允许"
+      }
+    },
+    {
+      "category": {
+        "en": "Authentication and permissions",
+        "es": "Autenticación y permisos",
+        "zh": "身份认证与权限"
+      },
+      "code": "account_blocked",
+      "http": 403,
+      "meaning": {
+        "en": "The account is not active",
+        "es": "La cuenta no está activa",
+        "zh": "账户处于非活跃状态"
+      }
+    },
+    {
+      "category": {
+        "en": "Authentication and permissions",
+        "es": "Autenticación y permisos",
+        "zh": "身份认证与权限"
+      },
+      "code": "service_disabled",
+      "http": 403,
+      "meaning": {
+        "en": "The service is not enabled for your account (check `GET /v1/services`)",
+        "es": "El servicio no está habilitado para tu cuenta (consulta `GET /v1/services`)",
+        "zh": "该服务未对您的账户启用（查看 `GET /v1/services`）"
+      }
+    },
+    {
+      "category": {
+        "en": "Authentication and permissions",
+        "es": "Autenticación y permisos",
+        "zh": "身份认证与权限"
+      },
+      "code": "org_suspended",
+      "http": 403,
+      "meaning": {
+        "en": "Service suspended; contact the CBPay team",
+        "es": "El servicio está suspendido; contacta al equipo de CBPay",
+        "zh": "服务已暂停；请联系 CBPay 团队"
+      }
+    },
+    {
+      "category": {
+        "en": "Authentication and permissions",
+        "es": "Autenticación y permisos",
+        "zh": "身份认证与权限"
+      },
+      "code": "company_only",
+      "http": 403,
+      "meaning": {
+        "en": "Feature only for company accounts",
+        "es": "Función solo para cuentas empresa",
+        "zh": "仅企业账户可用的功能"
+      }
+    },
+    {
+      "category": {
+        "en": "Authentication and permissions",
+        "es": "Autenticación y permisos",
+        "zh": "身份认证与权限"
+      },
+      "code": "company_required",
+      "http": 403,
+      "meaning": {
+        "en": "Feature only for company accounts (e.g. third-party banking)",
+        "es": "Función solo para cuentas empresa (ej. banking para terceros)",
+        "zh": "仅企业账户可用的功能（例如第三方银行服务）"
+      }
+    },
+    {
+      "category": {
+        "en": "Authentication and permissions",
+        "es": "Autenticación y permisos",
+        "zh": "身份认证与权限"
+      },
+      "code": "human_session_required",
+      "http": 403,
+      "meaning": {
+        "en": "The operation handles a private key (segregated wallet import/export) and requires a signed-in user session with 2FA — API keys are not allowed",
+        "es": "La operación maneja llave privada (import/export de wallet segregada) y exige sesión de usuario con 2FA — las API keys no se permiten",
+        "zh": "该操作涉及私钥（独立钱包导入/导出），需要带 2FA 的已登录用户会话——不允许使用 API 密钥"
+      }
+    },
+    {
+      "category": {
+        "en": "Authentication and permissions",
+        "es": "Autenticación y permisos",
+        "zh": "身份认证与权限"
+      },
+      "code": "member_disabled",
+      "http": 403,
+      "meaning": {
+        "en": "The mirror user is disabled in the test environment; contact support",
+        "es": "El usuario está bloqueado para iniciar sesión; contacta al administrador de tu organización",
+        "zh": "该用户已被禁止登录；请联系您组织的管理员"
+      }
+    },
+    {
+      "category": {
+        "en": "Authentication and permissions",
+        "es": "Autenticación y permisos",
+        "zh": "身份认证与权限"
+      },
+      "code": "passkey_rejected",
+      "http": 403,
+      "meaning": {
+        "en": "The passkey could not be verified; retry or sign in with another method",
+        "es": "La verificación de la passkey falló; reintenta o entra con contraseña",
+        "zh": "通行密钥（passkey）验证失败；请重试或使用密码登录"
+      }
+    },
+    {
+      "category": {
+        "en": "Authentication and permissions",
+        "es": "Autenticación y permisos",
+        "zh": "身份认证与权限"
+      },
+      "code": "owner_required",
+      "http": 403,
+      "meaning": {
+        "en": "Only the account owner can change the 2FA preferences",
+        "es": "Solo el miembro owner de la cuenta puede ejecutar esa acción",
+        "zh": "只有账户的 owner 成员才能执行该操作"
+      }
+    },
+    {
+      "category": {
+        "en": "OTP / 2FA",
+        "es": "OTP / 2FA",
+        "zh": "OTP / 双因素认证"
+      },
+      "code": "otp_required",
+      "http": 403,
+      "meaning": {
+        "en": "The action requires OTP: verify a challenge and retry with `X-OTP-Token`",
+        "es": "La acción exige OTP: verifica un desafío y reintenta con `X-OTP-Token`",
+        "zh": "该操作需要 OTP：验证一个质询后携带 `X-OTP-Token` 重试"
+      }
+    },
+    {
+      "category": {
+        "en": "OTP / 2FA",
+        "es": "OTP / 2FA",
+        "zh": "OTP / 双因素认证"
+      },
+      "code": "otp_invalid",
+      "http": 403,
+      "meaning": {
+        "en": "OTP token invalid, expired or already used",
+        "es": "Token OTP inválido, expirado o ya usado",
+        "zh": "OTP 令牌无效、已过期或已被使用"
+      }
+    },
+    {
+      "category": {
+        "en": "OTP / 2FA",
+        "es": "OTP / 2FA",
+        "zh": "OTP / 双因素认证"
+      },
+      "code": "session_required",
+      "http": 403,
+      "meaning": {
+        "en": "OTP challenges require a user session, not an API key",
+        "es": "Los desafíos OTP requieren sesión de usuario, no API key",
+        "zh": "OTP 质询需要用户会话，不能使用 API 密钥"
+      }
+    },
+    {
+      "category": {
+        "en": "OTP / 2FA",
+        "es": "OTP / 2FA",
+        "zh": "OTP / 双因素认证"
+      },
+      "code": "phone_binding_cooldown",
+      "http": 403,
+      "meaning": {
+        "en": "Phone linked less than 24 h ago without verification and no alternative factor (authenticator app or verified email)",
+        "es": "Teléfono enlazado hace menos de 24 h sin verificación y sin factor alternativo (app autenticadora o email verificado)",
+        "zh": "手机号绑定未满 24 小时且未经验证，且没有替代因素（身份验证器应用或已验证邮箱）"
+      }
+    },
+    {
+      "category": {
+        "en": "OTP / 2FA",
+        "es": "OTP / 2FA",
+        "zh": "OTP / 双因素认证"
+      },
+      "code": "phone_verification_required",
+      "http": 409,
+      "meaning": {
+        "en": "Verify your phone (OTP challenge) before enabling login 2FA over SMS/WhatsApp",
+        "es": "Verifica tu teléfono (desafío OTP) antes de activar el 2FA de login por SMS/WhatsApp",
+        "zh": "通过 SMS/WhatsApp 启用登录 2FA 前需先验证手机号（OTP 挑战）"
+      }
+    },
+    {
+      "category": {
+        "en": "OTP / 2FA",
+        "es": "OTP / 2FA",
+        "zh": "OTP / 双因素认证"
+      },
+      "code": "invalid_code",
+      "http": 401,
+      "meaning": {
+        "en": "The code does not match",
+        "es": "El código no coincide",
+        "zh": "验证码不匹配"
+      }
+    },
+    {
+      "category": {
+        "en": "OTP / 2FA",
+        "es": "OTP / 2FA",
+        "zh": "OTP / 双因素认证"
+      },
+      "code": "invalid_pending_token",
+      "http": 401,
+      "meaning": {
+        "en": "The intermediate login token expired; log in again",
+        "es": "El token intermedio del login expiró; vuelve a iniciar sesión",
+        "zh": "登录中间令牌已过期；请重新登录"
+      }
+    },
+    {
+      "category": {
+        "en": "OTP / 2FA",
+        "es": "OTP / 2FA",
+        "zh": "OTP / 双因素认证"
+      },
+      "code": "invalid_action",
+      "http": 400,
+      "meaning": {
+        "en": "Action or channel outside the catalog",
+        "es": "Acción o canal fuera de catálogo",
+        "zh": "操作或渠道不在目录中"
+      }
+    },
+    {
+      "category": {
+        "en": "OTP / 2FA",
+        "es": "OTP / 2FA",
+        "zh": "OTP / 双因素认证"
+      },
+      "code": "invalid_channel",
+      "http": 400,
+      "meaning": {
+        "en": "Action or channel outside the catalog",
+        "es": "Acción o canal fuera de catálogo",
+        "zh": "操作或渠道不在目录中"
+      }
+    },
+    {
+      "category": {
+        "en": "OTP / 2FA",
+        "es": "OTP / 2FA",
+        "zh": "OTP / 双因素认证"
+      },
+      "code": "phone_required",
+      "http": 409,
+      "meaning": {
+        "en": "The account has no phone (`PATCH /v1/me`)",
+        "es": "La cuenta no tiene teléfono (`PATCH /v1/me`)",
+        "zh": "账户未绑定手机号（`PATCH /v1/me`）"
+      }
+    },
+    {
+      "category": {
+        "en": "OTP / 2FA",
+        "es": "OTP / 2FA",
+        "zh": "OTP / 双因素认证"
+      },
+      "code": "otp_phone_missing",
+      "http": 409,
+      "meaning": {
+        "en": "Login requires OTP and the account has no phone; contact your operator",
+        "es": "El login exige OTP y la cuenta no tiene teléfono; contacta a tu operador",
+        "zh": "登录需要 OTP 但账户没有手机号；请联系您的运营方"
+      }
+    },
+    {
+      "category": {
+        "en": "OTP / 2FA",
+        "es": "OTP / 2FA",
+        "zh": "OTP / 双因素认证"
+      },
+      "code": "challenge_not_pending",
+      "http": 409,
+      "meaning": {
+        "en": "The challenge expired or was already used; create a new one",
+        "es": "El desafío expiró o ya se usó; crea uno nuevo",
+        "zh": "质询已过期或已被使用；请创建一个新的"
+      }
+    },
+    {
+      "category": {
+        "en": "OTP / 2FA",
+        "es": "OTP / 2FA",
+        "zh": "OTP / 双因素认证"
+      },
+      "code": "too_many_attempts",
+      "http": 429,
+      "meaning": {
+        "en": "Send/verification limits reached; wait a few minutes",
+        "es": "Límite de envíos o verificaciones; espera unos minutos",
+        "zh": "达到发送/验证次数限制；请等待几分钟"
+      }
+    },
+    {
+      "category": {
+        "en": "OTP / 2FA",
+        "es": "OTP / 2FA",
+        "zh": "OTP / 双因素认证"
+      },
+      "code": "otp_disabled_for_org",
+      "http": 409,
+      "meaning": {
+        "en": "Two-factor authentication is not enabled for your organization; contact support",
+        "es": "Tu organización no tiene habilitado el 2FA por acción; contacta a tu operador",
+        "zh": "您的组织未启用按操作的双因素认证；请联系您的运营方"
+      }
+    },
+    {
+      "category": {
+        "en": "OTP / 2FA",
+        "es": "OTP / 2FA",
+        "zh": "OTP / 双因素认证"
+      },
+      "code": "totp_not_started",
+      "http": 409,
+      "meaning": {
+        "en": "Confirm requires starting enrollment first (`POST /v1/me/totp/enroll`)",
+        "es": "No hay enrolamiento TOTP en curso; parte con `POST /v1/me/totp/enroll`",
+        "zh": "尚未开始 TOTP 注册；请先调用 `POST /v1/me/totp/enroll`"
+      }
+    },
+    {
+      "category": {
+        "en": "OTP / 2FA",
+        "es": "OTP / 2FA",
+        "zh": "OTP / 双因素认证"
+      },
+      "code": "otp_unavailable",
+      "http": 503,
+      "meaning": {
+        "en": "Verification service unavailable (the action stays blocked; OTP is never skipped)",
+        "es": "Servicio de verificación no disponible (la acción queda bloqueada, nunca se salta el OTP)",
+        "zh": "验证服务不可用（操作保持锁定；OTP 绝不会被跳过）"
+      }
+    },
+    {
+      "category": {
+        "en": "Social login (OAuth)",
+        "es": "Login social (OAuth)",
+        "zh": "社交登录（OAuth）"
+      },
+      "code": "invalid_provider",
+      "http": 400,
+      "meaning": {
+        "en": "Provider outside `google/apple/microsoft/facebook`",
+        "es": "Proveedor fuera de `google/apple/microsoft/facebook`",
+        "zh": "提供方不在 `google/apple/microsoft/facebook` 范围内"
+      }
+    },
+    {
+      "category": {
+        "en": "Social login (OAuth)",
+        "es": "Login social (OAuth)",
+        "zh": "社交登录（OAuth）"
+      },
+      "code": "provider_not_configured",
+      "http": 400,
+      "meaning": {
+        "en": "Your organization has not enabled that provider",
+        "es": "Tu organización no tiene ese proveedor habilitado",
+        "zh": "您的组织尚未启用该提供方"
+      }
+    },
+    {
+      "category": {
+        "en": "Social login (OAuth)",
+        "es": "Login social (OAuth)",
+        "zh": "社交登录（OAuth）"
+      },
+      "code": "invalid_credential",
+      "http": 401,
+      "meaning": {
+        "en": "The provider credential is invalid, expired or from another app",
+        "es": "La credencial del proveedor es inválida, expiró o es de otra app",
+        "zh": "提供方凭证无效、已过期或来自其他应用"
+      }
+    },
+    {
+      "category": {
+        "en": "Social login (OAuth)",
+        "es": "Login social (OAuth)",
+        "zh": "社交登录（OAuth）"
+      },
+      "code": "email_conflict",
+      "http": 409,
+      "meaning": {
+        "en": "An account with that email already exists; sign in and link the provider",
+        "es": "Ya existe una cuenta con ese email; entra con tu método actual y vincula el proveedor",
+        "zh": "已存在使用该邮箱的账户；请先登录再绑定该提供方"
+      }
+    },
+    {
+      "category": {
+        "en": "Social login (OAuth)",
+        "es": "Login social (OAuth)",
+        "zh": "社交登录（OAuth）"
+      },
+      "code": "identity_taken",
+      "http": 409,
+      "meaning": {
+        "en": "That provider is already linked to another account",
+        "es": "Ese proveedor ya está vinculado a otra cuenta",
+        "zh": "该提供方身份已绑定到其他账户"
+      }
+    },
+    {
+      "category": {
+        "en": "Social login (OAuth)",
+        "es": "Login social (OAuth)",
+        "zh": "社交登录（OAuth）"
+      },
+      "code": "last_login_method",
+      "http": 409,
+      "meaning": {
+        "en": "You cannot unlink your only sign-in method",
+        "es": "No puedes desvincular tu único método de acceso",
+        "zh": "无法解绑您唯一的登录方式"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "error",
+      "http": 400,
+      "meaning": {
+        "en": "Meaning",
+        "es": "Significado",
+        "zh": "含义"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_json",
+      "http": 400,
+      "meaning": {
+        "en": "Body is not valid JSON or has unknown fields",
+        "es": "Body no es JSON válido o tiene campos desconocidos",
+        "zh": "请求体不是有效的 JSON 或包含未知字段"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_settings",
+      "http": 400,
+      "meaning": {
+        "en": "Organization settings are not a valid JSON object or could not be normalized; correct the settings payload and retry",
+        "es": "Los settings de la organización no son un objeto JSON válido o no pudieron normalizarse; corrige el payload y reintenta",
+        "zh": "组织设置不是有效的 JSON 对象或无法规范化；请修正设置请求体后重试"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_type",
+      "http": 400,
+      "meaning": {
+        "en": "`type` must be `person` or `company`",
+        "es": "`type` debe ser `person` o `company`",
+        "zh": "`type` 必须为 `person` 或 `company`"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_email",
+      "http": 400,
+      "meaning": {
+        "en": "Invalid required field",
+        "es": "Campo requerido inválido",
+        "zh": "必填字段无效"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_display_name",
+      "http": 400,
+      "meaning": {
+        "en": "Invalid required field",
+        "es": "Campo requerido inválido",
+        "zh": "必填字段无效"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "weak_password",
+      "http": 400,
+      "meaning": {
+        "en": "Password shorter than 8 characters",
+        "es": "Contraseña menor a 8 caracteres",
+        "zh": "密码少于 8 个字符"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_role",
+      "http": 400,
+      "meaning": {
+        "en": "Invalid member role",
+        "es": "Rol de miembro inválido",
+        "zh": "成员角色无效"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "unknown_org",
+      "http": 400,
+      "meaning": {
+        "en": "Wrong organization slug (use `cbpay`)",
+        "es": "Slug de organización incorrecto (usa `cbpay`)",
+        "zh": "组织 slug 错误（应使用 `cbpay`）"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_request",
+      "http": 400,
+      "meaning": {
+        "en": "Missing `country`/`currency`",
+        "es": "Faltan `country`/`currency`",
+        "zh": "缺少 `country`/`currency`"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "idempotency_key_required",
+      "http": 400,
+      "meaning": {
+        "en": "Missing idempotency key",
+        "es": "Falta la clave de idempotencia",
+        "zh": "缺少幂等键"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "reserved_idempotency_key",
+      "http": 400,
+      "meaning": {
+        "en": "The key uses a system-reserved prefix (`payin-convert:` or `checkout-swap:`, owned by auto-conversions) — pick another key",
+        "es": "La clave usa un prefijo reservado del sistema (`payin-convert:` o `checkout-swap:`, propios de las auto-conversiones) — usa otra clave",
+        "zh": "幂等键使用了系统保留前缀（`payin-convert:` 或 `checkout-swap:`，属于自动转换）——请改用其他键"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "beneficiary_required",
+      "http": 400,
+      "meaning": {
+        "en": "Missing payout beneficiary",
+        "es": "Falta el beneficiario del payout",
+        "zh": "缺少付款收款人信息"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_amount",
+      "http": 400,
+      "meaning": {
+        "en": "Amount is not a valid positive decimal",
+        "es": "Monto no es un decimal positivo válido",
+        "zh": "金额不是有效的正十进制数"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "recipient_required",
+      "http": 400,
+      "meaning": {
+        "en": "Invalid transfer destination",
+        "es": "Destino de transferencia inválido",
+        "zh": "转账目标无效"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "self_transfer",
+      "http": 400,
+      "meaning": {
+        "en": "Invalid transfer destination",
+        "es": "Destino de transferencia inválido",
+        "zh": "转账目标无效"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_chain",
+      "http": 400,
+      "meaning": {
+        "en": "Unsupported network or asset",
+        "es": "Red o activo no soportado",
+        "zh": "不支持的网络或资产"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_asset",
+      "http": 400,
+      "meaning": {
+        "en": "Unsupported network or asset",
+        "es": "Red o activo no soportado",
+        "zh": "不支持的网络或资产"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "to_address_required",
+      "http": 400,
+      "meaning": {
+        "en": "Missing withdrawal destination address",
+        "es": "Falta dirección destino del retiro",
+        "zh": "缺少提现目标地址"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_payload",
+      "http": 400,
+      "meaning": {
+        "en": "Missing a required field (e.g. `enabled` on AML monitoring, `external_customer_id` on verifications)",
+        "es": "Falta un campo requerido (ej. `enabled` en monitoreo AML, `external_customer_id` en verificaciones)",
+        "zh": "缺少必填字段（例如 AML 监控的 `enabled`、身份验证的 `external_customer_id`）"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_qr_payload",
+      "http": 400,
+      "meaning": {
+        "en": "The payout QR is unreadable or unsupported (corrupt BR Code, bad checksum, or a dynamic PIX QR); the `message` explains the exact reason",
+        "es": "QR de payout ilegible o no soportado (BR Code corrupto, checksum inválido o QR PIX dinámico); el `message` explica la razón exacta",
+        "zh": "出金二维码不可读或不受支持（BR Code 损坏、校验和无效或动态 PIX 二维码）；`message` 说明具体原因"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "liveness_already_completed",
+      "http": 400,
+      "meaning": {
+        "en": "That verification's liveness check already passed",
+        "es": "La prueba de vida de esa verificación ya fue superada",
+        "zh": "该验证的活体检测已经通过"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_event_type",
+      "http": 400,
+      "meaning": {
+        "en": "Invalid webhook subscription",
+        "es": "Suscripción de webhook inválida",
+        "zh": "Webhook 订阅无效"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "weak_secret",
+      "http": 400,
+      "meaning": {
+        "en": "Invalid webhook subscription",
+        "es": "Suscripción de webhook inválida",
+        "zh": "Webhook 订阅无效"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_callback_url",
+      "http": 400,
+      "meaning": {
+        "en": "Invalid webhook subscription",
+        "es": "Suscripción de webhook inválida",
+        "zh": "Webhook 订阅无效"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_phone",
+      "http": 400,
+      "meaning": {
+        "en": "Phone not normalizable to E.164 (contacts and `to_phone`)",
+        "es": "Teléfono no normalizable a E.164 (contactos y `to_phone`)",
+        "zh": "手机号无法规范化为 E.164 格式（联系人和 `to_phone`）"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_language",
+      "http": 400,
+      "meaning": {
+        "en": "The PDF report `lang` is not `en`, `es` or `zh` (AML report)",
+        "es": "`lang` del informe PDF no es `en`, `es` ni `zh` (informe AML)",
+        "zh": "PDF 报告的 `lang` 不是 `en`、`es` 或 `zh`（AML 报告）"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "batch_too_large",
+      "http": 400,
+      "meaning": {
+        "en": "Contact import with more than 1,000 entries (paginate the upload)",
+        "es": "Import de contactos con más de 1.000 entradas (pagina la subida)",
+        "zh": "联系人导入超过 1,000 条（请分批上传）"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_alias",
+      "http": 400,
+      "meaning": {
+        "en": "Alias must be 4–20 chars (a-z, 0-9, dot, underscore, hyphen), start/end alphanumeric, and not a reserved word",
+        "es": "El alias debe tener 4–20 caracteres (a-z, 0-9, punto, guion bajo, guion), empezar/terminar alfanumérico y no ser palabra reservada",
+        "zh": "别名须为 4–20 个字符（a-z、0-9、点、下划线、连字符），首尾为字母或数字，且不能是保留词"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_body",
+      "http": 400,
+      "meaning": {
+        "en": "The request body could not be read (binary uploads, webhooks)",
+        "es": "No se pudo leer el body del request (subidas binarias, webhooks)",
+        "zh": "无法读取请求体（二进制上传、webhook）"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_image",
+      "http": 400,
+      "meaning": {
+        "en": "The avatar body is empty or not a supported image (PNG/JPEG/WebP, max 512 KB)",
+        "es": "El body del avatar está vacío o no es una imagen soportada (PNG/JPEG/WebP, máx 512 KB)",
+        "zh": "头像请求体为空或不是支持的图片格式（PNG/JPEG/WebP，最大 512 KB）"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_interval",
+      "http": 400,
+      "meaning": {
+        "en": "Subscription `interval` must be `daily`, `weekly`, `monthly` or `yearly`",
+        "es": "El `interval` de la suscripción debe ser `daily`, `weekly`, `monthly` o `yearly`",
+        "zh": "订阅的 `interval` 必须是 `daily`、`weekly`、`monthly` 或 `yearly`"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "query_required",
+      "http": 400,
+      "meaning": {
+        "en": "`GET /v1/resolve` needs `alias=` or `qr=`",
+        "es": "`GET /v1/resolve` necesita `alias=` o `qr=`",
+        "zh": "`GET /v1/resolve` 需要 `alias=` 或 `qr=` 参数"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "same_email",
+      "http": 400,
+      "meaning": {
+        "en": "The new login email is the current one; use `POST /v1/me/email/verify` to verify it instead",
+        "es": "El nuevo email de login es el actual; usa `POST /v1/me/email/verify` para verificarlo",
+        "zh": "新登录邮箱与当前邮箱相同；请改用 `POST /v1/me/email/verify` 进行验证"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_status",
+      "http": 400,
+      "meaning": {
+        "en": "Administration validations",
+        "es": "Validaciones de administración",
+        "zh": "管理端校验"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_kyc_status",
+      "http": 400,
+      "meaning": {
+        "en": "Administration validations",
+        "es": "Validaciones de administración",
+        "zh": "管理端校验"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_direction",
+      "http": 400,
+      "meaning": {
+        "en": "Administration validations",
+        "es": "Validaciones de administración",
+        "zh": "管理端校验"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "reason_required",
+      "http": 400,
+      "meaning": {
+        "en": "Administration validations",
+        "es": "Validaciones de administración",
+        "zh": "管理端校验"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "account_id_required",
+      "http": 400,
+      "meaning": {
+        "en": "Administration validations",
+        "es": "Validaciones de administración",
+        "zh": "管理端校验"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_service",
+      "http": 400,
+      "meaning": {
+        "en": "Administration validations",
+        "es": "Validaciones de administración",
+        "zh": "管理端校验"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_fee",
+      "http": 400,
+      "meaning": {
+        "en": "Administration validations",
+        "es": "Validaciones de administración",
+        "zh": "管理端校验"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "insufficient_funds",
+      "http": 402,
+      "meaning": {
+        "en": "Not enough available balance",
+        "es": "Saldo disponible insuficiente",
+        "zh": "可用余额不足"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "not_found",
+      "http": 404,
+      "meaning": {
+        "en": "Resource does not exist (or belongs to another account)",
+        "es": "Recurso inexistente (o de otra cuenta)",
+        "zh": "资源不存在（或属于其他账户）"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "recipient_not_found",
+      "http": 404,
+      "meaning": {
+        "en": "Transfer destination does not exist",
+        "es": "Destino de transferencia inexistente",
+        "zh": "转账目标不存在"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "duplicate",
+      "http": 409,
+      "meaning": {
+        "en": "The resource already exists",
+        "es": "El recurso ya existe",
+        "zh": "资源已存在"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "verification_required",
+      "http": 403,
+      "meaning": {
+        "en": "Your account has not approved its identity verification yet (person=KYC, company=KYB); until then you can only fund — request your link at `POST /v1/me/verification/link`",
+        "es": "Tu cuenta aún no aprobó su verificación de identidad (persona=KYC, empresa=KYB); hasta entonces solo puedes fondear — pide tu link en `POST /v1/me/verification/link`",
+        "zh": "您的账户尚未通过身份验证（个人=KYC，企业=KYB）；在此之前只能入金——通过 `POST /v1/me/verification/link` 申请您的验证链接"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "verification_not_approved",
+      "http": 422,
+      "meaning": {
+        "en": "The referenced verification is not approved yet",
+        "es": "La verificación referenciada aún no está aprobada",
+        "zh": "所引用的验证尚未通过"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "verification_kind_mismatch",
+      "http": 422,
+      "meaning": {
+        "en": "The verification kind does not match the product (KYC ⇒ person/INDIVIDUAL, KYB ⇒ company/COMPANY)",
+        "es": "El kind de la verificación no calza con el producto (KYC ⇒ persona/INDIVIDUAL, KYB ⇒ empresa/COMPANY)",
+        "zh": "验证类型与产品不匹配（KYC ⇒ person/INDIVIDUAL，KYB ⇒ company/COMPANY）"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "verification_invalid",
+      "http": 422,
+      "meaning": {
+        "en": "You referenced an own-onboarding verification where a third-party one is required",
+        "es": "Referenciaste una verificación de onboarding propio donde se exige la de un tercero",
+        "zh": "在需要第三方验证的场景引用了自身入驻的验证"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "company_account_required",
+      "http": 403,
+      "meaning": {
+        "en": "Third-party verification (KYC/KYB links/submissions) is for company accounts only",
+        "es": "La verificación de terceros (links/submissions KYC-KYB) es solo para cuentas empresa",
+        "zh": "第三方验证（KYC/KYB 链接/提交）仅限企业账户"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "already_verified",
+      "http": 409,
+      "meaning": {
+        "en": "Onboarding link requested with an already-verified account",
+        "es": "Pediste link de onboarding con la cuenta ya verificada",
+        "zh": "使用已通过验证的账户请求了入驻链接"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "identity_locked",
+      "http": 409,
+      "meaning": {
+        "en": "With the verification approved, `display_name`, `tax_id` and `country` come from the verified identity and cannot be changed via `PATCH /v1/me`; contact support",
+        "es": "Con la verificación aprobada, `display_name`, `tax_id` y `country` vienen de la identidad verificada y no se cambian por `PATCH /v1/me`; contacta al soporte",
+        "zh": "验证获批后，`display_name`、`tax_id` 和 `country` 来自已验证的身份，无法通过 `PATCH /v1/me` 修改；请联系支持"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "no_screening",
+      "http": 409,
+      "meaning": {
+        "en": "AML rescreen/monitoring without a prior screening",
+        "es": "Rescreen/monitoreo AML sin un screening previo",
+        "zh": "在没有先行筛查的情况下发起 AML 重新筛查/监控"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "no_banking_customer",
+      "http": 409,
+      "meaning": {
+        "en": "Banking operation without a banking profile (`POST /v1/banking/customer` first)",
+        "es": "Operación banking sin perfil bancario creado (`POST /v1/banking/customer` primero)",
+        "zh": "在没有银行账户资料的情况下发起银行操作（请先 `POST /v1/banking/customer`）"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "banking_customer_exists",
+      "http": 409,
+      "meaning": {
+        "en": "The account already has a banking profile (one per account)",
+        "es": "La cuenta ya tiene perfil bancario (es uno por cuenta)",
+        "zh": "该账户已有银行账户资料（每个账户仅限一个）"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "currency_not_supported",
+      "http": 422,
+      "meaning": {
+        "en": "No FX rate for that currency",
+        "es": "Sin tasa FX para esa moneda",
+        "zh": "该货币没有汇率"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "core_rejected",
+      "http": 422,
+      "meaning": {
+        "en": "The processor rejected the operation",
+        "es": "El procesador rechazó la operación",
+        "zh": "处理方拒绝了该操作"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "recipient_unavailable",
+      "http": 422,
+      "meaning": {
+        "en": "The destination account cannot receive",
+        "es": "La cuenta destino no puede recibir",
+        "zh": "目标账户无法接收"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "recipient_ambiguous",
+      "http": 422,
+      "meaning": {
+        "en": "More than one account shares the `to_phone` number (use `to_account_id` or `to_email`)",
+        "es": "Más de una cuenta comparte el teléfono de `to_phone` (usa `to_account_id` o `to_email`)",
+        "zh": "多个账户共用该 `to_phone` 号码（请使用 `to_account_id` 或 `to_email`）"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "contact_not_linked",
+      "http": 422,
+      "meaning": {
+        "en": "The contact has no linked CBPay account to transfer to",
+        "es": "El contacto no tiene cuenta CBPay asociada para transferirle",
+        "zh": "该联系人没有可转账的已关联 CBPay 账户"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "no_saved_destination",
+      "http": 422,
+      "meaning": {
+        "en": "The contact has no saved destination for that corridor/chain",
+        "es": "El contacto no tiene destino guardado para ese corredor/chain",
+        "zh": "该联系人在该通道/链上没有已保存的目标"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "wallet_limit_reached",
+      "http": 422,
+      "meaning": {
+        "en": "The account already holds its wallet for that network+asset pair (deposit: every account; segregated: persons)",
+        "es": "La cuenta ya tiene su wallet de esa combinación red+activo (depósito: todas las cuentas; segregadas: personas)",
+        "zh": "该账户在此网络+资产组合下已持有对应钱包（充值钱包：所有账户；隔离钱包：个人账户）"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "insufficient_gas",
+      "http": 422,
+      "meaning": {
+        "en": "The segregated wallet has no native gas (TRX/ETH) for the network fee; fund the address and retry",
+        "es": "La wallet segregada no tiene gas nativo (TRX/ETH) para el fee de red; fondea la dirección y reintenta",
+        "zh": "独立钱包没有支付网络费所需的原生 gas（TRX/ETH）；请为该地址充值后重试"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "idempotency_conflict",
+      "http": 409,
+      "meaning": {
+        "en": "Another wallet creation/send with the same key is still in flight; retry with the same key",
+        "es": "Otra creación/envío de wallet con la misma clave sigue en curso; reintenta con la misma clave",
+        "zh": "使用相同幂等键的另一次钱包创建/转出仍在进行中；请使用同一个键重试"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "card_limit_reached",
+      "http": 409,
+      "meaning": {
+        "en": "A person account tried to create a second card of the same type",
+        "es": "Una cuenta persona intentó crear una segunda tarjeta del mismo tipo",
+        "zh": "个人账户试图创建第二张同类型卡片"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "card_cancelled",
+      "http": 409,
+      "meaning": {
+        "en": "The card is already cancelled and cannot be updated",
+        "es": "La tarjeta ya está cancelada y no se puede modificar",
+        "zh": "卡片已注销，无法更新"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "card_not_pending",
+      "http": 409,
+      "meaning": {
+        "en": "Only cards in `pending_activation` can be activated",
+        "es": "Solo tarjetas en `pending_activation` se pueden activar",
+        "zh": "只有处于 `pending_activation` 状态的卡片才能激活"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "cardholder_kyc_pending",
+      "http": 409,
+      "meaning": {
+        "en": "The designated cardholder requires identity documents",
+        "es": "El titular designado requiere documentos de identidad",
+        "zh": "指定持卡人需要提交身份证明文件"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "invalid_occupation",
+      "http": 400,
+      "meaning": {
+        "en": "`occupation` is not a catalog code (`GET /v1/cards/catalog/occupations`)",
+        "es": "`occupation` no es un código del catálogo (`GET /v1/cards/catalog/occupations`)",
+        "zh": "`occupation` 不是目录中的代码（`GET /v1/cards/catalog/occupations`）"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "invalid_kind_of_business",
+      "http": 400,
+      "meaning": {
+        "en": "`kind_of_business` is not a catalog code (`GET /v1/cards/catalog/business-activities`)",
+        "es": "`kind_of_business` no es un código del catálogo (`GET /v1/cards/catalog/business-activities`)",
+        "zh": "`kind_of_business` 不是目录中的代码（`GET /v1/cards/catalog/business-activities`）"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "invalid_settlement_asset",
+      "http": 400,
+      "meaning": {
+        "en": "`settlement_asset` is not USDT, USDC, BTC or GOLD",
+        "es": "`settlement_asset` no es USDT, USDC, BTC ni GOLD",
+        "zh": "`settlement_asset` 不是 USDT、USDC、BTC 或 GOLD"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "settlement_asset_disabled",
+      "http": 400,
+      "meaning": {
+        "en": "Your organization disabled that asset as settlement source",
+        "es": "Tu organización tiene deshabilitado ese asset como origen de settlement",
+        "zh": "您的组织已禁用该资产作为结算来源"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "settlement_limit_exceeded",
+      "http": 422,
+      "meaning": {
+        "en": "The operation exceeds the per-operation limit for volatile assets (BTC/GOLD); use USDT/USDC or split the operation",
+        "es": "La operación supera el límite por operación de los assets volátiles (BTC/GOLD); usa USDT/USDC o divide la operación",
+        "zh": "该操作超出波动性资产（BTC/GOLD）的单笔操作限额；请使用 USDT/USDC 或拆分操作"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "settlement_daily_limit_exceeded",
+      "http": 422,
+      "meaning": {
+        "en": "The account exceeded its 24h volume for volatile assets (BTC/GOLD); use USDT/USDC or retry later",
+        "es": "La cuenta superó su volumen de 24 h en assets volátiles (BTC/GOLD); usa USDT/USDC o reintenta más tarde",
+        "zh": "该账户已超出波动性资产（BTC/GOLD）的 24 小时交易量限额；请使用 USDT/USDC 或稍后重试"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "invalid_pair",
+      "http": 400,
+      "meaning": {
+        "en": "Swap with the same source and destination currency",
+        "es": "Swap con la misma moneda de origen y destino",
+        "zh": "兑换（swap）的源货币与目标货币相同"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "amount_too_small",
+      "http": 400,
+      "meaning": {
+        "en": "The swap amount does not reach the destination currency's minimum unit",
+        "es": "El monto del swap no alcanza la unidad mínima de la moneda destino",
+        "zh": "兑换金额不足目标货币的最小单位"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "swap_asset_disabled",
+      "http": 400,
+      "meaning": {
+        "en": "One of the swap currencies is disabled for your organization",
+        "es": "Una de las monedas del swap está deshabilitada para tu organización",
+        "zh": "兑换涉及的某一货币已被您的组织禁用"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "already_paid",
+      "http": 409,
+      "meaning": {
+        "en": "The universal checkout link was already paid through another method",
+        "es": "El link de cobro universal ya se pagó por otro método",
+        "zh": "通用收款链接已通过其他方式支付"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "checkout_expired",
+      "http": 410,
+      "meaning": {
+        "en": "The universal checkout link expired unpaid",
+        "es": "El link de cobro universal venció sin pago",
+        "zh": "通用收款链接到期未支付"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "method_unavailable",
+      "http": 422,
+      "meaning": {
+        "en": "The method chosen on the checkout link is not available for that link or country",
+        "es": "El método elegido en el link de cobro no está disponible para ese link o país",
+        "zh": "收款链接上所选方式对该链接或国家不可用"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "country_required",
+      "http": 400,
+      "meaning": {
+        "en": "Fiat materialization on the checkout link is missing `?country=XX`",
+        "es": "Materialización fiat del link de cobro sin `?country=XX`",
+        "zh": "收款链接的法币物化缺少 `?country=XX`"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "currency_required",
+      "http": 400,
+      "meaning": {
+        "en": "The country offers the checkout link method in several currencies; `?currency=YYY` is missing",
+        "es": "El país ofrece el método del link de cobro en varias monedas; falta `?currency=YYY`",
+        "zh": "该国家以多种币种提供收款链接的方式；缺少 `?currency=YYY`"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "country_unavailable",
+      "http": 422,
+      "meaning": {
+        "en": "That country has no payment methods available on the checkout link",
+        "es": "Ese país no tiene métodos de pago disponibles en el link de cobro",
+        "zh": "该国家在收款链接上没有可用的支付方式"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "collect_otp_failed",
+      "http": 422,
+      "meaning": {
+        "en": "The rail rejected the OTP delivery for the link's pull collection",
+        "es": "El rail rechazó el envío de la clave OTP del cobro pull del link",
+        "zh": "通道拒绝发送链接拉取式收款的 OTP"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "collect_rejected",
+      "http": 422,
+      "meaning": {
+        "en": "The rail rejected the link's pull charge (invalid OTP or wrong data); the link stays pending",
+        "es": "El rail rechazó el cobro pull del link (OTP inválida o datos incorrectos); el link sigue pendiente",
+        "zh": "通道拒绝了链接的拉取式扣款（OTP 无效或数据错误）；链接保持待支付"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "checkout_amount_mismatch",
+      "http": 422,
+      "meaning": {
+        "en": "The CBPay transfer does not cover the checkout link's current due; the message carries the updated amount",
+        "es": "La transferencia CBPay no cubre el monto vigente del link de cobro; el mensaje trae el monto actualizado",
+        "zh": "CBPay 转账不足以覆盖收款链接的当前应付额；错误消息附带最新金额"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "stored_card_revoked",
+      "http": 422,
+      "meaning": {
+        "en": "The saved card is revoked; it no longer accepts charges",
+        "es": "La tarjeta guardada está revocada; no acepta más cobros",
+        "zh": "已保存的卡片已被撤销；不再接受扣款"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "merchant_disabled",
+      "http": 422,
+      "meaning": {
+        "en": "The QR Crypto POS merchant is disabled; re-enable it before charging",
+        "es": "El merchant QR Crypto POS está deshabilitado; reactívalo antes de generar cobros",
+        "zh": "QR Crypto POS 商户已停用；先重新启用再生成收款"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "nothing_received",
+      "http": 422,
+      "meaning": {
+        "en": "The QR Crypto POS charge has not received any on-chain payment: there is nothing to refund",
+        "es": "El cobro QR Crypto POS no ha recibido ningún pago on-chain: no hay nada que devolver",
+        "zh": "QR Crypto POS 收款未收到任何链上支付：无可退款"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "refund_exceeds_received",
+      "http": 422,
+      "meaning": {
+        "en": "The refund exceeds what the QR Crypto POS charge received minus prior refunds",
+        "es": "La devolución supera lo recibido menos lo ya devuelto del cobro QR Crypto POS",
+        "zh": "退款超过 QR Crypto POS 收款已收金额减去已退金额"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "deposit_account_limit_reached",
+      "http": 422,
+      "meaning": {
+        "en": "Accounts hold one deposit account per corridor (created automatically with the account); it cannot be changed or deleted",
+        "es": "Las cuentas tienen una cuenta de depósito por corredor (creada automáticamente con la cuenta); no se puede cambiar ni eliminar",
+        "zh": "每个账户每条走廊只有一个入金账户（随账户自动创建）；不可更改或删除"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "export_rejected",
+      "http": 422,
+      "meaning": {
+        "en": "The processor rejected the segregated wallet key export",
+        "es": "El procesador rechazó el export de la llave de la wallet segregada",
+        "zh": "处理方拒绝了该独立钱包的私钥导出"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "stored_card_corridor_mismatch",
+      "http": 422,
+      "meaning": {
+        "en": "The saved card belongs to a different country/currency corridor than the charge",
+        "es": "La tarjeta guardada pertenece a otro corredor país/moneda distinto del cobro",
+        "zh": "该已保存卡片属于与本次收款不同的国家/货币走廊"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "subscription_state",
+      "http": 409,
+      "meaning": {
+        "en": "The subscription is not in a state that allows that action (e.g. pausing a canceled plan)",
+        "es": "La suscripción no está en un estado que permita esa acción (ej. pausar un plan cancelado)",
+        "zh": "该订阅当前状态不允许该操作（例如暂停已取消的计划）"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "email_required",
+      "http": 409,
+      "meaning": {
+        "en": "The login has no real email address; set one with `POST /v1/me/email/change`",
+        "es": "El login no tiene un email real; configura uno con `POST /v1/me/email/change`",
+        "zh": "该登录没有真实邮箱；请通过 `POST /v1/me/email/change` 设置"
+      }
+    },
+    {
+      "category": {
+        "en": "Compliance (403 / 503)",
+        "es": "Cumplimiento (403 / 503)",
+        "zh": "合规（403 / 503）"
+      },
+      "code": "compliance_hold",
+      "http": 403,
+      "meaning": {
+        "en": "The operation was held by the platform's compliance controls. It is not a request error: contact support with the timestamp — by policy the exact reason is not disclosed",
+        "es": "La operación fue retenida por los controles de cumplimiento de la plataforma. No es un error de tu request: contacta a soporte con el timestamp — por política no se informa la razón exacta",
+        "zh": "该操作已被平台的合规控制拦截。这不是请求错误：请携带时间戳联系支持团队 — 根据政策，不会披露具体原因"
+      }
+    },
+    {
+      "category": {
+        "en": "Compliance (403 / 503)",
+        "es": "Cumplimiento (403 / 503)",
+        "zh": "合规（403 / 503）"
+      },
+      "code": "geo_restricted",
+      "http": 403,
+      "meaning": {
+        "en": "The service or the operation is not available for the origin or counterparty jurisdiction",
+        "es": "El servicio o la operación no están disponibles para la jurisdicción de origen o de la contraparte",
+        "zh": "该服务或操作不适用于发起方或交易对手所在的司法辖区"
+      }
+    },
+    {
+      "category": {
+        "en": "Compliance (403 / 503)",
+        "es": "Cumplimiento (403 / 503)",
+        "zh": "合规（403 / 503）"
+      },
+      "code": "compliance_check_unavailable",
+      "http": 503,
+      "meaning": {
+        "en": "The compliance check could not be evaluated; the operation did NOT go out — retry with the **same** idempotency key",
+        "es": "La verificación de cumplimiento no se pudo evaluar; la operación NO salió — reintenta con la **misma** clave de idempotencia",
+        "zh": "合规检查暂时无法执行；操作**未**发出 — 请使用**相同的**幂等键重试"
+      }
+    },
+    {
+      "category": {
+        "en": "Compliance (403 / 503)",
+        "es": "Cumplimiento (403 / 503)",
+        "zh": "合规（403 / 503）"
+      },
+      "code": "travel_rule_required",
+      "http": 422,
+      "meaning": {
+        "en": "On-chain withdrawal above the Travel Rule threshold without beneficiary data — add `travel_address` or `wallet_type: \"self_hosted\"` + `beneficiary_name` (crypto guide)",
+        "es": "Retiro on-chain sobre el umbral Travel Rule sin datos del beneficiario — agrega `travel_address` o `wallet_type: \"self_hosted\"` + `beneficiary_name` (guía crypto)",
+        "zh": "超过 Travel Rule 阈值的链上提现缺少受益人数据 — 补充 `travel_address` 或 `wallet_type: \"self_hosted\"` + `beneficiary_name`（加密货币指南）"
+      }
+    },
+    {
+      "category": {
+        "en": "Compliance (403 / 503)",
+        "es": "Cumplimiento (403 / 503)",
+        "zh": "合规（403 / 503）"
+      },
+      "code": "travel_rule_beneficiary_required",
+      "http": 422,
+      "meaning": {
+        "en": "`beneficiary_name` is missing on a withdrawal subject to the Travel Rule",
+        "es": "Falta `beneficiary_name` en un retiro sujeto a Travel Rule",
+        "zh": "适用 Travel Rule 的提现缺少 `beneficiary_name`"
+      }
+    },
+    {
+      "category": {
+        "en": "Compliance (403 / 503)",
+        "es": "Cumplimiento (403 / 503)",
+        "zh": "合规（403 / 503）"
+      },
+      "code": "travel_rule_address_mismatch",
+      "http": 422,
+      "meaning": {
+        "en": "Your `to_address` does not match the payment address approved by the receiving institution — omit it or use the one from the exchange",
+        "es": "Tu `to_address` no coincide con la dirección de pago aprobada por la institución receptora — omítela o usa la del intercambio",
+        "zh": "您的 `to_address` 与收款机构批准的付款地址不一致 — 省略它或使用交换返回的地址"
+      }
+    },
+    {
+      "category": {
+        "en": "Compliance (403 / 503)",
+        "es": "Cumplimiento (403 / 503)",
+        "zh": "合规（403 / 503）"
+      },
+      "code": "travel_rule_rejected",
+      "http": 422,
+      "meaning": {
+        "en": "The receiving institution rejected the transfer; verify the beneficiary data",
+        "es": "La institución receptora rechazó la transferencia; verifica los datos del beneficiario",
+        "zh": "收款机构拒绝了该转账；请核对受益人数据"
+      }
+    },
+    {
+      "category": {
+        "en": "Compliance (403 / 503)",
+        "es": "Cumplimiento (403 / 503)",
+        "zh": "合规（403 / 503）"
+      },
+      "code": "travel_rule_pending",
+      "http": 422,
+      "meaning": {
+        "en": "The receiving institution has not resolved the exchange yet; retry with the **same** idempotency key",
+        "es": "La institución receptora aún no resuelve el intercambio; reintenta con la **misma** clave de idempotencia",
+        "zh": "收款机构尚未处理该交换；请使用**相同的**幂等键重试"
+      }
+    },
+    {
+      "category": {
+        "en": "Compliance (403 / 503)",
+        "es": "Cumplimiento (403 / 503)",
+        "zh": "合规（403 / 503）"
+      },
+      "code": "travel_rule_incomplete_approval",
+      "http": 422,
+      "meaning": {
+        "en": "The receiving institution approved without providing a payment address; contact support",
+        "es": "La institución receptora aprobó sin entregar dirección de pago; contacta a soporte",
+        "zh": "收款机构批准时未提供付款地址；请联系支持团队"
+      }
+    },
+    {
+      "category": {
+        "en": "Compliance (403 / 503)",
+        "es": "Cumplimiento (403 / 503)",
+        "zh": "合规（403 / 503）"
+      },
+      "code": "travel_rule_unavailable",
+      "http": 503,
+      "meaning": {
+        "en": "Travel Rule exchange temporarily unavailable; retry with the **same** idempotency key",
+        "es": "Intercambio Travel Rule temporalmente no disponible; reintenta con la **misma** clave de idempotencia",
+        "zh": "Travel Rule 数据交换暂时不可用；请使用**相同的**幂等键重试"
+      }
+    },
+    {
+      "category": {
+        "en": "Service (5xx)",
+        "es": "Servicio (5xx)",
+        "zh": "服务端（5xx）"
+      },
+      "code": "internal_error",
+      "http": 500,
+      "meaning": {
+        "en": "Unexpected error; retry with the same idempotency key",
+        "es": "Error inesperado; reintenta con la misma clave de idempotencia",
+        "zh": "意外错误；请使用相同的幂等键重试"
+      }
+    },
+    {
+      "category": {
+        "en": "Service (5xx)",
+        "es": "Servicio (5xx)",
+        "zh": "服务端（5xx）"
+      },
+      "code": "fee_config_invalid",
+      "http": 500,
+      "meaning": {
+        "en": "The account's fee configuration is invalid; contact support (the operation did not run)",
+        "es": "La configuración de comisiones de la cuenta es inválida; contacta al soporte (la operación no se ejecutó)",
+        "zh": "账户的费用配置无效；请联系支持（该操作未执行）"
+      }
+    },
+    {
+      "category": {
+        "en": "Service (5xx)",
+        "es": "Servicio (5xx)",
+        "zh": "服务端（5xx）"
+      },
+      "code": "rates_unavailable",
+      "http": 502,
+      "meaning": {
+        "en": "FX rates temporarily unavailable",
+        "es": "Tasas FX temporalmente no disponibles",
+        "zh": "汇率暂时不可用"
+      }
+    },
+    {
+      "category": {
+        "en": "Service (5xx)",
+        "es": "Servicio (5xx)",
+        "zh": "服务端（5xx）"
+      },
+      "code": "core_unavailable",
+      "http": 502,
+      "meaning": {
+        "en": "Processor temporarily unavailable",
+        "es": "Procesador temporalmente no disponible",
+        "zh": "处理方暂时不可用"
+      }
+    },
+    {
+      "category": {
+        "en": "Service (5xx)",
+        "es": "Servicio (5xx)",
+        "zh": "服务端（5xx）"
+      },
+      "code": "core_invalid_response",
+      "http": 502,
+      "meaning": {
+        "en": "The processor returned an unexpected response; retry with the **same** idempotency key",
+        "es": "El procesador devolvió una respuesta inesperada; reintenta con la **misma** clave de idempotencia",
+        "zh": "处理方返回了意外响应；请使用**相同的**幂等键重试"
+      }
+    },
+    {
+      "category": {
+        "en": "Service (5xx)",
+        "es": "Servicio (5xx)",
+        "zh": "服务端（5xx）"
+      },
+      "code": "compliance_unavailable",
+      "http": 502,
+      "meaning": {
+        "en": "AML screening temporarily unavailable",
+        "es": "Screening AML temporalmente no disponible",
+        "zh": "AML 筛查暂时不可用"
+      }
+    },
+    {
+      "category": {
+        "en": "Service (5xx)",
+        "es": "Servicio (5xx)",
+        "zh": "服务端（5xx）"
+      },
+      "code": "verifications_unavailable",
+      "http": 503,
+      "meaning": {
+        "en": "Identity verification temporarily unavailable (the fee was refunded)",
+        "es": "Verificación de identidad temporalmente no disponible (la comisión se reembolsó)",
+        "zh": "身份验证暂时不可用（费用已退还）"
+      }
+    },
+    {
+      "category": {
+        "en": "Service (5xx)",
+        "es": "Servicio (5xx)",
+        "zh": "服务端（5xx）"
+      },
+      "code": "org_credential_missing",
+      "http": 503,
+      "meaning": {
+        "en": "Service being configured; contact CBPay support",
+        "es": "Servicio en configuración; contacta al soporte de CBPay",
+        "zh": "服务正在配置中；请联系 CBPay 支持"
+      }
+    },
+    {
+      "category": {
+        "en": "Service (5xx)",
+        "es": "Servicio (5xx)",
+        "zh": "服务端（5xx）"
+      },
+      "code": "withdrawals_unavailable",
+      "http": 503,
+      "meaning": {
+        "en": "On-chain withdrawals not enabled for the corridor",
+        "es": "Retiros on-chain no habilitados para el corredor",
+        "zh": "该通道未启用链上提现"
+      }
+    },
+    {
+      "category": {
+        "en": "Service (5xx)",
+        "es": "Servicio (5xx)",
+        "zh": "服务端（5xx）"
+      },
+      "code": "pricing_unavailable",
+      "http": 503,
+      "meaning": {
+        "en": "BTC/GOLD execution price unavailable or stale; retry later or settle in USDT/USDC",
+        "es": "Precio de ejecución de BTC/GOLD no disponible o desactualizado; reintenta más tarde o liquida en USDT/USDC",
+        "zh": "BTC/GOLD 执行价格不可用或已过时；请稍后重试或以 USDT/USDC 结算"
+      }
+    },
+    {
+      "category": {
+        "en": "Service (5xx)",
+        "es": "Servicio (5xx)",
+        "zh": "服务端（5xx）"
+      },
+      "code": "channel_unavailable",
+      "http": 503,
+      "meaning": {
+        "en": "The payout channel is temporarily unavailable; retry later with the **same** idempotency key",
+        "es": "El canal de payout está temporalmente no disponible; reintenta más tarde con la **misma** clave de idempotencia",
+        "zh": "出金通道暂时不可用；请稍后使用**相同的**幂等键重试"
+      }
+    },
+    {
+      "category": {
+        "en": "Service (5xx)",
+        "es": "Servicio (5xx)",
+        "zh": "服务端（5xx）"
+      },
+      "code": "export_unavailable",
+      "http": 503,
+      "meaning": {
+        "en": "Segregated wallet private key export is not enabled on this environment",
+        "es": "El export de llaves privadas de wallets segregadas no está habilitado en este entorno",
+        "zh": "当前环境未启用独立钱包私钥导出"
+      }
+    }
+  ]
+}

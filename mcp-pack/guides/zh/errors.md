@@ -1,0 +1,210 @@
+---
+title: "错误"
+description: "错误格式与完整的错误码目录"
+slug: zh/errors
+lang: zh
+source_url: https://docs.cbpayapp.com/zh/errors
+---
+所有错误都采用相同的结构：
+
+```json
+{
+  "error": "insufficient_funds",
+  "message": "account balance is not enough for this operation"
+}
+```
+
+- `error`：稳定的 `snake_case` 错误码——请在您的业务逻辑中使用它。
+- `message`：面向人类的说明——可能变化，不要解析它。
+
+## 按类别划分的错误码
+
+### 身份认证与权限
+
+| HTTP | `error` | 含义 |
+|---|---|---|
+| 401 | `unauthorized` | 凭证缺失或无效 |
+| 401 | `invalid_credentials` | 邮箱或密码错误（登录） |
+| 401 | `invalid_refresh_token` | 刷新令牌无效、已过期、已被使用或已被吊销 —— 请引导用户重新登录 |
+| 403 | `account_required` | 该端点需要账户级凭证 |
+| 403 | `org_admin_required` | 该端点需要管理员凭证 |
+| 403 | `forbidden` | 凭证级别不允许 |
+| 403 | `account_blocked` | 账户处于非活跃状态 |
+| 403 | `member_disabled` | 该用户已被禁止登录；请联系您组织的管理员 |
+| 403 | `passkey_rejected` | 通行密钥（passkey）验证失败；请重试或使用密码登录 |
+| 403 | `owner_required` | 只有账户的 owner 成员才能执行该操作 |
+| 403 | `service_disabled` | 该服务未对您的账户启用（查看 `GET /v1/services`） |
+| 403 | `org_suspended` | 服务已暂停；请联系 CBPay 团队 |
+| 403 | `company_only` | 仅企业账户可用的功能 |
+| 403 | `company_required` | 仅企业账户可用的功能（例如[第三方银行服务](https://docs.cbpayapp.com/zh/guides/banking)） |
+| 403 | `human_session_required` | 该操作涉及私钥（独立钱包导入/导出），需要带 2FA 的已登录用户会话——不允许使用 API 密钥 |
+
+### OTP / 双因素认证
+
+完整流程和详情见[安全与双因素认证](https://docs.cbpayapp.com/zh/security-2fa)。
+
+| HTTP | `error` | 含义 |
+|---|---|---|
+| 403 | `otp_required` | 该操作需要 OTP：验证一个质询后携带 `X-OTP-Token` 重试 |
+| 403 | `otp_invalid` | OTP 令牌无效、已过期或已被使用 |
+| 403 | `session_required` | OTP 质询需要用户会话，不能使用 API 密钥 |
+| 403 | `phone_binding_cooldown` | 手机号绑定未满 24 小时且未经验证，且没有替代因素（身份验证器应用或已验证邮箱） |
+| 409 | `phone_verification_required` | 通过 SMS/WhatsApp 启用登录 2FA 前需先验证手机号（OTP 挑战） |
+| 401 | `invalid_code` | 验证码不匹配 |
+| 401 | `invalid_pending_token` | 登录中间令牌已过期；请重新登录 |
+| 400 | `invalid_action` / `invalid_channel` | 操作或渠道不在目录中 |
+| 409 | `phone_required` | 账户未绑定手机号（`PATCH /v1/me`） |
+| 409 | `otp_phone_missing` | 登录需要 OTP 但账户没有手机号；请联系您的运营方 |
+| 409 | `challenge_not_pending` | 质询已过期或已被使用；请创建一个新的 |
+| 429 | `too_many_attempts` | 达到发送/验证次数限制；请等待几分钟 |
+| 503 | `otp_unavailable` | 验证服务不可用（操作保持锁定；OTP 绝不会被跳过） |
+| 409 | `otp_disabled_for_org` | 您的组织未启用按操作的双因素认证；请联系您的运营方 |
+| 409 | `totp_not_started` | 尚未开始 TOTP 注册；请先调用 `POST /v1/me/totp/enroll` |
+
+### 社交登录（OAuth）
+
+完整流程和详情见[社交登录](https://docs.cbpayapp.com/zh/guides/social-login)。
+
+| HTTP | `error` | 含义 |
+|---|---|---|
+| 400 | `invalid_provider` | 提供方不在 `google/apple/microsoft/facebook` 范围内 |
+| 400 | `provider_not_configured` | 您的组织尚未启用该提供方 |
+| 401 | `invalid_credential` | 提供方凭证无效、已过期或来自其他应用 |
+| 409 | `email_conflict` | 已存在使用该邮箱的账户；请先登录再绑定该提供方 |
+| 409 | `identity_taken` | 该提供方身份已绑定到其他账户 |
+| 409 | `last_login_method` | 无法解绑您唯一的登录方式 |
+
+### 校验（400）
+
+| `error` | 含义 |
+|---|---|
+| `invalid_json` | 请求体不是有效的 JSON 或包含未知字段 |
+| `invalid_settings` | 组织设置不是有效的 JSON 对象或无法规范化；请修正设置请求体后重试 |
+| `invalid_type` | `type` 必须为 `person` 或 `company` |
+| `invalid_email` / `invalid_display_name` | 必填字段无效 |
+| `weak_password` | 密码少于 8 个字符 |
+| `invalid_role` | 成员角色无效 |
+| `unknown_org` | 组织 slug 错误（应使用 `cbpay`） |
+| `invalid_request` | 缺少 `country`/`currency` |
+| `idempotency_key_required` | 缺少幂等键 |
+| `reserved_idempotency_key` | 幂等键使用了系统保留前缀（`payin-convert:` 或 `checkout-swap:`，属于自动转换）——请改用其他键 |
+| `beneficiary_required` | 缺少付款收款人信息 |
+| `invalid_amount` | 金额不是有效的正十进制数 |
+| `recipient_required` / `self_transfer` | 转账目标无效 |
+| `invalid_chain` / `invalid_asset` | 不支持的网络或资产 |
+| `to_address_required` | 缺少提现目标地址 |
+| `invalid_payload` | 缺少必填字段（例如 AML 监控的 `enabled`、身份验证的 `external_customer_id`） |
+| `invalid_qr_payload` | 出金二维码不可读或不受支持（BR Code 损坏、校验和无效或动态 PIX 二维码）；`message` 说明具体原因 |
+| `liveness_already_completed` | 该验证的活体检测已经通过 |
+| `invalid_event_type` / `weak_secret` / `invalid_callback_url` | Webhook 订阅无效 |
+| `invalid_phone` | 手机号无法规范化为 E.164 格式（联系人和 `to_phone`） |
+| `invalid_language` | PDF 报告的 `lang` 不是 `en`、`es` 或 `zh`（AML 报告） |
+| `batch_too_large` | 联系人导入超过 1,000 条（请分批上传） |
+| `invalid_alias` | 别名须为 4–20 个字符（a-z、0-9、点、下划线、连字符），首尾为字母或数字，且不能是保留词 |
+| `invalid_body` | 无法读取请求体（二进制上传、webhook） |
+| `invalid_image` | 头像请求体为空或不是支持的图片格式（PNG/JPEG/WebP，最大 512 KB） |
+| `invalid_interval` | 订阅的 `interval` 必须是 `daily`、`weekly`、`monthly` 或 `yearly` |
+| `query_required` | `GET /v1/resolve` 需要 `alias=` 或 `qr=` 参数 |
+| `same_email` | 新登录邮箱与当前邮箱相同；请改用 `POST /v1/me/email/verify` 进行验证 |
+| `invalid_status` / `invalid_kyc_status` / `invalid_direction` / `reason_required` / `account_id_required` / `invalid_service` / `invalid_fee` | 管理端校验 |
+
+### 资金与状态（402 / 404 / 409 / 422）
+
+| HTTP | `error` | 含义 |
+|---|---|---|
+| 402 | `insufficient_funds` | 可用余额不足 |
+| 404 | `not_found` | 资源不存在（或属于其他账户） |
+| 404 | `recipient_not_found` | 转账目标不存在 |
+| 409 | `duplicate` | 资源已存在 |
+| 403 | `verification_required` | 您的账户尚未通过身份验证（个人=KYC，企业=KYB）；在此之前只能入金——通过 `POST /v1/me/verification/link` 申请您的验证链接 |
+| 422 | `verification_required` | 该操作需要一项已通过的第三方验证的 `verification_id`（第三方银行账户登记、指定持卡人卡片） |
+| 422 | `verification_not_approved` | 所引用的验证尚未通过 |
+| 422 | `verification_kind_mismatch` | 验证类型与产品不匹配（KYC ⇒ person/INDIVIDUAL，KYB ⇒ company/COMPANY） |
+| 422 | `verification_invalid` | 在需要第三方验证的场景引用了自身入驻的验证 |
+| 403 | `company_account_required` | 第三方验证（KYC/KYB 链接/提交）仅限企业账户 |
+| 409 | `already_verified` | 使用已通过验证的账户请求了入驻链接 |
+| 409 | `identity_locked` | 验证获批后，`display_name`、`tax_id` 和 `country` 来自已验证的身份，无法通过 `PATCH /v1/me` 修改；请联系支持 |
+| 409 | `no_screening` | 在没有先行筛查的情况下发起 AML 重新筛查/监控 |
+| 409 | `no_banking_customer` | 在没有银行账户资料的情况下发起银行操作（请先 `POST /v1/banking/customer`） |
+| 409 | `banking_customer_exists` | 该账户已有银行账户资料（每个账户仅限一个） |
+| 422 | `currency_not_supported` | 该货币没有汇率 |
+| 422 | `core_rejected` | 处理方拒绝了该操作 |
+| 422 | `recipient_unavailable` | 目标账户无法接收 |
+| 422 | `recipient_ambiguous` | 多个账户共用该 `to_phone` 号码（请使用 `to_account_id` 或 `to_email`） |
+| 422 | `contact_not_linked` | 该联系人没有可转账的已关联 CBPay 账户 |
+| 422 | `no_saved_destination` | 该联系人在该通道/链上没有已保存的目标 |
+| 422 | `wallet_limit_reached` | 该账户在此网络+资产组合下已持有对应钱包（充值钱包：所有账户；[隔离钱包](https://docs.cbpayapp.com/zh/guides/segregated-wallets)：个人账户） |
+| 422 | `insufficient_gas` | [独立钱包](https://docs.cbpayapp.com/zh/guides/segregated-wallets)没有支付网络费所需的原生 gas（TRX/ETH）；请为该地址充值后重试 |
+| 409 | `idempotency_conflict` | 使用相同幂等键的另一次钱包创建/转出仍在进行中；请使用同一个键重试 |
+| 409 | `card_limit_reached` | 个人账户试图创建第二张同类型卡片 |
+| 409 | `card_cancelled` | 卡片已注销，无法更新 |
+| 409 | `card_not_pending` | 只有处于 `pending_activation` 状态的卡片才能激活 |
+| 409 | `cardholder_kyc_pending` | 指定持卡人需要提交身份证明文件 |
+| 400 | `invalid_occupation` | `occupation` 不是目录中的代码（`GET /v1/cards/catalog/occupations`） |
+| 400 | `invalid_kind_of_business` | `kind_of_business` 不是目录中的代码（`GET /v1/cards/catalog/business-activities`） |
+| 400 | `invalid_settlement_asset` | `settlement_asset` 不是 USDT、USDC、BTC 或 GOLD |
+| 400 | `settlement_asset_disabled` | 您的组织已禁用该资产作为结算来源 |
+| 422 | `settlement_limit_exceeded` | 该操作超出波动性资产（BTC/GOLD）的单笔操作限额；请使用 USDT/USDC 或拆分操作 |
+| 422 | `settlement_daily_limit_exceeded` | 该账户已超出波动性资产（BTC/GOLD）的 24 小时交易量限额；请使用 USDT/USDC 或稍后重试 |
+| 400 | `invalid_pair` | 兑换（swap）的源货币与目标货币相同 |
+| 400 | `amount_too_small` | 兑换金额不足目标货币的最小单位 |
+| 400 | `swap_asset_disabled` | 兑换涉及的某一货币已被您的组织禁用 |
+| 409 | `already_paid` | [通用收款链接](https://docs.cbpayapp.com/zh/guides/checkout)已通过其他方式支付 |
+| 410 | `checkout_expired` | 通用收款链接到期未支付 |
+| 422 | `method_unavailable` | 收款链接上所选方式对该链接或国家不可用 |
+| 400 | `country_required` | 收款链接的法币物化缺少 `?country=XX` |
+| 400 | `currency_required` | 该国家以多种币种提供收款链接的方式；缺少 `?currency=YYY` |
+| 422 | `country_unavailable` | 该国家在收款链接上没有可用的支付方式 |
+| 422 | `collect_otp_failed` | 通道拒绝发送链接拉取式收款的 OTP |
+| 422 | `collect_rejected` | 通道拒绝了链接的拉取式扣款（OTP 无效或数据错误）；链接保持待支付 |
+| 422 | `settlement_asset_disabled` | 收款链接的 `settlement_asset` 已被您的组织禁用 |
+| 422 | `checkout_amount_mismatch` | CBPay 转账不足以覆盖收款链接的当前应付额；错误消息附带最新金额 |
+| 422 | `stored_card_revoked` | [已保存的卡片](https://docs.cbpayapp.com/zh/guides/stored-cards-subscriptions)已被撤销；不再接受扣款 |
+| 422 | `verification_required` | [QR Crypto POS](https://docs.cbpayapp.com/zh/guides/qr-pos)：用商户已批准的第三方 KYC/KYB 的 `verification_id` 注册商户 |
+| 422 | `merchant_disabled` | [QR Crypto POS](https://docs.cbpayapp.com/zh/guides/qr-pos) 商户已停用；先重新启用再生成收款 |
+| 422 | `nothing_received` | [QR Crypto POS](https://docs.cbpayapp.com/zh/guides/qr-pos) 收款未收到任何链上支付：无可退款 |
+| 422 | `refund_exceeds_received` | 退款超过 [QR Crypto POS](https://docs.cbpayapp.com/zh/guides/qr-pos) 收款已收金额减去已退金额 |
+| 400 | `to_address_required` | [QR Crypto POS](https://docs.cbpayapp.com/zh/guides/qr-pos) 退款（及加密货币提现）必须显式提供目标地址 |
+| 422 | `deposit_account_limit_reached` | 每个账户每条走廊只有一个入金账户（随账户自动创建）；不可更改或删除 |
+| 422 | `export_rejected` | 处理方拒绝了该独立钱包的私钥导出 |
+| 422 | `stored_card_corridor_mismatch` | 该[已保存卡片](https://docs.cbpayapp.com/zh/guides/stored-cards-subscriptions)属于与本次收款不同的国家/货币走廊 |
+| 409 | `subscription_state` | 该[订阅](https://docs.cbpayapp.com/zh/guides/stored-cards-subscriptions)当前状态不允许该操作（例如暂停已取消的计划） |
+| 409 | `email_required` | 该登录没有真实邮箱；请通过 `POST /v1/me/email/change` 设置 |
+
+### 合规（403 / 503）
+
+| HTTP | `error` | 含义 |
+|---|---|---|
+| 403 | `compliance_hold` | 该操作已被平台的合规控制拦截。这不是请求错误：请携带时间戳联系支持团队 — 根据政策，不会披露具体原因 |
+| 403 | `geo_restricted` | 该服务或操作不适用于发起方或交易对手所在的司法辖区 |
+| 503 | `compliance_check_unavailable` | 合规检查暂时无法执行；操作**未**发出 — 请使用**相同的**幂等键重试 |
+| 422 | `travel_rule_required` | 超过 Travel Rule 阈值的链上提现缺少受益人数据 — 补充 `travel_address` 或 `wallet_type: "self_hosted"` + `beneficiary_name`（[加密货币指南](https://docs.cbpayapp.com/zh/guides/crypto)） |
+| 422 | `travel_rule_beneficiary_required` | 适用 Travel Rule 的提现缺少 `beneficiary_name` |
+| 422 | `travel_rule_address_mismatch` | 您的 `to_address` 与收款机构批准的付款地址不一致 — 省略它或使用交换返回的地址 |
+| 422 | `travel_rule_rejected` | 收款机构拒绝了该转账；请核对受益人数据 |
+| 422 | `travel_rule_pending` | 收款机构尚未处理该交换；请使用**相同的**幂等键重试 |
+| 422 | `travel_rule_incomplete_approval` | 收款机构批准时未提供付款地址；请联系支持团队 |
+| 503 | `travel_rule_unavailable` | Travel Rule 数据交换暂时不可用；请使用**相同的**幂等键重试 |
+
+### 服务端（5xx）
+
+| HTTP | `error` | 含义 |
+|---|---|---|
+| 500 | `internal_error` | 意外错误；请使用相同的幂等键重试 |
+| 500 | `fee_config_invalid` | 账户的费用配置无效；请联系支持（该操作未执行） |
+| 502 | `rates_unavailable` | 汇率暂时不可用 |
+| 502 | `core_unavailable` | 处理方暂时不可用 |
+| 502 | `core_invalid_response` | 处理方返回了意外响应；请使用**相同的**幂等键重试 |
+| 502 | `compliance_unavailable` | AML 筛查暂时不可用 |
+| 503 | `verifications_unavailable` | 身份验证暂时不可用（费用已退还） |
+| 503 | `org_credential_missing` | 服务正在配置中；请联系 CBPay 支持 |
+| 503 | `withdrawals_unavailable` | 该通道未启用链上提现 |
+| 503 | `pricing_unavailable` | BTC/GOLD 执行价格不可用或已过时；请稍后重试或以 USDT/USDC 结算 |
+| 503 | `channel_unavailable` | 出金通道暂时不可用；请稍后使用**相同的**幂等键重试 |
+| 503 | `export_unavailable` | 当前环境未启用独立钱包私钥导出 |
+
+## 如何处理
+
+- **校验类 4xx**：修正请求。不要原样重试。
+- **402**：为账户充值后重试（仅当操作从未被创建时才使用新的幂等键）。
+- **5xx / 超时**：使用**相同的**幂等键重试；操作绝不会重复。

@@ -1,0 +1,651 @@
+---
+recipe: payins
+title: "Payins"
+slug: es/guias/payins
+lang: es
+source_url: https://docs.cbpayapp.com/es/guias/payins
+---
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) - Live `https://api.qbank.cl/platform` (`pk_...`).
+
+Un payin es un cobro fiat: tu cliente paga en moneda local y tu cuenta
+recibe el abono en USDT automáticamente, convertido a **tu tasa de payin**
+(`payin_rate` en `GET /v1/rates`) menos la comisión fija de payin si tu
+cuenta la tiene configurada.
+
+Sea cual sea la modalidad, todos los caminos terminan igual — abono
+automático + webhook:
+
+```mermaid
+flowchart LR
+    qr["QR de cobro<br/>(BO, BR·PIX)"] --> pago["Tu cliente paga<br/>en moneda local"]
+    hosted["Página de pago hosted<br/>(CL: fintoc)"] --> pago
+    card["Pago con tarjeta 3-D Secure<br/>(BO: card)"] --> pago
+    anunciada["Transferencia anunciada<br/>(CL, PE, MX, PY)"] --> pago
+    pull["Cobro activo pull<br/>(VE: c2p, débito)"] --> pago
+    clabe["Cuenta dedicada CLABE / CVU<br/>(MX, AR)"] --> pago
+    pago --> conv["Conversión FX a tu<br/>payin_rate − fee fijo"]
+    conv --> credito(("Abono USDT<br/>a tu saldo"))
+    credito --> wh["Webhook payin_credited"]
+```
+
+## 1. Descubre los corredores disponibles
+
+Los países, monedas y modalidades disponibles los define CBPay.
+Consúltalos siempre por catálogo:
+
+```bash
+curl https://api.qbank.cl/platform/v1/payins/methods \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "items": [
+    { "country": "BO", "currency": "BOB", "method": "qr", "delivery": "push" },
+    { "country": "VE", "currency": "VES", "method": "c2p", "delivery": "push+polling" },
+    { "country": "MX", "currency": "MXN", "method": "bank_transfer", "delivery": "push" }
+  ],
+  "meta": { "retrieved": 3 }
+}
+```
+
+`delivery` indica cómo se confirma el pago del lado de CBPay (notificación
+del banco, sondeo o ambos) — no cambia nada en tu integración: tú siempre
+recibes el webhook `payin_credited`.
+
+Corredores y modalidades de cobro:
+
+| País | Moneda | Modalidades |
+|---|---|---|
+| Chile | CLP | Página de pago hosted (`fintoc`), transferencia anunciada |
+| Perú | PEN | Transferencia anunciada |
+| México | MXN | Cuenta CLABE dedicada, transferencia anunciada |
+| Venezuela | VES | Cobro activo `c2p` y `debito_inmediato` (pull) |
+| Bolivia | BOB / USD | QR de cobro, página de pago con tarjeta (`card`) |
+| Paraguay | PYG | Transferencia anunciada |
+| Brasil | BRL | QR PIX dinámico |
+| Argentina | ARS | Cuenta CVU dedicada |
+
+La disponibilidad puede variar; el catálogo (`GET /v1/payins/methods`) es
+siempre la fuente de verdad. En todos los casos el abono llega igual: se
+convierte a USDT a tu `payin_rate` del momento y se acredita neto de la
+comisión fija de payin. Si prefieres quedarte con tus cobros en otro saldo
+(USDC, BTC o GOLD), configura `default_payin_asset` — ver
+[el modelo de dinero](https://docs.cbpayapp.com/es/conceptos/modelo-de-dinero#elige-en-que-saldo-se-acreditan-tus-payins).
+
+## 2. Elige la modalidad y crea el cobro
+
+Cada país tiene su propia modalidad de cobro. El request y la respuesta
+real de cada una:
+
+#### Chile
+
+**Página de pago hosted (`fintoc`)** — recomendado: recibes una
+`payment_url`; el pagador la abre y transfiere desde **cualquier banco o
+billetera chilena** (Banco Estado, Santander, Mach, Tenpo, Mercado
+Pago…). El pago se detecta y valida automáticamente — sin referencias
+manuales.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "CL",
+    "currency": "CLP",
+    "method": "fintoc",
+    "amount": "150000",
+    "description": "Recarga pedido 8841",
+    "idempotency_key": "topup-8841"
+  }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "payin_id": "7a2b…",
+  "status": "pending",
+  "reference": "7a2b…",
+  "payment_url": "https://pay.fintoc.com/plink_K2zwNNSxPyx8w3GZ",
+  "expires_at": "2026-07-08T18:48:25Z",
+  "note": "share the payment_url with the payer; the deposit is credited automatically once the transfer is detected"
+}
+```
+
+Comparte la `payment_url` con el pagador (link, redirección o WebView).
+Cuando el pago se confirma, tu cuenta se acredita en USDT y recibes el
+webhook `payin_credited`. El monto CLP debe ser entero (el peso chileno no
+usa decimales) y la sesión de pago vence en 24 horas por defecto. Un retry
+con la misma `idempotency_key` devuelve el mismo payin y la misma URL —
+nunca abre una segunda sesión de pago.
+
+**Transferencia anunciada** (alternativa manual): anuncias el depósito
+entrante y compartes la referencia con quien transfiere.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "CL",
+    "currency": "CLP",
+    "method": "bank_transfer",
+    "amount": "500000"
+  }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "payin_id": "4f81…",
+  "status": "pending",
+  "reference": "CBJ6T3W9M2K5",
+  "note": "include the reference in the transfer description so the deposit is credited automatically"
+}
+```
+
+Cuando la transferencia llega, se matchea por la referencia en la glosa (o
+por monto+moneda como respaldo) y tu cuenta se acredita automáticamente.
+
+#### Perú
+
+**Transferencia anunciada**, igual que Chile pero en soles:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "PE",
+    "currency": "PEN",
+    "method": "bank_transfer",
+    "amount": "1800.00"
+  }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "payin_id": "6d20…",
+  "status": "pending",
+  "reference": "CBK7M2Q9X4T3",
+  "note": "include the reference in the transfer description so the deposit is credited automatically"
+}
+```
+
+La `reference` es un **código corto de 12 caracteres alfanuméricos** (cabe
+en cualquier concepto bancario) y debe viajar en la descripción de la
+transferencia para el match automático; como respaldo también se matchea
+por monto+moneda.
+
+#### México
+
+**Cuenta CLABE dedicada** (recomendado): creas una CLABE fija vinculada a
+tu cuenta — todo SPEI que llegue a ella se acredita automáticamente, sin
+referencias:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins/deposit-accounts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "country": "MX", "currency": "MXN" }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "instrument_id": "a1d4…",
+  "account_id": "…",
+  "country": "MX",
+  "currency": "MXN",
+  "method": "bank_transfer",
+  "instrument": "734180000151000006",
+  "status": "active"
+}
+```
+
+`instrument` es la CLABE que compartes con tus pagadores. La creación es
+gratis; cada depósito paga la comisión de payin normal. Lista tus cuentas
+con `GET /v1/payins/deposit-accounts`.
+
+También puedes usar la **transferencia anunciada** puntual
+(`POST /v1/payins` con `method: "bank_transfer"`, `country: "MX"`).
+
+#### Venezuela
+
+**Cobro activo (pull)**: cobras directamente al pagador con su
+autorización. El resultado es **síncrono** — si el cobro se aprueba, el
+abono se acredita en la misma llamada.
+
+Para `debito_inmediato`, primero solicita el OTP (gratis):
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins/collect/otp \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method": "debito_inmediato",
+    "amount": "1200.00",
+    "payer_document": "V12345678",
+    "payer_phone": "04141234567",
+    "payer_bank": "0102",
+    "payer_account": "01020123456789012345"
+  }'
+```
+
+```json
+{
+  "method": "debito_inmediato",
+  "result": { "status": "sent", "otp_reference": "OTP-5521" }
+}
+```
+
+Luego ejecuta el cobro:
+
+```bash c2p (teléfono + cédula + OTP del pagador)
+curl -X POST https://api.qbank.cl/platform/v1/payins/collect \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method": "c2p",
+    "amount": "1200.00",
+    "description": "Cobro pedido 5512",
+    "payer_document": "V12345678",
+    "payer_phone": "04141234567",
+    "payer_bank": "0102",
+    "otp": "12345678",
+    "idempotency_key": "cobro-5512"
+  }'
+```
+
+```bash debito_inmediato (cuenta + OTP solicitado antes)
+curl -X POST https://api.qbank.cl/platform/v1/payins/collect \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method": "debito_inmediato",
+    "amount": "1200.00",
+    "description": "Cobro pedido 5512",
+    "payer_document": "V12345678",
+    "payer_account": "01020123456789012345",
+    "payer_bank": "0102",
+    "payer_account_type": "CNTA",
+    "otp": "87654321",
+    "otp_reference": "OTP-5521",
+    "idempotency_key": "cobro-5512"
+  }'
+```
+
+> **Nota**
+El cobro activo ejecuta un débito real contra el pagador, así que
+`idempotency_key` es **obligatoria** (body o header `Idempotency-Key`): un
+reintento con la misma clave devuelve el resultado original con
+`idempotency_hit` y nunca vuelve a cobrar.
+Respuesta `200` (cobro aprobado y acreditado):
+
+```json
+{
+  "payin_id": "7b3c…",
+  "kind": "collect",
+  "method": "c2p",
+  "status": "credited",
+  "local_amount": "1200.00",
+  "fx_rate": "36.50",
+  "usdt_gross": "32.876712",
+  "fee": "0.300000",
+  "usdt_credited": "32.576712",
+  "paid": true,
+  "provider_reference": "…"
+}
+```
+
+Si el pagador rechaza o falla la autorización, `paid` es `false`, el payin
+queda `failed` y no se cobra nada. La causa exacta del rechazo queda
+persistida en el payin y se expone en el objeto `failure` (en la respuesta
+síncrona, en `GET /v1/payins/{payin_id}` y en el replay idempotente):
+
+```json
+{
+  "payin_id": "7b3c…",
+  "kind": "collect",
+  "method": "c2p",
+  "status": "failed",
+  "paid": false,
+  "failure": {
+    "source": "provider",
+    "code": "provider_rejected",
+    "message": "Documento de identidad del receptor errado"
+  }
+}
+```
+
+- `source` indica dónde se originó el rechazo (`provider` = el banco del
+  pagador rechazó; `core` = la validación previa al cobro).
+- `code` y `message` traen el motivo concreto (OTP inválida o expirada,
+  documento errado, fondos insuficientes del pagador, etc.), útil para
+  mostrarle al pagador qué corregir antes de reintentar con una clave
+  de idempotencia nueva.
+
+#### Bolivia
+
+**QR de cobro** (estándar interoperable local): generas el QR y tu cliente
+lo escanea con su app bancaria.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BO",
+    "currency": "BOB",
+    "method": "qr",
+    "amount": "700.00",
+    "description": "Recarga app",
+    "expires_in": 3600
+  }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "payin_id": "9c2a…",
+  "status": "pending",
+  "charge": {
+    "charge_id": "…",
+    "qr_image": "<base64>",
+    "qr_image_url": "https://cdn.cbpayapp.com/public/payin-qr/<charge_id>.png",
+    "qr_payload": "<contenido del QR>",
+    "our_reference": "482915073",
+    "status": "pending"
+  }
+}
+```
+
+Muestra el QR a tu cliente — `qr_image_url` es una URL pública de CDN lista
+para un `` (prefiérela por sobre el base64 `qr_image`); cuando paga, tu
+cuenta se acredita automáticamente. También funciona en USD
+(`currency: "USD"`).
+
+**Página de pago con tarjeta (`card`)**: recibes una `payment_url` de un
+checkout hosted con 3-D Secure — el pagador ingresa su tarjeta en una página
+segura con la marca de tu organización y, si su banco lo exige, completa el
+desafío de autenticación ahí mismo. Los datos de la tarjeta nunca pasan por
+tu sistema ni por tu integración.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BO",
+    "currency": "BOB",
+    "method": "card",
+    "amount": "700.00",
+    "description": "Recarga app",
+    "customer": { "email": "pagador@ejemplo.com", "first_name": "Ana", "last_name": "Rojas" },
+    "success_url": "https://tu-app.com/pago/ok",
+    "failure_url": "https://tu-app.com/pago/error",
+    "idempotency_key": "recarga-7719"
+  }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "payin_id": "b41c…",
+  "status": "pending",
+  "reference": "b41c…",
+  "payment_url": "https://api.qbank.cl/pay/cards/9f3XkT…",
+  "expires_at": "2026-07-16T18:30:00Z",
+  "note": "share the payment_url with the payer; the balance is credited automatically once the card payment is approved"
+}
+```
+
+Comparte la `payment_url` (link, redirección o WebView). Detalles del flujo:
+
+- `customer` es un prefill **opcional** de los datos de facturación
+  (`email`, `first_name`, `last_name`, `address`, `city`, `country` —
+  texto plano, máx 120 caracteres por campo); el pagador puede
+  completarlos/corregirlos en la página.
+- `success_url` / `failure_url` (opcionales, https públicas) redirigen al
+  pagador al terminar; sin ellas la página muestra el resultado final.
+- `expires_at` (opcional, RFC3339, mínimo 15 minutos) acorta la vigencia de
+  la sesión; el default es 24 horas. Si vence sin pago, el payin pasa a
+  `expired` y recibes el webhook `payin_expired`.
+- El pagador tiene un número limitado de intentos; un rechazo del emisor le
+  permite reintentar con otra tarjeta dentro de la misma sesión.
+- La aprobación es en línea: al aprobarse el cargo tu cuenta se acredita en
+  USDT a tu `payin_rate` y recibes `payin_credited` — igual que cualquier
+  otra modalidad.
+- Un retry con la misma `idempotency_key` devuelve el mismo payin y la misma
+  `payment_url`; nunca abre una segunda sesión de pago.
+- Funciona también en USD (`currency: "USD"`).
+
+#### Paraguay
+
+**Transferencia anunciada** en guaraníes: anuncias el depósito, tu pagador
+transfiere (SIPAP interbancaria o transferencia interna del banco receptor)
+con la referencia en el concepto, y el abono se detecta automáticamente.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "PY",
+    "currency": "PYG",
+    "method": "bank_transfer",
+    "amount": "596000"
+  }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "payin_id": "8f41…",
+  "status": "pending",
+  "reference": "CBW4N8R2T6P9",
+  "note": "include the reference in the transfer description so the deposit is credited automatically"
+}
+```
+
+> **Nota**
+Los guaraníes no usan decimales: anuncia el monto **entero exacto** que
+transferirá tu pagador (ej. `"596000"`). La `reference` es un código corto
+de 12 caracteres alfanuméricos — diseñado para el concepto SIPAP, que
+acepta **máximo 20 caracteres sin caracteres especiales** — y ponerla en
+el concepto asegura el match automático; como respaldo también se matchea
+por monto+moneda.
+#### Brasil
+
+**QR PIX dinámico**: el mismo endpoint genera un QR PIX con el monto
+embebido.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "BR",
+    "currency": "BRL",
+    "method": "qr",
+    "amount": "120.00",
+    "description": "Pedido 7719",
+    "expires_in": 1800
+  }'
+```
+
+En la respuesta, `charge.qr_payload` es el código **"copia e cola"** de
+PIX, para que el pagador pueda pegarlo en su app bancaria si no escanea la
+imagen (`charge.qr_image` base64 o `charge.qr_image_url`, la URL pública de
+CDN). El QR expira según `expires_in` (default 1
+hora); el pago se acredita automáticamente al confirmarse en el rail
+(conciliación continua — consulta puntual con `GET /v1/payins/{charge_id}`).
+
+> **Nota**
+En Brasil el cobro es únicamente por QR PIX dinámico (un QR = un pago, con
+monto exacto embebido). La transferencia anunciada llegará más adelante.
+#### Argentina
+
+**Cuenta CVU dedicada**: creas una CVU fija vinculada a tu cuenta — toda
+transferencia en ARS que llegue a ella (desde cualquier CBU o CVU del
+sistema argentino) se acredita automáticamente, sin referencias:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins/deposit-accounts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "country": "AR", "currency": "ARS" }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "instrument_id": "f2b8…",
+  "account_id": "…",
+  "country": "AR",
+  "currency": "ARS",
+  "method": "bank_transfer",
+  "instrument": "0000079900000000132537",
+  "status": "active"
+}
+```
+
+`instrument` es la CVU de 22 dígitos que compartes con tus pagadores. La
+creación es gratis; cada depósito paga la comisión de payin normal. Lista
+tus cuentas con `GET /v1/payins/deposit-accounts`.
+
+> **Nota**
+La CVU opera **solo en ARS** y es de depósito (receive-only): ningún
+tercero puede debitarla. Los intentos de débito directo (DEBIN) contra
+una CVU de depósito se rechazan automáticamente.
+## Link de cobro universal (`checkout`)
+
+El link de cobro universal ahora tiene su propia guía, con el cotizador,
+todos los rieles y los endpoints públicos:
+
+- **Checkout** - Un solo link donde el pagador elige cómo pagar — fiat en todos los países activos, crypto, tarjeta o la app CBPay — liquidado en el saldo que elijas.
+
+## Tarjetas guardadas y cobros recurrentes (tarjeta)
+
+Las credenciales guardadas (COF) y las suscripciones agendadas ahora tienen
+su propia guía:
+
+- **Tarjetas guardadas y suscripciones** - Guarda tarjetas con consentimiento del pagador, cóbralas con un clic o sin el pagador presente, y agenda suscripciones recurrentes.
+
+## 3. Recibe el abono
+
+Cuando el pago llega (por cualquiera de las modalidades), tu cuenta se
+acredita automáticamente y se emite el webhook `payin_credited`:
+
+```json
+{
+  "payin_id": "9c2a…",
+  "account_id": "…",
+  "country": "BO",
+  "currency": "BOB",
+  "local_amount": "700.00",
+  "fx_rate": "6.91",
+  "usdt_credited": "100.302460",
+  "fee": "1.000000"
+}
+```
+
+`fx_rate` es tu `payin_rate` del momento del abono — la conversión se hace
+exactamente a esa tasa: `usdt_gross = 700.00 / 6.91`.
+
+El objeto payin queda con el detalle completo:
+
+```bash
+curl https://api.qbank.cl/platform/v1/payins/9c2a… \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "payin_id": "9c2a…",
+  "kind": "qr",
+  "status": "credited",
+  "local_amount": "700.00",
+  "fx_rate": "6.91",
+  "usdt_gross": "101.302460",
+  "fee": "1.000000",
+  "usdt_credited": "100.302460"
+}
+```
+
+## Estados
+
+| Estado | Significado |
+|---|---|
+| `pending` | Cargo creado, esperando el pago |
+| `credited` | Pago recibido y abonado en USDT |
+| `unassigned` | Depósito recibido sin match automático (lo asigna el administrador) |
+| `expired` | El cargo venció sin pago |
+| `failed` | El cobro falló |
+
+> **Nota**
+Los depósitos que llegan por transferencia directa sin referencia clara
+quedan `unassigned` hasta que el equipo de CBPay los asigna a una cuenta.
+Al asignarse, se acreditan con la tasa y comisiones de la cuenta destino.
+> **Nota**
+Cuando un cobro activo (QR o checkout) muere sin pago, el payin pasa de
+`pending` a `expired` (o `failed`) automáticamente y recibes el webhook
+[`payin_expired`](https://docs.cbpayapp.com/es/webhooks). No se mueve dinero: si quieres reintentar
+el cobro, crea un payin nuevo.
+## Consulta e historial
+
+```bash
+# Un payin
+curl https://api.qbank.cl/platform/v1/payins/9c2a… \
+  -H "Authorization: Bearer <token>"
+
+# Historial con filtros
+curl "https://api.qbank.cl/platform/v1/payins?from=2026-07-01&to=2026-07-08&status=credited&country=BO&page_size=50" \
+  -H "Authorization: Bearer <token>"
+```
+
+`from`/`to` van en `YYYY-MM-DD` (UTC); fecha inválida responde
+`400 invalid_range`.
+
+## Errores frecuentes
+
+| HTTP | `error` | Qué hacer |
+|---|---|---|
+| 400 | `invalid_request` | Revisa `method` (qr, bank_transfer, fintoc, card; collect va en su endpoint) |
+| 400 | `idempotency_key_required` | El collect exige clave de idempotencia (débito real al pagador) |
+| 403 | `service_disabled` | Payins no está habilitado para tu cuenta — ver [servicios](https://docs.cbpayapp.com/es/conceptos/servicios) |
+| 422 | `core_rejected` | El procesador rechazó el cargo; revisa el mensaje |
+| 502 | `core_unavailable` | No se pudo crear el cargo; reintenta la creación (no se cobró nada) |
+## FAQ
+
+#### ¿Cómo sé que un payin se acreditó?
+Suscríbete a `payin_credited`: trae la tasa FX aplicada, la comisión y el
+`usdt_credited` exacto. También puedes consultar `GET /v1/payins/{id}`.
+#### ¿Qué tasa FX aplica a mi payin?
+El `payin_rate` vigente al momento de acreditar (ver `GET /v1/rates`). Tu
+spread acordado ya viene dentro de la tasa — nunca se itemiza.
+#### ¿Los payins pueden caer en un saldo distinto de USDT?
+Sí — configura `default_payin_asset` con `PUT /v1/settlement`. El crédito
+sigue entrando en USDT y se convierte inmediatamente después a precio real;
+`conversion_status` reporta `done` o `pending_retry` (se reintenta solo).
+#### ¿Qué pasa cuando un cobro (QR, checkout) expira sin pago?
+Recibes `payin_expired` y el payin se cierra sin mover dinero. Crea un
+cobro nuevo — nada se debitó ni acreditó.
+#### El pagador transfirió un monto distinto al anunciado, ¿qué pasa?
+El match exige que la referencia **y** el monto calcen. Una transferencia
+que no calza queda sin asignar para conciliación; tu equipo CBPay puede
+asignarla manualmente al payin correcto.
+#### ¿Por qué falló mi cobro collect (pull)?
+La respuesta y `GET /v1/payins/{id}` persisten un bloque `failure` con el
+código y mensaje del riel (por ejemplo, un documento que no calza con el
+registro bancario del pagador). Corrige el dato y reintenta con clave
+nueva.

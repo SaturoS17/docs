@@ -1,0 +1,236 @@
+---
+title: "Modelo de dinero"
+description: "Saldos virtuales por moneda, conversión FX, holds y el ledger inmutable"
+slug: es/conceptos/modelo-de-dinero
+lang: es
+source_url: https://docs.cbpayapp.com/es/conceptos/modelo-de-dinero
+---
+## Cuatro saldos virtuales independientes
+
+Cada cuenta mantiene **cuatro saldos virtuales, uno por moneda**. Son
+totalmente independientes entre sí: nunca se mezclan ni se convierten
+automáticamente.
+
+| Moneda | Qué es | Decimales | Cómo se fondea |
+|---|---|---|---|
+| `USDT` | Stablecoin USD — **la moneda operativa** | 6 | Payins fiat, depósitos on-chain (TRON/Ethereum), transferencias |
+| `USDC` | Stablecoin USD | 6 | Depósitos on-chain (Ethereum), transferencias |
+| `BTC` | Bitcoin | 8 (satoshis) | Abonos del operador y transferencias internas |
+| `GOLD` | **Gramos de oro fino** con respaldo en custodio | 6 | Abonos del operador y transferencias internas |
+
+`GET /v1/balances` devuelve siempre los cuatro (con ceros si no has operado
+esa moneda), como **strings decimales**:
+
+```json
+{
+  "account_id": "…",
+  "balances": [
+    { "asset": "USDT", "available": "125.430000", "held": "10.000000" },
+    { "asset": "USDC", "available": "50.000000", "held": "0.000000" },
+    { "asset": "BTC", "available": "0.00060000", "held": "0.00000000" },
+    { "asset": "GOLD", "available": "12.500000", "held": "0.000000" }
+  ]
+}
+```
+
+> **Nota**
+Internamente cada monto se almacena como entero en la unidad mínima de su
+moneda (micro-USDT, satoshis, micro-gramos) y se calcula con aritmética
+racional exacta. Nunca hay floats ni errores de redondeo acumulados.
+**USDT es la moneda operativa**: los precios de payouts, payins fiat y
+comisiones de servicios se cotizan siempre en USDT. Pero el **pago** puede
+salir de cualquiera de los cuatro saldos — ver
+[Elige desde qué saldo pagas](#elige-desde-que-saldo-pagas). Los payins
+acreditan en USDT y, si configuras `default_payin_asset`, el neto se
+auto-convierte al saldo que elijas — ver
+[Elige en qué saldo se acreditan tus payins](#elige-en-que-saldo-se-acreditan-tus-payins).
+Los otros saldos también se fondean con
+[transferencias internas](https://docs.cbpayapp.com/es/guias/transferencias) (siempre entre saldos
+de la misma moneda), depósitos on-chain (USDC y BTC) o abonos de tu
+operador (GOLD).
+
+## Elige desde qué saldo pagas
+
+Los **payouts** y las **comisiones de servicios** (KYC, creación de
+wallets, banking) pueden debitarse desde cualquiera de tus cuatro saldos.
+El pipeline de pricing no cambia: la operación se cotiza en USDT como
+siempre, y al final el total se traduce al asset elegido con el **precio
+efectivo de settlement** del momento.
+
+- **Predeterminado por cuenta**: `PUT /v1/settlement` con
+  `{"default_settlement_asset": "BTC"}`. Desde ahí, todo payout y toda
+  comisión de servicio sale del saldo BTC (si alcanza; no hay cascadas a
+  otros saldos).
+- **Override por operación**: envía `settlement_asset` en
+  `POST /v1/payouts` (o en el confirm de QR) para pagar esa operación
+  puntual desde otro saldo, sin tocar el predeterminado.
+
+```bash
+# Definir BTC como saldo de pago predeterminado
+curl -X PUT "https://api.qbank.cl/platform/v1/settlement" \
+  -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+  -d '{"default_settlement_asset": "BTC"}'
+```
+
+Reglas del settlement multi-asset:
+
+| Regla | Detalle |
+|---|---|
+| Precio de ejecución | BTC y GOLD usan un feed on-chain de ejecución (no el precio de referencia). Si el feed está viejo o no disponible, la operación devuelve `503 pricing_unavailable` — nunca se ejecuta con un precio dudoso. |
+| Débito, hold y reembolso | Los tres viven en el asset elegido. Si el payout falla, se reembolsa el `settlement_amount` **exacto** — jamás se re-cotiza. |
+| Idempotencia | El replay con la misma llave devuelve el monto original; el precio no se recalcula. |
+| Límite por operación | Los assets volátiles (BTC/GOLD) tienen un límite por operación (equivalente USDT, visible en `GET /v1/settlement`); si lo superas: `422 settlement_limit_exceeded`. |
+| Límite diario por cuenta | Los assets volátiles también tienen un tope de volumen en 24 h móviles (`volatile_daily_limit_usdt` en `GET /v1/settlement`); al superarlo: `422 settlement_daily_limit_exceeded`. Paga en USDT/USDC o reintenta más tarde. |
+| USDT | Sigue siendo el camino por defecto y no cambia en nada para quien no toca esta configuración. |
+
+El bloque `settlement` de `GET /v1/rates` muestra el precio efectivo por
+asset (spread incluido) para estimar antes de operar, y la respuesta del
+payout registra `settlement_asset`, `settlement_amount` y
+`settlement_rate` para auditoría.
+
+## Elige en qué saldo se acreditan tus payins
+
+Por defecto los **payins** (QR, transferencia, collect, tarjeta) acreditan
+al saldo USDT. Si prefieres quedarte en otro asset, configura
+`default_payin_asset`: el crédito sigue entrando en USDT (pricing, spread
+FX y comisiones intactos) y el **neto acreditado** se auto-convierte a tu
+asset con el motor de swaps **al precio real, sin spread adicional** — el
+payin ya pagó su comisión y su tasa; la conversión automática no cobra una
+segunda vez. Aplican los mismos límites de un swap normal.
+
+```bash
+# Acreditar mis payins en USDC
+curl -X PUT "https://api.qbank.cl/platform/v1/settlement" \
+  -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+  -d '{"default_payin_asset": "USDC"}'
+```
+
+| Regla | Detalle |
+|---|---|
+| Conversión post-crédito | El payin acredita en USDT y la conversión corre inmediatamente después como un swap (verás `swap_out`/`swap_in` en tu cartola). |
+| Precio y límites | La conversión ejecuta **al precio real, sin spread de swap** (no hay doble costo: el payin ya pagó su comisión y su tasa). Aplican los límites por operación/24 h de los assets volátiles (BTC/GOLD). |
+| Si la conversión falla | El payin queda acreditado en USDT con `conversion_status: pending_retry` y el sistema reintenta automático — el saldo jamás se pierde ni se convierte doble. |
+| Checkout y POS | Cada link conserva el `settlement_asset` elegido al crearlo; esta configuración no los re-convierte. Un link creado **sin** `settlement_asset` usa tu `default_payin_asset`. |
+| Superficies | `GET /v1/payins`, el detalle y el webhook `payin_credited` exponen `settlement_asset` y `conversion_status` cuando hay conversión. |
+
+## `available` y `held`
+
+Cada saldo tiene sus dos contadores:
+
+| Campo | Significado |
+|---|---|
+| `available` | Saldo disponible para operar |
+| `held` | Reservado por operaciones en vuelo (payouts y retiros pendientes) |
+
+Cuando creas un payout o retiro, el débito (`monto + comisión`) sale de
+`available` y queda en `held` hasta que la operación llega a estado final:
+
+- **`completed`** → el hold se consume; el dinero salió.
+- **`failed`** → se reembolsa el débito completo (monto + comisión) a
+  `available`.
+
+## Conversión FX (fiat ↔ USDT)
+
+Las operaciones fiat se convierten a USDT con **las tasas de tu cuenta** al
+momento de ejecutar (las mismas que devuelve `GET /v1/rates`, base USD):
+`rate` para payouts y `payin_rate` para payins. La conversión redondea
+**hacia arriba** en los débitos y **hacia abajo** en los abonos, con una
+diferencia máxima de 1 micro-USDT.
+
+Ejemplo de un payout de 50.000 CLP con tasa 950.25:
+
+```
+usdt_amount = ceil(50000 / 950.25 × 10^6) / 10^6 = 52.618258 USDT
+total_debit = usdt_amount + fee
+```
+
+Ejemplo de un payin de 50.000 CLP con `payin_rate` 955.10:
+
+```
+usdt_gross    = floor(50000 / 955.10 × 10^6) / 10^6 = 52.350539 USDT
+usdt_credited = usdt_gross − fee
+```
+
+La tasa usada queda registrada en el objeto (`fx_rate`) para auditoría.
+
+## Precios de referencia y de settlement
+
+`GET /v1/rates` incluye un bloque `asset_prices` con el **precio USD de
+referencia** de cada moneda (BTC por unidad, GOLD por gramo; USDT y USDC
+valen 1 por convención), para valorizar tus saldos en pantalla, y un bloque
+`settlement` con el **precio efectivo** al que se valoraría tu saldo si
+pagas una operación desde ese asset (spread incluido):
+
+```json
+{
+  "asset_prices": {
+    "USDT": { "currency": "USD", "unit": "usdt", "price": "1" },
+    "USDC": { "currency": "USD", "unit": "usdc", "price": "1" },
+    "BTC": { "currency": "USD", "unit": "btc", "price": "109853.24",
+             "updated_at": "2026-07-07T11:59:41Z",
+             "settlement_grade": true },
+    "GOLD": { "currency": "USD", "unit": "gram", "price": "107.5341",
+              "updated_at": "2026-07-07T09:12:05Z",
+              "settlement_grade": true }
+  },
+  "settlement": {
+    "default_asset": "USDT",
+    "assets": [
+      { "asset": "USDT", "available": true, "settlement_rate": "1" },
+      { "asset": "USDC", "available": true, "settlement_rate": "0.99900000" },
+      { "asset": "BTC", "available": true, "settlement_rate": "109029.34070000" },
+      { "asset": "GOLD", "available": true, "settlement_rate": "106.99642950" }
+    ]
+  }
+}
+```
+
+`settlement_grade: true` indica que el precio está lo bastante fresco para
+ejecutar operaciones; si baja a `false`, los pagos desde ese asset
+responden `503 pricing_unavailable` hasta que el precio vuelva.
+
+## Ledger inmutable
+
+Cada movimiento genera una entrada inmutable con saldo resultante
+(`balance_after`) **en la moneda del movimiento**. Tu historial completo
+está en `GET /v1/movements` (filtra por moneda con `?asset=`):
+
+| `type` | Qué representa |
+|---|---|
+| `payin_credit` | Abono de un cobro fiat |
+| `payout_debit` / `payout_refund` | Débito de payout / reembolso si falló |
+| `transfer_in` / `transfer_out` | Transferencia interna recibida / enviada |
+| `funding` | Depósito on-chain acreditado (USDT o USDC, cada uno en su saldo) |
+| `withdrawal_debit` / `withdrawal_refund` | Retiro on-chain / reembolso si falló |
+| `compliance_fee` / `compliance_refund` | Cargo por servicio KYC/KYB / reembolso |
+| `wallet_creation_fee` / `wallet_creation_refund` | Cargo por creación de wallet / reembolso |
+| `adjustment` | Ajuste manual de CBPay (auditado) |
+
+```bash
+curl "https://api.qbank.cl/platform/v1/movements?type=payout_debit&from=2026-07-01&to=2026-07-07&page_size=20" \
+  -H "Authorization: Bearer <token>"
+
+# Solo los movimientos del saldo GOLD
+curl "https://api.qbank.cl/platform/v1/movements?asset=GOLD&from=2026-07-01&to=2026-07-07" \
+  -H "Authorization: Bearer <token>"
+```
+
+Todos los listados (`/v1/movements`, `/v1/payouts`, `/v1/payins`,
+`/v1/crypto/transactions`, `/v1/banking/operations`) aceptan paginación
+(`page`, `page_size` hasta 200) y filtros de fecha `from`/`to`
+(YYYY-MM-DD, UTC, inclusive).
+
+## Estados de operación
+
+Payouts y retiros crypto siguen el mismo ciclo:
+
+```mermaid
+flowchart LR
+    pending --> processing
+    processing --> completed
+    processing --> failed
+    pending --> failed
+```
+
+Los estados finales (`completed`/`failed`) llegan por
+[webhook](https://docs.cbpayapp.com/es/webhooks); no es necesario hacer polling.

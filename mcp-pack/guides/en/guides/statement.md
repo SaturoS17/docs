@@ -1,0 +1,191 @@
+---
+title: "Account statement"
+description: "The consolidated statement: JSON for your web, downloadable PDF and Excel, ready for your accountant"
+slug: en/guides/statement
+lang: en
+source_url: https://docs.cbpayapp.com/en/guides/statement
+---
+> **Environments:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) - Live `https://api.qbank.cl/platform` (`pk_...`).
+
+The statement consolidates **every** movement of an account in a period —
+payouts, payins, crypto deposits and withdrawals, internal transfers, card
+purchases, balance conversions, banking operations and service charges —
+into one auditable document. A single endpoint serves it in three formats:
+
+| Format | What for | How to request it |
+|---|---|---|
+| `json` (default) | Rendering the statement in your web/app | `format=json` |
+| `pdf` | Formal document with CBPay branding | `format=pdf` |
+| `xlsx` | Excel with per-section sheets, filters and numeric cells | `format=xlsx` |
+
+```mermaid
+flowchart LR
+    ledger["Immutable ledger<br/>(every movement with balance_after)"] --> build["Statement assembly<br/>summary + breakdowns + detail"]
+    build --> json["JSON<br/>(web view)"]
+    build --> pdf["Branded PDF<br/>(download)"]
+    build --> xlsx["Multi-sheet Excel<br/>(download)"]
+    build --> check{"Reconciliation:<br/>opening + inflows − outflows<br/>= closing"}
+```
+
+## Requesting the statement
+
+```bash
+# JSON for your front end
+curl "https://api.qbank.cl/platform/v1/reports/statement?from=2026-01-01&to=2026-07-07" \
+  -H "Authorization: Bearer <token>"
+
+# Downloadable PDF (CBPay branding)
+curl -OJ "https://api.qbank.cl/platform/v1/reports/statement?from=2026-01-01&to=2026-07-07&format=pdf" \
+  -H "Authorization: Bearer <token>"
+
+# Downloadable Excel
+curl -OJ "https://api.qbank.cl/platform/v1/reports/statement?from=2026-01-01&to=2026-07-07&format=xlsx" \
+  -H "Authorization: Bearer <token>"
+```
+
+- `from` / `to`: `YYYY-MM-DD` dates, inclusive, in UTC. Maximum range:
+  400 days.
+- `lang=es|en`: language of the PDF/Excel (default `es`).
+- Files arrive with `Content-Disposition: attachment` and the name
+  `cartola_cbpay_<account>_<from>_<to>.pdf/.xlsx`.
+
+## What it contains
+
+```json
+{
+  "account": { "account_id": "…", "display_name": "Example Company SpA", "type": "company" },
+  "period": { "from": "2026-01-01", "to": "2026-07-07", "timezone": "UTC" },
+  "generated_at": "2026-07-07T15:00:00Z",
+  "summary": {
+    "opening_balance": "0.000000",
+    "total_in": "985633.540000",
+    "total_out": "38099.870000",
+    "net_change": "947533.670000",
+    "closing_balance": "947533.670000",
+    "balanced": true,
+    "counts": { "payouts": 51, "payins": 12, "crypto_deposits": 18, "transfers": 4, "movements": 771 },
+    "fees_by_service": { "payout": "15.300000", "funding": "897.550000" },
+    "total_fees": "912.850000"
+  },
+  "breakdown": {
+    "by_product": [ { "product": "payouts", "count": 51, "usdt_in": "0.000000", "usdt_out": "38099.870000", "fees": "15.300000" } ],
+    "by_country": [ { "flow": "payouts", "country": "BO", "currency": "BOB", "count": 14, "local_amount": "28748.58", "usdt_amount": "2902.210000" } ],
+    "by_currency": [ { "currency": "BOB", "payout_local": "28748.58", "payin_local": "700.00" } ],
+    "by_month": [ { "month": "2026-01", "usdt_in": "985633.540000", "usdt_out": "35100.000000" } ]
+  },
+  "payouts": [ { "created_at": "…", "payout_id": "…", "country": "BO", "beneficiary": "Juan Quispe", "local_amount": "90.00", "fx_rate": "6.91", "usdt_amount": "13.024600", "fee": "0.300000", "fee_percent": "0.200000", "fee_fixed": "0.100000", "total_debit": "13.324600", "status": "completed" } ],
+  "payins": [ { "…": "…" } ],
+  "card_transactions": [ { "created_at": "…", "transaction_id": "…", "card_id": "…", "kind": "purchase", "merchant": "AMAZON.COM", "amount_usd": "25.00", "spend_asset": "USDT", "spend_amount": "25.000000", "status": "settled" } ],
+  "swaps": [ { "created_at": "…", "swap_id": "…", "from_asset": "USDT", "to_asset": "BTC", "from_amount": "10.000000", "to_amount": "0.00015433", "rate": "0.00001543", "status": "completed" } ],
+  "banking_operations": [ { "created_at": "…", "operation_id": "…", "direction": "out", "type": "wire", "currency": "USD", "amount": "150.00", "counterparty": "Acme Inc", "status": "completed" } ],
+  "assets": [
+    {
+      "asset": "GOLD",
+      "opening_balance": "0.000000",
+      "total_in": "12.500000",
+      "total_out": "2.000000",
+      "net_change": "10.500000",
+      "closing_balance": "10.500000",
+      "balanced": true,
+      "movements": [ { "type": "adjustment", "amount": "12.500000", "balance_after": "12.500000", "created_at": "…" } ]
+    }
+  ],
+  "crypto_deposits": [ { "chain": "tron", "asset": "USDT", "tx_id": "…", "usdt_gross": "100.000000", "fee": "1.000000", "usdt_credited": "99.000000", "balance_after": "99.000000" } ],
+  "crypto_withdrawals": [ { "…": "…" } ],
+  "transfers": [ { "direction": "sent", "counterparty": "Ana Perez", "asset": "USDT", "amount": "25.000000" } ],
+  "service_charges": [ { "type": "banking_fee", "service": "banking_customer", "fee_model": "fixed", "amount": "-0.500000", "balance_after": "98.500000" } ],
+  "movements": [ { "type": "funding", "amount": "99.000000", "balance_after": "99.000000", "created_at": "…" } ]
+}
+```
+
+Sections:
+
+1. **`summary`** — opening balance, inflows, outflows, closing balance,
+   fees by service and the `balanced` flag of the **USDT balance** (the
+   operating currency).
+2. **`assets`** — one reconciled section per non-USDT balance with activity
+   or balance (USDC, BTC, GOLD and, if you use Banking, the
+   `BANK_USD`/`BANK_EUR` mirrors of your bank accounts): opening/closing
+   balance, inflows, outflows, its own `balanced` flag and its movements,
+   in each currency's precision. Empty if you only operate USDT.
+3. **`breakdown`** — by product, by country (payouts and payins with local
+   amount and USDT), by fiat currency and by month.
+4. **Per-product detail** — payouts (beneficiary, rate and debit), payins
+   (per mode), crypto (with `tx_id` and its `asset`), transfers (with
+   counterparty and `asset`), card purchases (`card_transactions`, with
+   merchant and spending balance), balance conversions (`swaps`), banking
+   operations (`banking_operations`) and service charges (with refunds).
+5. **`movements`** — the raw USDT ledger: every movement with its
+   `balance_after`. This is the section an auditor uses to tie everything
+   out (other currencies' movements live inside their `assets` section).
+
+> **Note**
+**Transparent fees.** On payouts, payins and crypto withdrawals, when the
+fee combines a percentage and a fixed component, the statement splits them
+into `fee_percent` and `fee_fixed` (they add up exactly to `fee`).
+Standalone charges (compliance, wallets, banking, verifications, cards) are
+always fixed-amount and carry `fee_model: "fixed"` — the PDF/Excel labels
+them **Fixed Com**. Historical operations predating this field only show the
+combined `fee`.
+## How to reconcile it (for your accountant)
+
+The statement satisfies an exact accounting identity, with no rounding:
+
+```
+opening_balance + total_in − total_out = closing_balance
+```
+
+- `balanced: true` confirms the identity holds against the ledger — both
+  on the USDT summary and inside each `assets` section (every currency
+  reconciles separately; amounts of different currencies are never summed).
+- Every `movements` row carries the resulting balance (`balance_after`):
+  you can follow the balance line by line from opening to closing.
+- The closing balance of one period matches the opening of the next.
+- Fees are never hidden inside amounts: every operation shows gross, fee
+  and net separately, and `fees_by_service` totals them.
+- In the Excel file, the **Movements** sheet uses real numeric cells: you
+  can sum/pivot without cleaning anything.
+
+## For the administrator (org admin)
+
+The CBPay team can generate any of its accounts' statements:
+
+```bash
+curl "https://api.qbank.cl/platform/v1/accounts/{accountID}/reports/statement?from=2026-01-01&to=2026-07-07&format=pdf" \
+  -H "X-API-Key: <pk_org_admin>"
+```
+
+The administrator view also includes additional operational information for
+the period (detailed in the administration documentation).
+
+## Errors
+
+| HTTP | `error` | Cause |
+|---|---|---|
+| 400 | `invalid_range` | Missing/invalid dates, `to` before `from`, or range over 400 days |
+| 400 | `invalid_format` | `format` other than `json`, `pdf`, `xlsx` |
+| 404 | `not_found` | The account does not exist (org admin only) |
+## FAQ
+
+#### How often is the statement generated?
+On demand — every request builds it live from the ledger for the `from`/`to`
+range you pass (both required, `YYYY-MM-DD`, UTC).
+#### What does balanced: true mean?
+Each asset reconciles independently: `opening + credits − debits = closing`
+for USDT, USDC, BTC, GOLD and the banking mirrors. If any asset does not
+balance the flag is `false` — report it to your CBPay team.
+#### Why do I see BANK_USD / BANK_EUR balances?
+They mirror your banking money inside the statement so the account
+reconstructs completely. The authoritative balance is always the bank's
+(`GET /v1/banking/accounts/{id}/balance`); these mirrors are never
+spendable.
+#### Which formats are available?
+JSON (integration), PDF and XLSX — both branded with your organization's
+identity. Use the `Accept` header or the format parameter of the endpoint.
+#### What is fee_model: fixed?
+Standalone service charges (verifications, screenings, wallet services) are
+fixed-only fees, labeled "Fixed Com" in the statement — as opposed to
+percent+fixed transactional fees.
+#### Can I verify an individual movement?
+Yes — every operation has a [receipt](https://docs.cbpayapp.com/en/guides/receipts) with a public
+verification code; anyone can validate it without authentication.

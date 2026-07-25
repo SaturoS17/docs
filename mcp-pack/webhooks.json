@@ -1,0 +1,618 @@
+{
+  "count": 28,
+  "events": [
+    {
+      "description": {
+        "en": "Fires when the AML screening finishes, a case changes, the risk changes or a monitored transaction is reviewed.",
+        "es": "Se emite cuando el screening AML termina, un caso cambia, el riesgo cambia o una transacción monitoreada es revisada.",
+        "zh": "当 AML 筛查完成、案件变化、风险变化或受监控交易被审核时触发。"
+      },
+      "event": "aml_screening_updated",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "customer_id": "cus_8f2e1a3b4c5d",
+        "data": {
+          "risk_level": "high"
+        },
+        "screening_event": "compliance_risk_changed"
+      },
+      "summary": {
+        "en": "AML screening updated",
+        "es": "Novedades del AML screening",
+        "zh": "AML 筛查已更新"
+      }
+    },
+    {
+      "description": {
+        "en": "Fires when the banking profile verification state changes (submitted, under_review, approved, rejected) — for your own banking profile (`customer_kind: self`) and for the third parties you registered (`customer_kind: third_party`, with `third_party_id` matching GET /v1/banking/third-parties/{id}).",
+        "es": "Se emite cuando cambia el estado de verificación del perfil bancario (submitted, under_review, approved, rejected) — tanto del perfil propio de la cuenta (`customer_kind: self`) como de los terceros que registraste (`customer_kind: third_party`, con `third_party_id` igual al de GET /v1/banking/third-parties/{id}).",
+        "zh": "当银行档案验证状态变更(submitted、under_review、approved、rejected)时触发 — 包括账户自己的银行档案（`customer_kind: self`）和你注册的第三方（`customer_kind: third_party`， 其 `third_party_id` 与 GET /v1/banking/third-parties/{id} 一致）。"
+      },
+      "event": "banking_customer_status_changed",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "customer_id": "9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d",
+        "customer_kind": "self",
+        "kyc_status": "approved"
+      },
+      "summary": {
+        "en": "Banking profile verification changed",
+        "es": "Cambió la verificación del perfil bancario",
+        "zh": "银行档案验证状态已变更"
+      }
+    },
+    {
+      "description": {
+        "en": "Fires when a bank payment reaches a new state (processing, completed, failed).",
+        "es": "Se emite cuando un pago bancario alcanza un nuevo estado (processing, completed, failed).",
+        "zh": "当银行付款进入新状态(processing、completed、failed)时触发。"
+      },
+      "event": "banking_operation_status_changed",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "customer_id": "9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d",
+        "operation_id": "7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c",
+        "status": "completed",
+        "type": "withdraw"
+      },
+      "summary": {
+        "en": "Bank payment status changed",
+        "es": "Cambió el estado de un pago bancario",
+        "zh": "银行付款状态已变更"
+      }
+    },
+    {
+      "description": {
+        "en": "Fires when a card changes state (active, frozen, cancelled), including automatic freezes when the monthly fee cannot be charged.",
+        "es": "Se dispara cuando una tarjeta cambia de estado (active, frozen, cancelled), incluidos los congelamientos automáticos cuando la mensualidad no se puede cobrar.",
+        "zh": "当卡片状态变更(active、frozen、cancelled)时触发,包括月费无法扣款时的自动冻结。"
+      },
+      "event": "card_status_changed",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "card_id": "3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c",
+        "reason": "monthly_fee_unpaid",
+        "status": "frozen"
+      },
+      "summary": {
+        "en": "Card status changed",
+        "es": "Estado de tarjeta cambiado",
+        "zh": "卡片状态已变更"
+      }
+    },
+    {
+      "description": {
+        "en": "",
+        "es": "",
+        "zh": ""
+      },
+      "event": "card_stored",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "brand": "visa",
+        "country": "BO",
+        "currency": "BOB",
+        "event_type": "card_stored",
+        "last4": "2701",
+        "payer_reference": "customer-1042",
+        "seed_payin_id": "4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b",
+        "stored_card_id": "5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70"
+      },
+      "summary": {
+        "en": "A payer saved a card on the hosted checkout (explicit consent on a 3-D Secure approved seed payment).",
+        "es": "Un pagador guardó una tarjeta en el checkout hosted (consentimiento explícito sobre una semilla 3-D Secure aprobada).",
+        "zh": "付款人在托管收银台保存了卡片（在获批的 3-D Secure 种子支付上明确同意）。"
+      }
+    },
+    {
+      "description": {
+        "en": "Fires on every card transaction lifecycle change: authorized (real-time hold), reversed (funds returned) and settled adjustments. Same signature headers as every delivery.",
+        "es": "Se dispara en cada cambio del ciclo de vida de una transacción de tarjeta: authorized (hold en tiempo real), reversed (fondos devueltos) y ajustes de liquidación. Mismos headers de firma que toda entrega.",
+        "zh": "在每次卡片交易生命周期变更时触发:authorized(实时冻结)、reversed(资金退回)和 settled 调整。签名请求头与所有投递相同。"
+      },
+      "event": "card_transaction",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "amount_usdt": "16.170000",
+        "card_id": "3c2b1a09-8d7e-6f5a-4b3c-2d1e0f9a8b7c",
+        "merchant": "AMZN Mktp",
+        "status": "authorized",
+        "transaction_id": "5e4d3c2b-1a09-8f7e-6d5c-4b3a2c1d0e9f"
+      },
+      "summary": {
+        "en": "Card transaction",
+        "es": "Transacción de tarjeta",
+        "zh": "卡片交易"
+      }
+    },
+    {
+      "description": {
+        "en": "An incoming deposit was credited normally, but the sender address shows high risk. Informational — no action is required on the funds.",
+        "es": "Un depósito entrante se acreditó normal, pero la dirección remitente presenta riesgo alto. Informativo — no requiere acción sobre los fondos.",
+        "zh": "一笔入账充值已正常入账,但发送方地址显示高风险。仅供参考——无需对资金采取任何操作。"
+      },
+      "event": "crypto_deposit_alert",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "asset": "usdt",
+        "chain": "tron",
+        "risk": "High",
+        "status": "credited",
+        "tx_id": "9c6d4e92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b2"
+      },
+      "summary": {
+        "en": "Crypto deposit credited with a risk alert",
+        "es": "Depósito crypto acreditado con alerta de riesgo",
+        "zh": "加密充值已入账并带风险警示"
+      }
+    },
+    {
+      "description": {
+        "en": "An on-chain deposit was confirmed and credited (net of the funding fee) to the balance of the wallet's asset (`USDT` or `USDC`).\n\nEvery delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Respond 2xx; up to 5 attempts with incremental backoff.",
+        "es": "Un depósito on-chain fue confirmado y acreditado (neto de la comisión de fondeo) al saldo del activo de la wallet (`USDT` o `USDC`).\n\nCada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` y `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Responde 2xx; hasta 5 intentos con backoff incremental.",
+        "zh": "一笔链上充值已确认并入账(扣除充值手续费后)到钱包资产(`USDT` 或 `USDC`)对应的余额。\n\n每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`。请返回 2xx;最多重试 5 次,间隔递增。"
+      },
+      "event": "crypto_deposit_credited",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "amount": "499.000000",
+        "asset": "USDT",
+        "chain": "tron",
+        "fee": "1.000000",
+        "tx_id": "b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b"
+      },
+      "summary": {
+        "en": "Crypto deposit credited",
+        "es": "Depósito crypto acreditado",
+        "zh": "加密充值已入账"
+      }
+    },
+    {
+      "description": {
+        "en": "An incoming on-chain deposit was NOT credited because the sender address shows severe risk (sanctions / direct illicit funds). The operator's compliance team reviews the hold and releases (credits) or rejects it.",
+        "es": "Un depósito on-chain entrante NO se acreditó porque la dirección remitente presenta riesgo severo (sanciones / fondos ilícitos directos). El equipo de compliance del operador revisa el hold y lo libera (acredita) o lo rechaza.",
+        "zh": "一笔链上入账充值因发送方地址显示严重风险(制裁/直接非法资金)而未入账。运营方合规团队会审核该冻结并放行(入账)或拒绝。"
+      },
+      "event": "crypto_deposit_held",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "asset": "usdt",
+        "chain": "tron",
+        "hold_id": "c1d2e3f4-5a6b-4c7d-8e9f-0a1b2c3d4e5f",
+        "risk": "Severe",
+        "status": "held",
+        "tx_id": "8a5b3c92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b1"
+      },
+      "summary": {
+        "en": "Crypto deposit held for compliance review",
+        "es": "Depósito crypto retenido por revisión de compliance",
+        "zh": "加密充值因合规审核被冻结"
+      }
+    },
+    {
+      "description": {
+        "en": "An on-chain withdrawal reached a new state.\n\nEvery delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Respond 2xx; up to 5 attempts with incremental backoff.",
+        "es": "Un retiro on-chain alcanzó un nuevo estado.\n\nCada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` y `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Responde 2xx; hasta 5 intentos con backoff incremental.",
+        "zh": "一笔链上提现进入新状态。\n\n每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`。请返回 2xx;最多重试 5 次,间隔递增。"
+      },
+      "event": "crypto_withdrawal_status_changed",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "amount": "100.000000",
+        "asset": "USDT",
+        "chain": "tron",
+        "status": "completed",
+        "tx_id": "b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b",
+        "withdrawal_id": "6c5d4e3f-2a1b-0c9d-8e7f-6a5b4c3d2e1f"
+      },
+      "summary": {
+        "en": "Crypto withdrawal status changed",
+        "es": "Estado de retiro crypto cambiado",
+        "zh": "加密提现状态已变更"
+      }
+    },
+    {
+      "description": {
+        "en": "Fires when the OCR validation of a KYB document finishes.",
+        "es": "Se emite cuando termina la validación OCR de un documento KYB.",
+        "zh": "当 KYB 文件的 OCR 校验完成时触发。"
+      },
+      "event": "kyb_document_validated",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "category": "legalPresence",
+        "external_customer_id": "cust_456",
+        "kind": "kyb",
+        "outcome": "REVIEW",
+        "score": 0.72,
+        "submission_id": "e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8091",
+        "summary": "Registry extract requires manual review"
+      },
+      "summary": {
+        "en": "KYB document OCR finished",
+        "es": "Terminó el OCR de un documento KYB",
+        "zh": "KYB 文件 OCR 已完成"
+      }
+    },
+    {
+      "description": {
+        "en": "Fires when your customer completes a hosted KYB link; the submission is created.",
+        "es": "Se emite cuando tu cliente completa un link KYB hosteado; nace la submission.",
+        "zh": "当你的客户完成托管 KYB 链接时触发;submission 已创建。"
+      },
+      "event": "kyb_link_completed",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "event": "link_completed",
+        "external_customer_id": "cust_456",
+        "kind": "kyb",
+        "link_id": "d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f80",
+        "status": "completed",
+        "submission_id": "e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8091"
+      },
+      "summary": {
+        "en": "KYB link completed",
+        "es": "Link KYB completado",
+        "zh": "KYB 链接已完成"
+      }
+    },
+    {
+      "description": {
+        "en": "Fires on every KYB submission lifecycle change, including AML/risk/report signals from the review.",
+        "es": "Se emite en cada cambio del ciclo de una submission KYB, incluidas las señales AML/riesgo/reporte de la revisión.",
+        "zh": "在每次 KYB submission 生命周期变更时触发,包括审核中的 AML/风险/报告信号。"
+      },
+      "event": "kyb_verification_status_changed",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "event": "approved",
+        "external_customer_id": "cust_456",
+        "kind": "kyb",
+        "risk_band": "low",
+        "status": "approved",
+        "submission_id": "e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8091"
+      },
+      "summary": {
+        "en": "KYB verification status changed",
+        "es": "Cambió el estado de una verificación KYB",
+        "zh": "KYB 验证状态已变更"
+      }
+    },
+    {
+      "description": {
+        "en": "Fires when the OCR validation of a document uploaded through the API finishes.",
+        "es": "Se emite cuando termina la validación OCR de un documento subido por API.",
+        "zh": "当通过 API 上传的文件的 OCR 校验完成时触发。"
+      },
+      "event": "kyc_document_validated",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "category": "identity",
+        "external_customer_id": "cust_789",
+        "kind": "kyc",
+        "outcome": "MATCH",
+        "score": 0.97,
+        "submission_id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
+        "summary": "Document matches the submitted identity"
+      },
+      "summary": {
+        "en": "KYC document OCR finished",
+        "es": "Terminó el OCR de un documento KYC",
+        "zh": "KYC 文件 OCR 已完成"
+      }
+    },
+    {
+      "description": {
+        "en": "Fires when your customer completes a hosted KYC link; the submission is created.",
+        "es": "Se emite cuando tu cliente completa un link KYC hosteado; nace la submission.",
+        "zh": "当你的客户完成托管 KYC 链接时触发;submission 已创建。"
+      },
+      "event": "kyc_link_completed",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "event": "link_completed",
+        "external_customer_id": "cust_123",
+        "kind": "kyc",
+        "link_id": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+        "status": "completed",
+        "submission_id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f"
+      },
+      "summary": {
+        "en": "KYC link completed",
+        "es": "Link KYC completado",
+        "zh": "KYC 链接已完成"
+      }
+    },
+    {
+      "description": {
+        "en": "Fires when the video liveness check is completed from a liveness link.",
+        "es": "Se emite cuando la prueba de vida en video se completa desde un liveness link.",
+        "zh": "当通过活体链接完成视频活体检测时触发。"
+      },
+      "event": "kyc_liveness_completed",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "external_customer_id": "cust_789",
+        "kind": "kyc",
+        "outcome": "PASS",
+        "passed": true,
+        "submission_id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f"
+      },
+      "summary": {
+        "en": "Liveness check completed",
+        "es": "Prueba de vida completada",
+        "zh": "活体检测已完成"
+      }
+    },
+    {
+      "description": {
+        "en": "Fires on every KYC submission lifecycle change (submitted, in_review, changes_requested, more_info_required, escalated, approved, approved_partial, rejected). Your own onboarding arrives with self_onboarding: true.",
+        "es": "Se emite en cada cambio del ciclo de una submission KYC (submitted, in_review, changes_requested, more_info_required, escalated, approved, approved_partial, rejected). Tu propio onboarding llega con self_onboarding: true.",
+        "zh": "在每次 KYC submission 生命周期变更时触发(submitted、in_review、changes_requested、more_info_required、escalated、approved、approved_partial、rejected)。你自己的入驻会带 self_onboarding: true。"
+      },
+      "event": "kyc_verification_status_changed",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "decision": "approved",
+        "event": "approved",
+        "external_customer_id": "cust_789",
+        "kind": "kyc",
+        "risk_band": "low",
+        "status": "approved",
+        "submission_id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f"
+      },
+      "summary": {
+        "en": "KYC verification status changed",
+        "es": "Cambió el estado de una verificación KYC",
+        "zh": "KYC 验证状态已变更"
+      }
+    },
+    {
+      "description": {
+        "en": "A fiat collection was received and credited to the account in USDT. For universal checkout links (`kind: checkout`) the payload also carries `settled_via` (e.g. `qr`, `crypto:tron:usdt`, `cbpay`), `settlement_asset` and `asset_amount`; crypto payments add `crypto_amount` and CBPay app payments add `transfer_id`, `asset` and `amount`. When the account configured a `default_payin_asset` other than USDT the payload also carries `settlement_asset` and `conversion_status` for the automatic post-credit conversion.\n\nEvery delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Respond 2xx; up to 5 attempts with incremental backoff.",
+        "es": "Se recibió un cobro fiat y se acreditó a la cuenta en USDT. Para links de cobro universal (`kind: checkout`) el payload trae además `settled_via` (ej. `qr`, `crypto:tron:usdt`, `cbpay`), `settlement_asset` y `asset_amount`; los pagos crypto agregan `crypto_amount` y los pagos desde la app CBPay agregan `transfer_id`, `asset` y `amount`. Cuando la cuenta configuró un `default_payin_asset` distinto de USDT, el payload trae además `settlement_asset` y `conversion_status` de la conversión automática post-crédito.\n\nCada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` y `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Responde 2xx; hasta 5 intentos con backoff incremental.",
+        "zh": "已收到一笔法币收款并以 USDT 入账到账户。对于通用收款链接(`kind: checkout`),载荷还携带 `settled_via`(如 `qr`、`crypto:tron:usdt`、`cbpay`)、`settlement_asset` 与 `asset_amount`;加密货币支付附加 `crypto_amount`,CBPay 应用支付附加 `transfer_id`、`asset` 与 `amount`。当账户配置了非 USDT 的 `default_payin_asset` 时,载荷还携带入账后自动兑换的 `settlement_asset` 与 `conversion_status`。\n\n每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`。请返回 2xx;最多重试 5 次,间隔递增。"
+      },
+      "event": "payin_credited",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "conversion_status": "done",
+        "country": "BO",
+        "currency": "BOB",
+        "fee": "1.000000",
+        "fx_rate": "6.91",
+        "local_amount": "700.00",
+        "payin_id": "4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b",
+        "settlement_asset": "USDC",
+        "usdt_credited": "100.302460"
+      },
+      "summary": {
+        "en": "Payin credited",
+        "es": "Payin acreditado",
+        "zh": "payin 已入账"
+      }
+    },
+    {
+      "description": {
+        "en": "An active collection (QR or hosted checkout) reached a final state without receiving the payment: the payin moves from `pending` to `expired` (or `failed`). No funds move; create a new payin to retry the charge.\n\nEvery delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Respond 2xx; up to 5 attempts with incremental backoff.",
+        "es": "Un cobro activo (QR o checkout hosteado) llegó a estado final sin recibir el pago: el payin pasa de `pending` a `expired` (o `failed`). No se mueve dinero; crea un payin nuevo para reintentar el cobro.\n\nCada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` y `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Responde 2xx; hasta 5 intentos con backoff incremental.",
+        "zh": "一笔待支付的代收(二维码或托管 checkout)在未收到付款的情况下到达最终状态:payin 从 `pending` 变为 `expired`(或 `failed`)。不产生任何资金变动;如需重新收款请创建新的 payin。\n\n每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`。请返回 2xx;最多重试 5 次,间隔递增。"
+      },
+      "event": "payin_expired",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "country": "BO",
+        "currency": "BOB",
+        "local_amount": "60.99",
+        "payin_id": "567d0d1a-49bc-437e-92e3-77e921112e49",
+        "reference": "CBK7Q2M4XZ9P",
+        "status": "expired"
+      },
+      "summary": {
+        "en": "Payin expired",
+        "es": "Payin expirado",
+        "zh": "payin 已过期"
+      }
+    },
+    {
+      "description": {
+        "en": "A payout reached a new state (processing, completed or failed).\n\nEvery delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Respond 2xx; up to 5 attempts with incremental backoff.",
+        "es": "Un payout alcanzó un nuevo estado (processing, completed o failed).\n\nCada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` y `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Responde 2xx; hasta 5 intentos con backoff incremental.",
+        "zh": "payout 进入新状态(processing、completed 或 failed)。\n\n每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`。请返回 2xx;最多重试 5 次,间隔递增。"
+      },
+      "event": "payout_status_changed",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "country": "MX",
+        "currency": "MXN",
+        "local_amount": "1500.00",
+        "payout_id": "7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f",
+        "status": "completed",
+        "status_code": "",
+        "total_debit": "86.014286",
+        "usdt_amount": "85.714286"
+      },
+      "summary": {
+        "en": "Payout status changed",
+        "es": "Estado de payout cambiado",
+        "zh": "payout 状态已变更"
+      }
+    },
+    {
+      "description": {
+        "en": "",
+        "es": "",
+        "zh": ""
+      },
+      "event": "stored_card_revoked",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "brand": "visa",
+        "event_type": "stored_card_revoked",
+        "last4": "2701",
+        "payer_reference": "customer-1042",
+        "stored_card_id": "5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70"
+      },
+      "summary": {
+        "en": "A stored card was revoked (by you via DELETE /v1/stored-cards/{id}).",
+        "es": "Una tarjeta guardada fue revocada (por ti vía DELETE /v1/stored-cards/{id}).",
+        "zh": "一张已保存的卡片被撤销（由你通过 DELETE /v1/stored-cards/{id} 操作）。"
+      }
+    },
+    {
+      "description": {
+        "en": "",
+        "es": "",
+        "zh": ""
+      },
+      "event": "subscription_status_changed",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "event_type": "subscription_status_changed",
+        "period": 3,
+        "reason": "dunning_exhausted",
+        "status": "past_due",
+        "stored_card_id": "5f0f2c9e-6a4b-4c7e-9a1d-2b3c4d5e6f70",
+        "subscription_id": "7a1c9e2d-3b4f-5061-8273-9a4b5c6d7e8f"
+      },
+      "summary": {
+        "en": "A subscription changed status (active, paused, past_due after dunning, or canceled).",
+        "es": "Una suscripción cambió de estado (active, paused, past_due tras el dunning, o canceled).",
+        "zh": "订阅状态发生变化（active、paused、经催收后 past_due，或 canceled）。"
+      }
+    },
+    {
+      "description": {
+        "en": "The account received an internal transfer.\n\nEvery delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Respond 2xx; up to 5 attempts with incremental backoff.",
+        "es": "La cuenta recibió una transferencia interna.\n\nCada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` y `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Responde 2xx; hasta 5 intentos con backoff incremental.",
+        "zh": "账户收到一笔内部转账。\n\n每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`。请返回 2xx;最多重试 5 次,间隔递增。"
+      },
+      "event": "transfer_received",
+      "payload_example": {
+        "amount": "25.000000",
+        "asset": "USDT",
+        "created_at": "2026-07-07T12:00:00Z",
+        "description": "Expense split",
+        "from_account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "to_account_id": "5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b",
+        "transfer_id": "2a7b9c1d-4e5f-6a70-8b9c-0d1e2f3a4b5c"
+      },
+      "summary": {
+        "en": "Transfer received",
+        "es": "Transferencia recibida",
+        "zh": "已收到转账"
+      }
+    },
+    {
+      "description": {
+        "en": "An on-chain deposit was confirmed at a segregated wallet. It does **not** touch the ledger (the balance lives on-chain in the wallet).\n\nEvery delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Respond 2xx.",
+        "es": "Se confirmó un depósito on-chain en una wallet segregada. **No** toca el ledger (el saldo vive on-chain en la wallet).\n\nCada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` y `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Responde 2xx.",
+        "zh": "一笔链上充值已在隔离钱包确认。它**不会**触及账本(余额存在于钱包链上)。\n\n每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`。请返回 2xx。"
+      },
+      "event": "wallet_deposit_received",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "amount_raw": "125000000",
+        "asset": "USDT",
+        "chain": "tron",
+        "from_address": "TDonor00000000000000000000000000000",
+        "tx_id": "b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b",
+        "wallet_id": "b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d"
+      },
+      "summary": {
+        "en": "Segregated wallet deposit received",
+        "es": "Depósito recibido en wallet segregada",
+        "zh": "隔离钱包收到充值"
+      }
+    },
+    {
+      "description": {
+        "en": "The activity sync detected an on-chain movement of a segregated wallet that did not go through the platform (expected under client custody, e.g. after importing or exporting the key). The wallet's activity record stays complete either way.",
+        "es": "El sync de actividad detectó un movimiento on-chain de una wallet segregada que no pasó por la plataforma (esperable en custodia del cliente, p. ej. tras importar o exportar la llave). El registro de actividad de la wallet queda completo igual.",
+        "zh": "活动同步检测到某隔离钱包的链上转账未经平台(在客户托管下属正常,例如导入或导出私钥之后)。无论如何,钱包的活动记录都保持完整。"
+      },
+      "event": "wallet_external_movement",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "amount_raw": "25000000",
+        "asset": "USDT",
+        "chain": "tron",
+        "custody": "client",
+        "direction": "out",
+        "tx_id": "9a3c1e5f7b2d4a6c8e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d",
+        "wallet_id": "b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d"
+      },
+      "summary": {
+        "en": "External movement on a segregated wallet",
+        "es": "Movimiento externo en una wallet segregada",
+        "zh": "隔离钱包上的外部转账"
+      }
+    },
+    {
+      "description": {
+        "en": "CRITICAL: funds left a platform-custody segregated wallet without going through the platform. By design this is impossible unless the private key leaked. Treat the key as compromised, move remaining funds to a new wallet and contact support immediately.",
+        "es": "CRÍTICO: salió plata de una wallet segregada con custodia de la plataforma sin pasar por la plataforma. Por diseño es imposible salvo que la llave privada se haya filtrado. Trata la llave como comprometida, mueve los fondos restantes a una wallet nueva y contacta soporte de inmediato.",
+        "zh": "严重:资金未经平台即离开了平台托管的隔离钱包。按设计这不可能发生,除非私钥泄露。请视私钥已泄露处理,将剩余资金转移到新钱包并立即联系支持团队。"
+      },
+      "event": "wallet_key_compromise_suspected",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "amount_raw": "25000000",
+        "asset": "USDT",
+        "chain": "tron",
+        "custody": "cbpay",
+        "direction": "out",
+        "tx_id": "9a3c1e5f7b2d4a6c8e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d",
+        "wallet_id": "b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d"
+      },
+      "summary": {
+        "en": "Suspected key compromise (critical alarm)",
+        "es": "Sospecha de llave comprometida (alarma crítica)",
+        "zh": "疑似私钥泄露(严重警报)"
+      }
+    },
+    {
+      "description": {
+        "en": "Security alert: the private key of a segregated wallet was exported (shared custody). The payload never includes the key.",
+        "es": "Alerta de seguridad: se exportó la llave privada de una wallet segregada (custodia compartida). El payload nunca incluye la llave.",
+        "zh": "安全警报:某隔离钱包的私钥已被导出(共享托管)。载荷绝不包含私钥。"
+      },
+      "event": "wallet_key_exported",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "address": "TRmSZRaMAqLEevAdGwo3R43bRBXamWR5bd",
+        "asset": "USDT",
+        "chain": "tron",
+        "wallet_id": "b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d"
+      },
+      "summary": {
+        "en": "Segregated wallet key exported",
+        "es": "Se exportó la llave de una wallet segregada",
+        "zh": "隔离钱包私钥已导出"
+      }
+    },
+    {
+      "description": {
+        "en": "A send from a segregated wallet reached a new state (processing, completed or failed).",
+        "es": "Un envío desde una wallet segregada alcanzó un nuevo estado (processing, completed o failed).",
+        "zh": "隔离钱包的一笔发送进入新状态(processing、completed 或 failed)。"
+      },
+      "event": "wallet_send_status_changed",
+      "payload_example": {
+        "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "amount_raw": "25500000",
+        "asset": "USDT",
+        "chain": "tron",
+        "send_id": "9c8b7a6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d",
+        "status": "completed",
+        "tx_id": "b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b",
+        "wallet_id": "b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d"
+      },
+      "summary": {
+        "en": "Segregated wallet send status changed",
+        "es": "Cambió el estado de un envío de wallet segregada",
+        "zh": "隔离钱包发送状态已变更"
+      }
+    }
+  ]
+}

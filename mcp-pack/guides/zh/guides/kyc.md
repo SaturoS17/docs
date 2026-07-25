@@ -1,0 +1,406 @@
+---
+title: "KYC 与 KYB 验证"
+description: "通过托管向导完成身份验证：表单、OCR 校验的证件与视频活体检测——适用于您自己的账户以及您的客户"
+slug: zh/guides/kyc
+lang: zh
+source_url: https://docs.cbpayapp.com/zh/guides/kyc
+---
+> **环境：** 测试 `https://cryptobank.qbank.cl/platform` (`pk_test_...`) - 正式 `https://api.qbank.cl/platform` (`pk_...`).
+
+**身份验证**通过真实证据证明个人（KYC）或企业（KYB）确为其所声称的身份：完整的表单、经 OCR 校验的证件上传，以及**视频活体检测**。它包含两个方面：
+
+1. **您自己的验证（入驻）**——强制要求：在获批之前，您的账户只能**入金**（收款、加密货币充值、转入的内部转账）和读取数据。个人 ⇒ KYC；企业 ⇒ KYB。
+2. **验证您的客户（仅限企业账户）**——生成托管链接或通过 API 提交数据来验证您自己的终端客户，每次验证收取固定费用。
+
+```mermaid
+flowchart LR
+    create["POST /v1/kyc/links or /v1/kyb/links<br/>(固定费用)"] --> link["托管链接<br/>status: pending"]
+    link -->|"您的客户打开链接"| opened["opened"]
+    opened -->|"表单 + 证件<br/>+ 活体检测"| completed["completed<br/>(link_completed webhook)"]
+    completed --> review["提交件<br/>pending_review → in_review"]
+    review -->|"批准"| ok["approved (webhook)"]
+    review -->|"资料缺失"| changes["changes_requested /<br/>more_info_required"]
+    review -->|"拒绝"| rejectedNode["rejected (webhook)"]
+```
+
+## 您自己的验证（入驻）
+
+注册后，您的账户初始为未验证状态（`kyc_status: none`），**只能入金和读取数据**。任何资金流出操作（付款、内部转账、提现、银行服务、卡片）在您获批之前都会返回 `403 verification_required`。
+
+### 申请您的验证链接
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/me/verification/link \
+  -H "Authorization: Bearer <token>"
+```
+
+`201` 响应（如果您已有一个未关闭的链接，则返回同一个链接并响应 `200`）：
+
+```json
+{
+  "link_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+  "kind": "kyc",
+  "url": "https://…/on/usd/individual/new?invite=abc123…",
+  "status": "pending",
+  "label": "Ana Pérez",
+  "created_at": "2026-07-10T12:00:00Z",
+  "updated_at": "2026-07-10T12:00:00Z"
+}
+```
+
+`kind` 由您的账户类型决定：个人 ⇒ `kyc`，企业 ⇒ `kyb`。入驻验证对您**免费**。
+### 完成向导
+
+打开 `url`：托管向导会引导您完成表单、证件上传（身份证明、居住证明；企业需提供公司文件），KYC 还包括摄像头活体检测。
+### 等待审核
+
+随时查询您的状态：
+
+```bash
+curl https://api.qbank.cl/platform/v1/me/verification \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "kyc_status": "pending",
+  "required_kind": "kyc",
+  "verified": false,
+  "link": { "link_id": "a1b2c3d4-…", "kind": "kyc", "url": "https://…", "status": "completed" },
+  "submission": { "submission_id": "f0e1d2c3-…", "kind": "kyc", "status": "in_review", "liveness_pending": false }
+}
+```
+
+合规团队批准后，您的 `kyc_status` 会**自动**变为 `approved`，所有服务随即解锁（您会收到带 `self_onboarding: true` 的 `kyc_verification_status_changed` webhook）。
+
+批准后还会**用已验证的身份回填您的账户档案**：`display_name`（个人 =
+名 + 姓；企业 = 法定名称）、`tax_id` 和 `country` 均取自验证结果，此后
+通过 `PATCH /v1/me` 修改将返回 `409 identity_locked` —— 已验证的身份即为
+数据的最终来源。
+> **注**
+等待期间您可以正常入金：所有方式的收款、加密货币充值和转入的内部转账从第一天起即可使用。如果您的验证被拒绝（`kyc_status: rejected`），请联系您的运营方——他们可能会要求您通过新链接重试。
+## 验证您的客户（仅限企业账户）
+
+已通过验证的**企业**账户可以验证其自己的终端客户。每创建一次验证都会计收所配置的固定费用（`kyc_verification` / `kyb_verification`；0 = 免费），若创建失败则**自动退款**。个人账户会收到 `403 company_account_required`。
+
+### 方式 A——托管链接（推荐）
+
+您的客户在白标向导中完成全部流程：表单、证件和活体检测。您只需生成链接并等待 webhook。
+
+```bash KYC link (person)
+curl -X POST https://api.qbank.cl/platform/v1/kyc/links \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "external_customer_id": "cust_123",
+    "label": "Ana Pérez",
+    "expires_in_days": 14,
+    "idempotency_key": "kyc-link-cust-123-1"
+  }'
+```
+
+```bash KYB link (company, with country)
+curl -X POST https://api.qbank.cl/platform/v1/kyb/links \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "external_customer_id": "cust_456",
+    "country": "cl",
+    "label": "Comercial Andina SpA",
+    "expires_in_days": 14,
+    "idempotency_key": "kyb-link-cust-456-1"
+  }'
+```
+
+- `external_customer_id`（必填）：您对被验证客户的自有引用——会在每个 webhook 和查询中原样返回。等于 `self` 或以 `:self` 结尾的值保留给账户入驻使用，会被拒绝并返回 `400 invalid_payload`。
+- `idempotency_key`（必填）：使用相同 key 的重试会返回原始链接，**绝不会重复扣费**。
+- `country`（仅 KYB）：`us`、`cl`、`ve`、`br`、`mx`、`co`、`pe`、`bo`、`py`、`ar` 或 `generic`（配合 ISO alpha-2 的 `generic_country`，例如 `"ES"`）。个人 KYC 不需要国家。
+- `expires_in_days`（可选，1–30）：省略时链接永不过期。
+
+`201` 响应：
+
+```json
+{
+  "link_id": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+  "kind": "kyb",
+  "external_customer_id": "cust_456",
+  "url": "https://…/on/cl/business/new?invite=abc123…",
+  "status": "pending",
+  "country": "cl",
+  "label": "Comercial Andina SpA",
+  "expires_at": 1721209600,
+  "verification_fee": "2.000000",
+  "created_at": "2026-07-10T12:00:00Z",
+  "updated_at": "2026-07-10T12:00:00Z"
+}
+```
+
+查询与历史（每个 POST 都有对应的 GET）：
+
+```bash
+# Filtered listing
+curl "https://api.qbank.cl/platform/v1/kyb/links?from=2026-07-01&to=2026-07-10&status=completed&page=1&page_size=50" \
+  -H "Authorization: Bearer <token>"
+
+# Detail (live link state)
+curl https://api.qbank.cl/platform/v1/kyb/links/{link_id} \
+  -H "Authorization: Bearer <token>"
+```
+
+| 链接状态 | 含义 |
+|---|---|
+| `pending` | 已创建，您的客户尚未打开 |
+| `opened` | 您的客户已打开向导 |
+| `completed` | 表单已提交——生成提交件（`kyb_link_completed` / `kyc_link_completed` webhook） |
+| `expired` | 未完成即已过期 |
+
+### 方式 B——通过 API 提交数据
+
+如果您已持有客户的数据，可直接创建验证（无需向导）。提交件会进入同一个审核队列：
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/kyc/submissions \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "external_customer_id": "cust_789",
+    "idempotency_key": "kyc-sub-cust-789-1",
+    "person": {
+      "first_name": "Ana",
+      "last_name": "Pérez",
+      "email": "ana@example.com",
+      "phone": "+56912345678",
+      "nationality": "CHL",
+      "date_of_birth": "1990-04-12",
+      "tax_id": "12.345.678-5",
+      "id_type": "id_card",
+      "id_number": "12345678",
+      "address": {
+        "line1": "Av. Siempre Viva 123",
+        "city": "Santiago",
+        "state": "RM",
+        "postal_code": "8320000",
+        "country": "CHL"
+      },
+      "primary_purpose": "personal_or_living_expenses",
+      "most_recent_occupation": "Engineer",
+      "source_of_funds": "salary"
+    }
+  }'
+```
+
+数据模式注意事项：
+
+- 国家使用 **ISO alpha-3**（`CHL`、`USA`、`VEN`…）；日期格式 `YYYY-MM-DD`；`id_type`：`passport | id_card | drivers_license`。
+- KYB：在 `POST /v1/kyb/submissions` 上使用请求体 `{ external_customer_id, country?, business: {…}, ubos?, directors?, signers?, bank_info?, metadata? }`。
+- **创建时不要求活体检测**：KYC 提交件带有 `liveness_pending: true`；通过[活体检测链接](#liveness-check-liveness-link)来完成它。
+- 在提交件处于开放状态（`pending_review`、`changes_requested`、`more_info_required`）时使用相同的 `external_customer_id` 重新发送，会**更新**同一个提交件，不会再次扣费。
+
+`201` 响应：
+
+```json
+{
+  "submission_id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
+  "kind": "kyc",
+  "external_customer_id": "cust_789",
+  "status": "pending_review",
+  "liveness_pending": true,
+  "verification_fee": "1.500000",
+  "created_at": "2026-07-10T12:05:00Z",
+  "updated_at": "2026-07-10T12:05:00Z"
+}
+```
+
+查询与历史：
+
+```bash
+curl "https://api.qbank.cl/platform/v1/kyc/submissions?from=2026-07-01&to=2026-07-10&status=approved&page=1&page_size=50" \
+  -H "Authorization: Bearer <token>"
+
+curl https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id} \
+  -H "Authorization: Bearer <token>"
+```
+
+详情中会附加合规团队要求的内容：`pending_documents`、`rejection_reason`、`changes_requested_comments`；KYC 还包含 `liveness_pending` 和 `documents_received`；KYB 包含 `aml_decision`。
+
+| 提交件状态 | 含义 |
+|---|---|
+| `pending_review` | 已接收，处于合规队列中 |
+| `in_review` | 合规团队已受理该案例 |
+| `changes_requested` | 需要修正数据并重新提交 |
+| `more_info_required` | 缺少证件（[通过 API 上传](#documents-through-the-api)） |
+| `escalated` | 已升级至高级审核 |
+| `approved` / `approved_partial` | 已批准（最终态） |
+| `rejected` | 已拒绝（最终态） |
+
+### 通过 API 上传证件
+
+创建时证件为可选项（如缺失，合规团队会通过 `more_info_required` 要求补充）。三步流程：
+
+### 预签名
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id}/documents \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "category": "identity",
+    "filename": "cedula.jpg",
+    "content_type": "image/jpeg",
+    "file_size": 482133
+  }'
+```
+
+```json
+{ "upload_url": "https://storage…", "key": "public-api/…", "expires_in": 900 }
+```
+
+类别——KYC：`identity`、`proofOfResidence`；KYB：`legalPresence`、`ownershipStructure`、`controlStructure`、`companyDetails`。文件类型：`application/pdf`、`image/png`、`image/jpeg`；最大 15 MB；上传 URL 15 分钟后过期。
+### 上传
+
+使用相同的 `Content-Type` 将二进制文件直接 `PUT` 到 `upload_url`。
+### 确认
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id}/documents/confirm \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "key": "public-api/…", "category": "identity", "filename": "cedula.jpg", "content_type": "image/jpeg" }'
+```
+
+```json
+{ "status": "received", "ocr": "queued" }
+```
+
+确认后 OCR 校验进入队列；结果通过 `kyc_document_validated` / `kyb_document_validated` webhook 送达，并可用 GET 查询：
+
+```bash
+curl https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id}/documents \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "items": [
+    { "category": "identity", "status": "completed", "outcome": "MATCH", "score": 0.97, "summary": "Document matches the submitted identity", "filename": "cedula.jpg" }
+  ],
+  "meta": { "retrieved": 1 }
+}
+```
+
+`outcome`：`MATCH`、`REVIEW`（人工审核）、`NO_MATCH`。
+### 活体检测（活体检测链接）
+
+通过 API 创建的 KYC 提交件初始带有 `liveness_pending: true`（活体检测是一个浏览器摄像头流程）。为您的客户生成一个精简的托管链接来完成它：
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id}/liveness_link \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "expires_in_days": 7 }'
+```
+
+```json
+{ "url": "https://…/on/liveness/<token>", "status": "pending", "expires_at": 1751234567 }
+```
+
+- 免费（该服务在创建提交件时已计费）。如已存在未关闭的链接，POST 会返回同一个；如检测已通过，则返回 `400 liveness_already_completed`。
+- `GET .../liveness_link` 返回最新的链接和当前检测状态（`{ "liveness": { "status", "outcome", "passed" } }`）。
+- 通过时（outcome 为 `PASS` 或 `REVIEW`）：提交件清除 `liveness_pending`，并触发 `kyc_liveness_completed` webhook。
+
+## 一次验证通行所有产品（可复用身份）
+
+客户已批准的验证就是其在 CBPay 内的**唯一身份**：在任何其他产品中，您都无需重新录入其数据或重新上传其证件。
+
+```mermaid
+flowchart LR
+    verif["已批准的验证<br/>(submission_id)"] -->|"verification_id"| banking["第三方银行用户<br/>POST /v1/banking/third-parties"]
+    verif -->|"cardholder.verification_id"| card["为指定人员发卡<br/>POST /v1/cards"]
+    verif -.->|"同一模式"| future["未来产品"]
+```
+
+- **第三方银行服务**：`POST /v1/banking/third-parties` 需要该第三方一条**已批准**验证的 `verification_id`。类型（`INDIVIDUAL`/`COMPANY`）由验证种类决定（KYC ⇒ 个人，KYB ⇒ 企业），数据（姓名、邮箱、地址）会从已验证的档案自动填充，且已校验的证件会自动重新递交给银行服务提供方（响应中的 `documents_synced`）。详见[银行服务](https://docs.cbpayapp.com/zh/guides/banking#third-party-banking-users-companies-only)。
+- **为指定人员发卡**：`POST /v1/cards` 使用个人 `cardholder` 时，需要该人员**已批准 KYC** 的 `cardholder.verification_id`。持卡人的身份和证件来自该验证；您只需补充发卡方专属字段（`occupation`、`salary_usd`）。详见[卡片](https://docs.cbpayapp.com/zh/guides/cards)。
+- **您自己的账户**：您已批准的入驻验证同样可以复用——在创建您的银行客户档案或首张卡片时，缺失的数据和证件会从您的验证中自动填充。
+
+请求中显式提供的字段**始终优先于**自动填充。
+
+> **重要**
+若第三方没有已批准的验证，银行注册和指定人员发卡都会返回 `422 verification_required`。请先完成验证（托管链接或 API 数据方式），再将已批准的 `submission_id` 作为 `verification_id` 使用。
+## 合规报告（仅 KYB）
+
+对于每一条 KYB 验证，您都可以下载**签名的合规报告**（PDF，可作为提供给您自己审计方的证据）：
+
+```bash
+curl -o report.pdf https://api.qbank.cl/platform/v1/kyb/submissions/{submission_id}/report \
+  -H "Authorization: Bearer <token>"
+```
+
+该报告免费（该服务在创建验证时已计费）。
+
+## Webhooks
+
+| 事件 | 触发时机 |
+|---|---|
+| `kyc_verification_status_changed` / `kyb_verification_status_changed` | 提交件状态发生变化（覆盖整个生命周期：已接收、审核中、要求修改、已批准、已拒绝…） |
+| `kyc_link_completed` / `kyb_link_completed` | 您的客户完成了一个托管链接 |
+| `kyc_document_validated` / `kyb_document_validated` | 通过 API 上传的证件完成了 OCR 校验 |
+| `kyc_liveness_completed` | 通过活体检测链接完成了活体检测 |
+
+示例载荷（`kyc_verification_status_changed`）：
+
+```json
+{
+  "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "kind": "kyc",
+  "event": "approved",
+  "submission_id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
+  "external_customer_id": "cust_789",
+  "status": "approved",
+  "risk_band": "low",
+  "decision": "approved"
+}
+```
+
+您自己的入驻验证事件会带 `"self_onboarding": true` 而不是 `external_customer_id`。订阅方式与其他事件相同（参见 [Webhooks](https://docs.cbpayapp.com/zh/webhooks)）。
+
+## 费用（由您的运营方配置，可以为 0）
+
+| 服务 | 计费时机 |
+|---|---|
+| `kyc_verification` | 创建第三方 KYC 链接或提交件时 |
+| `kyb_verification` | 创建第三方 KYB 链接或提交件时 |
+
+费用从您的默认结算余额中扣除，创建失败时会退款，且**您自己的入驻验证永不计费**。重新发送处于开放状态的提交件以及活体检测链接均不会再次扣费。
+
+## 错误
+
+| HTTP | `error` | 原因 | 解决方案 |
+|---|---|---|---|
+| 400 | `idempotency_key_required` | 创建类 POST 未携带 key | 发送 `idempotency_key`（请求体或请求头） |
+| 400 | `invalid_payload` | 缺少 `external_customer_id` 或其他必填字段 | 检查请求体 |
+| 400 | `liveness_already_completed` | 活体检测已通过 | 无需处理 |
+| 402 | `insufficient_funds` | 余额不足以支付费用 | 为账户充值后重试 |
+| 403 | `verification_required` | 您的账户尚未通过自身的验证 | 完成您的[入驻](#your-own-verification-onboarding) |
+| 403 | `company_account_required` | 个人账户尝试验证第三方 | 仅限企业账户 |
+| 403 | `service_disabled` | 您的账户已禁用 `kyc` 服务 | 联系您的运营方 |
+| 404 | `not_found` | 链接/提交件不存在或不属于您 | 检查 id |
+| 409 | `already_verified` | 已批准的账户又申请入驻链接 | 无需处理 |
+| 503 | `verifications_unavailable` | 服务暂时不可用（费用已退款） | 稍后重试 |
+
+## 常见问题
+
+#### 为什么注册后不能立即创建付款？
+每个账户在向外转出资金前都必须先通过身份验证（监管要求）。在此期间您可以入金（收款、加密货币充值、转入的内部转账）并探索 API。使用 `POST /v1/me/verification/link` 申请您的链接并完成它——批准后所有功能会自动解锁。
+#### 托管链接与通过 API 提交数据——该选哪个？
+使用链接时，您的客户在向导中完成全部流程（表单 + 证件 + 活体检测），您完全不接触敏感数据。使用 API 数据方式时，您提交字段并通过预签名上传证件——如果您有自己的表单会很有用——但活体检测仍需要一个活体检测链接（它是摄像头流程，无法在服务器之间完成）。
+#### 费用在什么时候计收，什么时候不计收？
+在创建第三方链接或提交件时计费（正式模式）。不计费的情形：您自己的入驻验证、重新发送处于开放状态的提交件（相同的 external_customer_id）、活体检测链接、查询和证件操作。若创建失败，费用会自动退款。
+#### 为什么我的个人账户不能创建链接？
+第三方验证是面向集成方（企业账户）的 B2B 工具。个人账户只需要自己的入驻验证，它是免费的，位于 /v1/me/verification。
+#### 合规团队要求补充更多证件——如何提交？
+您会收到 `more_info_required`，提交件详情中带有 `pending_documents`。按本页的预签名 → 上传 → 确认流程上传每份证件；确认后提交件会返回审核队列。
+#### 这能替代 AML 筛查吗？
+不能：两者互为补充。身份验证用证据（证件、视频）证明身份；[AML 筛查](https://docs.cbpayapp.com/zh/guides/aml)则将该身份与制裁/PEP/负面媒体名单比对，并可对其进行持续监控。
+#### 我可以在其他产品中复用客户的验证吗？
+可以——这正是设计初衷：一条已批准的验证即为唯一身份。在注册第三方银行用户或为指定人员发卡时，将其 `submission_id` 作为 `verification_id` 传入：数据和证件会自动填充。参见[可复用身份](#one-verification-for-everything-reusable-identity)。
