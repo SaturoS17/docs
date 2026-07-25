@@ -1,5 +1,5 @@
 {
-  "count": 157,
+  "count": 160,
   "errors": [
     {
       "category": {
@@ -2029,6 +2029,48 @@
         "en": "Travel Rule exchange temporarily unavailable; retry with the **same** idempotency key",
         "es": "Intercambio Travel Rule temporalmente no disponible; reintenta con la **misma** clave de idempotencia",
         "zh": "Travel Rule 数据交换暂时不可用；请使用**相同的**幂等键重试"
+      }
+    },
+    {
+      "category": {
+        "en": "Real-time events (SSE)",
+        "es": "Eventos en tiempo real (SSE)",
+        "zh": "实时事件（SSE）"
+      },
+      "code": "too_many_streams",
+      "http": 429,
+      "meaning": {
+        "en": "Concurrent stream limit reached (per account or per organization) — close one before opening another",
+        "es": "Se alcanzó el límite de streams simultáneos (por cuenta o por organización) — cierra uno antes de abrir otro",
+        "zh": "已达到并发流上限（按账户或按组织）— 请先关闭一个再打开新的"
+      }
+    },
+    {
+      "category": {
+        "en": "Real-time events (SSE)",
+        "es": "Eventos en tiempo real (SSE)",
+        "zh": "实时事件（SSE）"
+      },
+      "code": "streaming_unsupported",
+      "http": 500,
+      "meaning": {
+        "en": "The connection does not support streaming (an intermediate proxy is buffering) — remove the buffering or fall back to webhooks",
+        "es": "La conexión no soporta streaming (un proxy intermedio está bufferizando) — quita el buffering o usa webhooks",
+        "zh": "该连接不支持流式传输（中间代理在缓冲）— 关闭缓冲或改用 Webhook"
+      }
+    },
+    {
+      "category": {
+        "en": "Real-time events (SSE)",
+        "es": "Eventos en tiempo real (SSE)",
+        "zh": "实时事件（SSE）"
+      },
+      "code": "stream_unavailable",
+      "http": 503,
+      "meaning": {
+        "en": "The stream could not be opened; retry with backoff and keep your `Last-Event-ID`",
+        "es": "No se pudo abrir el stream; reintenta con backoff conservando tu `Last-Event-ID`",
+        "zh": "无法打开事件流；请携带 `Last-Event-ID` 退避重试"
       }
     },
     {

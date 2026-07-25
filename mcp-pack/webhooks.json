@@ -1,6 +1,30 @@
 {
-  "count": 30,
+  "count": 33,
   "events": [
+    {
+      "description": {
+        "en": "The administrative status of the account changed (`active`, `blocked`, `closed`). Resending the same status does not emit.",
+        "es": "El estado administrativo de la cuenta cambió (`active`, `blocked`, `closed`). Reenviar el mismo estado no emite.",
+        "zh": "账户的管理状态发生变化（`active`、`blocked`、`closed`）。重复提交同一状态不会推送。"
+      },
+      "event": "account_status_changed",
+      "payload_example": {
+        "account_id": "c57f05b6-8f2e-4d51-9a0c-5b7e2d3f4a10",
+        "created_at": "2026-07-25T18:06:30Z",
+        "data": {
+          "account_id": "c57f05b6-8f2e-4d51-9a0c-5b7e2d3f4a10",
+          "previous_status": "active",
+          "status": "blocked"
+        },
+        "event_id": "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+        "type": "account_status_changed"
+      },
+      "summary": {
+        "en": "Account status changed",
+        "es": "Estado de la cuenta cambiado",
+        "zh": "账户状态变更"
+      }
+    },
     {
       "description": {
         "en": "Fires when the AML screening finishes, a case changes, the risk changes or a monitored transaction is reviewed.",
@@ -20,6 +44,34 @@
         "en": "AML screening updated",
         "es": "Novedades del AML screening",
         "zh": "AML 筛查已更新"
+      }
+    },
+    {
+      "description": {
+        "en": "An administrative adjustment credited or debited the balance. Emitted only when the entry was actually applied: an adjustment awaiting a second approver, or the replay of an already-used idempotency key, does not emit.",
+        "es": "Un ajuste administrativo acreditó o debitó el saldo. Se emite solo cuando el asiento entró de verdad: un ajuste a la espera de un segundo aprobador, o el replay de una clave de idempotencia ya usada, no emite.",
+        "zh": "管理员调整对余额进行了贷记或借记。仅在分录真正入账时推送：等待第二位审批人的调整，或使用已用过的幂等键重放，都不会推送。"
+      },
+      "event": "balance_adjusted",
+      "payload_example": {
+        "account_id": "c57f05b6-8f2e-4d51-9a0c-5b7e2d3f4a10",
+        "created_at": "2026-07-25T18:02:00Z",
+        "data": {
+          "account_id": "c57f05b6-8f2e-4d51-9a0c-5b7e2d3f4a10",
+          "amount": "10.000000",
+          "asset": "USDT",
+          "available": "109.700000",
+          "direction": "credit",
+          "held": "0.000000",
+          "reason": "manual top-up"
+        },
+        "event_id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+        "type": "balance_adjusted"
+      },
+      "summary": {
+        "en": "Applied balance adjustment",
+        "es": "Ajuste de saldo aplicado",
+        "zh": "余额调整已入账"
       }
     },
     {
@@ -388,6 +440,32 @@
         "en": "KYC verification status changed",
         "es": "Cambió el estado de una verificación KYC",
         "zh": "KYC 验证状态已变更"
+      }
+    },
+    {
+      "description": {
+        "en": "A security fact of the account (sign-in, password change, factor added or removed, session revoked). Same fields as `GET /v1/me/security/events`.",
+        "es": "Un hecho de seguridad de la cuenta (inicio de sesión, cambio de contraseña, factor agregado o quitado, sesión revocada). Mismos campos que `GET /v1/me/security/events`.",
+        "zh": "账户的安全事实（登录、修改密码、新增或移除验证因素、会话被吊销）。字段与 `GET /v1/me/security/events` 一致。"
+      },
+      "event": "member_security_event",
+      "payload_example": {
+        "account_id": "c57f05b6-8f2e-4d51-9a0c-5b7e2d3f4a10",
+        "created_at": "2026-07-25T18:09:05Z",
+        "data": {
+          "account_id": "c57f05b6-8f2e-4d51-9a0c-5b7e2d3f4a10",
+          "event_type": "password_changed",
+          "ip": "200.1.2.3",
+          "member_id": "1c2d3e4f-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+          "user_agent": "Mozilla/5.0"
+        },
+        "event_id": "3c4d5e6f-7a8b-4c9d-8e0f-2a3b4c5d6e7f",
+        "type": "member_security_event"
+      },
+      "summary": {
+        "en": "Account security event",
+        "es": "Evento de seguridad de la cuenta",
+        "zh": "账户安全事件"
       }
     },
     {

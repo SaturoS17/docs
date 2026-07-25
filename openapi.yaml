@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.11'
+  version: '2.12'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -105,6 +105,9 @@ tags:
 - name: Social login
   description: Passwordless sign up and sign in with Google, Apple, Microsoft and Facebook via token exchange.
     The front end obtains the provider credential; the API verifies it and issues the CBPay session.
+- name: Real-time events
+  description: >-
+    Server-Sent Events stream with everything that happens in the account (or across the organization for admins), replay with `Last-Event-ID`, optional initial snapshot and a 90-day queryable history.
 paths:
   /v1/payouts/{payoutID}/receipt:
     get:
@@ -14863,6 +14866,187 @@ paths:
                   ip: 200.1.2.3
         '400':
           $ref: '#/components/responses/InvalidRange'
+  /v1/events:
+    get:
+      tags:
+      - Real-time events
+      operationId: streamEvents
+      summary: Real-time event stream (SSE)
+      description: |-
+        Opens a `text/event-stream` connection that delivers every event of the account in real time — the same events that travel by webhook, without exposing a public endpoint.
+        
+        Each event carries `id:` (monotonic cursor), `event:` (the event type) and `data:` (JSON with the same `event_id` as the webhook, so both channels cross-reference).
+        
+        Reconnect with the `Last-Event-ID` header (or `?last_event_id=`) and the server replays what you missed before resuming live delivery. Native `EventSource` cannot send an `Authorization` header: use `fetch` with `ReadableStream`.
+        
+        Scope follows the credential: an account credential receives its own events; an org-admin credential with `ops:read` receives the organization-wide channel and can narrow it with `?account_id=`.
+        
+        The connection sends `: ping` every 20s, revalidates the session every 60s (a revoked session closes the stream with the `unauthorized` control event) and closes after 30 minutes with a `reconnect` control event.
+      parameters:
+      - name: Last-Event-ID
+        in: header
+        required: false
+        description: 'Reconnection cursor. Alternative to the `Last-Event-ID` header for `fetch` clients.'
+        schema:
+          type: string
+        example: '4821'
+      - name: last_event_id
+        in: query
+        required: false
+        description: 'Reconnection cursor. Alternative to the `Last-Event-ID` header for `fetch` clients.'
+        schema:
+          type: string
+      - name: types
+        in: query
+        required: false
+        description: 'Comma-separated event types to filter. An unknown type returns `400 invalid_event_type`.'
+        schema:
+          type: string
+        example: payin_credited,payout_status_changed
+      - name: snapshot
+        in: query
+        required: false
+        description: 'When `true`, the first event is `snapshot` with the absolute current state (balances and, for org-admins, operational health) before the live deltas.'
+        schema:
+          type: boolean
+      - name: account_id
+        in: query
+        required: false
+        description: 'Org-admin only: narrows the org-wide channel to a single account.'
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: 'Event stream opened. The body stays open and is written incrementally.'
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              example: |
+                : cbpay event stream
+
+                retry: 3000
+
+                id: 4822
+                event: payin_credited
+                data: {"event_id":"7c1f0b2a-5c3d-4e6f-9a1b-2c3d4e5f6a7b","type":"payin_credited","account_id":"c57f05b6-8f2e-4d51-9a0c-5b7e2d3f4a10","created_at":"2026-07-25T18:04:11Z","cursor":"4822","data":{"payin_id":"9b8a7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d","usdt_credited":"99.700000"}}
+
+                : ping
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          description: 'Too many concurrent streams for the account or the organization.'
+          content:
+            application/json:
+              example:
+                error: too_many_streams
+                message: too many concurrent event streams for this account; close one before opening
+                  another
+  /v1/events/history:
+    get:
+      tags:
+      - Real-time events
+      operationId: listEventHistory
+      summary: Event history
+      description: 'The same log that feeds the stream, queryable. Requires `from`/`to` date filters. Retention is 90 days: the log is a notification buffer, the financial facts live in their own immutable resources (movements, payins, payouts).'
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: event_type
+        in: query
+        required: false
+        description: 'Filters by a single event type.'
+        schema:
+          type: string
+      - name: account_id
+        in: query
+        required: false
+        description: 'Org-admin only: narrows the org-wide channel to a single account.'
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: 'Events in the requested range.'
+          content:
+            application/json:
+              example:
+                page: 1
+                page_size: 50
+                total: 2
+                events:
+                - event_id: 7c1f0b2a-5c3d-4e6f-9a1b-2c3d4e5f6a7b
+                  type: payin_credited
+                  account_id: c57f05b6-8f2e-4d51-9a0c-5b7e2d3f4a10
+                  created_at: '2026-07-25T18:04:11Z'
+                  cursor: '4822'
+                  data:
+                    payin_id: 9b8a7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d
+                    usdt_credited: '99.700000'
+                - event_id: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+                  type: balance_adjusted
+                  account_id: c57f05b6-8f2e-4d51-9a0c-5b7e2d3f4a10
+                  created_at: '2026-07-25T18:02:00Z'
+                  cursor: '4821'
+                  data:
+                    account_id: c57f05b6-8f2e-4d51-9a0c-5b7e2d3f4a10
+                    asset: USDT
+                    amount: '10.000000'
+                    direction: credit
+                    reason: manual top-up
+                    available: '109.700000'
+                    held: '0.000000'
+        '400':
+          $ref: '#/components/responses/InvalidRange'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/events/{eventID}:
+    get:
+      tags:
+      - Real-time events
+      operationId: getEvent
+      summary: Event detail
+      description: 'Detail of a single event by its public `event_id` (the same one that travels in the webhook). An event outside your scope returns `404`, never `403`.'
+      parameters:
+      - name: eventID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: 'The event.'
+          content:
+            application/json:
+              example:
+                event_id: 7c1f0b2a-5c3d-4e6f-9a1b-2c3d4e5f6a7b
+                type: payin_credited
+                account_id: c57f05b6-8f2e-4d51-9a0c-5b7e2d3f4a10
+                created_at: '2026-07-25T18:04:11Z'
+                cursor: '4822'
+                data:
+                  payin_id: 9b8a7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d
+                  usdt_credited: '99.700000'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
     bearerAuth:
@@ -16943,3 +17127,66 @@ webhooks:
       responses:
         '200':
           description: Return any 2xx to acknowledge the delivery.
+  balance_adjusted:
+    post:
+      summary: Applied balance adjustment
+      description: 'An administrative adjustment credited or debited the balance. Emitted only when the entry was actually applied: an adjustment awaiting a second approver, or the replay of an already-used idempotency key, does not emit.'
+      requestBody:
+        content:
+          application/json:
+            example:
+              event_id: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+              type: balance_adjusted
+              account_id: c57f05b6-8f2e-4d51-9a0c-5b7e2d3f4a10
+              created_at: '2026-07-25T18:02:00Z'
+              data:
+                account_id: c57f05b6-8f2e-4d51-9a0c-5b7e2d3f4a10
+                asset: USDT
+                amount: '10.000000'
+                direction: credit
+                reason: manual top-up
+                available: '109.700000'
+                held: '0.000000'
+      responses:
+        '200':
+          description: 'Received.'
+  account_status_changed:
+    post:
+      summary: Account status changed
+      description: 'The administrative status of the account changed (`active`, `blocked`, `closed`). Resending the same status does not emit.'
+      requestBody:
+        content:
+          application/json:
+            example:
+              event_id: 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e
+              type: account_status_changed
+              account_id: c57f05b6-8f2e-4d51-9a0c-5b7e2d3f4a10
+              created_at: '2026-07-25T18:06:30Z'
+              data:
+                account_id: c57f05b6-8f2e-4d51-9a0c-5b7e2d3f4a10
+                status: blocked
+                previous_status: active
+      responses:
+        '200':
+          description: 'Received.'
+  member_security_event:
+    post:
+      summary: Account security event
+      description: 'A security fact of the account (sign-in, password change, factor added or removed, session revoked). Same fields as `GET /v1/me/security/events`.'
+      requestBody:
+        content:
+          application/json:
+            example:
+              event_id: 3c4d5e6f-7a8b-4c9d-8e0f-2a3b4c5d6e7f
+              type: member_security_event
+              account_id: c57f05b6-8f2e-4d51-9a0c-5b7e2d3f4a10
+              created_at: '2026-07-25T18:09:05Z'
+              data:
+                account_id: c57f05b6-8f2e-4d51-9a0c-5b7e2d3f4a10
+                event_type: password_changed
+                member_id: 1c2d3e4f-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                ip: 200.1.2.3
+                user_agent: Mozilla/5.0
+      responses:
+        '200':
+          description: 'Received.'

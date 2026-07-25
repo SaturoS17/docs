@@ -190,6 +190,17 @@ source_url: https://docs.cbpayapp.com/zh/errors
 | 422 | `travel_rule_incomplete_approval` | 收款机构批准时未提供付款地址；请联系支持团队 |
 | 503 | `travel_rule_unavailable` | Travel Rule 数据交换暂时不可用；请使用**相同的**幂等键重试 |
 
+### 实时事件（SSE）
+
+来自 [`GET /v1/events`](https://docs.cbpayapp.com/zh/realtime-events) 及其历史查询的错误码。
+
+| HTTP | `error` | 含义 |
+|---|---|---|
+| 400 | `invalid_event_type` | `?types=` 中的某个值不在目录内 — `message` 会列出有效值 |
+| 429 | `too_many_streams` | 已达到并发流上限（按账户或按组织）— 请先关闭一个再打开新的 |
+| 500 | `streaming_unsupported` | 该连接不支持流式传输（中间代理在缓冲）— 关闭缓冲或改用 Webhook |
+| 503 | `stream_unavailable` | 无法打开事件流；请携带 `Last-Event-ID` 退避重试 |
+
 ### 服务端（5xx）
 
 | HTTP | `error` | 含义 |

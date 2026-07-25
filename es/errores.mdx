@@ -189,6 +189,17 @@ Detalle y flujo completo en [login social](/es/guias/login-social).
 | 422 | `travel_rule_incomplete_approval` | La institución receptora aprobó sin entregar dirección de pago; contacta a soporte |
 | 503 | `travel_rule_unavailable` | Intercambio Travel Rule temporalmente no disponible; reintenta con la **misma** clave de idempotencia |
 
+### Eventos en tiempo real (SSE)
+
+Códigos de [`GET /v1/events`](/es/eventos-tiempo-real) y su historial.
+
+| HTTP | `error` | Significado |
+|---|---|---|
+| 400 | `invalid_event_type` | Un valor de `?types=` no está en el catálogo — el `message` lista los válidos |
+| 429 | `too_many_streams` | Se alcanzó el límite de streams simultáneos (por cuenta o por organización) — cierra uno antes de abrir otro |
+| 500 | `streaming_unsupported` | La conexión no soporta streaming (un proxy intermedio está bufferizando) — quita el buffering o usa webhooks |
+| 503 | `stream_unavailable` | No se pudo abrir el stream; reintenta con backoff conservando tu `Last-Event-ID` |
+
 ### Servicio (5xx)
 
 | HTTP | `error` | Significado |

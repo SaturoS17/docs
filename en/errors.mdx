@@ -189,6 +189,17 @@ Full flow and details in [social login](/en/guides/social-login).
 | 422 | `travel_rule_incomplete_approval` | The receiving institution approved without providing a payment address; contact support |
 | 503 | `travel_rule_unavailable` | Travel Rule exchange temporarily unavailable; retry with the **same** idempotency key |
 
+### Real-time events (SSE)
+
+Codes from [`GET /v1/events`](/en/realtime-events) and its history.
+
+| HTTP | `error` | Meaning |
+|---|---|---|
+| 400 | `invalid_event_type` | A value in `?types=` is not in the catalog — `message` lists the valid ones |
+| 429 | `too_many_streams` | Concurrent stream limit reached (per account or per organization) — close one before opening another |
+| 500 | `streaming_unsupported` | The connection does not support streaming (an intermediate proxy is buffering) — remove the buffering or fall back to webhooks |
+| 503 | `stream_unavailable` | The stream could not be opened; retry with backoff and keep your `Last-Event-ID` |
+
 ### Service (5xx)
 
 | HTTP | `error` | Meaning |

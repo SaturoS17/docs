@@ -8,7 +8,28 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.11 · 3 releases - July 25, 2026
+## v2.12 · 4 releases - July 25, 2026
+
+### v2.12
+
+**Added**
+
+- **Real-time event stream** ([guide](https://docs.cbpayapp.com/en/realtime-events)):
+  `GET /v1/events` opens a Server-Sent Events connection with everything that
+  happens in your account — the same events as the webhooks, delivered to the
+  browser without waiting for a poll. Reconnect with the `Last-Event-ID`
+  header and the server replays what you missed, filter with `?types=` and ask
+  for the absolute current state with `?snapshot=true`.
+- **Queryable event history**: `GET /v1/events/history` (with `from`/`to`,
+  pagination and filters by type) and `GET /v1/events/{eventID}` read the same
+  log that feeds the stream, kept for 90 days.
+- **Three new events** ([webhooks](https://docs.cbpayapp.com/en/webhooks)): `balance_adjusted` (an
+  admin credited or debited your balance), `account_status_changed` (your
+  account was suspended or reactivated) and `member_security_event` (logins,
+  password or 2FA changes, revoked sessions). They arrive both by webhook and
+  through the stream.
+- **New error codes** ([errors](https://docs.cbpayapp.com/en/errors)): `too_many_streams`,
+  `stream_unavailable` and `streaming_unsupported`.
 
 ### v2.11
 

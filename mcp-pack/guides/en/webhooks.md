@@ -99,6 +99,9 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 | `wallet_external_movement` | On-chain movement of a segregated wallet that did not go through the platform (expected under `client` custody) |
 | `wallet_key_compromise_suspected` | **Critical alarm**: external outflow from a `cbpay`-custody wallet — possible key compromise |
 | `corridor_status_changed` | A payment corridor changed availability (`operational` / `degraded` / `down`) — broadcast, see the [service status guide](https://docs.cbpayapp.com/en/service-status) |
+| `balance_adjusted` | An administrator applied a manual credit or debit to a balance |
+| `account_status_changed` | The account's administrative status changed (`active` / `blocked` / `closed`) |
+| `member_security_event` | A security event of one of the account's users (sign-in, credential change, new factor, revoked session) |
 
 ### Payload of each event
 
@@ -423,6 +426,36 @@ with its `third_party_id` — the same id as `GET /v1/banking/third-parties/{id}
   "previous_status": "operational",
   "since": "2026-07-24T22:10:00Z",
   "reason": "consecutive infrastructure failures"
+}
+```
+
+```json balance_adjusted
+{
+  "account_id": "ae8c…",
+  "asset": "USDT",
+  "amount": "25.000000",
+  "direction": "credit",
+  "reason": "goodwill credit",
+  "available": "1025.000000",
+  "held": "0.000000"
+}
+```
+
+```json account_status_changed
+{
+  "account_id": "ae8c…",
+  "status": "blocked",
+  "previous_status": "active"
+}
+```
+
+```json member_security_event
+{
+  "account_id": "ae8c…",
+  "member_id": "3f7b…",
+  "event_type": "password_changed",
+  "ip": "200.83.14.7",
+  "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"
 }
 ```
 

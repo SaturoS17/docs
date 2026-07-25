@@ -95,6 +95,9 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 | `wallet_external_movement` | 独立钱包发生了未经平台的链上资金变动（`client` 托管模式下属正常情况） |
 | `wallet_key_compromise_suspected` | **严重警报**：`cbpay` 托管钱包出现外部转出——私钥可能已泄露 |
 | `corridor_status_changed` | 某条支付通道的可用性发生变化（`operational` / `degraded` / `down`）——广播事件，见[服务状态指南](https://docs.cbpayapp.com/zh/service-status) |
+| `balance_adjusted` | 管理员对某个余额执行了手动入账或扣款 |
+| `account_status_changed` | 账户的管理状态发生变化（`active` / `blocked` / `closed`） |
+| `member_security_event` | 账户成员的安全事件（登录、凭据更改、新增验证因素、会话被撤销） |
 
 ### 各事件的载荷
 
@@ -419,6 +422,36 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
   "previous_status": "operational",
   "since": "2026-07-24T22:10:00Z",
   "reason": "consecutive infrastructure failures"
+}
+```
+
+```json balance_adjusted
+{
+  "account_id": "ae8c…",
+  "asset": "USDT",
+  "amount": "25.000000",
+  "direction": "credit",
+  "reason": "goodwill credit",
+  "available": "1025.000000",
+  "held": "0.000000"
+}
+```
+
+```json account_status_changed
+{
+  "account_id": "ae8c…",
+  "status": "blocked",
+  "previous_status": "active"
+}
+```
+
+```json member_security_event
+{
+  "account_id": "ae8c…",
+  "member_id": "3f7b…",
+  "event_type": "password_changed",
+  "ip": "200.83.14.7",
+  "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"
 }
 ```
 

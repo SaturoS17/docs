@@ -7,7 +7,26 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-<Update label="2026年7月25日" description="v2.11 · 3 个版本">
+<Update label="2026年7月25日" description="v2.12 · 4 个版本">
+
+### v2.12
+
+**新增**
+
+- **实时事件流**（[指南](/zh/realtime-events)）：
+  `GET /v1/events` 打开 Server-Sent Events 连接，推送你账户中发生的一切 ——
+  与 webhook 相同的事件，无需轮询即可送达浏览器。使用 `Last-Event-ID` 请求头
+  重连，服务端会重放你错过的事件；用 `?types=` 过滤；用 `?snapshot=true`
+  获取当前绝对状态。
+- **可查询的事件历史**：`GET /v1/events/history`（支持 `from`/`to`、分页与
+  类型过滤）与 `GET /v1/events/{eventID}` 读取与事件流同源的日志，保留 90 天。
+- **三个新事件**（[webhooks](/zh/webhooks)）：`balance_adjusted`（管理员为你
+  的余额入账或出账）、`account_status_changed`（账户被暂停或恢复）与
+  `member_security_event`（登录、密码或 2FA 变更、会话撤销）。它们同时通过
+  webhook 和事件流送达。
+- **新增错误码**（[错误](/zh/errors)）：`too_many_streams`、
+  `stream_unavailable` 与 `streaming_unsupported`。
+
 
 ### v2.11
 
