@@ -8,7 +8,7 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-25 01:34 UTC · versión `77ca5ab73915`
+> **Documento actualizado:** 2026-07-25 01:46 UTC · versión `929aa04edfc5`
 
 **Datos clave**
 
@@ -652,9 +652,7 @@ migró.
 
 *Registro e inicio de sesión con Google, Apple, Microsoft y Facebook, sin contraseñas*
 
-import { EnvUrls } from "/snippets/env-urls.jsx";
-
-<EnvUrls lang="es" />
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) · Live `https://api.qbank.cl/platform` (`pk_...`).
 
 Tus usuarios pueden registrarse e iniciar sesión con **Google, Apple,
 Microsoft o Facebook** — sin crear ni recordar contraseñas. CBPay usa el
@@ -2139,9 +2137,7 @@ payout → webhook) y vuelve aquí cuando agregues productos.
 
 *Cobra en moneda local y recibe el abono en USDT*
 
-import { EnvUrls } from "/snippets/env-urls.jsx";
-
-<EnvUrls lang="es" />
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) · Live `https://api.qbank.cl/platform` (`pk_...`).
 
 Un payin es un cobro fiat: tu cliente paga en moneda local y tu cuenta
 recibe el abono en USDT automáticamente, convertido a **tu tasa de payin**
@@ -2791,9 +2787,7 @@ nueva.
 
 *Un link de cobro universal: fiat en todos los paises con corredor activo, crypto, tarjetas y la app CBPay - liquidado en el saldo que elijas*
 
-import { EnvUrls } from "/snippets/env-urls.jsx";
-
-<EnvUrls lang="es" />
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) · Live `https://api.qbank.cl/platform` (`pk_...`).
 
 Crea un **link de cobro universal**: un solo `POST /v1/payins` con
 `method: "checkout"` devuelve una URL pública brandeada donde el pagador
@@ -3053,9 +3047,7 @@ recibes el mismo link. Una clave nueva crea un link nuevo e independiente.
 
 *Guarda tarjetas con consentimiento del pagador, cobralas con un clic o sin el pagador presente (MIT) y agenda suscripciones recurrentes*
 
-import { EnvUrls } from "/snippets/env-urls.jsx";
-
-<EnvUrls lang="es" />
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) · Live `https://api.qbank.cl/platform` (`pk_...`).
 
 El método `card` soporta **credencial almacenada** (mandato COF de las
 marcas): tu pagador guarda su tarjeta con consentimiento explícito en el
@@ -3299,9 +3291,7 @@ el primer cobro espera esa fecha.
 
 *Cobros QR crypto con monto para procesadores con POS físicos: registra tus comercios verificados, genera el QR, detecta el pago y concilia por cliente*
 
-import { EnvUrls } from "/snippets/env-urls.jsx";
-
-<EnvUrls lang="es" />
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) · Live `https://api.qbank.cl/platform` (`pk_...`).
 
 QR Crypto POS es el producto para **procesadores y adquirentes con cuenta empresa**
 que operan POS físicos: registras a tus comercios (restaurantes, hoteles,
@@ -3635,9 +3625,7 @@ roadmap.
 
 *Dispersa fiat a cuentas bancarias locales debitando tu saldo USDT*
 
-import { EnvUrls } from "/snippets/env-urls.jsx";
-
-<EnvUrls lang="es" />
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) · Live `https://api.qbank.cl/platform` (`pk_...`).
 
 Un payout envía dinero en moneda local a una cuenta bancaria del país
 destino. El monto se convierte de moneda local a USDT con **la tasa de tu
@@ -4555,9 +4543,7 @@ payout nuevo e independiente.
 
 *Escanea un QR de cobro (Bolivia, PIX de Brasil) y pagalo en dos pasos: escaneo gratis, confirmacion con cobro*
 
-import { EnvUrls } from "/snippets/env-urls.jsx";
-
-<EnvUrls lang="es" />
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) · Live `https://api.qbank.cl/platform` (`pk_...`).
 
 En Bolivia (QR interoperable local) y en Brasil (**QR PIX**, incluido el
 código "copia e cola") también puedes **pagar a un QR de cobro** en dos
@@ -4742,9 +4728,7 @@ errores de validación: nada se crea hasta que el payload valida.
 
 *Mueve USDT, USDC, BTC o GOLD entre cuentas CBPay, gratis y al instante*
 
-import { EnvUrls } from "/snippets/env-urls.jsx";
-
-<EnvUrls lang="es" />
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) · Live `https://api.qbank.cl/platform` (`pk_...`).
 
 Las transferencias internas mueven saldo entre dos cuentas **CBPay**, de
 forma atómica en el ledger y **siempre sin comisión** — el dinero nunca sale
@@ -4964,9 +4948,7 @@ cotizado (si no, `checkout_amount_mismatch`, 422).
 
 *Convierte entre tus saldos USDT, USDC, BTC y GOLD al instante, con cotización previa y a la tasa de ejecución del momento*
 
-import { EnvUrls } from "/snippets/env-urls.jsx";
-
-<EnvUrls lang="es" />
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) · Live `https://api.qbank.cl/platform` (`pk_...`).
 
 Los **swaps** convierten saldo entre tus cuatro monedas — `USDT`, `USDC`,
 `BTC` y `GOLD` — de forma **síncrona e instantánea**, sin que la plata salga
@@ -5145,9 +5127,7 @@ USDT/USDC cuando quieras con un swap.
 
 *Crea wallets on-chain, deposita, transfiere y consulta movimientos*
 
-import { EnvUrls } from "/snippets/env-urls.jsx";
-
-<EnvUrls lang="es" />
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) · Live `https://api.qbank.cl/platform` (`pk_...`).
 
 Tus saldos crypto viven conectados a la blockchain. Combinaciones
 soportadas:
@@ -5607,9 +5587,7 @@ equipo CBPay si crees que es un falso positivo.
 
 *Wallets on-chain con saldo propio: crear, importar, recibir, enviar, exportar la llave y reenviar automáticamente — el saldo vive en la blockchain, nunca en el ledger*
 
-import { EnvUrls } from "/snippets/env-urls.jsx";
-
-<EnvUrls lang="es" />
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) · Live `https://api.qbank.cl/platform` (`pk_...`).
 
 Las **wallets segregadas** son wallets on-chain **propias** de tu cuenta:
 su saldo **es** el saldo on-chain de la dirección, no un saldo
@@ -5976,9 +5954,7 @@ red+activo (una segunda responde `422 wallet_limit_reached`).
 
 *Emite tarjetas que gastan directo de cualquier saldo de la cuenta (USDT, USDC, BTC o GOLD), con límites por tarjeta*
 
-import { EnvUrls } from "/snippets/env-urls.jsx";
-
-<EnvUrls lang="es" />
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) · Live `https://api.qbank.cl/platform` (`pk_...`).
 
 Las tarjetas CBPay gastan **Just-In-Time del saldo central de la cuenta**:
 no hay que prefondearlas ni moverles saldo. Cada tarjeta elige desde qué
@@ -6433,9 +6409,7 @@ El catálogo general de errores vive en [Errores](#errores).
 
 *Cuentas bancarias reales para tu cuenta: recibe, mantén y envía dinero por rieles bancarios internacionales*
 
-import { EnvUrls } from "/snippets/env-urls.jsx";
-
-<EnvUrls lang="es" />
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) · Live `https://api.qbank.cl/platform` (`pk_...`).
 
 Banking te da **cuentas bancarias reales** a nombre de tu perfil verificado:
 recibes fondos por rieles internacionales (SEPA, SWIFT, ACH según la
@@ -6944,9 +6918,7 @@ consultar `GET /v1/banking/operations/{id}`.
 
 *El estado de cuenta consolidado: JSON para tu web, PDF y Excel descargables, listos para tu contador*
 
-import { EnvUrls } from "/snippets/env-urls.jsx";
-
-<EnvUrls lang="es" />
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) · Live `https://api.qbank.cl/platform` (`pk_...`).
 
 La cartola consolida **todos** los movimientos de una cuenta en un período —
 payouts, payins, depósitos y retiros crypto, transferencias internas,
@@ -7142,9 +7114,7 @@ autenticación.
 
 *PDF brandeado por operación, con QR de verificación de autenticidad, receipt_url en cada respuesta y envío automático por email*
 
-import { EnvUrls } from "/snippets/env-urls.jsx";
-
-<EnvUrls lang="es" />
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) · Live `https://api.qbank.cl/platform` (`pk_...`).
 
 Cada operación de tu cuenta — payouts, payins, transferencias, depósitos y
 retiros crypto, conversiones y compras con tarjeta — tiene un **comprobante
@@ -7329,9 +7299,7 @@ curl -X PATCH "https://api.qbank.cl/platform/v1/me" \
 
 *Un solo endpoint con todas las series y estadísticas de tu cuenta para armar tu dashboard: volumen, transacciones, usuarios, secciones por servicio, países, consumo y saldos*
 
-import { EnvUrls } from "/snippets/env-urls.jsx";
-
-<EnvUrls lang="es" />
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) · Live `https://api.qbank.cl/platform` (`pk_...`).
 
 `GET /v1/analytics/summary` entrega en **una sola llamada** todo lo que
 necesita la página de resumen de tu cuenta (persona o empresa): series
@@ -7769,9 +7737,7 @@ operando cada día.
 
 *Verificación de identidad con wizard hosteado: formulario, documentos con OCR y prueba de vida en video — para tu cuenta y para tus clientes*
 
-import { EnvUrls } from "/snippets/env-urls.jsx";
-
-<EnvUrls lang="es" />
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) · Live `https://api.qbank.cl/platform` (`pk_...`).
 
 La **verificación de identidad** comprueba que una persona (KYC) o empresa
 (KYB) es quien dice ser, con evidencia real: formulario completo, subida de
@@ -8273,9 +8239,7 @@ datos y documentos se completan solos. Ver
 
 *Screening de personas y empresas contra listas de sanciones, PEP y prensa adversa, con rescreening y monitoreo continuo*
 
-import { EnvUrls } from "/snippets/env-urls.jsx";
-
-<EnvUrls lang="es" />
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) · Live `https://api.qbank.cl/platform` (`pk_...`).
 
 El **AML screening** contrasta la identidad de una persona o empresa contra
 listas globales — sanciones, PEP, prensa adversa — y devuelve el resultado
@@ -8626,9 +8590,7 @@ resultado sin cobrar de nuevo) y descarga su informe.
 
 *Evalúa el riesgo AML de cualquier dirección blockchain — sanciones, fondos ilícitos, exposición — antes de operar con ella*
 
-import { EnvUrls } from "/snippets/env-urls.jsx";
-
-<EnvUrls lang="es" />
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) · Live `https://api.qbank.cl/platform` (`pk_...`).
 
 El **screening de wallets** evalúa una dirección blockchain contra
 inteligencia on-chain global y devuelve su nivel de riesgo: si pertenece a
@@ -8891,9 +8853,7 @@ se acreditan normal.
 
 *Libreta de contactos: se llena sola con cada envío, importa la agenda del celular, descubre quién tiene CBPay y permite enviar plata por teléfono*
 
-import { EnvUrls } from "/snippets/env-urls.jsx";
-
-<EnvUrls lang="es" />
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) · Live `https://api.qbank.cl/platform` (`pk_...`).
 
 La **libreta de contactos** elimina el tipeo repetido de datos: cada envío
 (transferencia interna, payout fiat o retiro crypto) guarda el destino como
@@ -9123,9 +9083,7 @@ poder transferirle).
 
 *Contraseña, email verificado, alias y QR para recibir, foto de perfil, 2FA (SMS/WhatsApp/email/app), passkeys, y gestión de sesiones y actividad de seguridad*
 
-import { EnvUrls } from "/snippets/env-urls.jsx";
-
-<EnvUrls lang="es" />
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) · Live `https://api.qbank.cl/platform` (`pk_...`).
 
 Todo lo que un usuario final gestiona sobre **su propia cuenta**: credenciales
 (contraseña y email), su identidad pública para recibir dinero (alias, QR y
@@ -10457,8 +10415,6 @@ al equipo de CBPay con el `payout_id`/`payin_id` y la hora.
 
 *Colección lista para importar y probar toda la API*
 
-import { PostmanFreshness } from "/snippets/postman-freshness.jsx";
-
 Descarga la colección oficial de Postman de CBPay, generada desde la misma
 especificación OpenAPI de esta documentación: incluye todos los endpoints,
 con un request por caso de uso (cada ejemplo nombrado del spec) y una
@@ -10466,11 +10422,7 @@ respuesta guardada por operación.
 
 - **CBPay API — Colección Postman** — Descargar `cbpay-api.postman_collection.json` (v2.1)
 
-{/* postman-meta:cbpay-api.postman_collection.json */}
 > **Colección actualizada:** 2026-07-24 21:15 UTC · 267 requests · versión `01edcb62c359`
-
-<PostmanFreshness iso="2026-07-24T21:15:00Z" lang="es" />
-{/* /postman-meta */}
 
 ### Cómo usarla
 
