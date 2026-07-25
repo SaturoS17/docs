@@ -83,6 +83,9 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 | `banking_operation_status_changed` | A bank payment changed state |
 | `card_transaction` | A card purchase was authorized, annulled or adjusted |
 | `card_status_changed` | A card changed state (including automatic freezes) |
+| `card_stored` | A payer's card was tokenized and saved with consent ([stored cards](/en/guides/payins#stored-cards)) |
+| `stored_card_revoked` | A stored card credential was revoked (merchant-initiated charges stop working) |
+| `subscription_status_changed` | A subscription on a stored card changed state (`active` / `paused` / `past_due` / `canceled`) |
 | `kyc_verification_status_changed` / `kyb_verification_status_changed` | An identity verification changed state (including your own onboarding, with `self_onboarding: true`) |
 | `kyc_link_completed` / `kyb_link_completed` | A hosted verification link was completed |
 | `kyc_document_validated` / `kyb_document_validated` | OCR finished for a document uploaded through the API |
@@ -236,6 +239,43 @@ with its `third_party_id` — the same id as `GET /v1/banking/third-parties/{id}
   "card_id": "3c2b…",
   "status": "frozen",
   "reason": "monthly_fee_unpaid"
+}
+```
+
+```json card_stored
+{
+  "stored_card_id": "a9b8…",
+  "account_id": "ae8c…",
+  "payer_reference": "payer@email.com",
+  "brand": "VISA",
+  "last4": "1234",
+  "country": "BO",
+  "currency": "BOB",
+  "seed_payin_id": "9c2a…"
+}
+```
+
+```json stored_card_revoked
+{
+  "stored_card_id": "a9b8…",
+  "account_id": "ae8c…",
+  "payer_reference": "payer@email.com",
+  "brand": "VISA",
+  "last4": "1234"
+}
+```
+
+```json subscription_status_changed
+{
+  "subscription_id": "4f1e…",
+  "account_id": "ae8c…",
+  "stored_card_id": "a9b8…",
+  "status": "past_due",
+  "period": 3,
+  "next_charge_at": "2026-08-01T12:00:00Z",
+  "payer_reference": "payer@email.com",
+  "reason": "dunning_exhausted",
+  "failed_attempts": 3
 }
 ```
 

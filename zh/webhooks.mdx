@@ -79,6 +79,9 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 | `banking_operation_status_changed` | 一笔银行付款状态发生变化 |
 | `card_transaction` | 一笔卡片消费被授权、撤销或调整 |
 | `card_status_changed` | 卡片状态发生变化（包括自动冻结） |
+| `card_stored` | 付款人的卡片已在获得同意后完成令牌化并保存（[已保存的卡片](/zh/guides/payins#stored-cards)） |
+| `stored_card_revoked` | 一张已保存卡片的凭证被吊销（商户发起的扣款将停止工作） |
+| `subscription_status_changed` | 基于已保存卡片的订阅状态发生变化（`active` / `paused` / `past_due` / `canceled`） |
 | `kyc_verification_status_changed` / `kyb_verification_status_changed` | 一项身份验证状态发生变化（包括您自身的入驻验证，带 `self_onboarding: true`） |
 | `kyc_link_completed` / `kyb_link_completed` | 一个托管验证链接已完成 |
 | `kyc_document_validated` / `kyb_document_validated` | 通过 API 上传的文档已完成 OCR |
@@ -232,6 +235,43 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
   "card_id": "3c2b…",
   "status": "frozen",
   "reason": "monthly_fee_unpaid"
+}
+```
+
+```json card_stored
+{
+  "stored_card_id": "a9b8…",
+  "account_id": "ae8c…",
+  "payer_reference": "payer@email.com",
+  "brand": "VISA",
+  "last4": "1234",
+  "country": "BO",
+  "currency": "BOB",
+  "seed_payin_id": "9c2a…"
+}
+```
+
+```json stored_card_revoked
+{
+  "stored_card_id": "a9b8…",
+  "account_id": "ae8c…",
+  "payer_reference": "payer@email.com",
+  "brand": "VISA",
+  "last4": "1234"
+}
+```
+
+```json subscription_status_changed
+{
+  "subscription_id": "4f1e…",
+  "account_id": "ae8c…",
+  "stored_card_id": "a9b8…",
+  "status": "past_due",
+  "period": 3,
+  "next_charge_at": "2026-08-01T12:00:00Z",
+  "payer_reference": "payer@email.com",
+  "reason": "dunning_exhausted",
+  "failed_attempts": 3
 }
 ```
 

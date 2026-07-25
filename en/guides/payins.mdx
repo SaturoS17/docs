@@ -660,3 +660,34 @@ curl "https://api.qbank.cl/platform/v1/payins?from=2026-07-01&to=2026-07-08&stat
 | 403 | `service_disabled` | Payins is not enabled for your account — see [services](/en/concepts/services) |
 | 422 | `core_rejected` | The processor rejected the charge; check the message |
 | 502 | `core_unavailable` | The charge could not be created; retry the creation (nothing was charged) |
+## FAQ
+
+<AccordionGroup>
+<Accordion title="How do I know a payin was credited?">
+Subscribe to `payin_credited`: it carries the FX rate applied, the fee and
+the exact `usdt_credited`. You can also poll `GET /v1/payins/{id}`.
+</Accordion>
+<Accordion title="Which FX rate applies to my payin?">
+The `payin_rate` in force at credit time (see `GET /v1/rates`). Your
+agreed spread is already inside the rate — it is never itemized.
+</Accordion>
+<Accordion title="Can payins land in a balance other than USDT?">
+Yes — set `default_payin_asset` with `PUT /v1/settlement`. The credit still
+enters in USDT and is converted right after at the real price;
+`conversion_status` reports `done` or `pending_retry` (auto-retried).
+</Accordion>
+<Accordion title="What happens when a charge (QR, checkout) expires unpaid?">
+You receive `payin_expired` and the payin closes without moving money.
+Create a new charge — nothing was debited or credited.
+</Accordion>
+<Accordion title="The payer transferred a different amount than announced — what now?">
+Matching requires the reference **and** the amount to line up. A transfer
+that does not match stays unassigned for reconciliation; your CBPay team
+can assign it to the right payin manually.
+</Accordion>
+<Accordion title="Why did my collect (pull) charge fail?">
+The response and `GET /v1/payins/{id}` persist a `failure` block with the
+rail's code and message (for example, a document that does not match the
+payer's bank registration). Fix the input and retry with a new key.
+</Accordion>
+</AccordionGroup>

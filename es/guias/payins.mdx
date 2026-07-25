@@ -659,3 +659,35 @@ curl "https://api.qbank.cl/platform/v1/payins?from=2026-07-01&to=2026-07-08&stat
 | 403 | `service_disabled` | Payins no está habilitado para tu cuenta — ver [servicios](/es/conceptos/servicios) |
 | 422 | `core_rejected` | El procesador rechazó el cargo; revisa el mensaje |
 | 502 | `core_unavailable` | No se pudo crear el cargo; reintenta la creación (no se cobró nada) |
+## FAQ
+
+<AccordionGroup>
+<Accordion title="¿Cómo sé que un payin se acreditó?">
+Suscríbete a `payin_credited`: trae la tasa FX aplicada, la comisión y el
+`usdt_credited` exacto. También puedes consultar `GET /v1/payins/{id}`.
+</Accordion>
+<Accordion title="¿Qué tasa FX aplica a mi payin?">
+El `payin_rate` vigente al momento de acreditar (ver `GET /v1/rates`). Tu
+spread acordado ya viene dentro de la tasa — nunca se itemiza.
+</Accordion>
+<Accordion title="¿Los payins pueden caer en un saldo distinto de USDT?">
+Sí — configura `default_payin_asset` con `PUT /v1/settlement`. El crédito
+sigue entrando en USDT y se convierte inmediatamente después a precio real;
+`conversion_status` reporta `done` o `pending_retry` (se reintenta solo).
+</Accordion>
+<Accordion title="¿Qué pasa cuando un cobro (QR, checkout) expira sin pago?">
+Recibes `payin_expired` y el payin se cierra sin mover dinero. Crea un
+cobro nuevo — nada se debitó ni acreditó.
+</Accordion>
+<Accordion title="El pagador transfirió un monto distinto al anunciado, ¿qué pasa?">
+El match exige que la referencia **y** el monto calcen. Una transferencia
+que no calza queda sin asignar para conciliación; tu equipo CBPay puede
+asignarla manualmente al payin correcto.
+</Accordion>
+<Accordion title="¿Por qué falló mi cobro collect (pull)?">
+La respuesta y `GET /v1/payins/{id}` persisten un bloque `failure` con el
+código y mensaje del riel (por ejemplo, un documento que no calza con el
+registro bancario del pagador). Corrige el dato y reintenta con clave
+nueva.
+</Accordion>
+</AccordionGroup>

@@ -168,3 +168,35 @@ the period (detailed in the administration documentation).
 | 400 | `invalid_range` | Missing/invalid dates, `to` before `from`, or range over 400 days |
 | 400 | `invalid_format` | `format` other than `json`, `pdf`, `xlsx` |
 | 404 | `not_found` | The account does not exist (org admin only) |
+## FAQ
+
+<AccordionGroup>
+<Accordion title="How often is the statement generated?">
+On demand — every request builds it live from the ledger for the `from`/`to`
+range you pass (both required, `YYYY-MM-DD`, UTC).
+</Accordion>
+<Accordion title="What does balanced: true mean?">
+Each asset reconciles independently: `opening + credits − debits = closing`
+for USDT, USDC, BTC, GOLD and the banking mirrors. If any asset does not
+balance the flag is `false` — report it to your CBPay team.
+</Accordion>
+<Accordion title="Why do I see BANK_USD / BANK_EUR balances?">
+They mirror your banking money inside the statement so the account
+reconstructs completely. The authoritative balance is always the bank's
+(`GET /v1/banking/accounts/{id}/balance`); these mirrors are never
+spendable.
+</Accordion>
+<Accordion title="Which formats are available?">
+JSON (integration), PDF and XLSX — both branded with your organization's
+identity. Use the `Accept` header or the format parameter of the endpoint.
+</Accordion>
+<Accordion title="What is fee_model: fixed?">
+Standalone service charges (verifications, screenings, wallet services) are
+fixed-only fees, labeled "Fixed Com" in the statement — as opposed to
+percent+fixed transactional fees.
+</Accordion>
+<Accordion title="Can I verify an individual movement?">
+Yes — every operation has a [receipt](/en/guides/receipts) with a public
+verification code; anyone can validate it without authentication.
+</Accordion>
+</AccordionGroup>

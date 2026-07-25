@@ -34,6 +34,9 @@ Todos los errores comparten el mismo formato:
 | 403 | `company_only` | Función solo para cuentas empresa |
 | 403 | `company_required` | Función solo para cuentas empresa (ej. [banking para terceros](/es/guias/banking)) |
 | 403 | `human_session_required` | La operación maneja llave privada (import/export de wallet segregada) y exige sesión de usuario con 2FA — las API keys no se permiten |
+| 403 | `member_disabled` | El usuario está bloqueado para iniciar sesión; contacta al administrador de tu organización |
+| 403 | `passkey_rejected` | La verificación de la passkey falló; reintenta o entra con contraseña |
+| 403 | `owner_required` | Solo el miembro owner de la cuenta puede ejecutar esa acción |
 
 ### OTP / 2FA
 
@@ -54,6 +57,8 @@ Detalle y flujo completo en [seguridad y 2FA](/es/seguridad-2fa).
 | 409 | `challenge_not_pending` | El desafío expiró o ya se usó; crea uno nuevo |
 | 429 | `too_many_attempts` | Límite de envíos o verificaciones; espera unos minutos |
 | 503 | `otp_unavailable` | Servicio de verificación no disponible (la acción queda bloqueada, nunca se salta el OTP) |
+| 409 | `otp_disabled_for_org` | Tu organización no tiene habilitado el 2FA por acción; contacta a tu operador |
+| 409 | `totp_not_started` | No hay enrolamiento TOTP en curso; parte con `POST /v1/me/totp/enroll` |
 
 ### Login social (OAuth)
 
@@ -93,6 +98,12 @@ Detalle y flujo completo en [login social](/es/guias/login-social).
 | `invalid_phone` | Teléfono no normalizable a E.164 (contactos y `to_phone`) |
 | `invalid_language` | `lang` del informe PDF no es `en`, `es` ni `zh` (informe AML) |
 | `batch_too_large` | Import de contactos con más de 1.000 entradas (pagina la subida) |
+| `invalid_alias` | El alias debe tener 4–20 caracteres (a-z, 0-9, punto, guion bajo, guion), empezar/terminar alfanumérico y no ser palabra reservada |
+| `invalid_body` | No se pudo leer el body del request (subidas binarias, webhooks) |
+| `invalid_image` | El body del avatar está vacío o no es una imagen soportada (PNG/JPEG/WebP, máx 512 KB) |
+| `invalid_interval` | El `interval` de la suscripción debe ser `daily`, `weekly`, `monthly` o `yearly` |
+| `query_required` | `GET /v1/resolve` necesita `alias=` o `qr=` |
+| `same_email` | El nuevo email de login es el actual; usa `POST /v1/me/email/verify` para verificarlo |
 | `invalid_status` / `invalid_kyc_status` / `invalid_direction` / `reason_required` / `account_id_required` / `invalid_service` / `invalid_fee` | Validaciones de administración |
 
 ### Dinero y estado (402 / 404 / 409 / 422)
@@ -152,6 +163,11 @@ Detalle y flujo completo en [login social](/es/guias/login-social).
 | 422 | `nothing_received` | El cobro [QR Crypto POS](/es/guias/qr-pos) no ha recibido ningún pago on-chain: no hay nada que devolver |
 | 422 | `refund_exceeds_received` | La devolución supera lo recibido menos lo ya devuelto del cobro [QR Crypto POS](/es/guias/qr-pos) |
 | 400 | `to_address_required` | La devolución [QR Crypto POS](/es/guias/qr-pos) (y el retiro crypto) exige la dirección destino explícita |
+| 422 | `deposit_account_limit_reached` | Las cuentas tienen una cuenta de depósito por corredor (creada automáticamente con la cuenta); no se puede cambiar ni eliminar |
+| 422 | `export_rejected` | El procesador rechazó el export de la llave de la wallet segregada |
+| 422 | `stored_card_corridor_mismatch` | La [tarjeta guardada](/es/guias/stored-cards-subscriptions) pertenece a otro corredor país/moneda distinto del cobro |
+| 409 | `subscription_state` | La [suscripción](/es/guias/stored-cards-subscriptions) no está en un estado que permita esa acción (ej. pausar un plan cancelado) |
+| 409 | `email_required` | El login no tiene un email real; configura uno con `POST /v1/me/email/change` |
 
 ### Cumplimiento (403 / 503)
 
@@ -173,8 +189,10 @@ Detalle y flujo completo en [login social](/es/guias/login-social).
 | HTTP | `error` | Significado |
 |---|---|---|
 | 500 | `internal_error` | Error inesperado; reintenta con la misma clave de idempotencia |
+| 500 | `fee_config_invalid` | La configuración de comisiones de la cuenta es inválida; contacta al soporte (la operación no se ejecutó) |
 | 502 | `rates_unavailable` | Tasas FX temporalmente no disponibles |
 | 502 | `core_unavailable` | Procesador temporalmente no disponible |
+| 502 | `core_invalid_response` | El procesador devolvió una respuesta inesperada; reintenta con la **misma** clave de idempotencia |
 | 502 | `compliance_unavailable` | Screening AML temporalmente no disponible |
 | 503 | `verifications_unavailable` | Verificación de identidad temporalmente no disponible (la comisión se reembolsó) |
 | 503 | `org_credential_missing` | Servicio en configuración; contacta al soporte de CBPay |

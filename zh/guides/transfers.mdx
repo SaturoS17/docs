@@ -183,3 +183,31 @@ curl https://api.qbank.cl/platform/v1/transfers/77b1… \
 | 422 | `recipient_ambiguous` | 多个账户共用该手机号（请使用 `to_account_id` 或 `to_email`） |
 | 422 | `contact_not_linked` | 该联系人未关联 CBPay 账户 |
 | 422 | `recipient_unavailable` | 目标账户已被冻结/关闭 |
+## 常见问题
+
+<AccordionGroup>
+<Accordion title="内部转账有费用吗？">
+没有 —— 你组织内账户之间的转账免费且即时。
+</Accordion>
+<Accordion title="可以在不同资产之间转账吗？">
+不可以 —— 两端移动的是**同一**资产（USDT 对 USDT、USDC 对 USDC……）。
+要更换资产，请先用[兑换](/zh/guides/swaps)转换。
+</Accordion>
+<Accordion title="转账可以撤销吗？">
+不可以 —— 转账即时且不可逆。如果转错了账户，请与对方协调退回。
+</Accordion>
+<Accordion title="按手机号发送是如何运作的？">
+`to_phone` 只解析你组织内**已验证**的手机号。未验证或未知的号码返回
+404；如果多个账户匹配则返回 `recipient_ambiguous`（422）—— 改用
+`to_alias` 或账户 ID。
+</Accordion>
+<Accordion title="to_alias 和 to_qr_token 是什么？">
+替代收款方式：账户的不可变别名和其个人资料 QR 令牌
+（`GET /v1/me/qr`）。全部只在你的组织内解析。
+</Accordion>
+<Accordion title="checkout_token 有什么用？">
+通过内部转账结算一个[收款链接](/zh/guides/checkout)：目标被强制为链接
+所属账户，金额必须覆盖报价应付额（否则 `checkout_amount_mismatch`，
+422）。
+</Accordion>
+</AccordionGroup>

@@ -182,3 +182,56 @@ curl "https://api.qbank.cl/platform/v1/subscriptions?from=2026-07-01&to=2026-07-
 ```
 
 撤销已存卡（`DELETE /v1/stored-cards/{id}`）会自动取消其订阅（`cancel_reason: card_revoked`）。
+## 订阅状态
+
+| 状态 | 含义 | 处理方式 |
+|---|---|---|
+| `active` | 每个周期在 `next_charge_at` 扣款 | 无需操作 —— 调度器自动执行 |
+| `paused` | 已冻结；错过的周期**不会**补扣 | 就绪后 `POST .../resume` |
+| `past_due` | 3 次催缴重试（间隔 24 小时）均失败 | 修复卡片/余额后 `resume` 重新激活 |
+| `canceled` | 终态 —— 由 `cancel` 触发或因保存的卡被吊销 | 如有需要创建新的订阅 |
+
+## 错误
+
+| HTTP | 代码 | 处理方式 |
+|---|---|---|
+| 400 | `idempotency_key_required` | 发送 `idempotency_key`（body 或 `Idempotency-Key` 请求头） |
+| 400 | `invalid_amount` | `amount` 必须是正的十进制字符串 |
+| 400 | `invalid_interval` | 使用 `daily`、`weekly`、`monthly` 或 `yearly` |
+| 400 | `invalid_request` | 货币必须与保存卡片的通道一致 |
+| 404 | `not_found` | 保存的卡片 / 订阅不存在或不属于你 |
+| 409 | `idempotency_conflict` | 相同 key 但 payload 不同 —— 请使用新的 key |
+| 409 | `subscription_state` | 当前状态不允许该操作（例如恢复已取消的计划） |
+| 422 | `stored_card_revoked` | 卡片凭证已被吊销；请付款人重新保存 |
+| 422 | `core_rejected` | 通道拒绝了扣款 —— 消息中携带原因 |
+
+完整错误目录见[错误](/zh/errors)。
+
+## 常见问题
+
+<AccordionGroup>
+<Accordion title="你们会存储卡号（PAN）吗？">
+绝不会。保存卡片存储的是不透明的网络令牌 —— PAN 从不接触平台。吊销
+凭证即令牌失效。
+</Accordion>
+<Accordion title="为什么周期性扣款不要求 3-D Secure？">
+商户发起的交易（MIT）按卡组织的规定无需 3DS：付款人在经其同意的首次
+支付中已完成 3DS 认证，每笔 MIT 都引用该笔交易。
+</Accordion>
+<Accordion title="卡片被吊销后订阅会怎样？">
+自动取消（`card_revoked`）。付款人需要重新保存卡片，你再创建新的订阅。
+</Accordion>
+<Accordion title="暂停会累积扣款吗？">
+不会 —— 没有补扣：暂停期间经过的周期只推进计数器而不扣款。恢复后仅
+从下一个到期周期开始扣款。
+</Accordion>
+<Accordion title="扣款被拒时催缴（dunning）如何运作？">
+调度器最多重试 3 次，每次间隔 24 小时。若全部失败，计划转为
+`past_due` 并触发 `subscription_status_changed` —— 在你 `resume` 之前
+不再扣款。
+</Accordion>
+<Accordion title="第一期什么时候扣款？">
+创建时同步扣款，除非你传入未来的 `start_at`（试用期）：此时首次扣款
+等到该日期。
+</Accordion>
+</AccordionGroup>

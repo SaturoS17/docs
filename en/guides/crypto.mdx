@@ -457,3 +457,37 @@ BTC); wallets are entry points, each currency has a single balance.
 | 422 | `wallet_limit_reached` | The account already holds its deposit wallet for that network+asset pair (applies to persons and companies) |
 | 422 | (withdrawal with `status: failed`) | Rejected at broadcast; debit refunded |
 | 503 | `withdrawals_unavailable` | Withdrawals not enabled for this corridor yet |
+## FAQ
+
+<AccordionGroup>
+<Accordion title="Do I need to create deposit wallets?">
+No. Every account is born with its deposit wallets for all supported pairs
+(`tron:usdt`, `eth:usdt`, `eth:usdc`, `btc:btc`), free of charge. The
+create endpoint only self-heals a missing pair — a second wallet for the
+same pair answers `wallet_limit_reached` (422).
+</Accordion>
+<Accordion title="When is a deposit credited to my balance?">
+Detection is near real-time (`pending`); the credit happens once the
+network reaches the required confirmations for that chain. Track it with
+`GET /v1/crypto/transactions` or the `crypto_deposit` webhooks.
+</Accordion>
+<Accordion title="What happens if my withdrawal fails?">
+The debited amount (including the fee) is refunded to your balance
+automatically. Retry with the **same** `idempotency_key` — the platform
+never re-broadcasts on its own.
+</Accordion>
+<Accordion title="Why is my withdrawal asking for beneficiary data?">
+Withdrawals above your organization's Travel Rule USD threshold require
+`wallet_type: self_hosted` plus `beneficiary_name`, or a `travel_address`
+(the `travel_rule_*` 422 errors guide you field by field).
+</Accordion>
+<Accordion title="Can I withdraw GOLD on-chain?">
+No — GOLD is a ledger-only balance without an on-chain rail. Convert it
+with [Swaps](/en/guides/swaps) to a withdrawable asset first.
+</Accordion>
+<Accordion title="Why was my withdrawal blocked with compliance_hold?">
+The destination address failed the compliance screening. The operation is
+recorded as failed and your funds are refunded; contact your CBPay team if
+you believe it is a false positive.
+</Accordion>
+</AccordionGroup>

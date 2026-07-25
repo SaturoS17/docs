@@ -209,3 +209,59 @@ curl "https://api.qbank.cl/platform/v1/subscriptions?from=2026-07-01&to=2026-07-
 
 Revocar la tarjeta guardada (`DELETE /v1/stored-cards/{id}`) cancela
 automáticamente sus suscripciones (`cancel_reason: card_revoked`).
+## Estados de la suscripción
+
+| Estado | Significado | Qué hacer |
+|---|---|---|
+| `active` | Cobra cada período en `next_charge_at` | Nada — el scheduler la ejecuta |
+| `paused` | Congelada; los períodos perdidos **no** se cobran retroactivamente | `POST .../resume` cuando quieras |
+| `past_due` | Fallaron los 3 reintentos de dunning (cada 24 h) | Corrige la tarjeta/saldo y haz `resume` para reactivar |
+| `canceled` | Terminal — por `cancel` o porque la tarjeta guardada se revocó | Crea una suscripción nueva si la necesitas |
+
+## Errores
+
+| HTTP | Código | Qué hacer |
+|---|---|---|
+| 400 | `idempotency_key_required` | Envía `idempotency_key` (body o header `Idempotency-Key`) |
+| 400 | `invalid_amount` | `amount` debe ser un decimal positivo en string |
+| 400 | `invalid_interval` | Usa `daily`, `weekly`, `monthly` o `yearly` |
+| 400 | `invalid_request` | La moneda debe calzar con el corredor de la tarjeta guardada |
+| 404 | `not_found` | La tarjeta guardada / suscripción no existe o no es tuya |
+| 409 | `idempotency_conflict` | Misma clave con payload distinto — usa una clave nueva |
+| 409 | `subscription_state` | El estado actual no permite esa acción (ej. reanudar un plan cancelado) |
+| 422 | `stored_card_revoked` | La credencial de la tarjeta se revocó; pide al pagador guardarla de nuevo |
+| 422 | `core_rejected` | El riel rechazó el cobro — el mensaje trae el motivo |
+
+El catálogo general de errores vive en [Errores](/es/errores).
+
+## FAQ
+
+<AccordionGroup>
+<Accordion title="¿Almacenan el número de tarjeta (PAN)?">
+Jamás. Guardar una tarjeta almacena un token de red opaco — el PAN nunca
+toca la plataforma. Revocar la credencial invalida el token.
+</Accordion>
+<Accordion title="¿Por qué los cobros recurrentes no piden 3-D Secure?">
+Las transacciones iniciadas por el comercio (MIT) corren sin 3DS por
+mandato de las marcas: el pagador se autenticó con 3DS en el pago inicial
+consentido, y cada MIT referencia esa transacción.
+</Accordion>
+<Accordion title="¿Qué pasa con las suscripciones si la tarjeta se revoca?">
+Se cancelan automáticamente (`card_revoked`). El pagador debe guardar la
+tarjeta de nuevo y tú creas una suscripción nueva.
+</Accordion>
+<Accordion title="¿Pausar acumula cobros?">
+No — no hay catch-up: los períodos transcurridos en pausa avanzan el
+contador sin cobrarse. Al reanudar se cobra solo desde el siguiente
+período.
+</Accordion>
+<Accordion title="¿Cómo funciona el dunning cuando un cobro declina?">
+El scheduler reintenta hasta 3 veces, cada 24 h. Si todas fallan el plan
+pasa a `past_due` y recibes `subscription_status_changed` — no hay más
+cobros hasta que hagas `resume`.
+</Accordion>
+<Accordion title="¿Cuándo se cobra el primer período?">
+Síncrono en la creación, salvo que pases un `start_at` futuro (trial): ahí
+el primer cobro espera esa fecha.
+</Accordion>
+</AccordionGroup>

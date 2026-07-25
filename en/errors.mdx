@@ -34,6 +34,9 @@ All errors share the same shape:
 | 403 | `company_only` | Feature only for company accounts |
 | 403 | `company_required` | Feature only for company accounts (e.g. [third-party banking](/en/guides/banking)) |
 | 403 | `human_session_required` | The operation handles a private key (segregated wallet import/export) and requires a signed-in user session with 2FA — API keys are not allowed |
+| 403 | `member_disabled` | The mirror user is disabled in the test environment; contact support |
+| 403 | `passkey_rejected` | The passkey could not be verified; retry or sign in with another method |
+| 403 | `owner_required` | Only the account owner can change the 2FA preferences |
 
 ### OTP / 2FA
 
@@ -53,6 +56,8 @@ Full flow and details in [security and 2FA](/en/security-2fa).
 | 409 | `otp_phone_missing` | Login requires OTP and the account has no phone; contact your operator |
 | 409 | `challenge_not_pending` | The challenge expired or was already used; create a new one |
 | 429 | `too_many_attempts` | Send/verification limits reached; wait a few minutes |
+| 409 | `otp_disabled_for_org` | Two-factor authentication is not enabled for your organization; contact support |
+| 409 | `totp_not_started` | Confirm requires starting enrollment first (`POST /v1/me/totp/enroll`) |
 | 503 | `otp_unavailable` | Verification service unavailable (the action stays blocked; OTP is never skipped) |
 
 ### Social login (OAuth)
@@ -93,6 +98,12 @@ Full flow and details in [social login](/en/guides/social-login).
 | `invalid_phone` | Phone not normalizable to E.164 (contacts and `to_phone`) |
 | `invalid_language` | The PDF report `lang` is not `en`, `es` or `zh` (AML report) |
 | `batch_too_large` | Contact import with more than 1,000 entries (paginate the upload) |
+| `invalid_alias` | Alias must be 4–20 chars (a-z, 0-9, dot, underscore, hyphen), start/end alphanumeric, and not a reserved word |
+| `invalid_body` | The request body could not be read (binary uploads, webhooks) |
+| `invalid_image` | The avatar body is empty or not a supported image (PNG/JPEG/WebP, max 512 KB) |
+| `invalid_interval` | Subscription `interval` must be `daily`, `weekly`, `monthly` or `yearly` |
+| `query_required` | `GET /v1/resolve` needs `alias=` or `qr=` |
+| `same_email` | The new login email is the current one; use `POST /v1/me/email/verify` to verify it instead |
 | `invalid_status` / `invalid_kyc_status` / `invalid_direction` / `reason_required` / `account_id_required` / `invalid_service` / `invalid_fee` | Administration validations |
 
 ### Money and state (402 / 404 / 409 / 422)
@@ -152,6 +163,11 @@ Full flow and details in [social login](/en/guides/social-login).
 | 422 | `nothing_received` | The [QR Crypto POS](/en/guides/qr-pos) charge has not received any on-chain payment: there is nothing to refund |
 | 422 | `refund_exceeds_received` | The refund exceeds what the [QR Crypto POS](/en/guides/qr-pos) charge received minus prior refunds |
 | 400 | `to_address_required` | The [QR Crypto POS](/en/guides/qr-pos) refund (and crypto withdrawals) require an explicit destination address |
+| 422 | `deposit_account_limit_reached` | Accounts hold one deposit account per corridor (created automatically with the account); it cannot be changed or deleted |
+| 422 | `export_rejected` | The processor rejected the segregated wallet key export |
+| 422 | `stored_card_corridor_mismatch` | The [saved card](/en/guides/stored-cards-subscriptions) belongs to a different country/currency corridor than the charge |
+| 409 | `subscription_state` | The [subscription](/en/guides/stored-cards-subscriptions) is not in a state that allows that action (e.g. pausing a canceled plan) |
+| 409 | `email_required` | The login has no real email address; set one with `POST /v1/me/email/change` |
 
 ### Compliance (403 / 503)
 
@@ -173,8 +189,10 @@ Full flow and details in [social login](/en/guides/social-login).
 | HTTP | `error` | Meaning |
 |---|---|---|
 | 500 | `internal_error` | Unexpected error; retry with the same idempotency key |
+| 500 | `fee_config_invalid` | The account's fee configuration is invalid; contact support (the operation did not run) |
 | 502 | `rates_unavailable` | FX rates temporarily unavailable |
 | 502 | `core_unavailable` | Processor temporarily unavailable |
+| 502 | `core_invalid_response` | The processor returned an unexpected response; retry with the **same** idempotency key |
 | 502 | `compliance_unavailable` | AML screening temporarily unavailable |
 | 503 | `verifications_unavailable` | Identity verification temporarily unavailable (the fee was refunded) |
 | 503 | `org_credential_missing` | Service being configured; contact CBPay support |

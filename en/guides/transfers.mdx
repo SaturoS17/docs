@@ -201,3 +201,34 @@ Each row carries `direction` (`sent` or `received`) from your perspective.
 | 422 | `recipient_ambiguous` | More than one account shares that phone (use `to_account_id` or `to_email`) |
 | 422 | `contact_not_linked` | The contact has no linked CBPay account |
 | 422 | `recipient_unavailable` | The destination account is blocked/closed |
+## FAQ
+
+<AccordionGroup>
+<Accordion title="Do internal transfers cost anything?">
+No — transfers between accounts of your organization are free and
+instantaneous.
+</Accordion>
+<Accordion title="Can I transfer between different assets?">
+No — both sides move the **same** asset (USDT to USDT, USDC to USDC…). To
+change asset, convert first with [Swaps](/en/guides/swaps).
+</Accordion>
+<Accordion title="Can a transfer be reversed?">
+No — transfers are instantaneous and irreversible. If you sent to the wrong
+account, coordinate the return with the counterparty.
+</Accordion>
+<Accordion title="How does sending by phone work?">
+`to_phone` only resolves **verified** phone numbers of your organization.
+An unverified or unknown number answers 404; if more than one account
+matches you get `recipient_ambiguous` (422) — use `to_alias` or the account
+ID instead.
+</Accordion>
+<Accordion title="What are to_alias and to_qr_token?">
+Alternative recipients: the account's immutable alias and its profile QR
+token (`GET /v1/me/qr`). All resolve within your organization only.
+</Accordion>
+<Accordion title="What is checkout_token for?">
+It settles a [checkout link](/en/guides/checkout) by internal transfer: the
+destination is forced to the link's account and the amount must cover the
+quoted due (`checkout_amount_mismatch`, 422, otherwise).
+</Accordion>
+</AccordionGroup>

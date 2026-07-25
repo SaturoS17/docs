@@ -83,6 +83,9 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 | `banking_operation_status_changed` | Un pago bancario cambió de estado |
 | `card_transaction` | Una compra con tarjeta fue autorizada, anulada o ajustada |
 | `card_status_changed` | Una tarjeta cambió de estado (incluye congelamiento automático) |
+| `card_stored` | La tarjeta de un pagador fue tokenizada y guardada con consentimiento ([tarjetas guardadas](/es/guias/payins#tarjetas-guardadas)) |
+| `stored_card_revoked` | Una credencial de tarjeta guardada fue revocada (los cobros iniciados por el comercio dejan de funcionar) |
+| `subscription_status_changed` | Una suscripción sobre una tarjeta guardada cambió de estado (`active` / `paused` / `past_due` / `canceled`) |
 | `kyc_verification_status_changed` / `kyb_verification_status_changed` | Una verificación de identidad cambió de estado (incluye tu propio onboarding, con `self_onboarding: true`) |
 | `kyc_link_completed` / `kyb_link_completed` | Un link de verificación hosteado fue completado |
 | `kyc_document_validated` / `kyb_document_validated` | Terminó el OCR de un documento subido por API |
@@ -236,6 +239,43 @@ propio (`self`) de un tercero que registraste (`third_party`, con su
   "card_id": "3c2b…",
   "status": "frozen",
   "reason": "monthly_fee_unpaid"
+}
+```
+
+```json card_stored
+{
+  "stored_card_id": "a9b8…",
+  "account_id": "ae8c…",
+  "payer_reference": "pagador@email.com",
+  "brand": "VISA",
+  "last4": "1234",
+  "country": "BO",
+  "currency": "BOB",
+  "seed_payin_id": "9c2a…"
+}
+```
+
+```json stored_card_revoked
+{
+  "stored_card_id": "a9b8…",
+  "account_id": "ae8c…",
+  "payer_reference": "pagador@email.com",
+  "brand": "VISA",
+  "last4": "1234"
+}
+```
+
+```json subscription_status_changed
+{
+  "subscription_id": "4f1e…",
+  "account_id": "ae8c…",
+  "stored_card_id": "a9b8…",
+  "status": "past_due",
+  "period": 3,
+  "next_charge_at": "2026-08-01T12:00:00Z",
+  "payer_reference": "pagador@email.com",
+  "reason": "dunning_exhausted",
+  "failed_attempts": 3
 }
 ```
 

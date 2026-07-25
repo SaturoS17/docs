@@ -915,3 +915,33 @@ webhook 会以 `status: failed` 送达，自动退款也在那一刻发生。
 处于 `processing` 状态的出金无法通过 API 取消：通道已经在处理它。请通过
 webhook 或 `GET` 等待最终状态 —— 它一定会到达，失败时会自动退款。
 </Note>
+## 常见问题
+
+<AccordionGroup>
+<Accordion title="我的余额什么时候被扣款？">
+创建时：payout 立即扣款并冻结资金。如果 payout 失败，精确的扣款金额
+（含手续费）会自动退回。
+</Accordion>
+<Accordion title="可以取消 processing 中的 payout 吗？">
+不可以 —— 一旦派发到通道，它会自行解析为 `completed` 或 `failed`。订阅
+`payout_status_changed` 获取最终状态。
+</Accordion>
+<Accordion title="我的 payout 使用哪个汇率？">
+创建时报价的汇率（以 `fx_rate` 返回），对该笔操作冻结。你约定的点差
+已包含在汇率中。
+</Accordion>
+<Accordion title="可以用 USDT 以外的余额付款吗？">
+可以 —— 设置账户级默认值（`PUT /v1/settlement`）或按笔用
+`settlement_asset` 覆盖（USDC、BTC、GOLD）。退款返回精确的结算金额，
+绝不重新报价。
+</Accordion>
+<Accordion title="compliance_hold（403）是什么意思？">
+受益人未通过合规筛查：payout **未被**创建，你的 `idempotency_key` 也未
+被消耗。请核对受益人信息或联系你的 CBPay 团队。
+</Accordion>
+<Accordion title="超时或 5xx 之后如何安全重试？">
+用**相同**的 `idempotency_key` 重试：会返回原始 payout
+（`idempotency_hit: true`）—— 绝不会重复。新的 key 是一笔全新的独立
+payout。
+</Accordion>
+</AccordionGroup>

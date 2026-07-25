@@ -203,3 +203,34 @@ Cada fila trae `direction` (`sent` o `received`) desde tu perspectiva.
 | 422 | `recipient_ambiguous` | Más de una cuenta comparte ese teléfono (usa `to_account_id` o `to_email`) |
 | 422 | `contact_not_linked` | El contacto no tiene cuenta CBPay asociada |
 | 422 | `recipient_unavailable` | La cuenta destino está bloqueada/cerrada |
+## FAQ
+
+<AccordionGroup>
+<Accordion title="¿Las transferencias internas tienen costo?">
+No — las transferencias entre cuentas de tu organización son gratis e
+instantáneas.
+</Accordion>
+<Accordion title="¿Puedo transferir entre assets distintos?">
+No — ambos lados mueven el **mismo** asset (USDT a USDT, USDC a USDC…).
+Para cambiar de asset, convierte primero con [Swaps](/es/guias/swaps).
+</Accordion>
+<Accordion title="¿Una transferencia se puede reversar?">
+No — las transferencias son instantáneas e irreversibles. Si enviaste a la
+cuenta equivocada, coordina la devolución con la contraparte.
+</Accordion>
+<Accordion title="¿Cómo funciona el envío por teléfono?">
+`to_phone` solo resuelve números **verificados** de tu organización. Un
+número sin verificar o desconocido responde 404; si más de una cuenta calza
+recibes `recipient_ambiguous` (422) — usa `to_alias` o el ID de cuenta.
+</Accordion>
+<Accordion title="¿Qué son to_alias y to_qr_token?">
+Destinatarios alternativos: el alias inmutable de la cuenta y el token de
+su QR de perfil (`GET /v1/me/qr`). Todos resuelven solo dentro de tu
+organización.
+</Accordion>
+<Accordion title="¿Para qué sirve checkout_token?">
+Liquida un [link de cobro](/es/guias/checkout) por transferencia interna:
+el destino se fuerza a la cuenta del link y el monto debe cubrir el due
+cotizado (si no, `checkout_amount_mismatch`, 422).
+</Accordion>
+</AccordionGroup>

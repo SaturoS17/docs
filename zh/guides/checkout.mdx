@@ -206,3 +206,33 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
 | 422 | `collect_rejected` | 通道拒绝了拉取式扣款（OTP 无效或数据错误）；链接保持待支付 |
 | 429 | `too_many_attempts` | 公开页面的按 IP 限流 |
 | 503 | `pricing_unavailable` | 报价暂时不可用；请稍后重试 |
+## 常见问题
+
+<AccordionGroup>
+<Accordion title="同一个链接可以被支付两次吗？">
+不可以。一个链接 = 一次收款：第一个完成支付的通道胜出（`already_paid`，
+409）。在链接已被其他通道结算之后到达的加密货币入金**不会**入账 ——
+它会被保留等待对账。
+</Accordion>
+<Accordion title="付款人转的加密货币比报价少（或多）怎么办？">
+部分加密支付会**累加**：页面会显示距报价金额还差多少。链接过期后到达的
+迟到付款仍会记入你的账户。
+</Accordion>
+<Accordion title="链接的有效期是多久？">
+`expires_in` 介于 600 秒和 7 天之间（默认 24 小时）。过期时你会收到
+`payin_expired` webhook，公开页面返回 `checkout_expired`（410）。
+</Accordion>
+<Accordion title="转换到我的结算资产失败了会怎样？">
+资金安全地保留在 USDT 中，payin 报告
+`conversion_status: pending_retry`；平台会自动重试直到兑换成功 ——
+你的钱不会丢失，也不会被重复转换。
+</Accordion>
+<Accordion title="付款人选定支付方式后还能更换吗？">
+可以。每种方式独立物化；重复请求同一方式会返回相同的物化结果。哪个
+通道先支付，哪个就结算该链接。
+</Accordion>
+<Accordion title="创建链接可以安全重试吗？">
+可以 —— 用**相同**的 `idempotency_key` 重试 `POST /v1/payins` 会返回同一个
+链接。新的 key 会创建一个全新的独立链接。
+</Accordion>
+</AccordionGroup>

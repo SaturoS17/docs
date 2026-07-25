@@ -8,13 +8,13 @@ solo saldo.
 > (https://docs.cbpayapp.com). No editar a mano: se regenera con
 > `python docs-mintlify/tools/build_cbpay_md.py`.
 >
-> **Documento actualizado:** 2026-07-24 21:15 UTC · versión `a7a40e6806da`
+> **Documento actualizado:** 2026-07-25 00:02 UTC · versión `f0e8869fc856`
 
 **Datos clave**
 
 | Dato | Valor |
 |---|---|
-| Versión de la documentación | v2.05 (24 de julio de 2026) |
+| Versión de la documentación | v2.06 (24 de julio de 2026) |
 | URL base | `https://api.qbank.cl/platform` |
 | Autenticación | Header `Authorization: Bearer <token>` (o `X-API-Key`) |
 | Moneda del saldo | USDT, 6 decimales, siempre como string |
@@ -2761,6 +2761,30 @@ curl "https://api.qbank.cl/platform/v1/payins?from=2026-07-01&to=2026-07-08&stat
 | 403 | `service_disabled` | Payins no está habilitado para tu cuenta — ver [servicios](#servicios-habilitados) |
 | 422 | `core_rejected` | El procesador rechazó el cargo; revisa el mensaje |
 | 502 | `core_unavailable` | No se pudo crear el cargo; reintenta la creación (no se cobró nada) |
+### FAQ
+
+#### ¿Cómo sé que un payin se acreditó?
+Suscríbete a `payin_credited`: trae la tasa FX aplicada, la comisión y el
+`usdt_credited` exacto. También puedes consultar `GET /v1/payins/{id}`.
+#### ¿Qué tasa FX aplica a mi payin?
+El `payin_rate` vigente al momento de acreditar (ver `GET /v1/rates`). Tu
+spread acordado ya viene dentro de la tasa — nunca se itemiza.
+#### ¿Los payins pueden caer en un saldo distinto de USDT?
+Sí — configura `default_payin_asset` con `PUT /v1/settlement`. El crédito
+sigue entrando en USDT y se convierte inmediatamente después a precio real;
+`conversion_status` reporta `done` o `pending_retry` (se reintenta solo).
+#### ¿Qué pasa cuando un cobro (QR, checkout) expira sin pago?
+Recibes `payin_expired` y el payin se cierra sin mover dinero. Crea un
+cobro nuevo — nada se debitó ni acreditó.
+#### El pagador transfirió un monto distinto al anunciado, ¿qué pasa?
+El match exige que la referencia **y** el monto calcen. Una transferencia
+que no calza queda sin asignar para conciliación; tu equipo CBPay puede
+asignarla manualmente al payin correcto.
+#### ¿Por qué falló mi cobro collect (pull)?
+La respuesta y `GET /v1/payins/{id}` persisten un bloque `failure` con el
+código y mensaje del riel (por ejemplo, un documento que no calza con el
+registro bancario del pagador). Corrige el dato y reintenta con clave
+nueva.
 
 
 ## Checkout
@@ -2998,6 +3022,31 @@ Errores propios del link (los ve quien abre la página):
 | 422 | `collect_rejected` | El rail rechazó el cobro pull (OTP inválida o datos incorrectos); el link sigue pendiente |
 | 429 | `too_many_attempts` | Rate limit por IP de la página pública |
 | 503 | `pricing_unavailable` | Cotización temporalmente no disponible; reintentar en un momento |
+### FAQ
+
+#### ¿El mismo link se puede pagar dos veces?
+No. Un link = un cobro: el primer riel que paga gana (`already_paid`, 409).
+Un depósito crypto que llega después de que el link se liquidó por otro riel
+**no** se acredita — queda retenido para conciliación.
+#### ¿Qué pasa si el pagador envía menos (o más) crypto que lo cotizado?
+Los pagos crypto parciales se **acumulan**: la página muestra cuánto falta
+hasta cubrir el monto cotizado. Los pagos tardíos que llegan con el link
+expirado igual acreditan tu cuenta.
+#### ¿Cuánto vive un link?
+`expires_in` entre 600 s y 7 días (default 24 h). Al expirar recibes el
+webhook `payin_expired` y la página pública responde `checkout_expired`
+(410).
+#### ¿Qué pasa si falla la conversión a mi saldo de liquidación?
+La plata queda segura en USDT y el payin reporta
+`conversion_status: pending_retry`; la plataforma reintenta automáticamente
+hasta que el swap resulte — nunca pierdes dinero ni se convierte dos veces.
+#### ¿El pagador puede cambiar de método después de elegir uno?
+Sí. Cada método se materializa de forma independiente; volver a pedir el
+mismo método devuelve la misma materialización. El primer riel que paga
+liquida el link.
+#### ¿Puedo reintentar la creación del link sin riesgo?
+Sí — reintenta `POST /v1/payins` con la **misma** `idempotency_key` y
+recibes el mismo link. Una clave nueva crea un link nuevo e independiente.
 
 
 ## Tarjetas guardadas y suscripciones
@@ -3196,6 +3245,54 @@ curl "https://api.qbank.cl/platform/v1/subscriptions?from=2026-07-01&to=2026-07-
 
 Revocar la tarjeta guardada (`DELETE /v1/stored-cards/{id}`) cancela
 automáticamente sus suscripciones (`cancel_reason: card_revoked`).
+### Estados de la suscripción
+
+| Estado | Significado | Qué hacer |
+|---|---|---|
+| `active` | Cobra cada período en `next_charge_at` | Nada — el scheduler la ejecuta |
+| `paused` | Congelada; los períodos perdidos **no** se cobran retroactivamente | `POST .../resume` cuando quieras |
+| `past_due` | Fallaron los 3 reintentos de dunning (cada 24 h) | Corrige la tarjeta/saldo y haz `resume` para reactivar |
+| `canceled` | Terminal — por `cancel` o porque la tarjeta guardada se revocó | Crea una suscripción nueva si la necesitas |
+
+### Errores
+
+| HTTP | Código | Qué hacer |
+|---|---|---|
+| 400 | `idempotency_key_required` | Envía `idempotency_key` (body o header `Idempotency-Key`) |
+| 400 | `invalid_amount` | `amount` debe ser un decimal positivo en string |
+| 400 | `invalid_interval` | Usa `daily`, `weekly`, `monthly` o `yearly` |
+| 400 | `invalid_request` | La moneda debe calzar con el corredor de la tarjeta guardada |
+| 404 | `not_found` | La tarjeta guardada / suscripción no existe o no es tuya |
+| 409 | `idempotency_conflict` | Misma clave con payload distinto — usa una clave nueva |
+| 409 | `subscription_state` | El estado actual no permite esa acción (ej. reanudar un plan cancelado) |
+| 422 | `stored_card_revoked` | La credencial de la tarjeta se revocó; pide al pagador guardarla de nuevo |
+| 422 | `core_rejected` | El riel rechazó el cobro — el mensaje trae el motivo |
+
+El catálogo general de errores vive en [Errores](#errores).
+
+### FAQ
+
+#### ¿Almacenan el número de tarjeta (PAN)?
+Jamás. Guardar una tarjeta almacena un token de red opaco — el PAN nunca
+toca la plataforma. Revocar la credencial invalida el token.
+#### ¿Por qué los cobros recurrentes no piden 3-D Secure?
+Las transacciones iniciadas por el comercio (MIT) corren sin 3DS por
+mandato de las marcas: el pagador se autenticó con 3DS en el pago inicial
+consentido, y cada MIT referencia esa transacción.
+#### ¿Qué pasa con las suscripciones si la tarjeta se revoca?
+Se cancelan automáticamente (`card_revoked`). El pagador debe guardar la
+tarjeta de nuevo y tú creas una suscripción nueva.
+#### ¿Pausar acumula cobros?
+No — no hay catch-up: los períodos transcurridos en pausa avanzan el
+contador sin cobrarse. Al reanudar se cobra solo desde el siguiente
+período.
+#### ¿Cómo funciona el dunning cuando un cobro declina?
+El scheduler reintenta hasta 3 veces, cada 24 h. Si todas fallan el plan
+pasa a `past_due` y recibes `subscription_status_changed` — no hay más
+cobros hasta que hagas `resume`.
+#### ¿Cuándo se cobra el primer período?
+Síncrono en la creación, salvo que pases un `start_at` futuro (trial): ahí
+el primer cobro espera esa fecha.
 
 
 ## QR Crypto POS
@@ -4428,6 +4525,30 @@ entrada `payout_refund` en
 Un payout en `processing` no se puede cancelar por API: el rail ya lo tiene.
 Espera el estado final por webhook o `GET` — llega siempre, con reembolso
 automático si falla.
+### FAQ
+
+#### ¿Cuándo se debita mi saldo?
+Al crear: el payout debita y retiene los fondos de inmediato. Si el payout
+falla, el monto exacto debitado (comisión incluida) se reembolsa
+automáticamente.
+#### ¿Puedo cancelar un payout en processing?
+No — una vez despachado al riel se resuelve solo a `completed` o `failed`.
+Suscríbete a `payout_status_changed` para el estado final.
+#### ¿Qué tasa FX usa mi payout?
+La tasa cotizada al crear (devuelta como `fx_rate`), congelada para esa
+operación. Tu spread acordado ya viene dentro de la tasa.
+#### ¿Puedo pagar desde un saldo distinto de USDT?
+Sí — fija un default por cuenta (`PUT /v1/settlement`) o sobreescribe por
+payout con `settlement_asset` (USDC, BTC, GOLD). Los reembolsos devuelven
+el monto liquidado exacto, jamás se re-cotizan.
+#### ¿Qué significa compliance_hold (403)?
+El beneficiario no pasó el screening de compliance: el payout **no** se
+creó y tu `idempotency_key` no se consumió. Revisa los datos del
+beneficiario o contacta a tu equipo CBPay.
+#### ¿Cómo reintento sin riesgo tras un timeout o 5xx?
+Reintenta con la **misma** `idempotency_key`: recibes el payout original
+(`idempotency_hit: true`) — jamás un duplicado. Una clave nueva es un
+payout nuevo e independiente.
 
 
 ## Payout QR
@@ -4580,6 +4701,41 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
   En Bolivia la referencia del scan es de un solo uso (un QR escaneado solo
   puede pagarse una vez); en Brasil el QR PIX estático es reutilizable y
   cada pago lleva su propia clave.
+### Errores
+
+| HTTP | Código | Qué hacer |
+|---|---|---|
+| 400 | `invalid_qr_payload` | El QR es ilegible, está corrupto o es un QR dinámico (no soportado) — nada se creó y tu clave no se consumió; pide al pagador un QR estático |
+| 400 | `idempotency_key_required` | Los QR estáticos reusables exigen `idempotency_key` explícita en el confirm |
+| 402 | `insufficient_funds` | Fondea tu saldo y reintenta con la misma clave |
+| 403 | `compliance_hold` | El beneficiario no pasó el screening; el payout no se creó |
+| 422 | payout `failed` + refund | El monto no calza con un QR de monto fijo, o el riel rechazó el pago — el débito se reembolsa automáticamente |
+| 503 | `channel_unavailable` | Riel temporalmente no disponible; reintenta más tarde con la misma clave |
+
+El catálogo general de errores vive en [Errores](#errores).
+
+### FAQ
+
+#### ¿Escanear un QR tiene costo?
+No — el scan es una lectura local gratuita. Solo se cobra cuando el confirm
+crea el payout.
+#### ¿Puedo pagar el mismo QR dos veces?
+Los QR de un solo uso (referencia fija) admiten un único pago. Los QR
+estáticos reusables pueden pagarse legítimamente más de una vez — por eso
+el confirm exige una `idempotency_key` explícita por pago.
+#### ¿Se soportan QR dinámicos?
+Todavía no — un QR dinámico responde `invalid_qr_payload` (400) con la
+guía. Pide al pagador el QR estático del destino.
+#### ¿Qué tasa FX aplica?
+La misma que un payout normal: la tasa cotizada en el confirm, congelada
+para esa operación, con tu spread ya incluido.
+#### ¿Y si el monto escaneado difiere de lo que quiero pagar?
+Los QR de monto fijo se pagan exacto; un descalce falla el payout con
+reembolso automático. Los QR de monto abierto aceptan el monto que pases en
+el confirm.
+#### ¿Cómo reintento un confirm fallido sin riesgo?
+Reintenta con la **misma** `idempotency_key` — el QR jamás se "quema" por
+errores de validación: nada se crea hasta que el payload valida.
 
 
 ## Transferencias internas
@@ -4779,6 +4935,29 @@ Cada fila trae `direction` (`sent` o `received`) desde tu perspectiva.
 | 422 | `recipient_ambiguous` | Más de una cuenta comparte ese teléfono (usa `to_account_id` o `to_email`) |
 | 422 | `contact_not_linked` | El contacto no tiene cuenta CBPay asociada |
 | 422 | `recipient_unavailable` | La cuenta destino está bloqueada/cerrada |
+### FAQ
+
+#### ¿Las transferencias internas tienen costo?
+No — las transferencias entre cuentas de tu organización son gratis e
+instantáneas.
+#### ¿Puedo transferir entre assets distintos?
+No — ambos lados mueven el **mismo** asset (USDT a USDT, USDC a USDC…).
+Para cambiar de asset, convierte primero con [Swaps](#swaps).
+#### ¿Una transferencia se puede reversar?
+No — las transferencias son instantáneas e irreversibles. Si enviaste a la
+cuenta equivocada, coordina la devolución con la contraparte.
+#### ¿Cómo funciona el envío por teléfono?
+`to_phone` solo resuelve números **verificados** de tu organización. Un
+número sin verificar o desconocido responde 404; si más de una cuenta calza
+recibes `recipient_ambiguous` (422) — usa `to_alias` o el ID de cuenta.
+#### ¿Qué son to_alias y to_qr_token?
+Destinatarios alternativos: el alias inmutable de la cuenta y el token de
+su QR de perfil (`GET /v1/me/qr`). Todos resuelven solo dentro de tu
+organización.
+#### ¿Para qué sirve checkout_token?
+Liquida un [link de cobro](#checkout) por transferencia interna:
+el destino se fuerza a la cuenta del link y el monto debe cubrir el due
+cotizado (si no, `checkout_amount_mismatch`, 422).
 
 
 ## Swaps
@@ -5396,6 +5575,32 @@ BTC); las wallets son puertas de entrada, el saldo por moneda es uno solo.
 | 422 | `wallet_limit_reached` | La cuenta ya tiene su wallet de depósito de esa combinación red+activo (aplica a personas y empresas) |
 | 422 | (retiro con `status: failed`) | Rechazado al transmitir; débito reembolsado |
 | 503 | `withdrawals_unavailable` | Retiros no habilitados aún para este corredor |
+### FAQ
+
+#### ¿Tengo que crear las wallets de depósito?
+No. Toda cuenta nace con sus wallets de depósito para todos los pares
+soportados (`tron:usdt`, `eth:usdt`, `eth:usdc`, `btc:btc`), sin costo. El
+endpoint de creación solo auto-repara un par faltante — una segunda wallet
+del mismo par responde `wallet_limit_reached` (422).
+#### ¿Cuándo se acredita un depósito a mi saldo?
+La detección es casi en tiempo real (`pending`); el crédito ocurre cuando la
+red alcanza las confirmaciones requeridas de esa chain. Síguelo con
+`GET /v1/crypto/transactions` o los webhooks de `crypto_deposit`.
+#### ¿Qué pasa si mi retiro falla?
+El monto debitado (incluida la comisión) se reembolsa a tu saldo
+automáticamente. Reintenta con la **misma** `idempotency_key` — la
+plataforma jamás re-transmite por su cuenta.
+#### ¿Por qué mi retiro pide datos del beneficiario?
+Los retiros sobre el umbral USD de Travel Rule de tu organización exigen
+`wallet_type: self_hosted` más `beneficiary_name`, o una `travel_address`
+(los errores 422 `travel_rule_*` te guían campo a campo).
+#### ¿Puedo retirar GOLD on-chain?
+No — GOLD es un saldo solo de ledger sin riel on-chain. Conviértelo primero
+con [Swaps](#swaps) a un asset retirable.
+#### ¿Por qué mi retiro se bloqueó con compliance_hold?
+La dirección de destino no pasó el screening de compliance. La operación
+queda registrada como fallida y tus fondos se reembolsan; contacta a tu
+equipo CBPay si crees que es un falso positivo.
 
 
 ## Wallets segregadas
@@ -6221,6 +6426,7 @@ persona debe tener su [verificación KYC aprobada](#verificacion-kyc-y-kyb) — 
 `verification_id` en el `cardholder` y sus datos y documentos se completan
 solos. La tarjeta gasta siempre del saldo de la cuenta empresa que la
 emitió.
+El catálogo general de errores vive en [Errores](#errores).
 
 
 ## Banking
@@ -6703,6 +6909,35 @@ curl "https://api.qbank.cl/platform/v1/banking/operations?from=2026-07-01&to=202
 | 422 | `verification_invalid` | Referenciaste tu verificación de onboarding; el tercero necesita la suya propia |
 | 404 | `not_found` | El tercero (o la verificación) no existe o no pertenece a tu cuenta |
 | 502 | `banking_request_failed` | Error del corredor bancario; la comisión se reembolsó — reintenta |
+### FAQ
+
+#### ¿El dinero banking aparece en mi saldo USDT?
+No. El dinero banking vive en tus cuentas bancarias y se consulta con
+`GET /v1/banking/accounts/{id}/balance`. El saldo autoritativo es el del
+banco; tu [cartola](#cartola-estado-de-cuenta) lo concilia en los saldos espejo
+`BANK_USD`/`BANK_EUR`. Solo las **comisiones** banking se debitan de tu
+saldo USDT.
+#### ¿Qué pasa con la comisión si una operación falla?
+Se reembolsa automáticamente — comisiones de perfil, cuenta y operación por
+igual. Un reintento con la misma `Idempotency-Key` devuelve la operación
+original (`idempotency_hit: true`) y jamás cobra dos veces.
+#### ¿Cuántas cuentas bancarias puedo abrir?
+Una por moneda (USD, EUR). Además, las cuentas **persona** pueden tener
+como máximo 1 cuenta bancaria en total (`409 banking_account_limit`); las
+cuentas empresa no tienen límite.
+#### ¿Por qué una de mis cuentas no aparece en el listado?
+El listado solo expone las cuentas **habilitadas para tu operación** según
+la configuración del corredor. Una cuenta no habilitada no aparece y sus
+consultas por id responden `404 not_found` — contacta a tu equipo CBPay si
+necesitas habilitarla.
+#### ¿Una cuenta persona puede registrar usuarios terceros?
+No — los terceros son una capacidad de empresa (`403 company_required`). El
+registro además exige el `verification_id` de una verificación KYC/KYB
+**aprobada** del tercero.
+#### ¿Cómo sé cuándo un pago llegó a su estado final?
+Suscríbete a `banking_operation_status_changed`: se dispara en `completed`
+/ `failed` e incluye el `receipt_url` una vez final. También puedes
+consultar `GET /v1/banking/operations/{id}`.
 
 
 ## Cartola (estado de cuenta)
@@ -6875,6 +7110,32 @@ período (detallada en la documentación de administración).
 | 400 | `invalid_range` | Fechas faltantes/invalidas, `to` anterior a `from`, o rango mayor a 400 días |
 | 400 | `invalid_format` | `format` distinto de `json`, `pdf`, `xlsx` |
 | 404 | `not_found` | La cuenta no existe (solo org admin) |
+### FAQ
+
+#### ¿Cada cuánto se genera la cartola?
+Bajo demanda — cada consulta la construye en vivo desde el ledger para el
+rango `from`/`to` que pases (ambos obligatorios, `YYYY-MM-DD`, UTC).
+#### ¿Qué significa balanced: true?
+Cada asset concilia de forma independiente: `apertura + abonos − cargos =
+cierre` para USDT, USDC, BTC, GOLD y los espejos banking. Si algún asset no
+cuadra el flag queda `false` — repórtalo a tu equipo CBPay.
+#### ¿Por qué veo saldos BANK_USD / BANK_EUR?
+Espejan tu dinero banking dentro de la cartola para que la cuenta se
+reconstruya completa. El saldo autoritativo siempre es el del banco
+(`GET /v1/banking/accounts/{id}/balance`); estos espejos jamás son
+gastables.
+#### ¿Qué formatos hay disponibles?
+JSON (integración), PDF y XLSX — ambos brandeados con la identidad de tu
+organización. Usa el header `Accept` o el parámetro de formato del
+endpoint.
+#### ¿Qué es fee_model: fixed?
+Los cargos standalone de servicios (verificaciones, screenings, servicios
+de wallet) son comisiones solo-fijas, etiquetadas "Fixed Com" en la
+cartola — a diferencia de las comisiones transaccionales de % + fijo.
+#### ¿Puedo verificar un movimiento individual?
+Sí — toda operación tiene su [comprobante](#comprobantes) con un
+código de verificación público; cualquiera puede validarlo sin
+autenticación.
 
 
 ## Comprobantes
@@ -9409,6 +9670,9 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 | `banking_operation_status_changed` | Un pago bancario cambió de estado |
 | `card_transaction` | Una compra con tarjeta fue autorizada, anulada o ajustada |
 | `card_status_changed` | Una tarjeta cambió de estado (incluye congelamiento automático) |
+| `card_stored` | La tarjeta de un pagador fue tokenizada y guardada con consentimiento ([tarjetas guardadas](#payins)) |
+| `stored_card_revoked` | Una credencial de tarjeta guardada fue revocada (los cobros iniciados por el comercio dejan de funcionar) |
+| `subscription_status_changed` | Una suscripción sobre una tarjeta guardada cambió de estado (`active` / `paused` / `past_due` / `canceled`) |
 | `kyc_verification_status_changed` / `kyb_verification_status_changed` | Una verificación de identidad cambió de estado (incluye tu propio onboarding, con `self_onboarding: true`) |
 | `kyc_link_completed` / `kyb_link_completed` | Un link de verificación hosteado fue completado |
 | `kyc_document_validated` / `kyb_document_validated` | Terminó el OCR de un documento subido por API |
@@ -9560,6 +9824,43 @@ propio (`self`) de un tercero que registraste (`third_party`, con su
   "card_id": "3c2b…",
   "status": "frozen",
   "reason": "monthly_fee_unpaid"
+}
+```
+
+```json card_stored
+{
+  "stored_card_id": "a9b8…",
+  "account_id": "ae8c…",
+  "payer_reference": "pagador@email.com",
+  "brand": "VISA",
+  "last4": "1234",
+  "country": "BO",
+  "currency": "BOB",
+  "seed_payin_id": "9c2a…"
+}
+```
+
+```json stored_card_revoked
+{
+  "stored_card_id": "a9b8…",
+  "account_id": "ae8c…",
+  "payer_reference": "pagador@email.com",
+  "brand": "VISA",
+  "last4": "1234"
+}
+```
+
+```json subscription_status_changed
+{
+  "subscription_id": "4f1e…",
+  "account_id": "ae8c…",
+  "stored_card_id": "a9b8…",
+  "status": "past_due",
+  "period": 3,
+  "next_charge_at": "2026-08-01T12:00:00Z",
+  "payer_reference": "pagador@email.com",
+  "reason": "dunning_exhausted",
+  "failed_attempts": 3
 }
 ```
 
@@ -9792,6 +10093,9 @@ Todos los errores comparten el mismo formato:
 | 403 | `company_only` | Función solo para cuentas empresa |
 | 403 | `company_required` | Función solo para cuentas empresa (ej. [banking para terceros](#banking)) |
 | 403 | `human_session_required` | La operación maneja llave privada (import/export de wallet segregada) y exige sesión de usuario con 2FA — las API keys no se permiten |
+| 403 | `member_disabled` | El usuario está bloqueado para iniciar sesión; contacta al administrador de tu organización |
+| 403 | `passkey_rejected` | La verificación de la passkey falló; reintenta o entra con contraseña |
+| 403 | `owner_required` | Solo el miembro owner de la cuenta puede ejecutar esa acción |
 
 #### OTP / 2FA
 
@@ -9812,6 +10116,8 @@ Detalle y flujo completo en [seguridad y 2FA](#seguridad-y-2fa-otp).
 | 409 | `challenge_not_pending` | El desafío expiró o ya se usó; crea uno nuevo |
 | 429 | `too_many_attempts` | Límite de envíos o verificaciones; espera unos minutos |
 | 503 | `otp_unavailable` | Servicio de verificación no disponible (la acción queda bloqueada, nunca se salta el OTP) |
+| 409 | `otp_disabled_for_org` | Tu organización no tiene habilitado el 2FA por acción; contacta a tu operador |
+| 409 | `totp_not_started` | No hay enrolamiento TOTP en curso; parte con `POST /v1/me/totp/enroll` |
 
 #### Login social (OAuth)
 
@@ -9851,6 +10157,12 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | `invalid_phone` | Teléfono no normalizable a E.164 (contactos y `to_phone`) |
 | `invalid_language` | `lang` del informe PDF no es `en`, `es` ni `zh` (informe AML) |
 | `batch_too_large` | Import de contactos con más de 1.000 entradas (pagina la subida) |
+| `invalid_alias` | El alias debe tener 4–20 caracteres (a-z, 0-9, punto, guion bajo, guion), empezar/terminar alfanumérico y no ser palabra reservada |
+| `invalid_body` | No se pudo leer el body del request (subidas binarias, webhooks) |
+| `invalid_image` | El body del avatar está vacío o no es una imagen soportada (PNG/JPEG/WebP, máx 512 KB) |
+| `invalid_interval` | El `interval` de la suscripción debe ser `daily`, `weekly`, `monthly` o `yearly` |
+| `query_required` | `GET /v1/resolve` necesita `alias=` o `qr=` |
+| `same_email` | El nuevo email de login es el actual; usa `POST /v1/me/email/verify` para verificarlo |
 | `invalid_status` / `invalid_kyc_status` / `invalid_direction` / `reason_required` / `account_id_required` / `invalid_service` / `invalid_fee` | Validaciones de administración |
 
 #### Dinero y estado (402 / 404 / 409 / 422)
@@ -9910,6 +10222,11 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | 422 | `nothing_received` | El cobro [QR Crypto POS](#qr-crypto-pos) no ha recibido ningún pago on-chain: no hay nada que devolver |
 | 422 | `refund_exceeds_received` | La devolución supera lo recibido menos lo ya devuelto del cobro [QR Crypto POS](#qr-crypto-pos) |
 | 400 | `to_address_required` | La devolución [QR Crypto POS](#qr-crypto-pos) (y el retiro crypto) exige la dirección destino explícita |
+| 422 | `deposit_account_limit_reached` | Las cuentas tienen una cuenta de depósito por corredor (creada automáticamente con la cuenta); no se puede cambiar ni eliminar |
+| 422 | `export_rejected` | El procesador rechazó el export de la llave de la wallet segregada |
+| 422 | `stored_card_corridor_mismatch` | La [tarjeta guardada](#tarjetas-guardadas-y-suscripciones) pertenece a otro corredor país/moneda distinto del cobro |
+| 409 | `subscription_state` | La [suscripción](#tarjetas-guardadas-y-suscripciones) no está en un estado que permita esa acción (ej. pausar un plan cancelado) |
+| 409 | `email_required` | El login no tiene un email real; configura uno con `POST /v1/me/email/change` |
 
 #### Cumplimiento (403 / 503)
 
@@ -9931,8 +10248,10 @@ Detalle y flujo completo en [login social](#login-social-google-apple-microsoft-
 | HTTP | `error` | Significado |
 |---|---|---|
 | 500 | `internal_error` | Error inesperado; reintenta con la misma clave de idempotencia |
+| 500 | `fee_config_invalid` | La configuración de comisiones de la cuenta es inválida; contacta al soporte (la operación no se ejecutó) |
 | 502 | `rates_unavailable` | Tasas FX temporalmente no disponibles |
 | 502 | `core_unavailable` | Procesador temporalmente no disponible |
+| 502 | `core_invalid_response` | El procesador devolvió una respuesta inesperada; reintenta con la **misma** clave de idempotencia |
 | 502 | `compliance_unavailable` | Screening AML temporalmente no disponible |
 | 503 | `verifications_unavailable` | Verificación de identidad temporalmente no disponible (la comisión se reembolsó) |
 | 503 | `org_credential_missing` | Servicio en configuración; contacta al soporte de CBPay |
@@ -10320,6 +10639,18 @@ Una vez conectado, pídele a tu asistente cosas como:
 Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
+
+### v2.06 — 24 de julio de 2026
+
+**Agregado**
+
+- **FAQ ancla en todas las guías de producto**: payouts, payins, checkout,
+  transferencias, crypto, banking, tarjetas, cartola, QR payout y tarjetas
+  guardadas + suscripciones cierran ahora con preguntas frecuentes y el
+  link directo al [catálogo de errores](#errores).
+- **Catálogo de errores y webhooks completado**: se documentaron códigos de
+  error y eventos de webhook que existían en la API pero faltaban en las
+  páginas de referencia. Sin cambio de contratos.
 
 ### v2.05 — 24 de julio de 2026
 

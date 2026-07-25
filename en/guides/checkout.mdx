@@ -239,3 +239,36 @@ Link-specific errors (seen by whoever opens the page):
 | 422 | `collect_rejected` | The rail rejected the pull charge (invalid OTP or wrong data); the link stays pending |
 | 429 | `too_many_attempts` | Per-IP rate limit of the public page |
 | 503 | `pricing_unavailable` | Pricing temporarily unavailable; retry in a moment |
+## FAQ
+
+<AccordionGroup>
+<Accordion title="Can the same link be paid twice?">
+No. One link = one charge: the first rail that pays wins (`already_paid`,
+409). A crypto deposit that arrives after the link was settled by another
+rail is **not** credited — it is held for reconciliation.
+</Accordion>
+<Accordion title="What if the payer sends less (or more) crypto than the quote?">
+Partial crypto payments **accumulate**: the page shows how much is missing
+until the quoted amount is covered. Late payments that arrive after the link
+expired still credit your account.
+</Accordion>
+<Accordion title="How long does a link live?">
+`expires_in` between 600 s and 7 days (default 24 h). When it expires you
+receive the `payin_expired` webhook and the public page answers
+`checkout_expired` (410).
+</Accordion>
+<Accordion title="What happens if the conversion to my settlement asset fails?">
+The funds stay safe in USDT and the payin reports
+`conversion_status: pending_retry`; the platform retries automatically until
+the swap succeeds — you never lose money nor get converted twice.
+</Accordion>
+<Accordion title="Can the payer switch payment method after choosing one?">
+Yes. Each method materializes independently; re-requesting the same method
+returns the same materialization. Whichever rail pays first settles the
+link.
+</Accordion>
+<Accordion title="Can I retry the link creation safely?">
+Yes — retry `POST /v1/payins` with the **same** `idempotency_key` and you
+get the same link back. A new key creates a new, independent link.
+</Accordion>
+</AccordionGroup>

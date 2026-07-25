@@ -172,3 +172,37 @@ período (detallada en la documentación de administración).
 | 400 | `invalid_range` | Fechas faltantes/invalidas, `to` anterior a `from`, o rango mayor a 400 días |
 | 400 | `invalid_format` | `format` distinto de `json`, `pdf`, `xlsx` |
 | 404 | `not_found` | La cuenta no existe (solo org admin) |
+## FAQ
+
+<AccordionGroup>
+<Accordion title="¿Cada cuánto se genera la cartola?">
+Bajo demanda — cada consulta la construye en vivo desde el ledger para el
+rango `from`/`to` que pases (ambos obligatorios, `YYYY-MM-DD`, UTC).
+</Accordion>
+<Accordion title="¿Qué significa balanced: true?">
+Cada asset concilia de forma independiente: `apertura + abonos − cargos =
+cierre` para USDT, USDC, BTC, GOLD y los espejos banking. Si algún asset no
+cuadra el flag queda `false` — repórtalo a tu equipo CBPay.
+</Accordion>
+<Accordion title="¿Por qué veo saldos BANK_USD / BANK_EUR?">
+Espejan tu dinero banking dentro de la cartola para que la cuenta se
+reconstruya completa. El saldo autoritativo siempre es el del banco
+(`GET /v1/banking/accounts/{id}/balance`); estos espejos jamás son
+gastables.
+</Accordion>
+<Accordion title="¿Qué formatos hay disponibles?">
+JSON (integración), PDF y XLSX — ambos brandeados con la identidad de tu
+organización. Usa el header `Accept` o el parámetro de formato del
+endpoint.
+</Accordion>
+<Accordion title="¿Qué es fee_model: fixed?">
+Los cargos standalone de servicios (verificaciones, screenings, servicios
+de wallet) son comisiones solo-fijas, etiquetadas "Fixed Com" en la
+cartola — a diferencia de las comisiones transaccionales de % + fijo.
+</Accordion>
+<Accordion title="¿Puedo verificar un movimiento individual?">
+Sí — toda operación tiene su [comprobante](/es/guias/comprobantes) con un
+código de verificación público; cualquiera puede validarlo sin
+autenticación.
+</Accordion>
+</AccordionGroup>

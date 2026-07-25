@@ -935,3 +935,35 @@ Un payout en `processing` no se puede cancelar por API: el rail ya lo tiene.
 Espera el estado final por webhook o `GET` — llega siempre, con reembolso
 automático si falla.
 </Note>
+## FAQ
+
+<AccordionGroup>
+<Accordion title="¿Cuándo se debita mi saldo?">
+Al crear: el payout debita y retiene los fondos de inmediato. Si el payout
+falla, el monto exacto debitado (comisión incluida) se reembolsa
+automáticamente.
+</Accordion>
+<Accordion title="¿Puedo cancelar un payout en processing?">
+No — una vez despachado al riel se resuelve solo a `completed` o `failed`.
+Suscríbete a `payout_status_changed` para el estado final.
+</Accordion>
+<Accordion title="¿Qué tasa FX usa mi payout?">
+La tasa cotizada al crear (devuelta como `fx_rate`), congelada para esa
+operación. Tu spread acordado ya viene dentro de la tasa.
+</Accordion>
+<Accordion title="¿Puedo pagar desde un saldo distinto de USDT?">
+Sí — fija un default por cuenta (`PUT /v1/settlement`) o sobreescribe por
+payout con `settlement_asset` (USDC, BTC, GOLD). Los reembolsos devuelven
+el monto liquidado exacto, jamás se re-cotizan.
+</Accordion>
+<Accordion title="¿Qué significa compliance_hold (403)?">
+El beneficiario no pasó el screening de compliance: el payout **no** se
+creó y tu `idempotency_key` no se consumió. Revisa los datos del
+beneficiario o contacta a tu equipo CBPay.
+</Accordion>
+<Accordion title="¿Cómo reintento sin riesgo tras un timeout o 5xx?">
+Reintenta con la **misma** `idempotency_key`: recibes el payout original
+(`idempotency_hit: true`) — jamás un duplicado. Una clave nueva es un
+payout nuevo e independiente.
+</Accordion>
+</AccordionGroup>

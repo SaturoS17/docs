@@ -490,3 +490,43 @@ curl "https://api.qbank.cl/platform/v1/banking/operations?from=2026-07-01&to=202
 | 422 | `verification_invalid` | You referenced your onboarding verification; the third party needs their own |
 | 404 | `not_found` | The third party (or the verification) does not exist or does not belong to your account |
 | 502 | `banking_request_failed` | Banking corridor error; the fee was refunded — retry |
+
+The general error catalog lives in [Errors](/en/errors).
+
+## FAQ
+
+<AccordionGroup>
+<Accordion title="Does banking money show up in my USDT balance?">
+No. Banking money lives in your bank accounts and is queried with
+`GET /v1/banking/accounts/{id}/balance`. The authoritative balance is the
+bank's; your [statement](/en/guides/statement) reconciles it in the
+`BANK_USD`/`BANK_EUR` mirror balances. Only the banking **fees** are
+debited from your USDT balance.
+</Accordion>
+<Accordion title="What happens to the fee if an operation fails?">
+It is refunded automatically — profile, account and operation fees alike.
+A retry with the same `Idempotency-Key` returns the original operation
+(`idempotency_hit: true`) and never charges twice.
+</Accordion>
+<Accordion title="How many bank accounts can I open?">
+One per currency (USD, EUR). Additionally, **person** accounts can hold at
+most 1 bank account in total (`409 banking_account_limit`); company
+accounts have no limit.
+</Accordion>
+<Accordion title="Why doesn't one of my accounts appear in the list?">
+The list only exposes accounts **enabled for your operation** per the
+corridor configuration. A non-enabled account does not appear and its
+by-id queries answer `404 not_found` — contact your CBPay team if you need
+it enabled.
+</Accordion>
+<Accordion title="Can a person account register third-party users?">
+No — third parties are a company feature (`403 company_required`).
+Registration also requires the `verification_id` of an **approved** KYC/KYB
+verification of the third party.
+</Accordion>
+<Accordion title="How do I know when a payment reached its final state?">
+Subscribe to `banking_operation_status_changed`: it fires on `completed` /
+`failed` and includes the `receipt_url` once final. You can also poll
+`GET /v1/banking/operations/{id}`.
+</Accordion>
+</AccordionGroup>

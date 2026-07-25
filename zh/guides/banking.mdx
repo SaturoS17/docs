@@ -428,3 +428,35 @@ curl "https://api.qbank.cl/platform/v1/banking/operations?from=2026-07-01&to=202
 | 422 | `verification_invalid` | 您引用了自己的入驻验证；第三方需要其自己的验证 |
 | 404 | `not_found` | 第三方（或验证）不存在或不属于您的账户 |
 | 502 | `banking_request_failed` | 银行通道错误；费用已退款——请重试 |
+## 常见问题
+
+<AccordionGroup>
+<Accordion title="Banking 资金会显示在我的 USDT 余额里吗？">
+不会。Banking 资金存放在你的银行账户中，通过
+`GET /v1/banking/accounts/{id}/balance` 查询。权威余额始终以银行为准；你的
+[对账单](/zh/guides/statement) 会在 `BANK_USD`/`BANK_EUR` 镜像余额中对其
+进行核对。只有 banking **手续费**才会从你的 USDT 余额中扣除。
+</Accordion>
+<Accordion title="操作失败时手续费会怎样？">
+自动退款 —— 档案、账户和操作的手续费一视同仁。使用相同的
+`Idempotency-Key` 重试会返回原始操作（`idempotency_hit: true`），绝不会
+重复收费。
+</Accordion>
+<Accordion title="我可以开多少个银行账户？">
+每种货币一个（USD、EUR）。此外，**个人**账户总共最多持有 1 个银行账户
+（`409 banking_account_limit`）；企业账户没有限制。
+</Accordion>
+<Accordion title="为什么我的某个账户不在列表里？">
+列表只展示按通道配置**为你的业务启用**的账户。未启用的账户不会出现，
+其按 id 的查询会返回 `404 not_found` —— 如需启用请联系你的 CBPay 团队。
+</Accordion>
+<Accordion title="个人账户可以登记第三方用户吗？">
+不可以 —— 第三方是企业能力（`403 company_required`）。登记还需要该第三方
+一次**已通过**的 KYC/KYB 验证的 `verification_id`。
+</Accordion>
+<Accordion title="如何知道一笔付款到达最终状态？">
+订阅 `banking_operation_status_changed`：它在 `completed` / `failed` 时触发，
+最终状态时附带 `receipt_url`。你也可以轮询
+`GET /v1/banking/operations/{id}`。
+</Accordion>
+</AccordionGroup>

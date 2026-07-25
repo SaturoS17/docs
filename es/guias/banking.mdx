@@ -498,3 +498,40 @@ curl "https://api.qbank.cl/platform/v1/banking/operations?from=2026-07-01&to=202
 | 422 | `verification_invalid` | Referenciaste tu verificación de onboarding; el tercero necesita la suya propia |
 | 404 | `not_found` | El tercero (o la verificación) no existe o no pertenece a tu cuenta |
 | 502 | `banking_request_failed` | Error del corredor bancario; la comisión se reembolsó — reintenta |
+## FAQ
+
+<AccordionGroup>
+<Accordion title="¿El dinero banking aparece en mi saldo USDT?">
+No. El dinero banking vive en tus cuentas bancarias y se consulta con
+`GET /v1/banking/accounts/{id}/balance`. El saldo autoritativo es el del
+banco; tu [cartola](/es/guias/cartola) lo concilia en los saldos espejo
+`BANK_USD`/`BANK_EUR`. Solo las **comisiones** banking se debitan de tu
+saldo USDT.
+</Accordion>
+<Accordion title="¿Qué pasa con la comisión si una operación falla?">
+Se reembolsa automáticamente — comisiones de perfil, cuenta y operación por
+igual. Un reintento con la misma `Idempotency-Key` devuelve la operación
+original (`idempotency_hit: true`) y jamás cobra dos veces.
+</Accordion>
+<Accordion title="¿Cuántas cuentas bancarias puedo abrir?">
+Una por moneda (USD, EUR). Además, las cuentas **persona** pueden tener
+como máximo 1 cuenta bancaria en total (`409 banking_account_limit`); las
+cuentas empresa no tienen límite.
+</Accordion>
+<Accordion title="¿Por qué una de mis cuentas no aparece en el listado?">
+El listado solo expone las cuentas **habilitadas para tu operación** según
+la configuración del corredor. Una cuenta no habilitada no aparece y sus
+consultas por id responden `404 not_found` — contacta a tu equipo CBPay si
+necesitas habilitarla.
+</Accordion>
+<Accordion title="¿Una cuenta persona puede registrar usuarios terceros?">
+No — los terceros son una capacidad de empresa (`403 company_required`). El
+registro además exige el `verification_id` de una verificación KYC/KYB
+**aprobada** del tercero.
+</Accordion>
+<Accordion title="¿Cómo sé cuándo un pago llegó a su estado final?">
+Suscríbete a `banking_operation_status_changed`: se dispara en `completed`
+/ `failed` e incluye el `receipt_url` una vez final. También puedes
+consultar `GET /v1/banking/operations/{id}`.
+</Accordion>
+</AccordionGroup>

@@ -29,6 +29,9 @@ description: "错误格式与完整的错误码目录"
 | 403 | `org_admin_required` | 该端点需要管理员凭证 |
 | 403 | `forbidden` | 凭证级别不允许 |
 | 403 | `account_blocked` | 账户处于非活跃状态 |
+| 403 | `member_disabled` | 该用户已被禁止登录；请联系您组织的管理员 |
+| 403 | `passkey_rejected` | 通行密钥（passkey）验证失败；请重试或使用密码登录 |
+| 403 | `owner_required` | 只有账户的 owner 成员才能执行该操作 |
 | 403 | `service_disabled` | 该服务未对您的账户启用（查看 `GET /v1/services`） |
 | 403 | `org_suspended` | 服务已暂停；请联系 CBPay 团队 |
 | 403 | `company_only` | 仅企业账户可用的功能 |
@@ -54,6 +57,8 @@ description: "错误格式与完整的错误码目录"
 | 409 | `challenge_not_pending` | 质询已过期或已被使用；请创建一个新的 |
 | 429 | `too_many_attempts` | 达到发送/验证次数限制；请等待几分钟 |
 | 503 | `otp_unavailable` | 验证服务不可用（操作保持锁定；OTP 绝不会被跳过） |
+| 409 | `otp_disabled_for_org` | 您的组织未启用按操作的双因素认证；请联系您的运营方 |
+| 409 | `totp_not_started` | 尚未开始 TOTP 注册；请先调用 `POST /v1/me/totp/enroll` |
 
 ### 社交登录（OAuth）
 
@@ -93,6 +98,12 @@ description: "错误格式与完整的错误码目录"
 | `invalid_phone` | 手机号无法规范化为 E.164 格式（联系人和 `to_phone`） |
 | `invalid_language` | PDF 报告的 `lang` 不是 `en`、`es` 或 `zh`（AML 报告） |
 | `batch_too_large` | 联系人导入超过 1,000 条（请分批上传） |
+| `invalid_alias` | 别名须为 4–20 个字符（a-z、0-9、点、下划线、连字符），首尾为字母或数字，且不能是保留词 |
+| `invalid_body` | 无法读取请求体（二进制上传、webhook） |
+| `invalid_image` | 头像请求体为空或不是支持的图片格式（PNG/JPEG/WebP，最大 512 KB） |
+| `invalid_interval` | 订阅的 `interval` 必须是 `daily`、`weekly`、`monthly` 或 `yearly` |
+| `query_required` | `GET /v1/resolve` 需要 `alias=` 或 `qr=` 参数 |
+| `same_email` | 新登录邮箱与当前邮箱相同；请改用 `POST /v1/me/email/verify` 进行验证 |
 | `invalid_status` / `invalid_kyc_status` / `invalid_direction` / `reason_required` / `account_id_required` / `invalid_service` / `invalid_fee` | 管理端校验 |
 
 ### 资金与状态（402 / 404 / 409 / 422）
@@ -152,6 +163,11 @@ description: "错误格式与完整的错误码目录"
 | 422 | `nothing_received` | [QR Crypto POS](/zh/guides/qr-pos) 收款未收到任何链上支付：无可退款 |
 | 422 | `refund_exceeds_received` | 退款超过 [QR Crypto POS](/zh/guides/qr-pos) 收款已收金额减去已退金额 |
 | 400 | `to_address_required` | [QR Crypto POS](/zh/guides/qr-pos) 退款（及加密货币提现）必须显式提供目标地址 |
+| 422 | `deposit_account_limit_reached` | 每个账户每条走廊只有一个入金账户（随账户自动创建）；不可更改或删除 |
+| 422 | `export_rejected` | 处理方拒绝了该独立钱包的私钥导出 |
+| 422 | `stored_card_corridor_mismatch` | 该[已保存卡片](/zh/guides/stored-cards-subscriptions)属于与本次收款不同的国家/货币走廊 |
+| 409 | `subscription_state` | 该[订阅](/zh/guides/stored-cards-subscriptions)当前状态不允许该操作（例如暂停已取消的计划） |
+| 409 | `email_required` | 该登录没有真实邮箱；请通过 `POST /v1/me/email/change` 设置 |
 
 ### 合规（403 / 503）
 
@@ -173,8 +189,10 @@ description: "错误格式与完整的错误码目录"
 | HTTP | `error` | 含义 |
 |---|---|---|
 | 500 | `internal_error` | 意外错误；请使用相同的幂等键重试 |
+| 500 | `fee_config_invalid` | 账户的费用配置无效；请联系支持（该操作未执行） |
 | 502 | `rates_unavailable` | 汇率暂时不可用 |
 | 502 | `core_unavailable` | 处理方暂时不可用 |
+| 502 | `core_invalid_response` | 处理方返回了意外响应；请使用**相同的**幂等键重试 |
 | 502 | `compliance_unavailable` | AML 筛查暂时不可用 |
 | 503 | `verifications_unavailable` | 身份验证暂时不可用（费用已退还） |
 | 503 | `org_credential_missing` | 服务正在配置中；请联系 CBPay 支持 |

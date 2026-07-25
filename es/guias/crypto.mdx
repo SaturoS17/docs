@@ -457,3 +457,37 @@ BTC); las wallets son puertas de entrada, el saldo por moneda es uno solo.
 | 422 | `wallet_limit_reached` | La cuenta ya tiene su wallet de depósito de esa combinación red+activo (aplica a personas y empresas) |
 | 422 | (retiro con `status: failed`) | Rechazado al transmitir; débito reembolsado |
 | 503 | `withdrawals_unavailable` | Retiros no habilitados aún para este corredor |
+## FAQ
+
+<AccordionGroup>
+<Accordion title="¿Tengo que crear las wallets de depósito?">
+No. Toda cuenta nace con sus wallets de depósito para todos los pares
+soportados (`tron:usdt`, `eth:usdt`, `eth:usdc`, `btc:btc`), sin costo. El
+endpoint de creación solo auto-repara un par faltante — una segunda wallet
+del mismo par responde `wallet_limit_reached` (422).
+</Accordion>
+<Accordion title="¿Cuándo se acredita un depósito a mi saldo?">
+La detección es casi en tiempo real (`pending`); el crédito ocurre cuando la
+red alcanza las confirmaciones requeridas de esa chain. Síguelo con
+`GET /v1/crypto/transactions` o los webhooks de `crypto_deposit`.
+</Accordion>
+<Accordion title="¿Qué pasa si mi retiro falla?">
+El monto debitado (incluida la comisión) se reembolsa a tu saldo
+automáticamente. Reintenta con la **misma** `idempotency_key` — la
+plataforma jamás re-transmite por su cuenta.
+</Accordion>
+<Accordion title="¿Por qué mi retiro pide datos del beneficiario?">
+Los retiros sobre el umbral USD de Travel Rule de tu organización exigen
+`wallet_type: self_hosted` más `beneficiary_name`, o una `travel_address`
+(los errores 422 `travel_rule_*` te guían campo a campo).
+</Accordion>
+<Accordion title="¿Puedo retirar GOLD on-chain?">
+No — GOLD es un saldo solo de ledger sin riel on-chain. Conviértelo primero
+con [Swaps](/es/guias/swaps) a un asset retirable.
+</Accordion>
+<Accordion title="¿Por qué mi retiro se bloqueó con compliance_hold?">
+La dirección de destino no pasó el screening de compliance. La operación
+queda registrada como fallida y tus fondos se reembolsan; contacta a tu
+equipo CBPay si crees que es un falso positivo.
+</Accordion>
+</AccordionGroup>

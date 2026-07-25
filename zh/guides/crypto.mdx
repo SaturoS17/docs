@@ -438,3 +438,34 @@ curl "https://api.qbank.cl/platform/v1/movements?type=funding&from=2026-07-01&to
 | 422 | `wallet_limit_reached` | 该账户在此网络+资产组合下已持有充值钱包（个人和企业均适用） |
 | 422 | （提现返回 `status: failed`） | 广播时被拒绝；扣款已退回 |
 | 503 | `withdrawals_unavailable` | 该通道的提现尚未启用 |
+## 常见问题
+
+<AccordionGroup>
+<Accordion title="我需要自己创建入金钱包吗？">
+不需要。每个账户出生时即免费拥有所有受支持交易对的入金钱包
+（`tron:usdt`、`eth:usdt`、`eth:usdc`、`btc:btc`）。创建端点只用于自愈
+缺失的交易对 —— 同一交易对的第二个钱包会返回 `wallet_limit_reached`
+（422）。
+</Accordion>
+<Accordion title="入金什么时候记入我的余额？">
+检测接近实时（`pending`）；当网络达到该链所需的确认数后入账。可通过
+`GET /v1/crypto/transactions` 或 `crypto_deposit` webhook 跟踪。
+</Accordion>
+<Accordion title="提现失败会怎样？">
+已扣除的金额（含手续费）会自动退回你的余额。用**相同**的
+`idempotency_key` 重试 —— 平台绝不会自行重新广播交易。
+</Accordion>
+<Accordion title="为什么我的提现要求受益人信息？">
+超过你组织 Travel Rule 美元阈值的提现需要
+`wallet_type: self_hosted` 加 `beneficiary_name`，或一个 `travel_address`
+（`travel_rule_*` 系列 422 错误会逐字段引导你）。
+</Accordion>
+<Accordion title="GOLD 可以链上提现吗？">
+不可以 —— GOLD 是仅账本余额，没有链上通道。请先用
+[兑换](/zh/guides/swaps) 转换为可提现资产。
+</Accordion>
+<Accordion title="为什么我的提现被 compliance_hold 拦截？">
+目标地址未通过合规筛查。操作记录为 failed 且资金已退回；如你认为是
+误报，请联系你的 CBPay 团队。
+</Accordion>
+</AccordionGroup>

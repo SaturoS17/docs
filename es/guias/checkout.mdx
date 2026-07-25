@@ -235,3 +235,36 @@ Errores propios del link (los ve quien abre la página):
 | 422 | `collect_rejected` | El rail rechazó el cobro pull (OTP inválida o datos incorrectos); el link sigue pendiente |
 | 429 | `too_many_attempts` | Rate limit por IP de la página pública |
 | 503 | `pricing_unavailable` | Cotización temporalmente no disponible; reintentar en un momento |
+## FAQ
+
+<AccordionGroup>
+<Accordion title="¿El mismo link se puede pagar dos veces?">
+No. Un link = un cobro: el primer riel que paga gana (`already_paid`, 409).
+Un depósito crypto que llega después de que el link se liquidó por otro riel
+**no** se acredita — queda retenido para conciliación.
+</Accordion>
+<Accordion title="¿Qué pasa si el pagador envía menos (o más) crypto que lo cotizado?">
+Los pagos crypto parciales se **acumulan**: la página muestra cuánto falta
+hasta cubrir el monto cotizado. Los pagos tardíos que llegan con el link
+expirado igual acreditan tu cuenta.
+</Accordion>
+<Accordion title="¿Cuánto vive un link?">
+`expires_in` entre 600 s y 7 días (default 24 h). Al expirar recibes el
+webhook `payin_expired` y la página pública responde `checkout_expired`
+(410).
+</Accordion>
+<Accordion title="¿Qué pasa si falla la conversión a mi saldo de liquidación?">
+La plata queda segura en USDT y el payin reporta
+`conversion_status: pending_retry`; la plataforma reintenta automáticamente
+hasta que el swap resulte — nunca pierdes dinero ni se convierte dos veces.
+</Accordion>
+<Accordion title="¿El pagador puede cambiar de método después de elegir uno?">
+Sí. Cada método se materializa de forma independiente; volver a pedir el
+mismo método devuelve la misma materialización. El primer riel que paga
+liquida el link.
+</Accordion>
+<Accordion title="¿Puedo reintentar la creación del link sin riesgo?">
+Sí — reintenta `POST /v1/payins` con la **misma** `idempotency_key` y
+recibes el mismo link. Una clave nueva crea un link nuevo e independiente.
+</Accordion>
+</AccordionGroup>

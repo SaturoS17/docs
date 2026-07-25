@@ -160,3 +160,46 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
   En Bolivia la referencia del scan es de un solo uso (un QR escaneado solo
   puede pagarse una vez); en Brasil el QR PIX estático es reutilizable y
   cada pago lleva su propia clave.
+## Errores
+
+| HTTP | Código | Qué hacer |
+|---|---|---|
+| 400 | `invalid_qr_payload` | El QR es ilegible, está corrupto o es un QR dinámico (no soportado) — nada se creó y tu clave no se consumió; pide al pagador un QR estático |
+| 400 | `idempotency_key_required` | Los QR estáticos reusables exigen `idempotency_key` explícita en el confirm |
+| 402 | `insufficient_funds` | Fondea tu saldo y reintenta con la misma clave |
+| 403 | `compliance_hold` | El beneficiario no pasó el screening; el payout no se creó |
+| 422 | payout `failed` + refund | El monto no calza con un QR de monto fijo, o el riel rechazó el pago — el débito se reembolsa automáticamente |
+| 503 | `channel_unavailable` | Riel temporalmente no disponible; reintenta más tarde con la misma clave |
+
+El catálogo general de errores vive en [Errores](/es/errores).
+
+## FAQ
+
+<AccordionGroup>
+<Accordion title="¿Escanear un QR tiene costo?">
+No — el scan es una lectura local gratuita. Solo se cobra cuando el confirm
+crea el payout.
+</Accordion>
+<Accordion title="¿Puedo pagar el mismo QR dos veces?">
+Los QR de un solo uso (referencia fija) admiten un único pago. Los QR
+estáticos reusables pueden pagarse legítimamente más de una vez — por eso
+el confirm exige una `idempotency_key` explícita por pago.
+</Accordion>
+<Accordion title="¿Se soportan QR dinámicos?">
+Todavía no — un QR dinámico responde `invalid_qr_payload` (400) con la
+guía. Pide al pagador el QR estático del destino.
+</Accordion>
+<Accordion title="¿Qué tasa FX aplica?">
+La misma que un payout normal: la tasa cotizada en el confirm, congelada
+para esa operación, con tu spread ya incluido.
+</Accordion>
+<Accordion title="¿Y si el monto escaneado difiere de lo que quiero pagar?">
+Los QR de monto fijo se pagan exacto; un descalce falla el payout con
+reembolso automático. Los QR de monto abierto aceptan el monto que pases en
+el confirm.
+</Accordion>
+<Accordion title="¿Cómo reintento un confirm fallido sin riesgo?">
+Reintenta con la **misma** `idempotency_key` — el QR jamás se "quema" por
+errores de validación: nada se crea hasta que el payload valida.
+</Accordion>
+</AccordionGroup>

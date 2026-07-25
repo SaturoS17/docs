@@ -154,3 +154,43 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts/qr/confirm \
 - 使用相同 `idempotency_key` 重试会返回原始出金。玻利维亚的扫码引用
   为一次性（已扫描的二维码只能支付一次）；巴西的静态 PIX 二维码可
   复用，每笔支付携带自己的键。
+## 错误
+
+| HTTP | 代码 | 处理方式 |
+|---|---|---|
+| 400 | `invalid_qr_payload` | QR 无法读取、已损坏或为动态 QR（暂不支持）—— 未创建任何内容，你的 key 也未被消耗；请向付款人索取静态 QR |
+| 400 | `idempotency_key_required` | 可复用的静态 QR 在 confirm 时必须显式提供 `idempotency_key` |
+| 402 | `insufficient_funds` | 充值余额后用相同的 key 重试 |
+| 403 | `compliance_hold` | 受益人未通过筛查；payout 未被创建 |
+| 422 | payout `failed` + 退款 | 金额与固定金额 QR 不符，或通道拒绝了付款 —— 扣款自动退回 |
+| 503 | `channel_unavailable` | 通道暂时不可用；稍后用相同的 key 重试 |
+
+完整错误目录见[错误](/zh/errors)。
+
+## 常见问题
+
+<AccordionGroup>
+<Accordion title="扫描 QR 需要费用吗？">
+不需要 —— 扫描是免费的本地读取。只有 confirm 创建 payout 时才收费。
+</Accordion>
+<Accordion title="同一个 QR 可以支付两次吗？">
+一次性 QR（固定参考号）只允许一次支付。可复用的静态 QR 可以合法地被
+支付多次 —— 因此 confirm 要求每次支付提供显式的 `idempotency_key`。
+</Accordion>
+<Accordion title="支持动态 QR 吗？">
+暂不支持 —— 动态 QR 返回 `invalid_qr_payload`（400）并附带指引。请向
+付款人索取目标账户的静态 QR。
+</Accordion>
+<Accordion title="适用哪个汇率？">
+与普通 payout 相同：confirm 时报价的汇率，对该笔操作冻结，你的点差已
+包含在内。
+</Accordion>
+<Accordion title="扫描出的金额与我想支付的不一致怎么办？">
+固定金额 QR 必须精确支付；不匹配会使 payout 失败并自动退款。开放金额
+QR 接受你在 confirm 时传入的金额。
+</Accordion>
+<Accordion title="confirm 失败后如何安全重试？">
+用**相同**的 `idempotency_key` 重试 —— QR 绝不会因验证错误而"作废"：
+在 payload 验证通过之前不会创建任何内容。
+</Accordion>
+</AccordionGroup>

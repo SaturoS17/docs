@@ -936,3 +936,35 @@ A payout in `processing` cannot be cancelled through the API: the rail
 already has it. Wait for the final state via webhook or `GET` — it always
 arrives, with an automatic refund on failure.
 </Note>
+## FAQ
+
+<AccordionGroup>
+<Accordion title="When is my balance debited?">
+At creation: the payout debits and holds the funds immediately. If the
+payout fails, the exact debited amount (fee included) is refunded
+automatically.
+</Accordion>
+<Accordion title="Can I cancel a payout in processing?">
+No — once dispatched to the rail it resolves to `completed` or `failed` on
+its own. Subscribe to `payout_status_changed` for the final state.
+</Accordion>
+<Accordion title="Which FX rate does my payout use?">
+The rate quoted at creation (returned as `fx_rate`), frozen for that
+operation. Your agreed spread is already inside the rate.
+</Accordion>
+<Accordion title="Can I pay from a balance other than USDT?">
+Yes — set a per-account default (`PUT /v1/settlement`) or override per
+payout with `settlement_asset` (USDC, BTC, GOLD). Refunds return the exact
+settled amount, never re-quoted.
+</Accordion>
+<Accordion title="What does compliance_hold (403) mean?">
+The beneficiary failed the compliance screening: the payout was **not**
+created and your `idempotency_key` was not consumed. Review the beneficiary
+data or contact your CBPay team.
+</Accordion>
+<Accordion title="How do I retry safely after a timeout or 5xx?">
+Retry with the **same** `idempotency_key`: you get the original payout
+back (`idempotency_hit: true`) — never a duplicate. A new key is a new,
+independent payout.
+</Accordion>
+</AccordionGroup>

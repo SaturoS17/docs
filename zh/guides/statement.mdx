@@ -138,3 +138,33 @@ curl "https://api.qbank.cl/platform/v1/accounts/{accountID}/reports/statement?fr
 | 400 | `invalid_range` | 日期缺失/无效、`to` 早于 `from`，或范围超过 400 天 |
 | 400 | `invalid_format` | `format` 不是 `json`、`pdf`、`xlsx` 之一 |
 | 404 | `not_found` | 账户不存在（仅组织管理员） |
+## 常见问题
+
+<AccordionGroup>
+<Accordion title="对账单多久生成一次？">
+按需生成 —— 每次请求都根据你传入的 `from`/`to` 区间（两者必填，
+`YYYY-MM-DD`，UTC）从账本实时构建。
+</Accordion>
+<Accordion title="balanced: true 是什么意思？">
+每种资产独立核对：`期初 + 入账 − 出账 = 期末`，覆盖 USDT、USDC、BTC、
+GOLD 和 banking 镜像。任一资产不平时该标志为 `false` —— 请报告给你的
+CBPay 团队。
+</Accordion>
+<Accordion title="为什么我会看到 BANK_USD / BANK_EUR 余额？">
+它们在对账单中镜像你的 banking 资金，使账户能够完整重建。权威余额始终
+以银行为准（`GET /v1/banking/accounts/{id}/balance`）；这些镜像余额永远
+不可支出。
+</Accordion>
+<Accordion title="有哪些可用格式？">
+JSON（集成）、PDF 和 XLSX —— 后两者均带有你组织的品牌标识。使用
+`Accept` 请求头或端点的格式参数。
+</Accordion>
+<Accordion title="fee_model: fixed 是什么？">
+独立服务收费（验证、筛查、钱包服务）为纯固定费用，在对账单中标注为
+"Fixed Com" —— 区别于百分比+固定的交易型手续费。
+</Accordion>
+<Accordion title="可以验证单笔流水吗？">
+可以 —— 每笔操作都有带公开验证码的[凭证](/zh/guides/receipts)；任何人
+无需认证即可验证。
+</Accordion>
+</AccordionGroup>

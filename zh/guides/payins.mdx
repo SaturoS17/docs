@@ -628,3 +628,32 @@ curl "https://api.qbank.cl/platform/v1/payins?from=2026-07-01&to=2026-07-08&stat
 | 403 | `service_disabled` | 您的账户未启用入金服务 —— 参见[服务](/zh/concepts/services) |
 | 422 | `core_rejected` | 处理方拒绝了该收款；请检查消息 |
 | 502 | `core_unavailable` | 收款无法创建；请重试创建（未产生任何扣款） |
+## 常见问题
+
+<AccordionGroup>
+<Accordion title="如何知道一笔 payin 已入账？">
+订阅 `payin_credited`：它携带所应用的汇率、手续费和精确的
+`usdt_credited`。你也可以轮询 `GET /v1/payins/{id}`。
+</Accordion>
+<Accordion title="我的 payin 适用哪个汇率？">
+入账时刻生效的 `payin_rate`（见 `GET /v1/rates`）。你约定的点差已包含在
+汇率中 —— 绝不会单独列示。
+</Accordion>
+<Accordion title="payin 可以落在 USDT 以外的余额吗？">
+可以 —— 用 `PUT /v1/settlement` 设置 `default_payin_asset`。入账仍先进入
+USDT，随后立即按真实价格转换；`conversion_status` 报告 `done` 或
+`pending_retry`（自动重试）。
+</Accordion>
+<Accordion title="收款（QR、checkout）过期未支付会怎样？">
+你会收到 `payin_expired`，该 payin 关闭且不发生任何资金变动。创建一个新
+的收款即可 —— 没有任何扣款或入账。
+</Accordion>
+<Accordion title="付款人转账金额与通报的不一致怎么办？">
+匹配要求参考号**和**金额同时吻合。不匹配的转账会保持未分配状态等待
+对账；你的 CBPay 团队可以手动将其分配到正确的 payin。
+</Accordion>
+<Accordion title="为什么我的 collect（pull）收款失败了？">
+响应和 `GET /v1/payins/{id}` 会持久化 `failure` 块，包含通道的代码和消息
+（例如证件与付款人银行登记不符）。修正输入后用新的 key 重试。
+</Accordion>
+</AccordionGroup>
