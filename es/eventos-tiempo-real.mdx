@@ -203,8 +203,12 @@ conexión ociosa — ignora las líneas que empiezan con `:`.
 | Vida de la conexión | 30 min | Termina con `reconnect`; el cursor lo hace transparente. |
 | Heartbeat | cada 20 s | Queda holgado bajo el timeout de lectura del proxy. |
 | Revalidación de credencial | cada 60 s | Una sesión revocada deja de recibir eventos al instante. |
+| Aperturas de stream por IP | 600 por hora | Absorbe reconexiones legítimas; corta un bucle de reintento roto. |
 
-Pasarse del límite de concurrencia devuelve `429 too_many_streams`.
+Pasarse del límite de concurrencia devuelve `429 too_many_streams`. Pasarse de
+la cuota de aperturas devuelve `429 rate_limited` — esa cuenta *intentos*, así
+que un cliente que reconecta en bucle la quema aunque no tenga ningún stream
+abierto. Respeta siempre el `retry:` (3 s) más backoff exponencial.
 
 ## Historial consultable
 
@@ -256,6 +260,7 @@ regulación en sus propios endpoints y en la [cartola](/es/guias/cartola).
 | 400 | `invalid_range` | `from`/`to` son obligatorios en el historial (`YYYY-MM-DD`, `from` antes de `to`). |
 | 404 | `not_found` | El evento no existe o es de otra cuenta. |
 | 429 | `too_many_streams` | Cierra un stream abierto antes de abrir otro. |
+| 429 | `rate_limited` | Demasiadas aperturas desde esta IP (600/h). Aplica backoff; nunca reconectes en bucle. |
 | 503 | `stream_unavailable` | Reintenta con backoff; el stream está temporalmente no disponible. |
 
 Lista completa en [Errores](/es/errores).

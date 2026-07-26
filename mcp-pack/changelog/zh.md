@@ -8,7 +8,18 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-## v2.12 · 4 个版本 - 2026年7月25日
+## v2.13 · 5 个版本 - 2026年7月25日
+
+### v2.13
+
+**新增**
+
+- **事件流握手配额**（[错误](https://docs.cbpayapp.com/zh/errors)）：连续过于频繁地打开
+  `GET /v1/events` 现在会返回 `429 rate_limited`。它与 `too_many_streams`
+  是两个不同的限制：`rate_limited` 按 IP 统计连接*尝试*次数（每小时 600 次，
+  足够用于重连），而 `too_many_streams` 限制同时*保持打开*的流数量
+  （每个账户 5 个）。两者的重试方式相同：等待后带上 `Last-Event-ID` 重连，
+  不会丢失任何事件。
 
 ### v2.12
 

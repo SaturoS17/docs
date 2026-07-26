@@ -1,5 +1,5 @@
 {
-  "count": 160,
+  "count": 161,
   "errors": [
     {
       "category": {
@@ -2043,6 +2043,20 @@
         "en": "Concurrent stream limit reached (per account or per organization) — close one before opening another",
         "es": "Se alcanzó el límite de streams simultáneos (por cuenta o por organización) — cierra uno antes de abrir otro",
         "zh": "已达到并发流上限（按账户或按组织）— 请先关闭一个再打开新的"
+      }
+    },
+    {
+      "category": {
+        "en": "Real-time events (SSE)",
+        "es": "Eventos en tiempo real (SSE)",
+        "zh": "实时事件（SSE）"
+      },
+      "code": "rate_limited",
+      "http": 429,
+      "meaning": {
+        "en": "Too many stream openings from this IP (600 per hour) — the quota counts *attempts*, not live connections: stop the reconnect loop and back off",
+        "es": "Demasiadas aperturas de stream desde esta IP (600 por hora) — la cuota cuenta *intentos*, no conexiones vivas: corta el bucle de reconexión y aplica backoff",
+        "zh": "该 IP 打开事件流过于频繁（每小时 600 次）— 该配额统计*尝试次数*而非活动连接：请停止重连循环并采用退避策略"
       }
     },
     {

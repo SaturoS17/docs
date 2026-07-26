@@ -8,7 +8,19 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.12 · 4 releases - July 25, 2026
+## v2.13 · 5 releases - July 25, 2026
+
+### v2.13
+
+**Added**
+
+- **Handshake quota on the event stream** ([errors](https://docs.cbpayapp.com/en/errors)): opening
+  `GET /v1/events` too many times in a row now answers `429 rate_limited`. It is
+  a different limit from `too_many_streams`: `rate_limited` counts connection
+  *attempts* per IP (600 per hour, plenty for reconnects), while
+  `too_many_streams` caps how many streams you keep *open* at the same time
+  (5 per account). Both retry the same way: wait and reconnect with your
+  `Last-Event-ID`, nothing is lost.
 
 ### v2.12
 

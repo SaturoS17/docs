@@ -198,6 +198,7 @@ source_url: https://docs.cbpayapp.com/zh/errors
 |---|---|---|
 | 400 | `invalid_event_type` | `?types=` 中的某个值不在目录内 — `message` 会列出有效值 |
 | 429 | `too_many_streams` | 已达到并发流上限（按账户或按组织）— 请先关闭一个再打开新的 |
+| 429 | `rate_limited` | 该 IP 打开事件流过于频繁（每小时 600 次）— 该配额统计*尝试次数*而非活动连接：请停止重连循环并采用退避策略 |
 | 500 | `streaming_unsupported` | 该连接不支持流式传输（中间代理在缓冲）— 关闭缓冲或改用 Webhook |
 | 503 | `stream_unavailable` | 无法打开事件流；请携带 `Last-Event-ID` 退避重试 |
 

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.12'
+  version: '2.13'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -14938,13 +14938,20 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '429':
-          description: 'Too many concurrent streams for the account or the organization.'
+          description: 'Too many concurrent streams (`too_many_streams`) or too many stream openings from this IP (`rate_limited`, 600 per hour — the quota counts attempts, not live connections).'
           content:
             application/json:
-              example:
-                error: too_many_streams
-                message: too many concurrent event streams for this account; close one before opening
-                  another
+              examples:
+                too_many_streams:
+                  summary: Concurrent stream limit reached
+                  value:
+                    error: too_many_streams
+                    message: too many concurrent event streams for this account; close one before opening another
+                rate_limited:
+                  summary: Too many stream openings from this IP
+                  value:
+                    error: rate_limited
+                    message: too many requests
   /v1/events/history:
     get:
       tags:

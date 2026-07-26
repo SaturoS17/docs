@@ -181,8 +181,11 @@ curl -N "https://api.qbank.cl/platform/v1/events?types=payin_credited,payout_sta
 | 连接寿命 | 30 分钟 | 以 `reconnect` 结束；游标使其对用户无感。 |
 | 心跳 | 每 20 秒 | 远低于代理的读取超时。 |
 | 凭证重新校验 | 每 60 秒 | 被吊销的会话会立即停止接收事件。 |
+| 每个 IP 的开流次数 | 每小时 600 次 | 可容纳正常重连；阻止失控的重试循环。 |
 
-超出并发上限会返回 `429 too_many_streams`。
+超出并发上限会返回 `429 too_many_streams`；超出开流配额会返回
+`429 rate_limited`——该配额统计*尝试次数*，因此即使没有打开任何流，紧密循环
+重连的客户端也会耗尽它。请始终遵守 `retry:`（3 秒）并配合指数退避。
 
 ## 可查询的历史
 
@@ -229,6 +232,7 @@ curl https://api.qbank.cl/platform/v1/events/9f1c0d3a-6b52-4c81-9f0e-2a7d5b1c8e4
 | 400 | `invalid_range` | 历史接口必须提供 `from`/`to`（`YYYY-MM-DD`，且 `from` 早于 `to`）。 |
 | 404 | `not_found` | 事件不存在或属于其他账户。 |
 | 429 | `too_many_streams` | 先关闭一个已打开的流再新建。 |
+| 429 | `rate_limited` | 该 IP 开流过于频繁（每小时 600 次）。请退避重试，不要循环重连。 |
 | 503 | `stream_unavailable` | 按退避策略重试；事件流暂时不可用。 |
 
 完整列表见[错误](https://docs.cbpayapp.com/zh/errors)。

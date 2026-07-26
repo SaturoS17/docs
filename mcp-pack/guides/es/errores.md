@@ -198,6 +198,7 @@ Códigos de [`GET /v1/events`](https://docs.cbpayapp.com/es/eventos-tiempo-real)
 |---|---|---|
 | 400 | `invalid_event_type` | Un valor de `?types=` no está en el catálogo — el `message` lista los válidos |
 | 429 | `too_many_streams` | Se alcanzó el límite de streams simultáneos (por cuenta o por organización) — cierra uno antes de abrir otro |
+| 429 | `rate_limited` | Demasiadas aperturas de stream desde esta IP (600 por hora) — la cuota cuenta *intentos*, no conexiones vivas: corta el bucle de reconexión y aplica backoff |
 | 500 | `streaming_unsupported` | La conexión no soporta streaming (un proxy intermedio está bufferizando) — quita el buffering o usa webhooks |
 | 503 | `stream_unavailable` | No se pudo abrir el stream; reintenta con backoff conservando tu `Last-Event-ID` |
 

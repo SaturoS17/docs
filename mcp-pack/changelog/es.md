@@ -9,7 +9,19 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-## v2.12 · 4 versiones - 25 de julio de 2026
+## v2.13 · 5 versiones - 25 de julio de 2026
+
+### v2.13
+
+**Agregado**
+
+- **Cuota del handshake del stream de eventos** ([errores](https://docs.cbpayapp.com/es/errores)): abrir
+  `GET /v1/events` demasiadas veces seguidas ahora responde
+  `429 rate_limited`. Es un limite distinto de `too_many_streams`:
+  `rate_limited` cuenta *intentos* de conexion por IP (600 por hora, de sobra
+  para reconexiones), mientras `too_many_streams` limita cuantos streams
+  mantienes *abiertos* a la vez (5 por cuenta). Los dos se reintentan igual:
+  esperas y reconectas con tu `Last-Event-ID`, no se pierde nada.
 
 ### v2.12
 

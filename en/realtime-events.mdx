@@ -202,8 +202,12 @@ idle connection — ignore lines starting with `:`.
 | Connection lifetime | 30 min | Ends with `reconnect`; the cursor makes it seamless. |
 | Heartbeat | every 20 s | Stays under the proxy read timeout. |
 | Credential revalidation | every 60 s | A revoked session stops receiving events immediately. |
+| Stream openings per IP | 600 per hour | Absorbs legitimate reconnects; stops a broken retry loop. |
 
-Exceeding the concurrency limit returns `429 too_many_streams`.
+Exceeding the concurrency limit returns `429 too_many_streams`. Exceeding the
+openings quota returns `429 rate_limited` — that one counts *attempts*, so a
+client reconnecting in a tight loop burns it even with no stream open. Always
+honour the `retry:` hint (3 s) plus exponential backoff.
 
 ## Queryable history
 
@@ -255,6 +259,7 @@ endpoints and the [statement](/en/guides/statement).
 | 400 | `invalid_range` | `from`/`to` are required in the history endpoint (`YYYY-MM-DD`, `from` before `to`). |
 | 404 | `not_found` | The event does not exist or belongs to another account. |
 | 429 | `too_many_streams` | Close an open stream before opening another. |
+| 429 | `rate_limited` | Too many openings from this IP (600/h). Back off; never reconnect in a loop. |
 | 503 | `stream_unavailable` | Retry with backoff; the stream is temporarily unavailable. |
 
 Full list in [Errors](/en/errors).
