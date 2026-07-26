@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.13'
+  version: '2.14'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -3662,6 +3662,27 @@ paths:
                     /v1/stored-cards). The hosted page skips card entry and shows the saved card;
                     3-D Secure still runs. Mutually exclusive with `save_card`. Unknown or revoked
                     card responds 404. The billing details saved with the credential are applied automatically on the hosted page (masked summary with an edit link — the payer retypes nothing).
+                payer_name:
+                  type: string
+                  maxLength: 140
+                  description: >-
+                    Announced bank transfer only — name of the person or company that will send
+                    the transfer, when it is NOT the account holder. Optional.
+                payer_document:
+                  type: string
+                  maxLength: 40
+                  description: >-
+                    Announced bank transfer only — tax or national ID of the sender (at least 5
+                    characters, one of them a digit). Optional: when you omit it the account
+                    holder's verified tax id is used, so a self-deposit is recognised even if the
+                    payer forgets the reference. Send it when a third party pays.
+                payer_account:
+                  type: string
+                  maxLength: 40
+                  description: >-
+                    Announced bank transfer only — the sender's bank account number (at least 5
+                    characters). Optional; it is an extra matching signal when the rail reports
+                    the originating account.
             examples:
               bo_qr:
                 summary: Bolivia — QR charge (BOB)
@@ -3688,6 +3709,7 @@ paths:
                   currency: CLP
                   method: bank_transfer
                   amount: '500000'
+                  payer_document: '17438319-7'
               py_announced_transfer:
                 summary: Paraguay — announced bank transfer (PYG, integer amounts)
                 value:
@@ -16127,6 +16149,51 @@ components:
               type: string
             message:
               type: string
+        payer_source:
+          type: string
+          enum:
+          - declared
+          - account_identity
+          - none
+          - bank_event
+          description: >-
+            Announced transfers and unassigned deposits — where the payer identity came from.
+            `declared` you sent it, `account_identity` the account holder's verified tax id was
+            used as the default, `none` no identity was available (only the reference can match),
+            `bank_event` (unassigned deposits) it was read from the arriving transfer.
+        payer:
+          type: object
+          description: Payer identity attached to the payin, when known.
+          properties:
+            name:
+              type: string
+            document:
+              type: string
+            account:
+              type: string
+        match_method:
+          type: string
+          enum:
+          - reference
+          - payer_document
+          - payer_account
+          - payer_name
+          - single_candidate
+          - dedicated_instrument
+          - collect_settlement
+          description: How the arriving transfer was matched to this payin (audit trail).
+        match_reason:
+          type: string
+          description: >-
+            Why the deposit could NOT be matched automatically, on `unassigned` payins —
+            `no_match`, `ambiguous_amount` (two or more announcements share the amount),
+            `ambiguous_payer`, `claim_lost` (another event claimed the announcement first) or
+            `assigned_to:<payin_id>`.
+        candidate_count:
+          type: integer
+          description: >-
+            Number of pending announcements that matched the amount and currency of an
+            `unassigned` deposit (2 or more means the deposit was ambiguous).
     PayinRefund:
       type: object
       properties:

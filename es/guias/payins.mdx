@@ -149,8 +149,10 @@ Respuesta `201`:
 }
 ```
 
-Cuando la transferencia llega, se matchea por la referencia en la glosa (o
-por monto+moneda como respaldo) y tu cuenta se acredita automáticamente.
+Cuando la transferencia llega, se matchea por la referencia en la glosa y tu
+cuenta se acredita automáticamente. Si la referencia no viaja, el documento
+del pagador la respalda — ver
+[conciliación de una transferencia anunciada](#conciliaci%C3%B3n-de-una-transferencia-anunciada).
 
 </Tab>
 <Tab title="Perú">
@@ -182,8 +184,9 @@ Respuesta `201`:
 
 La `reference` es un **código corto de 12 caracteres alfanuméricos** (cabe
 en cualquier concepto bancario) y debe viajar en la descripción de la
-transferencia para el match automático; como respaldo también se matchea
-por monto+moneda.
+transferencia para el match automático. Manda `payer_document` como
+respaldo — ver
+[cómo se concilia](#conciliaci%C3%B3n-de-una-transferencia-anunciada).
 
 </Tab>
 <Tab title="México">
@@ -475,8 +478,9 @@ Los guaraníes no usan decimales: anuncia el monto **entero exacto** que
 transferirá tu pagador (ej. `"596000"`). La `reference` es un código corto
 de 12 caracteres alfanuméricos — diseñado para el concepto SIPAP, que
 acepta **máximo 20 caracteres sin caracteres especiales** — y ponerla en
-el concepto asegura el match automático; como respaldo también se matchea
-por monto+moneda.
+el concepto asegura el match automático. Manda `payer_document` como
+respaldo — ver
+[conciliación de una transferencia anunciada](#conciliaci%C3%B3n-de-una-transferencia-anunciada).
 </Note>
 
 </Tab>
@@ -644,6 +648,80 @@ saldo, con su asiento en la cartola, comprobante y webhook:
   entiende cómo se aplica un contracargo.
 </Card>
 
+## Conciliación de una transferencia anunciada
+
+Una transferencia anunciada (`method: "bank_transfer"`) no tiene sesión de
+pago: el pagador mueve la plata desde su propio banco, así que el depósito se
+reconoce cuando llega. La conciliación corre en este orden y se detiene en el
+primer acierto:
+
+1. **`reference`** — el código de 12 caracteres en la glosa de la
+   transferencia.
+2. **Documento del pagador** — el `payer_document` del anuncio contra el
+   pagador que reporta el banco (puntos, guiones y dígito verificador se
+   ignoran).
+3. **Candidato único** — exactamente un anuncio pendiente por ese monto y
+   moneda.
+
+<Warning>
+Si ninguno de los tres resuelve a **un** anuncio — dos anuncios pendientes
+por el mismo monto, sin referencia y sin documento del pagador — el depósito
+**no** se acredita por adivinanza: queda `unassigned` y tu operador CBPay lo
+enruta. Nada se pierde; la plata ya está en la cuenta recaudadora.
+</Warning>
+
+### Identificar al pagador (opcional, recomendado)
+
+`method: "bank_transfer"` acepta los datos del pagador. Todos los campos son
+opcionales y aditivos — las integraciones existentes siguen funcionando igual:
+
+| Campo | Se compara contra |
+|---|---|
+| `payer_document` | RUT / documento que reporta el banco (puntos, guiones y dígito verificador se ignoran) |
+| `payer_name` | Nombre del pagador, por tokens (`JUAN PEREZ` calza con `PEREZ JUAN SOTO`) |
+| `payer_account` | Número de cuenta del pagador, por sus dígitos |
+
+<CodeGroup>
+```bash Request
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "CL",
+    "currency": "CLP",
+    "method": "bank_transfer",
+    "amount": "500000",
+    "payer_document": "17438319-7"
+  }'
+```
+
+```json Response 201
+{
+  "payin_id": "4f81…",
+  "status": "pending",
+  "reference": "CBJ6T3W9M2K5",
+  "note": "include the reference in the transfer description so the deposit is credited automatically",
+  "payer_source": "declared",
+  "payer_document": "17438319-7"
+}
+```
+</CodeGroup>
+
+`payer_source` viene SIEMPRE en la respuesta para que tu checkout sepa qué
+pedirle al pagador:
+
+| Valor | Significado |
+|---|---|
+| `declared` | Mandaste datos del pagador — el documento respalda la referencia |
+| `account_identity` | No mandaste pagador: se usa el RUT verificado de tu cuenta (el titular se deposita a sí mismo) |
+| `none` | Sin identidad disponible — **insiste en la referencia**, es la única señal fuerte que queda |
+
+<Note>
+Un documento de menos de 5 caracteres o sin dígitos se descarta como señal
+(no se puede distinguir de un monto o un código de banco). El anuncio se crea
+igual y `payer_source` reporta la cobertura real.
+</Note>
+
 ## 3. Recibe el abono
 
 Cuando el pago llega (por cualquiera de las modalidades), tu cuenta se
@@ -696,9 +774,11 @@ curl https://api.qbank.cl/platform/v1/payins/9c2a… \
 | `failed` | El cobro falló |
 
 <Info>
-Los depósitos que llegan por transferencia directa sin referencia clara
-quedan `unassigned` hasta que el equipo de CBPay los asigna a una cuenta.
-Al asignarse, se acreditan con la tasa y comisiones de la cuenta destino.
+Un depósito que no se puede resolver a un único anuncio queda `unassigned`
+hasta que el equipo de CBPay lo asigna a una cuenta (ver
+[conciliación de una transferencia anunciada](#conciliaci%C3%B3n-de-una-transferencia-anunciada)).
+Al asignarse, se acredita con la tasa y comisiones de la cuenta destino, y el
+anuncio al que pertenecía se cierra.
 </Info>
 
 <Note>
@@ -753,9 +833,22 @@ Recibes `payin_expired` y el payin se cierra sin mover dinero. Crea un
 cobro nuevo — nada se debitó ni acreditó.
 </Accordion>
 <Accordion title="El pagador transfirió un monto distinto al anunciado, ¿qué pasa?">
-El match exige que la referencia **y** el monto calcen. Una transferencia
-que no calza queda sin asignar para conciliación; tu equipo CBPay puede
-asignarla manualmente al payin correcto.
+La referencia sigue calzando con el anuncio, pero se acredita el monto que
+llegó. Una transferencia que no resuelve a ningún anuncio queda `unassigned`
+para conciliación; tu equipo CBPay puede asignarla manualmente al payin
+correcto.
+</Accordion>
+<Accordion title="Dos clientes anunciaron el mismo monto y ninguno puso la referencia, ¿a quién se le abona?">
+A nadie por azar. Si el documento del pagador no los distingue, ambos anuncios
+quedan `pending` y el depósito queda `unassigned` para que el operador lo
+enrute. Mandar `payer_document` en el anuncio es lo que convierte este caso en
+un abono automático.
+</Accordion>
+<Accordion title="¿Ahora tengo que mandar payer_document?">
+No — es opcional y nada se rompe sin él. Si lo omites, se usa el RUT
+verificado de la cuenta (`payer_source: account_identity`), que cubre los
+depósitos del propio titular. Mándalo cuando un tercero pague por tu cliente,
+y muéstrale SIEMPRE la `reference` al pagador.
 </Accordion>
 <Accordion title="¿Por qué falló mi cobro collect (pull)?">
 La respuesta y `GET /v1/payins/{id}` persisten un bloque `failure` con el

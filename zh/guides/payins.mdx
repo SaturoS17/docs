@@ -141,8 +141,9 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
 }
 ```
 
-转账到达后，系统会根据转账附言中的参考号进行匹配（或以金额+货币作为
-后备匹配方式），您的账户即自动入账。
+转账到达后，系统会根据转账附言中的参考号进行匹配，您的账户即自动入账。
+若参考号未随转账传递，付款人证件号可作为后备依据 — 参见
+[预告转账的匹配规则](#预告转账的匹配规则)。
 
 </Tab>
 <Tab title="秘鲁">
@@ -173,7 +174,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
 ```
 
 `reference` 是一个**12 位字母数字短代码**（可放入任何银行的附言字段），
-必须随转账附言一起传递以便自动匹配；金额+货币作为后备匹配方式。
+必须随转账附言一起传递以便自动匹配。建议同时传 `payer_document` 作为后备 —
+参见[预告转账的匹配规则](#预告转账的匹配规则)。
 
 </Tab>
 <Tab title="墨西哥">
@@ -454,7 +456,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
 瓜拉尼没有小数位：请申报付款人将转账的**精确整数金额**（例如
 `"596000"`）。`reference` 是一个 12 位字母数字短代码 —— 专为 SIPAP
 附言字段设计，该字段**最多接受 20 个字符且不允许特殊字符** ——
-将其填入附言可确保自动匹配；金额+货币匹配作为后备方式。
+将其填入附言可确保自动匹配。建议同时传 `payer_document` 作为后备 —
+参见[预告转账的匹配规则](#预告转账的匹配规则)。
 </Note>
 
 </Tab>
@@ -609,6 +612,72 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
   全额或部分退回银行卡收款、撤销当日授权，并了解拒付如何自动入账。
 </Card>
 
+## 预告转账的匹配规则
+
+预告转账（`method: "bank_transfer"`）没有支付会话：付款人从自己的银行转出，
+因此存款在到账时才被识别。匹配按以下顺序执行，命中即停止：
+
+1. **`reference`** —— 转账附言中的 12 位代码。
+2. **付款人证件号** —— 预告中的 `payer_document` 与银行报送的付款人比对
+   （点、连字符与校验位均忽略）。
+3. **唯一候选** —— 该金额与货币下恰好只有一笔待处理预告。
+
+<Warning>
+若三者都无法唯一对应到**一笔**预告 —— 同一金额有两笔待处理预告、没有参考号、
+也没有付款人证件号 —— 系统**不会**靠猜入账：该存款以 `unassigned` 落地，由你的
+CBPay 运营人员路由。钱不会丢失，它已经在收款账户中。
+</Warning>
+
+### 标识付款人（可选，推荐）
+
+`method: "bank_transfer"` 接受付款人数据。所有字段均为可选且向后兼容 ——
+现有集成无需改动即可继续工作：
+
+| 字段 | 比对对象 |
+|---|---|
+| `payer_document` | 银行报送的税号／身份证件号（点、连字符与校验位忽略） |
+| `payer_name` | 付款人姓名，按词元比对（`JUAN PEREZ` 可匹配 `PEREZ JUAN SOTO`） |
+| `payer_account` | 付款人账号，按其数字比对 |
+
+<CodeGroup>
+```bash Request
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "CL",
+    "currency": "CLP",
+    "method": "bank_transfer",
+    "amount": "500000",
+    "payer_document": "17438319-7"
+  }'
+```
+
+```json Response 201
+{
+  "payin_id": "4f81…",
+  "status": "pending",
+  "reference": "CBJ6T3W9M2K5",
+  "note": "include the reference in the transfer description so the deposit is credited automatically",
+  "payer_source": "declared",
+  "payer_document": "17438319-7"
+}
+```
+</CodeGroup>
+
+响应中始终包含 `payer_source`，便于你的结账页决定该向付款人索取什么：
+
+| 值 | 含义 |
+|---|---|
+| `declared` | 你传了付款人数据 —— 证件号可为参考号兜底 |
+| `account_identity` | 未传付款人：使用该账户已验证的税号（持有人自存） |
+| `none` | 无可用身份 —— **务必坚持使用参考号**，这是仅剩的强信号 |
+
+<Note>
+少于 5 个字符或不含数字的证件号会被丢弃为弱信号（无法与金额或银行代码区分）。
+预告仍会创建，且 `payer_source` 会如实反映覆盖情况。
+</Note>
+
 ## 3. 接收入账
 
 当付款到达（无论通过哪种模式），您的账户会自动入账，并触发
@@ -661,8 +730,9 @@ curl https://api.qbank.cl/platform/v1/payins/9c2a… \
 | `failed` | 收款失败 |
 
 <Info>
-通过直接转账到达但缺少清晰参考号的存款会保持 `unassigned` 状态，直到
-CBPay 团队将其路由到某个账户。分配后，按目标账户的汇率和费用入账。
+无法唯一对应到某一笔预告的存款会保持 `unassigned` 状态，直到 CBPay 团队将其
+路由到某个账户（参见[预告转账的匹配规则](#预告转账的匹配规则)）。分配后，
+按目标账户的汇率和费用入账，并同时关闭其所属的那笔预告。
 </Info>
 
 <Note>
@@ -717,8 +787,19 @@ USDT，随后立即按真实价格转换；`conversion_status` 报告 `done` 或
 的收款即可 —— 没有任何扣款或入账。
 </Accordion>
 <Accordion title="付款人转账金额与通报的不一致怎么办？">
-匹配要求参考号**和**金额同时吻合。不匹配的转账会保持未分配状态等待
-对账；你的 CBPay 团队可以手动将其分配到正确的 payin。
+参考号仍会匹配到该笔预告，但入账金额以实际到账金额为准。若一笔转账无法对应
+到任何预告，则保持 `unassigned` 状态等待对账；你的 CBPay 团队可以手动将其
+分配到正确的 payin。
+</Accordion>
+<Accordion title="两个客户预告了相同金额且都没填参考号，钱归谁？">
+不会靠猜。如果付款人证件号也无法区分二者，两笔预告都保持 `pending`，存款以
+`unassigned` 落地交由运营人员路由。在预告中传 `payer_document`，正是把这种
+情形变成自动入账的关键。
+</Accordion>
+<Accordion title="现在必须传 payer_document 吗？">
+不必 —— 它是可选的，不传也不会有任何中断。省略时会使用该账户已验证的税号
+（`payer_source: account_identity`），覆盖持有人自存的场景。当由第三方为你的
+客户付款时再传它，并始终向付款人展示 `reference`。
 </Accordion>
 <Accordion title="为什么我的 collect（pull）收款失败了？">
 响应和 `GET /v1/payins/{id}` 会持久化 `failure` 块，包含通道的代码和消息

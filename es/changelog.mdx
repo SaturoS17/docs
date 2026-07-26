@@ -8,7 +8,33 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-<Update label="25 de julio de 2026" description="v2.13 · 5 versiones">
+<Update label="25 de julio de 2026" description="v2.14 · 6 versiones">
+
+### v2.14
+
+**Agregado**
+
+- **Identificación del pagador en transferencias anunciadas**
+  ([payins](/es/guias/payins)): `POST /v1/payins` con
+  `method: "bank_transfer"` acepta los opcionales `payer_name`,
+  `payer_document` y `payer_account`. Si no mandas `payer_document` y la cuenta
+  es una persona verificada, se usa por defecto el documento del titular, así
+  un depósito que llega sin referencia igual se reconoce por el ordenante que
+  reporta el banco. La respuesta indica qué identidad quedó en juego con
+  `payer_source` (`declared`, `account_identity` o `none`).
+- **Auditoría del match en el payin**: `GET /v1/payins/{id}` expone
+  `match_method` (`reference`, `payer_document`, `payer_account`,
+  `payer_name`, `single_candidate`…) y el bloque `payer` que reportó el riel,
+  para que veas exactamente por qué el depósito cayó en esa cuenta.
+
+**Cambiado**
+
+- **Las transferencias anunciadas ya no matchean "la más antigua" por monto**:
+  si dos o más anuncios pendientes comparten monto y moneda y nada identifica
+  al pagador, el depósito queda `unassigned` en vez de acreditarse a la cuenta
+  equivocada (fail-closed). El match solo por monto sobrevive cuando hay
+  exactamente UN candidato. Documentado en la sección nueva
+  [Cómo se concilia una transferencia anunciada](/es/guias/payins).
 
 ### v2.13
 

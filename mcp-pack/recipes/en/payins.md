@@ -147,8 +147,9 @@ Response `201`:
 ```
 
 When the transfer arrives it is matched by the reference in the transfer
-description (or by amount+currency as a fallback) and your account is
-credited automatically.
+description and your account is credited automatically. If the reference
+does not travel, the payer's document backs it up — see
+[matching an announced transfer](#matching-an-announced-transfer).
 
 #### Peru
 
@@ -179,7 +180,8 @@ Response `201`:
 
 The `reference` is a **short 12-character alphanumeric code** (it fits any
 bank concept field) and must travel in the transfer description for the
-automatic match; amount+currency is used as a fallback matcher.
+automatic match. Send `payer_document` as a backup —
+[how matching works](#matching-an-announced-transfer).
 
 #### Mexico
 
@@ -462,8 +464,9 @@ Guaraníes use no decimals: announce the **exact integer amount** your
 payer will transfer (e.g. `"596000"`). The `reference` is a short
 12-character alphanumeric code — designed for the SIPAP concept field,
 which accepts **at most 20 characters and no special characters** — and
-putting it in the concept ensures the automatic match; amount+currency
-matching works as a fallback.
+putting it in the concept ensures the automatic match. Send
+`payer_document` as a backup — see
+[matching an announced transfer](#matching-an-announced-transfer).
 #### Brazil
 
 **Dynamic PIX QR**: the same endpoint generates a PIX QR with the amount
@@ -609,6 +612,71 @@ with its own ledger entry, receipt and webhook:
 
 - **Payin refunds** - Refund a card payin fully or partially, void a same-day charge, and understand how a chargeback is applied.
 
+## Matching an announced transfer
+
+An announced transfer (`method: "bank_transfer"`) has no payment session:
+the payer moves the money from their own bank, so the deposit is recognized
+when it lands. Matching runs in this order and stops at the first hit:
+
+1. **`reference`** — the 12-character code in the transfer description.
+2. **Payer document** — the announcement's `payer_document` against the
+   payer the bank reports (dots, dashes and check digit are ignored).
+3. **Single candidate** — exactly one pending announcement for that amount
+   and currency.
+
+> **Important**
+If none of the three resolves to **one** announcement — two pending
+announcements for the same amount, no reference, no payer document — the
+deposit is **not** credited on a guess: it lands as `unassigned` and your
+CBPay operator routes it. No money is lost; it is already in the collection
+account.
+### Identify the payer (optional, recommended)
+
+`method: "bank_transfer"` accepts the payer's data. Every field is optional
+and additive — existing integrations keep working unchanged:
+
+| Field | Matched against |
+|---|---|
+| `payer_document` | Tax ID / national ID reported by the bank (dots, dashes and check digit ignored) |
+| `payer_name` | Payer name, by tokens (`JUAN PEREZ` matches `PEREZ JUAN SOTO`) |
+| `payer_account` | Payer account number, by its digits |
+
+```bash Request
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "CL",
+    "currency": "CLP",
+    "method": "bank_transfer",
+    "amount": "500000",
+    "payer_document": "17438319-7"
+  }'
+```
+
+```json Response 201
+{
+  "payin_id": "4f81…",
+  "status": "pending",
+  "reference": "CBJ6T3W9M2K5",
+  "note": "include the reference in the transfer description so the deposit is credited automatically",
+  "payer_source": "declared",
+  "payer_document": "17438319-7"
+}
+```
+`payer_source` always comes back so your checkout knows what to ask the
+payer for:
+
+| Value | Meaning |
+|---|---|
+| `declared` | You sent payer data — the document backs up the reference |
+| `account_identity` | No payer sent: the verified tax ID of your account is used (the holder deposits to themselves) |
+| `none` | No identity available — **insist on the reference**, it is the only strong signal left |
+
+> **Note**
+A document shorter than 5 characters or with no digits is dropped as a
+signal (it cannot be told apart from an amount or a bank code). The
+announcement is still created and `payer_source` reports the real coverage.
 ## 3. Receiving the credit
 
 When the payment arrives (through any of the modes), your account is
@@ -661,9 +729,11 @@ curl https://api.qbank.cl/platform/v1/payins/9c2a… \
 | `failed` | The collection failed |
 
 > **Note**
-Deposits arriving by direct transfer without a clear reference stay
-`unassigned` until the CBPay team routes them to an account. Once assigned,
-they are credited with the destination account's rate and fees.
+A deposit that cannot be resolved to a single announcement stays
+`unassigned` until the CBPay team routes it to an account (see
+[matching an announced transfer](#matching-an-announced-transfer)). Once
+assigned, it is credited with the destination account's rate and fees, and
+the announcement it belonged to is closed.
 > **Note**
 When an active charge (QR or checkout) dies unpaid, the payin moves from
 `pending` to `expired` (or `failed`) automatically and you receive the
@@ -709,9 +779,20 @@ enters in USDT and is converted right after at the real price;
 You receive `payin_expired` and the payin closes without moving money.
 Create a new charge — nothing was debited or credited.
 #### The payer transferred a different amount than announced — what now?
-Matching requires the reference **and** the amount to line up. A transfer
-that does not match stays unassigned for reconciliation; your CBPay team
-can assign it to the right payin manually.
+The reference still matches the announcement, but the amount that arrived is
+what gets credited. A transfer that resolves to no announcement stays
+`unassigned` for reconciliation; your CBPay team can assign it to the right
+payin manually.
+#### Two clients announced the same amount and neither sent the reference — who gets the money?
+Nobody by chance. If the payer document does not tell them apart, both
+announcements stay `pending` and the deposit lands as `unassigned` for the
+operator to route. Sending `payer_document` in the announcement is what
+turns this case into an automatic credit.
+#### Do I have to send payer_document now?
+No — it is optional and nothing breaks without it. When you omit it, the
+verified tax ID of the account is used (`payer_source: account_identity`),
+which covers self-deposits. Send it whenever a third party pays for your
+client, and always show the `reference` to the payer.
 #### Why did my collect (pull) charge fail?
 The response and `GET /v1/payins/{id}` persist a `failure` block with the
 rail's code and message (for example, a document that does not match the

@@ -8,7 +8,31 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-## v2.13 · 5 个版本 - 2026年7月25日
+## v2.14 · 6 个版本 - 2026年7月25日
+
+### v2.14
+
+**新增**
+
+- **预告转账的付款人识别**（[充值](https://docs.cbpayapp.com/zh/guides/payins)）：
+  `POST /v1/payins` 使用 `method: "bank_transfer"` 时可选传入
+  `payer_name`、`payer_document` 与 `payer_account`。如果你不传
+  `payer_document` 且该账户是已验证的个人，系统默认使用持有人的证件号，
+  这样即使转账没有附言参考号，也能通过银行报告的付款人完成匹配。
+  响应中的 `payer_source`（`declared`、`account_identity` 或 `none`）
+  会说明最终使用的是哪种身份。
+- **充值上的匹配审计**：`GET /v1/payins/{id}` 会返回 `match_method`
+  （`reference`、`payer_document`、`payer_account`、`payer_name`、
+  `single_candidate` 等）以及通道报告的 `payer` 区块，让你清楚看到这笔
+  充值为什么进入了该账户。
+
+**变更**
+
+- **预告转账不再按金额匹配"最早的一笔"**：如果两条或以上待处理预告的
+  金额与币种相同，且没有任何信息可识别付款人，该充值会保持
+  `unassigned`，而不是错误入账到其他账户（fail-closed）。仅当只有
+  **一个**候选时，纯金额匹配才继续生效。详见新增章节
+  [预告转账的匹配规则](https://docs.cbpayapp.com/zh/guides/payins)。
 
 ### v2.13
 

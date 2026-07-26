@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.13'
+  version: '2.14'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -3679,6 +3679,27 @@ paths:
                     /v1/stored-cards). La página hosted salta la captura de tarjeta y muestra la
                     guardada; el 3-D Secure corre igual. Mutuamente excluyente con `save_card`.
                     Tarjeta desconocida o revocada responde 404. Los datos de facturación guardados con la credencial se aplican automáticamente en la página hosted (resumen enmascarado con enlace para editar — el pagador no re-tipea nada).
+                payer_name:
+                  type: string
+                  maxLength: 140
+                  description: >-
+                    Solo transferencia anunciada — nombre de la persona o empresa que hará la
+                    transferencia, cuando NO es el titular de la cuenta. Opcional.
+                payer_document:
+                  type: string
+                  maxLength: 40
+                  description: >-
+                    Solo transferencia anunciada — documento tributario o de identidad del pagador
+                    (al menos 5 caracteres, uno de ellos un dígito). Opcional: si lo omites se usa
+                    el documento verificado del titular, así un depósito propio se reconoce aunque
+                    el pagador olvide la referencia. Envíalo cuando paga un tercero.
+                payer_account:
+                  type: string
+                  maxLength: 40
+                  description: >-
+                    Solo transferencia anunciada — número de cuenta bancaria del pagador (al menos
+                    5 caracteres). Opcional; es una señal extra de conciliación cuando el corredor
+                    informa la cuenta de origen.
             examples:
               bo_qr:
                 summary: Bolivia — cobro QR (BOB)
@@ -3705,6 +3726,7 @@ paths:
                   currency: CLP
                   method: bank_transfer
                   amount: '500000'
+                  payer_document: '17438319-7'
               py_announced_transfer:
                 summary: Paraguay — transferencia bancaria anunciada (PYG, montos enteros)
                 value:
@@ -16152,6 +16174,51 @@ components:
               type: string
             message:
               type: string
+        payer_source:
+          type: string
+          enum:
+          - declared
+          - account_identity
+          - none
+          - bank_event
+          description: >-
+            Transferencias anunciadas y depósitos sin asignar — de dónde salió la identidad del
+            pagador. `declared` la enviaste tú, `account_identity` se usó por defecto el documento
+            verificado del titular, `none` no había identidad disponible (solo la referencia puede
+            conciliar), `bank_event` (depósitos sin asignar) se leyó de la transferencia que llegó.
+        payer:
+          type: object
+          description: Identidad del pagador asociada al payin, cuando se conoce.
+          properties:
+            name:
+              type: string
+            document:
+              type: string
+            account:
+              type: string
+        match_method:
+          type: string
+          enum:
+          - reference
+          - payer_document
+          - payer_account
+          - payer_name
+          - single_candidate
+          - dedicated_instrument
+          - collect_settlement
+          description: Cómo se concilió la transferencia con este payin (traza de auditoría).
+        match_reason:
+          type: string
+          description: >-
+            Por qué el depósito NO se pudo conciliar automáticamente, en payins `unassigned` —
+            `no_match`, `ambiguous_amount` (dos o más anuncios comparten el monto),
+            `ambiguous_payer`, `claim_lost` (otro evento tomó el anuncio primero) o
+            `assigned_to:<payin_id>`.
+        candidate_count:
+          type: integer
+          description: >-
+            Cantidad de anuncios pendientes que coincidían con el monto y la moneda de un depósito
+            `unassigned` (2 o más significa que el depósito era ambiguo).
     PayinRefund:
       type: object
       properties:

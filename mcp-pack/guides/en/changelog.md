@@ -8,7 +8,32 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.13 · 5 releases - July 25, 2026
+## v2.14 · 6 releases - July 25, 2026
+
+### v2.14
+
+**Added**
+
+- **Payer identification on announced transfers** ([payins](https://docs.cbpayapp.com/en/guides/payins)):
+  `POST /v1/payins` with `method: "bank_transfer"` accepts the optional
+  `payer_name`, `payer_document` and `payer_account`. If you do not send
+  `payer_document` and the account is a verified individual, the holder's
+  document is used by default, so a deposit that arrives without a reference is
+  still matched by the payer the bank reports. The response says which identity
+  is in play with `payer_source` (`declared`, `account_identity` or `none`).
+- **Matching audit on the payin**: `GET /v1/payins/{id}` exposes `match_method`
+  (`reference`, `payer_document`, `payer_account`, `payer_name`,
+  `single_candidate`…) and the `payer` block the rail reported, so you can see
+  exactly why a deposit landed in that account.
+
+**Changed**
+
+- **Announced transfers no longer match "the oldest one" by amount**: if two or
+  more pending announcements share amount and currency and nothing identifies
+  the payer, the deposit stays `unassigned` instead of crediting the wrong
+  account (fail-closed). The amount-only match survives only when there is
+  exactly ONE candidate. Documented in the new
+  [How an announced transfer is matched](https://docs.cbpayapp.com/en/guides/payins) section.
 
 ### v2.13
 
