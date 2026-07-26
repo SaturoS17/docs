@@ -3885,8 +3885,51 @@ paths:
                     checkout_url: https://api.qbank.cl/platform/pay/fc4981b8e7c7…
                     expires_at: '2026-07-17T17:57:44Z'
                     receipt_url: https://api.qbank.cl/platform/v1/payins/d0135ed5-8e9c-4f8b-a522-8ec100470426/receipt
+        '200':
+          description: >-
+            Replay idempotente de un anuncio de transferencia (`bank_transfer`): el anuncio
+            ORIGINAL, con la misma `reference`. Tambien se devuelve cuando un POST sin clave
+            de idempotencia calza con un anuncio vivo indistinguible (misma cuenta, moneda,
+            monto y pagador).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payin_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                  reference:
+                    type: string
+                  payer_source:
+                    type: string
+                  idempotency_hit:
+                    type: boolean
+              example:
+                payin_id: 4f81c1d0-aaaa-bbbb-cccc-ddddeeeeffff
+                status: pending
+                reference: CBJ6T3W9M2K5
+                note: include the reference in the transfer description so the deposit is credited
+                  automatically
+                payer_source: declared
+                payer_document: 17438319-7
+                idempotency_hit: true
         '400':
           $ref: '#/components/responses/BadRequest'
+        '409':
+          description: >-
+            `idempotency_conflict` — esta clave de idempotencia ya se uso con otro metodo de
+            payin (QR, checkout, tarjeta). Las claves son unicas por cuenta: usa una clave por
+            operacion logica.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: idempotency_conflict
+                message: this idempotency key was used with a different payin method
         '403':
           $ref: '#/components/responses/AccountRequired'
         '422':

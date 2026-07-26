@@ -722,6 +722,12 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
 `idempotency_key` —— 每个键值都会创建各自的预告与 `reference`。
 </Warning>
 
+<Note>
+幂等键在**账户内按逻辑操作唯一**：若你复用一个已用于**其他**收款方式
+（QR、checkout、卡支付）的 `idempotency_key`，API 会返回
+`409 idempotency_conflict`，而不是返回与请求不符的对象。
+</Note>
+
 ## 3. 接收入账
 
 当付款到达（无论通过哪种模式），您的账户会自动入账，并触发

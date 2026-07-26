@@ -719,6 +719,11 @@ a key reuses a live identical announcement instead of duplicating it (also
 To collect **two real payments** of the same amount from the same payer,
 send a different `idempotency_key` for each one — each key creates its own
 announcement with its own `reference`.
+> **Note**
+Keys are **unique per account and per logical operation**: if you reuse an
+`idempotency_key` that was already used with ANOTHER payin method (QR,
+checkout, card), the API replies `409 idempotency_conflict` instead of
+returning an object that does not match your request.
 ## 3. Receiving the credit
 
 When the payment arrives (through any of the modes), your account is

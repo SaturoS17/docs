@@ -721,6 +721,11 @@ un anuncio vivo idéntico en lugar de duplicarlo (también `200` con
 Para cobrar **dos pagos reales** del mismo monto al mismo pagador, manda una
 `idempotency_key` distinta en cada uno — cada clave crea su anuncio con su
 propia `reference`.
+> **Nota**
+Las claves son **únicas por cuenta y por operación lógica**: si reutilizas una
+`idempotency_key` que ya usaste con OTRO método de payin (QR, checkout,
+tarjeta), la API responde `409 idempotency_conflict` en vez de devolverte un
+objeto que no corresponde.
 ## 3. Recibe el abono
 
 Cuando el pago llega (por cualquiera de las modalidades), tu cuenta se

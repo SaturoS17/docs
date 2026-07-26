@@ -25,7 +25,10 @@ con anticipación y quedan marcados como **Breaking**.
   `idempotency_hit: true`). Un POST sin clave reutiliza un anuncio vivo
   idéntico (misma cuenta, moneda, monto y pagador) en vez de duplicarlo. Para
   cobrar dos pagos reales del mismo monto al mismo pagador, manda una clave
-  distinta en cada anuncio.
+  distinta en cada anuncio. Reutilizar una clave que ya usaste con OTRO
+  método de payin (QR, checkout, tarjeta) responde ahora
+  `409 idempotency_conflict` en vez de devolver un objeto que no
+  corresponde.
 </Update>
 
 <Update label="25 de julio de 2026" description="v2.14 · 6 versiones">

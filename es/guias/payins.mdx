@@ -769,6 +769,13 @@ Para cobrar **dos pagos reales** del mismo monto al mismo pagador, manda una
 propia `reference`.
 </Warning>
 
+<Note>
+Las claves son **únicas por cuenta y por operación lógica**: si reutilizas una
+`idempotency_key` que ya usaste con OTRO método de payin (QR, checkout,
+tarjeta), la API responde `409 idempotency_conflict` en vez de devolverte un
+objeto que no corresponde.
+</Note>
+
 ## 3. Recibe el abono
 
 Cuando el pago llega (por cualquiera de las modalidades), tu cuenta se

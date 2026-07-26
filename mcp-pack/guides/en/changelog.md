@@ -24,7 +24,10 @@ Breaking changes are announced in advance and flagged as **Breaking**.
   `idempotency_hit: true`). A POST without a key reuses a live identical
   announcement (same account, currency, amount and payer) instead of
   duplicating it. To collect two real payments of the same amount from the
-  same payer, send a different key for each announcement.
+  same payer, send a different key for each announcement. Reusing a key
+  that was already used with ANOTHER payin method (QR, checkout, card)
+  now replies `409 idempotency_conflict` instead of returning an object
+  that does not match the request.
 ## v2.14 · 6 releases - July 25, 2026
 
 ### v2.14

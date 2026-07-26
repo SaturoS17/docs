@@ -767,6 +767,13 @@ send a different `idempotency_key` for each one — each key creates its own
 announcement with its own `reference`.
 </Warning>
 
+<Note>
+Keys are **unique per account and per logical operation**: if you reuse an
+`idempotency_key` that was already used with ANOTHER payin method (QR,
+checkout, card), the API replies `409 idempotency_conflict` instead of
+returning an object that does not match your request.
+</Note>
+
 ## 3. Receiving the credit
 
 When the payment arrives (through any of the modes), your account is
