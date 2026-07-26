@@ -7,6 +7,25 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 26, 2026" description="v2.15 · 1 release">
+
+### v2.15
+
+**Fixed**
+
+- **Announced transfers now honour idempotency** ([payins](/en/guides/payins)):
+  `POST /v1/payins` with `method: "bank_transfer"` accepted `idempotency_key`
+  and ignored it, so a retry (timeout, double click) opened a second
+  announcement. Two live announcements with the same amount are exactly the
+  case matching refuses to resolve, so the real deposit landed `unassigned`.
+  A retry with the same key — body field or `Idempotency-Key` header — now
+  replays the original announcement (same `reference`, HTTP `200` with
+  `idempotency_hit: true`). A POST without a key reuses a live identical
+  announcement (same account, currency, amount and payer) instead of
+  duplicating it. To collect two real payments of the same amount from the
+  same payer, send a different key for each announcement.
+</Update>
+
 <Update label="July 25, 2026" description="v2.14 · 6 releases">
 
 ### v2.14

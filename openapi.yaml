@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.14'
+  version: '2.15'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -3608,10 +3608,18 @@ paths:
                     collections.
                 idempotency_key:
                   type: string
-                  description: Optional idempotency key (`fintoc`, `card` and `checkout` methods; also
-                    accepted as the `Idempotency-Key` header). A retry with the same key returns the
-                    original payin and its `payment_url`/`checkout_url` instead of opening a second
-                    payment session.
+                  description: >-
+                    Optional idempotency key (`bank_transfer`, `fintoc`, `card` and `checkout`
+                    methods; also accepted as the `Idempotency-Key` header). A retry with the same
+                    key returns the original payin with HTTP 200 and `idempotency_hit: true` — the
+                    same `payment_url`/`checkout_url` for hosted methods, or the SAME `reference`
+                    for an announced bank transfer — instead of opening a second charge. On
+                    announced transfers this decides whether the money can be credited: two live
+                    announcements with the same amount and no payer identity are indistinguishable,
+                    so the arriving deposit would stay `unassigned`. If you omit the key we still
+                    collapse an identical retry (same account, currency, amount and payer document)
+                    into the original announcement; send a distinct key when you really need two
+                    separate charges for the same amount and payer.
                 customer:
                   type: object
                   description: Optional billing prefill for the card checkout (`card` method) — `email`,
@@ -3710,6 +3718,7 @@ paths:
                   method: bank_transfer
                   amount: '500000'
                   payer_document: '17438319-7'
+                  idempotency_key: topup-9912
               py_announced_transfer:
                 summary: Paraguay — announced bank transfer (PYG, integer amounts)
                 value:

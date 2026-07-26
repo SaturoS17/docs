@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.14'
+  version: '2.15'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -3440,8 +3440,8 @@ paths:
                     收款请使用 /v1/payins/collect。
                 idempotency_key:
                   type: string
-                  description: 可选幂等键(`fintoc`、`card` 与 `checkout` 方式;也接受 `Idempotency-Key` 请求头)。使用相同键重试会返回原始
-                    payin 及其 `payment_url`/`checkout_url`,而不会开启第二个支付会话。
+                  description: >-
+                    可选幂等键(`bank_transfer`、`fintoc`、`card` 与 `checkout` 方式;也接受 `Idempotency-Key` 请求头)。使用相同键重试会返回原始 payin,HTTP 200 且带 `idempotency_hit: true` —— 托管方式返回同一个 `payment_url`/`checkout_url`,预告银行转账返回同一个 `reference` —— 而不会开启第二笔收款。对预告转账而言,这直接决定资金能否入账:两笔金额相同、且没有付款人身份的存活预告无法区分,到账存款会停留在 `unassigned`。若省略该键,我们仍会把完全相同的重试(同一账户、货币、金额与付款人证件号)合并到原始预告;当您确实需要针对同一金额与同一付款人创建两笔独立收款时,请发送不同的键。
                 customer:
                   type: object
                   description: 银行卡收银台的可选账单预填(`card` 方式)—— `email`、`first_name`、`last_name`、`address`、`city`、`country`(纯文本,每个字段最多
@@ -3527,6 +3527,7 @@ paths:
                   method: bank_transfer
                   amount: '500000'
                   payer_document: '17438319-7'
+                  idempotency_key: topup-9912
               py_announced_transfer:
                 summary: 巴拉圭 — 预告银行转账(PYG,整数金额)
                 value:

@@ -8,6 +8,21 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+## v2.15 · 1 个版本 - 2026年7月26日
+
+### v2.15
+
+**修复**
+
+- **预告转账现已遵循幂等性**（[payins](https://docs.cbpayapp.com/zh/guides/payins)）：
+  `POST /v1/payins` 在 `method: "bank_transfer"` 下接受 `idempotency_key`
+  却将其忽略，因此重试（超时、重复点击）会创建第二个预告。两个金额相同的
+  活跃预告正是匹配逻辑拒绝解析的情况，因此真实到账会变为
+  `unassigned`。现在，使用相同密钥（请求体字段或 `Idempotency-Key`
+  请求头）重试会返回原始预告（相同 `reference`，HTTP `200` 且包含
+  `idempotency_hit: true`）。不带密钥的 POST 会复用完全相同的活跃预告
+  （同一账户、币种、金额和付款人），而不是重复创建。若要向同一付款人
+  收取两笔金额相同的真实款项，请为每个预告发送不同的密钥。
 ## v2.14 · 6 个版本 - 2026年7月25日
 
 ### v2.14

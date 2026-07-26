@@ -9,6 +9,24 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+## v2.15 · 1 versión - 26 de julio de 2026
+
+### v2.15
+
+**Corregido**
+
+- **Las transferencias anunciadas ya respetan la idempotencia**
+  ([payins](https://docs.cbpayapp.com/es/guias/payins)): `POST /v1/payins` con
+  `method: "bank_transfer"` aceptaba `idempotency_key` y la ignoraba, así que
+  un reintento (timeout, doble clic) abría un segundo anuncio. Dos anuncios
+  vivos con el mismo monto son justo el caso que la conciliación se niega a
+  resolver, por lo que el abono real quedaba `unassigned`. Ahora un reintento
+  con la misma clave — campo del body o header `Idempotency-Key` — devuelve
+  el anuncio original (misma `reference`, HTTP `200` con
+  `idempotency_hit: true`). Un POST sin clave reutiliza un anuncio vivo
+  idéntico (misma cuenta, moneda, monto y pagador) en vez de duplicarlo. Para
+  cobrar dos pagos reales del mismo monto al mismo pagador, manda una clave
+  distinta en cada anuncio.
 ## v2.14 · 6 versiones - 25 de julio de 2026
 
 ### v2.14

@@ -679,6 +679,48 @@ pedirle al pagador:
 Un documento de menos de 5 caracteres o sin dígitos se descarta como señal
 (no se puede distinguir de un monto o un código de banco). El anuncio se crea
 igual y `payer_source` reporta la cobertura real.
+### Reintentos e idempotencia
+
+El anuncio acepta `idempotency_key` (en el body) o el header
+`Idempotency-Key`. Un reintento con la MISMA clave devuelve el anuncio
+**original** — misma `reference` — con `idempotency_hit: true` y HTTP `200`,
+en vez de crear un segundo anuncio.
+
+```bash Request (reintento)
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: topup-9912" \
+  -d '{
+    "country": "CL",
+    "currency": "CLP",
+    "method": "bank_transfer",
+    "amount": "500000",
+    "payer_document": "17438319-7"
+  }'
+```
+
+```json Response 200
+{
+  "payin_id": "4f81…",
+  "status": "pending",
+  "reference": "CBJ6T3W9M2K5",
+  "note": "include the reference in the transfer description so the deposit is credited automatically",
+  "payer_source": "declared",
+  "payer_document": "17438319-7",
+  "idempotency_hit": true
+}
+```
+> **Importante**
+Dos anuncios vivos idénticos (misma cuenta, moneda, monto y pagador) son
+justo el caso que la conciliación se niega a resolver: el depósito real
+calza con ambos y queda `unassigned`. Por eso un POST **sin** clave reutiliza
+un anuncio vivo idéntico en lugar de duplicarlo (también `200` con
+`idempotency_hit: true`).
+
+Para cobrar **dos pagos reales** del mismo monto al mismo pagador, manda una
+`idempotency_key` distinta en cada uno — cada clave crea su anuncio con su
+propia `reference`.
 ## 3. Recibe el abono
 
 Cuando el pago llega (por cualquiera de las modalidades), tu cuenta se
@@ -795,6 +837,13 @@ No — es opcional y nada se rompe sin él. Si lo omites, se usa el RUT
 verificado de la cuenta (`payer_source: account_identity`), que cubre los
 depósitos del propio titular. Mándalo cuando un tercero pague por tu cliente,
 y muéstrale SIEMPRE la `reference` al pagador.
+#### Reintenté el POST del anuncio, ¿creé dos anuncios?
+No. Con `idempotency_key` (body o header `Idempotency-Key`) el reintento
+devuelve el anuncio original con `idempotency_hit: true`. Incluso sin clave,
+un POST idéntico a un anuncio vivo (misma cuenta, moneda, monto y pagador)
+lo reutiliza — duplicarlo dejaría el depósito real `unassigned` por
+ambigüedad. Manda claves distintas solo cuando de verdad quieras cobrar dos
+veces.
 #### ¿Por qué falló mi cobro collect (pull)?
 La respuesta y `GET /v1/payins/{id}` persisten un bloque `failure` con el
 código y mensaje del riel (por ejemplo, un documento que no calza con el

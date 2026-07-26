@@ -678,6 +678,50 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
 预告仍会创建，且 `payer_source` 会如实反映覆盖情况。
 </Note>
 
+### 重试与幂等
+
+预告接受 `idempotency_key`（请求体）或 `Idempotency-Key` 请求头。使用相同
+键值重试会返回**原始**预告 —— 相同的 `reference` —— 并带上
+`idempotency_hit: true` 与 HTTP `200`，而不会创建第二笔预告。
+
+<CodeGroup>
+```bash Request（重试）
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: topup-9912" \
+  -d '{
+    "country": "CL",
+    "currency": "CLP",
+    "method": "bank_transfer",
+    "amount": "500000",
+    "payer_document": "17438319-7"
+  }'
+```
+
+```json Response 200
+{
+  "payin_id": "4f81…",
+  "status": "pending",
+  "reference": "CBJ6T3W9M2K5",
+  "note": "include the reference in the transfer description so the deposit is credited automatically",
+  "payer_source": "declared",
+  "payer_document": "17438319-7",
+  "idempotency_hit": true
+}
+```
+</CodeGroup>
+
+<Warning>
+两笔完全相同的存活预告（同一账户、货币、金额与付款人）正是匹配拒绝解析的场景：
+真实存款与两者都匹配，最终以 `unassigned` 落地。因此**未带**键值的 POST 会复用
+已存在的相同存活预告，而不是再创建一笔（同样返回 `200` 与
+`idempotency_hit: true`）。
+
+若要向同一付款人收取**两笔真实付款**且金额相同，请为每一笔传入不同的
+`idempotency_key` —— 每个键值都会创建各自的预告与 `reference`。
+</Warning>
+
 ## 3. 接收入账
 
 当付款到达（无论通过哪种模式），您的账户会自动入账，并触发
@@ -800,6 +844,12 @@ USDT，随后立即按真实价格转换；`conversion_status` 报告 `done` 或
 不必 —— 它是可选的，不传也不会有任何中断。省略时会使用该账户已验证的税号
 （`payer_source: account_identity`），覆盖持有人自存的场景。当由第三方为你的
 客户付款时再传它，并始终向付款人展示 `reference`。
+</Accordion>
+<Accordion title="我重试了预告的 POST，是否创建了两笔预告？">
+不会。带上 `idempotency_key`（请求体或 `Idempotency-Key` 请求头）时，重试会
+返回原始预告并带 `idempotency_hit: true`。即使未带键值，与某笔存活预告完全相同
+的 POST（同一账户、货币、金额与付款人）也会复用它 —— 复制会因歧义而让真实存款
+落到 `unassigned`。只有确实要收两笔款时，才为每笔传入不同的键值。
 </Accordion>
 <Accordion title="为什么我的 collect（pull）收款失败了？">
 响应和 `GET /v1/payins/{id}` 会持久化 `failure` 块，包含通道的代码和消息

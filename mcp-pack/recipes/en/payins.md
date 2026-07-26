@@ -677,6 +677,48 @@ payer for:
 A document shorter than 5 characters or with no digits is dropped as a
 signal (it cannot be told apart from an amount or a bank code). The
 announcement is still created and `payer_source` reports the real coverage.
+### Retries and idempotency
+
+The announcement accepts `idempotency_key` (body) or the `Idempotency-Key`
+header. A retry with the same key returns the **original** announcement —
+same `reference` — with `idempotency_hit: true` and HTTP `200` instead of
+creating a second one.
+
+```bash Request (retry)
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: topup-9912" \
+  -d '{
+    "country": "CL",
+    "currency": "CLP",
+    "method": "bank_transfer",
+    "amount": "500000",
+    "payer_document": "17438319-7"
+  }'
+```
+
+```json Response 200
+{
+  "payin_id": "4f81…",
+  "status": "pending",
+  "reference": "CBJ6T3W9M2K5",
+  "note": "include the reference in the transfer description so the deposit is credited automatically",
+  "payer_source": "declared",
+  "payer_document": "17438319-7",
+  "idempotency_hit": true
+}
+```
+> **Important**
+Two live announcements that look identical (same account, currency, amount
+and payer) are exactly the case matching refuses to resolve: the real
+deposit matches both and lands `unassigned`. That is why a POST **without**
+a key reuses a live identical announcement instead of duplicating it (also
+`200` with `idempotency_hit: true`).
+
+To collect **two real payments** of the same amount from the same payer,
+send a different `idempotency_key` for each one — each key creates its own
+announcement with its own `reference`.
 ## 3. Receiving the credit
 
 When the payment arrives (through any of the modes), your account is
@@ -793,6 +835,13 @@ No — it is optional and nothing breaks without it. When you omit it, the
 verified tax ID of the account is used (`payer_source: account_identity`),
 which covers self-deposits. Send it whenever a third party pays for your
 client, and always show the `reference` to the payer.
+#### I retried the announcement POST — did I create two announcements?
+No. With `idempotency_key` (body or `Idempotency-Key` header) the retry
+returns the original announcement with `idempotency_hit: true`. Even without
+a key, a POST that is identical to a live announcement (same account,
+currency, amount and payer) reuses it — duplicating it would leave the real
+deposit `unassigned` for ambiguity. Send different keys only when you really
+want to collect twice.
 #### Why did my collect (pull) charge fail?
 The response and `GET /v1/payins/{id}` persist a `failure` block with the
 rail's code and message (for example, a document that does not match the
