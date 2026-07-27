@@ -8,6 +8,22 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+## v2.16 · 1 个版本 - 2026年7月27日
+
+### v2.16
+
+**修复**
+
+- **QR 收款现在始终自动入账**（[payins](https://docs.cbpayapp.com/zh/guides/payins)）：已支付的 QR
+  可能停留在 `pending`，而资金以未指派存款的形式到账——因为银行转账不携带
+  收款的参考号，且按金额对账仅保留给预告转账。现在，结清收款（QR、checkout
+  链接或银行卡）的存款会携带与已支付收款单的关联，并一对一路由到其
+  payin——不使用启发式匹配。入账的 payin 以 `match_method: charge_link`
+  声明该关联，这是所有对账信号中最强的一种。
+- **`match_method` 枚举文档化**：参考文档曾列出 `single_candidate` 与
+  `dedicated_instrument`，但 API 中并不存在。真实值为
+  `amount_single_candidate` 与 `dedicated_clabe`；spec 中新增了
+  `charge_link` 与 `manual_assign`（管理员手工路由存款）。
 ## v2.15 · 1 个版本 - 2026年7月26日
 
 ### v2.15

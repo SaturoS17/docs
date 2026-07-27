@@ -8,6 +8,26 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+## v2.16 · 1 release - July 27, 2026
+
+### v2.16
+
+**Fixed**
+
+- **QR collections now always credit on their own**
+  ([payins](https://docs.cbpayapp.com/en/guides/payins)): a paid QR could stay `pending` while the
+  money arrived as an unassigned deposit, because the bank transfer does not
+  carry the collection's reference and amount-based reconciliation is
+  reserved for announced transfers. The deposit that settles a collection
+  (QR, checkout link or card) now travels with the link to the paid charge
+  and is routed one-to-one to its payin — no heuristics. The credited payin
+  declares it with `match_method: charge_link`, the strongest reconciliation
+  signal of all.
+- **`match_method` documented enum**: the reference listed
+  `single_candidate` and `dedicated_instrument`, which do not exist in the
+  API. The real values are `amount_single_candidate` and `dedicated_clabe`;
+  `charge_link` and `manual_assign` (an admin routed the deposit by hand)
+  were added to the spec.
 ## v2.15 · 1 release - July 26, 2026
 
 ### v2.15

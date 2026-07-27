@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.15'
+  version: '2.16'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -16226,14 +16226,20 @@ components:
         match_method:
           type: string
           enum:
+          - charge_link
           - reference
           - payer_document
           - payer_account
           - payer_name
-          - single_candidate
-          - dedicated_instrument
+          - amount_single_candidate
+          - dedicated_clabe
           - collect_settlement
-          description: How the arriving transfer was matched to this payin (audit trail).
+          - manual_assign
+          description: >-
+            How the arriving transfer was matched to this payin (audit trail). `charge_link`
+            means the deposit settled the charge created for this payin (QR, checkout link or
+            card) and was linked one-to-one by that charge - the strongest signal, no
+            heuristics involved. `manual_assign` means an org admin routed the deposit by hand.
         match_reason:
           type: string
           description: >-

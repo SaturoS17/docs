@@ -9,6 +9,25 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+## v2.16 · 1 versión - 27 de julio de 2026
+
+### v2.16
+
+**Corregido**
+
+- **Los cobros QR se acreditan siempre solos** ([payins](https://docs.cbpayapp.com/es/guias/payins)):
+  un QR pagado podía quedar `pending` mientras el dinero entraba como
+  depósito sin asignar, porque la transferencia del banco no trae la
+  referencia del cobro y la conciliación por monto está reservada a las
+  transferencias anunciadas. Ahora el abono que liquida un cobro (QR, link
+  de checkout o tarjeta) viaja con el vínculo al cobro pagado y se rutea
+  uno a uno a su payin — sin heurística. El payin acreditado lo declara con
+  `match_method: charge_link`, la señal de conciliación más fuerte de todas.
+- **Enum documentado de `match_method`**: la referencia listaba
+  `single_candidate` y `dedicated_instrument`, que no existen en la API. Los
+  valores reales son `amount_single_candidate` y `dedicated_clabe`; se
+  agregaron `charge_link` y `manual_assign` (un admin ruteó el depósito a
+  mano) al spec.
 ## v2.15 · 1 versión - 26 de julio de 2026
 
 ### v2.15

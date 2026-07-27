@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.15'
+  version: '2.16'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -16252,14 +16252,20 @@ components:
         match_method:
           type: string
           enum:
+          - charge_link
           - reference
           - payer_document
           - payer_account
           - payer_name
-          - single_candidate
-          - dedicated_instrument
+          - amount_single_candidate
+          - dedicated_clabe
           - collect_settlement
-          description: Cómo se concilió la transferencia con este payin (traza de auditoría).
+          - manual_assign
+          description: >-
+            Cómo se concilió la transferencia con este payin (traza de auditoría). `charge_link`
+            significa que el abono pagó el cobro creado para este payin (QR, link de checkout o
+            tarjeta) y se vinculó uno a uno por ese cobro — la señal más fuerte, sin
+            heurísticas. `manual_assign` significa que un admin de la org lo ruteó a mano.
         match_reason:
           type: string
           description: >-

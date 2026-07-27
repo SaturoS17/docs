@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.15'
+  version: '2.16'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -15782,14 +15782,19 @@ components:
         match_method:
           type: string
           enum:
+          - charge_link
           - reference
           - payer_document
           - payer_account
           - payer_name
-          - single_candidate
-          - dedicated_instrument
+          - amount_single_candidate
+          - dedicated_clabe
           - collect_settlement
-          description: 到账转账与该 payin 的匹配方式（审计线索）。
+          - manual_assign
+          description: >-
+            到账转账与该 payin 的匹配方式（审计线索）。`charge_link` 表示该存款支付了为此 payin
+            创建的收款（QR、checkout 链接或卡），并按该收款一对一关联 — 最强信号，无需启发式匹配。
+            `manual_assign` 表示由组织管理员手工路由。
         match_reason:
           type: string
           description: >-
