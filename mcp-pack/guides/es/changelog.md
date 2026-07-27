@@ -9,7 +9,21 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-## v2.17 · 2 versiones - 27 de julio de 2026
+## v2.18 · 3 versiones - 27 de julio de 2026
+
+### v2.18
+
+**Corregido**
+
+- **Montos siempre en decimal plano** ([payins](https://docs.cbpayapp.com/es/guias/payins)): el campo
+  `local_amount` de los payins (y el `amount` de los eventos de cobro) se
+  devuelve siempre como texto decimal — por ejemplo `"5000000"` —, nunca en
+  notación científica. En depósitos de montos altos en monedas sin decimales
+  (CLP, PYG, COP) un abono podía quedar registrado como `"5e+06"`: el monto
+  era ilegible para tu integración y el abono no lograba emparejarse con su
+  transferencia anunciada, quedando sin acreditar. La corrección aplica
+  también a los registros históricos: al consultarlos por la API se leen ya
+  normalizados, sin que se altere ningún dato contable.
 
 ### v2.17
 

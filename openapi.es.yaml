@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.17'
+  version: '2.18'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -16563,6 +16563,9 @@ components:
           type: string
         local_amount:
           type: string
+          description: >-
+            Monto en la moneda local, como texto decimal plano (por ejemplo
+            "5000000"). Nunca en notación científica.
         settlement_asset:
           type: string
           enum:

@@ -8,7 +8,21 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.17 · 2 releases - July 27, 2026
+## v2.18 · 3 releases - July 27, 2026
+
+### v2.18
+
+**Fixed**
+
+- **Amounts always as plain decimals** ([payins](https://docs.cbpayapp.com/en/guides/payins)): the
+  `local_amount` field on payins (and the `amount` on charge events) is always
+  returned as decimal text — for example `"5000000"` — never in scientific
+  notation. On large deposits in zero-decimal currencies (CLP, PYG, COP) a
+  credit could be recorded as `"5e+06"`: the amount was unreadable for your
+  integration and the deposit failed to match its announced transfer, so it
+  was never credited. The fix also covers historical records: reading them
+  through the API now returns them normalized, without altering any accounting
+  data.
 
 ### v2.17
 
