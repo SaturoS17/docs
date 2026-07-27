@@ -1,5 +1,5 @@
 {
-  "count": 161,
+  "count": 163,
   "errors": [
     {
       "category": {
@@ -892,9 +892,23 @@
       "code": "invalid_language",
       "http": 400,
       "meaning": {
-        "en": "The PDF report `lang` is not `en`, `es` or `zh` (AML report)",
-        "es": "`lang` del informe PDF no es `en`, `es` ni `zh` (informe AML)",
-        "zh": "PDF 报告的 `lang` 不是 `en`、`es` 或 `zh`（AML 报告）"
+        "en": "The PDF report `lang` is not `en`, `es` or `zh` (AML report and verification report)",
+        "es": "`lang` del informe PDF no es `en`, `es` ni `zh` (informe AML e informe de verificación)",
+        "zh": "PDF 报告的 `lang` 不是 `en`、`es` 或 `zh`（AML 报告与验证报告）"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_format",
+      "http": 400,
+      "meaning": {
+        "en": "The verification report `format` is not `pdf` or `json`",
+        "es": "`format` del informe de verificación no es `pdf` ni `json`",
+        "zh": "验证报告的 `format` 不是 `pdf` 或 `json`"
       }
     },
     {
@@ -1133,6 +1147,20 @@
         "en": "Transfer destination does not exist",
         "es": "Destino de transferencia inexistente",
         "zh": "转账目标不存在"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "verification_not_found",
+      "http": 404,
+      "meaning": {
+        "en": "The account has no submitted verification yet (`GET /v1/me/verification/report` before onboarding)",
+        "es": "La cuenta aún no tiene ninguna verificación enviada (`GET /v1/me/verification/report` antes del onboarding)",
+        "zh": "账户尚未提交任何验证（在完成入驻前调用 `GET /v1/me/verification/report`）"
       }
     },
     {

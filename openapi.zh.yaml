@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.16'
+  version: '2.17'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -322,6 +322,51 @@ paths:
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /verify/reports/{code}:
+    get:
+      security: []
+      tags:
+      - KYC / KYB
+      operationId: verifyReport
+      summary: 验证报告真伪（公开）
+      description: >-
+        每份验证报告上印的二维码背后的公开端点（无需凭证）。验证码经加密签名 - 被篡改或伪造的验证码将返回 404 且
+        valid=false。响应仅暴露类型（KYC/KYB）、当前的决定状态及其日期 - 绝不暴露主体身份、文件或 AML 结果。浏览器收到品牌化 HTML 页面；API 客户端收到 JSON。按
+        IP 限流。
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+        description: 报告上印的验证码（也嵌入在二维码 URL 中）。
+      responses:
+        '200':
+          description: 报告为真；验证的当前事实。
+          content:
+            application/json:
+              example:
+                valid: true
+                type: verification_report
+                kind: kyb
+                status: ok
+                decision: approved
+                date: '2026-07-21'
+                issued_by: CBPay
+        '404':
+          description: 验证码无效、被篡改或未知。
+          content:
+            application/json:
+              example:
+                valid: false
+                message: this verification code does not correspond to any verification report issued by this platform
+        '429':
+          description: 来自该 IP 的验证尝试过多。
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many verification attempts; wait a moment and retry
   /verify/receipts/{code}:
     get:
       security: []
@@ -5515,6 +5560,109 @@ paths:
           $ref: '#/components/responses/AccountRequired'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/me/verification/report:
+    get:
+      tags:
+      - KYC / KYB
+      operationId: getMyVerificationReport
+      summary: 下载我的验证报告（PDF/JSON）
+      description: >-
+        由平台生成的您自身入驻验证的合规报告：已验证身份、生命周期、文件 + OCR、活体检测，以及聚合的 AML 部分（制裁 / PEP / 负面媒体状态，绝不包含匹配明细）。使用
+        format=pdf（默认）或 format=json，以及 lang=en|es|zh。免费 - 验证本身在创建时已计费。PDF 上印有公开验证码 + 二维码，任何人都可在
+        /verify/reports/{code} 查验。
+      parameters:
+      - name: format
+        in: query
+        schema:
+          type: string
+          enum:
+          - pdf
+          - json
+        description: 报告格式 - pdf（默认）或 json。
+      - name: lang
+        in: query
+        schema:
+          type: string
+          enum:
+          - en
+          - es
+          - zh
+        description: 报告语言（en 默认、es、zh）。
+      responses:
+        '200':
+          description: 验证报告（application/pdf，或 format=json 时为 application/json）。
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+              example: '%PDF-1.7 (binary report content)'
+            application/json:
+              example:
+                report_id: IDR-F0E1D2C3B4A5
+                kind: kyc
+                scope: self
+                generated_at: '2026-07-27T15:04:05Z'
+                generated_by: CBPay
+                language: en
+                aml_detail: false
+                submission_id: f0e1d2c3-b4a5-4968-8776-5a4b3c2d1e0f
+                status: approved
+                risk_band: low
+                submitted_at: '2026-07-10T12:30:00Z'
+                updated_at: '2026-07-10T13:00:00Z'
+                subject:
+                  type: person
+                  name: Maria Perez
+                  person:
+                    first_name: Maria
+                    last_name: Perez
+                    nationality: CL
+                    date_of_birth: '1990-04-12'
+                    id_type: national_id
+                    id_number: '17438319-7'
+                  address:
+                    city: Santiago
+                    country: CL
+                documents:
+                - category: identity
+                  filename: cedula.jpg
+                  status: validated
+                  outcome: MATCH
+                  score: '0.97'
+                liveness:
+                - role: individual
+                  status: completed
+                  outcome: APPROVED
+                  passed_gate: true
+                  liveness_score: '0.99'
+                aml:
+                  risk_level: low
+                  status: clear
+                  sanctions: clear
+                  pep: clear
+                  adverse_media: clear
+                content_sha256: 9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b
+                verification_code: Kf0e1d2c3b4a549688776a4b3c2d1e0f0a1b2c3d4e5f6a7b8c9d
+                verification_url: https://api.example.com/verify/reports/Kf0e1d2c3b4a549688776a4b3c2d1e0f0a1b2c3d4e5f6a7b8c9d
+        '400':
+          description: 格式或语言无效（invalid_format、invalid_language）。
+          content:
+            application/json:
+              example:
+                error: invalid_format
+                message: format must be pdf or json
+        '404':
+          description: 该账户尚无任何验证 submission（verification_not_found）。
+          content:
+            application/json:
+              example:
+                error: verification_not_found
+                message: no verification submission exists for this account yet
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/me/verification:
     get:
       tags:
@@ -6854,6 +7002,254 @@ paths:
                   status: completed
                   outcome: PASS
                   passed: true
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/kyc/submissions/{submissionID}/verification-report:
+    get:
+      tags:
+      - KYC / KYB
+      operationId: getKycVerificationReport
+      summary: 您发起的 KYC 验证报告（PDF/JSON）
+      description: >-
+        您对客户发起的验证的完整合规报告（仅限企业账户）：已验证档案、生命周期、文件 + OCR、活体检测，以及包含匹配明细的完整 AML 筛查部分 - 您是您第三方数据的控制者。如果该
+        submission 是您自己的入驻验证，AML 部分将降级为聚合版本。使用 format=pdf（默认）或 format=json，以及 lang=en|es|zh。免费 -
+        读取已计费的验证。若该 submission 尚无关联的 AML 筛查，将按需幂等触发一次（不收费）；不可用时报告照常输出，并在 partial 字段声明缺口。
+      parameters:
+      - name: submissionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: Submission id。
+      - name: format
+        in: query
+        schema:
+          type: string
+          enum:
+          - pdf
+          - json
+        description: 报告格式 - pdf（默认）或 json。
+      - name: lang
+        in: query
+        schema:
+          type: string
+          enum:
+          - en
+          - es
+          - zh
+        description: 报告语言（en 默认、es、zh）。
+      responses:
+        '200':
+          description: 验证报告（application/pdf，或 format=json 时为 application/json）。
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+              example: '%PDF-1.7 (binary report content)'
+            application/json:
+              example:
+                report_id: IDR-9B2C41A0D3E5
+                kind: kyb
+                scope: third_party
+                generated_at: '2026-07-27T15:04:05Z'
+                generated_by: CBPay
+                language: en
+                aml_detail: true
+                submission_id: 9b2c41a0-d3e5-4f6a-8b7c-1d2e3f4a5b6c
+                status: approved
+                risk_band: low
+                aml_decision: approved
+                submitted_at: '2026-07-20T12:30:00Z'
+                updated_at: '2026-07-21T09:15:00Z'
+                decided_at: '2026-07-21T09:15:00Z'
+                documents_received:
+                - certificateOfIncorporation
+                - 'uboIdentity:0'
+                subject:
+                  type: company
+                  name: JVA SpA
+                  company:
+                    legal_name: JVA SpA
+                    registration_number: '77123456-7'
+                  address:
+                    line1: Av. Apoquindo 1234
+                    city: Santiago
+                    country: CL
+                  industry:
+                    code: K64
+                    label: Financial service activities
+                documents:
+                - category: certificateOfIncorporation
+                  filename: escritura.pdf
+                  status: validated
+                  outcome: MATCH
+                  score: '0.98'
+                  summary: Company name and registration number match the verified profile.
+                liveness:
+                - role: 'ubo:0'
+                  status: completed
+                  outcome: APPROVED
+                  passed_gate: true
+                  liveness_score: '0.99'
+                  antispoof_score: '0.97'
+                  face_similarity: '0.95'
+                  gestures_expected: 3
+                  gestures_passed: 3
+                aml:
+                  screening_id: 5f0e1d2c-b4a5-4968-8776-5a4b3c2d1e0f
+                  risk_level: low
+                  status: clear
+                  monitor: true
+                  screened_at: '2026-07-21T09:14:00Z'
+                  sanctions: clear
+                  pep: clear
+                  adverse_media: clear
+                  matches_total: 0
+                content_sha256: 4f2c1de0a9b83b7d6c5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c
+                verification_code: B9b2c41a0d3e54f6a8b7c1d2e3f4a5b6c0a1b2c3d4e5f6a7b8c9
+                verification_url: https://api.example.com/verify/reports/B9b2c41a0d3e54f6a8b7c1d2e3f4a5b6c0a1b2c3d4e5f6a7b8c9
+        '400':
+          description: 格式或语言无效（invalid_format、invalid_language）。
+          content:
+            application/json:
+              example:
+                error: invalid_format
+                message: format must be pdf or json
+        '403':
+          description: 仅企业账户可下载其第三方的报告（company_account_required）。
+          content:
+            application/json:
+              example:
+                error: company_account_required
+                message: this action requires a company account
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/kyb/submissions/{submissionID}/verification-report:
+    get:
+      tags:
+      - KYC / KYB
+      operationId: getKybVerificationReport
+      summary: 您发起的 KYB 验证报告（PDF/JSON）
+      description: >-
+        您对客户发起的验证的完整合规报告（仅限企业账户）：已验证档案、生命周期、文件 + OCR、活体检测，以及包含匹配明细的完整 AML 筛查部分 - 您是您第三方数据的控制者。如果该
+        submission 是您自己的入驻验证，AML 部分将降级为聚合版本。使用 format=pdf（默认）或 format=json，以及 lang=en|es|zh。免费 -
+        读取已计费的验证。若该 submission 尚无关联的 AML 筛查，将按需幂等触发一次（不收费）；不可用时报告照常输出，并在 partial 字段声明缺口。
+      parameters:
+      - name: submissionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: Submission id。
+      - name: format
+        in: query
+        schema:
+          type: string
+          enum:
+          - pdf
+          - json
+        description: 报告格式 - pdf（默认）或 json。
+      - name: lang
+        in: query
+        schema:
+          type: string
+          enum:
+          - en
+          - es
+          - zh
+        description: 报告语言（en 默认、es、zh）。
+      responses:
+        '200':
+          description: 验证报告（application/pdf，或 format=json 时为 application/json）。
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+              example: '%PDF-1.7 (binary report content)'
+            application/json:
+              example:
+                report_id: IDR-9B2C41A0D3E5
+                kind: kyb
+                scope: third_party
+                generated_at: '2026-07-27T15:04:05Z'
+                generated_by: CBPay
+                language: en
+                aml_detail: true
+                submission_id: 9b2c41a0-d3e5-4f6a-8b7c-1d2e3f4a5b6c
+                status: approved
+                risk_band: low
+                aml_decision: approved
+                submitted_at: '2026-07-20T12:30:00Z'
+                updated_at: '2026-07-21T09:15:00Z'
+                decided_at: '2026-07-21T09:15:00Z'
+                documents_received:
+                - certificateOfIncorporation
+                - 'uboIdentity:0'
+                subject:
+                  type: company
+                  name: JVA SpA
+                  company:
+                    legal_name: JVA SpA
+                    registration_number: '77123456-7'
+                  address:
+                    line1: Av. Apoquindo 1234
+                    city: Santiago
+                    country: CL
+                  industry:
+                    code: K64
+                    label: Financial service activities
+                documents:
+                - category: certificateOfIncorporation
+                  filename: escritura.pdf
+                  status: validated
+                  outcome: MATCH
+                  score: '0.98'
+                  summary: Company name and registration number match the verified profile.
+                liveness:
+                - role: 'ubo:0'
+                  status: completed
+                  outcome: APPROVED
+                  passed_gate: true
+                  liveness_score: '0.99'
+                  antispoof_score: '0.97'
+                  face_similarity: '0.95'
+                  gestures_expected: 3
+                  gestures_passed: 3
+                aml:
+                  screening_id: 5f0e1d2c-b4a5-4968-8776-5a4b3c2d1e0f
+                  risk_level: low
+                  status: clear
+                  monitor: true
+                  screened_at: '2026-07-21T09:14:00Z'
+                  sanctions: clear
+                  pep: clear
+                  adverse_media: clear
+                  matches_total: 0
+                content_sha256: 4f2c1de0a9b83b7d6c5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c
+                verification_code: B9b2c41a0d3e54f6a8b7c1d2e3f4a5b6c0a1b2c3d4e5f6a7b8c9
+                verification_url: https://api.example.com/verify/reports/B9b2c41a0d3e54f6a8b7c1d2e3f4a5b6c0a1b2c3d4e5f6a7b8c9
+        '400':
+          description: 格式或语言无效（invalid_format、invalid_language）。
+          content:
+            application/json:
+              example:
+                error: invalid_format
+                message: format must be pdf or json
+        '403':
+          description: 仅企业账户可下载其第三方的报告（company_account_required）。
+          content:
+            application/json:
+              example:
+                error: company_account_required
+                message: this action requires a company account
         '404':
           $ref: '#/components/responses/NotFound'
         '401':

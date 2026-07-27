@@ -8,7 +8,29 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-<Update label="27 de julio de 2026" description="v2.16 · 1 versión">
+<Update label="27 de julio de 2026" description="v2.17 · 2 versiones">
+
+### v2.17
+
+**Agregado**
+
+- **Informe de verificación KYC/KYB descargable**
+  ([verificación de identidad](/es/guias/kyc)): cada submission de KYC/KYB
+  tiene ahora su informe de verificación generado por la plataforma, en
+  `?format=pdf|json` y `?lang=en|es|zh`. Terceros: `GET
+  /v1/kyc/submissions/{submissionID}/verification-report` y `GET
+  /v1/kyb/submissions/{submissionID}/verification-report` (cuenta empresa,
+  informe completo: identidad verificada, ciclo de vida, documentos + OCR,
+  liveness y screening AML con matches). Onboarding propio: `GET
+  /v1/me/verification/report` (misma estructura con la sección AML
+  agregada). Sin costo — es lectura de la verificación ya pagada.
+- **Código de verificación pública del informe**: el PDF imprime un código
+  HMAC + QR y cualquiera puede validar el documento en `GET
+  /verify/reports/{code}` (JSON o página HTML, sin datos personales: solo
+  tipo, estado vigente de la decisión, fecha y organización emisora).
+- **Códigos de error nuevos**: `invalid_format` (400, `format` distinto de
+  `pdf`/`json`) y `verification_not_found` (404, la cuenta aún no envió
+  ninguna verificación); `invalid_language` aplica también a este informe.
 
 ### v2.16
 

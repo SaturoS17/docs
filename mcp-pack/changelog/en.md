@@ -8,7 +8,30 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.16 · 1 release - July 27, 2026
+## v2.17 · 2 releases - July 27, 2026
+
+### v2.17
+
+**Added**
+
+- **Downloadable KYC/KYB verification report**
+  ([identity verification](https://docs.cbpayapp.com/en/guides/kyc)): every KYC/KYB submission now
+  has a platform-generated verification report, with `?format=pdf|json`
+  and `?lang=en|es|zh`. Third parties: `GET
+  /v1/kyc/submissions/{submissionID}/verification-report` and `GET
+  /v1/kyb/submissions/{submissionID}/verification-report` (company
+  account, full report: verified identity, lifecycle, documents + OCR,
+  liveness and AML screening with matches). Own onboarding: `GET
+  /v1/me/verification/report` (same structure with an aggregated AML
+  section). Free of charge — it reads the verification already paid for.
+- **Public report verification code**: the PDF prints an HMAC code + QR
+  and anyone can validate the document at `GET /verify/reports/{code}`
+  (JSON or HTML page, no personal data: only kind, current decision
+  status, issue date and issuing organization).
+- **New error codes**: `invalid_format` (400, `format` other than
+  `pdf`/`json`) and `verification_not_found` (404, the account has not
+  submitted any verification yet); `invalid_language` also applies to
+  this report.
 
 ### v2.16
 

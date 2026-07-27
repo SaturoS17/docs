@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — convertible on demand with swaps.\nPayouts and service fees can be paid from any of the four balances\n(`PUT /v1/settlement` or per-payout `settlement_asset`), and payins\ncan auto-convert to the asset of your choice (`default_payin_asset`).\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-07-26 14:38 UTC",
-    "_content_sha256": "8c4ee5d714c414cceb125aca774b437bf1b5da34a94b71467b1167ead2cb6d36"
+    "_generated_at": "2026-07-27 22:49 UTC",
+    "_content_sha256": "e3160c5b098e4d9a11d7ab5cf9542d2d084867dc01d06059d14bd0e3b6b7aaaf"
   },
   "auth": {
     "type": "bearer",
@@ -373,6 +373,1989 @@
               "body": "{\n  \"valid\": true,\n  \"type\": \"payout\",\n  \"status\": \"ok\",\n  \"raw_status\": \"completed\",\n  \"amount\": \"800.00 VES\",\n  \"detail\": \"Venezuela — Pago Móvil\",\n  \"date\": \"2026-07-11 15:29 UTC\",\n  \"issued_by\": \"CBPay\"\n}"
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "KYC / KYB",
+      "item": [
+        {
+          "name": "Verify a report's authenticity (public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/verify/reports/:code",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "verify",
+                "reports",
+                ":code"
+              ],
+              "variable": [
+                {
+                  "key": "code",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Public endpoint (no credentials) behind the QR printed on every verification report. The code is cryptographically signed - a tampered or made-up one answers 404 with valid=false. The response only exposes the kind (KYC/KYB), the CURRENT decision status and its date - never the subject's identity, documents or AML results. Browsers get a branded HTML page; API clients get JSON. Rate limited per IP.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 The report is authentic; current facts of the verification.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/verify/reports/:code",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "verify",
+                    "reports",
+                    ":code"
+                  ],
+                  "variable": [
+                    {
+                      "key": "code",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "The report is authentic; current facts of the verification.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"valid\": true,\n  \"type\": \"verification_report\",\n  \"kind\": \"kyb\",\n  \"status\": \"ok\",\n  \"decision\": \"approved\",\n  \"date\": \"2026-07-21\",\n  \"issued_by\": \"CBPay\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Request my onboarding verification link",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/me/verification/link",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "me",
+                "verification",
+                "link"
+              ]
+            },
+            "description": "Returns the account's own identity-verification link (person accounts get a KYC link, company accounts a KYB link — derived from the account type). The hosted wizard covers the full flow: form, document uploads and video liveness. Free. If an open link already exists it is returned with 200; an already-approved account gets 409 already_verified. Until the account's verification is approved, every outgoing-money action answers 403 verification_required (funding and reads stay available).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expires_in_days\": 14\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Onboarding link created (200 when an open link is reused).",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/me/verification/link",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "me",
+                    "verification",
+                    "link"
+                  ]
+                }
+              },
+              "status": "Onboarding link created (200 when an open link is reused).",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"link_id\": \"a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d\",\n  \"kind\": \"kyc\",\n  \"url\": \"https://verify.example.com/on/usd/individual/new?invite=abc123\",\n  \"status\": \"pending\",\n  \"label\": \"Ana Perez\",\n  \"created_at\": \"2026-07-10T12:00:00Z\",\n  \"updated_at\": \"2026-07-10T12:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Download my verification report (PDF/JSON)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/me/verification/report",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "me",
+                "verification",
+                "report"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Report format - pdf (default) or json."
+                },
+                {
+                  "key": "lang",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Report language (en default, es, zh)."
+                }
+              ]
+            },
+            "description": "Compliance report of your own onboarding verification, generated by the platform: verified identity, lifecycle, documents + OCR, liveness and an AGGREGATED AML section (sanctions / PEP / adverse media status, never match detail). Use format=pdf (default) or format=json, and lang=en|es|zh. Free - the verification itself was already billed. The PDF prints a public verification code + QR that anyone can check at /verify/reports/{code}."
+          },
+          "response": [
+            {
+              "name": "200 The verification report (application/pdf, or application/jso",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/me/verification/report",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "me",
+                    "verification",
+                    "report"
+                  ],
+                  "query": [
+                    {
+                      "key": "format",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Report format - pdf (default) or json."
+                    },
+                    {
+                      "key": "lang",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Report language (en default, es, zh)."
+                    }
+                  ]
+                }
+              },
+              "status": "The verification report (application/pdf, or application/jso",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"report_id\": \"IDR-F0E1D2C3B4A5\",\n  \"kind\": \"kyc\",\n  \"scope\": \"self\",\n  \"generated_at\": \"2026-07-27T15:04:05Z\",\n  \"generated_by\": \"CBPay\",\n  \"language\": \"en\",\n  \"aml_detail\": false,\n  \"submission_id\": \"f0e1d2c3-b4a5-4968-8776-5a4b3c2d1e0f\",\n  \"status\": \"approved\",\n  \"risk_band\": \"low\",\n  \"submitted_at\": \"2026-07-10T12:30:00Z\",\n  \"updated_at\": \"2026-07-10T13:00:00Z\",\n  \"subject\": {\n    \"type\": \"person\",\n    \"name\": \"Maria Perez\",\n    \"person\": {\n      \"first_name\": \"Maria\",\n      \"last_name\": \"Perez\",\n      \"nationality\": \"CL\",\n      \"date_of_birth\": \"1990-04-12\",\n      \"id_type\": \"national_id\",\n      \"id_number\": \"17438319-7\"\n    },\n    \"address\": {\n      \"city\": \"Santiago\",\n      \"country\": \"CL\"\n    }\n  },\n  \"documents\": [\n    {\n      \"category\": \"identity\",\n      \"filename\": \"cedula.jpg\",\n      \"status\": \"validated\",\n      \"outcome\": \"MATCH\",\n      \"score\": \"0.97\"\n    }\n  ],\n  \"liveness\": [\n    {\n      \"role\": \"individual\",\n      \"status\": \"completed\",\n      \"outcome\": \"APPROVED\",\n      \"passed_gate\": true,\n      \"liveness_score\": \"0.99\"\n    }\n  ],\n  \"aml\": {\n    \"risk_level\": \"low\",\n    \"status\": \"clear\",\n    \"sanctions\": \"clear\",\n    \"pep\": \"clear\",\n    \"adverse_media\": \"clear\"\n  },\n  \"content_sha256\": \"9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b\",\n  \"verification_code\": \"Kf0e1d2c3b4a549688776a4b3c2d1e0f0a1b2c3d4e5f6a7b8c9d\",\n  \"verification_url\": \"https://api.example.com/verify/reports/Kf0e1d2c3b4a549688776a4b3c2d1e0f0a1b2c3d4e5f6a7b8c9d\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "My onboarding verification state",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/me/verification",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "me",
+                "verification"
+              ]
+            },
+            "description": "Effective verification state of the calling account — `kyc_status`, the required kind (kyc for persons, kyb for companies) plus the latest self-onboarding link and submission."
+          },
+          "response": [
+            {
+              "name": "200 Onboarding state.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/me/verification",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "me",
+                    "verification"
+                  ]
+                }
+              },
+              "status": "Onboarding state.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"kyc_status\": \"pending\",\n  \"required_kind\": \"kyc\",\n  \"verified\": false,\n  \"link\": {\n    \"link_id\": \"a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d\",\n    \"kind\": \"kyc\",\n    \"url\": \"https://verify.example.com/on/usd/individual/new?invite=abc123\",\n    \"status\": \"completed\",\n    \"created_at\": \"2026-07-10T12:00:00Z\",\n    \"updated_at\": \"2026-07-10T12:30:00Z\"\n  },\n  \"submission\": {\n    \"submission_id\": \"f0e1d2c3-b4a5-4968-8776-5a4b3c2d1e0f\",\n    \"kind\": \"kyc\",\n    \"status\": \"in_review\",\n    \"liveness_pending\": false,\n    \"created_at\": \"2026-07-10T12:30:00Z\",\n    \"updated_at\": \"2026-07-10T13:00:00Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "List KYC links",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyc/links",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyc",
+                "links"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 Paged KYC links.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyc/links",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyc",
+                    "links"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                    }
+                  ]
+                }
+              },
+              "status": "Paged KYC links.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"links\": [\n    {\n      \"link_id\": \"b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e\",\n      \"kind\": \"kyc\",\n      \"external_customer_id\": \"cust_123\",\n      \"url\": \"https://verify.example.com/on/usd/individual/new?invite=def456\",\n      \"status\": \"completed\",\n      \"created_at\": \"2026-07-10T12:00:00Z\",\n      \"updated_at\": \"2026-07-11T09:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a KYC link for a customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyc/links",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyc",
+                "links"
+              ]
+            },
+            "description": "Company accounts only: generates a hosted KYC link for one of YOUR end customers. The wizard covers form, documents and video liveness. Bills the fixed `kyc_verification` fee when configured (refunded if creation fails); `idempotency_key` is required — a retry with the same key returns the original link and never double-charges.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"external_customer_id\": \"cust_123\",\n  \"label\": \"Ana Perez\",\n  \"expires_in_days\": 14,\n  \"idempotency_key\": \"kyc-link-cust-123-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 KYC link created.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyc/links",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyc",
+                    "links"
+                  ]
+                }
+              },
+              "status": "KYC link created.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"link_id\": \"b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e\",\n  \"kind\": \"kyc\",\n  \"external_customer_id\": \"cust_123\",\n  \"url\": \"https://verify.example.com/on/usd/individual/new?invite=def456\",\n  \"status\": \"pending\",\n  \"label\": \"Ana Perez\",\n  \"expires_at\": 1721209600,\n  \"verification_fee\": \"1.500000\",\n  \"idempotency_key\": \"kyc-link-cust-123-1\",\n  \"created_at\": \"2026-07-10T12:00:00Z\",\n  \"updated_at\": \"2026-07-10T12:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get a KYC link",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyc/links/:linkID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyc",
+                "links",
+                ":linkID"
+              ],
+              "variable": [
+                {
+                  "key": "linkID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 The link with its live state.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyc/links/:linkID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyc",
+                    "links",
+                    ":linkID"
+                  ],
+                  "variable": [
+                    {
+                      "key": "linkID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "The link with its live state.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"link_id\": \"b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e\",\n  \"kind\": \"kyc\",\n  \"external_customer_id\": \"cust_123\",\n  \"url\": \"https://verify.example.com/on/usd/individual/new?invite=def456\",\n  \"status\": \"completed\",\n  \"submission_id\": \"c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f\",\n  \"created_at\": \"2026-07-10T12:00:00Z\",\n  \"updated_at\": \"2026-07-11T09:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List KYB links",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyb/links",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyb",
+                "links"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 Paged KYB links.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyb/links",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyb",
+                    "links"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Paged KYB links.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"links\": [\n    {\n      \"link_id\": \"d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f80\",\n      \"kind\": \"kyb\",\n      \"external_customer_id\": \"cust_456\",\n      \"url\": \"https://verify.example.com/on/cl/business/new?invite=ghi789\",\n      \"status\": \"pending\",\n      \"country\": \"cl\",\n      \"created_at\": \"2026-07-10T12:00:00Z\",\n      \"updated_at\": \"2026-07-10T12:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a KYB link for a customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyb/links",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyb",
+                "links"
+              ]
+            },
+            "description": "Company accounts only: generates a hosted KYB link for one of YOUR end customers (businesses). Bills the fixed `kyb_verification` fee when configured (refunded if creation fails); `idempotency_key` is required. `country` picks the wizard corridor: us, cl, ve, br, mx, co, pe, bo, py, ar or generic (send `generic_country` ISO alpha-2, optional `currency`).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"external_customer_id\": \"cust_456\",\n  \"country\": \"cl\",\n  \"label\": \"Comercial Andina SpA\",\n  \"expires_in_days\": 14,\n  \"idempotency_key\": \"kyb-link-cust-456-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 KYB link created.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyb/links",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyb",
+                    "links"
+                  ]
+                }
+              },
+              "status": "KYB link created.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"link_id\": \"d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f80\",\n  \"kind\": \"kyb\",\n  \"external_customer_id\": \"cust_456\",\n  \"url\": \"https://verify.example.com/on/cl/business/new?invite=ghi789\",\n  \"status\": \"pending\",\n  \"country\": \"cl\",\n  \"label\": \"Comercial Andina SpA\",\n  \"expires_at\": 1721209600,\n  \"verification_fee\": \"2.000000\",\n  \"idempotency_key\": \"kyb-link-cust-456-1\",\n  \"created_at\": \"2026-07-10T12:00:00Z\",\n  \"updated_at\": \"2026-07-10T12:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get a KYB link",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyb/links/:linkID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyb",
+                "links",
+                ":linkID"
+              ],
+              "variable": [
+                {
+                  "key": "linkID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 The link with its live state.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyb/links/:linkID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyb",
+                    "links",
+                    ":linkID"
+                  ],
+                  "variable": [
+                    {
+                      "key": "linkID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "The link with its live state.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"link_id\": \"d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f80\",\n  \"kind\": \"kyb\",\n  \"external_customer_id\": \"cust_456\",\n  \"url\": \"https://verify.example.com/on/cl/business/new?invite=ghi789\",\n  \"status\": \"opened\",\n  \"country\": \"cl\",\n  \"created_at\": \"2026-07-10T12:00:00Z\",\n  \"updated_at\": \"2026-07-10T15:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List KYC submissions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyc/submissions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyc",
+                "submissions"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 Paged KYC submissions.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyc/submissions",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyc",
+                    "submissions"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Paged KYC submissions.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"submissions\": [\n    {\n      \"submission_id\": \"c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f\",\n      \"kind\": \"kyc\",\n      \"external_customer_id\": \"cust_789\",\n      \"status\": \"approved\",\n      \"risk_band\": \"low\",\n      \"liveness_pending\": false,\n      \"created_at\": \"2026-07-10T12:05:00Z\",\n      \"updated_at\": \"2026-07-12T10:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a KYC submission with API data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyc/submissions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyc",
+                "submissions"
+              ]
+            },
+            "description": "Company accounts only: verifies one of YOUR end customers sending the data directly (no wizard). Countries in ISO alpha-3, dates YYYY-MM-DD, id_type passport | id_card | drivers_license. Documents are optional at creation (upload them via the presign flow); no liveness is required at creation — the submission carries liveness_pending: true, close it with a liveness link. Re-sending with the same external_customer_id while the submission is open updates it without charging again. Bills the fixed `kyc_verification` fee; `idempotency_key` required.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"external_customer_id\": \"cust_789\",\n  \"idempotency_key\": \"kyc-sub-cust-789-1\",\n  \"person\": {\n    \"first_name\": \"Ana\",\n    \"last_name\": \"Perez\",\n    \"email\": \"ana@example.com\",\n    \"phone\": \"+56912345678\",\n    \"nationality\": \"CHL\",\n    \"date_of_birth\": \"1990-04-12\",\n    \"tax_id\": \"12.345.678-5\",\n    \"id_type\": \"id_card\",\n    \"id_number\": \"12345678\",\n    \"address\": {\n      \"line1\": \"Av. Siempre Viva 123\",\n      \"city\": \"Santiago\",\n      \"state\": \"RM\",\n      \"postal_code\": \"8320000\",\n      \"country\": \"CHL\"\n    },\n    \"primary_purpose\": \"personal_or_living_expenses\",\n    \"most_recent_occupation\": \"Engineer\",\n    \"source_of_funds\": \"salary\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Submission created (enters the compliance review queue).",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyc/submissions",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyc",
+                    "submissions"
+                  ]
+                }
+              },
+              "status": "Submission created (enters the compliance review queue).",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"submission_id\": \"c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f\",\n  \"kind\": \"kyc\",\n  \"external_customer_id\": \"cust_789\",\n  \"status\": \"pending_review\",\n  \"liveness_pending\": true,\n  \"verification_fee\": \"1.500000\",\n  \"idempotency_key\": \"kyc-sub-cust-789-1\",\n  \"created_at\": \"2026-07-10T12:05:00Z\",\n  \"updated_at\": \"2026-07-10T12:05:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get a KYC submission",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyc",
+                "submissions",
+                ":submissionID"
+              ],
+              "variable": [
+                {
+                  "key": "submissionID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Aggregated state without internal sensitive data: status, risk_band, pending_documents (documents compliance requested), rejection_reason, changes_requested_comments, liveness_pending and documents_received."
+          },
+          "response": [
+            {
+              "name": "200 The submission.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyc",
+                    "submissions",
+                    ":submissionID"
+                  ],
+                  "variable": [
+                    {
+                      "key": "submissionID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "The submission.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"submission_id\": \"c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f\",\n  \"kind\": \"kyc\",\n  \"external_customer_id\": \"cust_789\",\n  \"status\": \"more_info_required\",\n  \"risk_band\": \"medium\",\n  \"liveness_pending\": false,\n  \"pending_documents\": [\n    \"proofOfResidence\"\n  ],\n  \"created_at\": \"2026-07-10T12:05:00Z\",\n  \"updated_at\": \"2026-07-11T16:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List KYB submissions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyb/submissions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyb",
+                "submissions"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 Paged KYB submissions.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyb/submissions",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyb",
+                    "submissions"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Paged KYB submissions.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"submissions\": [\n    {\n      \"submission_id\": \"e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8091\",\n      \"kind\": \"kyb\",\n      \"external_customer_id\": \"cust_456\",\n      \"status\": \"in_review\",\n      \"created_at\": \"2026-07-10T12:10:00Z\",\n      \"updated_at\": \"2026-07-10T14:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a KYB submission with API data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyb/submissions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyb",
+                "submissions"
+              ]
+            },
+            "description": "Company accounts only: verifies one of YOUR end customers (a business) sending the data directly. Body: external_customer_id, country?, business (the company fields), ubos?, directors?, signers?, bank_info?, metadata?. Bills the fixed `kyb_verification` fee; `idempotency_key` required. Re-sending while open updates the same submission without charging again.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"external_customer_id\": \"cust_456\",\n  \"idempotency_key\": \"kyb-sub-cust-456-1\",\n  \"country\": \"cl\",\n  \"business\": {\n    \"legal_name\": \"Comercial Andina SpA\",\n    \"tax_id\": \"76.543.210-8\"\n  },\n  \"ubos\": [\n    {\n      \"first_name\": \"Carlos\",\n      \"last_name\": \"Soto\",\n      \"ownership_percent\": 60\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Submission created (enters the compliance review queue).",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyb/submissions",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyb",
+                    "submissions"
+                  ]
+                }
+              },
+              "status": "Submission created (enters the compliance review queue).",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"submission_id\": \"e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8091\",\n  \"kind\": \"kyb\",\n  \"external_customer_id\": \"cust_456\",\n  \"status\": \"pending_review\",\n  \"verification_fee\": \"2.000000\",\n  \"idempotency_key\": \"kyb-sub-cust-456-1\",\n  \"created_at\": \"2026-07-10T12:10:00Z\",\n  \"updated_at\": \"2026-07-10T12:10:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get a KYB submission",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyb/submissions/:submissionID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyb",
+                "submissions",
+                ":submissionID"
+              ],
+              "variable": [
+                {
+                  "key": "submissionID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Aggregated state: status, risk_band, pending_documents, rejection_reason, changes_requested_comments and aml_decision."
+          },
+          "response": [
+            {
+              "name": "200 The submission.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyb/submissions/:submissionID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyb",
+                    "submissions",
+                    ":submissionID"
+                  ],
+                  "variable": [
+                    {
+                      "key": "submissionID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "The submission.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"submission_id\": \"e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8091\",\n  \"kind\": \"kyb\",\n  \"external_customer_id\": \"cust_456\",\n  \"status\": \"approved\",\n  \"risk_band\": \"low\",\n  \"aml_decision\": \"approved\",\n  \"created_at\": \"2026-07-10T12:10:00Z\",\n  \"updated_at\": \"2026-07-13T09:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List KYC document OCR results",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyc",
+                "submissions",
+                ":submissionID",
+                "documents"
+              ],
+              "variable": [
+                {
+                  "key": "submissionID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 OCR validation result per uploaded document.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID/documents",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyc",
+                    "submissions",
+                    ":submissionID",
+                    "documents"
+                  ],
+                  "variable": [
+                    {
+                      "key": "submissionID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "OCR validation result per uploaded document.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"items\": [\n    {\n      \"category\": \"identity\",\n      \"status\": \"completed\",\n      \"outcome\": \"MATCH\",\n      \"score\": 0.97,\n      \"summary\": \"Document matches the submitted identity\",\n      \"filename\": \"cedula.jpg\"\n    }\n  ],\n  \"meta\": {\n    \"retrieved\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Presign a KYC document upload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyc",
+                "submissions",
+                ":submissionID",
+                "documents"
+              ],
+              "variable": [
+                {
+                  "key": "submissionID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Step 1 of the document flow: returns a temporary upload URL. Then PUT the binary to upload_url with the same Content-Type (step 2) and confirm (step 3). Categories: identity, proofOfResidence. Types: application/pdf, image/png, image/jpeg; 15 MB max; the URL expires in 15 minutes.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"identity\",\n  \"filename\": \"cedula.jpg\",\n  \"content_type\": \"image/jpeg\",\n  \"file_size\": 482133\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Temporary upload URL.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID/documents",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyc",
+                    "submissions",
+                    ":submissionID",
+                    "documents"
+                  ],
+                  "variable": [
+                    {
+                      "key": "submissionID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Temporary upload URL.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"upload_url\": \"https://storage.example.com/presigned/abc\",\n  \"key\": \"public-api/2026/07/10/cedula.jpg\",\n  \"expires_in\": 900\n}"
+            }
+          ]
+        },
+        {
+          "name": "Confirm a KYC document upload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID/documents/confirm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyc",
+                "submissions",
+                ":submissionID",
+                "documents",
+                "confirm"
+              ],
+              "variable": [
+                {
+                  "key": "submissionID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Step 3 of the document flow. Attaches the uploaded file to the submission and queues its OCR validation; the result arrives via the kyc_document_validated webhook.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"key\": \"public-api/2026/07/10/cedula.jpg\",\n  \"category\": \"identity\",\n  \"filename\": \"cedula.jpg\",\n  \"content_type\": \"image/jpeg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Document received; OCR queued.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID/documents/confirm",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyc",
+                    "submissions",
+                    ":submissionID",
+                    "documents",
+                    "confirm"
+                  ],
+                  "variable": [
+                    {
+                      "key": "submissionID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Document received; OCR queued.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"received\",\n  \"ocr\": \"queued\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List KYB document OCR results",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyb/submissions/:submissionID/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyb",
+                "submissions",
+                ":submissionID",
+                "documents"
+              ],
+              "variable": [
+                {
+                  "key": "submissionID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 OCR validation result per uploaded document.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyb/submissions/:submissionID/documents",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyb",
+                    "submissions",
+                    ":submissionID",
+                    "documents"
+                  ],
+                  "variable": [
+                    {
+                      "key": "submissionID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "OCR validation result per uploaded document.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"items\": [\n    {\n      \"category\": \"legalPresence\",\n      \"status\": \"completed\",\n      \"outcome\": \"REVIEW\",\n      \"score\": 0.72,\n      \"summary\": \"Registry extract requires manual review\",\n      \"filename\": \"vigencia.pdf\"\n    }\n  ],\n  \"meta\": {\n    \"retrieved\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Presign a KYB document upload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyb/submissions/:submissionID/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyb",
+                "submissions",
+                ":submissionID",
+                "documents"
+              ],
+              "variable": [
+                {
+                  "key": "submissionID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Same 3-step flow as KYC documents. Categories: legalPresence, ownershipStructure, controlStructure, companyDetails.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"legalPresence\",\n  \"filename\": \"vigencia.pdf\",\n  \"content_type\": \"application/pdf\",\n  \"file_size\": 1204833\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Temporary upload URL.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyb/submissions/:submissionID/documents",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyb",
+                    "submissions",
+                    ":submissionID",
+                    "documents"
+                  ],
+                  "variable": [
+                    {
+                      "key": "submissionID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Temporary upload URL.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"upload_url\": \"https://storage.example.com/presigned/def\",\n  \"key\": \"public-api/2026/07/10/vigencia.pdf\",\n  \"expires_in\": 900\n}"
+            }
+          ]
+        },
+        {
+          "name": "Confirm a KYB document upload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyb/submissions/:submissionID/documents/confirm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyb",
+                "submissions",
+                ":submissionID",
+                "documents",
+                "confirm"
+              ],
+              "variable": [
+                {
+                  "key": "submissionID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"key\": \"public-api/2026/07/10/vigencia.pdf\",\n  \"category\": \"legalPresence\",\n  \"filename\": \"vigencia.pdf\",\n  \"content_type\": \"application/pdf\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Document received; OCR queued.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyb/submissions/:submissionID/documents/confirm",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyb",
+                    "submissions",
+                    ":submissionID",
+                    "documents",
+                    "confirm"
+                  ],
+                  "variable": [
+                    {
+                      "key": "submissionID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Document received; OCR queued.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"received\",\n  \"ocr\": \"queued\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get the liveness link and check state",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID/liveness_link",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyc",
+                "submissions",
+                ":submissionID",
+                "liveness_link"
+              ],
+              "variable": [
+                {
+                  "key": "submissionID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 Latest link plus the current liveness state.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID/liveness_link",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyc",
+                    "submissions",
+                    ":submissionID",
+                    "liveness_link"
+                  ],
+                  "variable": [
+                    {
+                      "key": "submissionID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Latest link plus the current liveness state.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"url\": \"https://verify.example.com/on/liveness/tok_abc123\",\n  \"status\": \"completed\",\n  \"liveness\": {\n    \"status\": \"completed\",\n    \"outcome\": \"PASS\",\n    \"passed\": true\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a liveness link",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID/liveness_link",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyc",
+                "submissions",
+                ":submissionID",
+                "liveness_link"
+              ],
+              "variable": [
+                {
+                  "key": "submissionID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Hosted page where your customer completes ONLY the video liveness check (camera gestures + server-side face match against the uploaded identity document). Free — the service was billed when the submission was created. If an open link exists the same one is returned; if the check already passed, 400 liveness_already_completed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expires_in_days\": 7\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Liveness link.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID/liveness_link",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyc",
+                    "submissions",
+                    ":submissionID",
+                    "liveness_link"
+                  ],
+                  "variable": [
+                    {
+                      "key": "submissionID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Liveness link.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"url\": \"https://verify.example.com/on/liveness/tok_abc123\",\n  \"status\": \"pending\",\n  \"expires_at\": 1751234567\n}"
+            }
+          ]
+        },
+        {
+          "name": "Verification report of a KYC you ran (PDF/JSON)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID/verification-report",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyc",
+                "submissions",
+                ":submissionID",
+                "verification-report"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Report format - pdf (default) or json."
+                },
+                {
+                  "key": "lang",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Report language (en default, es, zh)."
+                }
+              ],
+              "variable": [
+                {
+                  "key": "submissionID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Full compliance report of a verification you ran on your customer (company accounts only): verified profile, lifecycle, documents + OCR, liveness and the FULL AML screening section with match detail - you are the data controller of your third parties. If the submission turns out to be your own onboarding, the AML section is aggregated instead. Use format=pdf (default) or format=json, and lang=en|es|zh. Free - reading an already-billed verification. If the submission has no linked AML screening yet, one is triggered on demand (idempotent, no fee); when unavailable the report ships with the gap declared in the partial field."
+          },
+          "response": [
+            {
+              "name": "200 The verification report (application/pdf, or application/jso",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID/verification-report",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyc",
+                    "submissions",
+                    ":submissionID",
+                    "verification-report"
+                  ],
+                  "query": [
+                    {
+                      "key": "format",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Report format - pdf (default) or json."
+                    },
+                    {
+                      "key": "lang",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Report language (en default, es, zh)."
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "key": "submissionID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "The verification report (application/pdf, or application/jso",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"report_id\": \"IDR-9B2C41A0D3E5\",\n  \"kind\": \"kyb\",\n  \"scope\": \"third_party\",\n  \"generated_at\": \"2026-07-27T15:04:05Z\",\n  \"generated_by\": \"CBPay\",\n  \"language\": \"en\",\n  \"aml_detail\": true,\n  \"submission_id\": \"9b2c41a0-d3e5-4f6a-8b7c-1d2e3f4a5b6c\",\n  \"status\": \"approved\",\n  \"risk_band\": \"low\",\n  \"aml_decision\": \"approved\",\n  \"submitted_at\": \"2026-07-20T12:30:00Z\",\n  \"updated_at\": \"2026-07-21T09:15:00Z\",\n  \"decided_at\": \"2026-07-21T09:15:00Z\",\n  \"documents_received\": [\n    \"certificateOfIncorporation\",\n    \"uboIdentity:0\"\n  ],\n  \"subject\": {\n    \"type\": \"company\",\n    \"name\": \"JVA SpA\",\n    \"company\": {\n      \"legal_name\": \"JVA SpA\",\n      \"registration_number\": \"77123456-7\"\n    },\n    \"address\": {\n      \"line1\": \"Av. Apoquindo 1234\",\n      \"city\": \"Santiago\",\n      \"country\": \"CL\"\n    },\n    \"industry\": {\n      \"code\": \"K64\",\n      \"label\": \"Financial service activities\"\n    }\n  },\n  \"documents\": [\n    {\n      \"category\": \"certificateOfIncorporation\",\n      \"filename\": \"escritura.pdf\",\n      \"status\": \"validated\",\n      \"outcome\": \"MATCH\",\n      \"score\": \"0.98\",\n      \"summary\": \"Company name and registration number match the verified profile.\"\n    }\n  ],\n  \"liveness\": [\n    {\n      \"role\": \"ubo:0\",\n      \"status\": \"completed\",\n      \"outcome\": \"APPROVED\",\n      \"passed_gate\": true,\n      \"liveness_score\": \"0.99\",\n      \"antispoof_score\": \"0.97\",\n      \"face_similarity\": \"0.95\",\n      \"gestures_expected\": 3,\n      \"gestures_passed\": 3\n    }\n  ],\n  \"aml\": {\n    \"screening_id\": \"5f0e1d2c-b4a5-4968-8776-5a4b3c2d1e0f\",\n    \"risk_level\": \"low\",\n    \"status\": \"clear\",\n    \"monitor\": true,\n    \"screened_at\": \"2026-07-21T09:14:00Z\",\n    \"sanctions\": \"clear\",\n    \"pep\": \"clear\",\n    \"adverse_media\": \"clear\",\n    \"matches_total\": 0\n  },\n  \"content_sha256\": \"4f2c1de0a9b83b7d6c5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c\",\n  \"verification_code\": \"B9b2c41a0d3e54f6a8b7c1d2e3f4a5b6c0a1b2c3d4e5f6a7b8c9\",\n  \"verification_url\": \"https://api.example.com/verify/reports/B9b2c41a0d3e54f6a8b7c1d2e3f4a5b6c0a1b2c3d4e5f6a7b8c9\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Verification report of a KYB you ran (PDF/JSON)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyb/submissions/:submissionID/verification-report",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyb",
+                "submissions",
+                ":submissionID",
+                "verification-report"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Report format - pdf (default) or json."
+                },
+                {
+                  "key": "lang",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Report language (en default, es, zh)."
+                }
+              ],
+              "variable": [
+                {
+                  "key": "submissionID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Full compliance report of a verification you ran on your customer (company accounts only): verified profile, lifecycle, documents + OCR, liveness and the FULL AML screening section with match detail - you are the data controller of your third parties. If the submission turns out to be your own onboarding, the AML section is aggregated instead. Use format=pdf (default) or format=json, and lang=en|es|zh. Free - reading an already-billed verification. If the submission has no linked AML screening yet, one is triggered on demand (idempotent, no fee); when unavailable the report ships with the gap declared in the partial field."
+          },
+          "response": [
+            {
+              "name": "200 The verification report (application/pdf, or application/jso",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kyb/submissions/:submissionID/verification-report",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kyb",
+                    "submissions",
+                    ":submissionID",
+                    "verification-report"
+                  ],
+                  "query": [
+                    {
+                      "key": "format",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Report format - pdf (default) or json."
+                    },
+                    {
+                      "key": "lang",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Report language (en default, es, zh)."
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "key": "submissionID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "The verification report (application/pdf, or application/jso",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"report_id\": \"IDR-9B2C41A0D3E5\",\n  \"kind\": \"kyb\",\n  \"scope\": \"third_party\",\n  \"generated_at\": \"2026-07-27T15:04:05Z\",\n  \"generated_by\": \"CBPay\",\n  \"language\": \"en\",\n  \"aml_detail\": true,\n  \"submission_id\": \"9b2c41a0-d3e5-4f6a-8b7c-1d2e3f4a5b6c\",\n  \"status\": \"approved\",\n  \"risk_band\": \"low\",\n  \"aml_decision\": \"approved\",\n  \"submitted_at\": \"2026-07-20T12:30:00Z\",\n  \"updated_at\": \"2026-07-21T09:15:00Z\",\n  \"decided_at\": \"2026-07-21T09:15:00Z\",\n  \"documents_received\": [\n    \"certificateOfIncorporation\",\n    \"uboIdentity:0\"\n  ],\n  \"subject\": {\n    \"type\": \"company\",\n    \"name\": \"JVA SpA\",\n    \"company\": {\n      \"legal_name\": \"JVA SpA\",\n      \"registration_number\": \"77123456-7\"\n    },\n    \"address\": {\n      \"line1\": \"Av. Apoquindo 1234\",\n      \"city\": \"Santiago\",\n      \"country\": \"CL\"\n    },\n    \"industry\": {\n      \"code\": \"K64\",\n      \"label\": \"Financial service activities\"\n    }\n  },\n  \"documents\": [\n    {\n      \"category\": \"certificateOfIncorporation\",\n      \"filename\": \"escritura.pdf\",\n      \"status\": \"validated\",\n      \"outcome\": \"MATCH\",\n      \"score\": \"0.98\",\n      \"summary\": \"Company name and registration number match the verified profile.\"\n    }\n  ],\n  \"liveness\": [\n    {\n      \"role\": \"ubo:0\",\n      \"status\": \"completed\",\n      \"outcome\": \"APPROVED\",\n      \"passed_gate\": true,\n      \"liveness_score\": \"0.99\",\n      \"antispoof_score\": \"0.97\",\n      \"face_similarity\": \"0.95\",\n      \"gestures_expected\": 3,\n      \"gestures_passed\": 3\n    }\n  ],\n  \"aml\": {\n    \"screening_id\": \"5f0e1d2c-b4a5-4968-8776-5a4b3c2d1e0f\",\n    \"risk_level\": \"low\",\n    \"status\": \"clear\",\n    \"monitor\": true,\n    \"screened_at\": \"2026-07-21T09:14:00Z\",\n    \"sanctions\": \"clear\",\n    \"pep\": \"clear\",\n    \"adverse_media\": \"clear\",\n    \"matches_total\": 0\n  },\n  \"content_sha256\": \"4f2c1de0a9b83b7d6c5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c\",\n  \"verification_code\": \"B9b2c41a0d3e54f6a8b7c1d2e3f4a5b6c0a1b2c3d4e5f6a7b8c9\",\n  \"verification_url\": \"https://api.example.com/verify/reports/B9b2c41a0d3e54f6a8b7c1d2e3f4a5b6c0a1b2c3d4e5f6a7b8c9\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Download the signed compliance report (PDF)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kyb/submissions/:submissionID/report",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kyb",
+                "submissions",
+                ":submissionID",
+                "report"
+              ],
+              "variable": [
+                {
+                  "key": "submissionID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Signed compliance report of a KYB verification — evidence for your own auditors. Free (the service was billed when the verification was created)."
+          }
         }
       ]
     },
@@ -8633,1664 +10616,6 @@
               "body": "{\n  \"genders\": [\n    {\n      \"value\": \"male\",\n      \"label\": \"Male\"\n    },\n    {\n      \"value\": \"female\",\n      \"label\": \"Female\"\n    }\n  ],\n  \"company_status\": [\n    {\n      \"value\": \"active\",\n      \"label\": \"Active\"\n    }\n  ],\n  \"address_types\": [\n    {\n      \"value\": \"residential\",\n      \"label\": \"Residential\"\n    }\n  ],\n  \"company_types\": [\n    {\n      \"value\": \"Sociedad Anónima\",\n      \"label\": \"Sociedad Anónima\"\n    }\n  ],\n  \"source_of_income\": [\n    {\n      \"value\": \"salary\",\n      \"label\": \"Salary\"\n    }\n  ],\n  \"source_of_wealth\": [\n    {\n      \"value\": \"business_ownership\",\n      \"label\": \"Business ownership\"\n    }\n  ],\n  \"industries\": [\n    {\n      \"value\": \"financial_services\",\n      \"label\": \"Financial services\"\n    }\n  ],\n  \"industry_code_types\": [\n    {\n      \"value\": \"ISIC\",\n      \"label\": \"ISIC Rev.4\"\n    }\n  ],\n  \"company_types_by_country\": {\n    \"CL\": [\n      {\n        \"value\": \"Sociedad por Acciones\",\n        \"label\": \"Sociedad por Acciones\"\n      }\n    ]\n  },\n  \"industries_by_code_type\": {\n    \"ISIC\": [\n      {\n        \"value\": \"6419\",\n        \"label\": \"Other monetary intermediation\"\n      }\n    ]\n  },\n  \"industry_code_type_by_country\": {\n    \"CL\": \"ISIC\"\n  },\n  \"countries\": [\n    {\n      \"value\": \"CL\",\n      \"label\": \"Chile\"\n    }\n  ],\n  \"country_subdivisions\": {\n    \"CL\": [\n      {\n        \"value\": \"CL-RM\",\n        \"label\": \"Región Metropolitana de Santiago\"\n      }\n    ]\n  },\n  \"meta\": {\n    \"country_count\": 249,\n    \"note\": \"value = send to the API; label = display in the UI.\"\n  }\n}"
             }
           ]
-        }
-      ]
-    },
-    {
-      "name": "KYC / KYB",
-      "item": [
-        {
-          "name": "Request my onboarding verification link",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/me/verification/link",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "me",
-                "verification",
-                "link"
-              ]
-            },
-            "description": "Returns the account's own identity-verification link (person accounts get a KYC link, company accounts a KYB link — derived from the account type). The hosted wizard covers the full flow: form, document uploads and video liveness. Free. If an open link already exists it is returned with 200; an already-approved account gets 409 already_verified. Until the account's verification is approved, every outgoing-money action answers 403 verification_required (funding and reads stay available).",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"expires_in_days\": 14\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "201 Onboarding link created (200 when an open link is reused).",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/me/verification/link",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "me",
-                    "verification",
-                    "link"
-                  ]
-                }
-              },
-              "status": "Onboarding link created (200 when an open link is reused).",
-              "code": 201,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"link_id\": \"a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d\",\n  \"kind\": \"kyc\",\n  \"url\": \"https://verify.example.com/on/usd/individual/new?invite=abc123\",\n  \"status\": \"pending\",\n  \"label\": \"Ana Perez\",\n  \"created_at\": \"2026-07-10T12:00:00Z\",\n  \"updated_at\": \"2026-07-10T12:00:00Z\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "My onboarding verification state",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/me/verification",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "me",
-                "verification"
-              ]
-            },
-            "description": "Effective verification state of the calling account — `kyc_status`, the required kind (kyc for persons, kyb for companies) plus the latest self-onboarding link and submission."
-          },
-          "response": [
-            {
-              "name": "200 Onboarding state.",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/me/verification",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "me",
-                    "verification"
-                  ]
-                }
-              },
-              "status": "Onboarding state.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"kyc_status\": \"pending\",\n  \"required_kind\": \"kyc\",\n  \"verified\": false,\n  \"link\": {\n    \"link_id\": \"a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d\",\n    \"kind\": \"kyc\",\n    \"url\": \"https://verify.example.com/on/usd/individual/new?invite=abc123\",\n    \"status\": \"completed\",\n    \"created_at\": \"2026-07-10T12:00:00Z\",\n    \"updated_at\": \"2026-07-10T12:30:00Z\"\n  },\n  \"submission\": {\n    \"submission_id\": \"f0e1d2c3-b4a5-4968-8776-5a4b3c2d1e0f\",\n    \"kind\": \"kyc\",\n    \"status\": \"in_review\",\n    \"liveness_pending\": false,\n    \"created_at\": \"2026-07-10T12:30:00Z\",\n    \"updated_at\": \"2026-07-10T13:00:00Z\"\n  }\n}"
-            }
-          ]
-        },
-        {
-          "name": "List KYC links",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/kyc/links",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "kyc",
-                "links"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "",
-                  "disabled": true
-                },
-                {
-                  "key": "page_size",
-                  "value": "",
-                  "disabled": true
-                },
-                {
-                  "key": "status",
-                  "value": "",
-                  "disabled": true,
-                  "description": ""
-                },
-                {
-                  "key": "from",
-                  "value": "",
-                  "disabled": true,
-                  "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
-                },
-                {
-                  "key": "to",
-                  "value": "",
-                  "disabled": true,
-                  "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
-                }
-              ]
-            },
-            "description": ""
-          },
-          "response": [
-            {
-              "name": "200 Paged KYC links.",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/kyc/links",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "kyc",
-                    "links"
-                  ],
-                  "query": [
-                    {
-                      "key": "page",
-                      "value": "",
-                      "disabled": true
-                    },
-                    {
-                      "key": "page_size",
-                      "value": "",
-                      "disabled": true
-                    },
-                    {
-                      "key": "status",
-                      "value": "",
-                      "disabled": true,
-                      "description": ""
-                    },
-                    {
-                      "key": "from",
-                      "value": "",
-                      "disabled": true,
-                      "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
-                    },
-                    {
-                      "key": "to",
-                      "value": "",
-                      "disabled": true,
-                      "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
-                    }
-                  ]
-                }
-              },
-              "status": "Paged KYC links.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"links\": [\n    {\n      \"link_id\": \"b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e\",\n      \"kind\": \"kyc\",\n      \"external_customer_id\": \"cust_123\",\n      \"url\": \"https://verify.example.com/on/usd/individual/new?invite=def456\",\n      \"status\": \"completed\",\n      \"created_at\": \"2026-07-10T12:00:00Z\",\n      \"updated_at\": \"2026-07-11T09:00:00Z\"\n    }\n  ]\n}"
-            }
-          ]
-        },
-        {
-          "name": "Create a KYC link for a customer",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/kyc/links",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "kyc",
-                "links"
-              ]
-            },
-            "description": "Company accounts only: generates a hosted KYC link for one of YOUR end customers. The wizard covers form, documents and video liveness. Bills the fixed `kyc_verification` fee when configured (refunded if creation fails); `idempotency_key` is required — a retry with the same key returns the original link and never double-charges.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"external_customer_id\": \"cust_123\",\n  \"label\": \"Ana Perez\",\n  \"expires_in_days\": 14,\n  \"idempotency_key\": \"kyc-link-cust-123-1\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "201 KYC link created.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/kyc/links",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "kyc",
-                    "links"
-                  ]
-                }
-              },
-              "status": "KYC link created.",
-              "code": 201,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"link_id\": \"b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e\",\n  \"kind\": \"kyc\",\n  \"external_customer_id\": \"cust_123\",\n  \"url\": \"https://verify.example.com/on/usd/individual/new?invite=def456\",\n  \"status\": \"pending\",\n  \"label\": \"Ana Perez\",\n  \"expires_at\": 1721209600,\n  \"verification_fee\": \"1.500000\",\n  \"idempotency_key\": \"kyc-link-cust-123-1\",\n  \"created_at\": \"2026-07-10T12:00:00Z\",\n  \"updated_at\": \"2026-07-10T12:00:00Z\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "Get a KYC link",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/kyc/links/:linkID",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "kyc",
-                "links",
-                ":linkID"
-              ],
-              "variable": [
-                {
-                  "key": "linkID",
-                  "value": ""
-                }
-              ]
-            },
-            "description": ""
-          },
-          "response": [
-            {
-              "name": "200 The link with its live state.",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/kyc/links/:linkID",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "kyc",
-                    "links",
-                    ":linkID"
-                  ],
-                  "variable": [
-                    {
-                      "key": "linkID",
-                      "value": ""
-                    }
-                  ]
-                }
-              },
-              "status": "The link with its live state.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"link_id\": \"b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e\",\n  \"kind\": \"kyc\",\n  \"external_customer_id\": \"cust_123\",\n  \"url\": \"https://verify.example.com/on/usd/individual/new?invite=def456\",\n  \"status\": \"completed\",\n  \"submission_id\": \"c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f\",\n  \"created_at\": \"2026-07-10T12:00:00Z\",\n  \"updated_at\": \"2026-07-11T09:00:00Z\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "List KYB links",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/kyb/links",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "kyb",
-                "links"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "",
-                  "disabled": true
-                },
-                {
-                  "key": "page_size",
-                  "value": "",
-                  "disabled": true
-                },
-                {
-                  "key": "status",
-                  "value": "",
-                  "disabled": true,
-                  "description": ""
-                },
-                {
-                  "key": "from",
-                  "value": "",
-                  "disabled": true,
-                  "description": ""
-                },
-                {
-                  "key": "to",
-                  "value": "",
-                  "disabled": true,
-                  "description": ""
-                }
-              ]
-            },
-            "description": ""
-          },
-          "response": [
-            {
-              "name": "200 Paged KYB links.",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/kyb/links",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "kyb",
-                    "links"
-                  ],
-                  "query": [
-                    {
-                      "key": "page",
-                      "value": "",
-                      "disabled": true
-                    },
-                    {
-                      "key": "page_size",
-                      "value": "",
-                      "disabled": true
-                    },
-                    {
-                      "key": "status",
-                      "value": "",
-                      "disabled": true,
-                      "description": ""
-                    },
-                    {
-                      "key": "from",
-                      "value": "",
-                      "disabled": true,
-                      "description": ""
-                    },
-                    {
-                      "key": "to",
-                      "value": "",
-                      "disabled": true,
-                      "description": ""
-                    }
-                  ]
-                }
-              },
-              "status": "Paged KYB links.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"links\": [\n    {\n      \"link_id\": \"d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f80\",\n      \"kind\": \"kyb\",\n      \"external_customer_id\": \"cust_456\",\n      \"url\": \"https://verify.example.com/on/cl/business/new?invite=ghi789\",\n      \"status\": \"pending\",\n      \"country\": \"cl\",\n      \"created_at\": \"2026-07-10T12:00:00Z\",\n      \"updated_at\": \"2026-07-10T12:00:00Z\"\n    }\n  ]\n}"
-            }
-          ]
-        },
-        {
-          "name": "Create a KYB link for a customer",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/kyb/links",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "kyb",
-                "links"
-              ]
-            },
-            "description": "Company accounts only: generates a hosted KYB link for one of YOUR end customers (businesses). Bills the fixed `kyb_verification` fee when configured (refunded if creation fails); `idempotency_key` is required. `country` picks the wizard corridor: us, cl, ve, br, mx, co, pe, bo, py, ar or generic (send `generic_country` ISO alpha-2, optional `currency`).",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"external_customer_id\": \"cust_456\",\n  \"country\": \"cl\",\n  \"label\": \"Comercial Andina SpA\",\n  \"expires_in_days\": 14,\n  \"idempotency_key\": \"kyb-link-cust-456-1\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "201 KYB link created.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/kyb/links",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "kyb",
-                    "links"
-                  ]
-                }
-              },
-              "status": "KYB link created.",
-              "code": 201,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"link_id\": \"d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f80\",\n  \"kind\": \"kyb\",\n  \"external_customer_id\": \"cust_456\",\n  \"url\": \"https://verify.example.com/on/cl/business/new?invite=ghi789\",\n  \"status\": \"pending\",\n  \"country\": \"cl\",\n  \"label\": \"Comercial Andina SpA\",\n  \"expires_at\": 1721209600,\n  \"verification_fee\": \"2.000000\",\n  \"idempotency_key\": \"kyb-link-cust-456-1\",\n  \"created_at\": \"2026-07-10T12:00:00Z\",\n  \"updated_at\": \"2026-07-10T12:00:00Z\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "Get a KYB link",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/kyb/links/:linkID",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "kyb",
-                "links",
-                ":linkID"
-              ],
-              "variable": [
-                {
-                  "key": "linkID",
-                  "value": ""
-                }
-              ]
-            },
-            "description": ""
-          },
-          "response": [
-            {
-              "name": "200 The link with its live state.",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/kyb/links/:linkID",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "kyb",
-                    "links",
-                    ":linkID"
-                  ],
-                  "variable": [
-                    {
-                      "key": "linkID",
-                      "value": ""
-                    }
-                  ]
-                }
-              },
-              "status": "The link with its live state.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"link_id\": \"d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f80\",\n  \"kind\": \"kyb\",\n  \"external_customer_id\": \"cust_456\",\n  \"url\": \"https://verify.example.com/on/cl/business/new?invite=ghi789\",\n  \"status\": \"opened\",\n  \"country\": \"cl\",\n  \"created_at\": \"2026-07-10T12:00:00Z\",\n  \"updated_at\": \"2026-07-10T15:00:00Z\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "List KYC submissions",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/kyc/submissions",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "kyc",
-                "submissions"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "",
-                  "disabled": true
-                },
-                {
-                  "key": "page_size",
-                  "value": "",
-                  "disabled": true
-                },
-                {
-                  "key": "status",
-                  "value": "",
-                  "disabled": true,
-                  "description": ""
-                },
-                {
-                  "key": "from",
-                  "value": "",
-                  "disabled": true,
-                  "description": ""
-                },
-                {
-                  "key": "to",
-                  "value": "",
-                  "disabled": true,
-                  "description": ""
-                }
-              ]
-            },
-            "description": ""
-          },
-          "response": [
-            {
-              "name": "200 Paged KYC submissions.",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/kyc/submissions",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "kyc",
-                    "submissions"
-                  ],
-                  "query": [
-                    {
-                      "key": "page",
-                      "value": "",
-                      "disabled": true
-                    },
-                    {
-                      "key": "page_size",
-                      "value": "",
-                      "disabled": true
-                    },
-                    {
-                      "key": "status",
-                      "value": "",
-                      "disabled": true,
-                      "description": ""
-                    },
-                    {
-                      "key": "from",
-                      "value": "",
-                      "disabled": true,
-                      "description": ""
-                    },
-                    {
-                      "key": "to",
-                      "value": "",
-                      "disabled": true,
-                      "description": ""
-                    }
-                  ]
-                }
-              },
-              "status": "Paged KYC submissions.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"submissions\": [\n    {\n      \"submission_id\": \"c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f\",\n      \"kind\": \"kyc\",\n      \"external_customer_id\": \"cust_789\",\n      \"status\": \"approved\",\n      \"risk_band\": \"low\",\n      \"liveness_pending\": false,\n      \"created_at\": \"2026-07-10T12:05:00Z\",\n      \"updated_at\": \"2026-07-12T10:00:00Z\"\n    }\n  ]\n}"
-            }
-          ]
-        },
-        {
-          "name": "Create a KYC submission with API data",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/kyc/submissions",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "kyc",
-                "submissions"
-              ]
-            },
-            "description": "Company accounts only: verifies one of YOUR end customers sending the data directly (no wizard). Countries in ISO alpha-3, dates YYYY-MM-DD, id_type passport | id_card | drivers_license. Documents are optional at creation (upload them via the presign flow); no liveness is required at creation — the submission carries liveness_pending: true, close it with a liveness link. Re-sending with the same external_customer_id while the submission is open updates it without charging again. Bills the fixed `kyc_verification` fee; `idempotency_key` required.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"external_customer_id\": \"cust_789\",\n  \"idempotency_key\": \"kyc-sub-cust-789-1\",\n  \"person\": {\n    \"first_name\": \"Ana\",\n    \"last_name\": \"Perez\",\n    \"email\": \"ana@example.com\",\n    \"phone\": \"+56912345678\",\n    \"nationality\": \"CHL\",\n    \"date_of_birth\": \"1990-04-12\",\n    \"tax_id\": \"12.345.678-5\",\n    \"id_type\": \"id_card\",\n    \"id_number\": \"12345678\",\n    \"address\": {\n      \"line1\": \"Av. Siempre Viva 123\",\n      \"city\": \"Santiago\",\n      \"state\": \"RM\",\n      \"postal_code\": \"8320000\",\n      \"country\": \"CHL\"\n    },\n    \"primary_purpose\": \"personal_or_living_expenses\",\n    \"most_recent_occupation\": \"Engineer\",\n    \"source_of_funds\": \"salary\"\n  }\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "201 Submission created (enters the compliance review queue).",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/kyc/submissions",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "kyc",
-                    "submissions"
-                  ]
-                }
-              },
-              "status": "Submission created (enters the compliance review queue).",
-              "code": 201,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"submission_id\": \"c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f\",\n  \"kind\": \"kyc\",\n  \"external_customer_id\": \"cust_789\",\n  \"status\": \"pending_review\",\n  \"liveness_pending\": true,\n  \"verification_fee\": \"1.500000\",\n  \"idempotency_key\": \"kyc-sub-cust-789-1\",\n  \"created_at\": \"2026-07-10T12:05:00Z\",\n  \"updated_at\": \"2026-07-10T12:05:00Z\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "Get a KYC submission",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "kyc",
-                "submissions",
-                ":submissionID"
-              ],
-              "variable": [
-                {
-                  "key": "submissionID",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Aggregated state without internal sensitive data: status, risk_band, pending_documents (documents compliance requested), rejection_reason, changes_requested_comments, liveness_pending and documents_received."
-          },
-          "response": [
-            {
-              "name": "200 The submission.",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "kyc",
-                    "submissions",
-                    ":submissionID"
-                  ],
-                  "variable": [
-                    {
-                      "key": "submissionID",
-                      "value": ""
-                    }
-                  ]
-                }
-              },
-              "status": "The submission.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"submission_id\": \"c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f\",\n  \"kind\": \"kyc\",\n  \"external_customer_id\": \"cust_789\",\n  \"status\": \"more_info_required\",\n  \"risk_band\": \"medium\",\n  \"liveness_pending\": false,\n  \"pending_documents\": [\n    \"proofOfResidence\"\n  ],\n  \"created_at\": \"2026-07-10T12:05:00Z\",\n  \"updated_at\": \"2026-07-11T16:00:00Z\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "List KYB submissions",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/kyb/submissions",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "kyb",
-                "submissions"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "",
-                  "disabled": true
-                },
-                {
-                  "key": "page_size",
-                  "value": "",
-                  "disabled": true
-                },
-                {
-                  "key": "status",
-                  "value": "",
-                  "disabled": true,
-                  "description": ""
-                },
-                {
-                  "key": "from",
-                  "value": "",
-                  "disabled": true,
-                  "description": ""
-                },
-                {
-                  "key": "to",
-                  "value": "",
-                  "disabled": true,
-                  "description": ""
-                }
-              ]
-            },
-            "description": ""
-          },
-          "response": [
-            {
-              "name": "200 Paged KYB submissions.",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/kyb/submissions",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "kyb",
-                    "submissions"
-                  ],
-                  "query": [
-                    {
-                      "key": "page",
-                      "value": "",
-                      "disabled": true
-                    },
-                    {
-                      "key": "page_size",
-                      "value": "",
-                      "disabled": true
-                    },
-                    {
-                      "key": "status",
-                      "value": "",
-                      "disabled": true,
-                      "description": ""
-                    },
-                    {
-                      "key": "from",
-                      "value": "",
-                      "disabled": true,
-                      "description": ""
-                    },
-                    {
-                      "key": "to",
-                      "value": "",
-                      "disabled": true,
-                      "description": ""
-                    }
-                  ]
-                }
-              },
-              "status": "Paged KYB submissions.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"page\": 1,\n  \"page_size\": 50,\n  \"submissions\": [\n    {\n      \"submission_id\": \"e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8091\",\n      \"kind\": \"kyb\",\n      \"external_customer_id\": \"cust_456\",\n      \"status\": \"in_review\",\n      \"created_at\": \"2026-07-10T12:10:00Z\",\n      \"updated_at\": \"2026-07-10T14:00:00Z\"\n    }\n  ]\n}"
-            }
-          ]
-        },
-        {
-          "name": "Create a KYB submission with API data",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/kyb/submissions",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "kyb",
-                "submissions"
-              ]
-            },
-            "description": "Company accounts only: verifies one of YOUR end customers (a business) sending the data directly. Body: external_customer_id, country?, business (the company fields), ubos?, directors?, signers?, bank_info?, metadata?. Bills the fixed `kyb_verification` fee; `idempotency_key` required. Re-sending while open updates the same submission without charging again.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"external_customer_id\": \"cust_456\",\n  \"idempotency_key\": \"kyb-sub-cust-456-1\",\n  \"country\": \"cl\",\n  \"business\": {\n    \"legal_name\": \"Comercial Andina SpA\",\n    \"tax_id\": \"76.543.210-8\"\n  },\n  \"ubos\": [\n    {\n      \"first_name\": \"Carlos\",\n      \"last_name\": \"Soto\",\n      \"ownership_percent\": 60\n    }\n  ]\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "201 Submission created (enters the compliance review queue).",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/kyb/submissions",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "kyb",
-                    "submissions"
-                  ]
-                }
-              },
-              "status": "Submission created (enters the compliance review queue).",
-              "code": 201,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"submission_id\": \"e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8091\",\n  \"kind\": \"kyb\",\n  \"external_customer_id\": \"cust_456\",\n  \"status\": \"pending_review\",\n  \"verification_fee\": \"2.000000\",\n  \"idempotency_key\": \"kyb-sub-cust-456-1\",\n  \"created_at\": \"2026-07-10T12:10:00Z\",\n  \"updated_at\": \"2026-07-10T12:10:00Z\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "Get a KYB submission",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/kyb/submissions/:submissionID",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "kyb",
-                "submissions",
-                ":submissionID"
-              ],
-              "variable": [
-                {
-                  "key": "submissionID",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Aggregated state: status, risk_band, pending_documents, rejection_reason, changes_requested_comments and aml_decision."
-          },
-          "response": [
-            {
-              "name": "200 The submission.",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/kyb/submissions/:submissionID",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "kyb",
-                    "submissions",
-                    ":submissionID"
-                  ],
-                  "variable": [
-                    {
-                      "key": "submissionID",
-                      "value": ""
-                    }
-                  ]
-                }
-              },
-              "status": "The submission.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"submission_id\": \"e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8091\",\n  \"kind\": \"kyb\",\n  \"external_customer_id\": \"cust_456\",\n  \"status\": \"approved\",\n  \"risk_band\": \"low\",\n  \"aml_decision\": \"approved\",\n  \"created_at\": \"2026-07-10T12:10:00Z\",\n  \"updated_at\": \"2026-07-13T09:00:00Z\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "List KYC document OCR results",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID/documents",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "kyc",
-                "submissions",
-                ":submissionID",
-                "documents"
-              ],
-              "variable": [
-                {
-                  "key": "submissionID",
-                  "value": ""
-                }
-              ]
-            },
-            "description": ""
-          },
-          "response": [
-            {
-              "name": "200 OCR validation result per uploaded document.",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID/documents",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "kyc",
-                    "submissions",
-                    ":submissionID",
-                    "documents"
-                  ],
-                  "variable": [
-                    {
-                      "key": "submissionID",
-                      "value": ""
-                    }
-                  ]
-                }
-              },
-              "status": "OCR validation result per uploaded document.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"items\": [\n    {\n      \"category\": \"identity\",\n      \"status\": \"completed\",\n      \"outcome\": \"MATCH\",\n      \"score\": 0.97,\n      \"summary\": \"Document matches the submitted identity\",\n      \"filename\": \"cedula.jpg\"\n    }\n  ],\n  \"meta\": {\n    \"retrieved\": 1\n  }\n}"
-            }
-          ]
-        },
-        {
-          "name": "Presign a KYC document upload",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID/documents",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "kyc",
-                "submissions",
-                ":submissionID",
-                "documents"
-              ],
-              "variable": [
-                {
-                  "key": "submissionID",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Step 1 of the document flow: returns a temporary upload URL. Then PUT the binary to upload_url with the same Content-Type (step 2) and confirm (step 3). Categories: identity, proofOfResidence. Types: application/pdf, image/png, image/jpeg; 15 MB max; the URL expires in 15 minutes.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"category\": \"identity\",\n  \"filename\": \"cedula.jpg\",\n  \"content_type\": \"image/jpeg\",\n  \"file_size\": 482133\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "200 Temporary upload URL.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID/documents",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "kyc",
-                    "submissions",
-                    ":submissionID",
-                    "documents"
-                  ],
-                  "variable": [
-                    {
-                      "key": "submissionID",
-                      "value": ""
-                    }
-                  ]
-                }
-              },
-              "status": "Temporary upload URL.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"upload_url\": \"https://storage.example.com/presigned/abc\",\n  \"key\": \"public-api/2026/07/10/cedula.jpg\",\n  \"expires_in\": 900\n}"
-            }
-          ]
-        },
-        {
-          "name": "Confirm a KYC document upload",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID/documents/confirm",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "kyc",
-                "submissions",
-                ":submissionID",
-                "documents",
-                "confirm"
-              ],
-              "variable": [
-                {
-                  "key": "submissionID",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Step 3 of the document flow. Attaches the uploaded file to the submission and queues its OCR validation; the result arrives via the kyc_document_validated webhook.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"key\": \"public-api/2026/07/10/cedula.jpg\",\n  \"category\": \"identity\",\n  \"filename\": \"cedula.jpg\",\n  \"content_type\": \"image/jpeg\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "200 Document received; OCR queued.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID/documents/confirm",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "kyc",
-                    "submissions",
-                    ":submissionID",
-                    "documents",
-                    "confirm"
-                  ],
-                  "variable": [
-                    {
-                      "key": "submissionID",
-                      "value": ""
-                    }
-                  ]
-                }
-              },
-              "status": "Document received; OCR queued.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"status\": \"received\",\n  \"ocr\": \"queued\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "List KYB document OCR results",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/kyb/submissions/:submissionID/documents",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "kyb",
-                "submissions",
-                ":submissionID",
-                "documents"
-              ],
-              "variable": [
-                {
-                  "key": "submissionID",
-                  "value": ""
-                }
-              ]
-            },
-            "description": ""
-          },
-          "response": [
-            {
-              "name": "200 OCR validation result per uploaded document.",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/kyb/submissions/:submissionID/documents",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "kyb",
-                    "submissions",
-                    ":submissionID",
-                    "documents"
-                  ],
-                  "variable": [
-                    {
-                      "key": "submissionID",
-                      "value": ""
-                    }
-                  ]
-                }
-              },
-              "status": "OCR validation result per uploaded document.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"items\": [\n    {\n      \"category\": \"legalPresence\",\n      \"status\": \"completed\",\n      \"outcome\": \"REVIEW\",\n      \"score\": 0.72,\n      \"summary\": \"Registry extract requires manual review\",\n      \"filename\": \"vigencia.pdf\"\n    }\n  ],\n  \"meta\": {\n    \"retrieved\": 1\n  }\n}"
-            }
-          ]
-        },
-        {
-          "name": "Presign a KYB document upload",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/kyb/submissions/:submissionID/documents",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "kyb",
-                "submissions",
-                ":submissionID",
-                "documents"
-              ],
-              "variable": [
-                {
-                  "key": "submissionID",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Same 3-step flow as KYC documents. Categories: legalPresence, ownershipStructure, controlStructure, companyDetails.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"category\": \"legalPresence\",\n  \"filename\": \"vigencia.pdf\",\n  \"content_type\": \"application/pdf\",\n  \"file_size\": 1204833\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "200 Temporary upload URL.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/kyb/submissions/:submissionID/documents",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "kyb",
-                    "submissions",
-                    ":submissionID",
-                    "documents"
-                  ],
-                  "variable": [
-                    {
-                      "key": "submissionID",
-                      "value": ""
-                    }
-                  ]
-                }
-              },
-              "status": "Temporary upload URL.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"upload_url\": \"https://storage.example.com/presigned/def\",\n  \"key\": \"public-api/2026/07/10/vigencia.pdf\",\n  \"expires_in\": 900\n}"
-            }
-          ]
-        },
-        {
-          "name": "Confirm a KYB document upload",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/kyb/submissions/:submissionID/documents/confirm",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "kyb",
-                "submissions",
-                ":submissionID",
-                "documents",
-                "confirm"
-              ],
-              "variable": [
-                {
-                  "key": "submissionID",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"key\": \"public-api/2026/07/10/vigencia.pdf\",\n  \"category\": \"legalPresence\",\n  \"filename\": \"vigencia.pdf\",\n  \"content_type\": \"application/pdf\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "200 Document received; OCR queued.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/kyb/submissions/:submissionID/documents/confirm",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "kyb",
-                    "submissions",
-                    ":submissionID",
-                    "documents",
-                    "confirm"
-                  ],
-                  "variable": [
-                    {
-                      "key": "submissionID",
-                      "value": ""
-                    }
-                  ]
-                }
-              },
-              "status": "Document received; OCR queued.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"status\": \"received\",\n  \"ocr\": \"queued\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "Get the liveness link and check state",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID/liveness_link",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "kyc",
-                "submissions",
-                ":submissionID",
-                "liveness_link"
-              ],
-              "variable": [
-                {
-                  "key": "submissionID",
-                  "value": ""
-                }
-              ]
-            },
-            "description": ""
-          },
-          "response": [
-            {
-              "name": "200 Latest link plus the current liveness state.",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID/liveness_link",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "kyc",
-                    "submissions",
-                    ":submissionID",
-                    "liveness_link"
-                  ],
-                  "variable": [
-                    {
-                      "key": "submissionID",
-                      "value": ""
-                    }
-                  ]
-                }
-              },
-              "status": "Latest link plus the current liveness state.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"url\": \"https://verify.example.com/on/liveness/tok_abc123\",\n  \"status\": \"completed\",\n  \"liveness\": {\n    \"status\": \"completed\",\n    \"outcome\": \"PASS\",\n    \"passed\": true\n  }\n}"
-            }
-          ]
-        },
-        {
-          "name": "Create a liveness link",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID/liveness_link",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "kyc",
-                "submissions",
-                ":submissionID",
-                "liveness_link"
-              ],
-              "variable": [
-                {
-                  "key": "submissionID",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Hosted page where your customer completes ONLY the video liveness check (camera gestures + server-side face match against the uploaded identity document). Free — the service was billed when the submission was created. If an open link exists the same one is returned; if the check already passed, 400 liveness_already_completed.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"expires_in_days\": 7\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "200 Liveness link.",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/v1/kyc/submissions/:submissionID/liveness_link",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "kyc",
-                    "submissions",
-                    ":submissionID",
-                    "liveness_link"
-                  ],
-                  "variable": [
-                    {
-                      "key": "submissionID",
-                      "value": ""
-                    }
-                  ]
-                }
-              },
-              "status": "Liveness link.",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"url\": \"https://verify.example.com/on/liveness/tok_abc123\",\n  \"status\": \"pending\",\n  \"expires_at\": 1751234567\n}"
-            }
-          ]
-        },
-        {
-          "name": "Download the signed compliance report (PDF)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/kyb/submissions/:submissionID/report",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "kyb",
-                "submissions",
-                ":submissionID",
-                "report"
-              ],
-              "variable": [
-                {
-                  "key": "submissionID",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Signed compliance report of a KYB verification — evidence for your own auditors. Free (the service was billed when the verification was created)."
-          }
         }
       ]
     },

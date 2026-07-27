@@ -356,6 +356,102 @@ curl -o report.pdf https://api.qbank.cl/platform/v1/kyb/submissions/{submission_
 
 该报告免费（该服务在创建验证时已计费）。
 
+## 验证报告（PDF + JSON）
+
+除处理方的报告外，每条已决定的 KYC 或 KYB 提交件都有由平台生成的**验证报告**：已验证身份、决定生命周期、带 OCR 的证件、活体检测以及 AML 筛查（制裁 / PEP / 负面媒体），并附完整性哈希和公开验证码。支持两种格式（`?format=pdf|json`，默认 `pdf`）和三种语言（`?lang=en|es|zh`，默认 `en`）。它是免费的：这是对您已付费验证的读取。
+
+### 您的第三方（企业账户）
+
+```bash
+# 西班牙语 PDF
+curl -o report.pdf "https://api.qbank.cl/platform/v1/kyb/submissions/{submission_id}/verification-report?lang=es" \
+  -H "Authorization: Bearer <token>"
+
+# JSON（与 PDF 内容相同）
+curl "https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id}/verification-report?format=json" \
+  -H "Authorization: Bearer <token>"
+```
+
+第三方的报告是**完整的**：AML 部分包含风险等级、指标和匹配项（名称、制裁名单、PEP、负面媒体）。您对客户执行尽职调查，这份报告就是您的证据。
+
+`format=json` 响应（结构摘要——PDF 由同一模型渲染）：
+
+```json
+{
+  "report_id": "IDR-C3D4E5F6A7B8",
+  "kind": "kyb",
+  "scope": "third_party",
+  "generated_at": "2026-07-27T19:04:11Z",
+  "generated_by": "CBPay",
+  "language": "es",
+  "aml_detail": true,
+  "submission_id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
+  "external_customer_id": "cust_789",
+  "status": "approved",
+  "risk_band": "low",
+  "aml_decision": "no_match",
+  "subject": {
+    "type": "company",
+    "name": "Importadora Andina SpA",
+    "company": { "legal_name": "Importadora Andina SpA", "registration_number": "77.123.456-7" },
+    "address": { "city": "Santiago", "country": "CL" },
+    "industry": { "code": "G4690", "label": "批发贸易" }
+  },
+  "documents": [
+    { "category": "registration", "filename": "deed.pdf", "status": "validated", "outcome": "MATCH", "score": "0.97" }
+  ],
+  "liveness": [
+    { "role": "ubo:0", "outcome": "PASSED", "passed_gate": true, "liveness_score": "0.99" }
+  ],
+  "aml": {
+    "screening_id": "b7e1c2d3-4f5a-6b7c-8d9e-0f1a2b3c4d5e",
+    "risk_level": "no_risk",
+    "sanctions": "clear",
+    "pep": "clear",
+    "adverse_media": "clear",
+    "matches_total": 0
+  },
+  "content_sha256": "9f2b4c…",
+  "verification_code": "Bc3d4e5f6a7b84c9d0e1f2a3b4c5d6e7f9f2b4c6d8e0a1b3c5d7",
+  "verification_url": "https://api.qbank.cl/platform/verify/reports/Bc3d4e5f6a7b84c9d0e1f2a3b4c5d6e7f9f2b4c6d8e0a1b3c5d7"
+}
+```
+
+<Note>
+如果该验证尚未关联 AML 筛查（较早的验证），首次下载会自动**免费**执行筛查。若此时筛查不可用，报告仍会生成，并带有 `"partial": ["aml_unavailable"]` —— 该部分绝不会被虚构。
+</Note>
+
+### 您自己的入驻验证
+
+```bash
+curl -o report.pdf "https://api.qbank.cl/platform/v1/me/verification/report?lang=zh" \
+  -H "Authorization: Bearer <token>"
+```
+
+在您自己验证的报告中，AML 部分为**汇总形式**（`aml_detail: false`）：您会看到每个类别的状态——`sanctions`、`pep` 和 `adverse_media` 为 `clear` 或 `under_review`——但不含匹配项明细。
+
+### 报告的公开验证
+
+每份报告都带有 `verification_code`（印在 PDF 上，旁边有二维码）。任何人无需凭证即可确认其真实性：
+
+```bash
+curl "https://api.qbank.cl/platform/verify/reports/Bc3d4e5f6a7b84c9d0e1f2a3b4c5d6e7f9f2b4c6d8e0a1b3c5d7"
+```
+
+```json
+{
+  "valid": true,
+  "type": "verification_report",
+  "kind": "kyb",
+  "status": "approved",
+  "decision": "approved",
+  "date": "2026-07-27",
+  "issued_by": "CBPay"
+}
+```
+
+公开页面仅确认类型、决定的当前状态、日期和签发品牌——绝不会显示主体数据。在浏览器中它会返回带有您品牌的 HTML 页面。
+
 ## Webhooks
 
 | 事件 | 触发时机 |
@@ -398,11 +494,14 @@ curl -o report.pdf https://api.qbank.cl/platform/v1/kyb/submissions/{submission_
 | 400 | `idempotency_key_required` | 创建类 POST 未携带 key | 发送 `idempotency_key`（请求体或请求头） |
 | 400 | `invalid_payload` | 缺少 `external_customer_id` 或其他必填字段 | 检查请求体 |
 | 400 | `liveness_already_completed` | 活体检测已通过 | 无需处理 |
+| 400 | `invalid_format` | 请求验证报告时 `format` 无效 | 使用 `pdf` 或 `json` |
+| 400 | `invalid_language` | 请求验证报告时 `lang` 无效 | 使用 `en`、`es` 或 `zh` |
 | 402 | `insufficient_funds` | 余额不足以支付费用 | 为账户充值后重试 |
 | 403 | `verification_required` | 您的账户尚未通过自身的验证 | 完成您的[入驻](#your-own-verification-onboarding) |
 | 403 | `company_account_required` | 个人账户尝试验证第三方 | 仅限企业账户 |
 | 403 | `service_disabled` | 您的账户已禁用 `kyc` 服务 | 联系您的运营方 |
 | 404 | `not_found` | 链接/提交件不存在或不属于您 | 检查 id |
+| 404 | `verification_not_found` | 在没有已登记验证的情况下请求自己的报告 | 请先完成您的入驻验证 |
 | 409 | `already_verified` | 已批准的账户又申请入驻链接 | 无需处理 |
 | 503 | `verifications_unavailable` | 服务暂时不可用（费用已退款） | 稍后重试 |
 

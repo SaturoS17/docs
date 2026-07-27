@@ -98,7 +98,8 @@ Full flow and details in [social login](https://docs.cbpayapp.com/en/guides/soci
 | `liveness_already_completed` | That verification's liveness check already passed |
 | `invalid_event_type` / `weak_secret` / `invalid_callback_url` | Invalid webhook subscription |
 | `invalid_phone` | Phone not normalizable to E.164 (contacts and `to_phone`) |
-| `invalid_language` | The PDF report `lang` is not `en`, `es` or `zh` (AML report) |
+| `invalid_language` | The PDF report `lang` is not `en`, `es` or `zh` (AML report and verification report) |
+| `invalid_format` | The verification report `format` is not `pdf` or `json` |
 | `batch_too_large` | Contact import with more than 1,000 entries (paginate the upload) |
 | `invalid_alias` | Alias must be 4–20 chars (a-z, 0-9, dot, underscore, hyphen), start/end alphanumeric, and not a reserved word |
 | `invalid_body` | The request body could not be read (binary uploads, webhooks) |
@@ -115,6 +116,7 @@ Full flow and details in [social login](https://docs.cbpayapp.com/en/guides/soci
 | 402 | `insufficient_funds` | Not enough available balance |
 | 404 | `not_found` | Resource does not exist (or belongs to another account) |
 | 404 | `recipient_not_found` | Transfer destination does not exist |
+| 404 | `verification_not_found` | The account has no submitted verification yet (`GET /v1/me/verification/report` before onboarding) |
 | 409 | `duplicate` | The resource already exists |
 | 403 | `verification_required` | Your account has not approved its identity verification yet (person=KYC, company=KYB); until then you can only fund — request your link at `POST /v1/me/verification/link` |
 | 422 | `verification_required` | The operation requires the `verification_id` of an approved third-party verification (third-party banking registration, designated card) |

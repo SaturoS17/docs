@@ -409,6 +409,118 @@ curl -o report.pdf https://api.qbank.cl/platform/v1/kyb/submissions/{submission_
 
 Es gratuito (el servicio se cobró al crear la verificación).
 
+## Informe de verificación (PDF + JSON)
+
+Además del informe del procesador, cada submission KYC o KYB decidida tiene
+su **informe de verificación** generado por la plataforma: identidad
+verificada, ciclo de vida de la decisión, documentos con OCR, prueba de vida
+y screening AML (sanciones / PEP / medios adversos), con hash de integridad
+y código de verificación pública. Dos formatos (`?format=pdf|json`, default
+`pdf`) y tres idiomas (`?lang=en|es|zh`, default `en`). Es gratuito: es la
+lectura de una verificación ya pagada.
+
+### De tus terceros (cuentas empresa)
+
+```bash
+# PDF en español
+curl -o informe.pdf "https://api.qbank.cl/platform/v1/kyb/submissions/{submission_id}/verification-report?lang=es" \
+  -H "Authorization: Bearer <token>"
+
+# JSON (mismo contenido que el PDF)
+curl "https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id}/verification-report?format=json" \
+  -H "Authorization: Bearer <token>"
+```
+
+El informe de un tercero es **completo**: la sección AML incluye nivel de
+riesgo, indicadores y coincidencias (nombres, listas de sanciones, PEP,
+medios adversos). Tú realizas la diligencia sobre tu cliente y este informe
+es tu evidencia.
+
+Respuesta `format=json` (resumen del shape — el PDF sale del mismo modelo):
+
+```json
+{
+  "report_id": "IDR-C3D4E5F6A7B8",
+  "kind": "kyb",
+  "scope": "third_party",
+  "generated_at": "2026-07-27T19:04:11Z",
+  "generated_by": "CBPay",
+  "language": "es",
+  "aml_detail": true,
+  "submission_id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
+  "external_customer_id": "cust_789",
+  "status": "approved",
+  "risk_band": "low",
+  "aml_decision": "no_match",
+  "subject": {
+    "type": "company",
+    "name": "Importadora Andina SpA",
+    "company": { "legal_name": "Importadora Andina SpA", "registration_number": "77.123.456-7" },
+    "address": { "city": "Santiago", "country": "CL" },
+    "industry": { "code": "G4690", "label": "Comercio al por mayor" }
+  },
+  "documents": [
+    { "category": "registration", "filename": "escritura.pdf", "status": "validated", "outcome": "MATCH", "score": "0.97" }
+  ],
+  "liveness": [
+    { "role": "ubo:0", "outcome": "PASSED", "passed_gate": true, "liveness_score": "0.99" }
+  ],
+  "aml": {
+    "screening_id": "b7e1c2d3-4f5a-6b7c-8d9e-0f1a2b3c4d5e",
+    "risk_level": "no_risk",
+    "sanctions": "clear",
+    "pep": "clear",
+    "adverse_media": "clear",
+    "matches_total": 0
+  },
+  "content_sha256": "9f2b4c…",
+  "verification_code": "Bc3d4e5f6a7b84c9d0e1f2a3b4c5d6e7f9f2b4c6d8e0a1b3c5d7",
+  "verification_url": "https://api.qbank.cl/platform/verify/reports/Bc3d4e5f6a7b84c9d0e1f2a3b4c5d6e7f9f2b4c6d8e0a1b3c5d7"
+}
+```
+
+> **Nota**
+Si la verificación aún no tiene screening AML enlazado (verificaciones
+antiguas), la primera descarga lo ejecuta automáticamente **sin costo**. Si
+el screening no está disponible en ese momento, el informe sale igual con
+`"partial": ["aml_unavailable"]` — la sección jamás se inventa.
+### De tu propio onboarding
+
+```bash
+curl -o informe.pdf "https://api.qbank.cl/platform/v1/me/verification/report?lang=es" \
+  -H "Authorization: Bearer <token>"
+```
+
+En el informe de tu propia verificación la sección AML va **agregada**
+(`aml_detail: false`): verás el estado por categoría — `sanctions`, `pep` y
+`adverse_media` como `clear` o `under_review` — sin el detalle de
+coincidencias.
+
+### Verificación pública del informe
+
+Todo informe lleva un `verification_code` (impreso en el PDF junto a un QR).
+Cualquiera puede confirmar su autenticidad sin credenciales:
+
+```bash
+curl "https://api.qbank.cl/platform/verify/reports/Bc3d4e5f6a7b84c9d0e1f2a3b4c5d6e7f9f2b4c6d8e0a1b3c5d7"
+```
+
+```json
+{
+  "valid": true,
+  "type": "verification_report",
+  "kind": "kyb",
+  "status": "approved",
+  "decision": "approved",
+  "date": "2026-07-27",
+  "issued_by": "CBPay"
+}
+```
+
+La página pública confirma solo el tipo, el estado vigente de la decisión, la
+fecha y la marca emisora — nunca datos del sujeto. En un navegador responde
+una página HTML con tu marca.
+
 ## Webhooks
 
 | Evento | Cuándo |
@@ -455,11 +567,14 @@ submission abierta y liveness links no cobran de nuevo.
 | 400 | `idempotency_key_required` | POST de creación sin clave | Envía `idempotency_key` (body o header) |
 | 400 | `invalid_payload` | Falta `external_customer_id` u otro campo requerido | Revisa el body |
 | 400 | `liveness_already_completed` | La prueba de vida ya fue superada | Nada que hacer |
+| 400 | `invalid_format` | `format` inválido al pedir un informe de verificación | Usa `pdf` o `json` |
+| 400 | `invalid_language` | `lang` inválido al pedir un informe de verificación | Usa `en`, `es` o `zh` |
 | 402 | `insufficient_funds` | Saldo insuficiente para la comisión | Fondea la cuenta y reintenta |
 | 403 | `verification_required` | Tu cuenta aún no aprobó su propia verificación | Completa tu [onboarding](#tu-propia-verificacion-onboarding) |
 | 403 | `company_account_required` | Una cuenta persona intentó verificar terceros | Solo cuentas empresa |
 | 403 | `service_disabled` | El servicio `kyc` está deshabilitado para tu cuenta | Contacta a tu operador |
 | 404 | `not_found` | El link/submission no existe o no es tuyo | Verifica el id |
+| 404 | `verification_not_found` | Pediste tu informe self sin una verificación registrada | Completa tu onboarding primero |
 | 409 | `already_verified` | Pediste link de onboarding con la cuenta ya aprobada | Nada que hacer |
 | 503 | `verifications_unavailable` | Servicio temporalmente no disponible (la comisión se reembolsó) | Reintenta más tarde |
 

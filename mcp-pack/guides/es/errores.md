@@ -98,7 +98,8 @@ Detalle y flujo completo en [login social](https://docs.cbpayapp.com/es/guias/lo
 | `liveness_already_completed` | La prueba de vida de esa verificación ya fue superada |
 | `invalid_event_type` / `weak_secret` / `invalid_callback_url` | Suscripción de webhook inválida |
 | `invalid_phone` | Teléfono no normalizable a E.164 (contactos y `to_phone`) |
-| `invalid_language` | `lang` del informe PDF no es `en`, `es` ni `zh` (informe AML) |
+| `invalid_language` | `lang` del informe PDF no es `en`, `es` ni `zh` (informe AML e informe de verificación) |
+| `invalid_format` | `format` del informe de verificación no es `pdf` ni `json` |
 | `batch_too_large` | Import de contactos con más de 1.000 entradas (pagina la subida) |
 | `invalid_alias` | El alias debe tener 4–20 caracteres (a-z, 0-9, punto, guion bajo, guion), empezar/terminar alfanumérico y no ser palabra reservada |
 | `invalid_body` | No se pudo leer el body del request (subidas binarias, webhooks) |
@@ -115,6 +116,7 @@ Detalle y flujo completo en [login social](https://docs.cbpayapp.com/es/guias/lo
 | 402 | `insufficient_funds` | Saldo disponible insuficiente |
 | 404 | `not_found` | Recurso inexistente (o de otra cuenta) |
 | 404 | `recipient_not_found` | Destino de transferencia inexistente |
+| 404 | `verification_not_found` | La cuenta aún no tiene ninguna verificación enviada (`GET /v1/me/verification/report` antes del onboarding) |
 | 409 | `duplicate` | El recurso ya existe |
 | 403 | `verification_required` | Tu cuenta aún no aprobó su verificación de identidad (persona=KYC, empresa=KYB); hasta entonces solo puedes fondear — pide tu link en `POST /v1/me/verification/link` |
 | 422 | `verification_required` | La operación exige el `verification_id` de una verificación aprobada del tercero (alta banking de terceros, tarjeta designada) |

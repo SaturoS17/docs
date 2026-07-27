@@ -8,7 +8,26 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-## v2.16 · 1 个版本 - 2026年7月27日
+## v2.17 · 2 个版本 - 2026年7月27日
+
+### v2.17
+
+**新增**
+
+- **可下载的 KYC/KYB 验证报告**（[身份验证](https://docs.cbpayapp.com/zh/guides/kyc)）：每个 KYC/KYB
+  提交现在都有由平台生成的验证报告，支持 `?format=pdf|json` 与
+  `?lang=en|es|zh`。第三方：`GET
+  /v1/kyc/submissions/{submissionID}/verification-report` 与 `GET
+  /v1/kyb/submissions/{submissionID}/verification-report`（企业账户，
+  完整报告：已验证身份、生命周期、文件 + OCR、活体检测及含匹配明细的
+  AML 筛查）。自身入驻：`GET /v1/me/verification/report`（结构相同，
+  AML 部分为汇总视图）。免费 — 读取的是已付费的验证结果。
+- **报告公开验证码**：PDF 打印 HMAC 验证码 + 二维码，任何人都可在
+  `GET /verify/reports/{code}` 验证文件真伪（JSON 或 HTML 页面，不含
+  个人数据：仅类型、当前决定状态、签发日期与签发组织）。
+- **新错误码**：`invalid_format`（400，`format` 非 `pdf`/`json`）与
+  `verification_not_found`（404，账户尚未提交任何验证）；
+  `invalid_language` 同样适用于该报告。
 
 ### v2.16
 
