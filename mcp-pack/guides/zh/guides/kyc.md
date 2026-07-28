@@ -340,7 +340,20 @@ curl -o report.pdf https://api.qbank.cl/platform/v1/kyb/submissions/{submission_
 
 ## 验证报告（PDF + JSON）
 
-除处理方的报告外，每条已决定的 KYC 或 KYB 提交件都有由平台生成的**验证报告**：已验证身份、决定生命周期、带 OCR 的证件、活体检测以及 AML 筛查（制裁 / PEP / 负面媒体），并附完整性哈希和公开验证码。支持两种格式（`?format=pdf|json`，默认 `pdf`）和三种语言（`?lang=en|es|zh`，默认 `en`）。它是免费的：这是对您已付费验证的读取。
+除处理方的报告外，每条已决定的 KYC 或 KYB 提交件都有由平台生成的**验证报告**。它是完整的档案，而不是摘要：已验证身份（个人或企业）、申报的经济概况、风险声明、脱敏的银行账户、决定生命周期、带证件校验结果的证件、活体检测、**带各自筛查的关联方**（KYB）以及含每一条匹配明细的 AML 筛查——全部附完整性哈希和公开验证码。支持两种格式（`?format=pdf|json`，默认 `pdf`）和三种语言（`?lang=en|es|zh`，默认 `en`）。它是免费的：这是对您已付费验证的读取。
+
+报告章节：
+
+| 章节 | 内容 |
+|---|---|
+| 主体 | 已验证身份：个人（证件、国籍、税务居住地、职业）或企业（注册、成立、司法辖区、ISIC 行业、网站） |
+| 经济概况 | 资金来源、业务关系目的、预期交易量与收入、预期链 |
+| 声明 | 申报的风险问答（货币服务、第三方资金、高风险活动、禁止国家） |
+| 银行账户 | 银行、持有人及**在来源处即已脱敏**的账号（绝不完整展示） |
+| 证件 | 类别、文件、状态、校验结果、评分、校验时间与拒绝原因 |
+| 活体检测 | 按角色（持有人、UBO N）：结果、门槛、活体 / 防伪 / 人脸相似度评分 |
+| 关联方 | 仅 KYB：UBO、控制人与签署人，每位均含身份、持股、其证件、其活体检测以及**各自的 AML 筛查** |
+| AML 筛查 | 风险等级、指标、含别名的匹配项、带来源与有效期的制裁名单、PEP 职位、RCA 关联与负面媒体 |
 
 ### 您的第三方（企业账户）
 
@@ -375,12 +388,78 @@ curl "https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id}/verificat
   "subject": {
     "type": "company",
     "name": "Importadora Andina SpA",
-    "company": { "legal_name": "Importadora Andina SpA", "registration_number": "77.123.456-7" },
+    "company": {
+      "legal_name": "Importadora Andina SpA",
+      "registration_number": "77.123.456-7",
+      "incorporation_date": "2019-04-12",
+      "incorporation_country": "CHL",
+      "website": "https://andina.example",
+      "countries_of_operation": ["CL", "PE"]
+    },
     "address": { "city": "Santiago", "country": "CL" },
-    "industry": { "code": "G4690", "label": "批发贸易" }
+    "registered_address": { "line1": "Av. Apoquindo 1234", "city": "Santiago", "country": "CL" },
+    "industry": { "code": "G4690", "label": "批发贸易" },
+    "economic_profile": {
+      "source_of_funds": "business_revenue",
+      "primary_purpose": "supplier_payments",
+      "annual_revenue_usd": "250000",
+      "monthly_payments_usd": "40000",
+      "expected_chains": ["tron", "ethereum"]
+    },
+    "attestations": [
+      { "key": "att_money_services", "value": false },
+      { "key": "att_high_risk_activities", "items": [] }
+    ],
+    "bank_account": {
+      "bank_name": "Banco de Chile",
+      "account_holder": "Importadora Andina SpA",
+      "account_masked": "****4321",
+      "country": "CL",
+      "currency": "CLP"
+    }
   },
+  "parties": [
+    {
+      "source": "ubo",
+      "index": 0,
+      "kind": "ubo",
+      "name": "Javier Villablanca",
+      "person": {
+        "first_name": "Javier",
+        "last_name": "Villablanca",
+        "date_of_birth": "1985-03-04",
+        "nationality": "CL",
+        "id_type": "national_id",
+        "id_number": "12345678-9"
+      },
+      "address": { "city": "Santiago", "country": "CL" },
+      "ownership_percent": "60",
+      "has_ownership": true,
+      "has_control": true,
+      "documents": [
+        { "category": "uboIdentity:0", "status": "validated", "outcome": "MATCH", "party_index": 0 }
+      ],
+      "liveness": { "role": "ubo:0", "outcome": "PASSED", "passed_gate": true },
+      "aml": {
+        "screening_id": "d5f6a7b8-9c0d-4e1f-2a3b-4c5d6e7f8a9b",
+        "risk_level": "no_risk",
+        "sanctions": "clear",
+        "pep": "clear",
+        "adverse_media": "clear",
+        "monitor": true,
+        "matches_total": 0
+      }
+    }
+  ],
   "documents": [
-    { "category": "registration", "filename": "deed.pdf", "status": "validated", "outcome": "MATCH", "score": "0.97" }
+    {
+      "category": "registration",
+      "filename": "deed.pdf",
+      "status": "validated",
+      "outcome": "MATCH",
+      "score": "0.97",
+      "validated_at": "2026-07-26T14:02:00Z"
+    }
   ],
   "liveness": [
     { "role": "ubo:0", "outcome": "PASSED", "passed_gate": true, "liveness_score": "0.99" }
@@ -388,9 +467,21 @@ curl "https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id}/verificat
   "aml": {
     "screening_id": "b7e1c2d3-4f5a-6b7c-8d9e-0f1a2b3c4d5e",
     "risk_level": "no_risk",
+    "status": "no_hits",
+    "monitor": true,
+    "screened_at": "2026-07-26T14:05:12Z",
     "sanctions": "clear",
     "pep": "clear",
     "adverse_media": "clear",
+    "screening_result": "no_hits",
+    "indicators": [
+      { "key": "ind_sanctions", "hit": false },
+      { "key": "ind_pep", "hit": false },
+      { "key": "ind_adverse_media", "hit": false }
+    ],
+    "subject_rows": [
+      { "key": "legal_name", "value": "Importadora Andina SpA" }
+    ],
     "matches_total": 0
   },
   "content_sha256": "9f2b4c…",
@@ -401,6 +492,14 @@ curl "https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id}/verificat
 
 > **注**
 如果该验证尚未关联 AML 筛查（较早的验证），首次下载会自动**免费**执行筛查。若此时筛查不可用，报告仍会生成，并带有 `"partial": ["aml_unavailable"]` —— 该部分绝不会被虚构。
+### 关联方及其筛查（KYB）
+
+在企业验证中，档案里的每一位 UBO、控制人与签署人都会作为一条 `parties[]` 记录输出，包含其完整身份、持股比例、归属于其的证件与活体检测，以及**开启持续监控的独立 AML 筛查**。`(source, index)` 组合是该关联方在档案内的稳定标识：它用于关联其证件（`uboIdentity:0`），也确保无论您下载多少次报告，其筛查始终是同一条。
+
+关联方筛查是**免费**的（这是尽职调查义务，而非可计费产品），并处于持续监控之下：若某位 UBO 在入驻之后进入制裁名单，告警会自动出现。
+
+> **注**
+若下载时某关联方尚无筛查结果，报告仍会生成并带有 `"partial": ["party_aml_unavailable"]`，缺失的筛查会在后台执行：下一次下载即会包含。
 ### 您自己的入驻验证
 
 ```bash
@@ -408,7 +507,7 @@ curl -o report.pdf "https://api.qbank.cl/platform/v1/me/verification/report?lang
   -H "Authorization: Bearer <token>"
 ```
 
-在您自己验证的报告中，AML 部分为**汇总形式**（`aml_detail: false`）：您会看到每个类别的状态——`sanctions`、`pep` 和 `adverse_media` 为 `clear` 或 `under_review`——但不含匹配项明细。
+在您自己验证的报告中，AML 部分为**汇总形式**（`aml_detail: false`）：您会看到每个类别的状态——`sanctions`、`pep` 和 `adverse_media` 为 `clear` 或 `under_review`——但不含匹配项明细。关联方的筛查同样如此：其 AML 部分也是汇总形式。档案的其余内容（身份、经济概况、证件、活体检测、关联方）均为完整版。
 
 ### 报告的公开验证
 

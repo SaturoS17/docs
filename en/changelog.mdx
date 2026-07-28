@@ -7,6 +7,47 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="July 28, 2026" description="v2.19 · 1 release">
+
+### v2.19
+
+**Added**
+
+- **Complete verification report, nothing discarded**
+  ([identity verification](/en/guides/kyc)): the KYC/KYB report went from
+  summary to full file. On top of what it already carried, the JSON and the
+  PDF now include the **declared economic profile** (source of funds,
+  purpose of the relationship, expected volumes and income, expected
+  chains), the **risk attestations** (money services, third-party funds,
+  high-risk activities, prohibited countries), the **bank account masked at
+  the source** (the full number never enters the report), the extended
+  company identity (incorporation, jurisdiction, ISIC industry, website,
+  countries of operation, registered address) and the **remainder of the
+  file**: every verified field that does not fit a structured section is
+  still emitted in the fields block.
+- **Related parties with their own AML screening (KYB)**: every UBO,
+  control person and signer in the file is emitted as a `parties[]` entry
+  with its identity, its ownership, the documents and liveness proof that
+  belong to it, and **its own AML screening with continuous monitoring
+  enabled**. No charge: this is diligence, not a billable product. The
+  `(source, index)` pair is the stable identity of the party, so its
+  screening is always the same no matter how many times you download the
+  report. If a party has no screening yet at download time, the report
+  comes back with `"partial": ["party_aml_unavailable"]` and the missing
+  one runs in the background.
+- **AML screening with per-match detail**: the AML section of the full
+  report (third parties and admin reads) now carries indicators, aliases,
+  sanctions lists with source and validity, PEP positions, RCA links and
+  adverse media — the same level of detail as the AML report. On your own
+  onboarding report the section stays **aggregated** (`clear` /
+  `under_review`, no matches), and the same applies to the screening of
+  your related parties.
+- **Document validation in the document detail**: every document in the
+  report exposes `validated_at` and, when applicable, the rejection reason,
+  alongside category, filename, status, outcome and score.
+
+</Update>
+
 <Update label="July 27, 2026" description="v2.18 · 3 releases">
 
 ### v2.18

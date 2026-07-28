@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.18'
+  version: '2.19'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -5599,43 +5599,60 @@ paths:
               example: '%PDF-1.7 (binary report content)'
             application/json:
               example:
-                report_id: IDR-F0E1D2C3B4A5
+                report_id: IDR-1A2B3C4D5E6F
                 kind: kyc
                 scope: self
-                generated_at: '2026-07-27T15:04:05Z'
+                generated_at: '2026-07-28T15:04:05Z'
                 generated_by: CBPay
                 language: en
                 aml_detail: false
-                submission_id: f0e1d2c3-b4a5-4968-8776-5a4b3c2d1e0f
+                submission_id: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
                 status: approved
                 risk_band: low
-                submitted_at: '2026-07-10T12:30:00Z'
-                updated_at: '2026-07-10T13:00:00Z'
+                submitted_at: '2026-07-18T10:00:00Z'
+                decided_at: '2026-07-18T10:42:00Z'
+                documents_received:
+                - identity
+                - proofOfAddress
                 subject:
                   type: person
-                  name: Maria Perez
+                  name: Taylor Code
                   person:
-                    first_name: Maria
-                    last_name: Perez
+                    first_name: Taylor
+                    last_name: Code
+                    date_of_birth: '1990-06-15'
                     nationality: CL
-                    date_of_birth: '1990-04-12'
+                    tax_residence_country: CL
                     id_type: national_id
-                    id_number: '17438319-7'
+                    id_number: 17438319-7
+                    occupation: Software engineer
                   address:
                     city: Santiago
                     country: CL
+                  economic_profile:
+                    source_of_funds: salary
+                    primary_purpose: personal_payments
+                    monthly_payments_usd: '3000'
+                    employment_status: employed
+                  bank_account:
+                    bank_name: Banco Estado
+                    account_masked: '****7788'
+                    country: CL
                 documents:
                 - category: identity
-                  filename: cedula.jpg
+                  filename: cedula.pdf
                   status: validated
                   outcome: MATCH
-                  score: '0.97'
+                  score: '0.99'
+                  validated_at: '2026-07-18T10:31:00Z'
                 liveness:
-                - role: individual
+                - role: subject
                   status: completed
                   outcome: APPROVED
                   passed_gate: true
-                  liveness_score: '0.99'
+                  liveness_score: '0.98'
+                  antispoof_score: '0.96'
+                  face_similarity: '0.97'
                 aml:
                   risk_level: low
                   status: clear
@@ -5643,8 +5660,8 @@ paths:
                   pep: clear
                   adverse_media: clear
                 content_sha256: 9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b
-                verification_code: Kf0e1d2c3b4a549688776a4b3c2d1e0f0a1b2c3d4e5f6a7b8c9d
-                verification_url: https://api.example.com/verify/reports/Kf0e1d2c3b4a549688776a4b3c2d1e0f0a1b2c3d4e5f6a7b8c9d
+                verification_code: K1a2b3c4d5e6f4a7b8c9d0e1f2a3b4c5d9f8e7d6c5b4a3928
+                verification_url: https://api.example.com/verify/reports/K1a2b3c4d5e6f4a7b8c9d0e1f2a3b4c5d9f8e7d6c5b4a3928
         '400':
           description: 格式或语言无效（invalid_format、invalid_language）。
           content:
@@ -7052,66 +7069,166 @@ paths:
               example: '%PDF-1.7 (binary report content)'
             application/json:
               example:
-                report_id: IDR-9B2C41A0D3E5
-                kind: kyb
+                report_id: IDR-3C4D5E6F7A8B
+                kind: kyc
                 scope: third_party
-                generated_at: '2026-07-27T15:04:05Z'
+                generated_at: '2026-07-28T15:04:05Z'
                 generated_by: CBPay
                 language: en
                 aml_detail: true
-                submission_id: 9b2c41a0-d3e5-4f6a-8b7c-1d2e3f4a5b6c
+                submission_id: 3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e6f
+                external_customer_id: customer-1042
                 status: approved
-                risk_band: low
+                risk_band: medium
                 aml_decision: approved
-                submitted_at: '2026-07-20T12:30:00Z'
-                updated_at: '2026-07-21T09:15:00Z'
-                decided_at: '2026-07-21T09:15:00Z'
+                submitted_at: '2026-07-19T14:00:00Z'
+                updated_at: '2026-07-19T14:52:00Z'
+                decided_at: '2026-07-19T14:52:00Z'
                 documents_received:
-                - certificateOfIncorporation
-                - 'uboIdentity:0'
+                - identity
+                - proofOfAddress
                 subject:
-                  type: company
-                  name: JVA SpA
-                  company:
-                    legal_name: JVA SpA
-                    registration_number: '77123456-7'
+                  type: person
+                  name: Maria Fernanda Rojas
+                  person:
+                    first_name: Maria
+                    middle_name: Fernanda
+                    last_name: Rojas
+                    date_of_birth: '1988-11-02'
+                    country_of_birth: PE
+                    nationality: PE
+                    tax_residence_country: PE
+                    id_type: national_id
+                    id_number: '45678912'
+                    id_issuing_country: PE
+                    id_expires_at: '2029-05-20'
+                    occupation: Regional sales manager
+                    email: maria.rojas@example.com
+                    phone: +51 9 8765 4321
                   address:
-                    line1: Av. Apoquindo 1234
-                    city: Santiago
-                    country: CL
-                  industry:
-                    code: K64
-                    label: Financial service activities
+                    line1: Av. Arequipa 1200
+                    city: Lima
+                    state: Lima
+                    postal_code: '15046'
+                    country: PE
+                  economic_profile:
+                    source_of_funds: salary
+                    primary_purpose: personal_payments
+                    monthly_payments_usd: '5000'
+                    monthly_transaction_count: '20'
+                    employment_status: employed
+                    employer_name: Andes Retail SAC
+                    expected_chains:
+                    - tron
+                  attestations:
+                  - key: att_money_services
+                    value: false
+                  - key: att_prohibited_countries
+                    value: false
+                  bank_account:
+                    bank_name: BCP
+                    account_holder: Maria Fernanda Rojas
+                    account_masked: '****9911'
+                    country: PE
+                    currency: PEN
+                    third_party_account: false
                 documents:
-                - category: certificateOfIncorporation
-                  filename: escritura.pdf
+                - category: identity
+                  filename: dni.pdf
                   status: validated
                   outcome: MATCH
-                  score: '0.98'
-                  summary: Company name and registration number match the verified profile.
+                  score: '0.99'
+                  summary: Name, document number and date of birth match the verified profile.
+                  validated_at: '2026-07-19T14:40:00Z'
+                - category: proofOfAddress
+                  filename: recibo-luz.pdf
+                  status: validated
+                  outcome: REVIEW
+                  score: '0.72'
+                  error: Address line partially legible.
+                  validated_at: '2026-07-19T14:41:00Z'
                 liveness:
-                - role: 'ubo:0'
+                - role: subject
                   status: completed
                   outcome: APPROVED
                   passed_gate: true
-                  liveness_score: '0.99'
-                  antispoof_score: '0.97'
-                  face_similarity: '0.95'
+                  liveness_score: '0.98'
+                  antispoof_score: '0.96'
+                  face_similarity: '0.94'
                   gestures_expected: 3
                   gestures_passed: 3
                 aml:
-                  screening_id: 5f0e1d2c-b4a5-4968-8776-5a4b3c2d1e0f
-                  risk_level: low
-                  status: clear
+                  screening_id: 6b7c8d9e-0f1a-4b2c-9d3e-4f5a6b7c8d9e
+                  risk_level: medium
+                  status: under_review
                   monitor: true
-                  screened_at: '2026-07-21T09:14:00Z'
+                  screened_at: '2026-07-19T14:50:00Z'
                   sanctions: clear
-                  pep: clear
-                  adverse_media: clear
-                  matches_total: 0
-                content_sha256: 4f2c1de0a9b83b7d6c5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c
-                verification_code: B9b2c41a0d3e54f6a8b7c1d2e3f4a5b6c0a1b2c3d4e5f6a7b8c9
-                verification_url: https://api.example.com/verify/reports/B9b2c41a0d3e54f6a8b7c1d2e3f4a5b6c0a1b2c3d4e5f6a7b8c9
+                  pep: under_review
+                  adverse_media: under_review
+                  screening_result: has_hits
+                  rationale: One PEP profile and one adverse media article matched the declared identity.
+                  indicators:
+                  - key: ind_sanctions
+                    hit: false
+                  - key: ind_pep
+                    hit: true
+                  - key: ind_adverse_media
+                    hit: true
+                  - key: ind_warning
+                    hit: false
+                  - key: ind_fitness_probity
+                    hit: false
+                  subject_rows:
+                  - key: full_name
+                    value: Maria Fernanda Rojas
+                  - key: date_of_birth
+                    value: '1988-11-02'
+                  - key: nationality
+                    value: PE
+                  matches_total: 1
+                  matches:
+                  - name: Maria F. Rojas
+                    score: 0.88
+                    match_types:
+                    - name_fuzzy
+                    - year_of_birth
+                    risk_kinds:
+                    - pep
+                    - adverse_media
+                    aliases:
+                    - M. Rojas
+                    - Maria Rojas Vega
+                    identity:
+                    - key: date_of_birth
+                      value: '1988'
+                    - key: nationality
+                      value: PE
+                    - key: national_id
+                      value: 4567****
+                    peps:
+                    - name: Advisor, regional government
+                      country: PE
+                      since: '2018'
+                      until: '2021'
+                      info: Non-elected advisory role.
+                    adverse_media:
+                    - title: Local outlet reports contract review
+                      published_at: '2020-09-14'
+                      source: Diario Local
+                      snippet: Regional contract under administrative review.
+                    associates:
+                    - name: Luis Rojas
+                      relation: relative
+                  cases:
+                  - case_id: CASE-4821
+                    status: closed
+                    decision: no_action
+                    opened_at: '2026-07-19T14:51:00Z'
+                    closed_at: '2026-07-19T15:20:00Z'
+                content_sha256: 1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c
+                verification_code: K3c4d5e6f7a8b4c9d8e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5
+                verification_url: https://api.example.com/verify/reports/K3c4d5e6f7a8b4c9d8e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5
         '400':
           description: 格式或语言无效（invalid_format、invalid_language）。
           content:
@@ -7179,7 +7296,7 @@ paths:
                 report_id: IDR-9B2C41A0D3E5
                 kind: kyb
                 scope: third_party
-                generated_at: '2026-07-27T15:04:05Z'
+                generated_at: '2026-07-28T15:04:05Z'
                 generated_by: CBPay
                 language: en
                 aml_detail: true
@@ -7192,20 +7309,170 @@ paths:
                 decided_at: '2026-07-21T09:15:00Z'
                 documents_received:
                 - certificateOfIncorporation
-                - 'uboIdentity:0'
+                - proofOfAddress
+                - uboIdentity:0
                 subject:
                   type: company
                   name: JVA SpA
                   company:
                     legal_name: JVA SpA
-                    registration_number: '77123456-7'
+                    trade_name: JVA
+                    registration_number: 77123456-7
+                    business_type: corporation
+                    company_status: active
+                    incorporation_date: '2019-04-12'
+                    incorporation_country: CHL
+                    website: https://jva.example
+                    countries_of_operation:
+                    - CHL
+                    - PER
                   address:
+                    line1: Av. Apoquindo 1234
+                    city: Santiago
+                    state: RM
+                    postal_code: '7550000'
+                    country: CL
+                  registered_address:
                     line1: Av. Apoquindo 1234
                     city: Santiago
                     country: CL
                   industry:
                     code: K64
                     label: Financial service activities
+                  economic_profile:
+                    source_of_funds: business_revenue
+                    primary_purpose: payments
+                    annual_revenue_usd: '250000'
+                    monthly_payments_usd: '40000'
+                    monthly_transaction_count: '120'
+                    average_transaction_usd: '330'
+                    expected_chains:
+                    - tron
+                    - ethereum
+                    customer_funds_description: Collections from merchants in CL and PE.
+                  attestations:
+                  - key: att_money_services
+                    value: false
+                  - key: att_third_party_funds
+                    value: true
+                    detail: Settlement on behalf of merchants.
+                  - key: att_high_risk_activities
+                    items:
+                    - none
+                  bank_account:
+                    bank_name: Banco de Chile
+                    account_holder: JVA SpA
+                    account_masked: '****4321'
+                    country: CL
+                    currency: CLP
+                    third_party_account: false
+                  fields:
+                    operatingName: JVA Payments
+                parties:
+                - source: ubo
+                  index: 0
+                  kind: ubo
+                  roles:
+                  - beneficial_owner
+                  - control_person
+                  name: Javier Andres Villablanca
+                  person:
+                    first_name: Javier
+                    middle_name: Andres
+                    last_name: Villablanca
+                    date_of_birth: '1985-03-04'
+                    nationality: CL
+                    tax_residence_country: CL
+                    id_type: national_id
+                    id_number: 12345678-9
+                    id_issuing_country: CL
+                    id_expires_at: '2030-01-31'
+                    occupation: Director
+                  address:
+                    line1: Av. Siempre Viva 742
+                    city: Santiago
+                    state: RM
+                    country: CL
+                  ownership_percent: '60'
+                  has_ownership: true
+                  has_control: true
+                  is_signer: false
+                  documents:
+                  - category: uboIdentity:0
+                    filename: cedula.pdf
+                    status: validated
+                    outcome: MATCH
+                    score: '0.97'
+                    validated_at: '2026-07-21T09:12:00Z'
+                    party_index: 0
+                  liveness:
+                    role: ubo:0
+                    status: completed
+                    outcome: APPROVED
+                    passed_gate: true
+                    liveness_score: '0.99'
+                    antispoof_score: '0.97'
+                    face_similarity: '0.95'
+                  aml:
+                    screening_id: 7c1d2e3f-4a5b-4c6d-8e9f-0a1b2c3d4e5f
+                    risk_level: medium
+                    status: under_review
+                    monitor: true
+                    screened_at: '2026-07-21T09:13:00Z'
+                    sanctions: clear
+                    pep: under_review
+                    adverse_media: clear
+                    screening_result: has_hits
+                    indicators:
+                    - key: ind_sanctions
+                      hit: false
+                    - key: ind_pep
+                      hit: true
+                    - key: ind_adverse_media
+                      hit: false
+                    matches_total: 1
+                    matches:
+                    - name: Javier Villablanca
+                      score: 0.91
+                      match_types:
+                      - name_exact
+                      risk_kinds:
+                      - pep
+                      aliases:
+                      - J. Villablanca
+                      identity:
+                      - key: date_of_birth
+                        value: '1985-03-04'
+                      - key: nationality
+                        value: CL
+                      peps:
+                      - name: Municipal council member
+                        country: CL
+                        since: '2016'
+                        until: '2020'
+                        info: Former local office holder.
+                      associates:
+                      - name: Ana Soto
+                        relation: business_partner
+                - source: signer
+                  index: 0
+                  kind: signer
+                  name: Pedro Ruiz
+                  business_title: CFO
+                  is_signer: true
+                  person:
+                    first_name: Pedro
+                    last_name: Ruiz
+                  aml:
+                    screening_id: 8d2e3f4a-5b6c-4d7e-9f0a-1b2c3d4e5f6a
+                    risk_level: low
+                    status: clear
+                    monitor: true
+                    sanctions: clear
+                    pep: clear
+                    adverse_media: clear
+                    screening_result: no_hits
+                    matches_total: 0
                 documents:
                 - category: certificateOfIncorporation
                   filename: escritura.pdf
@@ -7213,8 +7480,15 @@ paths:
                   outcome: MATCH
                   score: '0.98'
                   summary: Company name and registration number match the verified profile.
+                  validated_at: '2026-07-21T09:10:00Z'
+                - category: proofOfAddress
+                  filename: cartola.pdf
+                  status: rejected
+                  outcome: NO_MATCH
+                  error: Document older than 90 days.
+                  validated_at: '2026-07-21T09:11:00Z'
                 liveness:
-                - role: 'ubo:0'
+                - role: ubo:0
                   status: completed
                   outcome: APPROVED
                   passed_gate: true
@@ -7232,7 +7506,23 @@ paths:
                   sanctions: clear
                   pep: clear
                   adverse_media: clear
+                  screening_result: no_hits
+                  rationale: No profiles matched the declared identity.
+                  indicators:
+                  - key: ind_sanctions
+                    hit: false
+                  - key: ind_pep
+                    hit: false
+                  - key: ind_adverse_media
+                    hit: false
+                  subject_rows:
+                  - key: legal_name
+                    value: JVA SpA
+                  - key: registration_number
+                    value: 77123456-7
                   matches_total: 0
+                partial:
+                - party_aml_unavailable
                 content_sha256: 4f2c1de0a9b83b7d6c5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c
                 verification_code: B9b2c41a0d3e54f6a8b7c1d2e3f4a5b6c0a1b2c3d4e5f6a7b8c9
                 verification_url: https://api.example.com/verify/reports/B9b2c41a0d3e54f6a8b7c1d2e3f4a5b6c0a1b2c3d4e5f6a7b8c9

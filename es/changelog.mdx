@@ -8,6 +8,47 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="28 de julio de 2026" description="v2.19 · 1 versión">
+
+### v2.19
+
+**Agregado**
+
+- **Informe de verificación completo, sin datos descartados**
+  ([verificación de identidad](/es/guias/kyc)): el informe KYC/KYB pasó de
+  resumen a expediente. Además de lo que ya traía, el JSON y el PDF ahora
+  incluyen el **perfil económico declarado** (origen de fondos, propósito de
+  la relación, volúmenes e ingresos esperados, cadenas esperadas), las
+  **declaraciones de riesgo** (servicios monetarios, fondos de terceros,
+  actividades de alto riesgo, países prohibidos), la **cuenta bancaria
+  enmascarada en origen** (el número completo jamás entra al informe), la
+  identidad de empresa extendida (constitución, jurisdicción, industria
+  ISIC, sitio web, países de operación, dirección registrada) y el
+  **residual del expediente**: todo campo verificado que no calce en una
+  sección estructurada sale igual en el bloque de campos.
+- **Partes relacionadas con su propio screening AML (KYB)**: cada UBO,
+  persona de control y firmante del expediente sale como una entrada de
+  `parties[]` con su identidad, su participación, los documentos y la prueba
+  de vida que le corresponden y **su propio screening AML con monitoreo
+  continuo activado**. Sin costo: es diligencia, no un producto facturable.
+  El par `(source, index)` es la identidad estable de la parte, así que su
+  screening es siempre el mismo por más veces que descargues el informe. Si
+  una parte todavía no tiene screening al descargar, el informe sale con
+  `"partial": ["party_aml_unavailable"]` y el faltante se ejecuta en
+  segundo plano.
+- **Screening AML con el detalle de cada coincidencia**: la sección AML del
+  informe completo (terceros y lectura admin) trae ahora indicadores,
+  alias, listas de sanciones con fuente y vigencia, cargos PEP, vínculos
+  RCA y medios adversos — el mismo nivel de detalle del informe AML. En el
+  informe de tu propio onboarding la sección sigue **agregada**
+  (`clear` / `under_review`, sin coincidencias), y lo mismo aplica al
+  screening de tus partes relacionadas.
+- **Validación documental en el detalle de documentos**: cada documento del
+  informe expone `validated_at` y, cuando corresponde, el motivo de rechazo,
+  junto a categoría, archivo, estado, outcome y score.
+
+</Update>
+
 <Update label="27 de julio de 2026" description="v2.18 · 3 versiones">
 
 ### v2.18
