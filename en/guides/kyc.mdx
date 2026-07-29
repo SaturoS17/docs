@@ -448,10 +448,10 @@ Report sections:
 | Economic profile | Source of funds, purpose of the relationship, expected volumes and revenue, expected chains |
 | Attestations | Declared risk answers (money services, third-party funds, high-risk activities, prohibited countries) |
 | Bank account | Bank, holder and account number **masked at the source** (never in full) |
-| Documents | Category, file, status, validation outcome, score, validation timestamp and rejection reason |
-| Liveness | Per role (holder, UBO N): outcome, gate, liveness / antispoofing / face similarity scores |
+| Documents | Category, file, status, validation outcome, score, validation timestamp and rejection reason. The PDF adds **identity document photos** when the provider supplies them (if none, the section is omitted) |
+| Liveness | Per role (holder, UBO N): outcome, gate, liveness / antispoofing / face similarity scores. The PDF embeds selfie/frames when live media exists; JSON only declares metadata (`has_selfie`, gestures, hashes) without URLs |
 | Related parties | KYB only: UBOs, control persons and signers, each with identity, ownership, their documents, their liveness and **their own AML screening** |
-| AML screening | Risk level, indicators, matches with aliases, sanctions lists with source and validity, PEP positions, RCA links and adverse media |
+| AML screening | Risk level, indicators, matches with aliases, sanctions lists with source and validity, PEP positions, RCA links and adverse media. The PDF closing includes the full AML annex (attribution and sources) when a screening exists |
 
 ### For your third parties (company accounts)
 

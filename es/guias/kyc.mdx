@@ -448,10 +448,10 @@ Secciones del informe:
 | Perfil económico | Origen de fondos, propósito de la relación, volúmenes e ingresos esperados, redes esperadas |
 | Declaraciones | Respuestas de riesgo declaradas (servicios monetarios, fondos de terceros, actividades de alto riesgo, países prohibidos) |
 | Cuenta bancaria | Banco, titular y número **enmascarado en origen** (nunca completo) |
-| Documentos | Categoría, archivo, estado, resultado de validación, score, fecha de validación y motivo de rechazo |
-| Prueba de vida | Por rol (titular, UBO N): resultado, gate, scores de liveness / antispoofing / similitud facial |
+| Documentos | Categoría, archivo, estado, resultado de validación, score, fecha de validación y motivo de rechazo. El PDF agrega **fotos del documento de identidad** cuando el proveedor las entrega (si no hay, la sección se omite) |
+| Prueba de vida | Por rol (titular, UBO N): resultado, gate, scores de liveness / antispoofing / similitud facial. El PDF embebe selfie/frames cuando hay media viva; el JSON solo declara metadata (`has_selfie`, gestos, hashes) sin URLs |
 | Partes relacionadas | Solo KYB: UBOs, personas de control y firmantes, cada una con identidad, participación, sus documentos, su liveness y **su propio screening AML** |
-| Screening AML | Nivel de riesgo, indicadores, coincidencias con alias, listas de sanciones con fuente y vigencia, posiciones PEP, vínculos RCA y medios adversos |
+| Screening AML | Nivel de riesgo, indicadores, coincidencias con alias, listas de sanciones con fuente y vigencia, posiciones PEP, vínculos RCA y medios adversos. El cierre del PDF incluye el anexo AML completo (atribución y fuentes) cuando hubo screening |
 
 ### De tus terceros (cuentas empresa)
 

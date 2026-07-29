@@ -7,7 +7,22 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-<Update label="July 28, 2026" description="v2.19 · 1 release">
+<Update label="July 28, 2026" description="v2.20 · 2 releases">
+
+### v2.20
+
+**Added**
+
+- **Visual evidence in the verification report**
+  ([identity verification](/en/guides/kyc)): when the provider publishes
+  liveness media (selfie / frames) or identity document photos, the **PDF
+  embeds the photos** best-effort. If media is missing or the link expired,
+  the photo section is omitted. The report JSON only declares metadata
+  (`has_selfie`, gestures, `has_video`, hashes) — **never signed URLs**.
+- **Full AML annex at the PDF closing**: when a screening exists, the report
+  reuses the same closing as the standalone AML report (attribution,
+  coverage stats, source blocks and legal notice). Without a screening it
+  keeps the generic disclaimer.
 
 ### v2.19
 
