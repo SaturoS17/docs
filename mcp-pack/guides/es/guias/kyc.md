@@ -435,7 +435,6 @@ Secciones del informe:
 | Partes relacionadas | Solo KYB: UBOs, personas de control y firmantes, cada una con identidad, participación, sus documentos, su liveness y **su propio screening AML** |
 | Screening AML | Nivel de riesgo, indicadores, coincidencias con alias, listas de sanciones con fuente y vigencia, posiciones PEP, vínculos RCA y medios adversos. El cierre del PDF incluye el anexo AML completo (atribución y fuentes) cuando hubo screening |
 
-<!-- idreport-uiux -->
 > **Nota**
 **Cómo se lee el PDF.** El informe abre con una **portada navegable**: un
 índice de tarjetas con icono, título y número de página que son **clicables**

@@ -435,7 +435,6 @@ Report sections:
 | Related parties | KYB only: UBOs, control persons and signers, each with identity, ownership, their documents, their liveness and **their own AML screening** |
 | AML screening | Risk level, indicators, matches with aliases, sanctions lists with source and validity, PEP positions, RCA links and adverse media. The PDF closing includes the full AML annex (attribution and sources) when a screening exists |
 
-<!-- idreport-uiux -->
 > **Note**
 **How to read the PDF.** The report opens with a **navigable cover**: an index
 of cards with icon, title and page number that are **clickable** and jump to

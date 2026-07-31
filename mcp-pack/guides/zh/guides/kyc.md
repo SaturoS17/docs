@@ -355,7 +355,6 @@ curl -o report.pdf https://api.qbank.cl/platform/v1/kyb/submissions/{submission_
 | 关联方 | 仅 KYB：UBO、控制人与签署人，每位均含身份、持股、其证件、其活体检测以及**各自的 AML 筛查** |
 | AML 筛查 | 风险等级、指标、含别名的匹配项、带来源与有效期的制裁名单、PEP 职位、RCA 关联与负面媒体。存在筛查时 PDF 结尾包含完整 AML 附录（归属声明与数据源） |
 
-<!-- idreport-uiux -->
 > **注**
 **如何阅读该 PDF。** 报告首页为**可导航封面**：索引卡片包含图标、标题与页码，
 **可点击**并跳转到对应章节。每个章节都带有自己的图标与强调条（与 AML 报告一致的
