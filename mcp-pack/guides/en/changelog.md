@@ -8,6 +8,28 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+## v2.21 · 1 release - July 30, 2026
+
+### v2.21
+
+**Changed**
+
+- **Verification report with a navigable cover**
+  ([identity verification](https://docs.cbpayapp.com/en/guides/kyc)): the PDF opens with an index of
+  **clickable** cards (icon, title and page number) that jump to their
+  section. Every section carries its icon and accent bar, matching the visual
+  language of the AML report.
+- **Clickable links**: adverse media entries in the AML annex carry a “view
+  source” chip and the public verification URL in the closing block is
+  clickable. For safety, **only `http` and `https` links are embedded** — any
+  other scheme is dropped and the text stays unlinked.
+- **Photos keep their real aspect ratio**: identity document and liveness
+  photos are rendered without stretching, with their caption underneath.
+- **No blank pages, no orphan headings**: each section header reserves the
+  height of its first block, so it never sits alone at the bottom of a page.
+- The aggregated adverse media status now reads **“Review”** (was “In
+  review”).
+
 ## v2.20 · 2 releases - July 28, 2026
 
 ### v2.20

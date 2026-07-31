@@ -9,6 +9,29 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+## v2.21 · 1 versión - 30 de julio de 2026
+
+### v2.21
+
+**Cambiado**
+
+- **Informe de verificación con portada navegable**
+  ([verificación de identidad](https://docs.cbpayapp.com/es/guias/kyc)): el PDF abre con un índice de
+  tarjetas **clicables** (icono, título y número de página) que saltan a su
+  sección. Cada sección lleva su icono y su barra de acento, con el mismo
+  lenguaje visual del informe AML.
+- **Enlaces clicables**: los medios adversos del anexo AML llevan un chip
+  “ver fuente” y la URL de verificación pública del cierre es clicable. Por
+  seguridad, **solo se embeben enlaces `http` y `https`** — cualquier otro
+  esquema se descarta y el texto queda sin enlace.
+- **Fotos con su proporción real**: las fotos del documento y de la prueba de
+  vida se muestran sin deformarse, con su leyenda debajo.
+- **Sin páginas en blanco ni títulos huérfanos**: cada encabezado de sección
+  reserva el alto de su primer bloque, así que nunca queda solo al pie de una
+  página.
+- El estado agregado de medios adversos se lee **“Review”** (antes “In
+  review”) en la versión en inglés.
+
 ## v2.20 · 2 versiones - 28 de julio de 2026
 
 ### v2.20
