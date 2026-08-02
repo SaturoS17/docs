@@ -7,6 +7,26 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="August 1, 2026" description="v2.22 · 1 release">
+
+### v2.22
+
+**Changed**
+
+- **Liveness now supports multiple sessions per subject**
+  ([identity verification](/en/guides/kyc)): the verification report's
+  `liveness[]` array can carry more than one entry per person — the
+  onboarding `gate` check plus one or more later evidence
+  `media_recapture`s. Each session now carries its own `session_id` and
+  `purpose` (`gate` or `media_recapture`). In a KYB, `parties[].liveness`
+  (singular) is kept for compatibility and always points to that party's
+  `gate` session, while the new `parties[].liveness_sessions[]` carries
+  every session for that party. Media metadata stays URL-free
+  (`has_selfie`, `has_video`, `frame_gestures`, hashes) — no contract
+  change there.
+
+</Update>
+
 <Update label="July 30, 2026" description="v2.21 · 1 release">
 
 ### v2.21

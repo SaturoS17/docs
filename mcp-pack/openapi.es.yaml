@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.21'
+  version: '2.22'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -5841,11 +5841,12 @@ paths:
       summary: Descargar mi informe de verificación (PDF/JSON)
       description: >-
         Informe de compliance de tu propia verificación de onboarding, generado por la plataforma:
-        identidad verificada, ciclo de vida, documentos + OCR, liveness y una sección AML AGREGADA
-        (estado de sanciones / PEP / medios adversos, jamás el detalle de coincidencias). Usa format=pdf
-        (default) o format=json, y lang=en|es|zh. Gratis - la verificación ya se cobró al crearse. El
-        PDF imprime un código público de verificación + QR consultable por cualquiera en
-        /verify/reports/{code}.
+        identidad verificada, ciclo de vida, documentos + OCR, liveness (una entrada por sesión - el
+        check de onboarding más cualquier recaptura de evidencia posterior, cada una con su propio
+        session_id y purpose) y una sección AML AGREGADA (estado de sanciones / PEP / medios adversos,
+        jamás el detalle de coincidencias). Usa format=pdf (default) o format=json, y lang=en|es|zh.
+        Gratis - la verificación ya se cobró al crearse. El PDF imprime un código público de
+        verificación + QR consultable por cualquiera en /verify/reports/{code}.
       parameters:
       - name: format
         in: query
@@ -5923,12 +5924,49 @@ paths:
                   validated_at: '2026-07-18T10:31:00Z'
                 liveness:
                 - role: subject
+                  session_id: lv_e763e3465bf34f1dab826a263c1eaaaa
+                  purpose: gate
                   status: completed
-                  outcome: APPROVED
+                  outcome: PASS
                   passed_gate: true
                   liveness_score: '0.98'
                   antispoof_score: '0.96'
                   face_similarity: '0.97'
+                  gestures_expected: 3
+                  gestures_passed: 3
+                  updated_at: '2026-07-18T10:35:00Z'
+                  media:
+                    has_selfie: true
+                    has_video: false
+                    expires_in_sec: 900
+                    selfie_sha256: 6f8a3b1c2d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e
+                - role: subject
+                  session_id: lv_4cdd3a82903940cebd8cc95a77cdacb3
+                  purpose: media_recapture
+                  status: completed
+                  outcome: FAIL
+                  passed_gate: false
+                  liveness_score: '0.98'
+                  antispoof_score: '0.59'
+                  face_similarity: '0.55'
+                  gestures_expected: 3
+                  gestures_passed: 2
+                  reasons:
+                  - Smile was not detected.
+                  updated_at: '2026-07-18T10:38:00Z'
+                  media:
+                    has_selfie: true
+                    has_video: true
+                    frame_gestures:
+                    - center
+                    - turn_right
+                    - smile
+                    video_mime_type: video/mp4
+                    expires_in_sec: 900
+                    selfie_sha256: a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9
+                    frame_sha256:
+                    - c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9a1b2
+                    - d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9a1b2c3
                 aml:
                   risk_level: low
                   status: clear
@@ -7334,13 +7372,15 @@ paths:
       summary: Informe de verificación de un KYC tuyo (PDF/JSON)
       description: >-
         Informe de compliance COMPLETO de una verificación que corriste sobre tu cliente (solo cuentas
-        empresa): perfil verificado, ciclo de vida, documentos + OCR, liveness y la sección AML COMPLETA
-        con detalle de coincidencias - eres el responsable de los datos de tus terceros. Si la
-        submission resulta ser tu propio onboarding, la sección AML baja a la versión agregada. Usa
-        format=pdf (default) o format=json, y lang=en|es|zh. Gratis - es lectura de una verificación ya
-        cobrada. Si la submission aún no tiene screening AML enlazado, se dispara uno on-demand
-        (idempotente, sin fee); si no está disponible, el informe sale igual con el hueco declarado en
-        el campo partial.
+        empresa): perfil verificado, ciclo de vida, documentos + OCR, liveness (una entrada por sesión -
+        el check de onboarding más cualquier recaptura de evidencia posterior, cada una con su propio
+        session_id y purpose; en un KYB, cada parte relacionada puede tener más de una sesión también) y
+        la sección AML COMPLETA con detalle de coincidencias - eres el responsable de los datos de tus
+        terceros. Si la submission resulta ser tu propio onboarding, la sección AML baja a la versión
+        agregada. Usa format=pdf (default) o format=json, y lang=en|es|zh. Gratis - es lectura de una
+        verificación ya cobrada. Si la submission aún no tiene screening AML enlazado, se dispara uno
+        on-demand (idempotente, sin fee); si no está disponible, el informe sale igual con el hueco
+        declarado en el campo partial.
       parameters:
       - name: submissionID
         in: path
@@ -7457,14 +7497,49 @@ paths:
                   validated_at: '2026-07-19T14:41:00Z'
                 liveness:
                 - role: subject
+                  session_id: lv_e763e3465bf34f1dab826a263c1eaaaa
+                  purpose: gate
                   status: completed
-                  outcome: APPROVED
+                  outcome: PASS
                   passed_gate: true
                   liveness_score: '0.98'
                   antispoof_score: '0.96'
                   face_similarity: '0.94'
                   gestures_expected: 3
                   gestures_passed: 3
+                  updated_at: '2026-07-19T14:35:00Z'
+                  media:
+                    has_selfie: true
+                    has_video: false
+                    expires_in_sec: 900
+                    selfie_sha256: 6f8a3b1c2d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e
+                - role: subject
+                  session_id: lv_4cdd3a82903940cebd8cc95a77cdacb3
+                  purpose: media_recapture
+                  status: completed
+                  outcome: FAIL
+                  passed_gate: false
+                  liveness_score: '0.98'
+                  antispoof_score: '0.59'
+                  face_similarity: '0.55'
+                  gestures_expected: 3
+                  gestures_passed: 2
+                  reasons:
+                  - Smile was not detected.
+                  updated_at: '2026-07-19T14:38:00Z'
+                  media:
+                    has_selfie: true
+                    has_video: true
+                    frame_gestures:
+                    - center
+                    - turn_right
+                    - smile
+                    video_mime_type: video/mp4
+                    expires_in_sec: 900
+                    selfie_sha256: a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9
+                    frame_sha256:
+                    - c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9a1b2
+                    - d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9a1b2c3
                 aml:
                   screening_id: 6b7c8d9e-0f1a-4b2c-9d3e-4f5a6b7c8d9e
                   risk_level: medium
@@ -7563,13 +7638,15 @@ paths:
       summary: Informe de verificación de un KYB tuyo (PDF/JSON)
       description: >-
         Informe de compliance COMPLETO de una verificación que corriste sobre tu cliente (solo cuentas
-        empresa): perfil verificado, ciclo de vida, documentos + OCR, liveness y la sección AML COMPLETA
-        con detalle de coincidencias - eres el responsable de los datos de tus terceros. Si la
-        submission resulta ser tu propio onboarding, la sección AML baja a la versión agregada. Usa
-        format=pdf (default) o format=json, y lang=en|es|zh. Gratis - es lectura de una verificación ya
-        cobrada. Si la submission aún no tiene screening AML enlazado, se dispara uno on-demand
-        (idempotente, sin fee); si no está disponible, el informe sale igual con el hueco declarado en
-        el campo partial.
+        empresa): perfil verificado, ciclo de vida, documentos + OCR, liveness (una entrada por sesión -
+        el check de onboarding más cualquier recaptura de evidencia posterior, cada una con su propio
+        session_id y purpose; en un KYB, cada parte relacionada puede tener más de una sesión también) y
+        la sección AML COMPLETA con detalle de coincidencias - eres el responsable de los datos de tus
+        terceros. Si la submission resulta ser tu propio onboarding, la sección AML baja a la versión
+        agregada. Usa format=pdf (default) o format=json, y lang=en|es|zh. Gratis - es lectura de una
+        verificación ya cobrada. Si la submission aún no tiene screening AML enlazado, se dispara uno
+        on-demand (idempotente, sin fee); si no está disponible, el informe sale igual con el hueco
+        declarado en el campo partial.
       parameters:
       - name: submissionID
         in: path
@@ -7720,12 +7797,67 @@ paths:
                     party_index: 0
                   liveness:
                     role: ubo:0
+                    session_id: lv_e763e3465bf34f1dab826a263c1eaaaa
+                    purpose: gate
                     status: completed
-                    outcome: APPROVED
+                    outcome: PASS
                     passed_gate: true
                     liveness_score: '0.99'
                     antispoof_score: '0.97'
                     face_similarity: '0.95'
+                    gestures_expected: 3
+                    gestures_passed: 3
+                    updated_at: '2026-07-20T09:05:00Z'
+                    media:
+                      has_selfie: true
+                      has_video: false
+                      expires_in_sec: 900
+                      selfie_sha256: 6f8a3b1c2d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e
+                  liveness_sessions:
+                  - role: ubo:0
+                    session_id: lv_e763e3465bf34f1dab826a263c1eaaaa
+                    purpose: gate
+                    status: completed
+                    outcome: PASS
+                    passed_gate: true
+                    liveness_score: '0.99'
+                    antispoof_score: '0.97'
+                    face_similarity: '0.95'
+                    gestures_expected: 3
+                    gestures_passed: 3
+                    updated_at: '2026-07-20T09:05:00Z'
+                    media:
+                      has_selfie: true
+                      has_video: false
+                      expires_in_sec: 900
+                      selfie_sha256: 6f8a3b1c2d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e
+                  - role: ubo:0
+                    session_id: lv_4cdd3a82903940cebd8cc95a77cdacb3
+                    purpose: media_recapture
+                    status: completed
+                    outcome: FAIL
+                    passed_gate: false
+                    liveness_score: '0.98'
+                    antispoof_score: '0.59'
+                    face_similarity: '0.55'
+                    gestures_expected: 3
+                    gestures_passed: 2
+                    reasons:
+                    - Smile was not detected.
+                    updated_at: '2026-07-31T22:29:32Z'
+                    media:
+                      has_selfie: true
+                      has_video: true
+                      frame_gestures:
+                      - center
+                      - turn_right
+                      - smile
+                      video_mime_type: video/mp4
+                      expires_in_sec: 900
+                      selfie_sha256: a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9
+                      frame_sha256:
+                      - c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9a1b2
+                      - d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9a1b2c3
                   aml:
                     screening_id: 7c1d2e3f-4a5b-4c6d-8e9f-0a1b2c3d4e5f
                     risk_level: medium
@@ -7802,14 +7934,49 @@ paths:
                   validated_at: '2026-07-21T09:11:00Z'
                 liveness:
                 - role: ubo:0
+                  session_id: lv_e763e3465bf34f1dab826a263c1eaaaa
+                  purpose: gate
                   status: completed
-                  outcome: APPROVED
+                  outcome: PASS
                   passed_gate: true
                   liveness_score: '0.99'
                   antispoof_score: '0.97'
                   face_similarity: '0.95'
                   gestures_expected: 3
                   gestures_passed: 3
+                  updated_at: '2026-07-20T09:05:00Z'
+                  media:
+                    has_selfie: true
+                    has_video: false
+                    expires_in_sec: 900
+                    selfie_sha256: 6f8a3b1c2d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e
+                - role: ubo:0
+                  session_id: lv_4cdd3a82903940cebd8cc95a77cdacb3
+                  purpose: media_recapture
+                  status: completed
+                  outcome: FAIL
+                  passed_gate: false
+                  liveness_score: '0.98'
+                  antispoof_score: '0.59'
+                  face_similarity: '0.55'
+                  gestures_expected: 3
+                  gestures_passed: 2
+                  reasons:
+                  - Smile was not detected.
+                  updated_at: '2026-07-31T22:29:32Z'
+                  media:
+                    has_selfie: true
+                    has_video: true
+                    frame_gestures:
+                    - center
+                    - turn_right
+                    - smile
+                    video_mime_type: video/mp4
+                    expires_in_sec: 900
+                    selfie_sha256: a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9
+                    frame_sha256:
+                    - c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9a1b2
+                    - d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9a1b2c3
                 aml:
                   screening_id: 5f0e1d2c-b4a5-4968-8776-5a4b3c2d1e0f
                   risk_level: low

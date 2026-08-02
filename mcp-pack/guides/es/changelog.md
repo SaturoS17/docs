@@ -9,6 +9,24 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+## v2.22 · 1 versión - 1 de agosto de 2026
+
+### v2.22
+
+**Cambiado**
+
+- **La prueba de vida ahora admite varias sesiones por sujeto**
+  ([verificación de identidad](https://docs.cbpayapp.com/es/guias/kyc)): el array `liveness[]` del
+  informe de verificación puede traer más de una entrada por persona — el
+  check de onboarding `gate` más una o más recapturas de evidencia
+  `media_recapture` posteriores. Cada sesión ahora trae su propio
+  `session_id` y `purpose` (`gate` o `media_recapture`). En un KYB,
+  `parties[].liveness` (singular) se conserva por compatibilidad y siempre
+  apunta a la sesión `gate` de esa parte, mientras el nuevo
+  `parties[].liveness_sessions[]` trae todas las sesiones de esa parte. La
+  metadata de media sigue sin URLs (`has_selfie`, `has_video`,
+  `frame_gestures`, hashes) — sin cambio de contrato ahí.
+
 ## v2.21 · 1 versión - 30 de julio de 2026
 
 ### v2.21

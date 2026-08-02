@@ -351,10 +351,19 @@ curl -o report.pdf https://api.qbank.cl/platform/v1/kyb/submissions/{submission_
 | 声明 | 申报的风险问答（货币服务、第三方资金、高风险活动、禁止国家） |
 | 银行账户 | 银行、持有人及**在来源处即已脱敏**的账号（绝不完整展示） |
 | 证件 | 类别、文件、状态、校验结果、评分、校验时间与拒绝原因。当提供商交付证件照片时，PDF 会加入**身份证件照片**（若无则省略该区块） |
-| 活体检测 | 按角色（持有人、UBO N）：结果、门槛、活体 / 防伪 / 人脸相似度评分。存在可用媒体时 PDF 嵌入自拍/手势帧；JSON 仅声明元数据（`has_selfie`、手势、哈希），不含 URL |
-| 关联方 | 仅 KYB：UBO、控制人与签署人，每位均含身份、持股、其证件、其活体检测以及**各自的 AML 筛查** |
+| 活体检测 | 按角色（持有人、UBO N）：结果、门槛、活体 / 防伪 / 人脸相似度评分。**每个会话一行** —— 同一主体可能既有开通门槛检测 `gate`，也有一次或多次后续证据补录 `media_recapture`，每个会话都有各自的 `session_id` 与 `purpose`。存在可用媒体时 PDF 嵌入自拍/手势帧；JSON 仅声明元数据（`has_selfie`、`has_video`、`frame_gestures`、哈希），不含 URL |
+| 关联方 | 仅 KYB：UBO、控制人与签署人，每位均含身份、持股、其证件、**其全部活体检测会话**（`liveness_sessions[]`）以及**各自的 AML 筛查** |
 | AML 筛查 | 风险等级、指标、含别名的匹配项、带来源与有效期的制裁名单、PEP 职位、RCA 关联与负面媒体。存在筛查时 PDF 结尾包含完整 AML 附录（归属声明与数据源） |
 
+> **注**
+**活体检测按会话计数，而不是按主体计数。** `gate` 会话是开通入驻的门槛检测——
+通常只带自拍照。`media_recapture` 会话是后续的证据补录，携带完整素材包
+（自拍 + 每个手势一帧 + 视频）。以 `outcome: "FAIL"` 结束的 `media_recapture`
+依然重要——它可能是唯一带可用视频的会话——因此请**遍历整个 `liveness[]`
+数组**，而不是只读取 `liveness[0]`；主体当前的判定始终以 `gate` 会话的
+`outcome` 为准。在 KYB 中，`parties[].liveness`（单数）出于兼容性保留，
+始终指向该关联方的 `gate` 会话，而 `parties[].liveness_sessions[]` 携带该
+关联方的全部会话。
 > **注**
 **如何阅读该 PDF。** 报告首页为**可导航封面**：索引卡片包含图标、标题与页码，
 **可点击**并跳转到对应章节。每个章节都带有自己的图标与强调条（与 AML 报告一致的
@@ -446,7 +455,45 @@ curl "https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id}/verificat
       "documents": [
         { "category": "uboIdentity:0", "status": "validated", "outcome": "MATCH", "party_index": 0 }
       ],
-      "liveness": { "role": "ubo:0", "outcome": "PASSED", "passed_gate": true },
+      "liveness": {
+        "role": "ubo:0",
+        "session_id": "lv_e763e3465bf34f1dab826a263c1eaaaa",
+        "purpose": "gate",
+        "status": "completed",
+        "outcome": "PASS",
+        "passed_gate": true,
+        "liveness_score": "0.86",
+        "media": { "has_selfie": true, "has_video": false, "expires_in_sec": 900 }
+      },
+      "liveness_sessions": [
+        {
+          "role": "ubo:0",
+          "session_id": "lv_e763e3465bf34f1dab826a263c1eaaaa",
+          "purpose": "gate",
+          "status": "completed",
+          "outcome": "PASS",
+          "passed_gate": true,
+          "liveness_score": "0.86",
+          "media": { "has_selfie": true, "has_video": false, "expires_in_sec": 900 }
+        },
+        {
+          "role": "ubo:0",
+          "session_id": "lv_4cdd3a82903940cebd8cc95a77cdacb3",
+          "purpose": "media_recapture",
+          "status": "completed",
+          "outcome": "FAIL",
+          "passed_gate": false,
+          "liveness_score": "0.98",
+          "reasons": ["未检测到微笑。"],
+          "media": {
+            "has_selfie": true,
+            "has_video": true,
+            "frame_gestures": ["center", "turn_right", "smile"],
+            "video_mime_type": "video/mp4",
+            "expires_in_sec": 900
+          }
+        }
+      ],
       "aml": {
         "screening_id": "d5f6a7b8-9c0d-4e1f-2a3b-4c5d6e7f8a9b",
         "risk_level": "no_risk",
@@ -469,7 +516,33 @@ curl "https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id}/verificat
     }
   ],
   "liveness": [
-    { "role": "ubo:0", "outcome": "PASSED", "passed_gate": true, "liveness_score": "0.99" }
+    {
+      "role": "ubo:0",
+      "session_id": "lv_e763e3465bf34f1dab826a263c1eaaaa",
+      "purpose": "gate",
+      "status": "completed",
+      "outcome": "PASS",
+      "passed_gate": true,
+      "liveness_score": "0.86",
+      "media": { "has_selfie": true, "has_video": false, "expires_in_sec": 900 }
+    },
+    {
+      "role": "ubo:0",
+      "session_id": "lv_4cdd3a82903940cebd8cc95a77cdacb3",
+      "purpose": "media_recapture",
+      "status": "completed",
+      "outcome": "FAIL",
+      "passed_gate": false,
+      "liveness_score": "0.98",
+      "reasons": ["未检测到微笑。"],
+      "media": {
+        "has_selfie": true,
+        "has_video": true,
+        "frame_gestures": ["center", "turn_right", "smile"],
+        "video_mime_type": "video/mp4",
+        "expires_in_sec": 900
+      }
+    }
   ],
   "aml": {
     "screening_id": "b7e1c2d3-4f5a-6b7c-8d9e-0f1a2b3c4d5e",

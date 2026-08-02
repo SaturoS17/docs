@@ -431,10 +431,22 @@ Secciones del informe:
 | Declaraciones | Respuestas de riesgo declaradas (servicios monetarios, fondos de terceros, actividades de alto riesgo, países prohibidos) |
 | Cuenta bancaria | Banco, titular y número **enmascarado en origen** (nunca completo) |
 | Documentos | Categoría, archivo, estado, resultado de validación, score, fecha de validación y motivo de rechazo. El PDF agrega **fotos del documento de identidad** cuando el proveedor las entrega (si no hay, la sección se omite) |
-| Prueba de vida | Por rol (titular, UBO N): resultado, gate, scores de liveness / antispoofing / similitud facial. El PDF embebe selfie/frames cuando hay media viva; el JSON solo declara metadata (`has_selfie`, gestos, hashes) sin URLs |
-| Partes relacionadas | Solo KYB: UBOs, personas de control y firmantes, cada una con identidad, participación, sus documentos, su liveness y **su propio screening AML** |
+| Prueba de vida | Por rol (titular, UBO N): resultado, gate, scores de liveness / antispoofing / similitud facial. **Una fila por sesión** — un sujeto puede tener el check de onboarding `gate` más una o más recapturas de evidencia `media_recapture` posteriores, cada una con su propio `session_id` y `purpose`. El PDF embebe selfie/frames cuando hay media viva; el JSON solo declara metadata (`has_selfie`, `has_video`, `frame_gestures`, hashes) sin URLs |
+| Partes relacionadas | Solo KYB: UBOs, personas de control y firmantes, cada una con identidad, participación, sus documentos, **todas sus sesiones de liveness** (`liveness_sessions[]`) y **su propio screening AML** |
 | Screening AML | Nivel de riesgo, indicadores, coincidencias con alias, listas de sanciones con fuente y vigencia, posiciones PEP, vínculos RCA y medios adversos. El cierre del PDF incluye el anexo AML completo (atribución y fuentes) cuando hubo screening |
 
+> **Nota**
+**La prueba de vida trae una fila por sesión, no una por sujeto.** La sesión
+`gate` es el check que habilitó el onboarding — normalmente trae solo la
+selfie. La sesión `media_recapture` es una captura de evidencia posterior y
+es la que trae el paquete completo (selfie + un frame por gesto solicitado +
+video). Una `media_recapture` que terminó en `outcome: "FAIL"` sigue
+importando — puede ser la única sesión con video utilizable — así que
+**recorre todo el array `liveness[]`** en vez de leer `liveness[0]`; el
+veredicto vigente del sujeto es siempre el `outcome` de la sesión `gate`. En
+un KYB, `parties[].liveness` (singular) se conserva por compatibilidad y
+siempre apunta a la sesión `gate` de esa parte, mientras
+`parties[].liveness_sessions[]` trae todas las sesiones de esa parte.
 > **Nota**
 **Cómo se lee el PDF.** El informe abre con una **portada navegable**: un
 índice de tarjetas con icono, título y número de página que son **clicables**
@@ -532,7 +544,45 @@ Respuesta `format=json` (resumen del shape — el PDF sale del mismo modelo):
       "documents": [
         { "category": "uboIdentity:0", "status": "validated", "outcome": "MATCH", "party_index": 0 }
       ],
-      "liveness": { "role": "ubo:0", "outcome": "PASSED", "passed_gate": true },
+      "liveness": {
+        "role": "ubo:0",
+        "session_id": "lv_e763e3465bf34f1dab826a263c1eaaaa",
+        "purpose": "gate",
+        "status": "completed",
+        "outcome": "PASS",
+        "passed_gate": true,
+        "liveness_score": "0.86",
+        "media": { "has_selfie": true, "has_video": false, "expires_in_sec": 900 }
+      },
+      "liveness_sessions": [
+        {
+          "role": "ubo:0",
+          "session_id": "lv_e763e3465bf34f1dab826a263c1eaaaa",
+          "purpose": "gate",
+          "status": "completed",
+          "outcome": "PASS",
+          "passed_gate": true,
+          "liveness_score": "0.86",
+          "media": { "has_selfie": true, "has_video": false, "expires_in_sec": 900 }
+        },
+        {
+          "role": "ubo:0",
+          "session_id": "lv_4cdd3a82903940cebd8cc95a77cdacb3",
+          "purpose": "media_recapture",
+          "status": "completed",
+          "outcome": "FAIL",
+          "passed_gate": false,
+          "liveness_score": "0.98",
+          "reasons": ["No se detectó la sonrisa."],
+          "media": {
+            "has_selfie": true,
+            "has_video": true,
+            "frame_gestures": ["center", "turn_right", "smile"],
+            "video_mime_type": "video/mp4",
+            "expires_in_sec": 900
+          }
+        }
+      ],
       "aml": {
         "screening_id": "d5f6a7b8-9c0d-4e1f-2a3b-4c5d6e7f8a9b",
         "risk_level": "no_risk",
@@ -555,7 +605,33 @@ Respuesta `format=json` (resumen del shape — el PDF sale del mismo modelo):
     }
   ],
   "liveness": [
-    { "role": "ubo:0", "outcome": "PASSED", "passed_gate": true, "liveness_score": "0.99" }
+    {
+      "role": "ubo:0",
+      "session_id": "lv_e763e3465bf34f1dab826a263c1eaaaa",
+      "purpose": "gate",
+      "status": "completed",
+      "outcome": "PASS",
+      "passed_gate": true,
+      "liveness_score": "0.86",
+      "media": { "has_selfie": true, "has_video": false, "expires_in_sec": 900 }
+    },
+    {
+      "role": "ubo:0",
+      "session_id": "lv_4cdd3a82903940cebd8cc95a77cdacb3",
+      "purpose": "media_recapture",
+      "status": "completed",
+      "outcome": "FAIL",
+      "passed_gate": false,
+      "liveness_score": "0.98",
+      "reasons": ["No se detectó la sonrisa."],
+      "media": {
+        "has_selfie": true,
+        "has_video": true,
+        "frame_gestures": ["center", "turn_right", "smile"],
+        "video_mime_type": "video/mp4",
+        "expires_in_sec": 900
+      }
+    }
   ],
   "aml": {
     "screening_id": "b7e1c2d3-4f5a-6b7c-8d9e-0f1a2b3c4d5e",

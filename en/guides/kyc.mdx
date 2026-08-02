@@ -449,9 +449,23 @@ Report sections:
 | Attestations | Declared risk answers (money services, third-party funds, high-risk activities, prohibited countries) |
 | Bank account | Bank, holder and account number **masked at the source** (never in full) |
 | Documents | Category, file, status, validation outcome, score, validation timestamp and rejection reason. The PDF adds **identity document photos** when the provider supplies them (if none, the section is omitted) |
-| Liveness | Per role (holder, UBO N): outcome, gate, liveness / antispoofing / face similarity scores. The PDF embeds selfie/frames when live media exists; JSON only declares metadata (`has_selfie`, gestures, hashes) without URLs |
-| Related parties | KYB only: UBOs, control persons and signers, each with identity, ownership, their documents, their liveness and **their own AML screening** |
+| Liveness | Per role (holder, UBO N): outcome, gate, liveness / antispoofing / face similarity scores. **One entry per session** — a subject can have the onboarding `gate` check plus one or more later evidence `media_recapture`s, each with its own `session_id` and `purpose`. The PDF embeds selfie/frames when live media exists; JSON only declares metadata (`has_selfie`, `has_video`, `frame_gestures`, hashes) without URLs |
+| Related parties | KYB only: UBOs, control persons and signers, each with identity, ownership, their documents, **all their liveness sessions** (`liveness_sessions[]`) and **their own AML screening** |
 | AML screening | Risk level, indicators, matches with aliases, sanctions lists with source and validity, PEP positions, RCA links and adverse media. The PDF closing includes the full AML annex (attribution and sources) when a screening exists |
+
+<Note>
+**Liveness has one entry per session, not one per subject.** A `gate`
+session is the check that unlocked onboarding — it usually only carries the
+selfie. A `media_recapture` session is a later evidence capture and is the
+one that carries the full package (selfie + one frame per requested gesture
++ video). A `media_recapture` that ended `outcome: "FAIL"` still matters —
+it can be the only session with usable video — so **iterate the whole
+`liveness[]` array** instead of reading `liveness[0]`; the subject's current
+verdict is always the `gate` session's `outcome`. In a KYB, `parties[].liveness`
+(singular) stays for compatibility and always points to that party's `gate`
+session, while `parties[].liveness_sessions[]` carries every session for
+that party.
+</Note>
 
 <Note>
 **How to read the PDF.** The report opens with a **navigable cover**: an index
@@ -552,7 +566,45 @@ evidence.
       "documents": [
         { "category": "uboIdentity:0", "status": "validated", "outcome": "MATCH", "party_index": 0 }
       ],
-      "liveness": { "role": "ubo:0", "outcome": "PASSED", "passed_gate": true },
+      "liveness": {
+        "role": "ubo:0",
+        "session_id": "lv_e763e3465bf34f1dab826a263c1eaaaa",
+        "purpose": "gate",
+        "status": "completed",
+        "outcome": "PASS",
+        "passed_gate": true,
+        "liveness_score": "0.86",
+        "media": { "has_selfie": true, "has_video": false, "expires_in_sec": 900 }
+      },
+      "liveness_sessions": [
+        {
+          "role": "ubo:0",
+          "session_id": "lv_e763e3465bf34f1dab826a263c1eaaaa",
+          "purpose": "gate",
+          "status": "completed",
+          "outcome": "PASS",
+          "passed_gate": true,
+          "liveness_score": "0.86",
+          "media": { "has_selfie": true, "has_video": false, "expires_in_sec": 900 }
+        },
+        {
+          "role": "ubo:0",
+          "session_id": "lv_4cdd3a82903940cebd8cc95a77cdacb3",
+          "purpose": "media_recapture",
+          "status": "completed",
+          "outcome": "FAIL",
+          "passed_gate": false,
+          "liveness_score": "0.98",
+          "reasons": ["Smile was not detected."],
+          "media": {
+            "has_selfie": true,
+            "has_video": true,
+            "frame_gestures": ["center", "turn_right", "smile"],
+            "video_mime_type": "video/mp4",
+            "expires_in_sec": 900
+          }
+        }
+      ],
       "aml": {
         "screening_id": "d5f6a7b8-9c0d-4e1f-2a3b-4c5d6e7f8a9b",
         "risk_level": "no_risk",
@@ -575,7 +627,33 @@ evidence.
     }
   ],
   "liveness": [
-    { "role": "ubo:0", "outcome": "PASSED", "passed_gate": true, "liveness_score": "0.99" }
+    {
+      "role": "ubo:0",
+      "session_id": "lv_e763e3465bf34f1dab826a263c1eaaaa",
+      "purpose": "gate",
+      "status": "completed",
+      "outcome": "PASS",
+      "passed_gate": true,
+      "liveness_score": "0.99",
+      "media": { "has_selfie": true, "has_video": false, "expires_in_sec": 900 }
+    },
+    {
+      "role": "ubo:0",
+      "session_id": "lv_4cdd3a82903940cebd8cc95a77cdacb3",
+      "purpose": "media_recapture",
+      "status": "completed",
+      "outcome": "FAIL",
+      "passed_gate": false,
+      "liveness_score": "0.98",
+      "reasons": ["Smile was not detected."],
+      "media": {
+        "has_selfie": true,
+        "has_video": true,
+        "frame_gestures": ["center", "turn_right", "smile"],
+        "video_mime_type": "video/mp4",
+        "expires_in_sec": 900
+      }
+    }
   ],
   "aml": {
     "screening_id": "b7e1c2d3-4f5a-6b7c-8d9e-0f1a2b3c4d5e",

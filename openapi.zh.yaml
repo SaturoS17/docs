@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.21'
+  version: '2.22'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -5567,7 +5567,8 @@ paths:
       operationId: getMyVerificationReport
       summary: 下载我的验证报告（PDF/JSON）
       description: >-
-        由平台生成的您自身入驻验证的合规报告：已验证身份、生命周期、文件 + OCR、活体检测，以及聚合的 AML 部分（制裁 / PEP / 负面媒体状态，绝不包含匹配明细）。使用
+        由平台生成的您自身入驻验证的合规报告：已验证身份、生命周期、文件 + OCR、活体检测（每次会话一条记录 - 入驻门槛检查
+        加上后续任何证据补录，各自带有独立的 session_id 和 purpose），以及聚合的 AML 部分（制裁 / PEP / 负面媒体状态，绝不包含匹配明细）。使用
         format=pdf（默认）或 format=json，以及 lang=en|es|zh。免费 - 验证本身在创建时已计费。PDF 上印有公开验证码 + 二维码，任何人都可在
         /verify/reports/{code} 查验。
       parameters:
@@ -5647,12 +5648,49 @@ paths:
                   validated_at: '2026-07-18T10:31:00Z'
                 liveness:
                 - role: subject
+                  session_id: lv_e763e3465bf34f1dab826a263c1eaaaa
+                  purpose: gate
                   status: completed
-                  outcome: APPROVED
+                  outcome: PASS
                   passed_gate: true
                   liveness_score: '0.98'
                   antispoof_score: '0.96'
                   face_similarity: '0.97'
+                  gestures_expected: 3
+                  gestures_passed: 3
+                  updated_at: '2026-07-18T10:35:00Z'
+                  media:
+                    has_selfie: true
+                    has_video: false
+                    expires_in_sec: 900
+                    selfie_sha256: 6f8a3b1c2d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e
+                - role: subject
+                  session_id: lv_4cdd3a82903940cebd8cc95a77cdacb3
+                  purpose: media_recapture
+                  status: completed
+                  outcome: FAIL
+                  passed_gate: false
+                  liveness_score: '0.98'
+                  antispoof_score: '0.59'
+                  face_similarity: '0.55'
+                  gestures_expected: 3
+                  gestures_passed: 2
+                  reasons:
+                  - Smile was not detected.
+                  updated_at: '2026-07-18T10:38:00Z'
+                  media:
+                    has_selfie: true
+                    has_video: true
+                    frame_gestures:
+                    - center
+                    - turn_right
+                    - smile
+                    video_mime_type: video/mp4
+                    expires_in_sec: 900
+                    selfie_sha256: a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9
+                    frame_sha256:
+                    - c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9a1b2
+                    - d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9a1b2c3
                 aml:
                   risk_level: low
                   status: clear
@@ -7030,8 +7068,10 @@ paths:
       operationId: getKycVerificationReport
       summary: 您发起的 KYC 验证报告（PDF/JSON）
       description: >-
-        您对客户发起的验证的完整合规报告（仅限企业账户）：已验证档案、生命周期、文件 + OCR、活体检测，以及包含匹配明细的完整 AML 筛查部分 - 您是您第三方数据的控制者。如果该
-        submission 是您自己的入驻验证，AML 部分将降级为聚合版本。使用 format=pdf（默认）或 format=json，以及 lang=en|es|zh。免费 -
+        您对客户发起的验证的完整合规报告（仅限企业账户）：已验证档案、生命周期、文件 +
+        OCR、活体检测（每次会话一条记录 - 入驻门槛检查加上后续任何证据补录，各自带有独立的 session_id 和 purpose；在 KYB
+        中，每个关联方也可能有多次会话），以及包含匹配明细的完整 AML 筛查部分 - 您是您第三方数据的控制者。如果该 submission
+        是您自己的入驻验证，AML 部分将降级为聚合版本。使用 format=pdf（默认）或 format=json，以及 lang=en|es|zh。免费 -
         读取已计费的验证。若该 submission 尚无关联的 AML 筛查，将按需幂等触发一次（不收费）；不可用时报告照常输出，并在 partial 字段声明缺口。
       parameters:
       - name: submissionID
@@ -7149,14 +7189,49 @@ paths:
                   validated_at: '2026-07-19T14:41:00Z'
                 liveness:
                 - role: subject
+                  session_id: lv_e763e3465bf34f1dab826a263c1eaaaa
+                  purpose: gate
                   status: completed
-                  outcome: APPROVED
+                  outcome: PASS
                   passed_gate: true
                   liveness_score: '0.98'
                   antispoof_score: '0.96'
                   face_similarity: '0.94'
                   gestures_expected: 3
                   gestures_passed: 3
+                  updated_at: '2026-07-19T14:35:00Z'
+                  media:
+                    has_selfie: true
+                    has_video: false
+                    expires_in_sec: 900
+                    selfie_sha256: 6f8a3b1c2d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e
+                - role: subject
+                  session_id: lv_4cdd3a82903940cebd8cc95a77cdacb3
+                  purpose: media_recapture
+                  status: completed
+                  outcome: FAIL
+                  passed_gate: false
+                  liveness_score: '0.98'
+                  antispoof_score: '0.59'
+                  face_similarity: '0.55'
+                  gestures_expected: 3
+                  gestures_passed: 2
+                  reasons:
+                  - Smile was not detected.
+                  updated_at: '2026-07-19T14:38:00Z'
+                  media:
+                    has_selfie: true
+                    has_video: true
+                    frame_gestures:
+                    - center
+                    - turn_right
+                    - smile
+                    video_mime_type: video/mp4
+                    expires_in_sec: 900
+                    selfie_sha256: a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9
+                    frame_sha256:
+                    - c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9a1b2
+                    - d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9a1b2c3
                 aml:
                   screening_id: 6b7c8d9e-0f1a-4b2c-9d3e-4f5a6b7c8d9e
                   risk_level: medium
@@ -7254,8 +7329,10 @@ paths:
       operationId: getKybVerificationReport
       summary: 您发起的 KYB 验证报告（PDF/JSON）
       description: >-
-        您对客户发起的验证的完整合规报告（仅限企业账户）：已验证档案、生命周期、文件 + OCR、活体检测，以及包含匹配明细的完整 AML 筛查部分 - 您是您第三方数据的控制者。如果该
-        submission 是您自己的入驻验证，AML 部分将降级为聚合版本。使用 format=pdf（默认）或 format=json，以及 lang=en|es|zh。免费 -
+        您对客户发起的验证的完整合规报告（仅限企业账户）：已验证档案、生命周期、文件 +
+        OCR、活体检测（每次会话一条记录 - 入驻门槛检查加上后续任何证据补录，各自带有独立的 session_id 和 purpose；在 KYB
+        中，每个关联方也可能有多次会话），以及包含匹配明细的完整 AML 筛查部分 - 您是您第三方数据的控制者。如果该 submission
+        是您自己的入驻验证，AML 部分将降级为聚合版本。使用 format=pdf（默认）或 format=json，以及 lang=en|es|zh。免费 -
         读取已计费的验证。若该 submission 尚无关联的 AML 筛查，将按需幂等触发一次（不收费）；不可用时报告照常输出，并在 partial 字段声明缺口。
       parameters:
       - name: submissionID
@@ -7407,12 +7484,67 @@ paths:
                     party_index: 0
                   liveness:
                     role: ubo:0
+                    session_id: lv_e763e3465bf34f1dab826a263c1eaaaa
+                    purpose: gate
                     status: completed
-                    outcome: APPROVED
+                    outcome: PASS
                     passed_gate: true
                     liveness_score: '0.99'
                     antispoof_score: '0.97'
                     face_similarity: '0.95'
+                    gestures_expected: 3
+                    gestures_passed: 3
+                    updated_at: '2026-07-20T09:05:00Z'
+                    media:
+                      has_selfie: true
+                      has_video: false
+                      expires_in_sec: 900
+                      selfie_sha256: 6f8a3b1c2d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e
+                  liveness_sessions:
+                  - role: ubo:0
+                    session_id: lv_e763e3465bf34f1dab826a263c1eaaaa
+                    purpose: gate
+                    status: completed
+                    outcome: PASS
+                    passed_gate: true
+                    liveness_score: '0.99'
+                    antispoof_score: '0.97'
+                    face_similarity: '0.95'
+                    gestures_expected: 3
+                    gestures_passed: 3
+                    updated_at: '2026-07-20T09:05:00Z'
+                    media:
+                      has_selfie: true
+                      has_video: false
+                      expires_in_sec: 900
+                      selfie_sha256: 6f8a3b1c2d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e
+                  - role: ubo:0
+                    session_id: lv_4cdd3a82903940cebd8cc95a77cdacb3
+                    purpose: media_recapture
+                    status: completed
+                    outcome: FAIL
+                    passed_gate: false
+                    liveness_score: '0.98'
+                    antispoof_score: '0.59'
+                    face_similarity: '0.55'
+                    gestures_expected: 3
+                    gestures_passed: 2
+                    reasons:
+                    - Smile was not detected.
+                    updated_at: '2026-07-31T22:29:32Z'
+                    media:
+                      has_selfie: true
+                      has_video: true
+                      frame_gestures:
+                      - center
+                      - turn_right
+                      - smile
+                      video_mime_type: video/mp4
+                      expires_in_sec: 900
+                      selfie_sha256: a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9
+                      frame_sha256:
+                      - c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9a1b2
+                      - d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9a1b2c3
                   aml:
                     screening_id: 7c1d2e3f-4a5b-4c6d-8e9f-0a1b2c3d4e5f
                     risk_level: medium
@@ -7489,14 +7621,49 @@ paths:
                   validated_at: '2026-07-21T09:11:00Z'
                 liveness:
                 - role: ubo:0
+                  session_id: lv_e763e3465bf34f1dab826a263c1eaaaa
+                  purpose: gate
                   status: completed
-                  outcome: APPROVED
+                  outcome: PASS
                   passed_gate: true
                   liveness_score: '0.99'
                   antispoof_score: '0.97'
                   face_similarity: '0.95'
                   gestures_expected: 3
                   gestures_passed: 3
+                  updated_at: '2026-07-20T09:05:00Z'
+                  media:
+                    has_selfie: true
+                    has_video: false
+                    expires_in_sec: 900
+                    selfie_sha256: 6f8a3b1c2d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e
+                - role: ubo:0
+                  session_id: lv_4cdd3a82903940cebd8cc95a77cdacb3
+                  purpose: media_recapture
+                  status: completed
+                  outcome: FAIL
+                  passed_gate: false
+                  liveness_score: '0.98'
+                  antispoof_score: '0.59'
+                  face_similarity: '0.55'
+                  gestures_expected: 3
+                  gestures_passed: 2
+                  reasons:
+                  - Smile was not detected.
+                  updated_at: '2026-07-31T22:29:32Z'
+                  media:
+                    has_selfie: true
+                    has_video: true
+                    frame_gestures:
+                    - center
+                    - turn_right
+                    - smile
+                    video_mime_type: video/mp4
+                    expires_in_sec: 900
+                    selfie_sha256: a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9
+                    frame_sha256:
+                    - c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9a1b2
+                    - d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9a1b2c3
                 aml:
                   screening_id: 5f0e1d2c-b4a5-4968-8776-5a4b3c2d1e0f
                   risk_level: low

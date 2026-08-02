@@ -8,6 +8,21 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+## v2.22 · 1 个版本 - 2026年8月1日
+
+### v2.22
+
+**变更**
+
+- **活体检测现支持同一主体多个会话**
+  ([身份验证](https://docs.cbpayapp.com/zh/guides/kyc))：验证报告的 `liveness[]` 数组可为同一人携带多条
+  记录——开通门槛检测 `gate` 加上一次或多次后续证据补录
+  `media_recapture`。每个会话现在都带有各自的 `session_id` 与 `purpose`
+  （`gate` 或 `media_recapture`）。在 KYB 中，`parties[].liveness`（单数）
+  出于兼容性保留，始终指向该关联方的 `gate` 会话，而新增的
+  `parties[].liveness_sessions[]` 携带该关联方的全部会话。媒体元数据依旧不含
+  URL（`has_selfie`、`has_video`、`frame_gestures`、哈希）——该部分契约不变。
+
 ## v2.21 · 1 个版本 - 2026年7月30日
 
 ### v2.21
