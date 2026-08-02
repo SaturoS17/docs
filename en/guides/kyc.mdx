@@ -849,4 +849,17 @@ third-party banking user or issuing a card for a designated person: data
 and documents auto-fill. See
 [reusable identity](#one-verification-for-everything-reusable-identity).
 </Accordion>
+<Accordion title="Do I get an email when my verification is approved or rejected?">
+If the verification is for your own account (self onboarding — this does
+not apply if you are verifying a third party from a company account), you
+get an automatic email to your address when the decision lands on
+approved, rejected, or changes requested. The email uses your
+organization's branding (or CBPay's by default), never includes the
+detailed reason for a rejection for security and privacy reasons, and the
+action button takes you to the organization's site. If you are verifying a
+third party (for example your company verifying a customer or vendor), the
+third party does NOT receive this email — the notification in that case is
+still the `kyc_status_changed`/`kyb_status_changed` webhook you already
+integrated.
+</Accordion>
 </AccordionGroup>

@@ -851,4 +851,16 @@ banking de tercero o al emitir una tarjeta para una persona designada: los
 datos y documentos se completan solos. Ver
 [identidad reutilizable](#una-sola-verificacion-para-todo-identidad-reutilizable).
 </Accordion>
+<Accordion title="¿Recibo un email cuando aprueban o rechazan mi verificación?">
+Si la verificación es de tu propia cuenta (self onboarding — esto no aplica
+si estás verificando a un tercero desde una cuenta empresa), recibes un
+correo automático a tu email cuando la decisión queda en aprobada,
+rechazada o requiere cambios. El correo usa el branding de tu organización
+(o el de CBPay por defecto), no incluye el motivo detallado de un rechazo
+por razones de seguridad y privacidad, y el botón de acción te lleva al
+sitio de la organización. Si estás verificando a un tercero (por ejemplo tu
+empresa verificando a un cliente o proveedor), el tercero NO recibe este
+email — la notificación en ese caso sigue siendo el webhook
+`kyc_status_changed`/`kyb_status_changed` que ya integraste.
+</Accordion>
 </AccordionGroup>

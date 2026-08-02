@@ -8,6 +8,21 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+## v2.23 · 1 release - August 2, 2026
+
+### v2.23
+
+**Added**
+
+- **Automatic KYC/KYB decision emails** (self onboarding): when your
+  verification lands on approved, rejected, or changes requested, you get a
+  branded email with the organization letting you know the outcome. Does not
+  apply to third-party verifications (for example, your company verifying a
+  customer or vendor) — that flow keeps using the
+  `kyc_status_changed`/`kyb_status_changed` webhook you already integrated.
+  The email never includes the detailed reason for a rejection, for security
+  and privacy reasons.
+
 ## v2.22 · 1 release - August 1, 2026
 
 ### v2.22

@@ -9,6 +9,21 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+## v2.23 · 1 versión - 2 de agosto de 2026
+
+### v2.23
+
+**Agregado**
+
+- **Emails automáticos de decisión de verificación KYC/KYB** (onboarding
+  propio): al quedar tu verificación en aprobada, rechazada o con cambios
+  requeridos, recibes un correo brandeado con la organización avisando el
+  resultado. No aplica a verificaciones de un tercero (por ejemplo, tu
+  empresa verificando a un cliente o proveedor) — ahí sigue el webhook
+  `kyc_status_changed`/`kyb_status_changed` que ya integraste. El correo no
+  incluye el motivo detallado de un rechazo por razones de seguridad y
+  privacidad.
+
 ## v2.22 · 1 versión - 1 de agosto de 2026
 
 ### v2.22

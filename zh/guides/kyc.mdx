@@ -714,4 +714,7 @@ curl "https://api.qbank.cl/platform/verify/reports/Bc3d4e5f6a7b84c9d0e1f2a3b4c5d
 <Accordion title="我可以在其他产品中复用客户的验证吗？">
 可以——这正是设计初衷：一条已批准的验证即为唯一身份。在注册第三方银行用户或为指定人员发卡时，将其 `submission_id` 作为 `verification_id` 传入：数据和证件会自动填充。参见[可复用身份](#one-verification-for-everything-reusable-identity)。
 </Accordion>
+<Accordion title="验证通过或被拒绝时，我会收到邮件通知吗？">
+如果该验证是您自己账户的验证（自助入驻——如果您是从企业账户验证第三方，则不适用），当决定结果为已批准、已拒绝或需要补充材料时，您会在注册邮箱收到一封自动邮件。该邮件使用您所属机构的品牌样式（默认为 CBPay 品牌），出于安全和隐私考虑不会包含拒绝的具体合规原因，操作按钮会跳转到该机构的网站。如果您是在验证第三方（例如您的企业在验证某个客户或供应商），该第三方**不会**收到此邮件——此时的通知仍然是您已接入的 `kyc_status_changed`/`kyb_status_changed` webhook。
+</Accordion>
 </AccordionGroup>
