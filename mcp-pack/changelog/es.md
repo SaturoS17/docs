@@ -9,7 +9,19 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-## v2.26 · 1 versión - 3 de agosto de 2026
+## v2.27 · 2 versiones - 3 de agosto de 2026
+
+### v2.27
+
+**Agregado**
+
+- **Desactivar y reactivar suscripciones de webhook**: nuevo
+  `PATCH /v1/webhooks/subscriptions/{subscriptionID}` con
+  `{ "status": "active" | "disabled" }` — una suscripción `disabled` deja de
+  recibir eventos nuevos sin borrarse (las entregas ya encoladas siguen
+  saliendo) y puedes reactivarla cuando quieras. Idempotente: repetir el
+  estado vigente es un no-op `200`. Ver la
+  [guía de webhooks](https://docs.cbpayapp.com/es/webhooks#desactivar-y-reactivar-una-suscripción).
 
 ### v2.26
 

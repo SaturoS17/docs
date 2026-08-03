@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.26'
+  version: '2.27'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -9299,6 +9299,96 @@ paths:
                   callback_url: https://api.example.com/webhooks/cbpay
                   status: active
                   created_at: '2026-07-07T12:00:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/webhooks/subscriptions/{subscriptionID}:
+    patch:
+      tags:
+      - Webhooks
+      operationId: updateWebhookSubscriptionStatus
+      summary: 停用或重新启用 webhook 订阅
+      description: '将账户的某个订阅在 `active` 和 `disabled` 之间切换。`disabled`
+        状态的订阅停止接收新事件；已排队的投递仍会发出。幂等：重复当前状态返回
+        `200` 且无变化。订阅永远不会被删除——停用即退订。强制执行归属权：其他账户的
+        订阅返回 `404`（与不存在的订阅无法区分）。
+
+        '
+      parameters:
+      - name: subscriptionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - status
+              properties:
+                status:
+                  type: string
+                  enum:
+                  - active
+                  - disabled
+            examples:
+              disable:
+                summary: 停用订阅
+                value:
+                  status: disabled
+              reactivate:
+                summary: 重新启用订阅
+                value:
+                  status: active
+      responses:
+        '200':
+          description: 返回订阅及其当前状态。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  event_type:
+                    type: string
+                  callback_url:
+                    type: string
+                  status:
+                    type: string
+                    enum:
+                    - active
+                    - disabled
+                  created_at:
+                    type: string
+                    format: date-time
+              examples:
+                disabled:
+                  summary: 订阅已停用
+                  value:
+                    id: 8e7f6a5b-4c3d-2e1f-0a9b-8c7d6e5f4a3b
+                    event_type: payout_status_changed
+                    callback_url: https://api.myapp.com/webhooks/cbpay
+                    status: disabled
+                    created_at: '2026-07-07T12:00:00Z'
+        '400':
+          description: '`invalid_status`：状态必须为 `active` 或 `disabled`。'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidStatus:
+                  summary: 状态超出目录范围
+                  value:
+                    error: invalid_status
+                    message: status must be active or disabled
+        '404':
+          $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
   /healthz:

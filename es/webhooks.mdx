@@ -67,6 +67,43 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 }
 ```
 
+## Desactivar y reactivar una suscripción
+
+Cuando un callback deja de usarse, desactívalo en vez de borrarlo (las
+suscripciones **nunca se borran**: quedan `disabled` y puedes reactivarlas
+cuando quieras):
+
+```bash
+curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "status": "disabled" }'
+```
+
+```json
+{
+  "id": "5f3a…",
+  "event_type": "payout_status_changed",
+  "callback_url": "https://api.miapp.com/webhooks/cbpay",
+  "status": "disabled",
+  "created_at": "2026-07-01T12:00:00Z"
+}
+```
+
+Para reactivarla, el mismo llamado con `{ "status": "active" }`.
+
+- El toggle rige lo **futuro**: una suscripción `disabled` deja de recibir
+  eventos nuevos, pero las entregas **ya encoladas** siguen saliendo.
+- Es **idempotente**: repetir el estado vigente responde `200` sin cambiar
+  nada.
+- Solo puedes tocar las suscripciones de **tu cuenta**: una suscripción de
+  otra cuenta responde `404` (es indistinguible de una inexistente).
+
+| HTTP | `error` | Solución |
+|---|---|---|
+| 400 | `invalid_status` | El estado debe ser `active` o `disabled` |
+| 404 | `not_found` | La suscripción no existe o pertenece a otra cuenta |
+
 ## Eventos
 
 | Evento | Cuándo se emite |

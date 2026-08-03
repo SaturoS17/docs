@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.26'
+  version: '2.27'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -9627,6 +9627,98 @@ paths:
                   callback_url: https://api.example.com/webhooks/cbpay
                   status: active
                   created_at: '2026-07-07T12:00:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/webhooks/subscriptions/{subscriptionID}:
+    patch:
+      tags:
+      - Webhooks
+      operationId: updateWebhookSubscriptionStatus
+      summary: Desactivar o reactivar una suscripción de webhook
+      description: 'Alterna una suscripción de la cuenta entre `active` y `disabled`.
+        Una suscripción `disabled` deja de recibir eventos NUEVOS; las entregas ya
+        encoladas siguen saliendo. Idempotente: repetir el estado vigente es un no-op
+        `200`. Las suscripciones nunca se borran — desactivar es la forma de
+        desuscribirse. Ownership aplicado: una suscripción de otra cuenta responde
+        `404` (es indistinguible de una inexistente).
+
+        '
+      parameters:
+      - name: subscriptionID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - status
+              properties:
+                status:
+                  type: string
+                  enum:
+                  - active
+                  - disabled
+            examples:
+              disable:
+                summary: Desactivar la suscripción
+                value:
+                  status: disabled
+              reactivate:
+                summary: Reactivar la suscripción
+                value:
+                  status: active
+      responses:
+        '200':
+          description: La suscripción con su estado vigente.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  event_type:
+                    type: string
+                  callback_url:
+                    type: string
+                  status:
+                    type: string
+                    enum:
+                    - active
+                    - disabled
+                  created_at:
+                    type: string
+                    format: date-time
+              examples:
+                disabled:
+                  summary: Suscripción desactivada
+                  value:
+                    id: 8e7f6a5b-4c3d-2e1f-0a9b-8c7d6e5f4a3b
+                    event_type: payout_status_changed
+                    callback_url: https://api.myapp.com/webhooks/cbpay
+                    status: disabled
+                    created_at: '2026-07-07T12:00:00Z'
+        '400':
+          description: '`invalid_status`: el estado debe ser `active` o `disabled`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidStatus:
+                  summary: Estado fuera de catálogo
+                  value:
+                    error: invalid_status
+                    message: status must be active or disabled
+        '404':
+          $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
   /healthz:

@@ -63,6 +63,41 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 }
 ```
 
+## 停用和重新启用订阅
+
+当某个回调不再使用时，请将其停用而不是删除（订阅**永远不会被删除**：
+会保持 `disabled` 状态，您可以随时重新启用）：
+
+```bash
+curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "status": "disabled" }'
+```
+
+```json
+{
+  "id": "5f3a…",
+  "event_type": "payout_status_changed",
+  "callback_url": "https://api.myapp.com/webhooks/cbpay",
+  "status": "disabled",
+  "created_at": "2026-07-01T12:00:00Z"
+}
+```
+
+如需重新启用，使用 `{ "status": "active" }` 发起同样的调用。
+
+- 该开关只影响**未来**的事件：`disabled` 状态的订阅停止接收新事件，
+  但**已排队**的投递仍会发出。
+- **幂等**：重复当前状态会返回 `200`，不会有任何变化。
+- 您只能操作**自己账户**的订阅：其他账户的订阅会返回 `404`（与不存在的
+  订阅无法区分）。
+
+| HTTP | `error` | 解决方法 |
+|---|---|---|
+| 400 | `invalid_status` | 状态必须为 `active` 或 `disabled` |
+| 404 | `not_found` | 订阅不存在或属于其他账户 |
+
 ## 事件
 
 | 事件 | 触发时机 |

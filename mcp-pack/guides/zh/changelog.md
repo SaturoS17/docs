@@ -8,7 +8,18 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-## v2.26 · 1 个版本 - 2026年8月3日
+## v2.27 · 2 个版本 - 2026年8月3日
+
+### v2.27
+
+**新增**
+
+- **停用和重新启用 webhook 订阅**：新增
+  `PATCH /v1/webhooks/subscriptions/{subscriptionID}`，请求体为
+  `{ "status": "active" | "disabled" }` —— `disabled` 状态的订阅停止接收
+  新事件，但不会被删除（已排队的投递仍会发出），您可以随时重新启用。
+  幂等：重复当前状态返回 `200` 且无变化。详见
+  [webhooks 指南](https://docs.cbpayapp.com/zh/webhooks#停用和重新启用订阅)。
 
 ### v2.26
 

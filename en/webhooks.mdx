@@ -67,6 +67,44 @@ curl https://api.qbank.cl/platform/v1/webhooks/subscriptions \
 }
 ```
 
+## Disabling and reactivating a subscription
+
+When a callback is no longer used, disable it instead of deleting it
+(subscriptions are **never deleted**: they stay `disabled` and you can
+reactivate them at any time):
+
+```bash
+curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "status": "disabled" }'
+```
+
+```json
+{
+  "id": "5f3a…",
+  "event_type": "payout_status_changed",
+  "callback_url": "https://api.myapp.com/webhooks/cbpay",
+  "status": "disabled",
+  "created_at": "2026-07-01T12:00:00Z"
+}
+```
+
+To reactivate it, same call with `{ "status": "active" }`.
+
+- The toggle governs **future** events: a `disabled` subscription stops
+  receiving new events, but deliveries **already queued** are still sent.
+- It is **idempotent**: repeating the current status answers `200` with no
+  change.
+- You can only touch **your account's** subscriptions: a subscription of
+  another account answers `404` (it is indistinguishable from an inexistent
+  one).
+
+| HTTP | `error` | Fix |
+|---|---|---|
+| 400 | `invalid_status` | Status must be `active` or `disabled` |
+| 404 | `not_found` | The subscription does not exist or belongs to another account |
+
 ## Events
 
 | Event | When it fires |

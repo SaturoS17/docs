@@ -7,7 +7,19 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-<Update label="August 3, 2026" description="v2.26 · 1 release">
+<Update label="August 3, 2026" description="v2.27 · 2 releases">
+
+### v2.27
+
+**Added**
+
+- **Disable and reactivate webhook subscriptions**: new
+  `PATCH /v1/webhooks/subscriptions/{subscriptionID}` with
+  `{ "status": "active" | "disabled" }` — a `disabled` subscription stops
+  receiving new events without being deleted (deliveries already queued are
+  still sent) and you can reactivate it at any time. Idempotent: repeating
+  the current status is a no-op `200`. See the
+  [webhooks guide](/en/webhooks#disabling-and-reactivating-a-subscription).
 
 ### v2.26
 
