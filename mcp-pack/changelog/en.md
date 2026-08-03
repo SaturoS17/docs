@@ -8,7 +8,16 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.24 · 2 releases - August 2, 2026
+## v2.25 · 3 releases - August 2, 2026
+
+### v2.25
+
+**Changed**
+
+- **Administration error codes documented**: added the `global_treasury_access_disabled`
+  and `invalid_value` error codes to the [error catalog](https://docs.cbpayapp.com/en/errors). These come
+  from organization administration surfaces (the CBPay Admin panel), not from
+  the account-level API — see the new "Organization admin panel" section.
 
 ### v2.24
 

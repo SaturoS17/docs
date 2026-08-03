@@ -1,5 +1,5 @@
 {
-  "count": 163,
+  "count": 165,
   "errors": [
     {
       "category": {
@@ -517,6 +517,34 @@
         "en": "You cannot unlink your only sign-in method",
         "es": "No puedes desvincular tu único método de acceso",
         "zh": "无法解绑您唯一的登录方式"
+      }
+    },
+    {
+      "category": {
+        "en": "Organization admin panel",
+        "es": "Panel de administración de organización",
+        "zh": "组织管理面板"
+      },
+      "code": "global_treasury_access_disabled",
+      "http": 403,
+      "meaning": {
+        "en": "The organization has not enabled global treasury visibility for its admin panel; ask a platform administrator to enable `global_treasury_read` in the organization settings",
+        "es": "La organización no tiene habilitada la visibilidad de tesorería global en su panel admin; pide a un administrador de plataforma que habilite `global_treasury_read` en los settings de la organización",
+        "zh": "该组织尚未在其管理面板启用全局资金总览；请联系平台管理员在组织设置中启用 `global_treasury_read`"
+      }
+    },
+    {
+      "category": {
+        "en": "Organization admin panel",
+        "es": "Panel de administración de organización",
+        "zh": "组织管理面板"
+      },
+      "code": "invalid_value",
+      "http": 400,
+      "meaning": {
+        "en": "An organization setting was sent with the wrong type (e.g. `global_treasury_read` must be a boolean, not a string)",
+        "es": "Un setting de la organización se envió con el tipo incorrecto (ej. `global_treasury_read` debe ser booleano, no un string)",
+        "zh": "组织设置的值类型有误（例如 `global_treasury_read` 必须是布尔值，而不是字符串）"
       }
     },
     {

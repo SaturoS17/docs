@@ -74,6 +74,15 @@ Full flow and details in [social login](https://docs.cbpayapp.com/en/guides/soci
 | 409 | `identity_taken` | That provider is already linked to another account |
 | 409 | `last_login_method` | You cannot unlink your only sign-in method |
 
+### Organization admin panel
+
+These codes come from **organization administration surfaces** (the [CBPay Admin](https://cbpayapp.com) panel), not from the account-level API documented above — they never appear on `/v1/*` account endpoints.
+
+| HTTP | `error` | Meaning |
+|---|---|---|
+| 403 | `global_treasury_access_disabled` | The organization has not enabled global treasury visibility for its admin panel; ask a platform administrator to enable `global_treasury_read` in the organization settings |
+| 400 | `invalid_value` | An organization setting was sent with the wrong type (e.g. `global_treasury_read` must be a boolean, not a string) |
+
 ### Validation (400)
 
 | `error` | Meaning |

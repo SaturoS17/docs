@@ -8,7 +8,16 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-## v2.24 · 2 个版本 - 2026年8月2日
+## v2.25 · 3 个版本 - 2026年8月2日
+
+### v2.25
+
+**变更**
+
+- **补充管理端错误码文档**：在[错误目录](https://docs.cbpayapp.com/zh/errors)中新增了
+  `global_treasury_access_disabled` 和 `invalid_value` 错误码。这两个错误码
+  来自组织管理界面（CBPay Admin 面板），并非账户级 API —— 详见新增的
+  “组织管理面板”一节。
 
 ### v2.24
 

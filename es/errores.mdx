@@ -73,6 +73,15 @@ Detalle y flujo completo en [login social](/es/guias/login-social).
 | 409 | `identity_taken` | Ese proveedor ya está vinculado a otra cuenta |
 | 409 | `last_login_method` | No puedes desvincular tu único método de acceso |
 
+### Panel de administración de organización
+
+Estos códigos provienen de **superficies de administración de organización** (el panel [CBPay Admin](https://cbpayapp.com)), no de la API a nivel cuenta documentada arriba — nunca aparecen en los endpoints `/v1/*` de cuenta.
+
+| HTTP | `error` | Significado |
+|---|---|---|
+| 403 | `global_treasury_access_disabled` | La organización no tiene habilitada la visibilidad de tesorería global en su panel admin; pide a un administrador de plataforma que habilite `global_treasury_read` en los settings de la organización |
+| 400 | `invalid_value` | Un setting de la organización se envió con el tipo incorrecto (ej. `global_treasury_read` debe ser booleano, no un string) |
+
 ### Validación (400)
 
 | `error` | Significado |

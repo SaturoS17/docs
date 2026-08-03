@@ -9,7 +9,18 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-## v2.24 · 2 versiones - 2 de agosto de 2026
+## v2.25 · 3 versiones - 2 de agosto de 2026
+
+### v2.25
+
+**Cambiado**
+
+- **Códigos de error de administración documentados**: se agregaron los
+  códigos `global_treasury_access_disabled` e `invalid_value` al
+  [catálogo de errores](https://docs.cbpayapp.com/es/errores). Provienen de superficies de
+  administración de organización (el panel CBPay Admin), no de la API a
+  nivel cuenta — ver la nueva sección "Panel de administración de
+  organización".
 
 ### v2.24
 
