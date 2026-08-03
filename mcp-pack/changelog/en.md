@@ -8,7 +8,24 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.23 · 1 release - August 2, 2026
+## v2.24 · 2 releases - August 2, 2026
+
+### v2.24
+
+**Added**
+
+- **Deposit instructions for announced bank transfers**
+  ([payins guide](https://docs.cbpayapp.com/en/guides/payins)): creating a payin with
+  `method: "bank_transfer"` on supported corridors now returns a
+  `deposit_instructions` block with the exact destination account —
+  `bank_name`, `account_number`, `account_type`, `holder_name`,
+  `holder_tax_id`, `holder_email`, `reference_required`, a copy-paste
+  `qr_payload` (multi-line text with the account, the holder and your
+  reference/amount) and a branded `qr_png_base64`. The same block is
+  echoed back on the payin's detail and list responses. The new
+  `GET /v1/payins/deposit-instructions?country=&currency=&method=`
+  previews the destination account before you create the payin. See the
+  guide's FAQ for why the bank QR is scan-to-copy, not auto-fill.
 
 ### v2.23
 

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.23'
+  version: '2.24'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -11892,6 +11892,87 @@ paths:
                 - *id013
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/payins/deposit-instructions:
+    get:
+      tags:
+      - 收款(Payins)
+      operationId: getDepositInstructions
+      summary: 预览某通道的存款说明
+      description: |
+        返回你的组织为 `bank_transfer` 通道发布的银行账户文本 —— 与已宣告
+        payin 响应中自动嵌入的内容相同。可用于在付款人创建 payin 之前渲染
+        "钱应该汇到哪里"页面,或在静态页面上展示当前的存款说明。
+
+        只有配置了有效、由管理员设置的说明的通道才会返回内容;其余通道
+        响应 `404 not_found`(没有可预览的内容 —— 该通道不需要说明,或
+        尚无人配置)。
+      parameters:
+      - name: country
+        in: query
+        required: true
+        schema:
+          type: string
+        example: CL
+      - name: currency
+        in: query
+        required: true
+        schema:
+          type: string
+        example: CLP
+      - name: method
+        in: query
+        schema:
+          type: string
+          default: bank_transfer
+      responses:
+        '200':
+          description: 该通道当前有效的存款说明。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deposit_instructions:
+                    $ref: '#/components/schemas/DepositInstructions'
+              example: &id_deposit_instr
+                deposit_instructions:
+                  id: 9f0c1a2b-3d4e-4f5a-8b9c-1a2b3c4d5e6f
+                  country: CL
+                  currency: CLP
+                  method: bank_transfer
+                  purpose: payin
+                  revision: 3
+                  active: true
+                  reference_required: true
+                  bank_name: Bank of Example
+                  account_number: '0001112223'
+                  account_type: checking
+                  holder_name: Example Org SpA
+                  created_at: '2026-07-15T14:02:00Z'
+                  qr_payload: |
+                    Bank: Bank of Example
+                    Account type: checking
+                    Account number: 0001112223
+                    Holder: Example Org SpA
+                  qr_png_base64: iVBORw0KGgoAAAANSU...
+        '400':
+          description: 缺少 country 或 currency(invalid_payload)。
+          content:
+            application/json:
+              schema: *id012
+              example:
+                error: invalid_payload
+                message: country and currency are required
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: 该通道未配置有效的存款说明(not_found)。
+          content:
+            application/json:
+              schema: *id012
+              example:
+                error: not_found
+                message: no deposit instructions configured for this corridor
   /v1/banking/customer:
     post:
       tags:
@@ -15672,6 +15753,57 @@ components:
             error: unauthorized
             message: invalid or missing credentials
   schemas:
+    DepositInstructions:
+      type: object
+      description: |
+        你的组织为 `bank_transfer` 通道发布的银行账户文本。由管理员维护,
+        只追加新版本(新的修订版本永远不会覆盖 payin 已经快照的文本)。
+      properties:
+        id:
+          type: string
+          format: uuid
+        country:
+          type: string
+        currency:
+          type: string
+        method:
+          type: string
+        purpose:
+          type: string
+          enum:
+          - payin
+          - otc
+        revision:
+          type: integer
+        active:
+          type: boolean
+        reference_required:
+          type: boolean
+        bank_name:
+          type: string
+        account_number:
+          type: string
+        account_type:
+          type: string
+        holder_name:
+          type: string
+        holder_tax_id:
+          type: string
+        holder_email:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        qr_payload:
+          type: string
+          description: |
+            多行纯文本,包含银行账户信息(以及该通道要求时的金额和参考号)。
+            供人工阅读,不是供银行 App 扫描的。
+        qr_png_base64:
+          type: string
+          description: |
+            将 `qr_payload` 渲染为 QR 码的 base64 PNG,顶部居中带有你组织
+            的品牌符号。
     PosMerchant:
       type: object
       properties:

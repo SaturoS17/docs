@@ -724,6 +724,73 @@ Keys are **unique per account and per logical operation**: if you reuse an
 `idempotency_key` that was already used with ANOTHER payin method (QR,
 checkout, card), the API replies `409 idempotency_conflict` instead of
 returning an object that does not match your request.
+### Deposit instructions: where to send the money
+
+On corridors where your organization registered a destination account for
+announced transfers (today Chile and Paraguay), the announcement response
+includes a `deposit_instructions` block — the exact bank account the payer
+must transfer to, with the amount and `reference` already baked into a
+copy-paste QR:
+
+```json Response 201 (with deposit instructions)
+{
+  "payin_id": "4f81…",
+  "status": "pending",
+  "reference": "CBJ6T3W9M2K5",
+  "note": "include the reference in the transfer description so the deposit is credited automatically",
+  "payer_source": "declared",
+  "payer_document": "17438319-7",
+  "deposit_instructions": {
+    "bank_name": "Banco Ejemplo",
+    "account_number": "001122334455",
+    "account_type": "checking",
+    "holder_name": "CBPay Operations SpA",
+    "holder_tax_id": "77123456-7",
+    "reference_required": true,
+    "qr_payload": "Bank: Banco Ejemplo\nAccount type: checking\nAccount number: 001122334455\nHolder: CBPay Operations SpA\nTax ID: 77123456-7\nAmount: 500000 CLP\nReference: CBJ6T3W9M2K5",
+    "qr_png_base64": "iVBORw0KGgoAAAANSUhEUgAA…"
+  }
+}
+```
+
+You can also preview the destination account **before** creating a payin —
+useful to show the payer where they will need to send money once they
+confirm:
+
+```bash
+curl "https://api.qbank.cl/platform/v1/payins/deposit-instructions?country=CL&currency=CLP&method=bank_transfer" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json Response 200
+{
+  "deposit_instructions": {
+    "bank_name": "Banco Ejemplo",
+    "account_number": "001122334455",
+    "account_type": "checking",
+    "holder_name": "CBPay Operations SpA",
+    "holder_tax_id": "77123456-7",
+    "reference_required": true,
+    "qr_payload": "Bank: Banco Ejemplo\nAccount type: checking\nAccount number: 001122334455\nHolder: CBPay Operations SpA\nTax ID: 77123456-7",
+    "qr_png_base64": "iVBORw0KGgoAAAANSUhEUgAA…"
+  }
+}
+```
+
+> **Note**
+The preview endpoint's `qr_payload` has no `Amount`/`Reference` lines (there
+is no payin yet); the one embedded in an actual announcement always has
+both, so the payer can pay without typing anything by hand. The block on the
+announcement is a **frozen snapshot**: if your CBPay operator later updates
+the registered account, live announcements keep pointing at the account they
+were created with — only new ones pick up the change.
+The exact same `deposit_instructions` block is echoed back on
+`GET /v1/payins/{id}` and on the list (`GET /v1/payins`), so your front end
+does not need to cache it from the creation response. On corridors without a
+registered destination account, the field is simply absent — fall back to
+showing the `reference` and asking the payer to use their usual bank details
+for your organization.
+
 ## 3. Receiving the credit
 
 When the payment arrives (through any of the modes), your account is
@@ -809,7 +876,13 @@ curl "https://api.qbank.cl/platform/v1/payins?from=2026-07-01&to=2026-07-08&stat
 | 400 | `idempotency_key_required` | Collect requires an idempotency key (real debit against the payer) |
 | 403 | `service_disabled` | Payins is not enabled for your account — see [services](https://docs.cbpayapp.com/en/concepts/services) |
 | 422 | `core_rejected` | The processor rejected the charge; check the message |
+| 422 | `deposit_instructions_unavailable` | `bank_transfer` on a corridor that requires a registered destination account (today CL, PY) and your organization has not configured one yet — contact your CBPay operator |
 | 502 | `core_unavailable` | The charge could not be created; retry the creation (nothing was charged) |
+
+> **Note**
+`GET /v1/payins/deposit-instructions` responds `404 not_found` when the
+corridor has no active destination account configured — treat it the same
+way as the `422` above: the payer cannot be shown an account yet.
 ## FAQ
 
 #### How do I know a payin was credited?
@@ -847,6 +920,16 @@ a key, a POST that is identical to a live announcement (same account,
 currency, amount and payer) reuses it — duplicating it would leave the real
 deposit `unassigned` for ambiguity. Send different keys only when you really
 want to collect twice.
+#### Why is the bank QR just text to copy, not something my banking app scans?
+Banks don't share a common QR standard for arbitrary destination accounts
+(unlike a merchant QR at checkout) — every bank encodes account transfers
+differently, and most banking apps can't auto-fill a transfer from a
+third-party QR at all. `qr_png_base64` renders the account details as a QR
+purely as a **copy shortcut on mobile**: the payer scans it, gets the
+multi-line text (bank, account, holder, amount, reference), and pastes it
+into their own bank's transfer form — they still confirm the transfer
+themselves. Don't build a scan-and-pay flow around it; show it next to the
+plain-text fields so the payer can always type them manually.
 #### Why did my collect (pull) charge fail?
 The response and `GET /v1/payins/{id}` persist a `failure` block with the
 rail's code and message (for example, a document that does not match the

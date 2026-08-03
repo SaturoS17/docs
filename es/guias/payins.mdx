@@ -776,6 +776,76 @@ tarjeta), la API responde `409 idempotency_conflict` en vez de devolverte un
 objeto que no corresponde.
 </Note>
 
+### Instrucciones de depósito: a dónde transferir
+
+En los corredores donde tu organización registró una cuenta de destino para
+transferencias anunciadas (hoy Chile y Paraguay), la respuesta del anuncio
+incluye un bloque `deposit_instructions` — la cuenta bancaria exacta a la
+que el pagador debe transferir, con el monto y la `reference` ya incrustados
+en un QR para copiar:
+
+```json Respuesta 201 (con instrucciones de depósito)
+{
+  "payin_id": "4f81…",
+  "status": "pending",
+  "reference": "CBJ6T3W9M2K5",
+  "note": "incluye la referencia en la descripción de la transferencia para que el depósito se acredite automáticamente",
+  "payer_source": "declared",
+  "payer_document": "17438319-7",
+  "deposit_instructions": {
+    "bank_name": "Banco Ejemplo",
+    "account_number": "001122334455",
+    "account_type": "checking",
+    "holder_name": "CBPay Operations SpA",
+    "holder_tax_id": "77123456-7",
+    "reference_required": true,
+    "qr_payload": "Bank: Banco Ejemplo\nAccount type: checking\nAccount number: 001122334455\nHolder: CBPay Operations SpA\nTax ID: 77123456-7\nAmount: 500000 CLP\nReference: CBJ6T3W9M2K5",
+    "qr_png_base64": "iVBORw0KGgoAAAANSUhEUgAA…"
+  }
+}
+```
+
+También puedes previsualizar la cuenta de destino **antes** de crear un
+payin — útil para mostrarle al pagador a dónde tendrá que transferir una vez
+que confirme:
+
+```bash
+curl "https://api.qbank.cl/platform/v1/payins/deposit-instructions?country=CL&currency=CLP&method=bank_transfer" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json Respuesta 200
+{
+  "deposit_instructions": {
+    "bank_name": "Banco Ejemplo",
+    "account_number": "001122334455",
+    "account_type": "checking",
+    "holder_name": "CBPay Operations SpA",
+    "holder_tax_id": "77123456-7",
+    "reference_required": true,
+    "qr_payload": "Bank: Banco Ejemplo\nAccount type: checking\nAccount number: 001122334455\nHolder: CBPay Operations SpA\nTax ID: 77123456-7",
+    "qr_png_base64": "iVBORw0KGgoAAAANSUhEUgAA…"
+  }
+}
+```
+
+<Note>
+El `qr_payload` del endpoint de preview no lleva las líneas `Amount`/
+`Reference` (todavía no existe el payin); el que va embebido en un anuncio
+real siempre las lleva, así el pagador puede pagar sin escribir nada a mano.
+El bloque del anuncio es una **fotografía congelada**: si tu operador CBPay
+actualiza después la cuenta registrada, los anuncios ya vivos siguen
+apuntando a la cuenta con la que se crearon — solo los nuevos toman el
+cambio.
+</Note>
+
+El mismo bloque `deposit_instructions` se repite en
+`GET /v1/payins/{id}` y en el listado (`GET /v1/payins`), así tu front no
+necesita cachearlo de la respuesta de creación. En corredores sin cuenta de
+destino registrada, el campo simplemente está ausente — en ese caso muestra
+la `reference` y pídele al pagador que use los datos bancarios habituales de
+tu organización.
+
 ## 3. Recibe el abono
 
 Cuando el pago llega (por cualquiera de las modalidades), tu cuenta se
@@ -865,7 +935,15 @@ curl "https://api.qbank.cl/platform/v1/payins?from=2026-07-01&to=2026-07-08&stat
 | 400 | `idempotency_key_required` | El collect exige clave de idempotencia (débito real al pagador) |
 | 403 | `service_disabled` | Payins no está habilitado para tu cuenta — ver [servicios](/es/conceptos/servicios) |
 | 422 | `core_rejected` | El procesador rechazó el cargo; revisa el mensaje |
+| 422 | `deposit_instructions_unavailable` | `bank_transfer` en un corredor que exige una cuenta de destino registrada (hoy CL, PY) y tu organización todavía no configuró una — contacta a tu operador CBPay |
 | 502 | `core_unavailable` | No se pudo crear el cargo; reintenta la creación (no se cobró nada) |
+
+<Note>
+`GET /v1/payins/deposit-instructions` responde `404 not_found` cuando el
+corredor no tiene una cuenta de destino activa configurada — trátalo igual
+que el `422` de arriba: todavía no puedes mostrarle una cuenta al pagador.
+</Note>
+
 ## FAQ
 
 <AccordionGroup>
@@ -917,5 +995,18 @@ La respuesta y `GET /v1/payins/{id}` persisten un bloque `failure` con el
 código y mensaje del riel (por ejemplo, un documento que no calza con el
 registro bancario del pagador). Corrige el dato y reintenta con clave
 nueva.
+</Accordion>
+<Accordion title="¿Por qué el QR bancario es solo texto para copiar y no algo que mi app bancaria escanea?">
+Los bancos no comparten un estándar de QR común para cuentas de destino
+arbitrarias (a diferencia de un QR de comercio en un checkout) — cada banco
+codifica las transferencias de forma distinta, y la mayoría de las apps
+bancarias no puede auto-completar una transferencia desde un QR de un
+tercero. `qr_png_base64` renderiza los datos de la cuenta como QR
+únicamente como **atajo de copiado en el celular**: el pagador lo escanea,
+obtiene el texto multilínea (banco, cuenta, titular, monto, referencia) y lo
+pega en el formulario de transferencia de SU banco — la transferencia la
+confirma él mismo. No construyas un flujo de escanear-y-pagar alrededor de
+esto; muéstralo junto a los campos en texto plano para que el pagador
+siempre pueda escribirlos a mano.
 </Accordion>
 </AccordionGroup>

@@ -7,7 +7,22 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-<Update label="2026年8月2日" description="v2.23 · 1 个版本">
+<Update label="2026年8月2日" description="v2.24 · 2 个版本">
+
+### v2.24
+
+**新增**
+
+- **转账通知类 payin 的入金说明**（[payins 指南](/zh/guides/payins)）：
+  在支持的走廊中，使用 `method: "bank_transfer"` 创建 payin 现在会返回
+  `deposit_instructions` 区块，包含确切的收款账户信息——`bank_name`、
+  `account_number`、`account_type`、`holder_name`、`holder_tax_id`、
+  `holder_email`、`reference_required`，一段可直接复制的多行文本
+  `qr_payload`（含账户、收款人和你的备注/金额），以及带品牌的
+  `qr_png_base64`。该区块在 payin 的详情与列表接口中同样返回。新增
+  `GET /v1/payins/deposit-instructions?country=&currency=&method=`，
+  可在创建 payin 之前预览收款账户。银行 QR 为“扫码复制”而非自动填充的
+  原因，详见指南中的常见问题。
 
 ### v2.23
 

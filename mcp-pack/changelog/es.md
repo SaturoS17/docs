@@ -9,7 +9,25 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-## v2.23 · 1 versión - 2 de agosto de 2026
+## v2.24 · 2 versiones - 2 de agosto de 2026
+
+### v2.24
+
+**Agregado**
+
+- **Instrucciones de depósito para transferencias anunciadas**
+  ([guía de payins](https://docs.cbpayapp.com/es/guias/payins)): crear un payin con
+  `method: "bank_transfer"` en los corredores soportados ahora devuelve
+  un bloque `deposit_instructions` con la cuenta de destino exacta —
+  `bank_name`, `account_number`, `account_type`, `holder_name`,
+  `holder_tax_id`, `holder_email`, `reference_required`, un `qr_payload`
+  para copiar (texto multilínea con la cuenta, el titular y tu
+  referencia/monto) y un `qr_png_base64` brandeado. El mismo bloque se
+  repite en el detalle y el listado del payin. El nuevo
+  `GET /v1/payins/deposit-instructions?country=&currency=&method=`
+  permite previsualizar la cuenta de destino antes de crear el payin.
+  Revisa el FAQ de la guía para entender por qué el QR bancario es para
+  copiar, no para autocompletar.
 
 ### v2.23
 

@@ -728,6 +728,75 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
 `409 idempotency_conflict`，而不是返回与请求不符的对象。
 </Note>
 
+### 入金说明：应该转到哪里
+
+在你的组织已为转账通知类收款登记了收款账户的走廊（目前是智利与巴拉圭），
+通报的响应中会包含一个 `deposit_instructions` 区块——付款人需要转账的确切
+银行账户，金额和 `reference` 已经内置在一段可直接复制的二维码文本中：
+
+```json 响应 201（含入金说明）
+{
+  "payin_id": "4f81…",
+  "status": "pending",
+  "reference": "CBJ6T3W9M2K5",
+  "note": "include the reference in the transfer description so the deposit is credited automatically",
+  "payer_source": "declared",
+  "payer_document": "17438319-7",
+  "deposit_instructions": {
+    "bank_name": "Banco Ejemplo",
+    "account_number": "001122334455",
+    "account_type": "checking",
+    "holder_name": "CBPay Operations SpA",
+    "holder_tax_id": "77123456-7",
+    "reference_required": true,
+    "qr_payload": "Bank: Banco Ejemplo\nAccount type: checking\nAccount number: 001122334455\nHolder: CBPay Operations SpA\nTax ID: 77123456-7\nAmount: 500000 CLP\nReference: CBJ6T3W9M2K5",
+    "qr_png_base64": "iVBORw0KGgoAAAANSUhEUgAA…"
+  }
+}
+```
+
+你也可以在创建 payin **之前**预览收款账户——便于在付款人确认之前，先告诉
+他们应该把钱转到哪里：
+
+```bash
+curl "https://api.qbank.cl/platform/v1/payins/deposit-instructions?country=CL&currency=CLP&method=bank_transfer" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json 响应 200
+{
+  "deposit_instructions": {
+    "bank_name": "Banco Ejemplo",
+    "account_number": "001122334455",
+    "account_type": "checking",
+    "holder_name": "CBPay Operations SpA",
+    "holder_tax_id": "77123456-7",
+    "reference_required": true,
+    "qr_payload": "Bank: Banco Ejemplo\nAccount type: checking\nAccount number: 001122334455\nHolder: CBPay Operations SpA\nTax ID: 77123456-7",
+    "qr_png_base64": "iVBORw0KGgoAAAANSUhEUgAA…"
+  }
+}
+```
+
+<Note>
+预览端点的 `qr_payload` 没有 `Amount`/`Reference` 这两行（此时还没有实际
+的 payin）；而实际通报中内置的那段文本始终包含这两行，这样付款人无需手动
+输入任何内容即可完成支付。通报中的这个区块是一份**冻结的快照**：如果你的
+CBPay 运营方之后更新了登记的账户，已经存在的通报仍会指向创建时使用的账户
+——只有新的通报才会采用变更后的账户。
+</Note>
+
+<Note>
+如果该走廊尚未登记任何收款账户，此端点会返回 `404 not_found`——处理方式
+与下方的 `422 deposit_instructions_unavailable` 相同：此时还不能向付款人
+展示任何账户。
+</Note>
+
+`GET /v1/payins/{id}` 与列表接口（`GET /v1/payins`）会原样返回同一个
+`deposit_instructions` 区块，因此你的前端无需从创建响应中缓存它。在未登记
+收款账户的走廊上，该字段直接缺省——此时展示 `reference`，并请付款人使用
+你组织常规的银行信息即可。
+
 ## 3. 接收入账
 
 当付款到达（无论通过哪种模式），您的账户会自动入账，并触发
@@ -815,6 +884,7 @@ curl "https://api.qbank.cl/platform/v1/payins?from=2026-07-01&to=2026-07-08&stat
 | 400 | `idempotency_key_required` | Collect 需要幂等键（对付款人的真实扣款） |
 | 403 | `service_disabled` | 您的账户未启用入金服务 —— 参见[服务](/zh/concepts/services) |
 | 422 | `core_rejected` | 处理方拒绝了该收款；请检查消息 |
+| 422 | `deposit_instructions_unavailable` | `bank_transfer` 走廊要求登记收款账户（目前为 CL、PY），而您的组织尚未配置——请联系您的 CBPay 运营方 |
 | 502 | `core_unavailable` | 收款无法创建；请重试创建（未产生任何扣款） |
 ## 常见问题
 
@@ -860,5 +930,14 @@ USDT，随后立即按真实价格转换；`conversion_status` 报告 `done` 或
 <Accordion title="为什么我的 collect（pull）收款失败了？">
 响应和 `GET /v1/payins/{id}` 会持久化 `failure` 块，包含通道的代码和消息
 （例如证件与付款人银行登记不符）。修正输入后用新的 key 重试。
+</Accordion>
+<Accordion title="为什么银行 QR 只是一段供复制的文本，而不是我的银行 App 能扫描识别的内容？">
+银行之间并没有针对任意收款账户的统一二维码标准（不同于结账时商户的收款
+二维码）——每家银行对转账信息的编码方式都不同，而且大多数银行 App 根本
+无法从第三方二维码自动填充转账信息。`qr_png_base64` 把账户信息渲染成
+二维码，仅仅是**移动端的复制捷径**：付款人扫码后得到一段多行文本
+（银行、账户、持有人、金额、备注），再把它粘贴到自己银行的转账表单中——
+转账本身仍由付款人自己确认。不要围绕它构建"扫码即付"的流程；应把它和
+纯文本字段放在一起展示，让付款人始终可以手动输入。
 </Accordion>
 </AccordionGroup>

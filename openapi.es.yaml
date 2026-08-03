@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.23'
+  version: '2.24'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -12260,6 +12260,92 @@ paths:
                 - *id013
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/payins/deposit-instructions:
+    get:
+      tags:
+      - Payins
+      operationId: getDepositInstructions
+      summary: Previsualizar las instrucciones de depósito de un corredor
+      description: |
+        Devuelve el texto de cuenta bancaria que tu organización publica para
+        un corredor `bank_transfer` — el mismo contenido que se embebe
+        automáticamente en la respuesta de un payin anunciado. Útil para
+        renderizar una pantalla "¿dónde envío la plata?" antes de que el
+        pagador cree el payin, o para mostrar las instrucciones vigentes en
+        una página estática.
+
+        Solo los corredores con una instrucción activa configurada por el
+        admin devuelven contenido; el resto responde `404 not_found` (nada
+        que previsualizar — el corredor no lo requiere o nadie lo configuró
+        aún).
+      parameters:
+      - name: country
+        in: query
+        required: true
+        schema:
+          type: string
+        example: CL
+      - name: currency
+        in: query
+        required: true
+        schema:
+          type: string
+        example: CLP
+      - name: method
+        in: query
+        schema:
+          type: string
+          default: bank_transfer
+      responses:
+        '200':
+          description: Instrucciones de depósito activas del corredor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deposit_instructions:
+                    $ref: '#/components/schemas/DepositInstructions'
+              example: &id_deposit_instr
+                deposit_instructions:
+                  id: 9f0c1a2b-3d4e-4f5a-8b9c-1a2b3c4d5e6f
+                  country: CL
+                  currency: CLP
+                  method: bank_transfer
+                  purpose: payin
+                  revision: 3
+                  active: true
+                  reference_required: true
+                  bank_name: Banco de Ejemplo
+                  account_number: '0001112223'
+                  account_type: checking
+                  holder_name: Ejemplo Org SpA
+                  created_at: '2026-07-15T14:02:00Z'
+                  qr_payload: |
+                    Bank: Banco de Ejemplo
+                    Account type: checking
+                    Account number: 0001112223
+                    Holder: Ejemplo Org SpA
+                  qr_png_base64: iVBORw0KGgoAAAANSU...
+        '400':
+          description: Faltan country o currency (invalid_payload).
+          content:
+            application/json:
+              schema: *id012
+              example:
+                error: invalid_payload
+                message: country and currency are required
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: No hay instrucciones de depósito activas para este corredor
+            (not_found).
+          content:
+            application/json:
+              schema: *id012
+              example:
+                error: not_found
+                message: no deposit instructions configured for this corridor
   /v1/banking/customer:
     post:
       tags:
@@ -17451,6 +17537,60 @@ components:
         created_at:
           type: string
           format: date-time
+    DepositInstructions:
+      type: object
+      description: |
+        El texto de cuenta bancaria que tu organización publica para un
+        corredor `bank_transfer`. Administrado por el equipo admin,
+        append-only (una revisión nueva jamás sobrescribe el texto que un
+        payin ya congeló).
+      properties:
+        id:
+          type: string
+          format: uuid
+        country:
+          type: string
+        currency:
+          type: string
+        method:
+          type: string
+        purpose:
+          type: string
+          enum:
+          - payin
+          - otc
+        revision:
+          type: integer
+        active:
+          type: boolean
+        reference_required:
+          type: boolean
+        bank_name:
+          type: string
+        account_number:
+          type: string
+        account_type:
+          type: string
+        holder_name:
+          type: string
+        holder_tax_id:
+          type: string
+        holder_email:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        qr_payload:
+          type: string
+          description: |
+            Texto plano multilínea con los datos bancarios (y, cuando el
+            corredor lo exige, el monto y la referencia). Pensado para que
+            lo lea una persona, no para que lo escanee una app bancaria.
+        qr_png_base64:
+          type: string
+          description: |
+            PNG en base64 que renderiza `qr_payload` como código QR, con el
+            símbolo de marca de tu organización centrado.
 webhooks:
   payin_credited:
     post:
