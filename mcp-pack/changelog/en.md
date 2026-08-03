@@ -8,6 +8,19 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+## v2.26 · 1 release - August 3, 2026
+
+### v2.26
+
+**Fixed**
+
+- **Verification status protected against late events from older
+  attempts**: when an account retries identity verification (for example,
+  after a rejection), a late status event from an earlier attempt can no
+  longer change the account's verification status or trigger the decision
+  email — only the most recent attempt decides it. Every attempt keeps its
+  full history in the admin panel.
+
 ## v2.25 · 3 releases - August 2, 2026
 
 ### v2.25

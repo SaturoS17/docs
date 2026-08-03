@@ -9,6 +9,20 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+## v2.26 · 1 versión - 3 de agosto de 2026
+
+### v2.26
+
+**Corregido**
+
+- **Estado de verificación protegido ante eventos tardíos de intentos
+  anteriores**: cuando una cuenta reintenta su verificación de identidad
+  (por ejemplo, tras un rechazo), un evento de estado tardío de un intento
+  anterior ya no puede cambiar el estado de verificación de la cuenta ni
+  disparar el correo de decisión — solo el intento más reciente lo decide.
+  Cada intento conserva su historial completo en el panel de
+  administración.
+
 ## v2.25 · 3 versiones - 2 de agosto de 2026
 
 ### v2.25
