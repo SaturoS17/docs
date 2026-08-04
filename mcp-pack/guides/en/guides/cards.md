@@ -98,11 +98,32 @@ settlement.
 |---|---|
 | `card_creation_virtual` | When issuing a virtual card |
 | `card_creation_physical` | When issuing a physical card |
+| `card_purchase_virtual` | **Per purchase** with a virtual card (percent + fixed over the USD amount) |
+| `card_purchase_physical` | **Per purchase** with a physical card (percent + fixed over the USD amount) |
 | `card_monthly` | Monthly fee per active card (with no balance, the card is frozen — no debt) |
 | `card_cancellation` | When cancelling a card |
 
 Exact amounts come from `GET /v1/rates` (`fees` field). Every issuance charge is
 **automatically refunded** if issuance fails.
+
+### Per-purchase fee (lifecycle)
+
+The per-transaction fee follows the same lifecycle as the purchase:
+
+- **Authorization**: the estimated fee is reserved **inside the hold**
+  together with the purchase amount, in the card's `spending_asset` (the
+  percent applies over the purchase's USD amount; in BTC/GOLD it converts
+  with the same event price).
+- **Settlement**: the fee is **recalculated** with the configuration in
+  force at that moment and the definitive one is charged (`card_fee` in
+  your movements); the difference against the estimate is released or
+  charged together with the cushion adjustment.
+- **Reversals and downward adjustments**: the fee is **prorated back** to
+  the refunded fraction of the purchase (`card_fee_refund`).
+
+If your operator changes the percent between authorization and settlement,
+the settlement fee is charged — the same criterion as the BTC/GOLD price
+per event. Declined purchases **charge no fee**.
 
 ## Create a card
 
@@ -359,6 +380,8 @@ curl "https://api.qbank.cl/platform/v1/cards/{card_id}/transactions?from=2026-07
       "amount_usdt": "25.000000",
       "spend_asset": "USDC",
       "spend_amount": "25.000000",
+      "fee_asset": "USDC",
+      "fee_amount": "0.300000",
       "status": "settled",
       "decline_reason": "",
       "auth_number": "123456",
@@ -374,6 +397,13 @@ debited and how much in that asset (`amount_usd` / `amount_usdt` remain the
 USD reference value). For BTC/GOLD, an authorized transaction's
 `spend_amount` includes the reserve cushion; after settlement it shows the
 final amount.
+
+`fee_asset` / `fee_amount` are the asset and amount of the per-purchase fee
+(definitive once `settled`; estimated while `authorized`).
+`fee_refunded_amount` appears once a refund applies from reversals or
+downward adjustments. When your operator does not configure a per-purchase
+fee, the `fee_*` fields are **not included** in the transaction — the
+historical behavior is unchanged.
 
 | Status | Meaning |
 |---|---|
@@ -444,6 +474,12 @@ receive the equivalent in your asset of the refunded USD amount. If BTC
 went up since the purchase you receive less BTC (same USD value); if it
 went down, more. Your BTC/GOLD balance is always exposed to the price —
 that is the nature of spending from a volatile asset.
+#### Why did the fee of my purchase change between authorization and settlement?
+The authorization reserves an estimated fee inside the hold. At settlement
+the fee is recalculated with the configuration in force at that moment:
+if your operator changed the percent between both events, the settlement
+fee applies. The difference against the estimate is released or charged
+together with the purchase adjustment — never as a separate movement.
 #### What happens if there is no balance for the monthly fee?
 The card is frozen automatically (`card_status_changed` event with
 `reason: monthly_fee_unpaid`). No debt accrues; once the balance is topped

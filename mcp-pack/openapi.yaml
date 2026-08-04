@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.27'
+  version: '2.29'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -700,72 +700,6 @@ paths:
               example:
                 error: pricing_unavailable
                 message: pricing is temporarily unavailable; retry in a moment
-  /pay/{token}/saved-cards:
-    get:
-      security: []
-      tags:
-      - Checkout
-      operationId: checkoutSavedCards
-      summary: Saved cards for a checkout payer (public)
-      description: >-
-        Public lookup (rate limited per IP) of the payer's saved cards with this merchant,
-        filtered by the payer's email — the checkout page uses it to offer "pay with a saved
-        card" before opening the hosted card page. Returns display data only (brand, last 4,
-        expiry) — never tokens or card numbers. A missing/invalid email, an unknown email or a
-        resolved link all return the same empty list (soft anti-enumeration). Materializing the card method with a `stored_card_id` requires this same cardholder email — a mismatch responds 404.
-      parameters:
-      - name: token
-        in: path
-        required: true
-        schema:
-          type: string
-        description: Opaque checkout token embedded in the `checkout_url`.
-      - name: email
-        in: query
-        required: true
-        schema:
-          type: string
-        description: The payer's email (the one used when the card was saved).
-      - name: country
-        in: query
-        required: false
-        schema:
-          type: string
-        description: Optional filter by the card corridor country.
-      - name: currency
-        in: query
-        required: false
-        schema:
-          type: string
-        description: Optional filter by the card corridor currency.
-      responses:
-        '200':
-          description: Saved cards for that email (empty list when none match).
-          content:
-            application/json:
-              example:
-                stored_cards:
-                - stored_card_id: 3f2b8c1d-4e5a-6789-abcd-ef0123456789
-                  brand: VISA
-                  last4: '1111'
-                  expiry_month: '12'
-                  expiry_year: '2031'
-                  country: BO
-                  currency: BOB
-        '404':
-          description: Invalid token or unknown payment link.
-          content:
-            application/json:
-              example:
-                error: not_found
-                message: payment link not found
-        '429':
-          description: Too many requests from this IP.
-          content:
-            application/json:
-              example:
-                error: rate_limited
-                message: too many requests
   /pay/{token}/methods/{method}:
     post:
       security: []
@@ -14052,7 +13986,11 @@ paths:
         at clearing), `reversed` (annulled, funds returned to the same balance) and `declined` (with the
         reason: insufficient_funds, card_limit_exceeded, card_frozen...). `spend_asset` / `spend_amount`
         show which balance the purchase debited and how much in that asset; `amount_usd` / `amount_usdt`
-        remain the USD reference value.'
+        remain the USD reference value. When the operator configures a per-purchase fee
+        (`card_purchase_virtual` / `card_purchase_physical`), `fee_asset` / `fee_amount` expose the fee
+        (estimated while `authorized`, definitive once `settled`) and `fee_refunded_amount` appears once
+        reversals or downward adjustments prorate a refund; without fee configuration the `fee_*` fields
+        are omitted.'
       parameters:
       - $ref: '#/components/parameters/cardID'
       - $ref: '#/components/parameters/page'
@@ -14105,6 +14043,8 @@ paths:
                   amount_usdt: '16.170000'
                   spend_asset: USDC
                   spend_amount: '16.170000'
+                  fee_asset: USDC
+                  fee_amount: '0.214255'
                   status: settled
                   auth_number: '040031'
                   created_at: '2026-07-08T15:00:00Z'

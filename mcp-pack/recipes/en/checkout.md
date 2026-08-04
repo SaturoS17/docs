@@ -129,7 +129,10 @@ and redirects to your `success_url` if you set one.
   currency with its quoted amount; picking one opens the hosted payment
   page in that currency. Each currency is an independent materialization
   (you can quote BOB and USD on the same link; the first one to complete
-  pays it).
+  pays it). On the payment page the payer can use a **saved card**: they
+  type their email, verify it with a code and pick one — with "Remember
+  this device" they skip the code for 30 days (see
+  [stored cards](https://docs.cbpayapp.com/en/guides/stored-cards-subscriptions#the-payer-discovers-their-cards-on-the-payment-page)).
 - **Crypto (wallet per charge)**: choosing a currency generates an
   exclusive address with its `qr_payload` and `qr_png_base64` — the QR
   always carries the raw address (BTC bech32, TRON base58, ETH hex) for

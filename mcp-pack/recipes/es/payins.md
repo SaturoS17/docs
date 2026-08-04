@@ -429,6 +429,11 @@ Comparte la `payment_url` (link, redirección o WebView). Detalles del flujo:
   otra modalidad.
 - Un retry con la misma `idempotency_key` devuelve el mismo payin y la misma
   `payment_url`; nunca abre una segunda sesión de pago.
+- Si el pagador ya guardó tarjetas contigo, la página se las ofrece sola:
+  escribe su correo (primer campo), lo verifica con un código y paga con una
+  de ellas sin re-digitarla — con "Recordar este dispositivo" no repite el
+  código por 30 días. Detalle en
+  [tarjetas guardadas](https://docs.cbpayapp.com/es/guias/stored-cards-subscriptions#el-pagador-descubre-sus-tarjetas-en-la-página-de-pago).
 - Funciona también en USD (`currency: "USD"`).
 
 #### Paraguay
@@ -586,6 +591,10 @@ propias del corredor internacional:
 - `save_card: true` + `payer_reference` guardan la tarjeta con el
   consentimiento del pagador para cobros posteriores (ver
   [tarjetas guardadas y suscripciones](https://docs.cbpayapp.com/es/guias/stored-cards-subscriptions)).
+- Si el pagador ya tiene tarjetas guardadas, la página se las ofrece tras
+  verificar su correo con un código (una sola vez por dispositivo si marca
+  "Recordar este dispositivo", vigente 30 días) — paga con 3-D Secure sin
+  re-digitar la tarjeta.
 
 > **Nota**
 El corredor de tarjetas internacionales se habilita por cuenta. Consulta

@@ -73,10 +73,26 @@ curl -X PATCH https://api.qbank.cl/platform/v1/cards/{card_id} \
 |---|---|
 | `card_creation_virtual` | 发行虚拟卡时 |
 | `card_creation_physical` | 发行实体卡时 |
+| `card_purchase_virtual` | **每笔虚拟卡消费**（按消费美元金额计 percent + 固定额） |
+| `card_purchase_physical` | **每笔实体卡消费**（按消费美元金额计 percent + 固定额） |
 | `card_monthly` | 每张有效卡的月费（余额不足时卡片会被冻结——不产生欠款） |
 | `card_cancellation` | 注销卡片时 |
 
 具体金额见 `GET /v1/rates`（`fees` 字段）。若发卡失败，所有发卡费用都会**自动退款**。
+
+### 按笔消费手续费（生命周期）
+
+按笔手续费与消费走同一生命周期：
+
+- **授权**：预估手续费与消费金额一起计入**预授权冻结**，币种为卡片的
+  `spending_asset`（百分比按消费的美元金额计算；BTC/GOLD 按该事件同一
+  价格折算）。
+- **清算**：按当时生效的配置**重新计算**手续费并收取最终值
+  （流水中的 `card_fee`）；与预估值的差额随保证金调整一并释放或补收。
+- **撤销与下调调整**：按退款比例**退回**手续费（`card_fee_refund`）。
+
+若运营商在授权与清算之间调整了费率，将按清算时的费率收取——与
+BTC/GOLD 按事件计价的规则一致。被拒消费（`declined`）**不收费**。
 
 ## 创建卡片
 
@@ -307,6 +323,8 @@ curl "https://api.qbank.cl/platform/v1/cards/{card_id}/transactions?from=2026-07
       "amount_usdt": "25.000000",
       "spend_asset": "USDC",
       "spend_amount": "25.000000",
+      "fee_asset": "USDC",
+      "fee_amount": "0.300000",
       "status": "settled",
       "decline_reason": "",
       "auth_number": "123456",
@@ -318,6 +336,8 @@ curl "https://api.qbank.cl/platform/v1/cards/{card_id}/transactions?from=2026-07
 ```
 
 `spend_asset` / `spend_amount` 显示这笔消费实际从哪个余额扣款，以及在该资产中扣了多少（`amount_usd` / `amount_usdt` 仍为美元参考值）。对于 BTC/GOLD，已授权交易的 `spend_amount` 包含预留缓冲额；清算后显示最终金额。
+
+`fee_asset` / `fee_amount` 为按笔消费手续费的币种与金额（`settled` 后为最终值；`authorized` 状态时为预估值）。`fee_refunded_amount` 在撤销或下调调整产生退款后出现。若运营商未配置按笔手续费，交易中**不会包含** `fee_*` 字段——保持历史行为不变。
 
 | 状态 | 含义 |
 |---|---|
@@ -369,6 +389,9 @@ curl -X POST https://api.qbank.cl/platform/v1/cards/{card_id}/cancel \
 </Accordion>
 <Accordion title="我的一笔 BTC 消费被退款了——为什么收到的数量不一样？">
 退款按退款时刻的价格换算，而非消费时刻的价格：您收到的是退款美元金额在您资产中的等值。如果 BTC 自消费以来上涨，您收到的 BTC 会更少（美元价值相同）；如果下跌，则更多。您的 BTC/GOLD 余额始终暴露于价格波动——这是用波动性资产消费的本质。
+</Accordion>
+<Accordion title="为什么我的消费手续费在授权与清算之间发生了变化？">
+授权时在冻结额中预留的是预估手续费；清算时按当时生效的配置重新计算——若运营商在两个事件之间调整了费率，则按清算时的费率收取。与预估值的差额随消费调整一并释放或补收，不会产生单独的手续费流水。
 </Accordion>
 <Accordion title="如果月费扣款时没有余额会怎样？">
 卡片会被自动冻结（`card_status_changed` 事件，`reason: monthly_fee_unpaid`）。不会产生欠款；余额补足后，用 `PATCH { "frozen": false }` 解冻即可。

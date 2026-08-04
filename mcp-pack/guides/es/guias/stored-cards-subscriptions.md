@@ -71,9 +71,13 @@ corre igual — el pagador solo confirma con su banco. Los **datos de
 facturación** que el pagador ingresó al guardar la tarjeta también quedan
 en archivo: la página los aplica sola y muestra solo un resumen enmascarado
 (nombre, correo parcial y ciudad) con un enlace "usar otros datos" por si
-quiere cambiarlos — no se re-tipea nada. En la página pública del checkout,
-usar una tarjeta guardada exige además ingresar el **mismo correo del
-titular** con el que se guardó (si no calza, responde `404`).
+quiere cambiarlos — no se re-tipea nada. Este camino server-to-server no
+pide verificación adicional: tú ya conoces a tu cliente.
+
+¿No sabes qué tarjeta tiene guardada (o si tiene)? No pases
+`stored_card_id`: la página de pago le ofrece al pagador descubrir sus
+tarjetas verificando su correo con un código — ver
+[el pagador descubre sus tarjetas](#el-pagador-descubre-sus-tarjetas-en-la-página-de-pago).
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/payins \
@@ -131,6 +135,40 @@ Los cobros sin el pagador presente viajan **sin 3-D Secure** por definición
 del mandato: el riesgo de contracargo es tuyo. Cobra solo lo acordado
 explícitamente con tu cliente — la plataforma persiste la evidencia del
 consentimiento de la semilla (checkbox, IP y timestamp) para disputas.
+## El pagador descubre sus tarjetas en la página de pago
+
+Toda página de pago con tarjeta — la `payment_url` de un payin `card` y la
+opción tarjeta del checkout universal — pide el **correo del pagador como
+primer campo**. Si ese correo tiene tarjetas guardadas contigo, la página
+le envía un **código de verificación** (con la marca de tu organización) y
+solo cuando lo ingresa correctamente le revela sus tarjetas: marca,
+últimos 4 dígitos y vencimiento, jamás el número completo. Al elegir una,
+paga con 3-D Secure sin re-digitarla; también puede elegir "usar otra
+tarjeta" y pagar con una nueva.
+
+### El pagador escribe su correo
+
+Si ya lo enviaste en `customer.email` (o un `payer_reference` con correo),
+la página lo muestra pre-llenado. Si el correo no tiene tarjetas guardadas,
+el formulario de tarjeta nueva sigue su curso — no se revela nada.
+### Lo verifica con el código (una vez por dispositivo)
+
+Con tarjetas encontradas, la página envía un código al correo y pide
+ingresarlo. El checkbox **"Recordar este dispositivo"** (marcado por
+defecto) deja el dispositivo confiable por **30 días**: los pagos
+siguientes con ese correo en ese navegador muestran las tarjetas sin pedir
+código.
+### Elige la tarjeta y paga
+
+Con el correo verificado, el pagador ve sus tarjetas enmascaradas, elige
+una y completa solo el 3-D Secure. El correo **verificado** queda como la
+identidad del pagador del cobro — gana sobre cualquier correo declarado en
+el formulario.
+> **Nota**
+La confianza es por dispositivo y dura 30 días; cada pagador puede tener
+hasta 10 dispositivos recordados (al superar el tope se olvida el más
+antiguo). Si un pagador pierde un dispositivo, soporte puede revocar sus
+dispositivos recordados y volverá a recibir el código en su próximo pago.
 ## Suscripciones (cobros recurrentes agendados)
 
 Si en vez de cobrar tú manualmente cada mes quieres que **la plataforma
@@ -243,3 +281,13 @@ cobros hasta que hagas `resume`.
 #### ¿Cuándo se cobra el primer período?
 Síncrono en la creación, salvo que pases un `start_at` futuro (trial): ahí
 el primer cobro espera esa fecha.
+#### ¿Por qué la página de pago pide un código al correo del pagador?
+Para mostrarle sus tarjetas guardadas sin que cualquiera que sepa su correo
+pueda verlas: la lista solo se revela tras verificar el correo con el
+código (o en un dispositivo ya recordado). Si el correo no tiene tarjetas,
+la página sigue directo al formulario de tarjeta nueva.
+#### ¿El pagador debe verificar su correo en cada pago?
+No: con "Recordar este dispositivo" (marcado por defecto) el navegador
+queda confiable por 30 días y los pagos siguientes con ese correo muestran
+las tarjetas sin código. Pasado el plazo — o en otro dispositivo — se
+verifica de nuevo.

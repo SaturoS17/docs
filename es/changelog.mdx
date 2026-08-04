@@ -8,6 +8,55 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="4 de agosto de 2026" description="v2.29 · 2 versiones">
+
+### v2.29
+
+**Agregado**
+
+- **Comisión por compra con tarjeta**: las transacciones de tarjeta ahora
+  pueden llevar una comisión transaccional (porcentaje + fijo) configurada
+  por cuenta a través de dos servicios nuevos — `card_purchase_virtual` y
+  `card_purchase_physical`. La comisión se **estima en la autorización**
+  (incluida en la retención del saldo), se **recalcula en la liquidación**
+  con la configuración vigente en ese momento, y se **devuelve prorrateada**
+  en reversas y ajustes parciales o totales. Las transacciones de tarjeta
+  ahora exponen `fee_asset`, `fee_amount` y `fee_refunded_amount` (se
+  omiten cuando no hay comisión configurada — las cuentas sin
+  configuración no ven cambios), el comprobante de compra muestra la línea
+  de comisión, y el ledger registra los movimientos como `card_fee` /
+  `card_fee_refund`. Detalles en
+  [tarjetas](/es/guias/tarjetas#comisión-por-compra-ciclo-de-vida).
+
+
+
+### v2.28
+
+**Agregado**
+
+- **Tarjetas guardadas con verificación del pagador en la página de pago**:
+  toda página de pago con tarjeta (la `payment_url` de un payin `card` y la
+  opción tarjeta del checkout universal) ahora pide el **correo del pagador
+  como primer campo** y, si ese correo tiene tarjetas guardadas contigo, le
+  envía un **código de verificación** antes de mostrarlas — la lista jamás
+  se revela sin verificar. Con **"Recordar este dispositivo"** (marcado por
+  defecto) el pagador no repite el código por **30 días** en ese navegador.
+  Al elegir una tarjeta paga con 3-D Secure sin re-digitarla. Detalle en
+  [tarjetas guardadas](/es/guias/stored-cards-subscriptions#el-pagador-descubre-sus-tarjetas-en-la-página-de-pago).
+
+**Cambiado**
+
+- **El checkout universal ya no pide el correo del pagador**: la opción
+  tarjeta materializa y redirige directo a la página de pago, donde vive el
+  discovery de tarjetas guardadas. El endpoint público
+  `GET /pay/{token}/saved-cards` fue **eliminado** (responde 404) — la
+  lista de tarjetas ya no sale de ninguna superficie sin verificación.
+  **Sin cambios de contrato**: `POST /v1/payins` (`card` y `checkout`)
+  sigue igual, y `stored_card_id` server-to-server no exige código (ya
+  conoces a tu cliente).
+
+</Update>
+
 <Update label="3 de agosto de 2026" description="v2.27 · 2 versiones">
 
 ### v2.27

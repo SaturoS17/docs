@@ -56,6 +56,8 @@ payin:   usdt_gross    = local_amount / payin_rate
 | `card_creation_physical` | 每张卡固定费用 | 发行实体卡时 |
 | `card_monthly` | 每月固定费用 | 每张有效卡的月费（无余额时卡片将被冻结 — 不产生欠款） |
 | `card_cancellation` | 每张卡固定费用 | 注销卡片时 |
+| `card_purchase_virtual` | 按消费美元金额的 `%` + 固定费用 | 每笔虚拟卡消费（授权时预估，清算时确定；冲正按比例退还） |
+| `card_purchase_physical` | 按消费美元金额的 `%` + 固定费用 | 每笔实体卡消费（周期与虚拟卡相同） |
 
 对于按 `%` 收费的服务，公式为
 `fee = ceil(amount × percent / 100) + fixed_amount`（向上取整到

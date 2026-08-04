@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.27'
+  version: '2.29'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -652,70 +652,6 @@ paths:
               example:
                 error: pricing_unavailable
                 message: pricing is temporarily unavailable; retry in a moment
-  /pay/{token}/saved-cards:
-    get:
-      security: []
-      tags:
-      - 收银台(Checkout)
-      operationId: checkoutSavedCards
-      summary: 结账付款人的已存卡（公开）
-      description: >-
-        按付款人邮箱过滤的公开查询（按 IP 限流），返回付款人在该商户保存的卡片 —
-        结账页面用它在打开托管卡片页之前提供"用已存卡支付"。仅返回展示数据（品牌、末 4
-        位、有效期）— 绝不返回令牌或卡号。邮箱缺失/无效、邮箱未知或链接已结束均返回相同的空列表（软性防枚举）。使用 `stored_card_id` 物化 card 方式时须提供同一持卡人邮箱 — 不匹配返回 404。
-      parameters:
-      - name: token
-        in: path
-        required: true
-        schema:
-          type: string
-        description: 嵌在 `checkout_url` 中的不透明结账令牌。
-      - name: email
-        in: query
-        required: true
-        schema:
-          type: string
-        description: 付款人的邮箱（保存卡片时使用的邮箱）。
-      - name: country
-        in: query
-        required: false
-        schema:
-          type: string
-        description: 可选：按卡片走廊国家过滤。
-      - name: currency
-        in: query
-        required: false
-        schema:
-          type: string
-        description: 可选：按卡片走廊货币过滤。
-      responses:
-        '200':
-          description: 该邮箱的已存卡（无匹配时为空列表）。
-          content:
-            application/json:
-              example:
-                stored_cards:
-                - stored_card_id: 3f2b8c1d-4e5a-6789-abcd-ef0123456789
-                  brand: VISA
-                  last4: '1111'
-                  expiry_month: '12'
-                  expiry_year: '2031'
-                  country: BO
-                  currency: BOB
-        '404':
-          description: 令牌无效或付款链接不存在。
-          content:
-            application/json:
-              example:
-                error: not_found
-                message: payment link not found
-        '429':
-          description: 来自此 IP 的请求过多。
-          content:
-            application/json:
-              example:
-                error: too_many_attempts
-                message: too many requests; wait a moment and retry
   /pay/{token}/methods/{method}:
     post:
       security: []
@@ -13663,7 +13599,9 @@ paths:
       operationId: listCardTransactions
       summary: 列出卡片交易
       description: 消费及其生命周期:`authorized`(实时冻结)、`settled`(清算确认)、`reversed`(已撤销,资金退回同一余额)和 `declined`(附原因:insufficient_funds、card_limit_exceeded、card_frozen……)。`spend_asset`
-        / `spend_amount` 显示该消费扣了哪个余额及该资产的金额;`amount_usd` / `amount_usdt` 保持 USD 参考值。
+        / `spend_amount` 显示该消费扣了哪个余额及该资产的金额;`amount_usd` / `amount_usdt` 保持 USD 参考值。当运营商配置了按笔消费手续费(`card_purchase_virtual`
+        / `card_purchase_physical`)时,`fee_asset` / `fee_amount` 展示手续费金额(`authorized` 时为预估值,`settled` 后为最终值),`fee_refunded_amount`
+        在撤销或下调调整按比例退款后出现;未配置手续费时不返回 `fee_*` 字段。
       parameters:
       - $ref: '#/components/parameters/cardID'
       - $ref: '#/components/parameters/page'
@@ -13716,6 +13654,8 @@ paths:
                   amount_usdt: '16.170000'
                   spend_asset: USDC
                   spend_amount: '16.170000'
+                  fee_asset: USDC
+                  fee_amount: '0.214255'
                   status: settled
                   auth_number: '040031'
                   created_at: '2026-07-08T15:00:00Z'

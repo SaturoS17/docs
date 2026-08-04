@@ -104,11 +104,32 @@ devuelve siempre al liquidar.
 |---|---|
 | `card_creation_virtual` | Al emitir una tarjeta virtual |
 | `card_creation_physical` | Al emitir una tarjeta física |
+| `card_purchase_virtual` | **Por cada compra** con tarjeta virtual (percent + fijo sobre el monto USD) |
+| `card_purchase_physical` | **Por cada compra** con tarjeta física (percent + fijo sobre el monto USD) |
 | `card_monthly` | Mensualidad por tarjeta activa (si no hay saldo, la tarjeta se congela — sin deuda) |
 | `card_cancellation` | Al cancelar una tarjeta |
 
 Los montos exactos se consultan en `GET /v1/rates` (campo `fees`). Todo
 cargo de emisión se **reembolsa automáticamente** si la emisión falla.
+
+### Comisión por compra (ciclo de vida)
+
+La comisión por transacción sigue el mismo ciclo que la compra:
+
+- **Autorización**: el fee estimado se reserva **dentro del hold** junto al
+  monto de la compra, en el mismo `spending_asset` de la tarjeta (el % se
+  aplica sobre el monto USD de la compra; en BTC/GOLD se convierte con el
+  mismo precio del evento).
+- **Liquidación**: el fee se **recalcula** con la configuración vigente en
+  ese momento y se cobra el definitivo (`card_fee` en tus movimientos); la
+  diferencia contra el estimado se libera o se cobra junto al ajuste del
+  colchón.
+- **Reversas y ajustes a la baja**: el fee se **devuelve prorrateado** a la
+  fracción de la compra devuelta (`card_fee_refund`).
+
+Si tu operador cambia el porcentaje entre la autorización y la liquidación,
+se cobra el fee de la liquidación — mismo criterio que el precio BTC/GOLD
+por evento. Las compras rechazadas (`declined`) **no cobran fee**.
 
 ## Crear una tarjeta
 
@@ -381,6 +402,8 @@ curl "https://api.qbank.cl/platform/v1/cards/{card_id}/transactions?from=2026-07
       "amount_usdt": "25.000000",
       "spend_asset": "USDC",
       "spend_amount": "25.000000",
+      "fee_asset": "USDC",
+      "fee_amount": "0.300000",
       "status": "settled",
       "decline_reason": "",
       "auth_number": "123456",
@@ -395,6 +418,13 @@ curl "https://api.qbank.cl/platform/v1/cards/{card_id}/transactions?from=2026-07
 la compra y cuánto en ese asset (`amount_usd` / `amount_usdt` siguen siendo
 el valor USD de referencia). En BTC/GOLD, `spend_amount` de una transacción
 autorizada incluye el colchón de reserva; al liquidar queda el monto final.
+
+`fee_asset` / `fee_amount` son el asset y el monto de la comisión por compra
+(definitivo una vez `settled`; estimado mientras `authorized`).
+`fee_refunded_amount` aparece cuando hubo devolución por reversas y ajustes
+a la baja. Cuando tu operador no configura comisión por compra, los campos
+`fee_*` **no se incluyen** en la transacción — el comportamiento histórico
+no cambia.
 
 | Estado | Significado |
 |---|---|
@@ -483,6 +513,15 @@ persona debe tener su [verificación KYC aprobada](/es/guias/kyc) — pasas su
 `verification_id` en el `cardholder` y sus datos y documentos se completan
 solos. La tarjeta gasta siempre del saldo de la cuenta empresa que la
 emitió.
+</Accordion>
+<Accordion title="¿Por qué el fee de una compra cambió entre la autorización y la liquidación?">
+La comisión por compra se calcula dos veces: estimada al autorizar (va en
+el hold) y definitiva al liquidar, con la configuración vigente en ese
+momento — igual que el precio BTC/GOLD, que se cotiza por evento. Si tu
+operador cambió el porcentaje entre ambos eventos, se cobra el valor de la
+liquidación y la diferencia se ajusta automáticamente contra lo reservado.
+Las devoluciones siempre reintegran el fee prorrateado sobre lo
+efectivamente cobrado, nunca re-cotizan.
 </Accordion>
 </AccordionGroup>
 El catálogo general de errores vive en [Errores](/es/errores).

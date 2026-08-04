@@ -128,7 +128,11 @@ y redirige a tu `success_url` si la configuraste.
   disponible con su monto cotizado; al elegir una se abre la página de
   pago hosted en esa moneda. Cada moneda es una materialización
   independiente (puedes cotizar en BOB y en USD sobre el mismo link; paga
-  la primera que complete).
+  la primera que complete). En la página de pago el pagador puede usar una
+  **tarjeta guardada**: escribe su correo, lo verifica con un código y
+  elige — con "Recordar este dispositivo" no repite el código por 30 días
+  (ver
+  [tarjetas guardadas](https://docs.cbpayapp.com/es/guias/stored-cards-subscriptions#el-pagador-descubre-sus-tarjetas-en-la-página-de-pago)).
 - **Crypto (wallet por cobro)**: al elegir una moneda se genera una
   dirección exclusiva con su `qr_payload` y `qr_png_base64` — el QR lleva
   SIEMPRE la dirección cruda (BTC bech32, TRON base58, ETH hex) para máxima

@@ -57,6 +57,8 @@ de las tasas de tu cuenta para ese país. Cotizado = cobrado, siempre.
 | `card_creation_physical` | Fijo por tarjeta | Al emitir una tarjeta física |
 | `card_monthly` | Fijo mensual | Mensualidad por tarjeta activa (sin saldo, la tarjeta se congela — sin deuda) |
 | `card_cancellation` | Fijo por tarjeta | Al cancelar una tarjeta |
+| `card_purchase_virtual` | `%` + fijo sobre el monto USD de la compra | Por cada compra con tarjeta virtual (estimado en la autorización, definitivo al liquidar; las reversas lo devuelven proporcional) |
+| `card_purchase_physical` | `%` + fijo sobre el monto USD de la compra | Por cada compra con tarjeta física (mismo ciclo que la virtual) |
 
 Para los servicios con `%`, la fórmula es
 `fee = ceil(monto × percent / 100) + fixed_amount` (redondeo hacia arriba al

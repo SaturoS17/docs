@@ -420,6 +420,10 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
   入账，并收到 `payin_credited` —— 与其他所有模式相同。
 - 使用相同 `idempotency_key` 重试会返回同一个 payin 和同一个
   `payment_url`；绝不会开启第二个支付会话。
+- 如果付款人已在您这里保存过卡片，页面会主动提供：付款人输入邮箱
+  （第一个字段），用验证码完成验证后即可选择已保存的卡片支付，无需
+  重新输入卡号 —— 勾选"记住此设备"后 30 天内无需再次验证。详见
+  [已保存卡片](/zh/guides/stored-cards-subscriptions#付款人在支付页面上发现自己的卡片)。
 - 同样支持 USD（`currency: "USD"`）。
 
 </Tab>
@@ -578,6 +582,9 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
 - `save_card: true` 配合 `payer_reference` 会在获得付款人同意后保存卡片
   以便后续收款（参见
   [已保存卡片与订阅](/zh/guides/stored-cards-subscriptions)）。
+- 如果付款人已有已保存的卡片，页面会在其用验证码验证邮箱后提供这些
+  卡片（勾选"记住此设备"后每个设备只需验证一次，30 天有效）—— 付款人
+  通过 3-D Secure 完成支付，无需重新输入卡片。
 
 <Note>
 国际银行卡通道按账户开通。请查询 `GET /v1/payins/methods` —— 它是您账户

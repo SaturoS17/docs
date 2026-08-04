@@ -77,9 +77,13 @@ payer only confirms with their bank. The **billing details** the payer
 entered when saving the card are also kept on file: the page applies them
 automatically and shows only a masked summary (name, partial email, city)
 with a "use different details" link in case they want to change them —
-nothing is retyped. On the public checkout page, paying with a saved card
-additionally requires entering the **same cardholder email** it was saved
-with (a mismatch responds `404`).
+nothing is retyped. This server-to-server path needs no extra verification:
+you already know your customer.
+
+Don't know which card they have saved (or whether they have one)? Don't
+pass `stored_card_id`: the payment page lets the payer discover their cards
+by verifying their email with a code — see
+[the payer discovers their cards](#the-payer-discovers-their-cards-on-the-payment-page).
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/payins \
@@ -144,6 +148,49 @@ definition of the mandate: the chargeback risk is yours. Charge only what
 your customer explicitly agreed to — the platform persists the seed's
 consent evidence (checkbox, IP and timestamp) for disputes.
 </Warning>
+
+## The payer discovers their cards on the payment page
+
+Every card payment page — the `payment_url` of a `card` payin and the card
+option of the universal checkout — asks for the **payer's email as the
+first field**. If that email has saved cards with you, the page sends a
+**verification code** (branded with your organization's identity) and only
+once they enter it correctly does it reveal their cards: brand, last 4
+digits and expiry, never the full number. Picking one pays with 3-D Secure
+without re-typing it; they can also choose "use another card" and pay with
+a new one.
+
+<Steps>
+<Step title="The payer types their email">
+
+If you already sent it in `customer.email` (or a `payer_reference` holding
+an email), the page shows it pre-filled. If the email has no saved cards,
+the new-card form carries on — nothing is revealed.
+
+</Step>
+<Step title="They verify it with the code (once per device)">
+
+When cards are found, the page emails a code and asks for it. The
+**"Remember this device"** checkbox (checked by default) trusts the device
+for **30 days**: later payments with that email in that browser show the
+cards without asking for a code.
+
+</Step>
+<Step title="They pick the card and pay">
+
+With the email verified, the payer sees their masked cards, picks one and
+only completes 3-D Secure. The **verified** email becomes the payer
+identity of the charge — it wins over any email typed into the form.
+
+</Step>
+</Steps>
+
+<Note>
+Trust is per device and lasts 30 days; each payer can have up to 10
+remembered devices (the oldest is forgotten past the cap). If a payer loses
+a device, support can revoke their remembered devices and they will get a
+code again on their next payment.
+</Note>
 
 ## Subscriptions (scheduled recurring charges)
 
@@ -263,5 +310,16 @@ charges until you `resume`.
 <Accordion title="When is the first charge collected?">
 Synchronously at creation, unless you pass a future `start_at` (trial):
 then the first charge waits for that date.
+</Accordion>
+<Accordion title="Why does the payment page ask for a code sent to the payer's email?">
+To show their saved cards without letting anyone who knows their email see
+them: the list is only revealed after the email is verified with the code
+(or on an already remembered device). If the email has no cards, the page
+carries straight on to the new-card form.
+</Accordion>
+<Accordion title="Must the payer verify their email on every payment?">
+No: with "Remember this device" (checked by default) the browser stays
+trusted for 30 days and later payments with that email show the cards
+without a code. After that — or on another device — they verify again.
 </Accordion>
 </AccordionGroup>

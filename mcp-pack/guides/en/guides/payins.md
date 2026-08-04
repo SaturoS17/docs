@@ -427,6 +427,11 @@ Share the `payment_url` (link, redirect or WebView). Flow details:
   every other mode.
 - A retry with the same `idempotency_key` returns the same payin and the
   same `payment_url`; it never opens a second payment session.
+- If the payer already saved cards with you, the page offers them on its
+  own: they type their email (first field), verify it with a code and pay
+  with one of them without re-typing it — with "Remember this device" they
+  skip the code for 30 days. Details in
+  [stored cards](https://docs.cbpayapp.com/en/guides/stored-cards-subscriptions#the-payer-discovers-their-cards-on-the-payment-page).
 - It also works in USD (`currency: "USD"`).
 
 #### Paraguay
@@ -586,6 +591,10 @@ corridor:
 - `save_card: true` plus `payer_reference` store the card with the payer's
   consent for later charges (see
   [stored cards and subscriptions](https://docs.cbpayapp.com/en/guides/stored-cards-subscriptions)).
+- If the payer already has saved cards, the page offers them after they
+  verify their email with a code (once per device when they check
+  "Remember this device", valid for 30 days) — they pay with 3-D Secure
+  without re-typing the card.
 
 > **Note**
 The international card corridor is enabled per account. Check

@@ -7,6 +7,54 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="August 4, 2026" description="v2.29 · 2 releases">
+
+### v2.29
+
+**Added**
+
+- **Per-purchase card fees**: card transactions can now carry a
+  transactional fee (percent + fixed) configured per account through two
+  new services — `card_purchase_virtual` and `card_purchase_physical`.
+  The fee is **estimated at authorization** (included in the balance
+  hold), **recalculated at settlement** with the configuration in force
+  at that moment, and **refunded pro-rata** on partial or total
+  reversals and adjustments. Card transactions now expose `fee_asset`,
+  `fee_amount` and `fee_refunded_amount` (omitted when no fee is
+  configured — accounts without configuration see no change), the
+  purchase receipt shows the fee line, and the ledger records the
+  movements as `card_fee` / `card_fee_refund`. Details in
+  [cards](/en/guides/cards#per-purchase-fee-lifecycle).
+
+
+
+### v2.28
+
+**Added**
+
+- **Saved cards with payer verification on the payment page**: every card
+  payment page (the `payment_url` of a `card` payin and the card option of
+  the universal checkout) now asks for the **payer's email as the first
+  field** and, when that email has saved cards with you, emails a
+  **verification code** before showing them — the list is never revealed
+  without verification. With **"Remember this device"** (checked by
+  default) the payer skips the code for **30 days** on that browser.
+  Picking a card pays with 3-D Secure without re-typing it. Details in
+  [stored cards](/en/guides/stored-cards-subscriptions#the-payer-discovers-their-cards-on-the-payment-page).
+
+**Changed**
+
+- **The universal checkout no longer asks for the payer's email**: the card
+  option materializes and redirects straight to the payment page, where the
+  saved-cards discovery now lives. The public endpoint
+  `GET /pay/{token}/saved-cards` was **removed** (it answers 404) — the
+  card list no longer leaves any surface without verification. **No
+  contract changes**: `POST /v1/payins` (`card` and `checkout`) is
+  unchanged, and server-to-server `stored_card_id` needs no code (you
+  already know your customer).
+
+</Update>
+
 <Update label="August 3, 2026" description="v2.27 · 2 releases">
 
 ### v2.27

@@ -57,6 +57,8 @@ depends on your account's rates for that country. Quoted = charged, always.
 | `card_creation_physical` | Fixed per card | When issuing a physical card |
 | `card_monthly` | Fixed monthly | Monthly fee per active card (with no balance the card is frozen — no debt) |
 | `card_cancellation` | Fixed per card | When cancelling a card |
+| `card_purchase_virtual` | `%` + fixed over the USD purchase amount | Per purchase with a virtual card (estimated at authorization, final at settlement; reversals refund it proportionally) |
+| `card_purchase_physical` | `%` + fixed over the USD purchase amount | Per purchase with a physical card (same cycle as virtual) |
 
 For `%`-based services the formula is
 `fee = ceil(amount × percent / 100) + fixed_amount` (rounded up to the
