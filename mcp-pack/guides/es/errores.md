@@ -17,6 +17,8 @@ Todos los errores comparten el mismo formato:
 - `error`: código estable en `snake_case` — úsalo en tu lógica.
 - `message`: explicación legible — puede cambiar, no lo parsees.
 
+> **Nota**
+**Mensajes de error saneados.** El `message` de un error nunca expone nombres de proveedores, detalles de infraestructura, URLs, bodies crudos del proveedor (JSON/HTML) ni configuración interna — ni en respuestas de la API, ni en webhooks, ni en los campos de estado persistidos. Los rechazos de negocio del procesador conservan su motivo accionable (por ejemplo, por qué se rechazó un documento o una cuenta); las fallas de infraestructura se reemplazan por el mensaje genérico fijo `"the payment provider could not process the request"` — reintenta esas operaciones con la misma `idempotency_key`.
 ## Códigos por categoría
 
 ### Autenticación y permisos

@@ -17,6 +17,8 @@ All errors share the same shape:
 - `error`: stable `snake_case` code — use it in your logic.
 - `message`: human-readable explanation — may change, don't parse it.
 
+> **Note**
+**Sanitized error messages.** An error `message` will never expose provider names, infrastructure details, URLs, raw upstream bodies (JSON/HTML), or internal configuration — not in API responses, webhooks, or stored status fields. Business rejections from the payment processor keep their actionable reason (for example, why a document or account was rejected); infrastructure failures are replaced by the fixed generic message `"the payment provider could not process the request"` — retry those operations with the same `idempotency_key`.
 ## Codes by category
 
 ### Authentication and permissions

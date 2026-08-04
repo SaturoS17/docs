@@ -7,7 +7,14 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-<Update label="2026年8月4日" description="v2.29 · 2 个版本">
+<Update label="2026年8月4日" description="v2.30 · 3 个版本">
+
+### v2.30
+
+**变更**
+
+- **全 API 错误消息已脱敏。** 错误的 `message` 绝不会暴露提供商名称、基础设施细节、URL、上游原始响应体（JSON/HTML）或内部配置——无论是 API 响应、webhook 还是持久化的状态字段都不会。处理方的业务性拒绝会保留可操作的失败原因（例如某份文件或账户为何被拒绝）；基础设施故障会被替换为固定的通用消息 `"the payment provider could not process the request"` —— 请使用相同的 `idempotency_key` 重试这些操作。无结构变化：仅消息内容发生变化。
+
 
 ### v2.29
 

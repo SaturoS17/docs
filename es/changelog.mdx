@@ -8,7 +8,14 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-<Update label="4 de agosto de 2026" description="v2.29 · 2 versiones">
+<Update label="4 de agosto de 2026" description="v2.30 · 3 versiones">
+
+### v2.30
+
+**Cambiado**
+
+- **Mensajes de error saneados en toda la API.** El `message` de un error nunca expone nombres de proveedores, detalles de infraestructura, URLs, bodies crudos del proveedor (JSON/HTML) ni configuración interna — ni en respuestas de la API, ni en webhooks, ni en los campos de estado persistidos. Los rechazos de negocio del procesador conservan su motivo accionable (por ejemplo, por qué se rechazó un documento o una cuenta); las fallas de infraestructura se reemplazan por el mensaje genérico fijo `"the payment provider could not process the request"` — reintenta esas operaciones con la misma `idempotency_key`. Sin cambios de shape: solo cambia el contenido de los mensajes.
+
 
 ### v2.29
 
