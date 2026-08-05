@@ -9,6 +9,32 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+## v2.32 · 1 versión - 5 de agosto de 2026
+
+### v2.32
+
+**Agregado**
+
+- **Decisiones KYC/KYB automáticas**: las submissions de verificación ahora
+  son decididas por un motor automático antes de llegar a un revisor
+  humano. Un expediente **100% limpio** (documentos verificados, prueba de
+  vida superada, sin coincidencias de sanciones ni PEP, geografía de bajo
+  riesgo) se **aprueba en minutos** sin cola manual. Las zonas grises
+  (coincidencias AML por homónimo, señales PEP, lectura parcial de
+  documentos, riesgo medio, países de alto riesgo) van siempre a un
+  **revisor humano**, y los expedientes claramente inválidos (sanciones
+  severas confirmadas, documentos falsos o vencidos) se **rechazan
+  automáticamente**. Las decisiones finales ahora incluyen
+  `decision_source` (`auto` o `admin`) en los webhooks
+  `kyc_verification_status_changed` y `kyb_verification_status_changed`
+  para que sepas cómo se decidió cada expediente. Detalle en
+  [KYC y KYB](https://docs.cbpayapp.com/es/guias/kyc).
+- **Nuevo valor mágico `HOLDREVIEW` en el entorno de pruebas**: una
+  submission KYC/KYB cuyo nombre del sujeto contiene `HOLDREVIEW` queda en
+  revisión humana en vez de ser decidida automáticamente, para que puedas
+  ejercitar la cola manual de punta a punta. Ver
+  [entorno de pruebas](https://docs.cbpayapp.com/es/entorno-y-pruebas).
+
 ## v2.31 · 4 versiones - 4 de agosto de 2026
 
 ### v2.31

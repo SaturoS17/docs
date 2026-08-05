@@ -88,6 +88,15 @@ Cuando compliance aprueba, tu `kyc_status` pasa a `approved`
 **automáticamente** y todos los servicios se desbloquean (recibirás el
 webhook `kyc_verification_status_changed` con `self_onboarding: true`).
 
+> **Nota**
+**Motor de decisión automática:** una solicitud completamente limpia
+(documentos leídos correctamente, prueba de vida superada, sin coincidencias
+de sanciones ni PEP, sin señales de riesgo) se aprueba **en segundos sin
+intervención humana**. Las solicitudes con zonas grises (coincidencias AML
+homónimas, PEP, banda de riesgo media, país de alto riesgo, un documento
+ilegible…) pasan a la cola de revisión humana del operador, y los casos
+severos se rechazan directamente. El campo `decision_source` del webhook de
+estado (`"auto"` / `"admin"`) te dice quién decidió.
 La aprobación además **rellena el perfil de tu cuenta con la identidad
 verificada**: `display_name` (persona = nombre + apellido; empresa = razón
 social), `tax_id` y `country` se toman de la verificación y desde ese

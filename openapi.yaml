@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.31'
+  version: '2.32'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -18061,7 +18061,8 @@ webhooks:
       summary: KYC verification status changed
       description: 'Fires on every KYC submission lifecycle change (submitted, in_review, changes_requested,
         more_info_required, escalated, approved, approved_partial, rejected). Your own onboarding arrives
-        with self_onboarding: true.'
+        with self_onboarding: true. decision_source tells whether the decision was made by the automatic
+        engine (auto) or by a human reviewer (admin); it is present on final decisions.'
       requestBody:
         content:
           application/json:
@@ -18074,6 +18075,7 @@ webhooks:
               status: approved
               risk_band: low
               decision: approved
+              decision_source: auto
       responses:
         '200':
           description: Return any 2xx to acknowledge.
@@ -18081,7 +18083,8 @@ webhooks:
     post:
       summary: KYB verification status changed
       description: Fires on every KYB submission lifecycle change, including AML/risk/report signals from
-        the review.
+        the review. decision_source tells whether the decision was made by the automatic engine (auto)
+        or by a human reviewer (admin); it is present on final decisions.
       requestBody:
         content:
           application/json:
@@ -18093,6 +18096,7 @@ webhooks:
               external_customer_id: cust_456
               status: approved
               risk_band: low
+              decision_source: auto
       responses:
         '200':
           description: Return any 2xx to acknowledge.

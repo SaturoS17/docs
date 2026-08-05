@@ -333,13 +333,14 @@
     },
     {
       "description": {
-        "en": "Fires on every KYB submission lifecycle change, including AML/risk/report signals from the review.",
-        "es": "Se emite en cada cambio del ciclo de una submission KYB, incluidas las señales AML/riesgo/reporte de la revisión.",
-        "zh": "在每次 KYB submission 生命周期变更时触发,包括审核中的 AML/风险/报告信号。"
+        "en": "Fires on every KYB submission lifecycle change, including AML/risk/report signals from the review. decision_source tells whether the decision was made by the automatic engine (auto) or by a human reviewer (admin); it is present on final decisions.",
+        "es": "Se emite en cada cambio del ciclo de una submission KYB, incluidas las señales AML/riesgo/reporte de la revisión. decision_source indica si la decisión la tomó el motor automático (auto) o un revisor humano (admin); está presente en las decisiones finales.",
+        "zh": "在每次 KYB submission 生命周期变更时触发,包括审核中的 AML/风险/报告信号。decision_source 表示该决定由自动引擎 (auto) 还是人工审核员 (admin) 作出;它出现在最终决定上。"
       },
       "event": "kyb_verification_status_changed",
       "payload_example": {
         "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "decision_source": "auto",
         "event": "approved",
         "external_customer_id": "cust_456",
         "kind": "kyb",
@@ -421,14 +422,15 @@
     },
     {
       "description": {
-        "en": "Fires on every KYC submission lifecycle change (submitted, in_review, changes_requested, more_info_required, escalated, approved, approved_partial, rejected). Your own onboarding arrives with self_onboarding: true.",
-        "es": "Se emite en cada cambio del ciclo de una submission KYC (submitted, in_review, changes_requested, more_info_required, escalated, approved, approved_partial, rejected). Tu propio onboarding llega con self_onboarding: true.",
-        "zh": "在每次 KYC submission 生命周期变更时触发(submitted、in_review、changes_requested、more_info_required、escalated、approved、approved_partial、rejected)。你自己的入驻会带 self_onboarding: true。"
+        "en": "Fires on every KYC submission lifecycle change (submitted, in_review, changes_requested, more_info_required, escalated, approved, approved_partial, rejected). Your own onboarding arrives with self_onboarding: true. decision_source tells whether the decision was made by the automatic engine (auto) or by a human reviewer (admin); it is present on final decisions.",
+        "es": "Se emite en cada cambio del ciclo de una submission KYC (submitted, in_review, changes_requested, more_info_required, escalated, approved, approved_partial, rejected). Tu propio onboarding llega con self_onboarding: true. decision_source indica si la decisión la tomó el motor automático (auto) o un revisor humano (admin); está presente en las decisiones finales.",
+        "zh": "在每次 KYC submission 生命周期变更时触发(submitted、in_review、changes_requested、more_info_required、escalated、approved、approved_partial、rejected)。你自己的入驻会带 self_onboarding: true。decision_source 表示该决定由自动引擎 (auto) 还是人工审核员 (admin) 作出;它出现在最终决定上。"
       },
       "event": "kyc_verification_status_changed",
       "payload_example": {
         "account_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
         "decision": "approved",
+        "decision_source": "auto",
         "event": "approved",
         "external_customer_id": "cust_789",
         "kind": "kyc",

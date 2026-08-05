@@ -90,6 +90,16 @@ When compliance approves, your `kyc_status` becomes `approved`
 **automatically** and every service unlocks (you receive the
 `kyc_verification_status_changed` webhook with `self_onboarding: true`).
 
+<Note>
+**Automatic decision engine:** a fully clean application (documents read
+correctly, liveness passed, no sanctions or PEP matches, no risk signals) is
+approved **in seconds without human intervention**. Applications with grey
+areas (homonym AML matches, PEP, medium risk band, high-risk country, an
+unreadable document…) go to the operator's human review queue, and severe
+cases are rejected directly. The `decision_source` field of the status webhook
+(`"auto"` / `"admin"`) tells you who decided.
+</Note>
+
 The approval also **backfills your account profile with the verified
 identity**: `display_name` (person = first + last name; company = legal
 name), `tax_id` and `country` are taken from the verification and from then

@@ -8,6 +8,23 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+## v2.32 · 1 个版本 - 2026年8月5日
+
+### v2.32
+
+**新增**
+
+- **KYC/KYB 自动决策**:验证 submission 现在先由自动引擎决定,再进入人工审核。**100% 干净**
+  的档案(文件已验证、活体检测通过、无制裁或 PEP 命中、低风险地区)会在**几分钟内获批**,
+  无需人工排队。灰色地带(同名的 AML 匹配、PEP 信号、文件部分读取、中等风险、高风险国家)
+  一律交给**人工审核员**,而明显无效的档案(已确认的严重制裁、伪造或过期文件)会被**自动
+  拒绝**。最终决定现在在 `kyc_verification_status_changed` 和 `kyb_verification_status_changed`
+  webhook 中携带 `decision_source`(`auto` 或 `admin`),让你知道每份档案是如何决定的。
+  详见 [KYC 和 KYB](https://docs.cbpayapp.com/zh/guides/kyc)。
+- **测试环境新增 `HOLDREVIEW` 魔法值**:主体姓名包含 `HOLDREVIEW` 的 KYC/KYB submission 会保留
+  在人工审核中,而不会被自动决定,方便你端到端地演练人工队列。参见
+  [测试环境](https://docs.cbpayapp.com/zh/environment-testing)。
+
 ## v2.31 · 4 个版本 - 2026年8月4日
 
 ### v2.31

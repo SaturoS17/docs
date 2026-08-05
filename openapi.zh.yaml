@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.31'
+  version: '2.32'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -17567,7 +17567,7 @@ webhooks:
     post:
       summary: KYC 验证状态已变更
       description: '在每次 KYC submission 生命周期变更时触发(submitted、in_review、changes_requested、more_info_required、escalated、approved、approved_partial、rejected)。你自己的入驻会带
-        self_onboarding: true。'
+        self_onboarding: true。decision_source 表示该决定由自动引擎 (auto) 还是人工审核员 (admin) 作出;它出现在最终决定上。'
       requestBody:
         content:
           application/json:
@@ -17580,13 +17580,15 @@ webhooks:
               status: approved
               risk_band: low
               decision: approved
+              decision_source: auto
       responses:
         '200':
           description: 返回任意 2xx 以确认。
   kyb_verification_status_changed:
     post:
       summary: KYB 验证状态已变更
-      description: 在每次 KYB submission 生命周期变更时触发,包括审核中的 AML/风险/报告信号。
+      description: 在每次 KYB submission 生命周期变更时触发,包括审核中的 AML/风险/报告信号。decision_source 表示该决定由自动引擎
+        (auto) 还是人工审核员 (admin) 作出;它出现在最终决定上。
       requestBody:
         content:
           application/json:
@@ -17598,6 +17600,7 @@ webhooks:
               external_customer_id: cust_456
               status: approved
               risk_band: low
+              decision_source: auto
       responses:
         '200':
           description: 返回任意 2xx 以确认。

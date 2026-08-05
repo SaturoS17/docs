@@ -338,9 +338,12 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
   "external_customer_id": "cust_789",
   "status": "approved",
   "risk_band": "low",
-  "decision": "approved"
+  "decision": "approved",
+  "decision_source": "auto"
 }
 ```
+
+当事件携带最终判定（`approved`、`rejected` 或 `changes_requested`）时，载荷会包含 `decision_source`：`"auto"` 表示由自动判定引擎决定（完全干净的申请会在数秒内无需人工干预即获批准），`"admin"` 表示由合规专员在审核控制台人工判定。对于没有引擎数据的旧提交件，该字段会被省略。
 
 ```json kyb_link_completed
 {

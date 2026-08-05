@@ -8,6 +8,29 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+## v2.32 · 1 release - August 5, 2026
+
+### v2.32
+
+**Added**
+
+- **Automatic KYC/KYB decisions**: verification submissions are now decided
+  by an automatic engine before reaching a human reviewer. A **100% clean**
+  file (documents verified, liveness passed, no sanctions or PEP hits,
+  low-risk geography) is **approved in minutes** with no manual queue.
+  Grey areas (homonym AML matches, PEP signals, partial document reads,
+  medium risk, high-risk countries) always go to a **human reviewer**,
+  and clearly invalid files (confirmed severe sanctions, false or expired
+  documents) are **automatically rejected**. Final decisions now carry
+  `decision_source` (`auto` or `admin`) in the
+  `kyc_verification_status_changed` and `kyb_verification_status_changed`
+  webhooks so you can tell how each file was decided. Details in
+  [KYC and KYB](https://docs.cbpayapp.com/en/guides/kyc).
+- **New `HOLDREVIEW` magic value in the testing environment**: a KYC/KYB
+  submission whose subject name contains `HOLDREVIEW` stays in human
+  review instead of being auto-decided, so you can exercise the manual
+  queue end to end. See [testing environment](https://docs.cbpayapp.com/en/environment-testing).
+
 ## v2.31 · 4 releases - August 4, 2026
 
 ### v2.31

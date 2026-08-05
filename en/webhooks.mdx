@@ -345,9 +345,17 @@ with its `third_party_id` — the same id as `GET /v1/banking/third-parties/{id}
   "external_customer_id": "cust_789",
   "status": "approved",
   "risk_band": "low",
-  "decision": "approved"
+  "decision": "approved",
+  "decision_source": "auto"
 }
 ```
+
+When the event carries a final decision (`approved`, `rejected` or
+`changes_requested`), the payload includes `decision_source`: `"auto"` if the
+automatic decision engine resolved it (clean applications are approved in
+seconds without human intervention), `"admin"` if a compliance officer decided
+it from the review console. The field is omitted for older submissions without
+engine data.
 
 ```json kyb_link_completed
 {

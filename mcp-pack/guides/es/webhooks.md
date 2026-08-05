@@ -343,9 +343,17 @@ propio (`self`) de un tercero que registraste (`third_party`, con su
   "external_customer_id": "cust_789",
   "status": "approved",
   "risk_band": "low",
-  "decision": "approved"
+  "decision": "approved",
+  "decision_source": "auto"
 }
 ```
+
+Cuando el evento lleva una decisión final (`approved`, `rejected` o
+`changes_requested`), el payload incluye `decision_source`: `"auto"` si la
+resolvió el motor de decisión automática (los expedientes limpios se aprueban
+en segundos sin intervención humana), `"admin"` si la decidió un oficial de
+cumplimiento desde la consola de revisión. El campo se omite en submissions
+antiguas sin datos del motor.
 
 ```json kyb_link_completed
 {
