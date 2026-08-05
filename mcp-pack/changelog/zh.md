@@ -8,7 +8,18 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-## v2.30 · 3 个版本 - 2026年8月4日
+## v2.31 · 4 个版本 - 2026年8月4日
+
+### v2.31
+
+**新增**
+
+- **银行操作增强字段**：`GET /v1/banking/operations` 和
+  `GET /v1/banking/operations/{id}` 现在在银行报告这些字段时暴露可选的
+  `direction`（`in` / `out`）、净额 `amount`、`currency`、`counterparty`
+  和 `reference`——包括在操作列表中自动发现的入账存款和银行费用。
+  `banking_operation_status_changed` Webhook 按设计保持不变
+  （轻量 + 查询详情）。详见[银行业务](https://docs.cbpayapp.com/zh/guides/banking)。
 
 ### v2.30
 

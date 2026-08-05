@@ -9,7 +9,20 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-## v2.30 · 3 versiones - 4 de agosto de 2026
+## v2.31 · 4 versiones - 4 de agosto de 2026
+
+### v2.31
+
+**Agregado**
+
+- **Campos enriquecidos en operaciones bancarias**: `GET /v1/banking/operations`
+  y `GET /v1/banking/operations/{id}` ahora exponen los campos opcionales
+  `direction` (`in` / `out`), `amount` neto, `currency`, `counterparty` y
+  `reference` cuando el banco los reporta — incluidos los depósitos
+  entrantes y las comisiones descubiertas automáticamente en el listado de
+  operaciones. El webhook `banking_operation_status_changed` no cambia por
+  diseño (liviano + consulta de detalle). Detalles en
+  [banking](https://docs.cbpayapp.com/es/guias/banking).
 
 ### v2.30
 

@@ -448,6 +448,17 @@ curl "https://api.qbank.cl/platform/v1/banking/operations?from=2026-07-01&to=202
 }
 ```
 
+> **Note**
+Every banking operation — including inbound deposits and bank fees
+discovered automatically from the bank — exposes its `direction` (`in` /
+`out`), net `amount`, `currency`, `counterparty` and `reference` whenever
+the bank reports them. These fields are optional and appear in
+`GET /v1/banking/operations` and `GET /v1/banking/operations/{id}`.
+The `banking_operation_status_changed` webhook stays lightweight by design:
+it carries the identifiers and the new status only, never the enriched
+fields. When it fires, fetch the operation detail to read the direction,
+amount, counterparty and reference. See [webhooks](https://docs.cbpayapp.com/en/webhooks).
+
 ## Operation statuses
 
 | Status | Meaning |

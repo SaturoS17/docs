@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.30'
+  version: '2.31'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -13207,6 +13207,12 @@ paths:
       - Banking
       operationId: listBankingOperations
       summary: List my bank payments
+      description: >-
+        History of your bank operations, including inbound deposits and charges
+        discovered automatically. Items carry the enriched neutral view: the
+        optional fields direction, amount (net decimal string — credited amount
+        for `in`, net charge for `out`), currency, counterparty and reference
+        appear only when the banking provider reports them.
       parameters:
       - name: type
         in: query
@@ -13234,7 +13240,7 @@ paths:
           type: integer
       responses:
         '200':
-          description: Operation history.
+          description: Operation history (enriched neutral view).
           content:
             application/json:
               schema:
@@ -13245,10 +13251,23 @@ paths:
                 - id: 7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c
                   status: completed
                   type: withdraw
+                  direction: out
+                  amount: '250.00'
+                  currency: USD
+                  counterparty: ACME SUPPLIES GMBH
+                  reference: SEPA-20260804-9911
+                - id: 4c6d8e0f-2a4b-6c8d-0e2f-4a6c8e0b2d4f
+                  status: completed
+                  type: wire_transfer
+                  direction: in
+                  amount: '120.00'
+                  currency: USD
+                  counterparty: ACME SUPPLIES LLC
+                  reference: FEDWIRE-20260804-77881
                 meta:
                   page: 1
                   page_size: 50
-                  retrieved: 1
+                  retrieved: 2
         '401':
           $ref: '#/components/responses/Unauthorized'
         '409':
@@ -13266,6 +13285,10 @@ paths:
       - Banking
       operationId: getBankingOperation
       summary: Get a bank payment
+      description: >-
+        Operation with live status and the enriched neutral view: the optional
+        fields direction, amount (net decimal string), currency, counterparty
+        and reference appear only when the banking provider reports them.
       parameters:
       - name: operationID
         in: path
@@ -13274,7 +13297,7 @@ paths:
           type: string
       responses:
         '200':
-          description: Operation with live status.
+          description: Operation with live status (enriched neutral view).
           content:
             application/json:
               schema:
@@ -13288,6 +13311,11 @@ paths:
                 data:
                   type: WITHDRAW
                   paymentType: SEPA_CT
+                direction: out
+                amount: '250.00'
+                currency: USD
+                counterparty: ACME SUPPLIES GMBH
+                reference: SEPA-20260804-9911
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':

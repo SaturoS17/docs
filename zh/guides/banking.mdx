@@ -401,6 +401,19 @@ curl "https://api.qbank.cl/platform/v1/banking/operations?from=2026-07-01&to=202
 }
 ```
 
+<Note>
+每笔银行操作——包括自动从银行发现的入账存款和银行费用——在银行报告这些字段时都会暴露其
+`direction`（`in` / `out`）、净额 `amount`、`currency`、`counterparty` 和
+`reference`。这些字段为可选，出现在
+`GET /v1/banking/operations` 和
+`GET /v1/banking/operations/{id}` 中。
+</Note>
+
+`banking_operation_status_changed` Webhook 在设计上保持轻量：
+它只携带标识符和新状态，不包含增强字段。收到该事件后，
+请查询操作详情以读取方向、金额、对手方和参考号。参见
+[webhooks](/zh/webhooks)。
+
 ## 操作状态
 
 | 状态 | 含义 |

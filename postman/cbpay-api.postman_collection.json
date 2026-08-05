@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — convertible on demand with swaps.\nPayouts and service fees can be paid from any of the four balances\n(`PUT /v1/settlement` or per-payout `settlement_asset`), and payins\ncan auto-convert to the asset of your choice (`default_payin_asset`).\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-08-04 04:51 UTC",
-    "_content_sha256": "e82281bc82e2c92eb432f633aa4f527bb6bd0bcc7e44ab2b664729604ce8c6f2"
+    "_generated_at": "2026-08-05 07:05 UTC",
+    "_content_sha256": "30fc6e4097ad1dcd7d01cadbad35f86b8f9766bb7aa1dd2cbcd9b4e02706c68a"
   },
   "auth": {
     "type": "bearer",
@@ -15952,11 +15952,11 @@
                 }
               ]
             },
-            "description": ""
+            "description": "History of your bank operations, including inbound deposits and charges discovered automatically. Items carry the enriched neutral view: the optional fields direction, amount (net decimal string — credited amount for `in`, net charge for `out`), currency, counterparty and reference appear only when the banking provider reports them."
           },
           "response": [
             {
-              "name": "200 Operation history.",
+              "name": "200 Operation history (enriched neutral view).",
               "originalRequest": {
                 "method": "GET",
                 "url": {
@@ -16009,7 +16009,7 @@
                   ]
                 }
               },
-              "status": "Operation history.",
+              "status": "Operation history (enriched neutral view).",
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [
@@ -16018,7 +16018,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"items\": [\n    {\n      \"id\": \"7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c\",\n      \"status\": \"completed\",\n      \"type\": \"withdraw\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"page_size\": 50,\n    \"retrieved\": 1\n  }\n}"
+              "body": "{\n  \"items\": [\n    {\n      \"id\": \"7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c\",\n      \"status\": \"completed\",\n      \"type\": \"withdraw\",\n      \"direction\": \"out\",\n      \"amount\": \"250.00\",\n      \"currency\": \"USD\",\n      \"counterparty\": \"ACME SUPPLIES GMBH\",\n      \"reference\": \"SEPA-20260804-9911\"\n    },\n    {\n      \"id\": \"4c6d8e0f-2a4b-6c8d-0e2f-4a6c8e0b2d4f\",\n      \"status\": \"completed\",\n      \"type\": \"wire_transfer\",\n      \"direction\": \"in\",\n      \"amount\": \"120.00\",\n      \"currency\": \"USD\",\n      \"counterparty\": \"ACME SUPPLIES LLC\",\n      \"reference\": \"FEDWIRE-20260804-77881\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"page_size\": 50,\n    \"retrieved\": 2\n  }\n}"
             }
           ]
         },
@@ -16179,11 +16179,11 @@
                 }
               ]
             },
-            "description": ""
+            "description": "Operation with live status and the enriched neutral view: the optional fields direction, amount (net decimal string), currency, counterparty and reference appear only when the banking provider reports them."
           },
           "response": [
             {
-              "name": "200 Operation with live status.",
+              "name": "200 Operation with live status (enriched neutral view).",
               "originalRequest": {
                 "method": "GET",
                 "url": {
@@ -16205,7 +16205,7 @@
                   ]
                 }
               },
-              "status": "Operation with live status.",
+              "status": "Operation with live status (enriched neutral view).",
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [
@@ -16214,7 +16214,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"operation_id\": \"7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c\",\n  \"provider_id\": \"BNK-OP-90213\",\n  \"status\": \"completed\",\n  \"idempotency_key\": \"platform:9b1deb4d:acme-payment-0071\",\n  \"data\": {\n    \"type\": \"WITHDRAW\",\n    \"paymentType\": \"SEPA_CT\"\n  }\n}"
+              "body": "{\n  \"operation_id\": \"7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c\",\n  \"provider_id\": \"BNK-OP-90213\",\n  \"status\": \"completed\",\n  \"idempotency_key\": \"platform:9b1deb4d:acme-payment-0071\",\n  \"data\": {\n    \"type\": \"WITHDRAW\",\n    \"paymentType\": \"SEPA_CT\"\n  },\n  \"direction\": \"out\",\n  \"amount\": \"250.00\",\n  \"currency\": \"USD\",\n  \"counterparty\": \"ACME SUPPLIES GMBH\",\n  \"reference\": \"SEPA-20260804-9911\"\n}"
             }
           ]
         },

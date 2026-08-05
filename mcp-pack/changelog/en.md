@@ -8,7 +8,20 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.30 · 3 releases - August 4, 2026
+## v2.31 · 4 releases - August 4, 2026
+
+### v2.31
+
+**Added**
+
+- **Enriched banking operation fields**: `GET /v1/banking/operations` and
+  `GET /v1/banking/operations/{id}` now expose optional `direction`
+  (`in` / `out`), net `amount`, `currency`, `counterparty` and `reference`
+  fields whenever the bank reports them — including inbound deposits and
+  bank fees discovered automatically in the operations list. The
+  `banking_operation_status_changed` webhook is unchanged by design
+  (lightweight + fetch detail). Details in
+  [banking](https://docs.cbpayapp.com/en/guides/banking).
 
 ### v2.30
 

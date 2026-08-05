@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.30'
+  version: '2.31'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -12849,6 +12849,10 @@ paths:
       - 银行服务
       operationId: listBankingOperations
       summary: 列出我的银行付款
+      description: >-
+        您的银行操作历史，包括自动发现的入账存款和收费。列表项携带增强的中立视图：可选字段
+        direction、amount（净额十进制字符串——`in` 为入账金额，`out` 为净收费）、currency、counterparty
+        和 reference 仅在银行提供商报告时出现。
       parameters:
       - name: type
         in: query
@@ -12876,7 +12880,7 @@ paths:
           type: integer
       responses:
         '200':
-          description: 操作历史。
+          description: 操作历史(增强的中立视图)。
           content:
             application/json:
               schema:
@@ -12887,10 +12891,23 @@ paths:
                 - id: 7e8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c
                   status: completed
                   type: withdraw
+                  direction: out
+                  amount: '250.00'
+                  currency: USD
+                  counterparty: ACME SUPPLIES GMBH
+                  reference: SEPA-20260804-9911
+                - id: 4c6d8e0f-2a4b-6c8d-0e2f-4a6c8e0b2d4f
+                  status: completed
+                  type: wire_transfer
+                  direction: in
+                  amount: '120.00'
+                  currency: USD
+                  counterparty: ACME SUPPLIES LLC
+                  reference: FEDWIRE-20260804-77881
                 meta:
                   page: 1
                   page_size: 50
-                  retrieved: 1
+                  retrieved: 2
         '401':
           $ref: '#/components/responses/Unauthorized'
         '409':
@@ -12908,6 +12925,9 @@ paths:
       - 银行服务
       operationId: getBankingOperation
       summary: 获取银行付款
+      description: >-
+        带实时状态的操作及增强的中立视图：可选字段 direction、amount（净额十进制字符串）、currency、counterparty
+        和 reference 仅在银行提供商报告时出现。
       parameters:
       - name: operationID
         in: path
@@ -12916,7 +12936,7 @@ paths:
           type: string
       responses:
         '200':
-          description: 带实时状态的操作。
+          description: 带实时状态的操作(增强的中立视图)。
           content:
             application/json:
               schema:
@@ -12930,6 +12950,11 @@ paths:
                 data:
                   type: WITHDRAW
                   paymentType: SEPA_CT
+                direction: out
+                amount: '250.00'
+                currency: USD
+                counterparty: ACME SUPPLIES GMBH
+                reference: SEPA-20260804-9911
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':

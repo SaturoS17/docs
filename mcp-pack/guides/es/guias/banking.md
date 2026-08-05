@@ -452,6 +452,19 @@ curl "https://api.qbank.cl/platform/v1/banking/operations?from=2026-07-01&to=202
 }
 ```
 
+> **Nota**
+Toda operación bancaria — incluidos los depósitos entrantes y las comisiones
+bancarias descubiertas automáticamente desde el banco — expone su
+`direction` (`in` / `out`), `amount` neto, `currency`, `counterparty` y
+`reference` cuando el banco los reporta. Estos campos son opcionales y
+aparecen en `GET /v1/banking/operations` y
+`GET /v1/banking/operations/{id}`.
+El webhook `banking_operation_status_changed` se mantiene liviano por
+diseño: lleva los identificadores y el nuevo estado, nunca los campos
+enriquecidos. Cuando llegue, consulta el detalle de la operación para leer
+la dirección, el monto, la contraparte y la referencia. Ver
+[webhooks](https://docs.cbpayapp.com/es/webhooks).
+
 ## Estados de operación
 
 | Estado | Significado |
