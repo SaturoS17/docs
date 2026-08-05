@@ -63,6 +63,7 @@ que un tercero esté disponible. Las operaciones se resuelven de forma
 | Códigos de login / 2FA | `000000` | Válido en todos los canales (SMS, WhatsApp, email) — no se envía ningún mensaje real |
 | Verificación de identidad (KYC/KYB) | Nombre o external id que contenga `REJECT` | La verificación termina `rejected` |
 | Verificación de identidad (KYC/KYB) | Nombre o external id que contenga `HOLDREVIEW` | La banda de riesgo devuelve `medium` — zona gris que el motor de auto-decisión deriva a la cola de revisión humana en vez de auto-aprobar |
+| Verificación de identidad (KYC/KYB) | Nombre o external id que contenga `MANUALREVIEW` | Todas las señales quedan limpias, pero la verificación jamás se resuelve sola — queda `pending_review` hasta que el motor de auto-decisión (o un humano) decida. Úsalo para ejercitar los caminos automáticos de aprobación/rechazo del motor |
 | Verificación de identidad (KYC/KYB) | Cualquier otro | Se auto-aprueba tras el delay (los documentos siempre pasan el OCR) |
 | Screening AML | Nombre que contenga `SANCTION` | Screening con coincidencias, riesgo `prohibited` |
 | Screening AML | Nombre que contenga `PEP` | Screening con coincidencias, riesgo `high` |
@@ -161,7 +162,7 @@ siempre la firma HMAC — receta completa en
 | Payin | Crea un cobro QR o página de pago; se paga solo tras el delay y acredita tu saldo |
 | Transferencia | Crea una segunda cuenta de test y transfiere entre ambas (gratis) |
 | Crypto | Acredita un depósito de test desde el dashboard y retira a cualquier dirección |
-| Identidad (KYC/KYB) | Tu propia cuenta ya nace aprobada. Para probar el flujo de verificación, corre verificaciones KYC/KYB de terceros — se auto-aprueban en segundos (`REJECT` en el nombre fuerza el rechazo, `HOLDREVIEW` la manda a la cola de revisión humana) |
+| Identidad (KYC/KYB) | Tu propia cuenta ya nace aprobada. Para probar el flujo de verificación, corre verificaciones KYC/KYB de terceros — se auto-aprueban en segundos (`REJECT` en el nombre fuerza el rechazo, `HOLDREVIEW` la manda a la cola de revisión humana, `MANUALREVIEW` la deja sin decidir para que actúe el motor de auto-decisión) |
 | AML | Screenea a `John SANCTION` y `Maria PEP` para ejercitar tu manejo de coincidencias |
 | Tarjetas | Emite una tarjeta y simula compras desde el dashboard |
 | 2FA | Actívalo y usa el código `000000` en todas partes |

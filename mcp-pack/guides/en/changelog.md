@@ -29,7 +29,10 @@ Breaking changes are announced in advance and flagged as **Breaking**.
 - **New `HOLDREVIEW` magic value in the testing environment**: a KYC/KYB
   submission whose subject name contains `HOLDREVIEW` stays in human
   review instead of being auto-decided, so you can exercise the manual
-  queue end to end. See [testing environment](https://docs.cbpayapp.com/en/environment-testing).
+  queue end to end. The companion magic `MANUALREVIEW` keeps every signal
+  clean but never settles the submission on its own, so the automatic
+  approve/reject paths of the decision engine can be tested
+  deterministically. See [testing environment](https://docs.cbpayapp.com/en/environment-testing).
 
 ## v2.31 · 4 releases - August 4, 2026
 

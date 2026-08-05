@@ -100,6 +100,11 @@
       "value": "Name or external id containing `HOLDREVIEW`"
     },
     {
+      "outcome": "Every signal stays clean, but the verification never settles on its own — it stays `pending_review` until the auto-decision engine (or a human) decides. Use it to exercise the engine's automatic approve/reject paths",
+      "product": "Identity verification (KYC/KYB)",
+      "value": "Name or external id containing `MANUALREVIEW`"
+    },
+    {
       "outcome": "Auto-approves after the settle delay (documents always pass OCR)",
       "product": "Identity verification (KYC/KYB)",
       "value": "Anything else"

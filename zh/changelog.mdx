@@ -21,7 +21,9 @@ CBPay API 及本文档的每一次变更，最新的排在最前。
   webhook 中携带 `decision_source`(`auto` 或 `admin`),让你知道每份档案是如何决定的。
   详见 [KYC 和 KYB](/zh/guides/kyc)。
 - **测试环境新增 `HOLDREVIEW` 魔法值**:主体姓名包含 `HOLDREVIEW` 的 KYC/KYB submission 会保留
-  在人工审核中,而不会被自动决定,方便你端到端地演练人工队列。参见
+  在人工审核中,而不会被自动决定,方便你端到端地演练人工队列。配套的
+  `MANUALREVIEW` 魔法值让所有信号保持干净,但绝不会自行了结 submission,
+  从而确定性地测试判定引擎的自动通过/拒绝路径。参见
   [测试环境](/zh/environment-testing)。
 
 </Update>

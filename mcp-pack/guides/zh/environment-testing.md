@@ -59,6 +59,7 @@ flowchart LR
 | 登录 / 2FA 验证码 | `000000` | 在所有渠道（SMS、WhatsApp、邮件）均有效 —— 不会真正发送任何消息 |
 | 身份验证（KYC/KYB） | 姓名或 external id 包含 `REJECT` | 验证以 `rejected` 结束 |
 | 身份验证（KYC/KYB） | 姓名或 external id 包含 `HOLDREVIEW` | 风险等级返回 `medium` —— 灰色地带，自动判定引擎将其转入人工审核队列而非自动通过 |
+| 身份验证（KYC/KYB） | 姓名或 external id 包含 `MANUALREVIEW` | 所有信号保持干净，但验证绝不会自行了结——保持 `pending_review`，直到自动判定引擎（或人工）做出决定。用于演练引擎的自动通过/拒绝路径 |
 | 身份验证（KYC/KYB） | 其他任意值 | 延迟后自动通过（文件始终通过 OCR） |
 | AML 筛查 | 姓名包含 `SANCTION` | 命中筛查，风险 `prohibited` |
 | AML 筛查 | 姓名包含 `PEP` | 命中筛查，风险 `high` |
@@ -151,7 +152,7 @@ curl -X POST https://cryptobank.qbank.cl/platform/v1/webhooks/subscriptions \
 | 收款 | 创建 QR 收款或支付页面；延迟后自动支付并入账余额 |
 | 转账 | 创建第二个测试账户并在两者之间转账（免费） |
 | 加密货币 | 从控制台入账测试充值，然后提现到任意地址 |
-| 身份验证（KYC/KYB） | 您自己的账户生而已通过。要演练验证流程本身，请对第三方运行 KYC/KYB 验证 —— 几秒内自动通过（姓名包含 `REJECT` 可强制拒绝，包含 `HOLDREVIEW` 则转入人工审核队列） |
+| 身份验证（KYC/KYB） | 您自己的账户生而已通过。要演练验证流程本身，请对第三方运行 KYC/KYB 验证 —— 几秒内自动通过（姓名包含 `REJECT` 可强制拒绝，包含 `HOLDREVIEW` 则转入人工审核队列，包含 `MANUALREVIEW` 则保持未决，交由自动判定引擎处理） |
 | AML | 筛查 `John SANCTION` 和 `Maria PEP` 来演练命中处理 |
 | 卡片 | 发行一张卡并从控制台模拟消费 |
 | 2FA | 启用后在所有地方使用验证码 `000000` |

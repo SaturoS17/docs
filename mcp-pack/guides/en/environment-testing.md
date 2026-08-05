@@ -62,6 +62,7 @@ Operations resolve **deterministically**:
 | Login / 2FA codes | `000000` | Valid on every channel (SMS, WhatsApp, email) — no message is actually sent |
 | Identity verification (KYC/KYB) | Name or external id containing `REJECT` | Verification ends `rejected` |
 | Identity verification (KYC/KYB) | Name or external id containing `HOLDREVIEW` | The risk band comes back `medium` — a grey zone the auto-decision engine routes to the human review queue instead of auto-approving |
+| Identity verification (KYC/KYB) | Name or external id containing `MANUALREVIEW` | Every signal stays clean, but the verification never settles on its own — it stays `pending_review` until the auto-decision engine (or a human) decides. Use it to exercise the engine's automatic approve/reject paths |
 | Identity verification (KYC/KYB) | Anything else | Auto-approves after the settle delay (documents always pass OCR) |
 | AML screening | Name containing `SANCTION` | Screens with hits, risk `prohibited` |
 | AML screening | Name containing `PEP` | Screens with hits, risk `high` |
@@ -160,7 +161,7 @@ verify the HMAC signature — full recipe in
 | Payin | Create a QR charge or payment page; it pays itself after the delay and credits your balance |
 | Transfer | Create a second test account and transfer between both (free) |
 | Crypto | Credit a test deposit from the dashboard, then withdraw to any address |
-| Identity (KYC/KYB) | Your own account is already approved at birth. To test the verification flow itself, run third-party KYC/KYB verifications — they auto-approve in seconds (`REJECT` in the name forces a rejection, `HOLDREVIEW` sends it to the human review queue) |
+| Identity (KYC/KYB) | Your own account is already approved at birth. To test the verification flow itself, run third-party KYC/KYB verifications — they auto-approve in seconds (`REJECT` in the name forces a rejection, `HOLDREVIEW` sends it to the human review queue, `MANUALREVIEW` holds it undecided so the auto-decision engine can act) |
 | AML | Screen `John SANCTION` and `Maria PEP` to exercise your hit handling |
 | Cards | Issue a card and simulate purchases from the dashboard |
 | 2FA | Enable it and use code `000000` everywhere |

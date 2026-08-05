@@ -32,7 +32,10 @@ con anticipación y quedan marcados como **Breaking**.
 - **Nuevo valor mágico `HOLDREVIEW` en el entorno de pruebas**: una
   submission KYC/KYB cuyo nombre del sujeto contiene `HOLDREVIEW` queda en
   revisión humana en vez de ser decidida automáticamente, para que puedas
-  ejercitar la cola manual de punta a punta. Ver
+  ejercitar la cola manual de punta a punta. El mágico complementario
+  `MANUALREVIEW` mantiene todas las señales limpias pero jamás resuelve la
+  submission por su cuenta, para probar de forma determinista los caminos
+  automáticos de aprobación/rechazo del motor. Ver
   [entorno de pruebas](https://docs.cbpayapp.com/es/entorno-y-pruebas).
 
 ## v2.31 · 4 versiones - 4 de agosto de 2026
