@@ -336,13 +336,29 @@ curl https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id}/documents 
 ```json
 {
   "items": [
-    { "category": "identity", "status": "completed", "outcome": "MATCH", "score": 0.97, "summary": "Document matches the submitted identity", "filename": "cedula.jpg" }
+    {
+      "id": "9c9b0f1e-4b3c-4f6a-9f6d-2f0a1b2c3d4e",
+      "category": "identity",
+      "status": "completed",
+      "outcome": "MATCH",
+      "effective_outcome": "MATCH",
+      "score": 0.97,
+      "summary": "Document matches the submitted identity",
+      "filename": "cedula.jpg"
+    }
   ],
   "meta": { "retrieved": 1 }
 }
 ```
 
-`outcome`: `MATCH`, `REVIEW` (manual review), `NO_MATCH`.
+`outcome`: `MATCH`, `REVIEW` (manual review), `NO_MATCH`. Each item also exposes:
+
+- `id`: the validation identifier (used by the compliance team to review it).
+- `effective_outcome`: the outcome that currently governs — the admin's manual resolution from the admin panel if one exists, otherwise the OCR engine outcome. In the submission detail (`GET /v1/kyc/submissions/{id}`) the `documents_gate` block summarizes whether ALL documents are already resolved (`ok: true`), with `matched`/`total` and the `unresolved` list of pending ones.
+- `manual_review`: present only when an admin manually resolved the validation from the admin panel. The account view carries `outcome` and `reviewed_at` (without the internal note or the reviewer).
+
+> **Note**
+Manually resolving a document validation is an admin-panel-only operation (CBPay Admin); it is not exposed through the public API. When the compliance team applies it, your account sees the updated result in `effective_outcome` and `manual_review`, plus the corresponding `kyc_document_validated` / `kyb_document_validated` webhook.
 ### Liveness check (liveness link)
 
 KYC submissions created through the API are born with

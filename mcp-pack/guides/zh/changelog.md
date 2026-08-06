@@ -8,7 +8,19 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-## v2.32 · 1 个版本 - 2026年8月5日
+## v2.33 · 2 个版本 - 2026年8月5日
+
+### v2.33
+
+**新增**
+
+- **文档验证更透明**:submission 的文档列表
+  (`GET /v1/{kyc,kyb}/submissions/{id}/documents`)现在为每项验证暴露其
+  `id`、`effective_outcome`(当前生效的判定,可能来自运营方的人工复核)
+  以及 `manual_review` 块(当验证经过人工复核时包含 `outcome` 和
+  `reviewed_at`)。submission 详情还新增 `documents_gate`,汇总验证状态
+  (`ok`、`matched`、`total` 以及仍未解决的类别)。流程不变:均为新增的
+  只读字段。
 
 ### v2.32
 

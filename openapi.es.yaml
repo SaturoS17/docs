@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.32'
+  version: '2.33'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -6713,6 +6713,13 @@ paths:
                 liveness_pending: false
                 pending_documents:
                 - proofOfResidence
+                documents_gate:
+                  ok: false
+                  matched: 2
+                  total: 10
+                  unresolved:
+                  - category: proofOfResidence
+                    effective_outcome: REVIEW
                 created_at: '2026-07-10T12:05:00Z'
                 updated_at: '2026-07-11T16:00:00Z'
         '404':
@@ -6897,6 +6904,11 @@ paths:
                 status: approved
                 risk_band: low
                 aml_decision: approved
+                documents_gate:
+                  ok: true
+                  matched: 10
+                  total: 10
+                  unresolved: []
                 created_at: '2026-07-10T12:10:00Z'
                 updated_at: '2026-07-13T09:00:00Z'
         '404':
@@ -6988,9 +7000,11 @@ paths:
                       $ref: '#/components/schemas/VerificationDocumentValidation'
               example:
                 items:
-                - category: identity
+                - id: 7a1c2d3e-4f5a-4b6c-8d9e-0f1a2b3c4d5e
+                  category: identity
                   status: completed
                   outcome: MATCH
+                  effective_outcome: MATCH
                   score: 0.97
                   summary: Document matches the submitted identity
                   filename: cedula.jpg
@@ -7138,9 +7152,11 @@ paths:
                       $ref: '#/components/schemas/VerificationDocumentValidation'
               example:
                 items:
-                - category: legalPresence
+                - id: 7a1c2d3e-4f5a-4b6c-8d9e-0f1a2b3c4d5e
+                  category: legalPresence
                   status: completed
                   outcome: REVIEW
+                  effective_outcome: REVIEW
                   score: 0.72
                   summary: Registry extract requires manual review
                   filename: vigencia.pdf
@@ -16643,6 +16659,25 @@ components:
           type: string
         idempotency_key:
           type: string
+        documents_gate:
+          type: object
+          description: Pre-flight del approve — si ok es false, el approve explícito responde 409. Sirve para saber si el approve pasaría antes de llamarlo.
+          properties:
+            ok:
+              type: boolean
+            matched:
+              type: integer
+            total:
+              type: integer
+            unresolved:
+              type: array
+              items:
+                type: object
+                properties:
+                  category:
+                    type: string
+                  effective_outcome:
+                    type: string
         created_at:
           type: string
           format: date-time
@@ -16691,6 +16726,9 @@ components:
     VerificationDocumentValidation:
       type: object
       properties:
+        id:
+          type: string
+          description: ID de la validación (el valor que se pasa al endpoint de override de validaciones de documentos).
         category:
           type: string
         status:
@@ -16706,6 +16744,26 @@ components:
           - MATCH
           - REVIEW
           - NO_MATCH
+        effective_outcome:
+          type: string
+          description: El outcome que manda ahora — el override manual si existe, si no el del motor OCR.
+          enum:
+          - MATCH
+          - REVIEW
+          - NO_MATCH
+        manual_review:
+          type: object
+          description: Presente cuando un admin sobreescribió manualmente esta validación. La vista tenant solo expone outcome y reviewed_at.
+          properties:
+            outcome:
+              type: string
+              enum:
+              - match
+              - no_match
+              - review
+            reviewed_at:
+              type: string
+              format: date-time
         score:
           type: number
         summary:

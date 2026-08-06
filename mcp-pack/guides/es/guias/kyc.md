@@ -338,13 +338,29 @@ curl https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id}/documents 
 ```json
 {
   "items": [
-    { "category": "identity", "status": "completed", "outcome": "MATCH", "score": 0.97, "summary": "Document matches the submitted identity", "filename": "cedula.jpg" }
+    {
+      "id": "9c9b0f1e-4b3c-4f6a-9f6d-2f0a1b2c3d4e",
+      "category": "identity",
+      "status": "completed",
+      "outcome": "MATCH",
+      "effective_outcome": "MATCH",
+      "score": 0.97,
+      "summary": "Document matches the submitted identity",
+      "filename": "cedula.jpg"
+    }
   ],
   "meta": { "retrieved": 1 }
 }
 ```
 
-`outcome`: `MATCH` (coincide), `REVIEW` (revisión manual), `NO_MATCH`.
+`outcome`: `MATCH` (coincide), `REVIEW` (revisión manual), `NO_MATCH`. Cada item expone además:
+
+- `id`: identificador de la validación (lo usa el equipo de cumplimiento para revisarla).
+- `effective_outcome`: el resultado que rige hoy — si un administrador resolvió la validación manualmente desde el panel admin, ese resultado; si no, el del motor OCR. En el detalle de la submission (`GET /v1/kyc/submissions/{id}`) el bloque `documents_gate` resume si TODOS los documentos ya están resueltos (`ok: true`), con `matched`/`total` y la lista `unresolved` de los pendientes.
+- `manual_review`: presente solo cuando un administrador resolvió manualmente la validación desde el panel admin. En la vista de cuenta trae `outcome` y `reviewed_at` (sin la nota interna ni el revisor).
+
+> **Nota**
+La revisión manual de una validación de documento es una operación exclusiva del panel de administración (CBPay Admin); no se expone por API pública. Cuando el equipo de cumplimiento la aplica, tu cuenta ve el resultado actualizado en `effective_outcome` y `manual_review`, y el webhook `kyc_document_validated` / `kyb_document_validated` correspondiente.
 ### Prueba de vida (liveness link)
 
 Las submissions KYC creadas por datos nacen con `liveness_pending: true`

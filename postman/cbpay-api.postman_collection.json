@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — convertible on demand with swaps.\nPayouts and service fees can be paid from any of the four balances\n(`PUT /v1/settlement` or per-payout `settlement_asset`), and payins\ncan auto-convert to the asset of your choice (`default_payin_asset`).\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-08-05 07:05 UTC",
-    "_content_sha256": "30fc6e4097ad1dcd7d01cadbad35f86b8f9766bb7aa1dd2cbcd9b4e02706c68a"
+    "_generated_at": "2026-08-06 11:05 UTC",
+    "_content_sha256": "c765e356dc5989cef4ac037328d98680997ac28fbec7dafec7083a0d65d6409f"
   },
   "auth": {
     "type": "bearer",
@@ -1324,7 +1324,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"submission_id\": \"c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f\",\n  \"kind\": \"kyc\",\n  \"external_customer_id\": \"cust_789\",\n  \"status\": \"more_info_required\",\n  \"risk_band\": \"medium\",\n  \"liveness_pending\": false,\n  \"pending_documents\": [\n    \"proofOfResidence\"\n  ],\n  \"created_at\": \"2026-07-10T12:05:00Z\",\n  \"updated_at\": \"2026-07-11T16:00:00Z\"\n}"
+              "body": "{\n  \"submission_id\": \"c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f\",\n  \"kind\": \"kyc\",\n  \"external_customer_id\": \"cust_789\",\n  \"status\": \"more_info_required\",\n  \"risk_band\": \"medium\",\n  \"liveness_pending\": false,\n  \"pending_documents\": [\n    \"proofOfResidence\"\n  ],\n  \"documents_gate\": {\n    \"ok\": false,\n    \"matched\": 1,\n    \"total\": 2,\n    \"unresolved\": [\n      {\n        \"category\": \"proofOfResidence\",\n        \"effective_outcome\": \"REVIEW\"\n      }\n    ]\n  },\n  \"created_at\": \"2026-07-10T12:05:00Z\",\n  \"updated_at\": \"2026-07-11T16:00:00Z\"\n}"
             }
           ]
         },
@@ -1556,7 +1556,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"submission_id\": \"e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8091\",\n  \"kind\": \"kyb\",\n  \"external_customer_id\": \"cust_456\",\n  \"status\": \"approved\",\n  \"risk_band\": \"low\",\n  \"aml_decision\": \"approved\",\n  \"created_at\": \"2026-07-10T12:10:00Z\",\n  \"updated_at\": \"2026-07-13T09:00:00Z\"\n}"
+              "body": "{\n  \"submission_id\": \"e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8091\",\n  \"kind\": \"kyb\",\n  \"external_customer_id\": \"cust_456\",\n  \"status\": \"approved\",\n  \"risk_band\": \"low\",\n  \"aml_decision\": \"approved\",\n  \"documents_gate\": {\n    \"ok\": true,\n    \"matched\": 6,\n    \"total\": 6,\n    \"unresolved\": []\n  },\n  \"created_at\": \"2026-07-10T12:10:00Z\",\n  \"updated_at\": \"2026-07-13T09:00:00Z\"\n}"
             }
           ]
         },
@@ -1620,7 +1620,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"items\": [\n    {\n      \"category\": \"identity\",\n      \"status\": \"completed\",\n      \"outcome\": \"MATCH\",\n      \"score\": 0.97,\n      \"summary\": \"Document matches the submitted identity\",\n      \"filename\": \"cedula.jpg\"\n    }\n  ],\n  \"meta\": {\n    \"retrieved\": 1\n  }\n}"
+              "body": "{\n  \"items\": [\n    {\n      \"id\": \"9c9b0f1e-4b3c-4f6a-9f6d-2f0a1b2c3d4e\",\n      \"category\": \"identity\",\n      \"status\": \"completed\",\n      \"outcome\": \"MATCH\",\n      \"effective_outcome\": \"MATCH\",\n      \"score\": 0.97,\n      \"summary\": \"Document matches the submitted identity\",\n      \"filename\": \"cedula.jpg\",\n      \"manual_review\": {\n        \"outcome\": \"match\",\n        \"reviewed_at\": \"2026-08-05T14:22:10Z\"\n      }\n    }\n  ],\n  \"meta\": {\n    \"retrieved\": 1\n  }\n}"
             }
           ]
         },
@@ -1842,7 +1842,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"items\": [\n    {\n      \"category\": \"legalPresence\",\n      \"status\": \"completed\",\n      \"outcome\": \"REVIEW\",\n      \"score\": 0.72,\n      \"summary\": \"Registry extract requires manual review\",\n      \"filename\": \"vigencia.pdf\"\n    }\n  ],\n  \"meta\": {\n    \"retrieved\": 1\n  }\n}"
+              "body": "{\n  \"items\": [\n    {\n      \"id\": \"7a1c2d3e-4f5a-4b6c-8d9e-0f1a2b3c4d5e\",\n      \"category\": \"legalPresence\",\n      \"status\": \"completed\",\n      \"outcome\": \"REVIEW\",\n      \"effective_outcome\": \"REVIEW\",\n      \"score\": 0.72,\n      \"summary\": \"Registry extract requires manual review\",\n      \"filename\": \"vigencia.pdf\"\n    }\n  ],\n  \"meta\": {\n    \"retrieved\": 1\n  }\n}"
             }
           ]
         },

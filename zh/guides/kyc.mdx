@@ -299,13 +299,30 @@ curl https://api.qbank.cl/platform/v1/kyc/submissions/{submission_id}/documents 
 ```json
 {
   "items": [
-    { "category": "identity", "status": "completed", "outcome": "MATCH", "score": 0.97, "summary": "Document matches the submitted identity", "filename": "cedula.jpg" }
+    {
+      "id": "9c9b0f1e-4b3c-4f6a-9f6d-2f0a1b2c3d4e",
+      "category": "identity",
+      "status": "completed",
+      "outcome": "MATCH",
+      "effective_outcome": "MATCH",
+      "score": 0.97,
+      "summary": "Document matches the submitted identity",
+      "filename": "cedula.jpg"
+    }
   ],
   "meta": { "retrieved": 1 }
 }
 ```
 
-`outcome`：`MATCH`、`REVIEW`（人工审核）、`NO_MATCH`。
+`outcome`：`MATCH`、`REVIEW`（人工审核）、`NO_MATCH`。每项还包含：
+
+- `id`：校验标识符（合规团队使用它进行审核）。
+- `effective_outcome`：当前生效的结果 — 如果管理员已在管理面板中人工处理了该校验，则为人工结果；否则为 OCR 引擎结果。在提交详情（`GET /v1/kyc/submissions/{id}`）中，`documents_gate` 块汇总了所有文档是否已解决（`ok: true`），包含 `matched`/`total` 以及未解决项的 `unresolved` 列表。
+- `manual_review`：仅当管理员在管理面板中人工处理了该校验时出现。账户视图中仅包含 `outcome` 和 `reviewed_at`（不含内部备注和审核人）。
+
+<Note>
+人工处理文档校验是管理面板（CBPay Admin）的专属操作，不通过公共 API 提供。合规团队应用后，你的账户会在 `effective_outcome` 和 `manual_review` 中看到更新后的结果，并收到相应的 `kyc_document_validated` / `kyb_document_validated` webhook。
+</Note>
 </Step>
 </Steps>
 

@@ -8,7 +8,21 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.32 · 1 release - August 5, 2026
+## v2.33 · 2 releases - August 5, 2026
+
+### v2.33
+
+**Added**
+
+- **More transparency in document validations**: the document list of a
+  submission (`GET /v1/{kyc,kyb}/submissions/{id}/documents`) now exposes on
+  each validation its `id`, the `effective_outcome` (the verdict currently in
+  force, which may come from a manual review by the operator) and the
+  `manual_review` block with `outcome` and `reviewed_at` when a validation was
+  reviewed by hand. The submission detail also carries `documents_gate`, a
+  summary of the validation status (`ok`, `matched`, `total` and the
+  categories still unresolved). No flow changes: these are additive,
+  read-only fields.
 
 ### v2.32
 

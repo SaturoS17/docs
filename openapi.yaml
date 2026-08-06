@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.32'
+  version: '2.33'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -6695,6 +6695,13 @@ paths:
                 liveness_pending: false
                 pending_documents:
                 - proofOfResidence
+                documents_gate:
+                  ok: false
+                  matched: 1
+                  total: 2
+                  unresolved:
+                  - category: proofOfResidence
+                    effective_outcome: REVIEW
                 created_at: '2026-07-10T12:05:00Z'
                 updated_at: '2026-07-11T16:00:00Z'
         '404':
@@ -6879,6 +6886,11 @@ paths:
                 status: approved
                 risk_band: low
                 aml_decision: approved
+                documents_gate:
+                  ok: true
+                  matched: 6
+                  total: 6
+                  unresolved: []
                 created_at: '2026-07-10T12:10:00Z'
                 updated_at: '2026-07-13T09:00:00Z'
         '404':
@@ -6969,12 +6981,17 @@ paths:
                       $ref: '#/components/schemas/VerificationDocumentValidation'
               example:
                 items:
-                - category: identity
+                - id: 9c9b0f1e-4b3c-4f6a-9f6d-2f0a1b2c3d4e
+                  category: identity
                   status: completed
                   outcome: MATCH
+                  effective_outcome: MATCH
                   score: 0.97
                   summary: Document matches the submitted identity
                   filename: cedula.jpg
+                  manual_review:
+                    outcome: match
+                    reviewed_at: '2026-08-05T14:22:10Z'
                 meta:
                   retrieved: 1
         '404':
@@ -7119,9 +7136,11 @@ paths:
                       $ref: '#/components/schemas/VerificationDocumentValidation'
               example:
                 items:
-                - category: legalPresence
+                - id: 7a1c2d3e-4f5a-4b6c-8d9e-0f1a2b3c4d5e
+                  category: legalPresence
                   status: completed
                   outcome: REVIEW
+                  effective_outcome: REVIEW
                   score: 0.72
                   summary: Registry extract requires manual review
                   filename: vigencia.pdf
@@ -16617,6 +16636,31 @@ components:
           type: string
         idempotency_key:
           type: string
+        documents_gate:
+          type: object
+          description: Pre-flight gate for the explicit approve. When ok is false, approving responds 409; unresolved lists the document categories still pending.
+          properties:
+            ok:
+              type: boolean
+            matched:
+              type: integer
+            total:
+              type: integer
+            unresolved:
+              type: array
+              items:
+                type: object
+                properties:
+                  category:
+                    type: string
+                  effective_outcome:
+                    type: string
+                    enum:
+                    - MATCH
+                    - REVIEW
+                    - NO_MATCH
+                  status:
+                    type: string
         created_at:
           type: string
           format: date-time
@@ -16665,6 +16709,9 @@ components:
     VerificationDocumentValidation:
       type: object
       properties:
+        id:
+          type: string
+          description: ID of the validation (the value you pass to the document validation override endpoint).
         category:
           type: string
         status:
@@ -16680,6 +16727,26 @@ components:
           - MATCH
           - REVIEW
           - NO_MATCH
+        effective_outcome:
+          type: string
+          description: The outcome that currently governs — the manual override if one exists, otherwise the OCR engine outcome.
+          enum:
+          - MATCH
+          - REVIEW
+          - NO_MATCH
+        manual_review:
+          type: object
+          description: Present when an admin manually overrode this validation. Tenant view exposes only outcome and reviewed_at.
+          properties:
+            outcome:
+              type: string
+              enum:
+              - match
+              - no_match
+              - review
+            reviewed_at:
+              type: string
+              format: date-time
         score:
           type: number
         summary:

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.32'
+  version: '2.33'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -6421,6 +6421,13 @@ paths:
                 liveness_pending: false
                 pending_documents:
                 - proofOfResidence
+                documents_gate:
+                  ok: false
+                  matched: 1
+                  total: 2
+                  unresolved:
+                  - category: proofOfResidence
+                    effective_outcome: REVIEW
                 created_at: '2026-07-10T12:05:00Z'
                 updated_at: '2026-07-11T16:00:00Z'
         '404':
@@ -6603,6 +6610,11 @@ paths:
                 status: approved
                 risk_band: low
                 aml_decision: approved
+                documents_gate:
+                  ok: true
+                  matched: 6
+                  total: 6
+                  unresolved: []
                 created_at: '2026-07-10T12:10:00Z'
                 updated_at: '2026-07-13T09:00:00Z'
         '404':
@@ -6692,9 +6704,11 @@ paths:
                       $ref: '#/components/schemas/VerificationDocumentValidation'
               example:
                 items:
-                - category: identity
+                - id: 7a1c2d3e-4f5a-4b6c-8d9e-0f1a2b3c4d5e
+                  category: identity
                   status: completed
                   outcome: MATCH
+                  effective_outcome: MATCH
                   score: 0.97
                   summary: 文件与提交的身份一致
                   filename: cedula.jpg
@@ -6840,9 +6854,11 @@ paths:
                       $ref: '#/components/schemas/VerificationDocumentValidation'
               example:
                 items:
-                - category: legalPresence
+                - id: 7a1c2d3e-4f5a-4b6c-8d9e-0f1a2b3c4d5e
+                  category: legalPresence
                   status: completed
                   outcome: REVIEW
+                  effective_outcome: REVIEW
                   score: 0.72
                   summary: 登记摘录需人工审核
                   filename: vigencia.pdf
@@ -16213,6 +16229,25 @@ components:
           type: string
         idempotency_key:
           type: string
+        documents_gate:
+          type: object
+          description: 批准前的预检——如果 ok 为 false，显式批准将返回 409。用于在调用前判断批准是否会通过。
+          properties:
+            ok:
+              type: boolean
+            matched:
+              type: integer
+            total:
+              type: integer
+            unresolved:
+              type: array
+              items:
+                type: object
+                properties:
+                  category:
+                    type: string
+                  effective_outcome:
+                    type: string
         created_at:
           type: string
           format: date-time
@@ -16260,6 +16295,9 @@ components:
     VerificationDocumentValidation:
       type: object
       properties:
+        id:
+          type: string
+          description: 校验的 ID（传递给文档校验 override 端点的值）。
         category:
           type: string
         status:
@@ -16275,6 +16313,26 @@ components:
           - MATCH
           - REVIEW
           - NO_MATCH
+        effective_outcome:
+          type: string
+          description: 当前生效的 outcome——如果存在手动 override 则为 override，否则为 OCR 引擎的结果。
+          enum:
+          - MATCH
+          - REVIEW
+          - NO_MATCH
+        manual_review:
+          type: object
+          description: 当管理员手动覆盖此校验时存在。租户视图仅暴露 outcome 和 reviewed_at。
+          properties:
+            outcome:
+              type: string
+              enum:
+              - match
+              - no_match
+              - review
+            reviewed_at:
+              type: string
+              format: date-time
         score:
           type: number
         summary:
