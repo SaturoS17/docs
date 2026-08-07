@@ -8,7 +8,31 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-<Update label="6 de agosto de 2026" description="v2.34 · 1 versión">
+<Update label="6 de agosto de 2026" description="v2.35 · 2 versiones">
+
+### v2.35
+
+**Agregado**
+
+- **Nuevo corredor de payouts: Estados Unidos (USD)** con tres métodos —
+  `ach` (ACH al día siguiente a cuentas corrientes o de ahorro), `wire`
+  (wire doméstico) y `swift` (wire internacional en USD vía SWIFT). El
+  riel exige la **identidad y dirección postal completas del beneficiario
+  en cada transferencia** (`name`, `email`, `account_number`,
+  `country_code`, `address`, `city`, `postal_code`, `bank_name` y
+  `bank_code` — routing ABA para `ach`/`wire`, BIC SWIFT para `swift`;
+  `account_type` `CHECKING`/`SAVING` para `ach`), con el bloque de
+  dirección del banco receptor y `bank_phone` como opcionales
+  recomendados. `wire` y `swift` tienen **mínimo USD 25.00**. El primer
+  payout a un beneficiario nuevo puede quedar `processing` con
+  `status_code: "pending_aml"` mientras el riel revisa al beneficiario, y
+  se ejecuta solo al aprobarse; un rechazo del riel termina el payout
+  `failed` con `status_code: "counterparty_rejected"` y reembolso
+  automático. Por operación puedes sobreescribir las declaraciones de
+  propósito del riel en `options` (`purpose`, `crypto_activity`,
+  `payment_gateway`). Tabla de corredores, tabla de campos por método,
+  ejemplos reales y FAQ en [Payouts](/es/guias/payouts); ejemplos
+  nombrados `us_ach`, `us_wire` y `us_swift` en la referencia API.
 
 ### v2.34
 

@@ -7,7 +7,28 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-<Update label="2026年8月6日" description="v2.34 · 1 个版本">
+<Update label="2026年8月6日" description="v2.35 · 2 个版本">
+
+### v2.35
+
+**新增**
+
+- **新增出金通道：美国（USD）**，提供三种方式 —— `ach`（次日 ACH
+  至支票或储蓄账户）、`wire`（境内电汇）和 `swift`（经 SWIFT 的
+  国际美元电汇）。通道要求**每笔转账附带收款人完整的身份与邮政
+  地址**（`name`、`email`、`account_number`、`country_code`、
+  `address`、`city`、`postal_code`、`bank_name` 和 `bank_code` ——
+  `ach`/`wire` 用 ABA routing number，`swift` 用 SWIFT BIC；
+  `ach` 还需 `account_type` `CHECKING`/`SAVING`），收款银行的
+  地址块与 `bank_phone` 为建议选填项。`wire` 和 `swift` 最低
+  **USD 25.00**。向全新收款人发起的第一笔 payout 可能保持
+  `processing` 且 `status_code: "pending_aml"`，待通道审核收款人后
+  自动执行；若通道拒绝，payout 以 `failed`、
+  `status_code: "counterparty_rejected"` 结束并自动退款。可按笔在
+  `options` 中覆盖通道的付款用途声明（`purpose`、
+  `crypto_activity`、`payment_gateway`）。通道表、按方式的字段表、
+  真实示例与 FAQ 见 [出金](/zh/guides/payouts)；API 参考中新增
+  命名请求示例 `us_ach`、`us_wire` 和 `us_swift`。
 
 ### v2.34
 

@@ -8,7 +8,31 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.34 · 1 release - August 6, 2026
+## v2.35 · 2 releases - August 6, 2026
+
+### v2.35
+
+**Added**
+
+- **New payout corridor: United States (USD)** with three methods —
+  `ach` (next-day ACH to checking or savings accounts), `wire` (domestic
+  wire) and `swift` (international USD wire via SWIFT). The rail requires
+  the beneficiary's **complete identity and postal address on every
+  transfer** (`name`, `email`, `account_number`, `country_code`,
+  `address`, `city`, `postal_code`, `bank_name` and `bank_code` — ABA
+  routing number for `ach`/`wire`, SWIFT BIC for `swift`; `account_type`
+  `CHECKING`/`SAVING` for `ach`), with the receiving bank's address block
+  and `bank_phone` as recommended optionals. `wire` and `swift` have a
+  **USD 25.00 minimum**. The first payout to a brand-new beneficiary may
+  stay `processing` with `status_code: "pending_aml"` while the rail
+  reviews the beneficiary, and executes automatically on approval; a rail
+  rejection ends the payout `failed` with
+  `status_code: "counterparty_rejected"` and an automatic refund. Per
+  operation you can override the rail's payment-purpose declarations in
+  `options` (`purpose`, `crypto_activity`, `payment_gateway`). Corridor
+  table, per-method field table, real examples and FAQ in
+  [Payouts](https://docs.cbpayapp.com/en/guides/payouts); named request examples `us_ach`,
+  `us_wire` and `us_swift` in the API reference.
 
 ### v2.34
 

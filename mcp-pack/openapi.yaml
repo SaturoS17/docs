@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.34'
+  version: '2.35'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -2908,6 +2908,20 @@ paths:
 
                     (22-digit CBU or CVU; USD is CBU-only) — no `bank_code`.
 
+                    United States (USD): full beneficiary identity and postal address
+
+                    on every transfer — `name`, `email`, `account_number`,
+
+                    `country_code`, `address`, `city`, `postal_code`, `bank_name` and
+
+                    `bank_code` (ABA routing number for `ach`/`wire`, SWIFT BIC for
+
+                    `swift`); `account_type` (`CHECKING`/`SAVING`) is required for
+
+                    `ach`. The receiving bank''s address block and `bank_phone` are
+
+                    optional but recommended.
+
                     '
                 beneficiary_contact_id:
                   type: string
@@ -3135,6 +3149,73 @@ paths:
                     tax_id: 27-23456789-1
                     account_number: '2850590940090418135201'
                   idempotency_key: ar-usd-3312
+              us_ach:
+                summary: United States — ACH to a checking account (USD)
+                value:
+                  country: US
+                  currency: USD
+                  method: ach
+                  amount: '250.00'
+                  beneficiary:
+                    name: John Carter
+                    email: john.carter@example.com
+                    account_number: '123456789012'
+                    account_type: CHECKING
+                    country_code: US
+                    address: 1200 Brickell Ave
+                    city: Miami
+                    state: FL
+                    postal_code: '33131'
+                    bank_name: Example Bank
+                    bank_code: '021000089'
+                  description: Invoice 2210
+                  idempotency_key: us-ach-2210
+              us_wire:
+                summary: United States — domestic wire (USD, min 25.00)
+                value:
+                  country: US
+                  currency: USD
+                  method: wire
+                  amount: '1000.00'
+                  beneficiary:
+                    name: John Carter
+                    email: john.carter@example.com
+                    account_number: '123456789012'
+                    country_code: US
+                    address: 1200 Brickell Ave
+                    city: Miami
+                    state: FL
+                    postal_code: '33131'
+                    bank_name: Example Bank
+                    bank_code: '021000089'
+                    bank_address: 500 Main Street
+                    bank_city: New York
+                    bank_state: NY
+                    bank_postal_code: '10001'
+                    bank_country: US
+                    bank_phone: '+12125550100'
+                  description: Invoice 2211
+                  idempotency_key: us-wire-2211
+              us_swift:
+                summary: United States — international USD wire via SWIFT (min 25.00)
+                value:
+                  country: US
+                  currency: USD
+                  method: swift
+                  amount: '1000.00'
+                  beneficiary:
+                    name: John Carter
+                    email: john.carter@example.com
+                    account_number: '123456789012'
+                    country_code: US
+                    address: 1200 Brickell Ave
+                    city: Miami
+                    state: FL
+                    postal_code: '33131'
+                    bank_name: Example Bank
+                    bank_code: CHASUS33XXX
+                  description: Invoice 2212
+                  idempotency_key: us-swift-2212
               cl_paid_from_btc:
                 summary: Chile — paid from the BTC balance (settlement_asset)
                 value:
@@ -3453,6 +3534,18 @@ paths:
                   currency: PYG
                   method: bank_transfer
                   availability: operational
+                - country: US
+                  currency: USD
+                  method: ach
+                  availability: operational
+                - country: US
+                  currency: USD
+                  method: wire
+                  availability: operational
+                - country: US
+                  currency: USD
+                  method: swift
+                  availability: operational
                 - country: VE
                   currency: VES
                   method: bank_transfer
@@ -3462,7 +3555,7 @@ paths:
                   method: pago_movil
                   availability: down
                 meta:
-                  retrieved: 13
+                  retrieved: 16
         '403':
           $ref: '#/components/responses/Forbidden'
         '401':

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.34'
+  version: '2.35'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -2771,6 +2771,18 @@ paths:
 
                     (22 位 CBU 或 CVU;USD 仅支持 CBU)—— 无需 `bank_code`。
 
+                    美国(USD):每笔转账都需收款人完整的身份与邮政地址 —— `name`、
+
+                    `email`、`account_number`、`country_code`、`address`、`city`、
+
+                    `postal_code`、`bank_name` 和 `bank_code`(`ach`/`wire` 用 ABA
+
+                    routing number,`swift` 用 SWIFT BIC);`ach` 还必须提供
+
+                    `account_type`(`CHECKING`/`SAVING`)。收款银行的地址块与
+
+                    `bank_phone` 为选填,但建议提供。
+
                     '
                 beneficiary_contact_id:
                   type: string
@@ -2995,6 +3007,73 @@ paths:
                     tax_id: 27-23456789-1
                     account_number: '2850590940090418135201'
                   idempotency_key: ar-usd-3312
+              us_ach:
+                summary: 美国 — ACH 至支票账户(USD)
+                value:
+                  country: US
+                  currency: USD
+                  method: ach
+                  amount: '250.00'
+                  beneficiary:
+                    name: John Carter
+                    email: john.carter@example.com
+                    account_number: '123456789012'
+                    account_type: CHECKING
+                    country_code: US
+                    address: 1200 Brickell Ave
+                    city: Miami
+                    state: FL
+                    postal_code: '33131'
+                    bank_name: Example Bank
+                    bank_code: '021000089'
+                  description: Invoice 2210
+                  idempotency_key: us-ach-2210
+              us_wire:
+                summary: 美国 — 境内电汇(USD,最低 25.00)
+                value:
+                  country: US
+                  currency: USD
+                  method: wire
+                  amount: '1000.00'
+                  beneficiary:
+                    name: John Carter
+                    email: john.carter@example.com
+                    account_number: '123456789012'
+                    country_code: US
+                    address: 1200 Brickell Ave
+                    city: Miami
+                    state: FL
+                    postal_code: '33131'
+                    bank_name: Example Bank
+                    bank_code: '021000089'
+                    bank_address: 500 Main Street
+                    bank_city: New York
+                    bank_state: NY
+                    bank_postal_code: '10001'
+                    bank_country: US
+                    bank_phone: '+12125550100'
+                  description: Invoice 2211
+                  idempotency_key: us-wire-2211
+              us_swift:
+                summary: 美国 — 经 SWIFT 的国际美元电汇(最低 25.00)
+                value:
+                  country: US
+                  currency: USD
+                  method: swift
+                  amount: '1000.00'
+                  beneficiary:
+                    name: John Carter
+                    email: john.carter@example.com
+                    account_number: '123456789012'
+                    country_code: US
+                    address: 1200 Brickell Ave
+                    city: Miami
+                    state: FL
+                    postal_code: '33131'
+                    bank_name: Example Bank
+                    bank_code: CHASUS33XXX
+                  description: Invoice 2212
+                  idempotency_key: us-swift-2212
               cl_paid_from_btc:
                 summary: 智利 — 从 BTC 余额支付(settlement_asset)
                 value:
@@ -3306,6 +3385,18 @@ paths:
                   currency: PYG
                   method: bank_transfer
                   availability: operational
+                - country: US
+                  currency: USD
+                  method: ach
+                  availability: operational
+                - country: US
+                  currency: USD
+                  method: wire
+                  availability: operational
+                - country: US
+                  currency: USD
+                  method: swift
+                  availability: operational
                 - country: VE
                   currency: VES
                   method: bank_transfer
@@ -3315,7 +3406,7 @@ paths:
                   method: pago_movil
                   availability: down
                 meta:
-                  retrieved: 13
+                  retrieved: 16
         '403':
           $ref: '#/components/responses/Forbidden'
         '401':
