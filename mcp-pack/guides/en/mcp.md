@@ -135,3 +135,9 @@ Once connected, ask your assistant things like:
     Yes — it is generated from the same documentation you are reading, so every
     release listed in the [changelog](https://docs.cbpayapp.com/en/changelog) is reflected in the MCP
     content as well.
+#### Is there an MCP server for the organization admin docs?
+    Yes — a dedicated MCP server for the **organization administration**
+    documentation (`mcp-admin.cbpayapp.com`) is being deployed. It answers
+    questions about the org-admin API (accounts, fees, treasury, compliance)
+    and is aimed at organization administrators — this server here keeps
+    covering the account-level API your clients integrate.

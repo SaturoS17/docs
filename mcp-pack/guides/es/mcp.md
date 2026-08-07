@@ -136,3 +136,10 @@ Una vez conectado, pídele a tu asistente cosas como:
     Sí — se genera desde la misma documentación que estás leyendo, así que cada
     versión listada en el [changelog](https://docs.cbpayapp.com/es/changelog) también se refleja en el
     contenido del MCP.
+#### ¿Hay un servidor MCP para la docu de administración de la organización?
+    Sí — un servidor MCP dedicado a la documentación de **administración de la
+    organización** (`mcp-admin.cbpayapp.com`) está en despliegue. Responde
+    preguntas sobre la API org-admin (cuentas, comisiones, tesorería,
+    compliance) y está pensado para administradores de la organización — este
+    servidor de aquí sigue cubriendo la API de nivel cuenta que integran tus
+    clientes.

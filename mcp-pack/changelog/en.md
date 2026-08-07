@@ -8,6 +8,18 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+## v2.34 · 1 release - August 6, 2026
+
+### v2.34
+
+**Added**
+
+- The [MCP Server](https://docs.cbpayapp.com/en/mcp) page now mentions the dedicated MCP server for
+  the **organization administration** documentation
+  (`mcp-admin.cbpayapp.com`, being deployed), so organization
+  administrators know there is an equivalent assistant feed for the
+  org-admin API — this public server keeps covering the account-level API.
+
 ## v2.33 · 2 releases - August 5, 2026
 
 ### v2.33

@@ -9,6 +9,18 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+## v2.34 · 1 versión - 6 de agosto de 2026
+
+### v2.34
+
+**Agregado**
+
+- La página [Servidor MCP](https://docs.cbpayapp.com/es/mcp) ahora menciona el servidor MCP dedicado
+  de la documentación de **administración de la organización**
+  (`mcp-admin.cbpayapp.com`, en despliegue), para que los administradores de
+  la organización sepan que existe un feed equivalente para la API
+  org-admin — este servidor público sigue cubriendo la API de nivel cuenta.
+
 ## v2.33 · 2 versiones - 5 de agosto de 2026
 
 ### v2.33

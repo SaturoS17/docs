@@ -8,6 +8,16 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+## v2.34 · 1 个版本 - 2026年8月6日
+
+### v2.34
+
+**新增**
+
+- [MCP 服务器](https://docs.cbpayapp.com/zh/mcp)页面现在提及面向**组织管理**文档的专用 MCP
+  服务器（`mcp-admin.cbpayapp.com`，部署中），以便组织管理员了解
+  org-admin API 也有对应的助手内容源——本公开服务器继续覆盖账户级 API。
+
 ## v2.33 · 2 个版本 - 2026年8月5日
 
 ### v2.33
