@@ -7,7 +7,35 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-<Update label="August 7, 2026" description="v2.38 · 2 releases">
+<Update label="August 7, 2026" description="v2.39 · 3 releases">
+
+### v2.39
+
+**Added**
+
+- **Cities catalog per country** ([AML guide](/en/guides/aml)): the new
+  `GET /v1/aml/catalogs/cities?country=US` returns the cities of one ISO
+  3166-1 alpha-2 country grouped by subdivision — `states` keys are the
+  same ISO 3166-2 codes as `country_subdivisions` in the main catalog, and
+  `country_cities` lists the cities whose region could not be mapped
+  (neither field is ever `null`). A country without coverage answers `200`
+  with empty lists (fall back to a free-text city field); a malformed code
+  gets `400 invalid_country` and an unknown one `404 country_not_found`.
+  Static data with `Cache-Control: public, max-age=86400` — one call per
+  country, then filter by state on the client.
+- **US/USD payins now publish two deposit rails** ([payins
+  guide](/en/guides/payins)): the announced `bank_transfer` corridor
+  serves a **domestic wire** instruction (ABA `routing_number`) and an
+  **international SWIFT** instruction (BIC + correspondent bank) side by
+  side — the announcement, the payin reads and the
+  `GET /v1/payins/deposit-instructions` preview all expose
+  `deposit_instructions` (domestic) and `deposit_instructions_swift`
+  (international), each with its own copy-paste QR, so the payer picks the
+  rail their bank supports. Both blocks carry the new `holder_address` and
+  `notes` fields when configured (the QR prints them as "Holder address"
+  and "Note" lines). Fail-closed: a US/USD corridor missing its SWIFT
+  variant answers `422 deposit_instructions_unavailable` at announcement
+  time.
 
 ### v2.38
 

@@ -1,5 +1,5 @@
 {
-  "count": 174,
+  "count": 176,
   "errors": [
     {
       "category": {
@@ -1137,6 +1137,20 @@
     },
     {
       "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_country",
+      "http": 400,
+      "meaning": {
+        "en": "Malformed or missing country code — ISO 3166-1 alpha-2 (e.g. `GET /v1/aml/catalogs/cities?country=`)",
+        "es": "Código de país mal formado o ausente — ISO 3166-1 alpha-2 (ej. `GET /v1/aml/catalogs/cities?country=`)",
+        "zh": "国家/地区代码格式错误或缺失——ISO 3166-1 alpha-2（例如 `GET /v1/aml/catalogs/cities?country=`）"
+      }
+    },
+    {
+      "category": {
         "en": "Money and state (402 / 404 / 409 / 422)",
         "es": "Dinero y estado (402 / 404 / 409 / 422)",
         "zh": "资金与状态（402 / 404 / 409 / 422）"
@@ -1161,6 +1175,20 @@
         "en": "Resource does not exist (or belongs to another account)",
         "es": "Recurso inexistente (o de otra cuenta)",
         "zh": "资源不存在（或属于其他账户）"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "country_not_found",
+      "http": 404,
+      "meaning": {
+        "en": "Unknown ISO 3166-1 alpha-2 country code (cities catalog)",
+        "es": "Código de país ISO 3166-1 alpha-2 desconocido (catálogo de ciudades)",
+        "zh": "未知的 ISO 3166-1 alpha-2 国家/地区代码（城市目录）"
       }
     },
     {

@@ -7,7 +7,32 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-<Update label="2026年8月7日" description="v2.38 · 2 个版本">
+<Update label="2026年8月7日" description="v2.39 · 3 个版本">
+
+### v2.39
+
+**新增**
+
+- **按国家查询城市目录**（[AML 指南](/zh/guides/aml)）：新增的
+  `GET /v1/aml/catalogs/cities?country=US` 返回某个 ISO 3166-1 alpha-2
+  国家的城市，按行政区划分组——`states` 的键与主目录中
+  `country_subdivisions` 的 ISO 3166-2 代码一致，`country_cities`
+  列出无法映射到行政区的城市（两个字段都不会为 `null`）。无覆盖的
+  国家返回 `200` 和空列表（前端回退为自由文本输入）；格式错误的
+  国家代码返回 `400 invalid_country`，未知代码返回
+  `404 country_not_found`。静态数据，带
+  `Cache-Control: public, max-age=86400`——每个国家调用一次，然后
+  在客户端按州/省筛选。
+- **US/USD 充值现在发布两条存款通道**（[充值指南](/zh/guides/payins)）：
+  公告式 `bank_transfer` 走廊同时提供**美国国内电汇**指令（ABA
+  `routing_number`）和**国际 SWIFT** 指令（BIC + 代理行）——公告、
+  充值读取以及 `GET /v1/payins/deposit-instructions` 预览都会暴露
+  `deposit_instructions`（国内）和 `deposit_instructions_swift`
+  （国际），各自带有可复制的 QR，付款方选择其银行支持的通道。两个
+  指令块在配置后都会携带新的 `holder_address` 和 `notes` 字段（QR
+  中以 "Holder address" 和 "Note" 行打印）。失败关闭：缺少 SWIFT
+  变体的 US/USD 走廊在公告时返回
+  `422 deposit_instructions_unavailable`。
 
 ### v2.38
 

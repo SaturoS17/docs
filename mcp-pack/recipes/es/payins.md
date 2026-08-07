@@ -65,7 +65,7 @@ Corredores y modalidades de cobro:
 | Paraguay | PYG | Transferencia anunciada |
 | Brasil | BRL | QR PIX dinámico |
 | Argentina | ARS | Cuenta CVU dedicada |
-| Estados Unidos | USD | Página de pago con tarjeta internacional (`card`), transferencia anunciada (ACH / wire) |
+| Estados Unidos | USD | Página de pago con tarjeta internacional (`card`), transferencia anunciada (dos rieles: wire doméstico + SWIFT internacional) |
 
 La disponibilidad puede variar; el catálogo (`GET /v1/payins/methods`) es
 siempre la fuente de verdad. En todos los casos el abono llega igual: se
@@ -600,12 +600,16 @@ propias del corredor internacional:
 El corredor de tarjetas internacionales se habilita por cuenta. Consulta
 `GET /v1/payins/methods` — es la fuente de verdad de lo que tu cuenta
 puede cobrar hoy.
-**Transferencia anunciada (`bank_transfer`) — ACH / wire**: cobra dólares
+**Transferencia anunciada (`bank_transfer`) — dos rieles: wire doméstico y SWIFT internacional**: cobra dólares
 desde cualquier cuenta bancaria de EE. UU., con el mismo contrato de
-transferencia anunciada de los otros países. Anuncias el depósito y la
-respuesta trae el bloque `deposit_instructions` completo — la cuenta de
-destino más el **routing number (ABA)** y el **código SWIFT** que el banco
-emisor necesita, y el banco intermediario cuando el wire lo requiere:
+transferencia anunciada de los otros países. El corredor US/USD publica
+**dos instrucciones de depósito** a propósito — un riel doméstico (routing
+number ABA) para pagadores que bancan dentro de EE. UU., y un riel
+internacional (SWIFT/BIC a través de un banco corresponsal) para pagadores
+que envían desde el extranjero. Anuncias el depósito una sola vez y la
+respuesta trae ambos bloques — `deposit_instructions` (doméstico) y
+`deposit_instructions_swift` (internacional) — cada uno con su propio QR
+para copiar, así tu pagador elige el riel que su banco soporta:
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/payins \
@@ -623,6 +627,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
 
 Respuesta `201`:
 
+#### Wire doméstico (ABA)
+
 ```json
 {
   "payin_id": "8f4e…",
@@ -632,35 +638,76 @@ Respuesta `201`:
   "payer_source": "declared",
   "payer_name": "Acme Holdings LLC",
   "deposit_instructions": {
-    "bank_name": "Example Bank N.A.",
+    "bank_name": "Partner Bank, N.A.",
     "account_number": "000123456789",
     "account_type": "checking",
     "holder_name": "CBPay Operations LLC",
     "holder_tax_id": "88-1234567",
     "routing_number": "021000021",
-    "swift": "EXMPUS33",
-    "bank_address": "100 Example Ave, New York, NY 10001, US",
-    "intermediary_bank_name": "Intermediary Bank N.A.",
-    "intermediary_bank_swift": "INTRUS33",
+    "holder_address": "25 SW 9th Street, Suite 406, Miami, FL 33130, US",
     "reference_required": true,
-    "qr_payload": "Bank: Example Bank N.A.\nAccount type: checking\nAccount number: 000123456789\nRouting number (ABA): 021000021\nSWIFT: EXMPUS33\nBank address: 100 Example Ave, New York, NY 10001, US\nIntermediary bank: Intermediary Bank N.A.\nIntermediary SWIFT: INTRUS33\nHolder: CBPay Operations LLC\nTax ID: 88-1234567\nAmount: 1250.00 USD\nReference: CBM4X8Q2T7K9",
+    "qr_payload": "Bank: Partner Bank, N.A.\nAccount type: checking\nAccount number: 000123456789\nRouting number (ABA): 021000021\nHolder: CBPay Operations LLC\nHolder address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US\nTax ID: 88-1234567\nAmount: 1250.00 USD\nReference: CBM4X8Q2T7K9",
     "qr_png_base64": "iVBORw0KGgoAAAANSUhEUgAA…"
   }
 }
 ```
 
+Para pagadores que bancan **dentro de EE. UU.**: un wire doméstico (o ACH)
+con el `routing_number` (ABA). Este riel no tiene código SWIFT — las
+transferencias domésticas de EE. UU. no lo necesitan.
+
+#### SWIFT internacional (BIC)
+
+```json
+{
+  "payin_id": "8f4e…",
+  "status": "pending",
+  "reference": "CBM4X8Q2T7K9",
+  "note": "incluye la referencia en la descripción de la transferencia para que el depósito se acredite automáticamente",
+  "payer_source": "declared",
+  "payer_name": "Acme Holdings LLC",
+  "deposit_instructions_swift": {
+    "bank_name": "Partner Bank International",
+    "account_number": "9870001234",
+    "account_type": "checking",
+    "holder_name": "CBPay Operations LLC",
+    "holder_tax_id": "88-1234567",
+    "swift": "PRTBPRI3",
+    "bank_address": "200 Example Blvd, San Juan, PR 00901, PR",
+    "intermediary_bank_name": "Intermediary Bank N.A.",
+    "intermediary_bank_swift": "INTRUS33",
+    "holder_address": "25 SW 9th Street, Suite 406, Miami, FL 33130, US",
+    "notes": "Select Puerto Rico as the final beneficiary bank country",
+    "reference_required": true,
+    "qr_payload": "Bank: Partner Bank International\nAccount type: checking\nAccount number: 9870001234\nSWIFT: PRTBPRI3\nBank address: 200 Example Blvd, San Juan, PR 00901, PR\nIntermediary bank: Intermediary Bank N.A.\nIntermediary SWIFT: INTRUS33\nHolder: CBPay Operations LLC\nHolder address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US\nTax ID: 88-1234567\nAmount: 1250.00 USD\nReference: CBM4X8Q2T7K9\nNote: Select Puerto Rico as the final beneficiary bank country",
+    "qr_png_base64": "iVBORw0KGgoAAAANSUhEUgAA…"
+  }
+}
+```
+
+Para pagadores que envían **desde fuera de EE. UU.**: una transferencia
+internacional SWIFT con el `swift` (BIC) y el banco corresponsal
+(`intermediary_bank_name` / `intermediary_bank_swift`). El campo `notes`
+lleva las indicaciones operativas que el banco emisor necesita para llenar
+su formulario correctamente (aquí: qué país seleccionar como banco
+beneficiario final) — muéstralo al pagador tal cual viene.
+
 El pagador copia la `reference` (`CB…`) en el campo **memo / remittance**
-de la transferencia: es la señal que enlaza el abono con tu anuncio (ver
+de la transferencia, use el riel que use: es la señal que enlaza el abono
+con tu anuncio (ver
 [conciliación de una transferencia anunciada](#conciliaci%C3%B3n-de-una-transferencia-anunciada)).
-`intermediary_bank_name` / `intermediary_bank_swift` aparecen solo cuando la
-cuenta del corredor recibe wires internacionales a través de un banco
-corresponsal — muéstralos al pagador tal cual vienen; un wire que los
-necesita y viaja sin ellos puede rebotar o llegar con monto menor.
+`holder_address` es la dirección postal del titular de la cuenta — los
+bancos de EE. UU. la piden en su formulario de wire, y el QR de cada riel la
+incluye como línea "Holder address" cuando tiene valor (lo mismo para
+`notes` como línea "Note"). `intermediary_bank_name` /
+`intermediary_bank_swift` aparecen solo en el riel que recibe wires a través
+de un banco corresponsal — muéstralos al pagador tal cual vienen; un wire
+que los necesita y viaja sin ellos puede rebotar o llegar con monto menor.
 
 Las instrucciones de depósito de EE. UU. son **obligatorias** en este
 corredor: si tu organización todavía no las configuró, el anuncio responde
 `422 deposit_instructions_unavailable` y no se crea nada (ver
-[errores comunes](#errores-comunes)). Puedes previsualizar la cuenta de
+[errores comunes](#errores-comunes)). Puedes previsualizar ambas cuentas de
 destino sin anunciar con
 `GET /v1/payins/deposit-instructions?country=US&currency=USD&method=bank_transfer`.
 
@@ -853,17 +900,21 @@ curl "https://api.qbank.cl/platform/v1/payins/deposit-instructions?country=CL&cu
 }
 ```
 
-En el corredor **US/USD** el bloque trae además los datos que una
-transferencia estadounidense necesita — estos campos están ausentes (no
-vacíos) en los corredores que no los usan:
+En el corredor **US/USD** el preview devuelve **dos bloques**: el riel
+doméstico bajo `deposit_instructions` y, cuando tu organización tiene
+configurada la variante internacional, el riel SWIFT bajo
+`deposit_instructions_swift` (mismo shape, con su propio QR). Los campos de
+riel están ausentes (no vacíos) en los corredores que no los usan:
 
 | Campo | Qué es |
 |---|---|
-| `routing_number` | Routing number ABA del banco destino (ACH / wire doméstico) |
-| `swift` | SWIFT/BIC del banco destino (wire internacional) |
+| `routing_number` | Routing number ABA del banco destino — riel doméstico (`deposit_instructions`) |
+| `swift` | SWIFT/BIC del banco destino — riel internacional (`deposit_instructions_swift`) |
 | `bank_address` | Dirección registrada del banco destino |
 | `intermediary_bank_name` | Banco corresponsal, cuando los wires llegan a través de uno |
 | `intermediary_bank_swift` | SWIFT/BIC del banco corresponsal |
+| `holder_address` | Dirección postal del titular de la cuenta (los formularios de wire de EE. UU. la piden) |
+| `notes` | Nota operativa libre para el banco emisor (ej. qué país seleccionar como banco beneficiario final) |
 
 ```bash
 curl "https://api.qbank.cl/platform/v1/payins/deposit-instructions?country=US&currency=USD&method=bank_transfer" \
@@ -873,18 +924,31 @@ curl "https://api.qbank.cl/platform/v1/payins/deposit-instructions?country=US&cu
 ```json Respuesta 200 (US)
 {
   "deposit_instructions": {
-    "bank_name": "Example Bank N.A.",
+    "bank_name": "Partner Bank, N.A.",
     "account_number": "000123456789",
     "account_type": "checking",
     "holder_name": "CBPay Operations LLC",
     "holder_tax_id": "88-1234567",
     "routing_number": "021000021",
-    "swift": "EXMPUS33",
-    "bank_address": "100 Example Ave, New York, NY 10001, US",
+    "holder_address": "25 SW 9th Street, Suite 406, Miami, FL 33130, US",
+    "reference_required": true,
+    "qr_payload": "Bank: Partner Bank, N.A.\nAccount type: checking\nAccount number: 000123456789\nRouting number (ABA): 021000021\nHolder: CBPay Operations LLC\nHolder address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US\nTax ID: 88-1234567",
+    "qr_png_base64": "iVBORw0KGgoAAAANSUhEUgAA…"
+  },
+  "deposit_instructions_swift": {
+    "bank_name": "Partner Bank International",
+    "account_number": "9870001234",
+    "account_type": "checking",
+    "holder_name": "CBPay Operations LLC",
+    "holder_tax_id": "88-1234567",
+    "swift": "PRTBPRI3",
+    "bank_address": "200 Example Blvd, San Juan, PR 00901, PR",
     "intermediary_bank_name": "Intermediary Bank N.A.",
     "intermediary_bank_swift": "INTRUS33",
+    "holder_address": "25 SW 9th Street, Suite 406, Miami, FL 33130, US",
+    "notes": "Select Puerto Rico as the final beneficiary bank country",
     "reference_required": true,
-    "qr_payload": "Bank: Example Bank N.A.\nAccount type: checking\nAccount number: 000123456789\nRouting number (ABA): 021000021\nSWIFT: EXMPUS33\nBank address: 100 Example Ave, New York, NY 10001, US\nIntermediary bank: Intermediary Bank N.A.\nIntermediary SWIFT: INTRUS33\nHolder: CBPay Operations LLC\nTax ID: 88-1234567",
+    "qr_payload": "Bank: Partner Bank International\nAccount type: checking\nAccount number: 9870001234\nSWIFT: PRTBPRI3\nBank address: 200 Example Blvd, San Juan, PR 00901, PR\nIntermediary bank: Intermediary Bank N.A.\nIntermediary SWIFT: INTRUS33\nHolder: CBPay Operations LLC\nHolder address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US\nTax ID: 88-1234567\nNote: Select Puerto Rico as the final beneficiary bank country",
     "qr_png_base64": "iVBORw0KGgoAAAANSUhEUgAA…"
   }
 }
@@ -894,11 +958,12 @@ curl "https://api.qbank.cl/platform/v1/payins/deposit-instructions?country=US&cu
 El `qr_payload` del endpoint de preview no lleva las líneas `Amount`/
 `Reference` (todavía no existe el payin); el que va embebido en un anuncio
 real siempre las lleva, así el pagador puede pagar sin escribir nada a mano.
-El bloque del anuncio es una **fotografía congelada**: si tu operador CBPay
-actualiza después la cuenta registrada, los anuncios ya vivos siguen
+Ambos bloques del anuncio son una **fotografía congelada**: si tu operador
+CBPay actualiza después una cuenta registrada, los anuncios ya vivos siguen
 apuntando a la cuenta con la que se crearon — solo los nuevos toman el
 cambio.
-El mismo bloque `deposit_instructions` se repite en
+Los mismos bloques `deposit_instructions` (y `deposit_instructions_swift`,
+cuando existe) se repiten en
 `GET /v1/payins/{id}` y en el listado (`GET /v1/payins`), así tu front no
 necesita cachearlo de la respuesta de creación. En corredores sin cuenta de
 destino registrada, el campo simplemente está ausente — en ese caso muestra
@@ -1039,16 +1104,19 @@ La respuesta y `GET /v1/payins/{id}` persisten un bloque `failure` con el
 código y mensaje del riel (por ejemplo, un documento que no calza con el
 registro bancario del pagador). Corrige el dato y reintenta con clave
 nueva.
-#### ¿Cómo paga mi cliente de EE. UU. — ACH o wire?
-Ambos llegan a la misma cuenta de destino. Un emisor doméstico usa ACH o un
-Fedwire con el `routing_number` (ABA); un emisor fuera de EE. UU. envía el
-wire con el `swift`, y cuando la cuenta recibe a través de un corresponsal,
-el bloque trae `intermediary_bank_name` / `intermediary_bank_swift` — el
-banco del emisor los pide. Cualquiera sea el riel, la `reference` (`CB…`)
-en el campo memo / remittance es lo que acredita el depósito
-automáticamente. Un wire se reporta normalmente el mismo día hábil; un ACH
-puede tardar de uno a tres días hábiles según el banco emisor — el crédito
-y el webhook `payin_credited` ocurren en cuanto el banco reporta el abono.
+#### ¿Cómo paga mi cliente de EE. UU. — wire doméstico o SWIFT internacional?
+El corredor publica dos cuentas de destino a propósito, y tu pagador elige
+el riel que su banco soporta: quienes bancan **dentro de EE. UU.** usan el
+riel doméstico (`deposit_instructions`) con el `routing_number` (ABA) — un
+Fedwire o ACH; quienes envían **desde fuera de EE. UU.** usan el riel
+internacional (`deposit_instructions_swift`) con el `swift` (BIC), el banco
+corresponsal (`intermediary_bank_name` / `intermediary_bank_swift`) y las
+indicaciones de `notes` para el formulario del wire. Cualquiera sea el riel,
+la `reference` (`CB…`) en el campo memo / remittance es lo que acredita el
+depósito automáticamente. Un wire se reporta normalmente el mismo día hábil;
+un ACH puede tardar de uno a tres días hábiles según el banco emisor — el
+crédito y el webhook `payin_credited` ocurren en cuanto el banco reporta el
+abono.
 #### ¿Por qué el QR bancario es solo texto para copiar y no algo que mi app bancaria escanea?
 Los bancos no comparten un estándar de QR común para cuentas de destino
 arbitrarias (a diferencia de un QR de comercio en un checkout) — cada banco

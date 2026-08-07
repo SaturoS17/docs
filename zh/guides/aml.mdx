@@ -70,6 +70,35 @@ ISIC）；确定标准后，再从
 `industries_by_code_type[standard]` 中选取行业代码。
 </Tip>
 
+### 城市目录（按国家/地区）
+
+当表单需要填写城市时，在选定国家/地区后调用
+`GET /v1/aml/catalogs/cities?country=US` —— 每个国家只需调用一次，
+然后在客户端按州/省筛选：
+
+```bash
+curl "https://api.qbank.cl/platform/v1/aml/catalogs/cities?country=US" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "country": "US",
+  "states": { "US-FL": ["Miami", "Orlando"] },
+  "country_cities": [],
+  "meta": { "state_count": 51, "city_count": 3200 }
+}
+```
+
+- `states` 的键与主目录中 `country_subdivisions` 的 ISO 3166-2
+  行政区划相同；`country_cities` 列出无法映射到行政区划的城市 ——
+  也应一并提供。这两个字段永远不会是 `null`。
+- 没有覆盖的国家/地区返回 `200` 和空列表 —— 此时回退到自由文本的
+  城市字段。格式错误的代码返回 `400 invalid_country`；未知代码返回
+  `404 country_not_found`。
+- 静态数据，响应带 `Cache-Control: public, max-age=86400` —— 可以
+  缓存一天。
+
 ## 提交筛查
 
 个人和企业使用同一个端点；类型由请求体自动识别

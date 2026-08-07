@@ -61,7 +61,7 @@ curl https://api.qbank.cl/platform/v1/payins/methods \
 | 巴拉圭 | PYG | 预告银行转账 |
 | 巴西 | BRL | 动态 PIX 二维码 |
 | 阿根廷 | ARS | 专属 CVU 账户 |
-| 美国 | USD | 国际银行卡支付页面（`card`）、预告银行转账（ACH / wire） |
+| 美国 | USD | 国际银行卡支付页面（`card`）、预告银行转账（两条轨道：境内电汇 + 国际 SWIFT） |
 
 可用性可能变化；目录（`GET /v1/payins/methods`）始终是唯一可信来源。
 在所有情况下入账方式相同：按您当前的 `payin_rate` 折算为 USDT，并在
@@ -567,11 +567,13 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
 > **注**
 国际银行卡通道按账户开通。请查询 `GET /v1/payins/methods` —— 它是您账户
 当前可收款方式的唯一可信来源。
-**预告银行转账（`bank_transfer`）—— ACH / wire**：可从任意美国银行
-账户收款，契约与其他国家的预告转账完全相同。您发起预告后，响应中会
-携带完整的 `deposit_instructions` 区块——收款账户，以及汇款银行所需
-的 **ABA 路由号码** 和 **SWIFT 代码**；当电汇需要中间银行时也会一并
-给出：
+**预告银行转账（`bank_transfer`）—— 两条轨道：境内电汇与国际 SWIFT**：可从任意美国银行
+账户收款，契约与其他国家的预告转账完全相同。US/USD 走廊有意发布
+**两份入金说明**——境内轨道（ABA 路由号码）面向在美国境内开户的
+汇款方，国际轨道（经由代理行的 SWIFT/BIC）面向从境外汇款的发送方。
+您只需发起一次预告，响应即同时携带两个区块——`deposit_instructions`
+（境内）与 `deposit_instructions_swift`（国际）——各自带有可复制
+的 QR，付款人可任选其银行支持的轨道：
 
 ```bash
 curl -X POST https://api.qbank.cl/platform/v1/payins \
@@ -589,6 +591,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
 
 响应 `201`：
 
+#### 境内电汇（ABA）
+
 ```json
 {
   "payin_id": "8f4e…",
@@ -598,32 +602,69 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
   "payer_source": "declared",
   "payer_name": "Acme Holdings LLC",
   "deposit_instructions": {
-    "bank_name": "Example Bank N.A.",
+    "bank_name": "Partner Bank, N.A.",
     "account_number": "000123456789",
     "account_type": "checking",
     "holder_name": "CBPay Operations LLC",
     "holder_tax_id": "88-1234567",
     "routing_number": "021000021",
-    "swift": "EXMPUS33",
-    "bank_address": "100 Example Ave, New York, NY 10001, US",
-    "intermediary_bank_name": "Intermediary Bank N.A.",
-    "intermediary_bank_swift": "INTRUS33",
+    "holder_address": "25 SW 9th Street, Suite 406, Miami, FL 33130, US",
     "reference_required": true,
-    "qr_payload": "Bank: Example Bank N.A.\nAccount type: checking\nAccount number: 000123456789\nRouting number (ABA): 021000021\nSWIFT: EXMPUS33\nBank address: 100 Example Ave, New York, NY 10001, US\nIntermediary bank: Intermediary Bank N.A.\nIntermediary SWIFT: INTRUS33\nHolder: CBPay Operations LLC\nTax ID: 88-1234567\nAmount: 1250.00 USD\nReference: CBM4X8Q2T7K9",
+    "qr_payload": "Bank: Partner Bank, N.A.\nAccount type: checking\nAccount number: 000123456789\nRouting number (ABA): 021000021\nHolder: CBPay Operations LLC\nHolder address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US\nTax ID: 88-1234567\nAmount: 1250.00 USD\nReference: CBM4X8Q2T7K9",
     "qr_png_base64": "iVBORw0KGgoAAAANSUhEUgAA…"
   }
 }
 ```
 
-付款人将 `reference`（`CB…`）填写到转账的 **memo / remittance（附言）**
-栏位：它是把入金匹配到您预告的关键信号（参见
-[预告转账的匹配规则](#预告转账的匹配规则)）。`intermediary_bank_name` /
-`intermediary_bank_swift` 仅在走廊账户经由代理行接收国际电汇时出现——
-请原样展示给付款人；需要中间行却未填写的电汇可能被退回或短额到账。
+适用于在**美国境内**开户的汇款方：使用 `routing_number`（ABA）发起
+境内电汇（或 ACH）。该轨道没有 SWIFT 代码——美国境内转账不需要。
+
+#### 国际 SWIFT（BIC）
+
+```json
+{
+  "payin_id": "8f4e…",
+  "status": "pending",
+  "reference": "CBM4X8Q2T7K9",
+  "note": "include the reference in the transfer description so the deposit is credited automatically",
+  "payer_source": "declared",
+  "payer_name": "Acme Holdings LLC",
+  "deposit_instructions_swift": {
+    "bank_name": "Partner Bank International",
+    "account_number": "9870001234",
+    "account_type": "checking",
+    "holder_name": "CBPay Operations LLC",
+    "holder_tax_id": "88-1234567",
+    "swift": "PRTBPRI3",
+    "bank_address": "200 Example Blvd, San Juan, PR 00901, PR",
+    "intermediary_bank_name": "Intermediary Bank N.A.",
+    "intermediary_bank_swift": "INTRUS33",
+    "holder_address": "25 SW 9th Street, Suite 406, Miami, FL 33130, US",
+    "notes": "Select Puerto Rico as the final beneficiary bank country",
+    "reference_required": true,
+    "qr_payload": "Bank: Partner Bank International\nAccount type: checking\nAccount number: 9870001234\nSWIFT: PRTBPRI3\nBank address: 200 Example Blvd, San Juan, PR 00901, PR\nIntermediary bank: Intermediary Bank N.A.\nIntermediary SWIFT: INTRUS33\nHolder: CBPay Operations LLC\nHolder address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US\nTax ID: 88-1234567\nAmount: 1250.00 USD\nReference: CBM4X8Q2T7K9\nNote: Select Puerto Rico as the final beneficiary bank country",
+    "qr_png_base64": "iVBORw0KGgoAAAANSUhEUgAA…"
+  }
+}
+```
+
+适用于**从美国境外**汇款的发送方：使用 `swift`（BIC）与代理行
+（`intermediary_bank_name` / `intermediary_bank_swift`）发起国际
+SWIFT 电汇。`notes` 字段携带汇款银行正确填写表单所需的操作提示
+（此处：最终收款银行应选择哪个国家/地区）——请原样展示给付款人。
+
+付款人将 `reference`（`CB…`）填写到所选调转账的 **memo / remittance
+（附言）**栏位：它是把入金匹配到您预告的关键信号（参见
+[预告转账的匹配规则](#预告转账的匹配规则)）。`holder_address` 是账户持有人的
+邮政地址——美国银行的电汇表单会要求填写，每条轨道的 QR 在其有值时
+都会包含一行 "Holder address"（`notes` 同理，为一行 "Note"）。
+`intermediary_bank_name` / `intermediary_bank_swift` 仅在经由代理行
+接收电汇的轨道上出现——请原样展示给付款人；需要中间行却未填写的
+电汇可能被退回或短额到账。
 
 美国走廊的入金说明是**强制要求**的：如果您的组织尚未配置，发起预告会
 返回 `422 deposit_instructions_unavailable`，且不会创建任何记录（参见
-[常见错误](#常见错误)）。您也可以在未预告的情况下预览收款账户：
+[常见错误](#常见错误)）。您也可以在未预告的情况下预览两个收款账户：
 `GET /v1/payins/deposit-instructions?country=US&currency=USD&method=bank_transfer`。
 
 ## 通用收款链接（`checkout`）
@@ -797,16 +838,20 @@ curl "https://api.qbank.cl/platform/v1/payins/deposit-instructions?country=CL&cu
 }
 ```
 
-在 **US/USD** 走廊中，该区块还会携带美国转账所需的附加字段——这些字段
-在不使用它们的走廊上直接缺省（而非空值）：
+在 **US/USD** 走廊中，预览会返回**两个区块**：`deposit_instructions`
+下的境内轨道，以及（当您的组织配置了国际变体时）
+`deposit_instructions_swift` 下的 SWIFT 轨道（结构相同，带有自己的
+QR）。轨道字段在不使用它们的走廊上直接缺省（而非空值）：
 
 | 字段 | 含义 |
 |---|---|
-| `routing_number` | 收款银行的 ABA 路由号码（美国境内 ACH / wire） |
-| `swift` | 收款银行的 SWIFT/BIC（国际电汇） |
+| `routing_number` | 收款银行的 ABA 路由号码——境内轨道（`deposit_instructions`） |
+| `swift` | 收款银行的 SWIFT/BIC——国际轨道（`deposit_instructions_swift`） |
 | `bank_address` | 收款银行的注册地址 |
 | `intermediary_bank_name` | 中间（代理）银行，当电汇经由其到账时 |
 | `intermediary_bank_swift` | 中间银行的 SWIFT/BIC |
+| `holder_address` | 账户持有人的邮政地址（美国电汇表单会要求填写） |
+| `notes` | 给汇款银行的自由操作提示（例如最终收款银行应选择哪个国家/地区） |
 
 ```bash
 curl "https://api.qbank.cl/platform/v1/payins/deposit-instructions?country=US&currency=USD&method=bank_transfer" \
@@ -816,18 +861,31 @@ curl "https://api.qbank.cl/platform/v1/payins/deposit-instructions?country=US&cu
 ```json 响应 200（美国）
 {
   "deposit_instructions": {
-    "bank_name": "Example Bank N.A.",
+    "bank_name": "Partner Bank, N.A.",
     "account_number": "000123456789",
     "account_type": "checking",
     "holder_name": "CBPay Operations LLC",
     "holder_tax_id": "88-1234567",
     "routing_number": "021000021",
-    "swift": "EXMPUS33",
-    "bank_address": "100 Example Ave, New York, NY 10001, US",
+    "holder_address": "25 SW 9th Street, Suite 406, Miami, FL 33130, US",
+    "reference_required": true,
+    "qr_payload": "Bank: Partner Bank, N.A.\nAccount type: checking\nAccount number: 000123456789\nRouting number (ABA): 021000021\nHolder: CBPay Operations LLC\nHolder address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US\nTax ID: 88-1234567",
+    "qr_png_base64": "iVBORw0KGgoAAAANSUhEUgAA…"
+  },
+  "deposit_instructions_swift": {
+    "bank_name": "Partner Bank International",
+    "account_number": "9870001234",
+    "account_type": "checking",
+    "holder_name": "CBPay Operations LLC",
+    "holder_tax_id": "88-1234567",
+    "swift": "PRTBPRI3",
+    "bank_address": "200 Example Blvd, San Juan, PR 00901, PR",
     "intermediary_bank_name": "Intermediary Bank N.A.",
     "intermediary_bank_swift": "INTRUS33",
+    "holder_address": "25 SW 9th Street, Suite 406, Miami, FL 33130, US",
+    "notes": "Select Puerto Rico as the final beneficiary bank country",
     "reference_required": true,
-    "qr_payload": "Bank: Example Bank N.A.\nAccount type: checking\nAccount number: 000123456789\nRouting number (ABA): 021000021\nSWIFT: EXMPUS33\nBank address: 100 Example Ave, New York, NY 10001, US\nIntermediary bank: Intermediary Bank N.A.\nIntermediary SWIFT: INTRUS33\nHolder: CBPay Operations LLC\nTax ID: 88-1234567",
+    "qr_payload": "Bank: Partner Bank International\nAccount type: checking\nAccount number: 9870001234\nSWIFT: PRTBPRI3\nBank address: 200 Example Blvd, San Juan, PR 00901, PR\nIntermediary bank: Intermediary Bank N.A.\nIntermediary SWIFT: INTRUS33\nHolder: CBPay Operations LLC\nHolder address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US\nTax ID: 88-1234567\nNote: Select Puerto Rico as the final beneficiary bank country",
     "qr_png_base64": "iVBORw0KGgoAAAANSUhEUgAA…"
   }
 }
@@ -836,15 +894,16 @@ curl "https://api.qbank.cl/platform/v1/payins/deposit-instructions?country=US&cu
 > **注**
 预览端点的 `qr_payload` 没有 `Amount`/`Reference` 这两行（此时还没有实际
 的 payin）；而实际通报中内置的那段文本始终包含这两行，这样付款人无需手动
-输入任何内容即可完成支付。通报中的这个区块是一份**冻结的快照**：如果你的
+输入任何内容即可完成支付。通报中的这两个区块是一份**冻结的快照**：如果你的
 CBPay 运营方之后更新了登记的账户，已经存在的通报仍会指向创建时使用的账户
 ——只有新的通报才会采用变更后的账户。
 > **注**
 如果该走廊尚未登记任何收款账户，此端点会返回 `404 not_found`——处理方式
 与下方的 `422 deposit_instructions_unavailable` 相同：此时还不能向付款人
 展示任何账户。
-`GET /v1/payins/{id}` 与列表接口（`GET /v1/payins`）会原样返回同一个
-`deposit_instructions` 区块，因此你的前端无需从创建响应中缓存它。在未登记
+`GET /v1/payins/{id}` 与列表接口（`GET /v1/payins`）会原样返回同样的
+`deposit_instructions`（以及存在时的 `deposit_instructions_swift`）区块，
+因此你的前端无需从创建响应中缓存它。在未登记
 收款账户的走廊上，该字段直接缺省——此时展示 `reference`，并请付款人使用
 你组织常规的银行信息即可。
 
@@ -968,15 +1027,16 @@ USDT，随后立即按真实价格转换；`conversion_status` 报告 `done` 或
 #### 为什么我的 collect（pull）收款失败了？
 响应和 `GET /v1/payins/{id}` 会持久化 `failure` 块，包含通道的代码和消息
 （例如证件与付款人银行登记不符）。修正输入后用新的 key 重试。
-#### 我的美国客户如何付款 —— ACH 还是 wire？
-两种方式都会进入同一个收款账户。美国境内的汇款方通常使用 ACH 或
-Fedwire，填写 `routing_number`（ABA）；美国境外的汇款方使用 `swift`
-发起电汇，当账户经由代理行收款时，区块中还会携带
-`intermediary_bank_name` / `intermediary_bank_swift` —— 汇款方的银行会
-要求填写。无论走哪条通道，memo / 附言栏位中的 `reference`（`CB…`）
-才是自动入账的匹配依据。电汇通常在同一个工作日内到账并被上报；ACH
-视汇款银行可能需要一到三个工作日 —— 只要银行上报入金，入账与
-`payin_credited` webhook 立即发生。
+#### 我的美国客户如何付款 —— 境内电汇还是国际 SWIFT？
+走廊会同时发布**两条轨道**，付款人可任选其一：境内轨道
+（`deposit_instructions`）使用 `routing_number`（ABA），适用于在美国境内
+开户的汇款方（wire 或 ACH）；国际轨道（`deposit_instructions_swift`）使用
+`swift`（BIC）以及经由代理行的 `intermediary_bank_name` /
+`intermediary_bank_swift`，适用于从美国境外汇款的发送方。两条轨道都汇入
+您组织的同一收款安排，并共享同一个 `reference`（`CB…`）——付款人将其填入
+所选转账的 memo / 附言栏位，这就是自动入账的匹配依据。电汇通常在同一
+个工作日内到账并被上报；ACH 视汇款银行可能需要一到三个工作日 —— 只要银行
+上报入金，入账与 `payin_credited` webhook 立即发生。
 #### 为什么银行 QR 只是一段供复制的文本，而不是我的银行 App 能扫描识别的内容？
 银行之间并没有针对任意收款账户的统一二维码标准（不同于结账时商户的收款
 二维码）——每家银行对转账信息的编码方式都不同，而且大多数银行 App 根本

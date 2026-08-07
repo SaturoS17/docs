@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.38'
+  version: '2.39'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -3926,7 +3926,7 @@ paths:
                     note: include the reference in the transfer description so the deposit is credited
                       automatically
                 bank_transfer_us:
-                  summary: 'Depósito anunciado con instrucciones US (method: bank_transfer, US/USD)'
+                  summary: 'Depósito anunciado con instrucciones US (method: bank_transfer, US/USD — doble riel)'
                   value:
                     payin_id: 8f4e2a1b-1111-2222-3333-444455556666
                     status: pending
@@ -3936,18 +3936,30 @@ paths:
                     payer_source: declared
                     payer_name: Acme Holdings LLC
                     deposit_instructions:
-                      bank_name: Example Bank N.A.
+                      bank_name: Partner Bank, N.A.
                       account_number: '000123456789'
                       account_type: checking
                       holder_name: CBPay Operations LLC
                       holder_tax_id: 88-1234567
                       routing_number: '021000021'
-                      swift: EXMPUS33
-                      bank_address: 100 Example Ave, New York, NY 10001, US
+                      holder_address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US
+                      reference_required: true
+                      qr_payload: "Bank: Partner Bank, N.A.\nAccount type: checking\nAccount number: 000123456789\nRouting number (ABA): 021000021\nHolder: CBPay Operations LLC\nHolder address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US\nTax ID: 88-1234567\nAmount: 1250.00 USD\nReference: CBM4X8Q2T7K9"
+                      qr_png_base64: iVBORw0KGgoAAAANSU...
+                    deposit_instructions_swift:
+                      bank_name: Partner Bank International
+                      account_number: '9870001234'
+                      account_type: checking
+                      holder_name: CBPay Operations LLC
+                      holder_tax_id: 88-1234567
+                      swift: PRTBPRI3
+                      bank_address: 200 Example Blvd, San Juan, PR 00901, PR
                       intermediary_bank_name: Intermediary Bank N.A.
                       intermediary_bank_swift: INTRUS33
+                      holder_address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US
+                      notes: Select Puerto Rico as the final beneficiary bank country
                       reference_required: true
-                      qr_payload: "Bank: Example Bank N.A.\nAccount type: checking\nAccount number: 000123456789\nRouting number (ABA): 021000021\nSWIFT: EXMPUS33\nBank address: 100 Example Ave, New York, NY 10001, US\nIntermediary bank: Intermediary Bank N.A.\nIntermediary SWIFT: INTRUS33\nHolder: CBPay Operations LLC\nTax ID: 88-1234567\nAmount: 1250.00 USD\nReference: CBM4X8Q2T7K9"
+                      qr_payload: "Bank: Partner Bank International\nAccount type: checking\nAccount number: 9870001234\nSWIFT: PRTBPRI3\nBank address: 200 Example Blvd, San Juan, PR 00901, PR\nIntermediary bank: Intermediary Bank N.A.\nIntermediary SWIFT: INTRUS33\nHolder: CBPay Operations LLC\nHolder address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US\nTax ID: 88-1234567\nAmount: 1250.00 USD\nReference: CBM4X8Q2T7K9\nNote: Select Puerto Rico as the final beneficiary bank country"
                       qr_png_base64: iVBORw0KGgoAAAANSU...
                 fintoc:
                   summary: 'Página de pago hosted (method: fintoc, Chile)'
@@ -5853,6 +5865,86 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/AccountRequired'
+  /v1/aml/catalogs/cities:
+    get:
+      tags:
+      - AML screening
+      operationId: getAmlCatalogCities
+      summary: Catálogo de ciudades de un país
+      description: 'Devuelve las ciudades de un país ISO 3166-1 alpha-2, agrupadas por subdivisión:
+        las claves de `states` son los mismos códigos ISO 3166-2 de `country_subdivisions` en
+        `GET /v1/aml/catalogs`, y `country_cities` lista las ciudades cuya región no pudo
+        mapearse a una subdivisión (ofrécelas también). Ningún campo es jamás `null`. Un país
+        sin cobertura responde 200 con listas vacías — cae a un campo de ciudad de texto libre.
+        Data estática servida con `Cache-Control: public, max-age=86400`; se puede cachear por
+        un día. Una llamada por país y luego filtras por estado en el cliente.'
+      parameters:
+      - name: country
+        in: query
+        required: true
+        description: Código de país ISO 3166-1 alpha-2 (ej. `US`).
+        schema:
+          type: string
+          pattern: '^[A-Z]{2}$'
+        example: US
+      responses:
+        '200':
+          description: Ciudades del país agrupadas por subdivisión (listas vacías cuando el país no tiene cobertura).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  country:
+                    type: string
+                    description: Código de país ISO 3166-1 alpha-2 devuelto tal cual.
+                  states:
+                    type: object
+                    description: Ciudades por código de subdivisión ISO 3166-2 (`<CC>-<code>`).
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+                  country_cities:
+                    type: array
+                    description: Ciudades cuya región no pudo mapearse a una subdivisión.
+                    items:
+                      type: string
+                  meta:
+                    type: object
+                    description: Conteos de cobertura (`state_count`, `city_count`).
+              example:
+                country: US
+                states:
+                  US-FL:
+                  - Miami
+                  - Orlando
+                country_cities: []
+                meta:
+                  state_count: 51
+                  city_count: 3200
+        '400':
+          description: Código de país mal formado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_country
+                message: country is required (ISO 3166-1 alpha-2)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+        '404':
+          description: Código de país desconocido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: country_not_found
+                message: unknown country code
   /v1/me/verification/link:
     post:
       tags:
@@ -12486,6 +12578,12 @@ paths:
                 properties:
                   deposit_instructions:
                     $ref: '#/components/schemas/DepositInstructions'
+                  deposit_instructions_swift:
+                    $ref: '#/components/schemas/DepositInstructions'
+                    description: >-
+                      Variante internacional SWIFT del corredor (solo US/USD,
+                      cuando está configurada). Mismo shape, con su propio
+                      `qr_payload` y `qr_png_base64`.
               examples:
                 cl_bank_transfer:
                   summary: Chile (CLP)
@@ -12511,7 +12609,7 @@ paths:
                         Holder: Ejemplo Org SpA
                       qr_png_base64: iVBORw0KGgoAAAANSU...
                 us_bank_transfer:
-                  summary: Estados Unidos (USD — ABA routing / SWIFT)
+                  summary: 'Estados Unidos (USD — doble riel: ABA doméstico + SWIFT internacional)'
                   value:
                     deposit_instructions:
                       id: 7b1e4d5a-2c3b-4a59-8877-6f5e4d3c2b1a
@@ -12522,28 +12620,56 @@ paths:
                       revision: 1
                       active: true
                       reference_required: true
-                      bank_name: Example Bank N.A.
+                      bank_name: Partner Bank, N.A.
                       account_number: '000123456789'
                       account_type: checking
                       holder_name: CBPay Operations LLC
                       holder_tax_id: 88-1234567
                       routing_number: '021000021'
-                      swift: EXMPUS33
-                      bank_address: 100 Example Ave, New York, NY 10001, US
-                      intermediary_bank_name: Intermediary Bank N.A.
-                      intermediary_bank_swift: INTRUS33
+                      holder_address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US
                       created_at: '2026-08-07T10:00:00Z'
                       qr_payload: |
-                        Bank: Example Bank N.A.
+                        Bank: Partner Bank, N.A.
                         Account type: checking
                         Account number: 000123456789
                         Routing number (ABA): 021000021
-                        SWIFT: EXMPUS33
-                        Bank address: 100 Example Ave, New York, NY 10001, US
+                        Holder: CBPay Operations LLC
+                        Holder address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US
+                        Tax ID: 88-1234567
+                      qr_png_base64: iVBORw0KGgoAAAANSU...
+                    deposit_instructions_swift:
+                      id: 8c2f5e6b-3d4c-5b6a-9988-7f6e5d4c3b2a
+                      country: US
+                      currency: USD
+                      method: swift
+                      purpose: payin
+                      revision: 1
+                      active: true
+                      reference_required: true
+                      bank_name: Partner Bank International
+                      account_number: '9870001234'
+                      account_type: checking
+                      holder_name: CBPay Operations LLC
+                      holder_tax_id: 88-1234567
+                      swift: PRTBPRI3
+                      bank_address: 200 Example Blvd, San Juan, PR 00901, PR
+                      intermediary_bank_name: Intermediary Bank N.A.
+                      intermediary_bank_swift: INTRUS33
+                      holder_address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US
+                      notes: Select Puerto Rico as the final beneficiary bank country
+                      created_at: '2026-08-07T10:00:00Z'
+                      qr_payload: |
+                        Bank: Partner Bank International
+                        Account type: checking
+                        Account number: 9870001234
+                        SWIFT: PRTBPRI3
+                        Bank address: 200 Example Blvd, San Juan, PR 00901, PR
                         Intermediary bank: Intermediary Bank N.A.
                         Intermediary SWIFT: INTRUS33
                         Holder: CBPay Operations LLC
+                        Holder address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US
                         Tax ID: 88-1234567
+                        Note: Select Puerto Rico as the final beneficiary bank country
                       qr_png_base64: iVBORw0KGgoAAAANSU...
         '400':
           description: Faltan country o currency (invalid_payload).
@@ -17786,7 +17912,15 @@ components:
             Snapshot congelado de la cuenta bancaria de destino anunciada al pagador
             (payins `bank_transfer` anunciados en corredores con instrucciones
             configuradas — hoy CL, PY y US). El texto nunca cambia tras la creación;
-            la imagen QR se regenera al leer con tu branding vigente.
+            la imagen QR se regenera al leer con tu branding vigente. En el corredor
+            US/USD este bloque es el riel doméstico (routing number ABA).
+        deposit_instructions_swift:
+          $ref: '#/components/schemas/DepositInstructions'
+          description: >-
+            Snapshot congelado del riel internacional SWIFT (BIC + banco
+            corresponsal), presente solo en el corredor US/USD cuando tu
+            organización tiene configurada la variante swift. El pagador elige
+            cualquiera de los dos rieles; ambos comparten la misma `reference`.
         match_method:
           type: string
           enum:
@@ -18181,6 +18315,18 @@ components:
         intermediary_bank_swift:
           type: string
           description: SWIFT/BIC del banco corresponsal, cuando aplica.
+        holder_address:
+          type: string
+          description: >-
+            Dirección postal del titular de la cuenta. Los formularios de wire
+            de los bancos de EE. UU. la exigen; el QR de cada riel incluye una
+            línea "Holder address" cuando tiene valor.
+        notes:
+          type: string
+          description: >-
+            Nota operativa libre para el banco emisor (ej. qué país seleccionar
+            como banco beneficiario final). Se muestra al pagador tal cual; el
+            QR de cada riel incluye una línea "Note" cuando tiene valor.
         created_at:
           type: string
           format: date-time

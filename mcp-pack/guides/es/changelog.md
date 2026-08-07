@@ -9,7 +9,36 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-## v2.38 · 2 versiones - 7 de agosto de 2026
+## v2.39 · 3 versiones - 7 de agosto de 2026
+
+### v2.39
+
+**Agregado**
+
+- **Catálogo de ciudades por país** ([guía AML](https://docs.cbpayapp.com/es/guias/aml)): el nuevo
+  `GET /v1/aml/catalogs/cities?country=US` devuelve las ciudades de un
+  país ISO 3166-1 alpha-2 agrupadas por subdivisión — las claves de
+  `states` son los mismos códigos ISO 3166-2 de `country_subdivisions` del
+  catálogo principal, y `country_cities` lista las ciudades cuya región no
+  pudo mapearse (ningún campo es jamás `null`). Un país sin cobertura
+  responde `200` con listas vacías (cae a un campo de ciudad de texto
+  libre); un código mal formado recibe `400 invalid_country` y uno
+  desconocido `404 country_not_found`. Data estática con
+  `Cache-Control: public, max-age=86400` — una llamada por país y filtras
+  por estado en el cliente.
+- **Los payins US/USD ahora publican dos rieles de depósito** ([guía de
+  payins](https://docs.cbpayapp.com/es/guias/payins)): el corredor de transferencia anunciada
+  `bank_transfer` sirve una instrucción de **wire doméstico**
+  (`routing_number` ABA) y una **SWIFT internacional** (BIC + banco
+  corresponsal) lado a lado — el anuncio, las lecturas del payin y el
+  preview `GET /v1/payins/deposit-instructions` exponen
+  `deposit_instructions` (doméstico) y `deposit_instructions_swift`
+  (internacional), cada una con su propio QR para copiar, así el pagador
+  elige el riel que su banco soporta. Ambos bloques llevan los campos
+  nuevos `holder_address` y `notes` cuando están configurados (el QR los
+  imprime como líneas "Holder address" y "Note"). Fail-closed: un corredor
+  US/USD sin su variante SWIFT responde `422
+  deposit_instructions_unavailable` al anunciar.
 
 ### v2.38
 

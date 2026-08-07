@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.38'
+  version: '2.39'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -3724,18 +3724,30 @@ paths:
                     payer_source: declared
                     payer_name: Acme Holdings LLC
                     deposit_instructions:
-                      bank_name: Example Bank N.A.
+                      bank_name: Partner Bank, N.A.
                       account_number: '000123456789'
                       account_type: checking
                       holder_name: CBPay Operations LLC
                       holder_tax_id: 88-1234567
                       routing_number: '021000021'
-                      swift: EXMPUS33
-                      bank_address: 100 Example Ave, New York, NY 10001, US
+                      holder_address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US
+                      reference_required: true
+                      qr_payload: "Bank: Partner Bank, N.A.\nAccount type: checking\nAccount number: 000123456789\nRouting number (ABA): 021000021\nHolder: CBPay Operations LLC\nHolder address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US\nTax ID: 88-1234567\nAmount: 1250.00 USD\nReference: CBM4X8Q2T7K9"
+                      qr_png_base64: iVBORw0KGgoAAAANSU...
+                    deposit_instructions_swift:
+                      bank_name: Partner Bank International
+                      account_number: '9870001234'
+                      account_type: checking
+                      holder_name: CBPay Operations LLC
+                      holder_tax_id: 88-1234567
+                      swift: PRTBPRI3
+                      bank_address: 200 Example Blvd, San Juan, PR 00901, PR
                       intermediary_bank_name: Intermediary Bank N.A.
                       intermediary_bank_swift: INTRUS33
+                      holder_address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US
+                      notes: Select Puerto Rico as the final beneficiary bank country
                       reference_required: true
-                      qr_payload: "Bank: Example Bank N.A.\nAccount type: checking\nAccount number: 000123456789\nRouting number (ABA): 021000021\nSWIFT: EXMPUS33\nBank address: 100 Example Ave, New York, NY 10001, US\nIntermediary bank: Intermediary Bank N.A.\nIntermediary SWIFT: INTRUS33\nHolder: CBPay Operations LLC\nTax ID: 88-1234567\nAmount: 1250.00 USD\nReference: CBM4X8Q2T7K9"
+                      qr_payload: "Bank: Partner Bank International\nAccount type: checking\nAccount number: 9870001234\nSWIFT: PRTBPRI3\nBank address: 200 Example Blvd, San Juan, PR 00901, PR\nIntermediary bank: Intermediary Bank N.A.\nIntermediary SWIFT: INTRUS33\nHolder: CBPay Operations LLC\nHolder address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US\nTax ID: 88-1234567\nNote: Select Puerto Rico as the final beneficiary bank country\nAmount: 1250.00 USD\nReference: CBM4X8Q2T7K9"
                       qr_png_base64: iVBORw0KGgoAAAANSU...
                 fintoc:
                   summary: 托管支付页(方式:fintoc,智利)
@@ -5581,6 +5593,86 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/AccountRequired'
+  /v1/aml/catalogs/cities:
+    get:
+      tags:
+      - AML screening
+      operationId: getAmlCatalogCities
+      summary: 按国家/地区获取城市目录
+      description: '返回指定 ISO 3166-1 alpha-2 国家/地区的城市，按行政区划分组：
+        `states` 的键与 `GET /v1/aml/catalogs` 中 `country_subdivisions` 的
+        ISO 3166-2 代码相同，`country_cities` 列出无法映射到行政区划的城市
+        （也应一并提供）。这两个字段永远不会是 `null`。没有覆盖的国家/地区返回
+        200 和空列表 —— 此时回退到自由文本的城市字段。静态数据，响应带
+        `Cache-Control: public, max-age=86400`，可以缓存一天。每个国家只需调用一次，
+        然后在客户端按州/省筛选。'
+      parameters:
+      - name: country
+        in: query
+        required: true
+        description: ISO 3166-1 alpha-2 国家/地区代码（例如 `US`）。
+        schema:
+          type: string
+          pattern: '^[A-Z]{2}$'
+        example: US
+      responses:
+        '200':
+          description: 按行政区划分组的城市列表（国家/地区无覆盖时为空列表）。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  country:
+                    type: string
+                    description: 原样返回的 ISO 3166-1 alpha-2 国家/地区代码。
+                  states:
+                    type: object
+                    description: 按 ISO 3166-2 行政区划代码（`<CC>-<code>`）分组的城市。
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+                  country_cities:
+                    type: array
+                    description: 无法映射到行政区划的城市。
+                    items:
+                      type: string
+                  meta:
+                    type: object
+                    description: 覆盖统计（`state_count`、`city_count`）。
+              example:
+                country: US
+                states:
+                  US-FL:
+                  - Miami
+                  - Orlando
+                country_cities: []
+                meta:
+                  state_count: 51
+                  city_count: 3200
+        '400':
+          description: 国家/地区代码格式错误。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_country
+                message: country is required (ISO 3166-1 alpha-2)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+        '404':
+          description: 未知的国家/地区代码。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: country_not_found
+                message: unknown country code
   /v1/me/verification/link:
     post:
       tags:
@@ -12109,6 +12201,11 @@ paths:
                 properties:
                   deposit_instructions:
                     $ref: '#/components/schemas/DepositInstructions'
+                  deposit_instructions_swift:
+                    $ref: '#/components/schemas/DepositInstructions'
+                    description: >-
+                      该通道的国际 SWIFT 变体（仅 US/USD,配置后返回）。
+                      结构相同,带有自己的 `qr_payload` 和 `qr_png_base64`。
               examples:
                 cl_bank_transfer:
                   summary: 智利(CLP)
@@ -12134,7 +12231,7 @@ paths:
                         Holder: Example Org SpA
                       qr_png_base64: iVBORw0KGgoAAAANSU...
                 us_bank_transfer:
-                  summary: 美国(USD —— ABA 路由 / SWIFT)
+                  summary: 美国(USD —— 双通道:境内电汇 + 国际 SWIFT)
                   value:
                     deposit_instructions:
                       id: 7b1e4d5a-2c3b-4a59-8877-6f5e4d3c2b1a
@@ -12145,28 +12242,56 @@ paths:
                       revision: 1
                       active: true
                       reference_required: true
-                      bank_name: Example Bank N.A.
+                      bank_name: Partner Bank, N.A.
                       account_number: '000123456789'
                       account_type: checking
                       holder_name: CBPay Operations LLC
                       holder_tax_id: 88-1234567
                       routing_number: '021000021'
-                      swift: EXMPUS33
-                      bank_address: 100 Example Ave, New York, NY 10001, US
-                      intermediary_bank_name: Intermediary Bank N.A.
-                      intermediary_bank_swift: INTRUS33
+                      holder_address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US
                       created_at: '2026-08-07T10:00:00Z'
                       qr_payload: |
-                        Bank: Example Bank N.A.
+                        Bank: Partner Bank, N.A.
                         Account type: checking
                         Account number: 000123456789
                         Routing number (ABA): 021000021
-                        SWIFT: EXMPUS33
-                        Bank address: 100 Example Ave, New York, NY 10001, US
+                        Holder: CBPay Operations LLC
+                        Holder address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US
+                        Tax ID: 88-1234567
+                      qr_png_base64: iVBORw0KGgoAAAANSU...
+                    deposit_instructions_swift:
+                      id: 8c2f5e6b-3d4c-5b6a-9988-7f6e5d4c3b2a
+                      country: US
+                      currency: USD
+                      method: swift
+                      purpose: payin
+                      revision: 1
+                      active: true
+                      reference_required: true
+                      bank_name: Partner Bank International
+                      account_number: '9870001234'
+                      account_type: checking
+                      holder_name: CBPay Operations LLC
+                      holder_tax_id: 88-1234567
+                      swift: PRTBPRI3
+                      bank_address: 200 Example Blvd, San Juan, PR 00901, PR
+                      intermediary_bank_name: Intermediary Bank N.A.
+                      intermediary_bank_swift: INTRUS33
+                      holder_address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US
+                      notes: Select Puerto Rico as the final beneficiary bank country
+                      created_at: '2026-08-07T10:00:00Z'
+                      qr_payload: |
+                        Bank: Partner Bank International
+                        Account type: checking
+                        Account number: 9870001234
+                        SWIFT: PRTBPRI3
+                        Bank address: 200 Example Blvd, San Juan, PR 00901, PR
                         Intermediary bank: Intermediary Bank N.A.
                         Intermediary SWIFT: INTRUS33
                         Holder: CBPay Operations LLC
+                        Holder address: 25 SW 9th Street, Suite 406, Miami, FL 33130, US
                         Tax ID: 88-1234567
+                        Note: Select Puerto Rico as the final beneficiary bank country
                       qr_png_base64: iVBORw0KGgoAAAANSU...
         '400':
           description: 缺少 country 或 currency(invalid_payload)。
@@ -16333,6 +16458,16 @@ components:
         intermediary_bank_swift:
           type: string
           description: 中间银行的 SWIFT/BIC（如适用）。
+        holder_address:
+          type: string
+          description: >-
+            账户持有人的邮政地址。当汇款单要求填写时提供（US/USD 通道）。
+        notes:
+          type: string
+          description: >-
+            面向付款人的自由格式操作说明（例如："Select Puerto Rico as the
+            final beneficiary bank country"）。当通道需要汇款人提供额外
+            指示时提供。
         created_at:
           type: string
           format: date-time
@@ -17357,6 +17492,12 @@ components:
             向付款人预告的收款银行账户的冻结快照（已配置入金说明的通道上的
             `bank_transfer` 预告 payin —— 目前为 CL、PY、US）。文本创建后不再
             变化；QR 图片在读取时以您当前的品牌重新生成。
+        deposit_instructions_swift:
+          $ref: '#/components/schemas/DepositInstructions'
+          description: >-
+            国际 SWIFT 变体的冻结快照 —— 仅当该通道配置了 SWIFT 变体时存在
+            （目前为 US/USD）。与 `deposit_instructions`（境内电汇）并存,
+            带有自己的 `qr_payload` 和 `qr_png_base64`。
         match_method:
           type: string
           enum:

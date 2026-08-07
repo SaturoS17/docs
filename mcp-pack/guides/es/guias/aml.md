@@ -68,6 +68,36 @@ Cascadas: el país de la empresa fija sus formas jurídicas
 (`company_types_by_country[país]`, con `company_types` como fallback) y su
 estándar de industria (`industry_code_type_by_country[país]`, default ISIC);
 con ese estándar tomas los códigos de `industries_by_code_type[estándar]`.
+### Catálogo de ciudades (por país)
+
+Cuando el formulario pide una ciudad, consulta
+`GET /v1/aml/catalogs/cities?country=US` apenas se elige el país — una sola
+llamada por país y luego filtras por estado en el cliente:
+
+```bash
+curl "https://api.qbank.cl/platform/v1/aml/catalogs/cities?country=US" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "country": "US",
+  "states": { "US-FL": ["Miami", "Orlando"] },
+  "country_cities": [],
+  "meta": { "state_count": 51, "city_count": 3200 }
+}
+```
+
+- Las claves de `states` son las mismas subdivisiones ISO 3166-2 de
+  `country_subdivisions` en el catálogo principal; `country_cities` lista
+  las ciudades cuya región no pudo mapearse a una subdivisión — ofrécelas
+  también. Ningún campo es jamás `null`.
+- Un país sin cobertura responde `200` con listas vacías — cae a un campo
+  de ciudad de texto libre. Un código mal formado recibe `400
+  invalid_country`; uno desconocido, `404 country_not_found`.
+- Data estática servida con `Cache-Control: public, max-age=86400` — se
+  puede cachear por un día.
+
 ## Enviar el screening
 
 Un solo endpoint para persona y empresa; el tipo se detecta del payload

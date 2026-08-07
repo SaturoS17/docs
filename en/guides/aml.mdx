@@ -76,6 +76,36 @@ ISIC); with that standard you take the codes from
 `industries_by_code_type[standard]`.
 </Tip>
 
+### Cities catalog (per country)
+
+When the form asks for a city, fetch
+`GET /v1/aml/catalogs/cities?country=US` once the country is picked — one
+call per country, then filter by state on the client:
+
+```bash
+curl "https://api.qbank.cl/platform/v1/aml/catalogs/cities?country=US" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "country": "US",
+  "states": { "US-FL": ["Miami", "Orlando"] },
+  "country_cities": [],
+  "meta": { "state_count": 51, "city_count": 3200 }
+}
+```
+
+- `states` keys are the same ISO 3166-2 subdivisions as
+  `country_subdivisions` in the main catalog; `country_cities` lists the
+  cities whose region could not be mapped to a subdivision — offer them too.
+  Neither field is ever `null`.
+- A country without coverage answers `200` with empty lists — fall back to a
+  free-text city field. A malformed code gets `400 invalid_country`; an
+  unknown one, `404 country_not_found`.
+- Static data served with `Cache-Control: public, max-age=86400` — safe to
+  cache for a day.
+
 ## Submit a screening
 
 One endpoint for person and company; the type is detected from the payload
