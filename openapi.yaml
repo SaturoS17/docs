@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.37'
+  version: '2.38'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -18431,7 +18431,9 @@ webhooks:
         when the transactional firewall holds it, `info_requested`, `released`, `rejected`).
 
         The payload is deliberately neutral: status and operation summary only — internal
-        review reasons or compliance notes are never included.
+        review reasons or compliance notes are never included. A `rejected` status can also
+        come from the organization''s review deadline sweep (automatic rejection); the email
+        and the review detail carry the standard deadline notice.
 
         Every delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
         and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`. Respond 2xx; up

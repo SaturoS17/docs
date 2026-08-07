@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.37'
+  version: '2.38'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -18452,7 +18452,10 @@ webhooks:
         cuando el firewall transaccional la retiene, `info_requested`, `released`, `rejected`).
 
         El payload es deliberadamente neutro: solo estado y resumen de la operación — jamás
-        incluye motivos internos de revisión ni notas de cumplimiento.
+        incluye motivos internos de revisión ni notas de cumplimiento. Un estado `rejected`
+        también puede provenir del barrido por plazo de revisión de la organización
+        (rechazo automático); el email y el detalle de la revisión llevan el aviso
+        estándar de plazo.
 
         Cada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
         y `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`. Responde 2xx; hasta

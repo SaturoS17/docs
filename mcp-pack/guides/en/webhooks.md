@@ -136,7 +136,7 @@ To reactivate it, same call with `{ "status": "active" }`.
 | `wallet_key_exported` | A segregated wallet's private key was exported (security alert) |
 | `wallet_external_movement` | On-chain movement of a segregated wallet that did not go through the platform (expected under `client` custody) |
 | `wallet_key_compromise_suspected` | **Critical alarm**: external outflow from a `cbpay`-custody wallet — possible key compromise |
-| `txn_review_status_changed` | An operation held by the [transactional firewall](https://docs.cbpayapp.com/en/guides/transaction-reviews) changed review state (`in_review` / `info_requested` / `released` / `rejected`) — neutral payload, internal reasons never travel |
+| `txn_review_status_changed` | An operation held by the [transactional firewall](https://docs.cbpayapp.com/en/guides/transaction-reviews) changed review state (`in_review` / `info_requested` / `released` / `rejected`) — neutral payload, internal reasons never travel; a rejection can also come from the automatic deadline sweep (auto-rejection) |
 | `corridor_status_changed` | A payment corridor changed availability (`operational` / `degraded` / `down`) — broadcast, see the [service status guide](https://docs.cbpayapp.com/en/service-status) |
 | `balance_adjusted` | An administrator applied a manual credit or debit to a balance |
 | `account_status_changed` | The account's administrative status changed (`active` / `blocked` / `closed`) |

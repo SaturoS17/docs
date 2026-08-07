@@ -8,7 +8,21 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-<Update label="7 de agosto de 2026" description="v2.37">
+<Update label="7 de agosto de 2026" description="v2.38 · 2 versiones">
+
+### v2.38
+
+**Agregado**
+
+- **Rechazo automático por plazo de revisión** ([guía de revisiones](/es/guias/revisiones-operaciones)) —
+  si tu organización configuró un plazo de revisión para el firewall
+  transaccional, una revisión que nadie decide dentro de esa ventana
+  (contada desde su último cambio de estado — subir evidencia reinicia el
+  reloj) es **rechazada automáticamente** por un barrido horario: la
+  operación se cancela, los fondos retenidos vuelven a tu saldo y recibes
+  el mismo email y webhook `txn_review_status_changed`
+  (`status: "rejected"`) que con un rechazo manual. El detalle de la
+  revisión lleva el aviso estándar de plazo en `decision_note`.
 
 ### v2.37
 

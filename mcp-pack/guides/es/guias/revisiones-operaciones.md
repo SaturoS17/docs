@@ -118,6 +118,8 @@ Una revisión de otra cuenta responde `404 not_found` (nunca `403`, para no filt
 | `released` | La revisión aprobó la operación | La operación ya se ejecutó (o está en camino) |
 | `rejected` | La revisión rechazó la operación | La operación se canceló; si había fondos retenidos, se devolvieron a tu saldo |
 
+> **Nota**
+**Rechazo automático por plazo.** Si tu organización configuró un plazo de revisión, una revisión que nadie decide dentro de esa ventana (contada desde su último cambio de estado — subir evidencia reinicia el reloj) queda **automáticamente rechazada** por un barrido horario: la operación se cancela, los fondos retenidos vuelven a tu saldo y recibes el mismo email y webhook `txn_review_status_changed` que con un rechazo manual. En el detalle, el `decision_note` lleva el aviso estándar de plazo vencido.
 ## Sube documentos cuando te los pidan
 
 Si tu revisión está en `info_requested`, sube los archivos de respaldo. El body es el **binario crudo** del archivo, el nombre viaja en el query param `name` y el tipo en el header `Content-Type`:
@@ -204,7 +206,7 @@ Catálogo completo en [Errores](https://docs.cbpayapp.com/es/errores).
 #### ¿Por qué mi operación quedó retenida?
 Tu organización activó el firewall transaccional, una capa de control que retiene ciertas operaciones para revisión manual antes de ejecutarlas. Los criterios exactos dependen de la política de compliance de tu organización.
 #### ¿Cuánto tarda la revisión?
-La mayoría de las revisiones se resuelven en minutos u horas. Si tu revisión lleva más de 24 horas sin respuesta, tu organización recibe una alerta automática.
+La mayoría de las revisiones se resuelven en minutos u horas. Si tu revisión lleva más de 24 horas sin respuesta, tu organización recibe una alerta automática. Si tu organización configuró un plazo de decisión, la revisión se rechaza automáticamente cuando el plazo vence — subir la evidencia pedida reinicia ese reloj.
 #### ¿Qué pasa si rechazan mi operación?
 La operación se cancela. Si había fondos retenidos (por ejemplo, en un payout), se devuelven automáticamente a tu saldo disponible. Recibes un email con el motivo del rechazo.
 #### ¿Puedo cancelar una operación que está en revisión?

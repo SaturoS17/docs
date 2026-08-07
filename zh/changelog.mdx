@@ -7,7 +7,19 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-<Update label="2026年8月7日" description="v2.37">
+<Update label="2026年8月7日" description="v2.38 · 2 个版本">
+
+### v2.38
+
+**新增**
+
+- **按审核期限自动拒绝**（[交易审核指南](/zh/guides/transaction-reviews)）—
+  如果您的组织为交易防火墙配置了审核期限，在该期限内（自最后一次状态
+  变更起算——上传证据会重置计时）无人决定的审核将由每小时一次的扫描
+  **自动拒绝**：操作被取消，被扣留的资金退回您的余额，您会收到与人工
+  拒绝相同的邮件和 `txn_review_status_changed` webhook
+  （`status: "rejected"`）。审核详情的 `decision_note` 携带标准的期限
+  提示。
 
 ### v2.37
 

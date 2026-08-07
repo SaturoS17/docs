@@ -7,7 +7,21 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-<Update label="August 7, 2026" description="v2.37">
+<Update label="August 7, 2026" description="v2.38 · 2 releases">
+
+### v2.38
+
+**Added**
+
+- **Automatic rejection by review deadline** ([transaction reviews guide](/en/guides/transaction-reviews)) —
+  if your organization configured a review deadline for the transactional
+  firewall, a review nobody decides within that window (counted from its
+  last status change — uploading evidence resets the clock) is
+  **automatically rejected** by an hourly sweep: the operation is cancelled,
+  any held funds return to your balance, and you receive the same email and
+  `txn_review_status_changed` webhook (`status: "rejected"`) as with a
+  manual rejection. The review detail carries the standard deadline notice
+  in `decision_note`.
 
 ### v2.37
 

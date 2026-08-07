@@ -118,6 +118,8 @@ A review belonging to another account answers `404 not_found` (never `403`, so e
 | `released` | The review approved the operation | The operation already executed (or is on its way) |
 | `rejected` | The review rejected the operation | The operation was cancelled; any held funds were returned to your balance |
 
+> **Note**
+**Automatic rejection by deadline.** If your organization configured a review deadline, a review nobody decides within that window (counted from its last status change — uploading evidence resets the clock) is **automatically rejected** by an hourly sweep: the operation is cancelled, held funds return to your balance, and you receive the same email and `txn_review_status_changed` webhook as with a manual rejection. On the detail, the `decision_note` carries the standard deadline notice.
 ## Upload documents when asked
 
 If your review is in `info_requested`, upload the supporting files. The body is the **raw file binary**, the filename travels in the `name` query param and the type in the `Content-Type` header:
@@ -204,7 +206,7 @@ Full catalog in [Errors](https://docs.cbpayapp.com/en/errors).
 #### Why was my operation held?
 Your organization enabled the transactional firewall, a control layer that holds certain operations for manual review before executing them. The exact criteria depend on your organization's compliance policy.
 #### How long does a review take?
-Most reviews resolve within minutes or hours. If your review stays unanswered for over 24 hours, your organization receives an automatic alert.
+Most reviews resolve within minutes or hours. If your review stays unanswered for over 24 hours, your organization receives an automatic alert. If your organization configured a decision deadline, the review is automatically rejected when it expires — uploading the requested evidence resets that clock.
 #### What happens if my operation is rejected?
 The operation is cancelled. If funds were held (for example, in a payout), they are automatically returned to your available balance. You receive an email with the rejection reason.
 #### Can I cancel an operation under review?
