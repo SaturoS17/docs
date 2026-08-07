@@ -8,6 +8,33 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+## v2.37 - August 7, 2026
+
+### v2.37
+
+**Added**
+
+- **New payin corridor: United States (USD) via announced bank transfer
+  (ACH / wire)**. The account announces the deposit with `POST /v1/payins`
+  `{method: "bank_transfer", country: "US", currency: "USD", amount,
+  idempotency_key, payer_name?}` and the response carries the unique `CB…`
+  reference, `status: "pending"` and the complete `deposit_instructions`
+  block — which now supports the US banking fields `routing_number` (ABA),
+  `swift` (BIC), `bank_address`, `intermediary_bank_name` and
+  `intermediary_bank_swift`. The client transfers from their bank with the
+  `CB…` reference in the transfer memo; when the deposit reaches the
+  collection account it is matched by reference and credited in USDT
+  (`status: "credited"` with `usdt_credited` and `fx_rate`). A bank credit
+  with no announcement or reference stays `unassigned` — fail-closed, it is
+  never auto-credited. You can preview the destination account without
+  announcing via `GET /v1/payins/deposit-instructions?country=US&currency=
+  USD&method=bank_transfer`. The United States joins the corridors that
+  require the organization to have deposit instructions configured:
+  announcing without them fails with `422 deposit_instructions_unavailable`.
+  US tab with full request/response examples, status table, errors and FAQ
+  in the [Payins guide](https://docs.cbpayapp.com/en/guides/payins); the `deposit_instructions`
+  block and the preview endpoint are updated in the API reference.
+
 ## v2.36 · 3 releases - August 6, 2026
 
 ### v2.36

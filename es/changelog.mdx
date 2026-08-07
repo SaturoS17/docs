@@ -8,6 +8,35 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="7 de agosto de 2026" description="v2.37">
+
+### v2.37
+
+**Agregado**
+
+- **Nuevo corredor de payin: Estados Unidos (USD) por transferencia
+  bancaria anunciada (ACH / wire)**. La cuenta anuncia el depósito con
+  `POST /v1/payins` `{method: "bank_transfer", country: "US", currency:
+  "USD", amount, idempotency_key, payer_name?}` y la respuesta trae la
+  referencia única `CB…`, `status: "pending"` y el bloque
+  `deposit_instructions` completo — que ahora soporta los campos bancarios
+  de EE.UU. `routing_number` (ABA), `swift` (BIC), `bank_address`,
+  `intermediary_bank_name` e `intermediary_bank_swift`. El cliente
+  transfiere desde su banco con la referencia `CB…` en la glosa/memo; cuando
+  el abono llega a la cuenta de recaudación se matchea por referencia y se
+  acredita en USDT (`status: "credited"` con `usdt_credited` y `fx_rate`).
+  Un abono sin anuncio ni referencia queda `unassigned` — fail-closed, nunca
+  se acredita solo. Puedes previsualizar la cuenta destino sin anunciar con
+  `GET /v1/payins/deposit-instructions?country=US&currency=USD&method=
+  bank_transfer`. Estados Unidos se suma a los corredores que EXIGEN que la
+  organización tenga deposit instructions configuradas: anunciar sin ellas
+  falla con `422 deposit_instructions_unavailable`. Tab de EE.UU. con
+  ejemplos request/response completos, tabla de estados, errores y FAQ en la
+  [guía de Payins](/es/guias/payins); el bloque `deposit_instructions` y el
+  endpoint de preview quedaron actualizados en la referencia de API.
+
+</Update>
+
 <Update label="6 de agosto de 2026" description="v2.36 · 3 versiones">
 
 

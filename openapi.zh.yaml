@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.36'
+  version: '2.37'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -3607,6 +3607,15 @@ paths:
                   currency: PYG
                   method: bank_transfer
                   amount: '596000'
+              us_announced_transfer:
+                summary: 美国 — 预告银行转账(USD,ACH / wire)
+                value:
+                  country: US
+                  currency: USD
+                  method: bank_transfer
+                  amount: '1250.00'
+                  payer_name: Acme Holdings LLC
+                  idempotency_key: invoice-1042
               cl_fintoc:
                 summary: 智利 — 托管支付页,任意银行(CLP)
                 value:
@@ -3704,6 +3713,30 @@ paths:
                     reference: CBJ6T3W9M2K5
                     note: include the reference in the transfer description so the deposit is credited
                       automatically
+                bank_transfer_us:
+                  summary: 预告充值(含美国入金说明,方式:bank_transfer,US/USD)
+                  value:
+                    payin_id: 8f4e2a1b-1111-2222-3333-444455556666
+                    status: pending
+                    reference: CBM4X8Q2T7K9
+                    note: include the reference in the transfer description so the deposit is credited
+                      automatically
+                    payer_source: declared
+                    payer_name: Acme Holdings LLC
+                    deposit_instructions:
+                      bank_name: Example Bank N.A.
+                      account_number: '000123456789'
+                      account_type: checking
+                      holder_name: CBPay Operations LLC
+                      holder_tax_id: 88-1234567
+                      routing_number: '021000021'
+                      swift: EXMPUS33
+                      bank_address: 100 Example Ave, New York, NY 10001, US
+                      intermediary_bank_name: Intermediary Bank N.A.
+                      intermediary_bank_swift: INTRUS33
+                      reference_required: true
+                      qr_payload: "Bank: Example Bank N.A.\nAccount type: checking\nAccount number: 000123456789\nRouting number (ABA): 021000021\nSWIFT: EXMPUS33\nBank address: 100 Example Ave, New York, NY 10001, US\nIntermediary bank: Intermediary Bank N.A.\nIntermediary SWIFT: INTRUS33\nHolder: CBPay Operations LLC\nTax ID: 88-1234567\nAmount: 1250.00 USD\nReference: CBM4X8Q2T7K9"
+                      qr_png_base64: iVBORw0KGgoAAAANSU...
                 fintoc:
                   summary: 托管支付页(方式:fintoc,智利)
                   value:
@@ -3793,14 +3826,23 @@ paths:
         '403':
           $ref: '#/components/responses/AccountRequired'
         '422':
-          description: 核心拒绝了该收款(`core_rejected`)。
+          description: 核心拒绝了该收款(`core_rejected`),或预告转账通道要求登记收款账户而您的组织尚未配置(`deposit_instructions_unavailable` —— 目前为 CL、PY、US)。
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-              example:
-                error: core_rejected
-                message: amount is below the minimum for this corridor
+              examples:
+                core_rejected:
+                  summary: 通道级拒绝
+                  value:
+                    error: core_rejected
+                    message: amount is below the minimum for this corridor
+                deposit_instructions_unavailable:
+                  summary: 通道未配置入金说明
+                  value:
+                    error: deposit_instructions_unavailable
+                    message: no deposit instructions configured for this corridor; contact your
+                      organization admin
         '502':
           description: 核心不可用(`core_unavailable`)。
           content:
@@ -12067,27 +12109,65 @@ paths:
                 properties:
                   deposit_instructions:
                     $ref: '#/components/schemas/DepositInstructions'
-              example: &id_deposit_instr
-                deposit_instructions:
-                  id: 9f0c1a2b-3d4e-4f5a-8b9c-1a2b3c4d5e6f
-                  country: CL
-                  currency: CLP
-                  method: bank_transfer
-                  purpose: payin
-                  revision: 3
-                  active: true
-                  reference_required: true
-                  bank_name: Bank of Example
-                  account_number: '0001112223'
-                  account_type: checking
-                  holder_name: Example Org SpA
-                  created_at: '2026-07-15T14:02:00Z'
-                  qr_payload: |
-                    Bank: Bank of Example
-                    Account type: checking
-                    Account number: 0001112223
-                    Holder: Example Org SpA
-                  qr_png_base64: iVBORw0KGgoAAAANSU...
+              examples:
+                cl_bank_transfer:
+                  summary: 智利(CLP)
+                  value:
+                    deposit_instructions:
+                      id: 9f0c1a2b-3d4e-4f5a-8b9c-1a2b3c4d5e6f
+                      country: CL
+                      currency: CLP
+                      method: bank_transfer
+                      purpose: payin
+                      revision: 3
+                      active: true
+                      reference_required: true
+                      bank_name: Bank of Example
+                      account_number: '0001112223'
+                      account_type: checking
+                      holder_name: Example Org SpA
+                      created_at: '2026-07-15T14:02:00Z'
+                      qr_payload: |
+                        Bank: Bank of Example
+                        Account type: checking
+                        Account number: 0001112223
+                        Holder: Example Org SpA
+                      qr_png_base64: iVBORw0KGgoAAAANSU...
+                us_bank_transfer:
+                  summary: 美国(USD —— ABA 路由 / SWIFT)
+                  value:
+                    deposit_instructions:
+                      id: 7b1e4d5a-2c3b-4a59-8877-6f5e4d3c2b1a
+                      country: US
+                      currency: USD
+                      method: bank_transfer
+                      purpose: payin
+                      revision: 1
+                      active: true
+                      reference_required: true
+                      bank_name: Example Bank N.A.
+                      account_number: '000123456789'
+                      account_type: checking
+                      holder_name: CBPay Operations LLC
+                      holder_tax_id: 88-1234567
+                      routing_number: '021000021'
+                      swift: EXMPUS33
+                      bank_address: 100 Example Ave, New York, NY 10001, US
+                      intermediary_bank_name: Intermediary Bank N.A.
+                      intermediary_bank_swift: INTRUS33
+                      created_at: '2026-08-07T10:00:00Z'
+                      qr_payload: |
+                        Bank: Example Bank N.A.
+                        Account type: checking
+                        Account number: 000123456789
+                        Routing number (ABA): 021000021
+                        SWIFT: EXMPUS33
+                        Bank address: 100 Example Ave, New York, NY 10001, US
+                        Intermediary bank: Intermediary Bank N.A.
+                        Intermediary SWIFT: INTRUS33
+                        Holder: CBPay Operations LLC
+                        Tax ID: 88-1234567
+                      qr_png_base64: iVBORw0KGgoAAAANSU...
         '400':
           description: 缺少 country 或 currency(invalid_payload)。
           content:
@@ -16231,6 +16311,28 @@ components:
           type: string
         holder_email:
           type: string
+        routing_number:
+          type: string
+          description: >-
+            收款银行的 ABA 路由号码（US/USD 通道——境内 ACH 与电汇）。
+            不使用它的通道中此字段缺省。
+        swift:
+          type: string
+          description: >-
+            收款银行的 SWIFT/BIC（US/USD 通道——国际电汇）。
+            不使用它的通道中此字段缺省。
+        bank_address:
+          type: string
+          description: >-
+            收款银行的注册地址。当通道银行在汇款单上要求填写时提供
+            （US/USD）。
+        intermediary_bank_name:
+          type: string
+          description: >-
+            中间（代理）银行名称——仅当通道账户经由代理行接收国际电汇时。
+        intermediary_bank_swift:
+          type: string
+          description: 中间银行的 SWIFT/BIC（如适用）。
         created_at:
           type: string
           format: date-time
@@ -17249,6 +17351,12 @@ components:
               type: string
             account:
               type: string
+        deposit_instructions:
+          $ref: '#/components/schemas/DepositInstructions'
+          description: >-
+            向付款人预告的收款银行账户的冻结快照（已配置入金说明的通道上的
+            `bank_transfer` 预告 payin —— 目前为 CL、PY、US）。文本创建后不再
+            变化；QR 图片在读取时以您当前的品牌重新生成。
         match_method:
           type: string
           enum:

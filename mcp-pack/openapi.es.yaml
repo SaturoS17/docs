@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.36'
+  version: '2.37'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -3819,6 +3819,15 @@ paths:
                   currency: PYG
                   method: bank_transfer
                   amount: '596000'
+              us_announced_transfer:
+                summary: Estados Unidos — transferencia bancaria anunciada (USD, ACH / wire)
+                value:
+                  country: US
+                  currency: USD
+                  method: bank_transfer
+                  amount: '1250.00'
+                  payer_name: Acme Holdings LLC
+                  idempotency_key: invoice-1042
               cl_fintoc:
                 summary: Chile — página de pago hosted, cualquier banco (CLP)
                 value:
@@ -3916,6 +3925,30 @@ paths:
                     reference: CBJ6T3W9M2K5
                     note: include the reference in the transfer description so the deposit is credited
                       automatically
+                bank_transfer_us:
+                  summary: 'Depósito anunciado con instrucciones US (method: bank_transfer, US/USD)'
+                  value:
+                    payin_id: 8f4e2a1b-1111-2222-3333-444455556666
+                    status: pending
+                    reference: CBM4X8Q2T7K9
+                    note: include the reference in the transfer description so the deposit is credited
+                      automatically
+                    payer_source: declared
+                    payer_name: Acme Holdings LLC
+                    deposit_instructions:
+                      bank_name: Example Bank N.A.
+                      account_number: '000123456789'
+                      account_type: checking
+                      holder_name: CBPay Operations LLC
+                      holder_tax_id: 88-1234567
+                      routing_number: '021000021'
+                      swift: EXMPUS33
+                      bank_address: 100 Example Ave, New York, NY 10001, US
+                      intermediary_bank_name: Intermediary Bank N.A.
+                      intermediary_bank_swift: INTRUS33
+                      reference_required: true
+                      qr_payload: "Bank: Example Bank N.A.\nAccount type: checking\nAccount number: 000123456789\nRouting number (ABA): 021000021\nSWIFT: EXMPUS33\nBank address: 100 Example Ave, New York, NY 10001, US\nIntermediary bank: Intermediary Bank N.A.\nIntermediary SWIFT: INTRUS33\nHolder: CBPay Operations LLC\nTax ID: 88-1234567\nAmount: 1250.00 USD\nReference: CBM4X8Q2T7K9"
+                      qr_png_base64: iVBORw0KGgoAAAANSU...
                 fintoc:
                   summary: 'Página de pago hosted (method: fintoc, Chile)'
                   value:
@@ -4008,14 +4041,25 @@ paths:
         '403':
           $ref: '#/components/responses/AccountRequired'
         '422':
-          description: El core rechazó el cobro (`core_rejected`).
+          description: El core rechazó el cobro (`core_rejected`), o el corredor de
+            transferencia anunciada exige una cuenta de destino registrada y tu organización
+            aún no la configura (`deposit_instructions_unavailable` — hoy CL, PY y US).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-              example:
-                error: core_rejected
-                message: amount is below the minimum for this corridor
+              examples:
+                core_rejected:
+                  summary: Rechazo del corredor
+                  value:
+                    error: core_rejected
+                    message: amount is below the minimum for this corridor
+                deposit_instructions_unavailable:
+                  summary: Sin instrucciones de depósito configuradas en el corredor
+                  value:
+                    error: deposit_instructions_unavailable
+                    message: no deposit instructions configured for this corridor; contact your
+                      organization admin
         '502':
           description: Core no disponible (`core_unavailable`).
           content:
@@ -12442,27 +12486,65 @@ paths:
                 properties:
                   deposit_instructions:
                     $ref: '#/components/schemas/DepositInstructions'
-              example: &id_deposit_instr
-                deposit_instructions:
-                  id: 9f0c1a2b-3d4e-4f5a-8b9c-1a2b3c4d5e6f
-                  country: CL
-                  currency: CLP
-                  method: bank_transfer
-                  purpose: payin
-                  revision: 3
-                  active: true
-                  reference_required: true
-                  bank_name: Banco de Ejemplo
-                  account_number: '0001112223'
-                  account_type: checking
-                  holder_name: Ejemplo Org SpA
-                  created_at: '2026-07-15T14:02:00Z'
-                  qr_payload: |
-                    Bank: Banco de Ejemplo
-                    Account type: checking
-                    Account number: 0001112223
-                    Holder: Ejemplo Org SpA
-                  qr_png_base64: iVBORw0KGgoAAAANSU...
+              examples:
+                cl_bank_transfer:
+                  summary: Chile (CLP)
+                  value:
+                    deposit_instructions:
+                      id: 9f0c1a2b-3d4e-4f5a-8b9c-1a2b3c4d5e6f
+                      country: CL
+                      currency: CLP
+                      method: bank_transfer
+                      purpose: payin
+                      revision: 3
+                      active: true
+                      reference_required: true
+                      bank_name: Banco de Ejemplo
+                      account_number: '0001112223'
+                      account_type: checking
+                      holder_name: Ejemplo Org SpA
+                      created_at: '2026-07-15T14:02:00Z'
+                      qr_payload: |
+                        Bank: Banco de Ejemplo
+                        Account type: checking
+                        Account number: 0001112223
+                        Holder: Ejemplo Org SpA
+                      qr_png_base64: iVBORw0KGgoAAAANSU...
+                us_bank_transfer:
+                  summary: Estados Unidos (USD — ABA routing / SWIFT)
+                  value:
+                    deposit_instructions:
+                      id: 7b1e4d5a-2c3b-4a59-8877-6f5e4d3c2b1a
+                      country: US
+                      currency: USD
+                      method: bank_transfer
+                      purpose: payin
+                      revision: 1
+                      active: true
+                      reference_required: true
+                      bank_name: Example Bank N.A.
+                      account_number: '000123456789'
+                      account_type: checking
+                      holder_name: CBPay Operations LLC
+                      holder_tax_id: 88-1234567
+                      routing_number: '021000021'
+                      swift: EXMPUS33
+                      bank_address: 100 Example Ave, New York, NY 10001, US
+                      intermediary_bank_name: Intermediary Bank N.A.
+                      intermediary_bank_swift: INTRUS33
+                      created_at: '2026-08-07T10:00:00Z'
+                      qr_payload: |
+                        Bank: Example Bank N.A.
+                        Account type: checking
+                        Account number: 000123456789
+                        Routing number (ABA): 021000021
+                        SWIFT: EXMPUS33
+                        Bank address: 100 Example Ave, New York, NY 10001, US
+                        Intermediary bank: Intermediary Bank N.A.
+                        Intermediary SWIFT: INTRUS33
+                        Holder: CBPay Operations LLC
+                        Tax ID: 88-1234567
+                      qr_png_base64: iVBORw0KGgoAAAANSU...
         '400':
           description: Faltan country o currency (invalid_payload).
           content:
@@ -17698,6 +17780,13 @@ components:
               type: string
             account:
               type: string
+        deposit_instructions:
+          $ref: '#/components/schemas/DepositInstructions'
+          description: >-
+            Snapshot congelado de la cuenta bancaria de destino anunciada al pagador
+            (payins `bank_transfer` anunciados en corredores con instrucciones
+            configuradas — hoy CL, PY y US). El texto nunca cambia tras la creación;
+            la imagen QR se regenera al leer con tu branding vigente.
         match_method:
           type: string
           enum:
@@ -18069,6 +18158,29 @@ components:
           type: string
         holder_email:
           type: string
+        routing_number:
+          type: string
+          description: >-
+            Número de ruta ABA del banco destino (corredor US/USD — ACH y
+            wires domésticos). Ausente en corredores que no lo usan.
+        swift:
+          type: string
+          description: >-
+            SWIFT/BIC del banco destino (corredor US/USD — wires
+            internacionales). Ausente en corredores que no lo usan.
+        bank_address:
+          type: string
+          description: >-
+            Dirección registrada del banco destino. Presente cuando el banco
+            del corredor la exige en el formulario de transferencia (US/USD).
+        intermediary_bank_name:
+          type: string
+          description: >-
+            Banco corresponsal (intermediario) — solo cuando la cuenta del
+            corredor recibe wires internacionales a través de uno.
+        intermediary_bank_swift:
+          type: string
+          description: SWIFT/BIC del banco corresponsal, cuando aplica.
         created_at:
           type: string
           format: date-time

@@ -20,7 +20,7 @@ flowchart LR
     qr["Collection QR<br/>(BO, BR·PIX)"] --> pay["Your customer pays<br/>in local currency"]
     hosted["Hosted payment page<br/>(CL: fintoc)"] --> pay
     card["3-D Secure card payment<br/>(BO: card)"] --> pay
-    announced["Announced transfer<br/>(CL, PE, MX, PY)"] --> pay
+    announced["Announced transfer<br/>(CL, PE, MX, PY, US)"] --> pay
     pull["Active pull collection<br/>(VE: c2p, debit)"] --> pay
     clabe["Dedicated CLABE / CVU account<br/>(MX, AR)"] --> pay
     pay --> conv["FX conversion at your<br/>payin_rate − fixed fee"]
@@ -65,7 +65,7 @@ Collection corridors and modes:
 | Paraguay | PYG | Announced bank transfer |
 | Brazil | BRL | Dynamic PIX QR |
 | Argentina | ARS | Dedicated CVU account |
-| United States | USD | International card payment page (`card`) |
+| United States | USD | International card payment page (`card`), announced bank transfer (ACH / wire) |
 
 Availability may vary; the catalog (`GET /v1/payins/methods`) is always the
 source of truth. In every case the credit works the same way: converted to
@@ -600,6 +600,71 @@ corridor:
 The international card corridor is enabled per account. Check
 `GET /v1/payins/methods` — it is the source of truth for what your account
 can collect today.
+**Announced bank transfer (`bank_transfer`) — ACH / wire**: collect dollars
+from any US bank account, with the same announced-transfer contract as the
+other countries. Announce the deposit and the response carries the complete
+`deposit_instructions` block — destination account plus the **ABA routing
+number** and **SWIFT code** the sending bank needs, and the intermediary
+bank when the wire requires one:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "US",
+    "currency": "USD",
+    "method": "bank_transfer",
+    "amount": "1250.00",
+    "payer_name": "Acme Holdings LLC",
+    "idempotency_key": "invoice-1042"
+  }'
+```
+
+Response `201`:
+
+```json
+{
+  "payin_id": "8f4e…",
+  "status": "pending",
+  "reference": "CBM4X8Q2T7K9",
+  "note": "include the reference in the transfer description so the deposit is credited automatically",
+  "payer_source": "declared",
+  "payer_name": "Acme Holdings LLC",
+  "deposit_instructions": {
+    "bank_name": "Example Bank N.A.",
+    "account_number": "000123456789",
+    "account_type": "checking",
+    "holder_name": "CBPay Operations LLC",
+    "holder_tax_id": "88-1234567",
+    "routing_number": "021000021",
+    "swift": "EXMPUS33",
+    "bank_address": "100 Example Ave, New York, NY 10001, US",
+    "intermediary_bank_name": "Intermediary Bank N.A.",
+    "intermediary_bank_swift": "INTRUS33",
+    "reference_required": true,
+    "qr_payload": "Bank: Example Bank N.A.\nAccount type: checking\nAccount number: 000123456789\nRouting number (ABA): 021000021\nSWIFT: EXMPUS33\nBank address: 100 Example Ave, New York, NY 10001, US\nIntermediary bank: Intermediary Bank N.A.\nIntermediary SWIFT: INTRUS33\nHolder: CBPay Operations LLC\nTax ID: 88-1234567\nAmount: 1250.00 USD\nReference: CBM4X8Q2T7K9",
+    "qr_png_base64": "iVBORw0KGgoAAAANSUhEUgAA…"
+  }
+}
+```
+
+The payer copies the `reference` (`CB…`) into the transfer **memo /
+remittance** field: it is the signal that matches the deposit to your
+announcement (see
+[matching an announced transfer](#matching-an-announced-transfer)).
+`intermediary_bank_name` / `intermediary_bank_swift` appear only when the
+corridor's account receives international wires through a correspondent
+bank — show them to the payer exactly as they come; a wire that needs them
+and travels without them can bounce or arrive short.
+
+US deposit instructions are **mandatory** on this corridor: if your
+organization has not configured them yet, the announcement responds
+`422 deposit_instructions_unavailable` and nothing is created (see
+[common errors](#common-errors)). You can preview the destination account
+without announcing with
+`GET /v1/payins/deposit-instructions?country=US&currency=USD&method=bank_transfer`.
+
 ## Universal checkout link (`checkout`)
 
 The universal payment link now lives in its own guide, covering the quote
@@ -736,10 +801,10 @@ returning an object that does not match your request.
 ### Deposit instructions: where to send the money
 
 On corridors where your organization registered a destination account for
-announced transfers (today Chile and Paraguay), the announcement response
-includes a `deposit_instructions` block — the exact bank account the payer
-must transfer to, with the amount and `reference` already baked into a
-copy-paste QR:
+announced transfers (today Chile, Paraguay and the United States), the
+announcement response includes a `deposit_instructions` block — the exact
+bank account the payer must transfer to, with the amount and `reference`
+already baked into a copy-paste QR:
 
 ```json Response 201 (with deposit instructions)
 {
@@ -781,6 +846,43 @@ curl "https://api.qbank.cl/platform/v1/payins/deposit-instructions?country=CL&cu
     "holder_tax_id": "77123456-7",
     "reference_required": true,
     "qr_payload": "Bank: Banco Ejemplo\nAccount type: checking\nAccount number: 001122334455\nHolder: CBPay Operations SpA\nTax ID: 77123456-7",
+    "qr_png_base64": "iVBORw0KGgoAAAANSUhEUgAA…"
+  }
+}
+```
+
+On the **US/USD** corridor the block additionally carries the rails a US
+transfer needs — these fields are absent (not empty) on corridors that do
+not use them:
+
+| Field | What it is |
+|---|---|
+| `routing_number` | ABA routing number of the destination bank (domestic ACH / wire) |
+| `swift` | SWIFT/BIC of the destination bank (international wire) |
+| `bank_address` | Registered address of the destination bank |
+| `intermediary_bank_name` | Correspondent bank, when wires arrive through one |
+| `intermediary_bank_swift` | SWIFT/BIC of the correspondent bank |
+
+```bash
+curl "https://api.qbank.cl/platform/v1/payins/deposit-instructions?country=US&currency=USD&method=bank_transfer" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json Response 200 (US)
+{
+  "deposit_instructions": {
+    "bank_name": "Example Bank N.A.",
+    "account_number": "000123456789",
+    "account_type": "checking",
+    "holder_name": "CBPay Operations LLC",
+    "holder_tax_id": "88-1234567",
+    "routing_number": "021000021",
+    "swift": "EXMPUS33",
+    "bank_address": "100 Example Ave, New York, NY 10001, US",
+    "intermediary_bank_name": "Intermediary Bank N.A.",
+    "intermediary_bank_swift": "INTRUS33",
+    "reference_required": true,
+    "qr_payload": "Bank: Example Bank N.A.\nAccount type: checking\nAccount number: 000123456789\nRouting number (ABA): 021000021\nSWIFT: EXMPUS33\nBank address: 100 Example Ave, New York, NY 10001, US\nIntermediary bank: Intermediary Bank N.A.\nIntermediary SWIFT: INTRUS33\nHolder: CBPay Operations LLC\nTax ID: 88-1234567",
     "qr_png_base64": "iVBORw0KGgoAAAANSUhEUgAA…"
   }
 }
@@ -885,7 +987,7 @@ curl "https://api.qbank.cl/platform/v1/payins?from=2026-07-01&to=2026-07-08&stat
 | 400 | `idempotency_key_required` | Collect requires an idempotency key (real debit against the payer) |
 | 403 | `service_disabled` | Payins is not enabled for your account — see [services](https://docs.cbpayapp.com/en/concepts/services) |
 | 422 | `core_rejected` | The processor rejected the charge; check the message |
-| 422 | `deposit_instructions_unavailable` | `bank_transfer` on a corridor that requires a registered destination account (today CL, PY) and your organization has not configured one yet — contact your CBPay operator |
+| 422 | `deposit_instructions_unavailable` | `bank_transfer` on a corridor that requires a registered destination account (today CL, PY, US) and your organization has not configured one yet — contact your CBPay operator |
 | 502 | `core_unavailable` | The charge could not be created; retry the creation (nothing was charged) |
 
 > **Note**
@@ -929,6 +1031,17 @@ a key, a POST that is identical to a live announcement (same account,
 currency, amount and payer) reuses it — duplicating it would leave the real
 deposit `unassigned` for ambiguity. Send different keys only when you really
 want to collect twice.
+#### How does my US client pay — ACH or wire?
+Both land in the same destination account. Domestic senders typically use
+ACH or a Fedwire with the `routing_number` (ABA); senders outside the US
+wire with the `swift`, and when the account receives through a
+correspondent, the block carries `intermediary_bank_name` /
+`intermediary_bank_swift` — the sender's bank asks for them. Whatever the
+rail, the `reference` (`CB…`) in the memo / remittance field is what credits
+the deposit automatically. A wire is usually reported the same business
+day; an ACH can take one to three business days depending on the sending
+bank — the credit and the `payin_credited` webhook happen the moment the
+bank reports the deposit.
 #### Why is the bank QR just text to copy, not something my banking app scans?
 Banks don't share a common QR standard for arbitrary destination accounts
 (unlike a merchant QR at checkout) — every bank encodes account transfers

@@ -21,7 +21,7 @@ flowchart LR
     qr["QR de cobro<br/>(BO, BR·PIX)"] --> pago["Tu cliente paga<br/>en moneda local"]
     hosted["Página de pago hosted<br/>(CL: fintoc)"] --> pago
     card["Pago con tarjeta 3-D Secure<br/>(BO: card)"] --> pago
-    anunciada["Transferencia anunciada<br/>(CL, PE, MX, PY)"] --> pago
+    anunciada["Transferencia anunciada<br/>(CL, PE, MX, PY, US)"] --> pago
     pull["Cobro activo pull<br/>(VE: c2p, débito)"] --> pago
     clabe["Cuenta dedicada CLABE / CVU<br/>(MX, AR)"] --> pago
     pago --> conv["Conversión FX a tu<br/>payin_rate − fee fijo"]
@@ -66,7 +66,7 @@ Corredores y modalidades de cobro:
 | Paraguay | PYG | Transferencia anunciada |
 | Brasil | BRL | QR PIX dinámico |
 | Argentina | ARS | Cuenta CVU dedicada |
-| Estados Unidos | USD | Página de pago con tarjeta internacional (`card`) |
+| Estados Unidos | USD | Página de pago con tarjeta internacional (`card`), transferencia anunciada (ACH / wire) |
 
 La disponibilidad puede variar; el catálogo (`GET /v1/payins/methods`) es
 siempre la fuente de verdad. En todos los casos el abono llega igual: se
@@ -624,6 +624,70 @@ El corredor de tarjetas internacionales se habilita por cuenta. Consulta
 puede cobrar hoy.
 </Note>
 
+**Transferencia anunciada (`bank_transfer`) — ACH / wire**: cobra dólares
+desde cualquier cuenta bancaria de EE. UU., con el mismo contrato de
+transferencia anunciada de los otros países. Anuncias el depósito y la
+respuesta trae el bloque `deposit_instructions` completo — la cuenta de
+destino más el **routing number (ABA)** y el **código SWIFT** que el banco
+emisor necesita, y el banco intermediario cuando el wire lo requiere:
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payins \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "US",
+    "currency": "USD",
+    "method": "bank_transfer",
+    "amount": "1250.00",
+    "payer_name": "Acme Holdings LLC",
+    "idempotency_key": "factura-1042"
+  }'
+```
+
+Respuesta `201`:
+
+```json
+{
+  "payin_id": "8f4e…",
+  "status": "pending",
+  "reference": "CBM4X8Q2T7K9",
+  "note": "incluye la referencia en la descripción de la transferencia para que el depósito se acredite automáticamente",
+  "payer_source": "declared",
+  "payer_name": "Acme Holdings LLC",
+  "deposit_instructions": {
+    "bank_name": "Example Bank N.A.",
+    "account_number": "000123456789",
+    "account_type": "checking",
+    "holder_name": "CBPay Operations LLC",
+    "holder_tax_id": "88-1234567",
+    "routing_number": "021000021",
+    "swift": "EXMPUS33",
+    "bank_address": "100 Example Ave, New York, NY 10001, US",
+    "intermediary_bank_name": "Intermediary Bank N.A.",
+    "intermediary_bank_swift": "INTRUS33",
+    "reference_required": true,
+    "qr_payload": "Bank: Example Bank N.A.\nAccount type: checking\nAccount number: 000123456789\nRouting number (ABA): 021000021\nSWIFT: EXMPUS33\nBank address: 100 Example Ave, New York, NY 10001, US\nIntermediary bank: Intermediary Bank N.A.\nIntermediary SWIFT: INTRUS33\nHolder: CBPay Operations LLC\nTax ID: 88-1234567\nAmount: 1250.00 USD\nReference: CBM4X8Q2T7K9",
+    "qr_png_base64": "iVBORw0KGgoAAAANSUhEUgAA…"
+  }
+}
+```
+
+El pagador copia la `reference` (`CB…`) en el campo **memo / remittance**
+de la transferencia: es la señal que enlaza el abono con tu anuncio (ver
+[conciliación de una transferencia anunciada](#conciliaci%C3%B3n-de-una-transferencia-anunciada)).
+`intermediary_bank_name` / `intermediary_bank_swift` aparecen solo cuando la
+cuenta del corredor recibe wires internacionales a través de un banco
+corresponsal — muéstralos al pagador tal cual vienen; un wire que los
+necesita y viaja sin ellos puede rebotar o llegar con monto menor.
+
+Las instrucciones de depósito de EE. UU. son **obligatorias** en este
+corredor: si tu organización todavía no las configuró, el anuncio responde
+`422 deposit_instructions_unavailable` y no se crea nada (ver
+[errores comunes](#errores-comunes)). Puedes previsualizar la cuenta de
+destino sin anunciar con
+`GET /v1/payins/deposit-instructions?country=US&currency=USD&method=bank_transfer`.
+
 </Tab>
 </Tabs>
 
@@ -788,7 +852,8 @@ objeto que no corresponde.
 ### Instrucciones de depósito: a dónde transferir
 
 En los corredores donde tu organización registró una cuenta de destino para
-transferencias anunciadas (hoy Chile y Paraguay), la respuesta del anuncio
+transferencias anunciadas (hoy Chile, Paraguay y Estados Unidos), la
+respuesta del anuncio
 incluye un bloque `deposit_instructions` — la cuenta bancaria exacta a la
 que el pagador debe transferir, con el monto y la `reference` ya incrustados
 en un QR para copiar:
@@ -833,6 +898,43 @@ curl "https://api.qbank.cl/platform/v1/payins/deposit-instructions?country=CL&cu
     "holder_tax_id": "77123456-7",
     "reference_required": true,
     "qr_payload": "Bank: Banco Ejemplo\nAccount type: checking\nAccount number: 001122334455\nHolder: CBPay Operations SpA\nTax ID: 77123456-7",
+    "qr_png_base64": "iVBORw0KGgoAAAANSUhEUgAA…"
+  }
+}
+```
+
+En el corredor **US/USD** el bloque trae además los datos que una
+transferencia estadounidense necesita — estos campos están ausentes (no
+vacíos) en los corredores que no los usan:
+
+| Campo | Qué es |
+|---|---|
+| `routing_number` | Routing number ABA del banco destino (ACH / wire doméstico) |
+| `swift` | SWIFT/BIC del banco destino (wire internacional) |
+| `bank_address` | Dirección registrada del banco destino |
+| `intermediary_bank_name` | Banco corresponsal, cuando los wires llegan a través de uno |
+| `intermediary_bank_swift` | SWIFT/BIC del banco corresponsal |
+
+```bash
+curl "https://api.qbank.cl/platform/v1/payins/deposit-instructions?country=US&currency=USD&method=bank_transfer" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json Respuesta 200 (US)
+{
+  "deposit_instructions": {
+    "bank_name": "Example Bank N.A.",
+    "account_number": "000123456789",
+    "account_type": "checking",
+    "holder_name": "CBPay Operations LLC",
+    "holder_tax_id": "88-1234567",
+    "routing_number": "021000021",
+    "swift": "EXMPUS33",
+    "bank_address": "100 Example Ave, New York, NY 10001, US",
+    "intermediary_bank_name": "Intermediary Bank N.A.",
+    "intermediary_bank_swift": "INTRUS33",
+    "reference_required": true,
+    "qr_payload": "Bank: Example Bank N.A.\nAccount type: checking\nAccount number: 000123456789\nRouting number (ABA): 021000021\nSWIFT: EXMPUS33\nBank address: 100 Example Ave, New York, NY 10001, US\nIntermediary bank: Intermediary Bank N.A.\nIntermediary SWIFT: INTRUS33\nHolder: CBPay Operations LLC\nTax ID: 88-1234567",
     "qr_png_base64": "iVBORw0KGgoAAAANSUhEUgAA…"
   }
 }
@@ -944,7 +1046,7 @@ curl "https://api.qbank.cl/platform/v1/payins?from=2026-07-01&to=2026-07-08&stat
 | 400 | `idempotency_key_required` | El collect exige clave de idempotencia (débito real al pagador) |
 | 403 | `service_disabled` | Payins no está habilitado para tu cuenta — ver [servicios](/es/conceptos/servicios) |
 | 422 | `core_rejected` | El procesador rechazó el cargo; revisa el mensaje |
-| 422 | `deposit_instructions_unavailable` | `bank_transfer` en un corredor que exige una cuenta de destino registrada (hoy CL, PY) y tu organización todavía no configuró una — contacta a tu operador CBPay |
+| 422 | `deposit_instructions_unavailable` | `bank_transfer` en un corredor que exige una cuenta de destino registrada (hoy CL, PY, US) y tu organización todavía no configuró una — contacta a tu operador CBPay |
 | 502 | `core_unavailable` | No se pudo crear el cargo; reintenta la creación (no se cobró nada) |
 
 <Note>
@@ -1004,6 +1106,17 @@ La respuesta y `GET /v1/payins/{id}` persisten un bloque `failure` con el
 código y mensaje del riel (por ejemplo, un documento que no calza con el
 registro bancario del pagador). Corrige el dato y reintenta con clave
 nueva.
+</Accordion>
+<Accordion title="¿Cómo paga mi cliente de EE. UU. — ACH o wire?">
+Ambos llegan a la misma cuenta de destino. Un emisor doméstico usa ACH o un
+Fedwire con el `routing_number` (ABA); un emisor fuera de EE. UU. envía el
+wire con el `swift`, y cuando la cuenta recibe a través de un corresponsal,
+el bloque trae `intermediary_bank_name` / `intermediary_bank_swift` — el
+banco del emisor los pide. Cualquiera sea el riel, la `reference` (`CB…`)
+en el campo memo / remittance es lo que acredita el depósito
+automáticamente. Un wire se reporta normalmente el mismo día hábil; un ACH
+puede tardar de uno a tres días hábiles según el banco emisor — el crédito
+y el webhook `payin_credited` ocurren en cuanto el banco reporta el abono.
 </Accordion>
 <Accordion title="¿Por qué el QR bancario es solo texto para copiar y no algo que mi app bancaria escanea?">
 Los bancos no comparten un estándar de QR común para cuentas de destino

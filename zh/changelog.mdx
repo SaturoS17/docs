@@ -7,6 +7,30 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年8月7日" description="v2.37">
+
+### v2.37
+
+**新增**
+
+- **新增 payin 走廊：美国（USD）预报银行转账（ACH / wire）**。账户通过
+  `POST /v1/payins` 预报存款，请求体为 `{method: "bank_transfer", country:
+  "US", currency: "USD", amount, idempotency_key, payer_name?}`，响应返回唯一
+  参考号 `CB…`、`status: "pending"` 以及完整的 `deposit_instructions` 区块
+  ——该区块现在支持美国银行字段 `routing_number`（ABA）、`swift`（BIC）、
+  `bank_address`、`intermediary_bank_name` 和 `intermediary_bank_swift`。
+  客户从其银行转账时在附言/memo 中填写 `CB…` 参考号；款项到达归集账户后按
+  参考号匹配并以 USDT 入账（`status: "credited"`，含 `usdt_credited` 和
+  `fx_rate`）。没有预报或参考号的银行入账将保持 `unassigned`——失败关闭，
+  绝不会自动入账。无需预报即可预览收款账户：
+  `GET /v1/payins/deposit-instructions?country=US&currency=USD&method=
+  bank_transfer`。美国加入了强制要求组织配置存款指令的走廊名单：未配置即预报
+  会返回 `422 deposit_instructions_unavailable`。美国标签页（含完整
+  请求/响应示例、状态表、错误和 FAQ）见 [Payins 指南](/zh/guides/payins)；
+  `deposit_instructions` 区块和预览端点已在 API 参考中更新。
+
+</Update>
+
 <Update label="2026年8月6日" description="v2.36 · 3 个版本">
 
 
