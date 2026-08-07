@@ -135,6 +135,7 @@ Para reactivarla, el mismo llamado con `{ "status": "active" }`.
 | `wallet_key_exported` | Se exportó la llave privada de una wallet segregada (alerta de seguridad) |
 | `wallet_external_movement` | Movimiento on-chain de una wallet segregada que no pasó por la plataforma (esperable en custodia `client`) |
 | `wallet_key_compromise_suspected` | **Alarma crítica**: salida externa desde una wallet con custodia `cbpay` — posible llave comprometida |
+| `txn_review_status_changed` | Una operación retenida por el [firewall transaccional](https://docs.cbpayapp.com/es/guias/revisiones-operaciones) cambió de estado de revisión (`in_review` / `info_requested` / `released` / `rejected`) — payload neutro, sin motivos internos |
 | `corridor_status_changed` | Un corredor de pago cambió su disponibilidad (`operational` / `degraded` / `down`) — broadcast, ver la [guía de estado del servicio](https://docs.cbpayapp.com/es/estado-del-servicio) |
 | `balance_adjusted` | Un administrador aplicó un abono o cargo manual sobre un saldo |
 | `account_status_changed` | El estado administrativo de la cuenta cambió (`active` / `blocked` / `closed`) |
@@ -192,6 +193,19 @@ Para reactivarla, el mismo llamado con `{ "status": "active" }`.
   "total_debit": "86.014286",
   "status": "completed",
   "status_code": ""
+}
+```
+
+```json txn_review_status_changed
+{
+  "account_id": "ae8c…",
+  "review_id": "7a3f…",
+  "kind": "payout",
+  "resource_id": "0d4f…",
+  "status": "info_requested",
+  "previous_status": "in_review",
+  "amount": "1500.00",
+  "asset": "USD"
 }
 ```
 

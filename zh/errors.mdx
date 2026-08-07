@@ -204,6 +204,24 @@ description: "错误格式与完整的错误码目录"
 | 422 | `travel_rule_incomplete_approval` | 收款机构批准时未提供付款地址；请联系支持团队 |
 | 503 | `travel_rule_unavailable` | Travel Rule 数据交换暂时不可用；请使用**相同的**幂等键重试 |
 
+### 交易防火墙
+
+被交易防火墙挂起的操作在审核时返回的错误（见[指南](/zh/guides/transaction-reviews)）。挂起本身**不是错误**：创建请求返回 `202 Accepted` 并携带 `status: in_review` 和 `review_id`。
+
+| HTTP | `error` | 含义 |
+|---|---|---|
+| 400 | `invalid_status` | `status` 过滤条件无效——请使用 `in_review`、`info_requested`、`released`、`rejected` 或 `all` |
+| 400 | `invalid_range` | `from`/`to` 日期无效——格式为 `YYYY-MM-DD`（UTC） |
+| 400 | `invalid_name` | 缺少查询参数 `name` 中的文件名（最多 200 个字符，不含路径分隔符） |
+| 400 | `empty_file` | 文件请求体为空 |
+| 404 | `not_found` | 该审核或文件不属于您的账户——设计上绝不返回 403 |
+| 409 | `not_awaiting_info` | 该审核不在等待信息（已回到 `in_review` 或已有最终决定）——请查询其当前状态 |
+| 413 | `file_too_large` | 文件超过 50 MB 上限——请压缩或拆分 |
+| 415 | `unsupported_file_type` | 不支持的类型——请使用 PDF、PNG、JPEG、WEBP、TXT、CSV、DOC(X) 或 XLS(X)，并携带正确的 `Content-Type` 请求头 |
+| 422 | `file_limit_reached` | 该审核已有 20 个文件 |
+| 503 | `firewall_unavailable` | 无法评估策略或无法保存审核——请使用**相同的**幂等键重试 |
+| 503 | `storage_unavailable` | 文件存储暂不可用——请稍后重试 |
+
 ### 实时事件（SSE）
 
 来自 [`GET /v1/events`](/zh/realtime-events) 及其历史查询的错误码。

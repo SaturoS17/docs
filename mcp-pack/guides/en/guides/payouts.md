@@ -71,7 +71,6 @@ Available corridors and methods:
 | Ecuador | USD | `bank_transfer`, `deuna`, `cash_pickup`, `cnb` |
 | Paraguay | PYG | `bank_transfer` |
 | Argentina | ARS / USD | `bank_transfer` (CBU or CVU) |
-| United States | USD | `ach`, `wire`, `swift` |
 
 Availability may vary; the catalog (`GET /v1/payouts/methods`) is always
 the source of truth. If a country has a single method, `method` is
@@ -294,7 +293,6 @@ when configured; `0.30` here).
 | EC | `cash_pickup` / `cnb` | `name`, `document_value`, `sender_name` — the beneficiary withdraws with their ID |
 | PY | `bank_transfer` | `name` (max 35 chars), `tax_id`, `bank_code`, `account_number` |
 | AR | `bank_transfer` | `name`, `tax_id` (11-digit CUIT/CUIL), `account_number` (22-digit CBU or CVU; USD is CBU-only) |
-| US | `ach` / `wire` / `swift` | `name`, `account_number`, `email`, `country_code`, `address`, `city`, `postal_code`, `bank_name`, `bank_code` (ABA routing for `ach`/`wire`, SWIFT BIC for `swift`; + `account_type` `CHECKING`/`SAVING` for `ach`) |
 
 #### Chile
 
@@ -851,155 +849,6 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
   moves to `failed`, the debit is fully refunded and you receive the
   `payout_status_changed` webhook.
 
-#### United States
-
-Payouts in **USD** to US bank accounts, with three methods:
-
-- **`ach`** — ACH transfer to a checking or savings account. Submitted for
-  **next-day** settlement.
-- **`wire`** — domestic wire transfer. Minimum **USD 25.00**.
-- **`swift`** — international USD wire via SWIFT. Minimum **USD 25.00**.
-
-The US banking rail requires the beneficiary's **complete identity and
-postal address on every transfer** — an incomplete beneficiary is rejected
-at creation (`422`, see below). Required and optional fields:
-
-| Field | `ach` | `wire` | `swift` | Notes |
-|---|---|---|---|---|
-| `name` | required | required | required | Full legal name of the holder |
-| `account_number` | required | required | required | US bank account number |
-| `email` | required | required | required | The rail registers it for every beneficiary |
-| `country_code` | required | required | required | ISO-3166 alpha-2 (`US` for a domestic account) |
-| `address`, `city`, `postal_code` | required | required | required | Full postal address of the beneficiary |
-| `state` | optional | optional | optional | 2-letter state code |
-| `phone` | optional | optional | optional | Beneficiary contact phone |
-| `bank_name` | required | required | required | Receiving bank's name |
-| `bank_code` | required | required | required | **ABA routing number** (9 digits) for `ach`/`wire`; **SWIFT BIC** for `swift` |
-| `account_type` | required | — | — | `CHECKING` or `SAVING` |
-| `bank_address`, `bank_city`, `bank_state`, `bank_postal_code`, `bank_country`, `bank_phone` | optional | optional | optional | Receiving bank's address block and phone — send them when you have them |
-
-There is no US banks catalog: `bank_code` is the beneficiary bank's own
-ABA routing number (ACH/wire) or SWIFT BIC (swift), which the beneficiary
-provides.
-
-```bash ach
-curl -X POST https://api.qbank.cl/platform/v1/payouts \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "country": "US",
-    "currency": "USD",
-    "method": "ach",
-    "amount": "250.00",
-    "beneficiary": {
-      "name": "John Carter",
-      "email": "john.carter@example.com",
-      "account_number": "123456789012",
-      "account_type": "CHECKING",
-      "country_code": "US",
-      "address": "1200 Brickell Ave",
-      "city": "Miami",
-      "state": "FL",
-      "postal_code": "33131",
-      "bank_name": "Example Bank",
-      "bank_code": "021000089"
-    },
-    "description": "Invoice 2210",
-    "idempotency_key": "us-ach-2210"
-  }'
-```
-
-```bash wire
-curl -X POST https://api.qbank.cl/platform/v1/payouts \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "country": "US",
-    "currency": "USD",
-    "method": "wire",
-    "amount": "1000.00",
-    "beneficiary": {
-      "name": "John Carter",
-      "email": "john.carter@example.com",
-      "account_number": "123456789012",
-      "country_code": "US",
-      "address": "1200 Brickell Ave",
-      "city": "Miami",
-      "state": "FL",
-      "postal_code": "33131",
-      "bank_name": "Example Bank",
-      "bank_code": "021000089"
-    },
-    "description": "Invoice 2211",
-    "idempotency_key": "us-wire-2211"
-  }'
-```
-
-```bash swift
-curl -X POST https://api.qbank.cl/platform/v1/payouts \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "country": "US",
-    "currency": "USD",
-    "method": "swift",
-    "amount": "1000.00",
-    "beneficiary": {
-      "name": "John Carter",
-      "email": "john.carter@example.com",
-      "account_number": "123456789012",
-      "country_code": "US",
-      "address": "1200 Brickell Ave",
-      "city": "Miami",
-      "state": "FL",
-      "postal_code": "33131",
-      "bank_name": "Example Bank",
-      "bank_code": "CHASUS33XXX"
-    },
-    "description": "Invoice 2212",
-    "idempotency_key": "us-swift-2212"
-  }'
-```
-
-```json
-{
-  "payout_id": "c5f2…",
-  "country": "US",
-  "currency": "USD",
-  "method": "ach",
-  "local_amount": "250.00",
-  "fx_rate": "0.9980",
-  "usdt_amount": "250.501002",
-  "fee": "0.300000",
-  "total_debit": "250.801002",
-  "status": "processing"
-}
-```
-
-- **First payout to a brand-new beneficiary may stay `processing` longer**:
-  the rail reviews new beneficiaries before moving money, so the response
-  can come back with `status: "processing"` and
-  `status_code: "pending_aml"`. The transfer executes automatically once
-  the rail approves the beneficiary — you always get the final state via
-  the `payout_status_changed` webhook (with periodic reconciliation as
-  backup). Subsequent payouts to the same beneficiary go straight through.
-- If the rail **rejects the beneficiary**, the payout ends
-  `status: "failed"` with `status_code: "counterparty_rejected"` and the
-  debit is refunded automatically.
-- **Minimums**: `wire` and `swift` require at least **USD 25.00**; below
-  that the creation is rejected with `422` and `status_message`
-  `"…payouts require an amount of at least USD 25"`. ACH has no validated
-  minimum.
-- The rail asks for a **payment purpose declaration** on every transfer.
-  The defaults apply unless you override them per operation in `options`
-  (values up to 140 characters):
-
-  | `options` key | What it declares | Default |
-  |---|---|---|
-  | `purpose` | Payment purpose | `Invoice_Payment` |
-  | `crypto_activity` | Whether the payment relates to crypto buy/sell activity (`Yes`/`No`) | `No` |
-  | `payment_gateway` | Deposit gateway declaration | rail default |
-
 ## QR payout
 
 Paying a collection QR (Bolivia, Brazil PIX) now has its own guide:
@@ -1033,7 +882,6 @@ object in `status: failed` and the refund already applied. If it fails later
 | `status_code` | Meaning | Action |
 |---|---|---|
 | `core_rejected` | The processor rejected the operation at creation (invalid beneficiary data, corridor unavailable) | Read `status_message`, fix the data and create a new payout with a new key |
-| `counterparty_rejected` | The banking rail rejected the beneficiary itself (US/USD corridor) | Check the beneficiary's identity and address data with the holder, then create a new payout with a new key |
 | `channel_unavailable` | The payout channel became temporarily unavailable | Retry later; the refund (if a debit happened) is already applied |
 | *another code* | Later rejection by the banking rail (e.g. destination account closed) | Same: fix the data and create a new operation |
 | *(empty)* | Generic corridor failure | Check `status_message`; if unclear, contact support with the `payout_id` |
@@ -1070,11 +918,3 @@ data or contact your CBPay team.
 Retry with the **same** `idempotency_key`: you get the original payout
 back (`idempotency_hit: true`) — never a duplicate. A new key is a new,
 independent payout.
-#### Why is my first US payout to a new beneficiary still processing?
-The US/USD rail reviews every brand-new beneficiary before moving money:
-the payout stays `processing` with `status_code: "pending_aml"` until the
-rail approves the beneficiary, and then executes automatically. You receive
-the final state via the `payout_status_changed` webhook — the next payouts
-to that same beneficiary no longer wait. If the rail rejects the
-beneficiary, the payout ends `failed` with
-`status_code: "counterparty_rejected"` and the debit is refunded.

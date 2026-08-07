@@ -1,5 +1,5 @@
 {
-  "count": 33,
+  "count": 34,
   "events": [
     {
       "description": {
@@ -634,6 +634,29 @@
         "en": "Transfer received",
         "es": "Transferencia recibida",
         "zh": "已收到转账"
+      }
+    },
+    {
+      "description": {
+        "en": "A transaction of the account changed its review status (`in_review` when the transactional firewall holds it, `info_requested`, `released`, `rejected`).\nThe payload is deliberately neutral: status and operation summary only — internal review reasons or compliance notes are never included.\nEvery delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Respond 2xx; up to 5 attempts with incremental backoff.",
+        "es": "Una operación de la cuenta cambió su estado de revisión (`in_review` cuando el firewall transaccional la retiene, `info_requested`, `released`, `rejected`).\nEl payload es deliberadamente neutro: solo estado y resumen de la operación — jamás incluye motivos internos de revisión ni notas de cumplimiento.\nCada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` y `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Responde 2xx; hasta 5 intentos con backoff incremental.",
+        "zh": "账户的一笔操作更改了其审核状态(交易防火墙扣留时为 `in_review`,另有 `info_requested`、`released`、`rejected`)。\n负载刻意保持中性:仅包含状态和操作摘要——绝不包含内部审核原因或合规备注。\n每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`。请返回 2xx;最多重试 5 次,间隔递增。"
+      },
+      "event": "txn_review_status_changed",
+      "payload_example": {
+        "account_id": "ae8cf540-1234-5678-9abc-def012345678",
+        "amount": "1500.00",
+        "asset": "USD",
+        "kind": "payout",
+        "previous_status": "in_review",
+        "resource_id": "8b4c3d2e-1111-4111-8111-111111111111",
+        "review_id": "7a3f2b1c-0000-4000-8000-000000000001",
+        "status": "released"
+      },
+      "summary": {
+        "en": "Transaction review status changed",
+        "es": "Cambio de estado de una revisión transaccional",
+        "zh": "交易审核状态变更"
       }
     },
     {

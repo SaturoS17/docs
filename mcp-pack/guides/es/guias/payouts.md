@@ -70,7 +70,6 @@ Corredores y métodos disponibles:
 | Ecuador | USD | `bank_transfer`, `deuna`, `cash_pickup`, `cnb` |
 | Paraguay | PYG | `bank_transfer` |
 | Argentina | ARS / USD | `bank_transfer` (CBU o CVU) |
-| Estados Unidos | USD | `ach`, `wire`, `swift` |
 
 La disponibilidad puede variar; el catálogo (`GET /v1/payouts/methods`) es
 siempre la fuente de verdad. Si un país tiene un solo método, `method` es
@@ -293,7 +292,6 @@ las de tu cuenta en `GET /v1/rates`; el débito es `usdt_amount + fee`
 | EC | `cash_pickup` / `cnb` | `name`, `document_value`, `sender_name` — el beneficiario retira con su documento |
 | PY | `bank_transfer` | `name` (≤35), `tax_id`, `bank_code`, `account_number` |
 | AR | `bank_transfer` | `name`, `tax_id` (CUIT/CUIL de 11 dígitos), `account_number` (CBU o CVU de 22 dígitos; USD solo CBU) |
-| US | `ach` / `wire` / `swift` | `name`, `account_number`, `email`, `country_code`, `address`, `city`, `postal_code`, `bank_name`, `bank_code` (routing ABA para `ach`/`wire`, BIC SWIFT para `swift`; + `account_type` `CHECKING`/`SAVING` para `ach`) |
 
 #### Chile
 
@@ -850,156 +848,6 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
   `failed`, el débito se reembolsa completo y recibes el webhook
   `payout_status_changed`.
 
-#### Estados Unidos
-
-Payouts en **USD** a cuentas bancarias de EE. UU., con tres métodos:
-
-- **`ach`** — transferencia ACH a cuenta corriente o de ahorro. Se envía
-  con liquidación **al día siguiente**.
-- **`wire`** — transferencia wire doméstica. Mínimo **USD 25.00**.
-- **`swift`** — wire internacional en USD vía SWIFT. Mínimo **USD 25.00**.
-
-El riel bancario de EE. UU. exige la **identidad y dirección postal
-completas del beneficiario en cada transferencia** — un beneficiario
-incompleto se rechaza al crear (`422`, ver abajo). Campos requeridos y
-opcionales:
-
-| Campo | `ach` | `wire` | `swift` | Notas |
-|---|---|---|---|---|
-| `name` | requerido | requerido | requerido | Nombre legal completo del titular |
-| `account_number` | requerido | requerido | requerido | Número de cuenta bancaria US |
-| `email` | requerido | requerido | requerido | El riel lo registra para cada beneficiario |
-| `country_code` | requerido | requerido | requerido | ISO-3166 alpha-2 (`US` para cuenta doméstica) |
-| `address`, `city`, `postal_code` | requerido | requerido | requerido | Dirección postal completa del beneficiario |
-| `state` | opcional | opcional | opcional | Código de estado de 2 letras |
-| `phone` | opcional | opcional | opcional | Teléfono de contacto del beneficiario |
-| `bank_name` | requerido | requerido | requerido | Nombre del banco receptor |
-| `bank_code` | requerido | requerido | requerido | **Routing number ABA** (9 dígitos) para `ach`/`wire`; **BIC SWIFT** para `swift` |
-| `account_type` | requerido | — | — | `CHECKING` o `SAVING` |
-| `bank_address`, `bank_city`, `bank_state`, `bank_postal_code`, `bank_country`, `bank_phone` | opcional | opcional | opcional | Bloque de dirección y teléfono del banco receptor — envíalos cuando los tengas |
-
-No hay catálogo de bancos de EE. UU.: el `bank_code` es el propio routing
-ABA del banco del beneficiario (ACH/wire) o su BIC SWIFT (swift), dato que
-entrega el beneficiario.
-
-```bash ach
-curl -X POST https://api.qbank.cl/platform/v1/payouts \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "country": "US",
-    "currency": "USD",
-    "method": "ach",
-    "amount": "250.00",
-    "beneficiary": {
-      "name": "John Carter",
-      "email": "john.carter@example.com",
-      "account_number": "123456789012",
-      "account_type": "CHECKING",
-      "country_code": "US",
-      "address": "1200 Brickell Ave",
-      "city": "Miami",
-      "state": "FL",
-      "postal_code": "33131",
-      "bank_name": "Example Bank",
-      "bank_code": "021000089"
-    },
-    "description": "Factura 2210",
-    "idempotency_key": "us-ach-2210"
-  }'
-```
-
-```bash wire
-curl -X POST https://api.qbank.cl/platform/v1/payouts \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "country": "US",
-    "currency": "USD",
-    "method": "wire",
-    "amount": "1000.00",
-    "beneficiary": {
-      "name": "John Carter",
-      "email": "john.carter@example.com",
-      "account_number": "123456789012",
-      "country_code": "US",
-      "address": "1200 Brickell Ave",
-      "city": "Miami",
-      "state": "FL",
-      "postal_code": "33131",
-      "bank_name": "Example Bank",
-      "bank_code": "021000089"
-    },
-    "description": "Factura 2211",
-    "idempotency_key": "us-wire-2211"
-  }'
-```
-
-```bash swift
-curl -X POST https://api.qbank.cl/platform/v1/payouts \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "country": "US",
-    "currency": "USD",
-    "method": "swift",
-    "amount": "1000.00",
-    "beneficiary": {
-      "name": "John Carter",
-      "email": "john.carter@example.com",
-      "account_number": "123456789012",
-      "country_code": "US",
-      "address": "1200 Brickell Ave",
-      "city": "Miami",
-      "state": "FL",
-      "postal_code": "33131",
-      "bank_name": "Example Bank",
-      "bank_code": "CHASUS33XXX"
-    },
-    "description": "Factura 2212",
-    "idempotency_key": "us-swift-2212"
-  }'
-```
-
-```json
-{
-  "payout_id": "c5f2…",
-  "country": "US",
-  "currency": "USD",
-  "method": "ach",
-  "local_amount": "250.00",
-  "fx_rate": "0.9980",
-  "usdt_amount": "250.501002",
-  "fee": "0.300000",
-  "total_debit": "250.801002",
-  "status": "processing"
-}
-```
-
-- **El primer payout a un beneficiario nuevo puede quedarse `processing`
-  más tiempo**: el riel revisa a los beneficiarios nuevos antes de mover
-  plata, así que la respuesta puede volver con `status: "processing"` y
-  `status_code: "pending_aml"`. La transferencia se ejecuta sola cuando el
-  riel aprueba al beneficiario — el estado final siempre llega por el
-  webhook `payout_status_changed` (con conciliación periódica de respaldo).
-  Los payouts siguientes al mismo beneficiario van directo.
-- Si el riel **rechaza al beneficiario**, el payout termina
-  `status: "failed"` con `status_code: "counterparty_rejected"` y el
-  débito se reembolsa automáticamente.
-- **Mínimos**: `wire` y `swift` exigen al menos **USD 25.00**; bajo eso la
-  creación se rechaza con `422` y `status_message`
-  `"…payouts require an amount of at least USD 25"`. ACH no tiene mínimo
-  validado.
-- El riel pide una **declaración de propósito del pago** en cada
-  transferencia. Los defaults aplican salvo que los sobreescribas por
-  operación en `options` (valores de hasta 140 caracteres):
-
-  | Clave de `options` | Qué declara | Default |
-  |---|---|---|
-  | `purpose` | Propósito del pago | `Invoice_Payment` |
-  | `crypto_activity` | Si el pago se relaciona con compra/venta de cripto (`Yes`/`No`) | `No` |
-  | `payment_gateway` | Declaración de gateway de depósito | default del riel |
-
 ## Payout QR
 
 Pagar un QR de cobro (Bolivia, PIX de Brasil) ahora tiene su propia guía:
@@ -1033,7 +881,6 @@ webhook con `status: failed` y el reembolso automático en ese momento.
 | `status_code` | Significado | Acción |
 |---|---|---|
 | `core_rejected` | El procesador rechazó la operación al crearla (datos del beneficiario inválidos, corredor no disponible) | Lee `status_message`, corrige y crea un payout nuevo con clave nueva |
-| `counterparty_rejected` | El riel bancario rechazó al beneficiario mismo (corredor US/USD) | Revisa la identidad y dirección del beneficiario con el titular y crea un payout nuevo con clave nueva |
 | `channel_unavailable` | El canal de pago quedó temporalmente no disponible | Reintenta más tarde; el reembolso (si hubo débito) ya está aplicado |
 | *otro código* | Rechazo posterior del riel bancario (p. ej. cuenta destino cerrada) | Igual: corrige los datos y crea una operación nueva |
 | *(vacío)* | Fallo genérico del corredor | Revisa `status_message`; si no es claro, contacta soporte con el `payout_id` |
@@ -1070,11 +917,3 @@ beneficiario o contacta a tu equipo CBPay.
 Reintenta con la **misma** `idempotency_key`: recibes el payout original
 (`idempotency_hit: true`) — jamás un duplicado. Una clave nueva es un
 payout nuevo e independiente.
-#### ¿Por qué mi primer payout US a un beneficiario nuevo sigue en processing?
-El riel US/USD revisa a cada beneficiario nuevo antes de mover plata: el
-payout queda `processing` con `status_code: "pending_aml"` hasta que el
-riel lo aprueba, y luego se ejecuta solo. El estado final llega por el
-webhook `payout_status_changed` — los siguientes payouts a ese mismo
-beneficiario ya no esperan. Si el riel rechaza al beneficiario, el payout
-termina `failed` con `status_code: "counterparty_rejected"` y el débito se
-reembolsa.

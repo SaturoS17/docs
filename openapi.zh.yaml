@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.35'
+  version: '2.36'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -15795,6 +15795,284 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/me/txn-reviews:
+    get:
+      tags:
+      - Account
+      operationId: listMyTxnReviews
+      summary: 我的交易审核
+      description: |-
+        账户被交易防火墙挂起的资金操作（付款、加密货币提现、收款、银行转账）及其审核状态。可按 `status` 和日期范围（`from`/`to`，UTC，均含边界）过滤。当审核进入 `info_requested` 时，请通过 `POST /v1/me/txn-reviews/{reviewID}/files` 上传所需文件——在合规团队作出决定前，该操作将保持挂起状态。
+      parameters:
+      - name: status
+        in: query
+        description: '`in_review`, `info_requested`, `released`, `rejected` or `all` (empty = open: `in_review` + `info_requested`).'
+        schema:
+          type: string
+          enum:
+          - in_review
+          - info_requested
+          - released
+          - rejected
+          - all
+      - name: from
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: 我的交易审核.
+          content:
+            application/json:
+              example:
+                reviews:
+                - id: 7a3f2b1c-0000-4000-8000-000000000001
+                  kind: payout
+                  resource_id: 8b4c3d2e-1111-4111-8111-111111111111
+                  status: info_requested
+                  amount_label: '1500.00'
+                  asset: USD
+                  country: MX
+                  method: spei
+                  counterparty: Juan Pérez
+                  info_request:
+                    message: Please upload the invoice that justifies this payment
+                    requested_at: '2026-08-06T15:20:00Z'
+                  created_at: '2026-08-06T14:32:00Z'
+                  updated_at: '2026-08-06T15:20:00Z'
+                page: 1
+                page_size: 50
+                total: 1
+        '400':
+          description: Invalid filter.
+          content:
+            application/json:
+              examples:
+                invalid_status:
+                  summary: Unknown status
+                  value:
+                    error: invalid_status
+                    message: status must be one of in_review, info_requested, released, rejected, all
+                invalid_range:
+                  summary: Bad date range
+                  value:
+                    error: invalid_range
+                    message: invalid date range
+  /v1/me/txn-reviews/{reviewID}:
+    get:
+      tags:
+      - Account
+      operationId: getMyTxnReview
+      summary: 审核详情
+      description: '账户某条审核的详情，包括信息请求消息（`info_request`）和已上传的文件。内部挂起原因和合规备注绝不对外暴露（防止通风报信）。被拒绝的审核还会包含 `decision_note`（与拒绝邮件相同的文本）和 `decided_at`。'
+      parameters:
+      - name: reviewID
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The review with its uploaded files.
+          content:
+            application/json:
+              example:
+                review:
+                  id: 7a3f2b1c-0000-4000-8000-000000000001
+                  kind: payout
+                  resource_id: 8b4c3d2e-1111-4111-8111-111111111111
+                  status: info_requested
+                  amount_label: '1500.00'
+                  asset: USD
+                  country: MX
+                  method: spei
+                  counterparty: Juan Pérez
+                  info_request:
+                    message: Please upload the invoice that justifies this payment
+                    requested_at: '2026-08-06T15:20:00Z'
+                  files:
+                  - id: f1e2d3c4-0000-4000-8000-0000000000aa
+                    review_id: 7a3f2b1c-0000-4000-8000-000000000001
+                    file_name: invoice-221.pdf
+                    content_type: application/pdf
+                    size_bytes: 482110
+                    uploaded_by: account
+                    created_at: '2026-08-06T15:40:00Z'
+                  created_at: '2026-08-06T14:32:00Z'
+                  updated_at: '2026-08-06T15:40:00Z'
+        '404':
+          description: The review does not belong to the account.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: review not found
+  /v1/me/txn-reviews/{reviewID}/files:
+    post:
+      tags:
+      - Account
+      operationId: uploadMyTxnReviewFile
+      summary: 为信息请求上传文件
+      description: |-
+        为处于 `info_requested` 状态的审核上传证明文件。以原始二进制形式发送请求体，携带对应的 `Content-Type`（PDF、PNG、JPEG、WEBP、TXT、CSV、DOC(X) 或 XLS(X)，最大 50 MB），并在 `name` 查询参数中提供文件名。上传文件后，审核将回到 `in_review` 状态，等待合规团队重新评估。
+      parameters:
+      - name: reviewID
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: name
+        in: query
+        required: true
+        description: Original filename (max 200 chars, no path separators).
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/pdf:
+            schema:
+              type: string
+              format: binary
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
+          image/png:
+            schema:
+              type: string
+              format: binary
+          text/csv:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '201':
+          description: File uploaded; the review moved back to `in_review`.
+          content:
+            application/json:
+              example:
+                file:
+                  id: f1e2d3c4-0000-4000-8000-0000000000aa
+                  review_id: 7a3f2b1c-0000-4000-8000-000000000001
+                  file_name: invoice-221.pdf
+                  content_type: application/pdf
+                  size_bytes: 482110
+                  uploaded_by: account
+                  created_at: '2026-08-06T15:40:00Z'
+                status: in_review
+        '400':
+          description: Validation error.
+          content:
+            application/json:
+              examples:
+                invalid_name:
+                  summary: Missing filename
+                  value:
+                    error: invalid_name
+                    message: name is required (query param, max 200 chars, no path separators)
+                empty_file:
+                  summary: Empty body
+                  value:
+                    error: empty_file
+                    message: the file body is empty
+        '404':
+          description: The review does not belong to the account.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: review not found
+        '409':
+          description: The review is not waiting for information.
+          content:
+            application/json:
+              example:
+                error: not_awaiting_info
+                message: this review is not waiting for additional information
+        '413':
+          description: The file exceeds 50 MB.
+          content:
+            application/json:
+              example:
+                error: file_too_large
+                message: max file size is 50 MB
+        '415':
+          description: Unsupported content type.
+          content:
+            application/json:
+              example:
+                error: unsupported_file_type
+                message: 'allowed types: pdf, png, jpeg, webp, txt, csv, doc(x), xls(x) — send the file''s Content-Type header'
+        '422':
+          description: The review already has 20 files.
+          content:
+            application/json:
+              example:
+                error: file_limit_reached
+                message: a review accepts at most 20 files
+  /v1/me/txn-reviews/{reviewID}/files/{fileID}/download:
+    get:
+      tags:
+      - Account
+      operationId: downloadMyTxnReviewFile
+      summary: 下载您上传的文件
+      description: '下载账户此前为该审核上传的文件。以原始 `Content-Type` 返回原始二进制内容。属于其他账户或其他审核的文件将返回 `404 not_found`（绝不返回 `403`，以避免泄露存在性）。'
+      parameters:
+      - name: reviewID
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: fileID
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The raw file bytes with the original `Content-Type`.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: The review or file does not belong to the account.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: review not found
+
 components:
   securitySchemes:
     bearerAuth:
@@ -17535,6 +17813,41 @@ webhooks:
               amount: '25.000000'
               description: 费用分摊
               created_at: '2026-07-07T12:00:00Z'
+      responses:
+        '200':
+          description: 返回任意 2xx 以确认投递。
+  txn_review_status_changed:
+    post:
+      summary: 交易审核状态变更
+      description: '账户的一笔操作更改了其审核状态(交易防火墙扣留时为 `in_review`,另有 `info_requested`、`released`、`rejected`)。
+
+        负载刻意保持中性:仅包含状态和操作摘要——绝不包含内部审核原因或合规备注。
+
+        每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和
+        `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。请返回 2xx;最多重试 5 次,间隔递增。'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                account_id: *id017
+                review_id: *id017
+                kind: *id017
+                resource_id: *id017
+                status: *id017
+                previous_status: *id017
+                amount: *id017
+                asset: *id017
+            example:
+              account_id: ae8cf540-1234-5678-9abc-def012345678
+              review_id: 7a3f2b1c-0000-4000-8000-000000000001
+              kind: payout
+              resource_id: 8b4c3d2e-1111-4111-8111-111111111111
+              status: released
+              previous_status: in_review
+              amount: '1500.00'
+              asset: USD
       responses:
         '200':
           description: 返回任意 2xx 以确认投递。

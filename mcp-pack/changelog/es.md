@@ -9,7 +9,22 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-## v2.35 · 2 versiones - 6 de agosto de 2026
+## v2.36 · 3 versiones - 6 de agosto de 2026
+
+### v2.36
+
+**Agregado**
+
+- **Firewall transaccional**: cuando tu organización tiene el firewall
+  transaccional habilitado, las operaciones de dinero (payouts, retiros
+  crypto, payins y transferencias banking) pueden quedar `in_review` a la
+  espera de una decisión humana — la API responde `202 Accepted` con un
+  `review_id`. Nuevos endpoints de cuenta `GET /v1/me/txn-reviews` (lista y
+  detalle), `POST /v1/me/txn-reviews/{reviewID}/files` (sube los documentos
+  solicitados) y `GET .../files/{fileID}/download` (descarga tus propios
+  archivos), además del nuevo webhook `txn_review_status_changed` (payload
+  neutro — las razones internas nunca viajan). Nueva guía:
+  [Revisiones de operaciones](https://docs.cbpayapp.com/es/guias/revisiones-operaciones).
 
 ### v2.35
 

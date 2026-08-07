@@ -8,7 +8,22 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.35 · 2 releases - August 6, 2026
+## v2.36 · 3 releases - August 6, 2026
+
+### v2.36
+
+**Added**
+
+- **Transactional firewall**: when your organization has the transactional
+  firewall enabled, money operations (payouts, crypto withdrawals, payins
+  and banking transfers) can be held `in_review` awaiting a human decision —
+  the API answers `202 Accepted` with a `review_id`. New account endpoints
+  `GET /v1/me/txn-reviews` (list and
+  detail), `POST /v1/me/txn-reviews/{reviewID}/files` (upload the requested
+  documents) and `GET .../files/{fileID}/download` (download your own files), plus
+  the new `txn_review_status_changed` webhook (neutral payload — internal
+  reasons never travel). New guide:
+  [Transaction reviews](https://docs.cbpayapp.com/en/guides/transaction-reviews).
 
 ### v2.35
 

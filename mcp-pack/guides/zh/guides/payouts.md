@@ -68,7 +68,6 @@ curl https://api.qbank.cl/platform/v1/payouts/methods \
 | 厄瓜多尔 | USD | `bank_transfer`、`deuna`、`cash_pickup`、`cnb` |
 | 巴拉圭 | PYG | `bank_transfer` |
 | 阿根廷 | ARS / USD | `bank_transfer`（CBU 或 CVU） |
-| 美国 | USD | `ach`、`wire`、`swift` |
 
 可用性可能变化；目录（`GET /v1/payouts/methods`）始终是唯一可信来源。
 如果某个国家只有一种方式，`method` 为可选。每种方式的计费方式相同：
@@ -286,7 +285,6 @@ curl "https://api.qbank.cl/platform/v1/payouts?from=2026-07-01&to=2026-07-08&sta
 | EC | `cash_pickup` / `cnb` | `name`、`document_value`、`sender_name` — 收款人凭证件领取现金 |
 | PY | `bank_transfer` | `name`（最多 35 个字符）、`tax_id`、`bank_code`、`account_number` |
 | AR | `bank_transfer` | `name`、`tax_id`（11 位 CUIT/CUIL）、`account_number`（22 位 CBU 或 CVU；USD 仅支持 CBU） |
-| US | `ach` / `wire` / `swift` | `name`、`account_number`、`email`、`country_code`、`address`、`city`、`postal_code`、`bank_name`、`bank_code`（`ach`/`wire` 用 ABA routing，`swift` 用 SWIFT BIC；`ach` 还需 `account_type` `CHECKING`/`SAVING`） |
 
 #### 智利
 
@@ -833,147 +831,6 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
   此时该出金变为 `failed`，扣款全额退还，并且你会收到
   `payout_status_changed` webhook。
 
-#### 美国
-
-以 **USD** 向美国银行账户出金，提供三种方式：
-
-- **`ach`** —— 向支票或储蓄账户发起 ACH 转账，**次日**结算。
-- **`wire`** —— 美国境内电汇，最低 **USD 25.00**。
-- **`swift`** —— 通过 SWIFT 的国际美元电汇，最低 **USD 25.00**。
-
-美国银行通道要求**每笔转账都附带收款人完整的身份与邮政地址** ——
-收款人信息不完整会在创建时被拒绝（`422`，见下文）。必填与选填字段：
-
-| 字段 | `ach` | `wire` | `swift` | 说明 |
-|---|---|---|---|---|
-| `name` | 必填 | 必填 | 必填 | 账户持有人的完整法定姓名 |
-| `account_number` | 必填 | 必填 | 必填 | 美国银行账户号码 |
-| `email` | 必填 | 必填 | 必填 | 通道会为每个收款人登记该邮箱 |
-| `country_code` | 必填 | 必填 | 必填 | ISO-3166 alpha-2（美国境内账户为 `US`） |
-| `address`、`city`、`postal_code` | 必填 | 必填 | 必填 | 收款人的完整邮政地址 |
-| `state` | 选填 | 选填 | 选填 | 两位字母的州代码 |
-| `phone` | 选填 | 选填 | 选填 | 收款人联系电话 |
-| `bank_name` | 必填 | 必填 | 必填 | 收款银行名称 |
-| `bank_code` | 必填 | 必填 | 必填 | `ach`/`wire` 用 **ABA routing number**（9 位数字）；`swift` 用 **SWIFT BIC** |
-| `account_type` | 必填 | — | — | `CHECKING` 或 `SAVING` |
-| `bank_address`、`bank_city`、`bank_state`、`bank_postal_code`、`bank_country`、`bank_phone` | 选填 | 选填 | 选填 | 收款银行的地址块与电话 —— 如有请提供 |
-
-美国没有银行目录：`bank_code` 是收款人银行自身的 ABA routing number
-（ACH/wire）或 SWIFT BIC（swift），由收款人提供。
-
-```bash ach
-curl -X POST https://api.qbank.cl/platform/v1/payouts \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "country": "US",
-    "currency": "USD",
-    "method": "ach",
-    "amount": "250.00",
-    "beneficiary": {
-      "name": "John Carter",
-      "email": "john.carter@example.com",
-      "account_number": "123456789012",
-      "account_type": "CHECKING",
-      "country_code": "US",
-      "address": "1200 Brickell Ave",
-      "city": "Miami",
-      "state": "FL",
-      "postal_code": "33131",
-      "bank_name": "Example Bank",
-      "bank_code": "021000089"
-    },
-    "description": "Invoice 2210",
-    "idempotency_key": "us-ach-2210"
-  }'
-```
-
-```bash wire
-curl -X POST https://api.qbank.cl/platform/v1/payouts \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "country": "US",
-    "currency": "USD",
-    "method": "wire",
-    "amount": "1000.00",
-    "beneficiary": {
-      "name": "John Carter",
-      "email": "john.carter@example.com",
-      "account_number": "123456789012",
-      "country_code": "US",
-      "address": "1200 Brickell Ave",
-      "city": "Miami",
-      "state": "FL",
-      "postal_code": "33131",
-      "bank_name": "Example Bank",
-      "bank_code": "021000089"
-    },
-    "description": "Invoice 2211",
-    "idempotency_key": "us-wire-2211"
-  }'
-```
-
-```bash swift
-curl -X POST https://api.qbank.cl/platform/v1/payouts \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "country": "US",
-    "currency": "USD",
-    "method": "swift",
-    "amount": "1000.00",
-    "beneficiary": {
-      "name": "John Carter",
-      "email": "john.carter@example.com",
-      "account_number": "123456789012",
-      "country_code": "US",
-      "address": "1200 Brickell Ave",
-      "city": "Miami",
-      "state": "FL",
-      "postal_code": "33131",
-      "bank_name": "Example Bank",
-      "bank_code": "CHASUS33XXX"
-    },
-    "description": "Invoice 2212",
-    "idempotency_key": "us-swift-2212"
-  }'
-```
-
-```json
-{
-  "payout_id": "c5f2…",
-  "country": "US",
-  "currency": "USD",
-  "method": "ach",
-  "local_amount": "250.00",
-  "fx_rate": "0.9980",
-  "usdt_amount": "250.501002",
-  "fee": "0.300000",
-  "total_debit": "250.801002",
-  "status": "processing"
-}
-```
-
-- **向全新收款人发起的第一笔 payout 可能会在 `processing` 停留更久**：
-  通道会先审核新收款人再动资金，因此响应可能返回
-  `status: "processing"` 和 `status_code: "pending_aml"`。通道批准收款人后，
-  转账会自动执行 —— 最终状态总会通过 `payout_status_changed` webhook 送达
-  （并有定期对账作为兜底）。之后向同一收款人的 payout 将直接执行。
-- 如果通道**拒绝该收款人**，payout 会以 `status: "failed"`、
-  `status_code: "counterparty_rejected"` 结束，扣款自动退还。
-- **最低金额**：`wire` 和 `swift` 至少 **USD 25.00**；低于该金额会在创建时
-  被拒绝（`422`，`status_message` 为
-  `"…payouts require an amount of at least USD 25"`）。ACH 无已验证的最低金额。
-- 通道要求每笔转账附带**付款用途声明**。除非在 `options` 中按笔覆盖，
-  否则使用默认值（值最长 140 字符）：
-
-  | `options` 键 | 声明内容 | 默认值 |
-  |---|---|---|
-  | `purpose` | 付款用途 | `Invoice_Payment` |
-  | `crypto_activity` | 该付款是否涉及加密货币买卖活动（`Yes`/`No`） | `No` |
-  | `payment_gateway` | 入金网关声明 | 通道默认值 |
-
 ## QR 出金
 
 支付收款二维码（玻利维亚、巴西 PIX）现已拥有独立指南：
@@ -1006,7 +863,6 @@ webhook 会以 `status: failed` 送达，自动退款也在那一刻发生。
 | `status_code` | 含义 | 处理方式 |
 |---|---|---|
 | `core_rejected` | 处理方在创建时拒绝了该操作（收款人数据无效、通道不可用） | 阅读 `status_message`，修正数据后使用新的键创建新出金 |
-| `counterparty_rejected` | 银行通道拒绝了收款人本身（US/USD 通道） | 与账户持有人核对收款人的身份与地址信息，然后使用新的键创建新出金 |
 | `channel_unavailable` | 出金通道暂时不可用 | 稍后重试；退款（如已扣款）已经完成 |
 | *其他代码* | 银行通道在后续阶段拒绝（例如目标账户已注销） | 同上：修正数据后创建新的操作 |
 | *（空）* | 通道的一般性失败 | 检查 `status_message`；如仍不清楚，请携带 `payout_id` 联系支持 |
@@ -1040,9 +896,3 @@ webhook 或 `GET` 等待最终状态 —— 它一定会到达，失败时会自
 用**相同**的 `idempotency_key` 重试：会返回原始 payout
 （`idempotency_hit: true`）—— 绝不会重复。新的 key 是一笔全新的独立
 payout。
-#### 为什么我向新收款人发起的第一笔美国 payout 一直处于 processing？
-US/USD 通道在动用资金前会审核每个全新收款人：payout 保持
-`processing` 且 `status_code: "pending_aml"`，直到通道批准收款人后自动执行。
-最终状态通过 `payout_status_changed` webhook 送达 —— 之后向同一收款人的
-payout 不再需要等待。如果通道拒绝该收款人，payout 以 `failed`、
-`status_code: "counterparty_rejected"` 结束，扣款自动退还。

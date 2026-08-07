@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.35'
+  version: '2.36'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -16278,6 +16278,284 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/me/txn-reviews:
+    get:
+      tags:
+      - Account
+      operationId: listMyTxnReviews
+      summary: Mis revisiones de operaciones
+      description: |-
+        Operaciones de dinero de la cuenta retenidas por el firewall transaccional (payouts, retiros crypto, payins, transferencias banking) con su estado de revisión. Filtra por `status` y rango de fechas (`from`/`to`, UTC, ambos inclusive). Cuando una revisión llega a `info_requested`, sube los documentos pedidos con `POST /v1/me/txn-reviews/{reviewID}/files` — la operación sigue retenida hasta que el equipo de cumplimiento decida.
+      parameters:
+      - name: status
+        in: query
+        description: '`in_review`, `info_requested`, `released`, `rejected` or `all` (empty = open: `in_review` + `info_requested`).'
+        schema:
+          type: string
+          enum:
+          - in_review
+          - info_requested
+          - released
+          - rejected
+          - all
+      - name: from
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Mis revisiones de operaciones.
+          content:
+            application/json:
+              example:
+                reviews:
+                - id: 7a3f2b1c-0000-4000-8000-000000000001
+                  kind: payout
+                  resource_id: 8b4c3d2e-1111-4111-8111-111111111111
+                  status: info_requested
+                  amount_label: '1500.00'
+                  asset: USD
+                  country: MX
+                  method: spei
+                  counterparty: Juan Pérez
+                  info_request:
+                    message: Please upload the invoice that justifies this payment
+                    requested_at: '2026-08-06T15:20:00Z'
+                  created_at: '2026-08-06T14:32:00Z'
+                  updated_at: '2026-08-06T15:20:00Z'
+                page: 1
+                page_size: 50
+                total: 1
+        '400':
+          description: Invalid filter.
+          content:
+            application/json:
+              examples:
+                invalid_status:
+                  summary: Unknown status
+                  value:
+                    error: invalid_status
+                    message: status must be one of in_review, info_requested, released, rejected, all
+                invalid_range:
+                  summary: Bad date range
+                  value:
+                    error: invalid_range
+                    message: invalid date range
+  /v1/me/txn-reviews/{reviewID}:
+    get:
+      tags:
+      - Account
+      operationId: getMyTxnReview
+      summary: Detalle de una revisión
+      description: 'Detalle de una revisión de la cuenta, con el mensaje de la solicitud de información (`info_request`) y los archivos ya subidos. El motivo interno de la retención y las notas de cumplimiento nunca se exponen (anti tipping-off). Una revisión rechazada incluye además `decision_note` (el mismo texto del email de rechazo) y `decided_at`.'
+      parameters:
+      - name: reviewID
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The review with its uploaded files.
+          content:
+            application/json:
+              example:
+                review:
+                  id: 7a3f2b1c-0000-4000-8000-000000000001
+                  kind: payout
+                  resource_id: 8b4c3d2e-1111-4111-8111-111111111111
+                  status: info_requested
+                  amount_label: '1500.00'
+                  asset: USD
+                  country: MX
+                  method: spei
+                  counterparty: Juan Pérez
+                  info_request:
+                    message: Please upload the invoice that justifies this payment
+                    requested_at: '2026-08-06T15:20:00Z'
+                  files:
+                  - id: f1e2d3c4-0000-4000-8000-0000000000aa
+                    review_id: 7a3f2b1c-0000-4000-8000-000000000001
+                    file_name: invoice-221.pdf
+                    content_type: application/pdf
+                    size_bytes: 482110
+                    uploaded_by: account
+                    created_at: '2026-08-06T15:40:00Z'
+                  created_at: '2026-08-06T14:32:00Z'
+                  updated_at: '2026-08-06T15:40:00Z'
+        '404':
+          description: The review does not belong to the account.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: review not found
+  /v1/me/txn-reviews/{reviewID}/files:
+    post:
+      tags:
+      - Account
+      operationId: uploadMyTxnReviewFile
+      summary: Sube un archivo para una solicitud de información
+      description: |-
+        Sube un documento de respaldo para una revisión en `info_requested`. Envía el binario crudo con su `Content-Type` (PDF, PNG, JPEG, WEBP, TXT, CSV, DOC(X) o XLS(X), hasta 50 MB) y el nombre del archivo en el query param `name`. Al subir un archivo la revisión vuelve a `in_review` para que el equipo de cumplimiento la re-evalúe.
+      parameters:
+      - name: reviewID
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: name
+        in: query
+        required: true
+        description: Original filename (max 200 chars, no path separators).
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/pdf:
+            schema:
+              type: string
+              format: binary
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
+          image/png:
+            schema:
+              type: string
+              format: binary
+          text/csv:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '201':
+          description: File uploaded; the review moved back to `in_review`.
+          content:
+            application/json:
+              example:
+                file:
+                  id: f1e2d3c4-0000-4000-8000-0000000000aa
+                  review_id: 7a3f2b1c-0000-4000-8000-000000000001
+                  file_name: invoice-221.pdf
+                  content_type: application/pdf
+                  size_bytes: 482110
+                  uploaded_by: account
+                  created_at: '2026-08-06T15:40:00Z'
+                status: in_review
+        '400':
+          description: Validation error.
+          content:
+            application/json:
+              examples:
+                invalid_name:
+                  summary: Missing filename
+                  value:
+                    error: invalid_name
+                    message: name is required (query param, max 200 chars, no path separators)
+                empty_file:
+                  summary: Empty body
+                  value:
+                    error: empty_file
+                    message: the file body is empty
+        '404':
+          description: The review does not belong to the account.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: review not found
+        '409':
+          description: The review is not waiting for information.
+          content:
+            application/json:
+              example:
+                error: not_awaiting_info
+                message: this review is not waiting for additional information
+        '413':
+          description: The file exceeds 50 MB.
+          content:
+            application/json:
+              example:
+                error: file_too_large
+                message: max file size is 50 MB
+        '415':
+          description: Unsupported content type.
+          content:
+            application/json:
+              example:
+                error: unsupported_file_type
+                message: 'allowed types: pdf, png, jpeg, webp, txt, csv, doc(x), xls(x) — send the file''s Content-Type header'
+        '422':
+          description: The review already has 20 files.
+          content:
+            application/json:
+              example:
+                error: file_limit_reached
+                message: a review accepts at most 20 files
+  /v1/me/txn-reviews/{reviewID}/files/{fileID}/download:
+    get:
+      tags:
+      - Account
+      operationId: downloadMyTxnReviewFile
+      summary: Descarga un archivo que subiste
+      description: 'Descarga un archivo subido previamente por la cuenta para esta revisión. Devuelve el binario crudo con el `Content-Type` original. Los archivos de otras cuentas u otras revisiones responden `404 not_found` (nunca `403`, para no filtrar existencia).'
+      parameters:
+      - name: reviewID
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: fileID
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The raw file bytes with the original `Content-Type`.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: The review or file does not belong to the account.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: review not found
+
 components:
   securitySchemes:
     bearerAuth:
@@ -18052,6 +18330,44 @@ webhooks:
               amount: '25.000000'
               description: Expense split
               created_at: '2026-07-07T12:00:00Z'
+      responses:
+        '200':
+          description: Devuelve cualquier 2xx para confirmar la entrega.
+  txn_review_status_changed:
+    post:
+      summary: Cambio de estado de una revisión transaccional
+      description: 'Una operación de la cuenta cambió su estado de revisión (`in_review`
+        cuando el firewall transaccional la retiene, `info_requested`, `released`, `rejected`).
+
+        El payload es deliberadamente neutro: solo estado y resumen de la operación — jamás
+        incluye motivos internos de revisión ni notas de cumplimiento.
+
+        Cada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
+        y `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`. Responde 2xx; hasta
+        5 intentos con backoff incremental.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                account_id: *id017
+                review_id: *id017
+                kind: *id017
+                resource_id: *id017
+                status: *id017
+                previous_status: *id017
+                amount: *id017
+                asset: *id017
+            example:
+              account_id: ae8cf540-1234-5678-9abc-def012345678
+              review_id: 7a3f2b1c-0000-4000-8000-000000000001
+              kind: payout
+              resource_id: 8b4c3d2e-1111-4111-8111-111111111111
+              status: released
+              previous_status: in_review
+              amount: '1500.00'
+              asset: USD
       responses:
         '200':
           description: Devuelve cualquier 2xx para confirmar la entrega.

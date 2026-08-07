@@ -1,5 +1,5 @@
 {
-  "count": 165,
+  "count": 174,
   "errors": [
     {
       "category": {
@@ -2085,6 +2085,132 @@
         "en": "Travel Rule exchange temporarily unavailable; retry with the **same** idempotency key",
         "es": "Intercambio Travel Rule temporalmente no disponible; reintenta con la **misma** clave de idempotencia",
         "zh": "Travel Rule 数据交换暂时不可用；请使用**相同的**幂等键重试"
+      }
+    },
+    {
+      "category": {
+        "en": "Transactional firewall",
+        "es": "Firewall transaccional",
+        "zh": "交易防火墙"
+      },
+      "code": "invalid_range",
+      "http": 400,
+      "meaning": {
+        "en": "Invalid `from`/`to` dates — `YYYY-MM-DD` format (UTC)",
+        "es": "Fechas `from`/`to` inválidas — formato `YYYY-MM-DD` (UTC)",
+        "zh": "`from`/`to` 日期无效——格式为 `YYYY-MM-DD`（UTC）"
+      }
+    },
+    {
+      "category": {
+        "en": "Transactional firewall",
+        "es": "Firewall transaccional",
+        "zh": "交易防火墙"
+      },
+      "code": "invalid_name",
+      "http": 400,
+      "meaning": {
+        "en": "Missing filename in the `name` query param (max 200 chars, no path separators)",
+        "es": "Falta el nombre del archivo en el query param `name` (máx. 200 caracteres, sin separadores de ruta)",
+        "zh": "缺少查询参数 `name` 中的文件名（最多 200 个字符，不含路径分隔符）"
+      }
+    },
+    {
+      "category": {
+        "en": "Transactional firewall",
+        "es": "Firewall transaccional",
+        "zh": "交易防火墙"
+      },
+      "code": "empty_file",
+      "http": 400,
+      "meaning": {
+        "en": "The file body arrived empty",
+        "es": "El body del archivo llegó vacío",
+        "zh": "文件请求体为空"
+      }
+    },
+    {
+      "category": {
+        "en": "Transactional firewall",
+        "es": "Firewall transaccional",
+        "zh": "交易防火墙"
+      },
+      "code": "not_awaiting_info",
+      "http": 409,
+      "meaning": {
+        "en": "The review is not waiting for information (it already moved back to `in_review` or has a final decision) — check its current state",
+        "es": "La revisión no está esperando información (ya volvió a `in_review` o tiene decisión final) — consulta su estado actual",
+        "zh": "该审核不在等待信息（已回到 `in_review` 或已有最终决定）——请查询其当前状态"
+      }
+    },
+    {
+      "category": {
+        "en": "Transactional firewall",
+        "es": "Firewall transaccional",
+        "zh": "交易防火墙"
+      },
+      "code": "file_too_large",
+      "http": 413,
+      "meaning": {
+        "en": "The file exceeds the 50 MB limit — compress it or split it",
+        "es": "El archivo supera el límite de 50 MB — comprímelo o divídelo",
+        "zh": "文件超过 50 MB 上限——请压缩或拆分"
+      }
+    },
+    {
+      "category": {
+        "en": "Transactional firewall",
+        "es": "Firewall transaccional",
+        "zh": "交易防火墙"
+      },
+      "code": "unsupported_file_type",
+      "http": 415,
+      "meaning": {
+        "en": "Unsupported type — use PDF, PNG, JPEG, WEBP, TXT, CSV, DOC(X) or XLS(X) with the correct `Content-Type` header",
+        "es": "Tipo no permitido — usa PDF, PNG, JPEG, WEBP, TXT, CSV, DOC(X) o XLS(X) con el header `Content-Type` correcto",
+        "zh": "不支持的类型——请使用 PDF、PNG、JPEG、WEBP、TXT、CSV、DOC(X) 或 XLS(X)，并携带正确的 `Content-Type` 请求头"
+      }
+    },
+    {
+      "category": {
+        "en": "Transactional firewall",
+        "es": "Firewall transaccional",
+        "zh": "交易防火墙"
+      },
+      "code": "file_limit_reached",
+      "http": 422,
+      "meaning": {
+        "en": "The review already has 20 files",
+        "es": "La revisión ya tiene 20 archivos",
+        "zh": "该审核已有 20 个文件"
+      }
+    },
+    {
+      "category": {
+        "en": "Transactional firewall",
+        "es": "Firewall transaccional",
+        "zh": "交易防火墙"
+      },
+      "code": "firewall_unavailable",
+      "http": 503,
+      "meaning": {
+        "en": "The policy could not be evaluated or the review could not be persisted — retry with the **same** idempotency key",
+        "es": "No se pudo evaluar la política o persistir la revisión — reintenta con la **misma** clave de idempotencia",
+        "zh": "无法评估策略或无法保存审核——请使用**相同的**幂等键重试"
+      }
+    },
+    {
+      "category": {
+        "en": "Transactional firewall",
+        "es": "Firewall transaccional",
+        "zh": "交易防火墙"
+      },
+      "code": "storage_unavailable",
+      "http": 503,
+      "meaning": {
+        "en": "File storage is unavailable — retry in a few seconds",
+        "es": "El almacenamiento de archivos no está disponible — reintenta en unos segundos",
+        "zh": "文件存储暂不可用——请稍后重试"
       }
     },
     {

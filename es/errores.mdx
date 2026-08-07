@@ -204,6 +204,24 @@ Estos códigos provienen de **superficies de administración de organización** 
 | 422 | `travel_rule_incomplete_approval` | La institución receptora aprobó sin entregar dirección de pago; contacta a soporte |
 | 503 | `travel_rule_unavailable` | Intercambio Travel Rule temporalmente no disponible; reintenta con la **misma** clave de idempotencia |
 
+### Firewall transaccional
+
+Errores de la revisión de operaciones retenidas por el firewall transaccional ([guía](/es/guias/revisiones-operaciones)). La retención en sí **no es un error**: el create responde `202 Accepted` con `status: in_review` y `review_id`.
+
+| HTTP | `error` | Significado |
+|---|---|---|
+| 400 | `invalid_status` | El filtro `status` no es válido — usa `in_review`, `info_requested`, `released`, `rejected` o `all` |
+| 400 | `invalid_range` | Fechas `from`/`to` inválidas — formato `YYYY-MM-DD` (UTC) |
+| 400 | `invalid_name` | Falta el nombre del archivo en el query param `name` (máx. 200 caracteres, sin separadores de ruta) |
+| 400 | `empty_file` | El body del archivo llegó vacío |
+| 404 | `not_found` | La revisión o el archivo no pertenecen a tu cuenta — por diseño nunca se responde 403 |
+| 409 | `not_awaiting_info` | La revisión no está esperando información (ya volvió a `in_review` o tiene decisión final) — consulta su estado actual |
+| 413 | `file_too_large` | El archivo supera el límite de 50 MB — comprímelo o divídelo |
+| 415 | `unsupported_file_type` | Tipo no permitido — usa PDF, PNG, JPEG, WEBP, TXT, CSV, DOC(X) o XLS(X) con el header `Content-Type` correcto |
+| 422 | `file_limit_reached` | La revisión ya tiene 20 archivos |
+| 503 | `firewall_unavailable` | No se pudo evaluar la política o persistir la revisión — reintenta con la **misma** clave de idempotencia |
+| 503 | `storage_unavailable` | El almacenamiento de archivos no está disponible — reintenta en unos segundos |
+
 ### Eventos en tiempo real (SSE)
 
 Códigos de [`GET /v1/events`](/es/eventos-tiempo-real) y su historial.

@@ -7,7 +7,21 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-<Update label="2026年8月6日" description="v2.35 · 2 个版本">
+<Update label="2026年8月6日" description="v2.36 · 3 个版本">
+
+
+### v2.36
+
+**新增**
+
+- **交易防火墙**：当您的组织启用交易防火墙时，资金操作（法币 payout、加密
+  提现、payin 和银行转账）可能会被扣留为 `in_review` 状态，等待人工决定 —
+  API 返回 `202 Accepted` 和 `review_id`。新增账户端点
+  `GET /v1/me/txn-reviews`（列表和详情）、
+  `POST /v1/me/txn-reviews/{reviewID}/files`（上传所需文件）和
+  `GET .../files/{fileID}/download`（下载您自己的文件），以及新的
+  `txn_review_status_changed` webhook（中性 payload — 内部原因从不外传）。
+  新指南：[交易审核](/zh/guides/transaction-reviews)。
 
 ### v2.35
 
