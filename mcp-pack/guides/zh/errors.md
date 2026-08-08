@@ -217,6 +217,7 @@ source_url: https://docs.cbpayapp.com/zh/errors
 | 400 | `invalid_purpose` | `purpose` 不是允许的值之一(`credit_evaluation`、`tenant_screening`、`hiring`、`supplier_onboarding`、`other`)— 请修正该值 |
 | 400 | `invalid_doc_id` | `doc_id` 在给定的 `country` 无效(例如智利 RUT 校验位错误)— 修正证件格式 |
 | 400 | `invalid_subject_type` | `subject_type` 不是 `person`/`company` 且无法从证件推断 — 请显式发送 |
+| 403 | `report_required` | 启用监控需要先购买该主体的报告 — 请先购买([指南](https://docs.cbpayapp.com/zh/guides/qscore));出于隐私保护,主体不存在时也会返回相同的响应 |
 | 404 | `no_score` | 该主体尚无已计算的评分 — 请先购买报告 |
 | 404 | `pdf_not_ready` | 报告 PDF 尚不可用 — 轮询详情直到 `status=ready`(`risk_report_ready` webhook 会通知你) |
 

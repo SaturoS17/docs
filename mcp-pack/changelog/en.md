@@ -8,7 +8,29 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.46 · 6 releases - August 8, 2026
+## v2.47 · 7 releases - August 8, 2026
+
+### v2.47
+
+**Added**
+
+- **Qscore — continuous subject monitoring** ([Qscore guide](https://docs.cbpayapp.com/en/guides/qscore)):
+  once you own a `ready` report for a subject, subscribe with `PUT
+  /v1/qscore/subjects/{docID}/monitoring` and the platform re-evaluates the
+  subject every ~5 minutes, emitting the new webhook
+  `risk_monitoring_alert` when the score drops below your
+  `monitor_since_score` threshold (`score_drop_below`), when new bureau
+  records appear (`new_records`) or when records are removed
+  (`records_removed`) — with `only_material: true` only the material
+  triggers fire. Manage subscriptions with `GET
+  /v1/qscore/subjects/{docID}/monitoring`, `GET /v1/qscore/monitoring`
+  (every monitored subject of the account) and `DELETE
+  /v1/qscore/subjects/{docID}/monitoring` (deactivates with `active:
+  false` — the history is never deleted). Monitoring is free but requires
+  a purchased report for the subject: without one the API answers `403
+  report_required`, the same response a non-existent subject gets (by
+  design, so subject existence cannot be probed). New error code:
+  `report_required` ([errors](https://docs.cbpayapp.com/en/errors)).
 
 ### v2.46
 

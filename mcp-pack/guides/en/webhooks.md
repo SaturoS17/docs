@@ -133,6 +133,7 @@ To reactivate it, same call with `{ "status": "active" }`.
 | `aml_screening_updated` | AML screening updates (result, cases, risk, reviewed transaction) |
 | `risk_report_ready` | A [Qscore](https://docs.cbpayapp.com/en/guides/qscore) credit report finished generating (it carries the score and band) |
 | `risk_score_changed` | The score of a monitored subject moved (re-evaluation after new bureau data) |
+| `risk_monitoring_alert` | A monitored [Qscore](https://docs.cbpayapp.com/en/guides/qscore) subject triggered an alert: the score dropped below your threshold, new bureau records appeared, or records were removed |
 | `wallet_deposit_received` | An on-chain deposit arrived at a [segregated wallet](https://docs.cbpayapp.com/en/guides/segregated-wallets) (does not touch the ledger) |
 | `wallet_send_status_changed` | A send from a segregated wallet changed status |
 | `wallet_key_exported` | A segregated wallet's private key was exported (security alert) |
@@ -500,6 +501,32 @@ engine data.
   "new_score": 712,
   "old_band": "C",
   "new_band": "B"
+}
+```
+
+```json risk_monitoring_alert
+{
+  "monitoring_id": "7c9e2f14-5b6a-4c8d-9e1f-3a7b5c2d8e91",
+  "subject_id": "8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112",
+  "doc_id": "12.345.678-5",
+  "country": "CL",
+  "subject_type": "person",
+  "triggers": ["score_drop_below", "new_records"],
+  "score": 487,
+  "previous_score": 512,
+  "band": "D",
+  "record_count": 3,
+  "detected_at": "2026-08-08T18:41:12Z",
+  "new_records": [
+    {
+      "source": "res_chile",
+      "record_type": "debt_collection",
+      "reported_at": "2026-08-05T00:00:00Z",
+      "amount": "450000",
+      "currency": "CLP",
+      "status": "open"
+    }
+  ]
 }
 ```
 

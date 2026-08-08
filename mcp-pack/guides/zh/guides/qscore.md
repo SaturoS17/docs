@@ -1,6 +1,6 @@
 ---
 title: "Qscore — API 优先的征信局"
-description: "为个人和企业购买带评分的完整信用报告（智利先行），下载 PDF，公开验证，并管理 ARCO 异议。"
+description: "为个人和企业购买带评分的完整信用报告（智利先行），下载 PDF，公开验证，管理 ARCO 异议，并通过告警监控主体。"
 slug: zh/guides/qscore
 lang: zh
 source_url: https://docs.cbpayapp.com/zh/guides/qscore
@@ -260,7 +260,7 @@ curl "https://api.qbank.cl/platform/v1/qscore/reports?from=2026-08-01&to=2026-08
 
 ## 6. Webhooks
 
-在您的 [webhook 设置](https://docs.cbpayapp.com/zh/webhooks)中订阅 Qscore 事件。两者都是账户受众事件，与所有其他 webhook 一样签名。
+在您的 [webhook 设置](https://docs.cbpayapp.com/zh/webhooks)中订阅 Qscore 事件。三者都是账户受众事件，与所有其他 webhook 一样签名。
 
 #### risk_report_ready — 报告已生成完毕
 
@@ -289,6 +289,36 @@ curl "https://api.qbank.cl/platform/v1/qscore/reports?from=2026-08-01&to=2026-08
   "new_score": 742,
   "old_band": "B",
   "new_band": "B"
+}
+```
+
+#### risk_monitoring_alert — 被监控主体发生变化
+
+每当主体的评分跌破您的 `monitor_since_score` 下限、征信出现新记录或记录被移除时，都会为每条启用的监控订阅触发。订阅后的首次评估仅建立基线，绝不告警。
+
+```json risk_monitoring_alert
+{
+  "monitoring_id": "2f7b1c94-8d3a-4c5e-9f01-6a7b8c9d0e11",
+  "subject_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "doc_id": "11111111-1",
+  "country": "CL",
+  "subject_type": "person",
+  "triggers": ["score_drop_below", "new_records"],
+  "previous_score": 688,
+  "score": 612,
+  "band": "C",
+  "record_count": 4,
+  "new_records": [
+    {
+      "source": "res_chile",
+      "record_type": "debt_collection",
+      "reported_at": "2026-08-08",
+      "amount": "350000",
+      "currency": "CLP",
+      "status": "open"
+    }
+  ],
+  "detected_at": "2026-08-08T16:30:00Z"
 }
 ```
 
@@ -342,6 +372,63 @@ curl -X POST "https://api.qbank.cl/platform/v1/qscore/subjects/11111111-1/disput
 
 异议生命周期：`open` → `under_review` → `resolved_corrected` | `resolved_rejected`（最终）。使用 `GET /v1/qscore/subjects/{doc_id}/disputes?country=CL&status=open` 列出（分页），使用 `GET /v1/qscore/disputes/{dispute_id}` 读取单个。异议由您的组织管理员在管理面板中处理。
 
+## 9. 监控
+
+当您已持有某主体的 `ready` 报告后，可订阅**持续监控**，在发生相关变化时收到 `risk_monitoring_alert` webhook：评分跌破您的阈值、征信出现新记录或记录被移除。监控**免费** —— 唯一要求是已购买该主体的报告（与评分端点同一策略：未付费了解某主体之前，任何人都不能监控它）。
+
+```bash 订阅（或更新阈值）
+curl -X PUT "https://api.qbank.cl/platform/v1/qscore/subjects/11111111-1/monitoring" \
+  -H "Authorization: Bearer pk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "CL",
+    "monitor_since_score": 640,
+    "only_material": true
+  }'
+```
+
+```json 200 OK
+{
+  "monitoring_id": "2f7b1c94-8d3a-4c5e-9f01-6a7b8c9d0e11",
+  "subject_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "doc_id": "11111111-1",
+  "country": "CL",
+  "subject_type": "person",
+  "active": true,
+  "only_material": true,
+  "monitor_since_score": 640,
+  "last_score": 688,
+  "last_record_count": 3,
+  "created_at": "2026-08-08T16:20:00Z",
+  "last_checked_at": "2026-08-08T16:25:00Z"
+}
+```
+
+- `monitor_since_score`（可选，1–999）：当评分跌破此阈值时告警（触发器 `score_drop_below`）。
+- `only_material`（默认 `false`）：为 `true` 时仅重大变更触发告警。
+- Worker 每 **约 5 分钟**重新评估所有被监控主体。首次评估仅建立基线 —— 绝不会针对您在已购报告中已见过的数据告警。
+
+使用 `GET /v1/qscore/subjects/{doc_id}/monitoring` 读取单个订阅，使用 `GET /v1/qscore/monitoring?active=true&page=1&page_size=50` 列出账户下所有被监控主体（分页：`items`、`page`、`page_size`、`total`），并使用 `DELETE` 停用：
+
+```bash 停用监控
+curl -X DELETE "https://api.qbank.cl/platform/v1/qscore/subjects/11111111-1/monitoring?country=CL" \
+  -H "Authorization: Bearer pk_live_..."
+```
+
+```json 200 OK
+{
+  "subject_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "doc_id": "11111111-1",
+  "active": false
+}
+```
+
+`DELETE` 为停用（`active: false`）—— 订阅历史永不删除，再次 `PUT` 即以新阈值重新激活。
+
+> **重要**
+如果未购买该主体的 `ready` 报告，`PUT` 将返回 `403 report_required` —— 与主体不存在时的响应**相同**，这是有意设计，确保端点永不泄露某证件号是否存在于征信库。参见[错误](https://docs.cbpayapp.com/zh/errors)。
+告警负载（`risk_monitoring_alert`）包含触发器（`score_drop_below`、`new_records`、`records_removed`）、当前与先前评分、等级以及新记录 —— 完整示例见 [webhooks](https://docs.cbpayapp.com/zh/webhooks)。
+
 ## 常见问题
 
 #### 每份报告都会重新计算评分吗？
@@ -356,3 +443,5 @@ curl -X POST "https://api.qbank.cl/platform/v1/qscore/subjects/11111111-1/disput
     不会。"报告就绪"电子邮件特意不携带附件（第三方数据最小化）。PDF 只能通过 API 身份验证后下载。
 #### 支持哪些国家/地区？
     目前为智利（`country: "CL"`，RUT 作为 `doc_id`）。契约是国家无关的：新国家/地区接入其来源后将使用相同的端点。
+#### 被监控主体多久检查一次？
+    每约 5 分钟。`risk_monitoring_alert` webhook 仅在相对基线发生变化时才触发（设置 `only_material: true` 后仅重大变更触发）—— 绝不会因无变化而打扰您。

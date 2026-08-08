@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.46'
+  version: '2.47'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -17325,6 +17325,220 @@ paths:
               example:
                 error: not_found
                 message: not found
+  /v1/qscore/subjects/{docID}/monitoring:
+    put:
+      tags: [Qscore]
+      summary: 订阅某主体的监控
+      operationId: putQscoreMonitoring
+      description: '为你的账户创建或更新对某主体（个人或企业）的监控订阅。监控免费，但要求你的组织已购买该主体的
+        `ready` 报告——订阅的基线数据来自该已购报告。设计上（防预言机），不存在的主体与存在但未购报告的主体返回完全相同的
+        `403 report_required` 响应：本端点绝不会泄露某个证件号是否存在于信用局中。
+
+        订阅按（账户、主体）幂等：重复创建会返回已存在的订阅并保留其基线。`only_material`（默认
+        false）将 `new_records` 触发器限制为重大负面记录（未结催收、被拒付票据、破产、诉讼）。
+        `monitor_since_score`（1..999）配置 `score_drop_below` 触发器：当评分跌破该阈值时发出告警。'
+      parameters:
+      - name: docID
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 12.345.678-5
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+          default: CL
+        description: 证件的国家 ISO 代码（默认 CL）。也可在请求 body 中以 `country` 字段提供。
+        example: CL
+      requestBody:
+        required: false
+        content:
+          application/json:
+            example:
+              only_material: true
+              monitor_since_score: 500
+      responses:
+        '200':
+          description: 监控订阅（已创建或已更新）。
+          content:
+            application/json:
+              example:
+                monitoring_id: 7c9e2f14-5b6a-4c8d-9e1f-3a7b5c2d8e91
+                subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                active: true
+                only_material: true
+                created_at: '2026-08-08T16:11:40Z'
+                doc_id: 12.345.678-5
+                country: CL
+                subject_type: person
+                monitor_since_score: 500
+        '400':
+          description: invalid_doc_id | invalid_payload
+          content:
+            application/json:
+              example:
+                error: invalid_payload
+                message: monitor_since_score must be between 1 and 999
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden（服务未启用或账户未验证）| report_required
+          content:
+            application/json:
+              example:
+                error: report_required
+                message: purchase a report for this subject before enabling monitoring
+    get:
+      tags: [Qscore]
+      summary: 获取某主体的监控订阅
+      operationId: getQscoreMonitoring
+      description: '返回你的账户对某主体的当前监控订阅，包含最近观察到的评分、记录数量以及上次检查
+        （`last_checked_at`）和上次告警（`last_event_at`）的时间戳。若无订阅则返回
+        `404 not_found`。'
+      parameters:
+      - name: docID
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 12.345.678-5
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+          default: CL
+        description: 证件的国家 ISO 代码（默认 CL）。
+        example: CL
+      responses:
+        '200':
+          description: 监控订阅。
+          content:
+            application/json:
+              example:
+                monitoring_id: 7c9e2f14-5b6a-4c8d-9e1f-3a7b5c2d8e91
+                subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                active: true
+                only_material: true
+                created_at: '2026-08-08T16:11:40Z'
+                last_event_at: '2026-08-08T18:02:11Z'
+                last_checked_at: '2026-08-08T18:05:00Z'
+                doc_id: 12.345.678-5
+                country: CL
+                subject_type: person
+                monitor_since_score: 500
+                last_score: 487
+                last_record_count: 2
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden（服务未启用或账户未验证）
+        '404':
+          description: not_found
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: resource not found
+    delete:
+      tags: [Qscore]
+      summary: 取消订阅某主体
+      operationId: deleteQscoreMonitoring
+      description: '停用你的账户对某主体的监控订阅（`active: false`）。不再发送
+        `risk_monitoring_alert` webhook；可通过 `PUT` 重新订阅。若无订阅则返回
+        `404 not_found`。'
+      parameters:
+      - name: docID
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 12.345.678-5
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+          default: CL
+        description: 证件的国家 ISO 代码（默认 CL）。
+        example: CL
+      responses:
+        '200':
+          description: 订阅已停用。
+          content:
+            application/json:
+              example:
+                subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                doc_id: 12.345.678-5
+                active: false
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden（服务未启用或账户未验证）
+        '404':
+          description: not_found
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: resource not found
+  /v1/qscore/monitoring:
+    get:
+      tags: [Qscore]
+      summary: 列出监控订阅
+      operationId: listQscoreMonitoring
+      description: '分页列出你账户的监控订阅（最新在前）。`page` 从 1 开始；`page_size`
+        默认 50（最大 200）。'
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 1
+        example: 1
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 50
+        example: 50
+      - name: active
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: ['true']
+        description: 传入 `active=true` 仅列出启用的订阅。
+        example: 'true'
+      responses:
+        '200':
+          description: 一页监控订阅。
+          content:
+            application/json:
+              example:
+                items:
+                - monitoring_id: 7c9e2f14-5b6a-4c8d-9e1f-3a7b5c2d8e91
+                  subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                  active: true
+                  only_material: true
+                  created_at: '2026-08-08T16:11:40Z'
+                  doc_id: 12.345.678-5
+                  country: CL
+                  subject_type: person
+                  monitor_since_score: 500
+                  last_score: 487
+                  last_record_count: 2
+                page: 1
+                page_size: 50
+                total: 1
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden（服务未启用或账户未验证）
 components:
   securitySchemes:
     bearerAuth:
@@ -19739,6 +19953,94 @@ webhooks:
               new_score: 688
               old_band: B
               new_band: B
+      responses:
+        '200':
+          description: 返回任何 2xx 以确认交付。
+  risk_monitoring_alert:
+    post:
+      summary: Qscore 监控告警
+      description: '账户通过 `PUT /v1/qscore/subjects/{docID}/monitoring` 监控的主体自上次检查以来
+        发生了变化。`triggers` 列出触发本次告警的原因：`score_drop_below`（评分向下穿越订阅的
+        `monitor_since_score` 阈值：先前 >= 阈值，新值 < 阈值）、`new_records`（征信局登记了新事件；
+        当 `only_material: true` 时，仅重大负面事件——未结清的逾期、拒付、破产、诉讼——计入）或
+        `records_removed`（征信局当前显示的事件少于基线，即某条记录已结清或删除）。活跃订阅每
+        ~5 分钟重新评估一次；订阅后的首次扫描仅建立基线，绝不会就已购买报告中展示过的历史
+        记录发出告警。当主体暂无可分类评分时，`score` 和 `previous_score` 将被省略；没有新事件
+        触发时，`new_records` 也将被省略。
+
+
+        每次交付都包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp`
+        和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。响应 2xx；
+        最多 5 次尝试，采用递增退避。'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                monitoring_id:
+                  type: string
+                subject_id:
+                  type: string
+                doc_id:
+                  type: string
+                country:
+                  type: string
+                subject_type:
+                  type: string
+                  enum: [person, company]
+                triggers:
+                  type: array
+                  items:
+                    type: string
+                    enum: [score_drop_below, new_records, records_removed]
+                score:
+                  type: integer
+                previous_score:
+                  type: integer
+                band:
+                  type: string
+                  enum: [A, B, C, D, E, SC]
+                record_count:
+                  type: integer
+                new_records:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      source:
+                        type: string
+                      record_type:
+                        type: string
+                      reported_at:
+                        type: string
+                      amount:
+                        type: string
+                      currency:
+                        type: string
+                      status:
+                        type: string
+                detected_at:
+                  type: string
+            example:
+              monitoring_id: 7c9e2f14-5b6a-4c8d-9e1f-3a7b5c2d8e91
+              subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+              doc_id: 12.345.678-5
+              country: CL
+              subject_type: person
+              triggers: [score_drop_below, new_records]
+              score: 487
+              previous_score: 512
+              band: D
+              record_count: 3
+              new_records:
+              - source: res_chile
+                record_type: debt_collection
+                reported_at: '2026-08-05T00:00:00Z'
+                amount: '450000'
+                currency: CLP
+                status: open
+              detected_at: '2026-08-08T18:41:12Z'
       responses:
         '200':
           description: 返回任何 2xx 以确认交付。

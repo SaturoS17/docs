@@ -1,6 +1,6 @@
 ---
 title: Qscore — buró de crédito API-first
-description: Compra informes crediticios completos con score para personas y empresas (Chile primero), descarga el PDF, verifícalo públicamente y gestiona disputas ARCO.
+description: Compra informes crediticios completos con score para personas y empresas (Chile primero), descarga el PDF, verifícalo públicamente, gestiona disputas ARCO y monitorea sujetos con alertas.
 icon: gauge-high
 ---
 
@@ -268,7 +268,7 @@ Catálogo completo en [Errores](/es/errores).
 
 ## 6. Webhooks
 
-Suscríbete a los eventos de Qscore en tu [configuración de webhooks](/es/webhooks). Ambos son eventos de audiencia cuenta, firmados como todo webhook.
+Suscríbete a los eventos de Qscore en tu [configuración de webhooks](/es/webhooks). Los tres son eventos de audiencia cuenta, firmados como todo webhook.
 
 <AccordionGroup>
   <Accordion title="risk_report_ready — un informe terminó de generarse">
@@ -299,6 +299,37 @@ Se emite cuando un informe nuevo calcula un score distinto al anterior del sujet
   "new_score": 742,
   "old_band": "B",
   "new_band": "B"
+}
+```
+
+  </Accordion>
+  <Accordion title="risk_monitoring_alert — un sujeto monitoreado cambió">
+
+Se emite por cada suscripción de monitoreo activa cuando el score del sujeto cae bajo tu piso `monitor_since_score`, aparecen registros nuevos en el buró o se eliminan registros. La primera evaluación tras suscribirte solo siembra el baseline y nunca alerta.
+
+```json risk_monitoring_alert
+{
+  "monitoring_id": "2f7b1c94-8d3a-4c5e-9f01-6a7b8c9d0e11",
+  "subject_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "doc_id": "11111111-1",
+  "country": "CL",
+  "subject_type": "person",
+  "triggers": ["score_drop_below", "new_records"],
+  "previous_score": 688,
+  "score": 612,
+  "band": "C",
+  "record_count": 4,
+  "new_records": [
+    {
+      "source": "res_chile",
+      "record_type": "debt_collection",
+      "reported_at": "2026-08-08",
+      "amount": "350000",
+      "currency": "CLP",
+      "status": "open"
+    }
+  ],
+  "detected_at": "2026-08-08T16:30:00Z"
 }
 ```
 
@@ -355,6 +386,65 @@ curl -X POST "https://api.qbank.cl/platform/v1/qscore/subjects/11111111-1/disput
 
 Ciclo de vida de la disputa: `open` → `under_review` → `resolved_corrected` | `resolved_rejected` (final). Lístala con `GET /v1/qscore/subjects/{doc_id}/disputes?country=CL&status=open` (paginado) y lee una con `GET /v1/qscore/disputes/{dispute_id}`. La resolución la hace el admin de tu organización desde el panel de administración.
 
+## 9. Monitoreo
+
+Cuando ya tienes un informe `ready` de un sujeto, suscríbelo al **monitoreo continuo** y recibe un webhook `risk_monitoring_alert` cada vez que algo relevante cambia: el score cae bajo tu umbral, aparecen registros nuevos en el buró o se eliminan registros. El monitoreo es **gratuito** — el único requisito es el informe comprado (la misma política del endpoint de score: nadie vigila a un tercero sin haber pagado por conocerlo).
+
+```bash Suscribir (o actualizar umbrales)
+curl -X PUT "https://api.qbank.cl/platform/v1/qscore/subjects/11111111-1/monitoring" \
+  -H "Authorization: Bearer pk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "CL",
+    "monitor_since_score": 640,
+    "only_material": true
+  }'
+```
+
+```json 200 OK
+{
+  "monitoring_id": "2f7b1c94-8d3a-4c5e-9f01-6a7b8c9d0e11",
+  "subject_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "doc_id": "11111111-1",
+  "country": "CL",
+  "subject_type": "person",
+  "active": true,
+  "only_material": true,
+  "monitor_since_score": 640,
+  "last_score": 688,
+  "last_record_count": 3,
+  "created_at": "2026-08-08T16:20:00Z",
+  "last_checked_at": "2026-08-08T16:25:00Z"
+}
+```
+
+- `monitor_since_score` (opcional, 1–999): alerta cuando el score cae bajo este umbral (trigger `score_drop_below`).
+- `only_material` (default `false`): en `true` solo los cambios materiales disparan la alerta.
+- El worker re-evalúa cada sujeto monitoreado cada **~5 minutos**. La primera pasada solo siembra el baseline — jamás alerta sobre datos que ya viste en el informe que pagaste.
+
+Lee una suscripción con `GET /v1/qscore/subjects/{doc_id}/monitoring`, lista todos los sujetos monitoreados de la cuenta con `GET /v1/qscore/monitoring?active=true&page=1&page_size=50` (paginado: `items`, `page`, `page_size`, `total`) y desactiva con `DELETE`:
+
+```bash Desactivar el monitoreo
+curl -X DELETE "https://api.qbank.cl/platform/v1/qscore/subjects/11111111-1/monitoring?country=CL" \
+  -H "Authorization: Bearer pk_live_..."
+```
+
+```json 200 OK
+{
+  "subject_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "doc_id": "11111111-1",
+  "active": false
+}
+```
+
+`DELETE` desactiva (`active: false`) — la historia de la suscripción jamás se borra, y un nuevo `PUT` la reactiva con umbrales frescos.
+
+<Warning>
+Sin un informe `ready` comprado del sujeto, `PUT` responde `403 report_required` — la **misma** respuesta que recibe un sujeto inexistente, por diseño, para que el endpoint jamás revele si un documento existe en el buró. Ver [errores](/es/errores).
+</Warning>
+
+El payload de la alerta (`risk_monitoring_alert`) lleva los triggers (`score_drop_below`, `new_records`, `records_removed`), el score actual y el anterior, la banda y los registros nuevos — ejemplo completo en [webhooks](/es/webhooks).
+
 ## Preguntas frecuentes
 
 <AccordionGroup>
@@ -375,5 +465,8 @@ Ciclo de vida de la disputa: `open` → `under_review` → `resolved_corrected` 
   </Accordion>
   <Accordion title="¿Qué países están soportados?">
     Chile hoy (`country: "CL"`, RUT como `doc_id`). El contrato es country-agnostic: nuevos países funcionarán con los mismos endpoints cuando se enchufen sus fuentes.
+  </Accordion>
+  <Accordion title="¿Cada cuánto se revisa un sujeto monitoreado?">
+    Cada ~5 minutos. El webhook `risk_monitoring_alert` solo se emite cuando algo cambió contra el baseline (o solo en cambios materiales con `only_material: true`) — nunca recibes una alerta por un no-op.
   </Accordion>
 </AccordionGroup>

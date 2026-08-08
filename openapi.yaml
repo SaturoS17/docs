@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.46'
+  version: '2.47'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -17885,6 +17885,231 @@ paths:
               example:
                 error: not_found
                 message: not found
+  /v1/qscore/subjects/{docID}/monitoring:
+    put:
+      tags: [Qscore]
+      summary: Subscribe to a subject (monitoring)
+      operationId: putQscoreMonitoring
+      description: 'Creates or updates the monitoring subscription of your account
+        to a subject (person or company). Monitoring is free, but requires your
+        organization to have already purchased a `ready` report for that subject —
+        the subscription baseline is seeded from that purchased data. By design
+        (anti-oracle), a non-existent subject and an existing subject without a
+        purchased report receive the SAME `403 report_required` response: this
+        endpoint never reveals whether a document exists in the bureau.
+
+        The subscription is idempotent per (account, subject): re-creating returns
+        the existing subscription with its baseline preserved. `only_material`
+        (default false) limits the `new_records` trigger to materially negative
+        records (open collections, protested instruments, bankruptcies, lawsuits).
+        `monitor_since_score` (1..999) arms the `score_drop_below` trigger: an
+        alert fires when the score crosses that threshold downwards.'
+      parameters:
+      - name: docID
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 12.345.678-5
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+          default: CL
+        description: ISO country of the document (default CL). May also be sent
+          in the request body as `country`.
+        example: CL
+      requestBody:
+        required: false
+        content:
+          application/json:
+            example:
+              only_material: true
+              monitor_since_score: 500
+      responses:
+        '200':
+          description: Monitoring subscription (created or updated).
+          content:
+            application/json:
+              example:
+                monitoring_id: 7c9e2f14-5b6a-4c8d-9e1f-3a7b5c2d8e91
+                subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                active: true
+                only_material: true
+                created_at: '2026-08-08T16:11:40Z'
+                doc_id: 12.345.678-5
+                country: CL
+                subject_type: person
+                monitor_since_score: 500
+        '400':
+          description: invalid_doc_id | invalid_payload
+          content:
+            application/json:
+              example:
+                error: invalid_payload
+                message: monitor_since_score must be between 1 and 999
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden (service disabled or unverified account) | report_required
+          content:
+            application/json:
+              example:
+                error: report_required
+                message: purchase a report for this subject before enabling monitoring
+    get:
+      tags: [Qscore]
+      summary: Get a monitoring subscription
+      operationId: getQscoreMonitoring
+      description: 'Returns the current monitoring subscription of your account
+        for a subject, including the last observed score, the record count and
+        the timestamps of the last check (`last_checked_at`) and the last alert
+        (`last_event_at`). Returns `404 not_found` if there is no subscription.'
+      parameters:
+      - name: docID
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 12.345.678-5
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+          default: CL
+        description: ISO country of the document (default CL).
+        example: CL
+      responses:
+        '200':
+          description: Monitoring subscription.
+          content:
+            application/json:
+              example:
+                monitoring_id: 7c9e2f14-5b6a-4c8d-9e1f-3a7b5c2d8e91
+                subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                active: true
+                only_material: true
+                created_at: '2026-08-08T16:11:40Z'
+                last_event_at: '2026-08-08T18:02:11Z'
+                last_checked_at: '2026-08-08T18:05:00Z'
+                doc_id: 12.345.678-5
+                country: CL
+                subject_type: person
+                monitor_since_score: 500
+                last_score: 487
+                last_record_count: 2
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden (service disabled or unverified account)
+        '404':
+          description: not_found
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: resource not found
+    delete:
+      tags: [Qscore]
+      summary: Unsubscribe a subject
+      operationId: deleteQscoreMonitoring
+      description: 'Deactivates the monitoring subscription of your account for a
+        subject (`active: false`). No more `risk_monitoring_alert` webhooks are
+        sent; you can subscribe again with `PUT`. Returns `404 not_found` if
+        there is no subscription.'
+      parameters:
+      - name: docID
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 12.345.678-5
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+          default: CL
+        description: ISO country of the document (default CL).
+        example: CL
+      responses:
+        '200':
+          description: Subscription deactivated.
+          content:
+            application/json:
+              example:
+                subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                doc_id: 12.345.678-5
+                active: false
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden (service disabled or unverified account)
+        '404':
+          description: not_found
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: resource not found
+  /v1/qscore/monitoring:
+    get:
+      tags: [Qscore]
+      summary: List monitoring subscriptions
+      operationId: listQscoreMonitoring
+      description: 'Lists the monitoring subscriptions of your account (newest
+        first), paginated. `page` starts at 1; `page_size` defaults to 50
+        (maximum 200).'
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 1
+        example: 1
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 50
+        example: 50
+      - name: active
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: ['true']
+        description: Pass `active=true` to list only active subscriptions.
+        example: 'true'
+      responses:
+        '200':
+          description: Page of monitoring subscriptions.
+          content:
+            application/json:
+              example:
+                items:
+                - monitoring_id: 7c9e2f14-5b6a-4c8d-9e1f-3a7b5c2d8e91
+                  subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                  active: true
+                  only_material: true
+                  created_at: '2026-08-08T16:11:40Z'
+                  doc_id: 12.345.678-5
+                  country: CL
+                  subject_type: person
+                  monitor_since_score: 500
+                  last_score: 487
+                  last_record_count: 2
+                page: 1
+                page_size: 50
+                total: 1
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden (service disabled or unverified account)
 components:
   securitySchemes:
     bearerAuth:
@@ -20371,6 +20596,98 @@ webhooks:
               new_score: 688
               old_band: B
               new_band: B
+      responses:
+        '200':
+          description: Return any 2xx to acknowledge the delivery.
+  risk_monitoring_alert:
+    post:
+      summary: Qscore monitoring alert
+      description: 'A subject the account monitors via `PUT /v1/qscore/subjects/{docID}/monitoring`
+        changed since the last check. `triggers` lists what fired the alert:
+        `score_drop_below` (the score crossed the subscription''s `monitor_since_score`
+        threshold downward: previous >= threshold, new < threshold), `new_records`
+        (the bureau registered new events; with `only_material: true` only materially
+        negative events — open delinquency, protest, bankruptcy, lawsuit — count) or
+        `records_removed` (the bureau now shows fewer events than the baseline, i.e.
+        a record was closed or deleted). Active subscriptions are re-checked every
+        ~5 minutes; the first pass after subscribing only seeds the baseline and never
+        alerts on the history the purchased report already showed. `score` and
+        `previous_score` are omitted while the subject has no classifiable score, and
+        `new_records` is omitted when no new event fired.
+
+
+        Every delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
+        and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`. Respond 2xx; up
+        to 5 attempts with incremental backoff.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                monitoring_id:
+                  type: string
+                subject_id:
+                  type: string
+                doc_id:
+                  type: string
+                country:
+                  type: string
+                subject_type:
+                  type: string
+                  enum: [person, company]
+                triggers:
+                  type: array
+                  items:
+                    type: string
+                    enum: [score_drop_below, new_records, records_removed]
+                score:
+                  type: integer
+                previous_score:
+                  type: integer
+                band:
+                  type: string
+                  enum: [A, B, C, D, E, SC]
+                record_count:
+                  type: integer
+                new_records:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      source:
+                        type: string
+                      record_type:
+                        type: string
+                      reported_at:
+                        type: string
+                      amount:
+                        type: string
+                      currency:
+                        type: string
+                      status:
+                        type: string
+                detected_at:
+                  type: string
+            example:
+              monitoring_id: 7c9e2f14-5b6a-4c8d-9e1f-3a7b5c2d8e91
+              subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+              doc_id: 12.345.678-5
+              country: CL
+              subject_type: person
+              triggers: [score_drop_below, new_records]
+              score: 487
+              previous_score: 512
+              band: D
+              record_count: 3
+              new_records:
+              - source: res_chile
+                record_type: debt_collection
+                reported_at: '2026-08-05T00:00:00Z'
+                amount: '450000'
+                currency: CLP
+                status: open
+              detected_at: '2026-08-08T18:41:12Z'
       responses:
         '200':
           description: Return any 2xx to acknowledge the delivery.

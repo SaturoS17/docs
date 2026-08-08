@@ -218,6 +218,7 @@ Errores de los endpoints del buró de crédito ([guía](/es/guias/qscore)).
 | 400 | `invalid_purpose` | El `purpose` no es uno de los valores permitidos (`credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding`, `other`) — corrige el valor |
 | 400 | `invalid_doc_id` | El `doc_id` no es válido para el `country` indicado (ej. dígito verificador de RUT incorrecto en Chile) — corrige el formato del documento |
 | 400 | `invalid_subject_type` | `subject_type` no es `person`/`company` y no se pudo inferir del documento — envíalo explícito |
+| 403 | `report_required` | Activar el monitoreo exige un informe comprado de ese sujeto — compra uno primero ([guía](/es/guias/qscore)); por privacidad, un sujeto inexistente recibe esta misma respuesta |
 | 404 | `no_score` | El sujeto aún no tiene un score calculado — compra un informe primero |
 | 404 | `pdf_not_ready` | El PDF del informe aún no está disponible — consulta el detalle hasta `status=ready` (el webhook `risk_report_ready` te avisa) |
 

@@ -1,5 +1,5 @@
 {
-  "count": 184,
+  "count": 185,
   "errors": [
     {
       "category": {
@@ -2197,6 +2197,20 @@
         "en": "`subject_type` is not `person`/`company` and could not be inferred from the document — send it explicitly",
         "es": "`subject_type` no es `person`/`company` y no se pudo inferir del documento — envíalo explícito",
         "zh": "`subject_type` 不是 `person`/`company` 且无法从证件推断 — 请显式发送"
+      }
+    },
+    {
+      "category": {
+        "en": "Qscore",
+        "es": "Qscore",
+        "zh": "Qscore"
+      },
+      "code": "report_required",
+      "http": 403,
+      "meaning": {
+        "en": "Enabling monitoring requires a purchased report for that subject — buy one first (guide); for privacy, a subject that does not exist gets this same response",
+        "es": "Activar el monitoreo exige un informe comprado de ese sujeto — compra uno primero (guía); por privacidad, un sujeto inexistente recibe esta misma respuesta",
+        "zh": "启用监控需要先购买该主体的报告 — 请先购买(指南);出于隐私保护,主体不存在时也会返回相同的响应"
       }
     },
     {

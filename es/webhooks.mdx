@@ -131,6 +131,7 @@ Para reactivarla, el mismo llamado con `{ "status": "active" }`.
 | `aml_screening_updated` | Novedades del screening AML (resultado, casos, riesgo, transacción revisada) |
 | `risk_report_ready` | Un informe crediticio [Qscore](/es/guias/qscore) terminó de generarse (lleva el score y la banda) |
 | `risk_score_changed` | El score de un sujeto monitoreado se movió (re-evaluación tras nuevos datos del buró) |
+| `risk_monitoring_alert` | Un sujeto monitoreado de [Qscore](/es/guias/qscore) gatilló una alerta: el score cayó bajo tu umbral, aparecieron registros nuevos en el buró o se eliminaron registros |
 | `wallet_deposit_received` | Llegó un depósito on-chain a una [wallet segregada](/es/guias/wallets-segregadas) (no toca el ledger) |
 | `wallet_send_status_changed` | Un envío desde una wallet segregada cambió de estado |
 | `wallet_key_exported` | Se exportó la llave privada de una wallet segregada (alerta de seguridad) |
@@ -500,6 +501,32 @@ antiguas sin datos del motor.
   "new_score": 712,
   "old_band": "C",
   "new_band": "B"
+}
+```
+
+```json risk_monitoring_alert
+{
+  "monitoring_id": "7c9e2f14-5b6a-4c8d-9e1f-3a7b5c2d8e91",
+  "subject_id": "8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112",
+  "doc_id": "12.345.678-5",
+  "country": "CL",
+  "subject_type": "person",
+  "triggers": ["score_drop_below", "new_records"],
+  "score": 487,
+  "previous_score": 512,
+  "band": "D",
+  "record_count": 3,
+  "detected_at": "2026-08-08T18:41:12Z",
+  "new_records": [
+    {
+      "source": "res_chile",
+      "record_type": "debt_collection",
+      "reported_at": "2026-08-05T00:00:00Z",
+      "amount": "450000",
+      "currency": "CLP",
+      "status": "open"
+    }
+  ]
 }
 ```
 

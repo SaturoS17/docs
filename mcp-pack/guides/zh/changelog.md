@@ -8,7 +8,23 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-## v2.46 · 6 个版本 - 2026年8月8日
+## v2.47 · 7 个版本 - 2026年8月8日
+
+### v2.47
+
+**新增**
+
+- **Qscore —— 主体持续监控**([Qscore 指南](https://docs.cbpayapp.com/zh/guides/qscore)):当你已持有某主体的
+  `ready` 报告后,可通过 `PUT /v1/qscore/subjects/{docID}/monitoring` 订阅监控,
+  平台每约 5 分钟重新评估该主体,当评分跌破你的 `monitor_since_score` 阈值
+  (`score_drop_below`)、征信出现新记录(`new_records`)或记录被移除
+  (`records_removed`)时,发出新的 webhook `risk_monitoring_alert` —— 设置
+  `only_material: true` 后仅触发重大变更。可通过
+  `GET /v1/qscore/subjects/{docID}/monitoring`、`GET /v1/qscore/monitoring`
+  (账户下所有被监控主体)和 `DELETE /v1/qscore/subjects/{docID}/monitoring`
+  (停用,`active: false` —— 历史记录永不删除)管理订阅。监控免费,但需要先购买
+  该主体的报告:否则 API 返回 `403 report_required`,与主体不存在时的响应相同
+  (有意设计,防止探测主体是否存在)。新增错误码:`report_required`([错误](https://docs.cbpayapp.com/zh/errors))。
 
 ### v2.46
 

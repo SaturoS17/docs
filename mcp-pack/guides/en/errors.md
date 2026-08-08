@@ -217,6 +217,7 @@ Errors from the credit bureau endpoints ([guide](https://docs.cbpayapp.com/en/gu
 | 400 | `invalid_purpose` | The `purpose` is not one of the allowed values (`credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding`, `other`) — fix the value |
 | 400 | `invalid_doc_id` | The `doc_id` is not valid for the given `country` (e.g. bad RUT check digit in Chile) — fix the document format |
 | 400 | `invalid_subject_type` | `subject_type` is not `person`/`company` and could not be inferred from the document — send it explicitly |
+| 403 | `report_required` | Enabling monitoring requires a purchased report for that subject — buy one first ([guide](https://docs.cbpayapp.com/en/guides/qscore)); for privacy, a subject that does not exist gets this same response |
 | 404 | `no_score` | The subject has no computed score yet — buy a report first |
 | 404 | `pdf_not_ready` | The report PDF is not available yet — poll the detail until `status=ready` (the `risk_report_ready` webhook tells you) |
 

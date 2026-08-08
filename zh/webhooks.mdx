@@ -125,6 +125,7 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
 | `aml_screening_updated` | AML 筛查更新（结果、案件、风险、已复核交易） |
 | `risk_report_ready` | [Qscore](/zh/guides/qscore) 信用报告已生成完毕(携带评分和等级) |
 | `risk_score_changed` | 受监控主体的评分发生变化(信用局新数据后的重新评估) |
+| `risk_monitoring_alert` | 受监控的 [Qscore](/zh/guides/qscore) 主体触发了警报:评分跌破你设定的阈值、信用局出现新记录或记录被移除 |
 | `wallet_deposit_received` | 一笔链上充值到达[独立钱包](/zh/guides/segregated-wallets)（不触及账本） |
 | `wallet_send_status_changed` | 独立钱包发起的一笔转出状态发生变化 |
 | `wallet_key_exported` | 独立钱包的私钥被导出（安全警报） |
@@ -489,6 +490,32 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
   "new_score": 712,
   "old_band": "C",
   "new_band": "B"
+}
+```
+
+```json risk_monitoring_alert
+{
+  "monitoring_id": "7c9e2f14-5b6a-4c8d-9e1f-3a7b5c2d8e91",
+  "subject_id": "8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112",
+  "doc_id": "12.345.678-5",
+  "country": "CL",
+  "subject_type": "person",
+  "triggers": ["score_drop_below", "new_records"],
+  "score": 487,
+  "previous_score": 512,
+  "band": "D",
+  "record_count": 3,
+  "detected_at": "2026-08-08T18:41:12Z",
+  "new_records": [
+    {
+      "source": "res_chile",
+      "record_type": "debt_collection",
+      "reported_at": "2026-08-05T00:00:00Z",
+      "amount": "450000",
+      "currency": "CLP",
+      "status": "open"
+    }
+  ]
 }
 ```
 

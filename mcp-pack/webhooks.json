@@ -1,5 +1,5 @@
 {
-  "count": 36,
+  "count": 37,
   "events": [
     {
       "description": {
@@ -570,6 +570,45 @@
         "en": "Payout status changed",
         "es": "Estado de payout cambiado",
         "zh": "payout 状态已变更"
+      }
+    },
+    {
+      "description": {
+        "en": "A subject the account monitors via `PUT /v1/qscore/subjects/{docID}/monitoring` changed since the last check. `triggers` lists what fired the alert: `score_drop_below` (the score crossed the subscription's `monitor_since_score` threshold downward: previous >= threshold, new < threshold), `new_records` (the bureau registered new events; with `only_material: true` only materially negative events — open delinquency, protest, bankruptcy, lawsuit — count) or `records_removed` (the bureau now shows fewer events than the baseline, i.e. a record was closed or deleted). Active subscriptions are re-checked every ~5 minutes; the first pass after subscribing only seeds the baseline and never alerts on the history the purchased report already showed. `score` and `previous_score` are omitted while the subject has no classifiable score, and `new_records` is omitted when no new event fired.\n\nEvery delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Respond 2xx; up to 5 attempts with incremental backoff.",
+        "es": "Un sujeto que la cuenta monitorea vía `PUT /v1/qscore/subjects/{docID}/monitoring` cambió desde la última revisión. `triggers` lista qué disparó la alerta: `score_drop_below` (el score cruzó hacia abajo el umbral `monitor_since_score` de la suscripción: anterior >= umbral, nuevo < umbral), `new_records` (el buró registró eventos nuevos; con `only_material: true` solo cuentan los eventos materialmente negativos — mora abierta, protesto, quiebra, demanda) o `records_removed` (el buró ahora muestra menos eventos que el baseline, es decir, un registro se cerró o se eliminó). Las suscripciones activas se re-evalúan cada ~5 minutos; la primera pasada tras suscribirse solo siembra el baseline y jamás alerta con el historial que ya mostraba el informe comprado. `score` y `previous_score` se omiten mientras el sujeto no tenga score clasificable, y `new_records` se omite cuando ningún evento nuevo disparó la alerta.\n\nCada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` y `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Responde 2xx; hasta 5 intentos con backoff incremental.",
+        "zh": "账户通过 `PUT /v1/qscore/subjects/{docID}/monitoring` 监控的主体自上次检查以来 发生了变化。`triggers` 列出触发本次告警的原因：`score_drop_below`（评分向下穿越订阅的 `monitor_since_score` 阈值：先前 >= 阈值，新值 < 阈值）、`new_records`（征信局登记了新事件； 当 `only_material: true` 时，仅重大负面事件——未结清的逾期、拒付、破产、诉讼——计入）或 `records_removed`（征信局当前显示的事件少于基线，即某条记录已结清或删除）。活跃订阅每 ~5 分钟重新评估一次；订阅后的首次扫描仅建立基线，绝不会就已购买报告中展示过的历史 记录发出告警。当主体暂无可分类评分时，`score` 和 `previous_score` 将被省略；没有新事件 触发时，`new_records` 也将被省略。\n\n每次交付都包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`。响应 2xx； 最多 5 次尝试，采用递增退避。"
+      },
+      "event": "risk_monitoring_alert",
+      "payload_example": {
+        "band": "D",
+        "country": "CL",
+        "detected_at": "2026-08-08T18:41:12Z",
+        "doc_id": "12.345.678-5",
+        "monitoring_id": "7c9e2f14-5b6a-4c8d-9e1f-3a7b5c2d8e91",
+        "new_records": [
+          {
+            "amount": "450000",
+            "currency": "CLP",
+            "record_type": "debt_collection",
+            "reported_at": "2026-08-05T00:00:00Z",
+            "source": "res_chile",
+            "status": "open"
+          }
+        ],
+        "previous_score": 512,
+        "record_count": 3,
+        "score": 487,
+        "subject_id": "8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112",
+        "subject_type": "person",
+        "triggers": [
+          "score_drop_below",
+          "new_records"
+        ]
+      },
+      "summary": {
+        "en": "Qscore monitoring alert",
+        "es": "Alerta de monitoreo Qscore",
+        "zh": "Qscore 监控告警"
       }
     },
     {
