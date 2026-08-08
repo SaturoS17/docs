@@ -9,7 +9,15 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-## v2.43 · 3 versiones - 8 de agosto de 2026
+## v2.44 · 4 versiones - 8 de agosto de 2026
+
+### v2.44
+
+**Corregido**
+
+- Los eventos `payin_received` ya no se generan para reversas bancarias
+  internas de la cuenta de tesorería del operador (la reversa de un envío
+  propio nunca fue un cobro de cliente).
 
 ### v2.43
 

@@ -8,7 +8,15 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.43 · 3 releases - August 8, 2026
+## v2.44 · 4 releases - August 8, 2026
+
+### v2.44
+
+**Fixed**
+
+- `payin_received` events are no longer generated for internal bank
+  reversals of the operator's treasury account (the reversal of an own
+  outbound transfer was never a customer payment).
 
 ### v2.43
 
