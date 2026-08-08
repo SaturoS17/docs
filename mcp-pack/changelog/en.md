@@ -8,7 +8,22 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.42 · 2 releases - August 8, 2026
+## v2.43 · 3 releases - August 8, 2026
+
+### v2.43
+
+**Changed**
+
+- **Cities catalog quality pass** ([AML catalogs guide](https://docs.cbpayapp.com/en/guides/aml)): the
+  cities served by `GET /v1/aml/catalogs/cities?country=<CC>` were
+  regenerated for correctness and coverage. Names keep their local spelling
+  (accents, `ñ`, `ü` — "Alhué", "Coyoacán", "São Paulo"), local names
+  replace English exonyms ("Ciudad de México", not "Mexico City"), and urban
+  divisions are now complete — every comuna of Santiago, the districts of
+  Lima, the alcaldías of Mexico City, municipalities across the region.
+  Source noise was removed (US census suffixes like "Abanda CDP", residual
+  administrative prefixes, duplicate spellings). Same response shape and
+  error codes — no integration change.
 
 ### v2.42
 

@@ -86,6 +86,8 @@ curl "https://api.qbank.cl/platform/v1/aml/catalogs/cities?country=US" \
 - `states` 的键与主目录中 `country_subdivisions` 的 ISO 3166-2
   行政区划相同；`country_cities` 列出无法映射到行政区划的城市 ——
   也应一并提供。这两个字段永远不会是 `null`。
+- 名称使用本地拼写（含重音符号 —— "Alhué"、"São Paulo"、"Ciudad de México"），
+  并覆盖城市辖区（comuna、区、alcaldía），选择器可以按用户熟悉的方式展示城市。
 - 没有覆盖的国家/地区返回 `200` 和空列表 —— 此时回退到自由文本的
   城市字段。格式错误的代码返回 `400 invalid_country`；未知代码返回
   `404 country_not_found`。

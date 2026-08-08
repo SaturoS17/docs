@@ -8,7 +8,23 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-<Update label="8 de agosto de 2026" description="v2.42 · 2 versiones">
+<Update label="8 de agosto de 2026" description="v2.43 · 3 versiones">
+
+### v2.43
+
+**Cambiado**
+
+- **Mejora de calidad del catálogo de ciudades** ([guía de catálogos AML](/es/guias/aml)):
+  las ciudades que sirve `GET /v1/aml/catalogs/cities?country=<CC>` fueron
+  regeneradas con mejor cobertura y escritura correcta. Los nombres conservan
+  su ortografía local (tildes, `ñ`, `ü` — "Alhué", "Coyoacán", "São Paulo"),
+  los nombres locales reemplazan a los exónimos en inglés ("Ciudad de
+  México", no "Mexico City") y las divisiones urbanas quedaron completas:
+  todas las comunas de Santiago, los distritos de Lima, las alcaldías de
+  Ciudad de México, municipios de toda la región. Se eliminó el ruido de los
+  datos (sufijos censales de EE. UU. como "Abanda CDP", prefijos
+  administrativos residuales, duplicados). Mismo shape de respuesta y mismos
+  códigos de error — sin cambio de integración.
 
 ### v2.42
 

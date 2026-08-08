@@ -99,6 +99,10 @@ curl "https://api.qbank.cl/platform/v1/aml/catalogs/cities?country=US" \
   `country_subdivisions` en el catálogo principal; `country_cities` lista
   las ciudades cuya región no pudo mapearse a una subdivisión — ofrécelas
   también. Ningún campo es jamás `null`.
+- Los nombres vienen en su escritura local (tildes incluidas — "Alhué",
+  "São Paulo", "Ciudad de México") y las divisiones urbanas están cubiertas
+  (comunas, distritos, alcaldías), así el selector ofrece la ciudad tal como
+  la conoce tu usuario.
 - Un país sin cobertura responde `200` con listas vacías — cae a un campo
   de ciudad de texto libre. Un código mal formado recibe `400
   invalid_country`; uno desconocido, `404 country_not_found`.

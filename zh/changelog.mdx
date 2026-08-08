@@ -7,7 +7,20 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-<Update label="2026年8月8日" description="v2.42 · 2 个版本">
+<Update label="2026年8月8日" description="v2.43 · 3 个版本">
+
+### v2.43
+
+**变更**
+
+- **城市目录质量改进**([AML 目录指南](/zh/guides/aml)):
+  `GET /v1/aml/catalogs/cities?country=<CC>` 返回的城市数据已重新生成,
+  覆盖更完整、拼写更准确。名称保留本地拼写(重音符号、`ñ`、`ü` ——
+  如 "Alhué"、"Coyoacán"、"São Paulo"),本地名称取代英文外来名(如
+  "Ciudad de México" 而非 "Mexico City"),城市辖区覆盖完整 ——
+  圣地亚哥所有 comuna、利马各区、墨西哥城各 alcaldía 以及整个地区的
+  市镇。同时清理了源数据噪音(美国普查后缀如 "Abanda CDP"、残留的
+  行政前缀、重复拼写)。响应结构与错误码不变 —— 无需调整集成。
 
 ### v2.42
 
