@@ -123,7 +123,9 @@ curl "https://api.qbank.cl/platform/verify/receipts/P9b1deb4d3b7d4bad9bdd2b0d7b3
 ```
 
 If the same URL is opened in a **browser** (for example by scanning the QR
-with a phone), it renders a branded web page with the result.
+with a phone), it redirects to the **public tracking page** — a Wise-style
+hosted page with the live status, a step-by-step timeline and the PDF
+download. See [Transaction tracking link](https://docs.cbpayapp.com/en/guides/tracking).
 
 - The response **never** includes the beneficiary's personal data, accounts
   or addresses: only type, status, amount and date.
@@ -131,6 +133,8 @@ with a phone), it renders a branded web page with the result.
   `404` with `"valid": false`.
 - The verification shows the **current** data: if someone edits the PDF to
   inflate the amount, the QR exposes it instantly.
+- The `verify_url` included in receipt payloads and receipt emails points
+  directly to the tracking page, so recipients land on the timeline view.
 
 ## Automatic receipt email
 
@@ -174,8 +178,9 @@ curl -X PATCH "https://api.qbank.cl/platform/v1/me" \
     operation; checking them shows the true amount and status, so any
     tampering is exposed.
 #### Which languages is the receipt available in?
-    Spanish (`?lang=es`, default) and English (`?lang=en`). The email uses
-    Spanish.
+    English (`?lang=en`), Spanish (`?lang=es`) and Simplified Chinese
+    (`?lang=zh`). The public tracking page auto-detects the visitor's
+    browser language.
 #### Which brand appears on the receipt?
     The branding of the platform you operate on (the operator's logo,
     colors and contact details). The PDF/Excel statement uses the same
@@ -183,3 +188,4 @@ curl -X PATCH "https://api.qbank.cl/platform/v1/me" \
 #### Does the QR expire?
     No. The code verifies for as long as the operation exists, and it
     always answers its current status.
+- **Transaction tracking link** - Every receipt also has a shareable public tracking page with a live status timeline — no sign-in required.

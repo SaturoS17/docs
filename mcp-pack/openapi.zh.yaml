@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.40'
+  version: '2.41'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -411,6 +411,123 @@ paths:
               example:
                 error: too_many_attempts
                 message: too many verification attempts; wait a moment and retry
+  /v1/public/track/{code}:
+    get:
+      security: []
+      tags:
+      - 凭证
+      operationId: trackReceipt
+      summary: 通过公开链接跟踪交易(公开)
+      description: '公开端点(无需凭证),对应每张凭证及凭证邮件上打印的可分享跟踪链接。代码经加密签名:被篡改或伪造的代码返回统一的
+        404。审核状态一律泛化为 `processing`(防提示)。`timeline` 按操作系列使用固定步骤序列,只携带真实时间戳(created/updated)——绝不伪造。`lang`
+        切换标签语言(托管页面默认 `en`,可选 `es`、`zh`)。所有响应携带 `X-Robots-Tag: noindex` 与 `Cache-Control:
+        no-store`。与验证端点共享按 IP 限流。'
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+        description: 凭证上打印的签名跟踪代码(与验证 URL 中的代码相同)。
+      - name: lang
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [en, es, zh]
+        description: 标签、副标题及 `whats_next` 的语言。
+      responses:
+        '200':
+          description: 交易当前的公开状态。
+          content:
+            application/json:
+              example:
+                kind: payout
+                id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                status: in_transit
+                status_class: pending
+                subtitle: Venezuela — Pago Móvil
+                fields:
+                - {label: '交易编号', value: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, mono: true}
+                - {label: '日期和时间', value: '2026年8月8日 15:29 UTC'}
+                - {label: '收款人', value: 'María Pérez'}
+                - {label: '银行', value: 'Banco de Venezuela'}
+                - {label: '电话', value: 0414-1234567}
+                - {label: '附言', value: 'Invoice 1042'}
+                amounts:
+                - {label: '到账金额', value: '1250000.00 VES'}
+                - {label: '汇率', value: '950.00'}
+                - {label: '扣款总额', value: '1315.79 USDT'}
+                created_at: '2026-08-08T15:29:04Z'
+                timeline:
+                - {key: initiated, state: complete, at: '2026-08-08T15:29:04Z'}
+                - {key: processing, state: complete, at: null}
+                - {key: in_transit, state: in_progress, at: null}
+                - {key: completed, state: upcoming, at: null}
+                branding: {name: CBPay, logo_url: 'https://cdn.example.com/logo.png', website: 'https://www.cbpayapp.com', accent: '#FBC140'}
+                receipt_pdf_url: 'https://api.qbank.cl/platform/v1/public/track/Cb4f8a…/receipt.pdf'
+                whats_next: payout.in_transit
+                support: {website: 'https://www.cbpayapp.com'}
+        '404':
+          description: 跟踪代码无效、被篡改或未知(统一应答——防枚举)。
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: this tracking link does not correspond to any transaction issued by this platform
+        '429':
+          description: 来自此 IP 的尝试过多。
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many requests; wait a moment and retry
+  /v1/public/track/{code}/receipt.pdf:
+    get:
+      security: []
+      tags:
+      - 凭证
+      operationId: trackReceiptPdf
+      summary: 从跟踪链接下载凭证 PDF(公开)
+      description: '公开端点(无需凭证),使用与认证端点相同的渲染器实时生成凭证 PDF,支持所请求的语言(`lang=es|en|zh`;中文以
+        Noto Sans SC 字体绘制)。与 JSON 跟踪器使用相同的签名代码。响应携带 `X-Robots-Tag: noindex` 与 `Cache-Control:
+        no-store`。共享按 IP 限流。'
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+        description: 凭证上打印的签名跟踪代码。
+      - name: lang
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [en, es, zh]
+        description: PDF 的语言。
+      responses:
+        '200':
+          description: 实时生成的凭证 PDF。
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: 跟踪代码无效、被篡改或未知。
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: this tracking link does not correspond to any transaction issued by this platform
+        '429':
+          description: 来自此 IP 的尝试过多。
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many requests; wait a moment and retry
   /pay/{token}:
     get:
       security: []

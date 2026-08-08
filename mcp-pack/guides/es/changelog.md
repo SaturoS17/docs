@@ -9,6 +9,34 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+## v2.41 · 1 versión - 8 de agosto de 2026
+
+### v2.41
+
+**Agregado**
+
+- **Link de seguimiento público para cada transacción**
+  ([guía de seguimiento](https://docs.cbpayapp.com/es/guias/seguimiento)): cada comprobante (payout, payin, refund,
+  transferencia interna, swap, retiro o depósito crypto, operación banking, compra con tarjeta)
+  tiene ahora un link público compartible — `https://business.cbpayapp.com/t/{code}`, con el
+  mismo código firmado impreso en el comprobante — que abre una página de seguimiento estilo
+  Wise con la línea de tiempo en vivo, la descarga del comprobante PDF y selector de idioma
+  (EN/ES/ZH). La página es `noindex`, nunca se cachea y muestra los estados de revisión como
+  `processing` (sin tipping-off).
+- **Endpoints públicos de seguimiento**: `GET /v1/public/track/{code}?lang=` devuelve el estado
+  público de la transacción en JSON y `GET /v1/public/track/{code}/receipt.pdf?lang=` regenera
+  el comprobante PDF al vuelo. Ambos son sin autenticación, rate-limited por IP y responden un
+  `404 not_found` uniforme ante códigos inválidos o alterados.
+- **Comprobantes en chino**: los comprobantes PDF y la página de seguimiento ahora soportan
+  `lang=zh` por completo.
+
+**Cambiado**
+
+- **Los `verify_url` de los comprobantes abren el tracker**: el `verify_url` de los comprobantes
+  nuevos y de los correos de comprobante apunta ahora a la página de seguimiento. El legacy
+  `GET /v1/verify/receipts/{code}` sigue vivo — el navegador se redirige (302) al tracker y los
+  clientes API reciben el mismo JSON de siempre.
+
 ## v2.40 · 4 versiones - 7 de agosto de 2026
 
 ### v2.40

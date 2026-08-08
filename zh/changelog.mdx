@@ -7,6 +7,30 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年8月8日" description="v2.41 · 1 个版本">
+
+### v2.41
+
+**新增**
+
+- **每笔交易的公开跟踪链接**（[跟踪指南](/zh/guides/tracking)）：每张回单（payout、payin、
+  退款、内部转账、兑换、加密货币提现或充值、银行操作、刷卡消费）现在都带有一个可分享的
+  公开链接——`https://business.cbpayapp.com/t/{code}`，与回单上打印的签名代码相同——打开
+  Wise 风格的跟踪页面，展示实时时间线、回单 PDF 下载和语言选择（EN/ES/ZH）。页面为
+  `noindex`，永不缓存，并将审核类状态显示为 `processing`（防提示）。
+- **公开跟踪接口**：`GET /v1/public/track/{code}?lang=` 返回交易的公开 JSON 状态，
+  `GET /v1/public/track/{code}/receipt.pdf?lang=` 即时重新生成回单 PDF。两者均无需鉴权、
+  按 IP 限流，并对无效或被篡改的代码返回统一的 `404 not_found`。
+- **中文回单**：回单 PDF 和跟踪页面现已完整支持 `lang=zh`。
+
+**变更**
+
+- **回单 `verify_url` 打开跟踪页面**：新回单及回单邮件中的 `verify_url` 现在指向跟踪页面。
+  旧的 `GET /v1/verify/receipts/{code}` 继续保留——浏览器会被重定向（302）到跟踪页面，
+  而 API 客户端仍收到与之前相同的 JSON 结果。
+
+</Update>
+
 <Update label="2026年8月7日" description="v2.40 · 4 个版本">
 
 ### v2.40

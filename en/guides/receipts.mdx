@@ -128,7 +128,9 @@ curl "https://api.qbank.cl/platform/verify/receipts/P9b1deb4d3b7d4bad9bdd2b0d7b3
 ```
 
 If the same URL is opened in a **browser** (for example by scanning the QR
-with a phone), it renders a branded web page with the result.
+with a phone), it redirects to the **public tracking page** — a Wise-style
+hosted page with the live status, a step-by-step timeline and the PDF
+download. See [Transaction tracking link](/en/guides/tracking).
 
 - The response **never** includes the beneficiary's personal data, accounts
   or addresses: only type, status, amount and date.
@@ -136,6 +138,8 @@ with a phone), it renders a branded web page with the result.
   `404` with `"valid": false`.
 - The verification shows the **current** data: if someone edits the PDF to
   inflate the amount, the QR exposes it instantly.
+- The `verify_url` included in receipt payloads and receipt emails points
+  directly to the tracking page, so recipients land on the timeline view.
 
 ## Automatic receipt email
 
@@ -183,8 +187,9 @@ curl -X PATCH "https://api.qbank.cl/platform/v1/me" \
     tampering is exposed.
   </Accordion>
   <Accordion title="Which languages is the receipt available in?">
-    Spanish (`?lang=es`, default) and English (`?lang=en`). The email uses
-    Spanish.
+    English (`?lang=en`), Spanish (`?lang=es`) and Simplified Chinese
+    (`?lang=zh`). The public tracking page auto-detects the visitor's
+    browser language.
   </Accordion>
   <Accordion title="Which brand appears on the receipt?">
     The branding of the platform you operate on (the operator's logo,
@@ -196,3 +201,9 @@ curl -X PATCH "https://api.qbank.cl/platform/v1/me" \
     always answers its current status.
   </Accordion>
 </AccordionGroup>
+
+<CardGroup cols={1}>
+  <Card title="Transaction tracking link" icon="location-arrow" href="/en/guides/tracking">
+    Every receipt also has a shareable public tracking page with a live status timeline — no sign-in required.
+  </Card>
+</CardGroup>

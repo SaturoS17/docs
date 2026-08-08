@@ -7,6 +7,34 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="August 8, 2026" description="v2.41 · 1 release">
+
+### v2.41
+
+**Added**
+
+- **Public tracking link for every transaction** ([tracking guide](/en/guides/tracking)): every
+  receipt (payout, payin, refund, internal transfer, swap, crypto withdrawal or deposit, banking
+  operation, card purchase) now carries a shareable public link —
+  `https://business.cbpayapp.com/t/{code}`, with the same signed code printed on the receipt —
+  that opens a Wise-style tracking page with the live timeline, the receipt PDF download and
+  language selection (EN/ES/ZH). The page is `noindex`, never cached, and shows review-type
+  states as `processing` (no tipping-off).
+- **Public tracking endpoints**: `GET /v1/public/track/{code}?lang=` returns the public JSON
+  state of a transaction and `GET /v1/public/track/{code}/receipt.pdf?lang=` regenerates the
+  receipt PDF on the fly. Both are unauthenticated, rate-limited per IP and answer a uniform
+  `404 not_found` to invalid or tampered codes.
+- **Receipts in Chinese**: receipt PDFs and the tracking page now fully support `lang=zh`.
+
+**Changed**
+
+- **Receipt `verify_url`s open the tracker**: the `verify_url` of new receipts and of receipt
+  emails now points to the tracking page. The legacy `GET /v1/verify/receipts/{code}` stays live —
+  browsers are redirected (302) to the tracker while API clients keep receiving the same JSON
+  verdict as before.
+
+</Update>
+
 <Update label="August 7, 2026" description="v2.40 · 4 releases">
 
 ### v2.40

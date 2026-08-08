@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.40'
+  version: '2.41'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -461,6 +461,128 @@ paths:
               example:
                 error: too_many_attempts
                 message: too many verification attempts; wait a moment and retry
+  /v1/public/track/{code}:
+    get:
+      security: []
+      tags:
+      - Comprobantes
+      operationId: trackReceipt
+      summary: Seguir una operación por su link público (público)
+      description: 'Endpoint PÚBLICO (sin credenciales) detrás del link de seguimiento compartible
+        impreso en cada comprobante y email de comprobante. El código viene firmado criptográficamente:
+        uno adulterado o inventado responde un 404 uniforme. Los estados de revisión se generalizan a
+        `processing` (anti tipping-off). La `timeline` usa una secuencia fija de pasos por familia de
+        operación y solo lleva timestamps REALES (created/updated) — jamás fabricados. `lang` cambia
+        las etiquetas (`en` por defecto vía la página hospedada, `es`, `zh`). Toda respuesta lleva
+        `X-Robots-Tag: noindex` y `Cache-Control: no-store`. Comparte el rate limit por IP del endpoint
+        de verificación.'
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Código de seguimiento firmado impreso en el comprobante (el mismo código de la URL de verificación).
+      - name: lang
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [en, es, zh]
+        description: Idioma de las etiquetas, el subtítulo y `whats_next`.
+      responses:
+        '200':
+          description: Estado público vigente de la operación.
+          content:
+            application/json:
+              example:
+                kind: payout
+                id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                status: in_transit
+                status_class: pending
+                subtitle: Venezuela — Pago Móvil
+                fields:
+                - {label: 'ID DE TRANSACCIÓN', value: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d, mono: true}
+                - {label: 'FECHA Y HORA', value: '8 de agosto de 2026 a las 15:29 UTC'}
+                - {label: 'BENEFICIARIO', value: 'María Pérez'}
+                - {label: 'BANCO', value: 'Banco de Venezuela'}
+                - {label: 'TELÉFONO', value: 0414-1234567}
+                - {label: 'MENSAJE', value: 'Factura 1042'}
+                amounts:
+                - {label: 'MONTO RECIBIDO', value: '1250000.00 VES'}
+                - {label: 'TASA DE CAMBIO', value: '950.00'}
+                - {label: 'DÉBITO TOTAL', value: '1315.79 USDT'}
+                created_at: '2026-08-08T15:29:04Z'
+                timeline:
+                - {key: initiated, state: complete, at: '2026-08-08T15:29:04Z'}
+                - {key: processing, state: complete, at: null}
+                - {key: in_transit, state: in_progress, at: null}
+                - {key: completed, state: upcoming, at: null}
+                branding: {name: CBPay, logo_url: 'https://cdn.example.com/logo.png', website: 'https://www.cbpayapp.com', accent: '#FBC140'}
+                receipt_pdf_url: 'https://api.qbank.cl/platform/v1/public/track/Cb4f8a…/receipt.pdf'
+                whats_next: payout.in_transit
+                support: {website: 'https://www.cbpayapp.com'}
+        '404':
+          description: Código de seguimiento inválido, adulterado o desconocido (respuesta uniforme — anti-enumeración).
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: this tracking link does not correspond to any transaction issued by this platform
+        '429':
+          description: Demasiados intentos desde esta IP.
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many requests; wait a moment and retry
+  /v1/public/track/{code}/receipt.pdf:
+    get:
+      security: []
+      tags:
+      - Comprobantes
+      operationId: trackReceiptPdf
+      summary: Descargar el PDF del comprobante desde el link de seguimiento (público)
+      description: 'Endpoint PÚBLICO (sin credenciales) que genera el PDF del comprobante al vuelo con
+        el mismo renderer de los endpoints autenticados, en el idioma pedido (`lang=es|en|zh`; el chino
+        se dibuja con la fuente Noto Sans SC). Mismo código firmado del tracker JSON. Las respuestas
+        llevan `X-Robots-Tag: noindex` y `Cache-Control: no-store`. Comparte el rate limit por IP.'
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Código de seguimiento firmado impreso en el comprobante.
+      - name: lang
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [en, es, zh]
+        description: Idioma del PDF.
+      responses:
+        '200':
+          description: El PDF del comprobante, generado al vuelo.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Código de seguimiento inválido, adulterado o desconocido.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: this tracking link does not correspond to any transaction issued by this platform
+        '429':
+          description: Demasiados intentos desde esta IP.
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many requests; wait a moment and retry
   /pay/{token}:
     get:
       security: []

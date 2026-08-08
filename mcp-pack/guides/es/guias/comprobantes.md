@@ -125,7 +125,9 @@ curl "https://api.qbank.cl/platform/verify/receipts/P9b1deb4d3b7d4bad9bdd2b0d7b3
 ```
 
 Si la misma URL se abre en un **navegador** (por ejemplo al escanear el QR
-con el teléfono), responde una página web brandeada con el resultado.
+con el teléfono), redirige a la **página pública de seguimiento** — una
+página hospedada estilo Wise con el estado en vivo, un timeline paso a paso
+y la descarga del PDF. Ver [Link de seguimiento de transacciones](https://docs.cbpayapp.com/es/guias/seguimiento).
 
 - La respuesta **nunca** incluye datos personales del beneficiario, cuentas
   ni direcciones: solo tipo, estado, monto y fecha.
@@ -133,6 +135,9 @@ con el teléfono), responde una página web brandeada con el resultado.
   responde `404` con `"valid": false`.
 - La verificación muestra los datos **vigentes**: si alguien edita el PDF
   para inflar el monto, el QR lo delata al instante.
+- El `verify_url` incluido en los payloads de comprobante y en los emails
+  apunta directo a la página de seguimiento: quien lo recibe aterriza en la
+  vista con timeline.
 
 ## Email automático con el comprobante
 
@@ -176,11 +181,13 @@ curl -X PATCH "https://api.qbank.cl/platform/v1/me" \
     consultarlos se muestran el monto y estado verdaderos, por lo que
     cualquier adulteración queda en evidencia.
 #### ¿En qué idiomas está el comprobante?
-    Español (`?lang=es`, default) e inglés (`?lang=en`). El email usa
-    español.
+    Inglés (`?lang=en`), español (`?lang=es`) y chino simplificado
+    (`?lang=zh`). La página pública de seguimiento detecta el idioma del
+    navegador del visitante automáticamente.
 #### ¿Con qué marca sale el comprobante?
     Con el branding de la plataforma donde operas (logo, colores y datos de
     contacto del operador). La cartola PDF/Excel usa la misma identidad.
 #### ¿El QR expira?
     No. El código verifica mientras exista la operación, y siempre responde
     su estado vigente.
+- **Link de seguimiento de transacciones** - Cada comprobante tiene además una página pública de seguimiento compartible con timeline del estado en vivo — sin iniciar sesión.
