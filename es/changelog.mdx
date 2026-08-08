@@ -8,7 +8,22 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-<Update label="8 de agosto de 2026" description="v2.45 · 5 versiones">
+<Update label="8 de agosto de 2026" description="v2.46 · 6 versiones">
+
+### v2.46
+
+**Agregado**
+
+- **Referencia bancaria del payout, ahora visible en todas las superficies**
+  ([guía de payouts](/es/guias/payouts)): todo payout expone
+  `bank_reference` — el id de transacción asignado por el banco/rail de
+  destino — en las respuestas de `POST /v1/payouts`, `GET /v1/payouts` y
+  `GET /v1/payouts/{payoutID}`, en el payload del webhook
+  `payout_status_changed`, en el comprobante PDF, en el export CSV de
+  payouts y en la cartola (JSON y Excel). El campo viene vacío (`""`)
+  mientras el payout está en tránsito y se completa cuando queda
+  `completed` — es la referencia con la que el beneficiario puede cruzar el
+  pago con su banco.
 
 ### v2.45
 

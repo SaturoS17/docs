@@ -188,7 +188,8 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
   "usdt_amount": "85.714286",
   "total_debit": "86.014286",
   "status": "completed",
-  "status_code": ""
+  "status_code": "",
+  "bank_reference": "00761123456"
 }
 ```
 

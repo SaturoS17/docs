@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.45'
+  version: '2.46'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -3331,6 +3331,7 @@ paths:
                 status: processing
                 status_code: ''
                 status_message: ''
+                bank_reference: ''
                 created_at: '2026-07-07T12:00:00Z'
                 updated_at: '2026-07-07T12:00:00Z'
         '200':
@@ -3359,6 +3360,7 @@ paths:
                 status: processing
                 status_code: ''
                 status_message: ''
+                bank_reference: ''
                 created_at: '2026-07-07T12:00:00Z'
                 updated_at: '2026-07-07T12:00:00Z'
                 idempotency_hit: true
@@ -3406,6 +3408,7 @@ paths:
                 status: failed
                 status_code: core_rejected
                 status_message: beneficiary account is invalid
+                bank_reference: ''
                 created_at: '2026-07-07T12:00:00Z'
                 updated_at: '2026-07-07T12:00:00Z'
         '503':
@@ -3527,6 +3530,7 @@ paths:
                 status: completed
                 status_code: ''
                 status_message: ''
+                bank_reference: '00761123456'
                 created_at: '2026-07-07T12:00:00Z'
                 updated_at: '2026-07-07T12:00:00Z'
         '404':
@@ -11204,6 +11208,7 @@ paths:
                 status: completed
                 status_code: ''
                 status_message: ''
+                bank_reference: '00761123456'
                 created_at: '2026-07-07T12:00:00Z'
                 updated_at: '2026-07-07T12:00:01Z'
         '200':
@@ -11232,6 +11237,7 @@ paths:
                 status: completed
                 status_code: ''
                 status_message: ''
+                bank_reference: '00761123456'
                 created_at: '2026-07-07T12:00:00Z'
                 updated_at: '2026-07-07T12:00:01Z'
                 idempotency_hit: true
@@ -11281,6 +11287,7 @@ paths:
                 status: failed
                 status_code: core_rejected
                 status_message: QR already paid
+                bank_reference: ''
                 created_at: '2026-07-07T12:00:00Z'
                 updated_at: '2026-07-07T12:00:01Z'
   /v1/stored-cards:
@@ -13787,6 +13794,7 @@ paths:
                   fee_fixed: '0.100000'
                   total_debit: '13.324600'
                   status: completed
+                  bank_reference: '00761123456'
                 payins: []
                 crypto_deposits: []
                 crypto_withdrawals: []
@@ -18398,6 +18406,9 @@ components:
           type: string
         status_message:
           type: string
+        bank_reference:
+          type: string
+          description: 银行/支付渠道的交易参考号(受益人可用它与银行核对付款)。在渠道报告之前为空。
         created_at:
           type: string
           format: date-time
@@ -19059,6 +19070,7 @@ webhooks:
                 total_debit: *id017
                 status: *id017
                 status_code: *id017
+                bank_reference: *id017
             example:
               payout_id: 7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -19069,6 +19081,7 @@ webhooks:
               total_debit: '86.014286'
               status: completed
               status_code: ''
+              bank_reference: '00761123456'
       responses:
         '200':
           description: 返回任意 2xx 以确认投递。

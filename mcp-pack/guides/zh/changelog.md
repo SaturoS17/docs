@@ -8,7 +8,18 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-## v2.45 · 5 个版本 - 2026年8月8日
+## v2.46 · 6 个版本 - 2026年8月8日
+
+### v2.46
+
+**新增**
+
+- **付款的银行参考号现已覆盖所有界面**([付款指南](https://docs.cbpayapp.com/zh/guides/payouts)):每笔付款都会展示
+  `bank_reference` —— 收款银行/通道分配的交易号 —— 包括 `POST /v1/payouts`、
+  `GET /v1/payouts` 和 `GET /v1/payouts/{payoutID}` 的响应、
+  `payout_status_changed` webhook 负载、PDF 回执、付款 CSV 导出以及对账单
+  (JSON 和 Excel)。付款处理中该字段为空(`""`),付款完成后即为收款人
+  可用来与银行核对付款的参考号。
 
 ### v2.45
 

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.45'
+  version: '2.46'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -3486,6 +3486,7 @@ paths:
                 status: processing
                 status_code: ''
                 status_message: ''
+                bank_reference: ''
                 created_at: '2026-07-07T12:00:00Z'
                 updated_at: '2026-07-07T12:00:00Z'
         '200':
@@ -3514,6 +3515,7 @@ paths:
                 status: processing
                 status_code: ''
                 status_message: ''
+                bank_reference: ''
                 created_at: '2026-07-07T12:00:00Z'
                 updated_at: '2026-07-07T12:00:00Z'
                 idempotency_hit: true
@@ -3564,6 +3566,7 @@ paths:
                 status: failed
                 status_code: core_rejected
                 status_message: beneficiary account is invalid
+                bank_reference: ''
                 created_at: '2026-07-07T12:00:00Z'
                 updated_at: '2026-07-07T12:00:00Z'
         '503':
@@ -3687,6 +3690,7 @@ paths:
                 status: completed
                 status_code: ''
                 status_message: ''
+                bank_reference: '00761123456'
                 created_at: '2026-07-07T12:00:00Z'
                 updated_at: '2026-07-07T12:00:00Z'
         '404':
@@ -11576,6 +11580,7 @@ paths:
                 status: completed
                 status_code: ''
                 status_message: ''
+                bank_reference: '00761123456'
                 created_at: '2026-07-07T12:00:00Z'
                 updated_at: '2026-07-07T12:00:01Z'
         '200':
@@ -11604,6 +11609,7 @@ paths:
                 status: completed
                 status_code: ''
                 status_message: ''
+                bank_reference: '00761123456'
                 created_at: '2026-07-07T12:00:00Z'
                 updated_at: '2026-07-07T12:00:01Z'
                 idempotency_hit: true
@@ -11653,6 +11659,7 @@ paths:
                 status: failed
                 status_code: core_rejected
                 status_message: QR already paid
+                bank_reference: ''
                 created_at: '2026-07-07T12:00:00Z'
                 updated_at: '2026-07-07T12:00:01Z'
   /v1/stored-cards:
@@ -14184,6 +14191,7 @@ paths:
                   fee_fixed: '0.100000'
                   total_debit: '13.324600'
                   status: completed
+                  bank_reference: '00761123456'
                 payins: []
                 crypto_deposits: []
                 crypto_withdrawals: []
@@ -18890,6 +18898,9 @@ components:
           type: string
         status_message:
           type: string
+        bank_reference:
+          type: string
+          description: Bank/rail transaction reference (e.g. the bank's transfer id, which the beneficiary can use to cross-check the payment with their bank). Empty until the rail reports it.
         created_at:
           type: string
           format: date-time
@@ -19661,6 +19672,7 @@ webhooks:
                 total_debit: *id017
                 status: *id017
                 status_code: *id017
+                bank_reference: *id017
             example:
               payout_id: 7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -19671,6 +19683,7 @@ webhooks:
               total_debit: '86.014286'
               status: completed
               status_code: ''
+              bank_reference: '00761123456'
       responses:
         '200':
           description: Return any 2xx to acknowledge the delivery.

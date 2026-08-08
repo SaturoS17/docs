@@ -8,7 +8,21 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.45 · 5 releases - August 8, 2026
+## v2.46 · 6 releases - August 8, 2026
+
+### v2.46
+
+**Added**
+
+- **Bank reference of a payout, now visible on every surface**
+  ([payouts guide](https://docs.cbpayapp.com/en/guides/payouts)): every payout exposes
+  `bank_reference` — the transaction id assigned by the destination
+  bank/rail — in the responses of `POST /v1/payouts`, `GET /v1/payouts` and
+  `GET /v1/payouts/{payoutID}`, in the `payout_status_changed` webhook
+  payload, on the PDF receipt, in the payouts CSV export and in the
+  statement (JSON and Excel). The field is empty (`""`) while the payout is
+  in flight and populated once it is `completed` — it is the reference the
+  beneficiary can use to cross-check the payment with their bank.
 
 ### v2.45
 

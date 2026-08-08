@@ -146,6 +146,7 @@ Respuesta `202 Accepted`:
   "settlement_amount": "86.014286",
   "settlement_rate": "1",
   "status": "processing",
+  "bank_reference": "",
   "created_at": "2026-07-06T20:00:00Z"
 }
 ```
@@ -153,6 +154,13 @@ Respuesta `202 Accepted`:
 En ese momento tu saldo ya refleja el débito: `total_debit` pasó de
 `available` a `held` (en el saldo del `settlement_asset`).
 
+> **Nota**
+**`bank_reference` — el id propio del banco para la transferencia.** Mientras
+el payout está en curso viene vacío (`""`); cuando el payout queda
+`completed`, lleva el id de transacción asignado por el banco/rail de
+destino. Es el valor que el beneficiario puede usar para cruzar el pago con
+su banco, y también aparece en el webhook `payout_status_changed`, el
+comprobante PDF, el export CSV de payouts y la cartola.
 ### Pagar desde otro saldo (`settlement_asset`)
 
 Por defecto el débito sale de tu asset de settlement predeterminado (USDT
@@ -181,7 +189,8 @@ transformaciones, todas registradas en la respuesta:
   "settlement_asset": "BTC",
   "settlement_amount": "0.00096795",
   "settlement_rate": "109029.34070000",
-  "status": "processing"
+  "status": "processing",
+  "bank_reference": ""
 }
 ```
 
@@ -205,7 +214,8 @@ Suscríbete al evento `payout_status_changed` ([webhooks](https://docs.cbpayapp.
   "usdt_amount": "85.714286",
   "total_debit": "86.014286",
   "status": "completed",
-  "status_code": ""
+  "status_code": "",
+  "bank_reference": "00761123456"
 }
 ```
 
@@ -260,6 +270,7 @@ curl "https://api.qbank.cl/platform/v1/payouts?from=2026-07-01&to=2026-07-08&sta
       "status": "failed",
       "status_code": "core_rejected",
       "status_message": "beneficiary account does not exist",
+      "bank_reference": "",
       "created_at": "2026-07-06T20:00:00Z"
     }
   ]
@@ -331,7 +342,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
   "usdt_amount": "108.027528",
   "fee": "0.300000",
   "total_debit": "108.327528",
-  "status": "processing"
+  "status": "processing",
+  "bank_reference": ""
 }
 ```
 
@@ -388,7 +400,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
   "usdt_amount": "44.117648",
   "fee": "0.300000",
   "total_debit": "44.417648",
-  "status": "completed"
+  "status": "completed",
+  "bank_reference": "00761123456"
 }
 ```
 
@@ -447,7 +460,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
   "usdt_amount": "85.714286",
   "fee": "0.300000",
   "total_debit": "86.014286",
-  "status": "processing"
+  "status": "processing",
+  "bank_reference": ""
 }
 ```
 
@@ -506,7 +520,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
   "usdt_amount": "3.003004",
   "fee": "0.300000",
   "total_debit": "3.303004",
-  "status": "completed"
+  "status": "completed",
+  "bank_reference": "00761123456"
 }
 ```
 
@@ -548,7 +563,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
   "usdt_amount": "200.000000",
   "fee": "0.300000",
   "total_debit": "200.300000",
-  "status": "processing"
+  "status": "processing",
+  "bank_reference": ""
 }
 ```
 
@@ -589,7 +605,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
   "usdt_amount": "68.226121",
   "fee": "0.300000",
   "total_debit": "68.526121",
-  "status": "processing"
+  "status": "processing",
+  "bank_reference": ""
 }
 ```
 
@@ -723,7 +740,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
   "usdt_amount": "250.000000",
   "fee": "0.300000",
   "total_debit": "250.300000",
-  "status": "processing"
+  "status": "processing",
+  "bank_reference": ""
 }
 ```
 
@@ -774,7 +792,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
   "usdt_amount": "82.566020",
   "fee": "0.300000",
   "total_debit": "82.866020",
-  "status": "processing"
+  "status": "processing",
+  "bank_reference": ""
 }
 ```
 
@@ -833,7 +852,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
   "usdt_amount": "40.000000",
   "fee": "0.300000",
   "total_debit": "40.300000",
-  "status": "completed"
+  "status": "completed",
+  "bank_reference": "00761123456"
 }
 ```
 
@@ -997,7 +1017,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
   "usdt_amount": "250.501002",
   "fee": "0.300000",
   "total_debit": "250.801002",
-  "status": "processing"
+  "status": "processing",
+  "bank_reference": ""
 }
 ```
 
