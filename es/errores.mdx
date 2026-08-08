@@ -208,6 +208,19 @@ Estos códigos provienen de **superficies de administración de organización** 
 | 422 | `travel_rule_incomplete_approval` | La institución receptora aprobó sin entregar dirección de pago; contacta a soporte |
 | 503 | `travel_rule_unavailable` | Intercambio Travel Rule temporalmente no disponible; reintenta con la **misma** clave de idempotencia |
 
+### Qscore
+
+Errores de los endpoints del buró de crédito ([guía](/es/guias/qscore)).
+
+| HTTP | `error` | Significado |
+|---|---|---|
+| 400 | `purpose_required` | Falta `purpose` al crear un informe — la ley de protección de datos exige declararlo (`credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding` u `other`) |
+| 400 | `invalid_purpose` | El `purpose` no es uno de los valores permitidos (`credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding`, `other`) — corrige el valor |
+| 400 | `invalid_doc_id` | El `doc_id` no es válido para el `country` indicado (ej. dígito verificador de RUT incorrecto en Chile) — corrige el formato del documento |
+| 400 | `invalid_subject_type` | `subject_type` no es `person`/`company` y no se pudo inferir del documento — envíalo explícito |
+| 404 | `no_score` | El sujeto aún no tiene un score calculado — compra un informe primero |
+| 404 | `pdf_not_ready` | El PDF del informe aún no está disponible — consulta el detalle hasta `status=ready` (el webhook `risk_report_ready` te avisa) |
+
 ### Firewall transaccional
 
 Errores de la revisión de operaciones retenidas por el firewall transaccional ([guía](/es/guias/revisiones-operaciones)). La retención en sí **no es un error**: el create responde `202 Accepted` con `status: in_review` y `review_id`.

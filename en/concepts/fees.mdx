@@ -59,6 +59,8 @@ depends on your account's rates for that country. Quoted = charged, always.
 | `card_cancellation` | Fixed per card | When cancelling a card |
 | `card_purchase_virtual` | `%` + fixed over the USD purchase amount | Per purchase with a virtual card (estimated at authorization, final at settlement; reversals refund it proportionally) |
 | `card_purchase_physical` | `%` + fixed over the USD purchase amount | Per purchase with a physical card (same cycle as virtual) |
+| `risk_report_person` | Fixed per report | When buying a Qscore credit report on a person ([Qscore](/en/guides/qscore)); refunded automatically if the report fails (`risk_report_refund`) |
+| `risk_report_company` | Fixed per report | When buying a Qscore credit report on a company |
 
 For `%`-based services the formula is
 `fee = ceil(amount × percent / 100) + fixed_amount` (rounded up to the

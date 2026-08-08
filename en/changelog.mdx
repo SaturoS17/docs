@@ -7,7 +7,31 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-<Update label="August 8, 2026" description="v2.44 · 4 releases">
+<Update label="August 8, 2026" description="v2.45 · 5 releases">
+
+### v2.45
+
+**Added**
+
+- **Qscore — API-first credit bureau** ([Qscore guide](/en/guides/qscore)): buy
+  credit reports on people and companies (`POST /v1/qscore/reports`), Chile
+  first. Each report aggregates negative records, labor and pension background,
+  unpaid leaves and official gazette publications into a 0–1000 score with
+  bands A–E (`SC` when there is no data), reason codes, a branded PDF and a
+  public verification code. `GET /v1/qscore/subjects/{docID}/score` reads the
+  current score of a subject you already reported on, `GET
+  /v1/qscore/reports/{reportID}/pdf` downloads the PDF, and the ARCO
+  rectification flow runs through `POST /v1/qscore/subjects/{docID}/disputes` +
+  `GET /v1/qscore/disputes/{disputeID}`. Reports are billed per document type
+  (`risk_report_person` / `risk_report_company`) and require the declared
+  `purpose` under data protection law. New webhooks: `risk_report_ready` and
+  `risk_score_changed`. Requires the `risk` service flag.
+- **Public report verification**: `GET /v1/verify/qscore/{code}` validates the
+  code printed on a Qscore report and returns the non-sensitive facts (subject
+  class, band, issue date) — no PII.
+- New error codes: `purpose_required`, `invalid_purpose`, `invalid_doc_id`,
+  `invalid_subject_type`, `no_score`, `pdf_not_ready`
+  ([errors](/en/errors)).
 
 ### v2.44
 

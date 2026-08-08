@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.44'
+  version: '2.45'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -90,6 +90,10 @@ tags:
 - name: AML screening
   description: Screening AML standalone de personas y empresas contra listas de sanciones, PEP y medios
     adversos, con re-screening, monitoreo continuo e informe PDF descargable.
+- name: Qscore
+  description: Buró de crédito API-first. Emite informes crediticios completos con score 1-999 (bandas A-E, o SC cuando
+    no hay datos), consulta el último score de un sujeto y gestiona disputas ARCO. Chile primero, con diseño
+    agnóstico al país. Cada informe emitido lleva un código de verificación pública.
 - name: Analytics
 - name: Webhooks
   description: Suscripciones para recibir notificaciones de eventos firmadas.
@@ -398,6 +402,52 @@ paths:
                 status: ok
                 decision: approved
                 date: '2026-07-21'
+                issued_by: CBPay
+        '404':
+          description: Código de verificación inválido, adulterado o desconocido.
+          content:
+            application/json:
+              example:
+                valid: false
+                message: this verification code does not correspond to any verification report issued by this platform
+        '429':
+          description: Demasiados intentos de verificación desde esta IP.
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many verification attempts; wait a moment and retry
+  /verify/qscore/{code}:
+    get:
+      security: []
+      tags:
+      - Qscore
+      operationId: verifyQscoreReport
+      summary: Verificar la autenticidad de un informe Qscore (público)
+      description: 'Endpoint público (sin credenciales) detrás del código de verificación impreso en cada informe
+        crediticio Qscore. El código va firmado criptográficamente: uno adulterado o inventado responde 404 con
+        `valid: false`. La respuesta solo expone hechos no sensibles: que el informe existe, su BANDA de score
+        (nunca el score numérico) y su fecha de emisión — jamás la identidad del sujeto ni el detalle crediticio.
+        Los navegadores reciben una página HTML brandeada; los clientes API reciben JSON. Rate limit por IP.'
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Código de verificación impreso en el informe (el campo `verify_code` del recurso informe).
+      responses:
+        '200':
+          description: El informe es auténtico; hechos no sensibles.
+          content:
+            application/json:
+              example:
+                valid: true
+                type: verification_report
+                kind: qscore
+                status: ready
+                decision: B
+                date: '2026-08-08'
                 issued_by: CBPay
         '404':
           description: Código de verificación inválido, adulterado o desconocido.
@@ -3249,7 +3299,7 @@ paths:
                   amount: '350.00'
                   beneficiary:
                     name: João da Silva
-                    tax_id: 123.456.789-09
+                    tax_id: 123.456.789-69
                     pix_key_type: cpf
                     pix_key: '12345678909'
                   idempotency_key: br-pix-3321
@@ -5618,7 +5668,7 @@ paths:
                   customer:
                     company:
                       legal_name: Comercial Andina SpA
-                      registration_authority_identification: 76.543.210-8
+                      registration_authority_identification: 76.543.210-3
                     email: legal@andina.cl
                     country: CL
                   monitor: true
@@ -5630,7 +5680,7 @@ paths:
                       legal_name: Comercial Andina SpA
                       alias:
                       - Andina Market
-                      registration_authority_identification: 76.543.210-8
+                      registration_authority_identification: 76.543.210-3
                       place_of_registration: CL
                       incorporation_date:
                         year: 2015
@@ -7356,7 +7406,7 @@ paths:
               country: cl
               business:
                 legal_name: Comercial Andina SpA
-                tax_id: 76.543.210-8
+                tax_id: 76.543.210-3
               ubos:
               - first_name: Carlos
                 last_name: Soto
@@ -17118,6 +17168,744 @@ paths:
                 error: not_found
                 message: review not found
 
+  /v1/qscore/reports:
+    get:
+      tags: [Qscore]
+      summary: Listar informes crediticios
+      operationId: listQscoreReports
+      description: 'Devuelve los informes crediticios de tu cuenta, del más reciente al más antiguo. Los
+
+        filtros de fecha `from` y `to` (UTC, ambos inclusivos) son obligatorios. Los informes
+
+        de otras cuentas nunca son visibles (aislamiento por cuenta: un id de informe
+
+        perteneciente a otra cuenta devuelve `404 not_found`).'
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+        description: 'Fecha de inicio YYYY-MM-DD (UTC, inclusiva). Una fecha inválida
+
+          devuelve 400 invalid_range.'
+        example: '2026-08-01'
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+        description: Fecha de término YYYY-MM-DD (UTC, inclusiva).
+        example: '2026-08-08'
+      - name: subject_id
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Filtra por id de sujeto (de GET /v1/qscore/subjects/{docId}).
+        example: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [pending, ready, failed]
+        description: Filtra por estado del informe.
+        example: ready
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 1
+        description: Número de página (>= 1).
+        example: 1
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+        description: Resultados por página (máx. 200).
+        example: 50
+      responses:
+        '200':
+          description: 'Página de informes. Cada ítem es el objeto informe persistido; el
+
+            campo de versión del modelo de score es `score_model_version` en este listado
+
+            (los endpoints de un informe devuelven el mismo valor como `model_version`).'
+          content:
+            application/json:
+              examples:
+                ready:
+                  summary: Página con un informe listo
+                  value:
+                    items:
+                    - report_id: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+                      account_id: 5f9d2c10-3e8b-4a1d-9c7a-1d2f3a4b5c6d
+                      subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                      purpose: credit_evaluation
+                      status: ready
+                      lang: es
+                      score: 742
+                      band: B
+                      score_model_version: v1
+                      reason_codes:
+                      - code: CREDIT_HISTORY_DEPTH
+                        direction: positive
+                        weight: medium
+                      - code: ACTIVE_TRADELINES
+                        direction: positive
+                        weight: low
+                      verify_code: Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a
+                      created_at: '2026-08-08T15:04:22Z'
+                      completed_at: '2026-08-08T15:04:24Z'
+                    meta:
+                      page: 1
+                      page_size: 50
+                      total: 1
+        '400':
+          description: invalid_range
+          content:
+            application/json:
+              example:
+                error: invalid_range
+                message: from/to must be valid YYYY-MM-DD dates
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden (servicio deshabilitado, cuenta sin verificar o scope insuficiente)
+    post:
+      tags: [Qscore]
+      summary: Crear un informe crediticio
+      operationId: createQscoreReport
+      description: 'Emite un informe crediticio nuevo de un sujeto (persona o empresa),
+
+        cobrado como fee standalone (`risk_report_person` / `risk_report_company`)
+
+        al momento de la emisión. La idempotencia es obligatoria: reintentar con la
+
+        misma `idempotency_key` devuelve el informe original con `idempotency_hit:
+
+        true` y jamás cobra dos veces. El informe se calcula de forma síncrona: la
+
+        respuesta es normalmente el informe terminado (status `ready`) o uno fallido
+
+        (status `failed` con `error_code`/`error_message`). El campo `purpose`
+
+        es obligatorio (ley de protección de datos) y `doc_id` se valida y
+
+        normaliza por país (p. ej. el RUT chileno con dígito verificador).'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            examples:
+              person:
+                summary: Informe de persona (RUT chileno)
+                value:
+                  doc_id: 12.345.678-5
+                  country: CL
+                  subject_type: person
+                  purpose: credit_evaluation
+                  lang: es
+                  idempotency_key: qscore-9f2b8d11
+              company:
+                summary: Informe de empresa (RUT chileno de empresa)
+                value:
+                  doc_id: 76.543.210-3
+                  country: CL
+                  subject_type: company
+                  purpose: supplier_onboarding
+                  lang: en
+                  idempotency_key: qscore-7a31c4e5
+      responses:
+        '201':
+          description: 'Informe creado y calculado. `model_version` identifica la
+
+            versión del modelo de score. Con status `ready`, el objeto `report`
+
+            normalizado completo va embebido; con status `failed`,
+
+            `error_code`/`error_message` explican por qué y la clave de idempotencia
+
+            se libera para poder reintentar.'
+          content:
+            application/json:
+              examples:
+                ready:
+                  summary: Informe listo (score calculado)
+                  value:
+                    report_id: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+                    subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                    status: ready
+                    purpose: credit_evaluation
+                    lang: es
+                    score: 742
+                    band: B
+                    model_version: v1
+                    reason_codes:
+                    - code: CREDIT_HISTORY_DEPTH
+                      direction: positive
+                      weight: medium
+                    - code: ACTIVE_TRADELINES
+                      direction: positive
+                      weight: low
+                    verify_code: Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a
+                    created_at: '2026-08-08T15:04:22Z'
+                    completed_at: '2026-08-08T15:04:24Z'
+                    report:
+                      meta:
+                        report_id: QSR-3F5C9F2D7D21
+                        lang: es
+                        purpose: credit_evaluation
+                        generated_at: '2026-08-08T15:04:24Z'
+                        verification_code: Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a
+                        verification_url: /verify/qscore/Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a
+                      identity:
+                        subject_type: person
+                        doc_id: 12.345.678-5
+                        name: Example Name
+                        country: CL
+                      score:
+                        score: 742
+                        band: B
+                        model_version: v1
+                        reason_codes:
+                        - code: CREDIT_HISTORY_DEPTH
+                          direction: positive
+                          weight: medium
+                        - code: ACTIVE_TRADELINES
+                          direction: positive
+                          weight: low
+                        computed_at: '2026-08-08T15:04:24Z'
+                      summary:
+                      - No delinquencies or adverse events on record.
+                      - Active credit history with reported tradelines.
+                      tradelines:
+                      - source: res_chile
+                        creditor: Commercial creditor
+                        kind: loan
+                        status: current
+                        currency: CLP
+                        balance: '1250000'
+                        opened_at: '2025-03-14'
+                        reported_at: '2026-08-01'
+                      delinquencies: []
+                      sources:
+                      - source: res_chile
+                        label: Commercial bulletin
+                        records: 1
+                        fetched_at: '2026-08-08T15:04:23Z'
+                no_data:
+                  summary: Sujeto sin datos de buró (banda SC)
+                  value:
+                    report_id: 9b2e7a41-3c10-4e7b-8f25-9d31a2b7c5e2
+                    subject_id: 5c31a9d4-6b20-4f18-9a71-3e7b2d90c4aa
+                    status: ready
+                    purpose: hiring
+                    lang: en
+                    band: SC
+                    model_version: v1
+                    reason_codes:
+                    - code: NO_DATA
+                      direction: negative
+                      weight: high
+                    verify_code: Q9b2e7a413c104e7b8f259d31a2b7c5e2b2c3d4e5f60718293a4
+                    created_at: '2026-08-08T15:10:02Z'
+                    completed_at: '2026-08-08T15:10:03Z'
+                replay:
+                  summary: Replay idempotente (200 con idempotency_hit)
+                  value:
+                    report_id: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+                    subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                    status: ready
+                    purpose: credit_evaluation
+                    lang: es
+                    score: 742
+                    band: B
+                    model_version: v1
+                    reason_codes:
+                    - code: CREDIT_HISTORY_DEPTH
+                      direction: positive
+                      weight: medium
+                    verify_code: Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a
+                    created_at: '2026-08-08T15:04:22Z'
+                    completed_at: '2026-08-08T15:04:24Z'
+                    idempotency_hit: true
+        '400':
+          description: invalid_payload | purpose_required | invalid_purpose | invalid_doc_id | invalid_subject_type | idempotency_key_required
+          content:
+            application/json:
+              examples:
+                purpose:
+                  summary: Falta el purpose
+                  value:
+                    error: purpose_required
+                    message: purpose is required (data protection law)
+                doc_id:
+                  summary: Documento de identidad inválido
+                  value:
+                    error: invalid_doc_id
+                    message: doc_id is not valid for the given country
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden (servicio deshabilitado o cuenta sin verificar)
+        '404':
+          description: not_found (no se encontró un recurso padre de la cuenta)
+        '409':
+          description: idempotency_conflict (misma clave con payload distinto o aún procesando)
+  /v1/qscore/reports/{id}:
+    get:
+      tags: [Qscore]
+      summary: Obtener un informe crediticio
+      operationId: getQscoreReport
+      description: 'Devuelve el detalle completo de un informe crediticio de tu
+
+        cuenta. Con `status` `ready` el objeto `report` normalizado completo va
+
+        embebido; con `failed`, `error_code`/`error_message` explican por qué.
+
+        Un informe de otra cuenta devuelve `404 not_found` (aislamiento por
+
+        cuenta).'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+      responses:
+        '200':
+          description: Detalle del informe.
+          content:
+            application/json:
+              example:
+                report_id: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+                subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                status: ready
+                purpose: credit_evaluation
+                lang: es
+                score: 742
+                band: B
+                model_version: v1
+                reason_codes:
+                - code: CREDIT_HISTORY_DEPTH
+                  direction: positive
+                  weight: medium
+                - code: ACTIVE_TRADELINES
+                  direction: positive
+                  weight: low
+                verify_code: Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a
+                created_at: '2026-08-08T15:04:22Z'
+                completed_at: '2026-08-08T15:04:24Z'
+                report:
+                  meta:
+                    report_id: QSR-3F5C9F2D7D21
+                    lang: es
+                    purpose: credit_evaluation
+                    generated_at: '2026-08-08T15:04:24Z'
+                    verification_code: Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a
+                    verification_url: /verify/qscore/Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a
+                  identity:
+                    subject_type: person
+                    doc_id: 12.345.678-5
+                    name: Example Name
+                    country: CL
+                  score:
+                    score: 742
+                    band: B
+                    model_version: v1
+                    reason_codes:
+                    - code: CREDIT_HISTORY_DEPTH
+                      direction: positive
+                      weight: medium
+                    computed_at: '2026-08-08T15:04:24Z'
+                  summary:
+                  - No delinquencies or adverse events on record.
+                  sources:
+                  - source: res_chile
+                    label: Commercial bulletin
+                    records: 1
+                    fetched_at: '2026-08-08T15:04:23Z'
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden
+        '404':
+          description: not_found
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: report not found
+  /v1/qscore/reports/{id}/pdf:
+    get:
+      tags: [Qscore]
+      summary: Descargar el PDF del informe
+      operationId: getQscoreReportPDF
+      description: 'Descarga el PDF brandeado de un informe crediticio en el idioma en
+
+        que fue emitido (`lang`), con el `verify_code` impreso para verificación
+
+        pública. Solo disponible cuando el informe está `ready` — si no, `404
+
+        pdf_not_ready`. El PDF se genera al vuelo en cada request; guárdalo si
+
+        necesitas una copia inmutable.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+      responses:
+        '200':
+          description: Archivo PDF del informe.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+              example: '%PDF-1.7 (binary report content)'
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden
+        '404':
+          description: not_found | pdf_not_ready
+          content:
+            application/json:
+              example:
+                error: pdf_not_ready
+                message: the report PDF is not available yet
+  /v1/qscore/subjects/{docID}:
+    get:
+      tags: [Qscore]
+      summary: Consultar un sujeto
+      operationId: getQscoreSubject
+      description: 'Devuelve el registro del sujeto para un documento de identidad (no
+
+        emite un informe nuevo ni cobra nada). Los sujetos se crean automáticamente
+
+        la primera vez que se pide un informe para ese documento. El parámetro de
+
+        ruta `docId` es el documento tal como fue emitido (p. ej. un RUT chileno como
+
+        `12.345.678-5`); se valida y normaliza por país. Si el sujeto ya tiene
+
+        scores, el último se resume en `last_score` / `last_band` / `last_score_at`
+
+        (`last_score` está ausente para la banda SC). Un sujeto inexistente devuelve
+
+        `404 not_found`.'
+      parameters:
+      - name: docID
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Documento de identidad tal como fue emitido en el país (p. ej. `12.345.678-5` para Chile).
+        example: 12.345.678-5
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+          default: CL
+        description: País ISO del documento (CL por defecto).
+        example: CL
+      responses:
+        '200':
+          description: Registro del sujeto con el resumen de su último score.
+          content:
+            application/json:
+              example:
+                subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                country: CL
+                doc_id: 12.345.678-5
+                subject_type: person
+                display_name: Example Name
+                last_score: 742
+                last_band: B
+                last_score_at: '2026-08-08T15:04:24Z'
+        '400':
+          description: invalid_doc_id
+          content:
+            application/json:
+              example:
+                error: invalid_doc_id
+                message: doc_id is not valid for the given country
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden
+        '404':
+          description: not_found (el sujeto no existe)
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: subject not found
+  /v1/qscore/subjects/{docID}/score:
+    get:
+      tags: [Qscore]
+      summary: Score vigente de un sujeto
+      operationId: getQscoreSubjectScore
+      description: 'Devuelve solo el último score de un sujeto — la consulta barata
+
+        para chequeos recurrentes sin emitir (ni pagar) un informe nuevo. Devuelve
+
+        `404 no_score` si aún no se ha calculado ningún informe para ese sujeto.
+
+        Para la banda SC (sin datos), `score` está ausente.'
+      parameters:
+      - name: docID
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 12.345.678-5
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+          default: CL
+        description: País ISO del documento (CL por defecto).
+        example: CL
+      responses:
+        '200':
+          description: Último score del sujeto.
+          content:
+            application/json:
+              example:
+                subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                doc_id: 12.345.678-5
+                country: CL
+                score: 742
+                band: B
+                model_version: v1
+                computed_at: '2026-08-08T15:04:24Z'
+        '400':
+          description: invalid_doc_id
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden
+        '404':
+          description: not_found (el sujeto no existe) | no_score
+          content:
+            application/json:
+              example:
+                error: no_score
+                message: no score has been computed for this subject yet
+  /v1/qscore/subjects/{docID}/disputes:
+    get:
+      tags: [Qscore]
+      summary: Listar disputas del sujeto (ARCO)
+      operationId: listQscoreSubjectDisputes
+      description: 'Lista las disputas ARCO abiertas para un sujeto (derechos del
+
+        titular de los datos: rectificación y cancelación de datos crediticios).
+
+        Filtrable por `status` (`open`, `under_review`, `resolved_corrected`,
+
+        `resolved_rejected`). El ciclo de vida de la disputa se opera desde el panel
+
+        org admin o por tu organización vía `PATCH /v1/org/qscore/disputes/{id}`;
+
+        cada cambio se notifica al solicitante por email. Una disputa resuelta jamás
+
+        borra el registro disputado: la corrección es un registro nuevo que lo
+
+        reemplaza.'
+      parameters:
+      - name: docID
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 12.345.678-5
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+          default: CL
+        description: País ISO del documento (CL por defecto).
+        example: CL
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [open, under_review, resolved_corrected, resolved_rejected]
+        description: Filtra por estado de la disputa.
+        example: open
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 1
+        example: 1
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+        example: 50
+      responses:
+        '200':
+          description: Página de disputas.
+          content:
+            application/json:
+              example:
+                items:
+                - dispute_id: 6a1c4e92-3b7d-4f51-9e82-1c7f3a5d8b64
+                  subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                  report_id: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+                  record_source: res_chile
+                  record_ref: BOL-2026-04512
+                  reason: The reported default was paid in full on 2026-07-30.
+                  status: open
+                  created_by: 5f9d2c10-3e8b-4a1d-9c7a-1d2f3a4b5c6d
+                  created_at: '2026-08-08T16:11:40Z'
+                meta:
+                  page: 1
+                  page_size: 50
+                  total: 1
+        '400':
+          description: invalid_doc_id
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden
+        '404':
+          description: not_found (el sujeto no existe)
+    post:
+      tags: [Qscore]
+      summary: Abrir una disputa (ARCO)
+      operationId: createQscoreDispute
+      description: 'Abre una disputa ARCO sobre un registro específico de un sujeto
+
+        (p. ej. una deuda que no le pertenece o que ya fue pagada), en cumplimiento
+
+        de los derechos de rectificación del titular de los datos. El sujeto ya debe
+
+        existir (lo crea el primer informe). `record_source` identifica la familia de
+
+        fuente de datos del registro disputado y `record_ref` el registro dentro de
+
+        esa fuente (ambos aparecen en el informe como `source` / `ref` de cada
+
+        tradeline o evento adverso). La disputa nace en estado `open` y su ciclo de
+
+        vida lo gestiona tu organización.'
+      parameters:
+      - name: docID
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 12.345.678-5
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+          default: CL
+        description: País ISO del documento (CL por defecto).
+        example: CL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              record_source: res_chile
+              record_ref: BOL-2026-04512
+              reason: The reported default was paid in full on 2026-07-30.
+              report_id: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+      responses:
+        '201':
+          description: Disputa creada en estado `open`.
+          content:
+            application/json:
+              example:
+                dispute_id: 6a1c4e92-3b7d-4f51-9e82-1c7f3a5d8b64
+                subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                report_id: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+                record_source: res_chile
+                record_ref: BOL-2026-04512
+                reason: The reported default was paid in full on 2026-07-30.
+                status: open
+                created_by: 5f9d2c10-3e8b-4a1d-9c7a-1d2f3a4b5c6d
+                created_at: '2026-08-08T16:11:40Z'
+        '400':
+          description: invalid_payload | invalid_doc_id
+          content:
+            application/json:
+              example:
+                error: invalid_payload
+                message: record_source and reason are required
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden (servicio deshabilitado o cuenta sin verificar)
+        '404':
+          description: not_found (el sujeto no existe)
+  /v1/qscore/disputes/{id}:
+    get:
+      tags: [Qscore]
+      summary: Obtener una disputa
+      operationId: getQscoreDispute
+      description: 'Devuelve el detalle y el estado actual de una disputa ARCO de tu
+
+        cuenta. Una disputa de otra cuenta devuelve `404 not_found` (aislamiento por
+
+        cuenta).'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 6a1c4e92-3b7d-4f51-9e82-1c7f3a5d8b64
+      responses:
+        '200':
+          description: Detalle de la disputa.
+          content:
+            application/json:
+              example:
+                dispute_id: 6a1c4e92-3b7d-4f51-9e82-1c7f3a5d8b64
+                subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                report_id: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+                record_source: res_chile
+                record_ref: BOL-2026-04512
+                reason: The reported default was paid in full on 2026-07-30.
+                status: under_review
+                resolution_note: Under review with the data source.
+                created_by: 5f9d2c10-3e8b-4a1d-9c7a-1d2f3a4b5c6d
+                created_at: '2026-08-08T16:11:40Z'
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden
+        '404':
+          description: not_found
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: not found
 components:
   securitySchemes:
     bearerAuth:
@@ -19511,3 +20299,95 @@ webhooks:
       responses:
         '200':
           description: 'Recibido.'
+  risk_report_ready:
+    post:
+      summary: Informe crediticio Qscore listo
+      description: 'Un informe crediticio Qscore comprado con `POST /v1/qscore/reports`
+        terminó de generarse con éxito. El payload lleva la identidad del informe,
+        el score/banda resultante y el `verify_code` público (compartible con el
+        sujeto como prueba de autenticidad en `GET /verify/qscore/{code}`). Si la
+        generación falla, el informe queda `status: failed` y no se emite evento.
+        El evento también se emite cuando el informe comprado ya estaba disponible
+        para el sujeto (reuso idempotente).
+
+
+        Cada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
+        y `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`. Responde 2xx; hasta
+        5 intentos con backoff incremental.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                report_id:
+                  type: string
+                subject_id:
+                  type: string
+                doc_id:
+                  type: string
+                country:
+                  type: string
+                subject_type:
+                  type: string
+                  enum: [person, company]
+                score:
+                  type: integer
+                band:
+                  type: string
+                  enum: [A, B, C, D, E, SC]
+                verify_code:
+                  type: string
+            example:
+              report_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              subject_id: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+              doc_id: '12983319'
+              country: CL
+              subject_type: person
+              score: 742
+              band: B
+              verify_code: Q3fa85f6457174562b3fc2c963f66afa6a1b2c3d4e5f
+      responses:
+        '200':
+          description: Devuelve cualquier 2xx para confirmar la entrega.
+  risk_score_changed:
+    post:
+      summary: Cambió el score Qscore
+      description: 'Un informe Qscore recién generado produjo un score distinto al
+        último conocido del sujeto (p. ej. en una re-consulta de monitoreo o una
+        compra nueva). Se emite solo cuando el score efectivamente cambia; el payload
+        lleva el par score/banda anterior y nuevo para que decidas si actuar.
+        Suscríbete a este evento para monitorear un sujeto en el tiempo sin polling.
+
+
+        Cada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
+        y `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`. Responde 2xx; hasta
+        5 intentos con backoff incremental.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject_id:
+                  type: string
+                report_id:
+                  type: string
+                old_score:
+                  type: integer
+                new_score:
+                  type: integer
+                old_band:
+                  type: string
+                new_band:
+                  type: string
+            example:
+              subject_id: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+              report_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              old_score: 742
+              new_score: 688
+              old_band: B
+              new_band: B
+      responses:
+        '200':
+          description: Devuelve cualquier 2xx para confirmar la entrega.

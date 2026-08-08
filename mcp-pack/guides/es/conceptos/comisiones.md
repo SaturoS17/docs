@@ -60,6 +60,8 @@ de las tasas de tu cuenta para ese país. Cotizado = cobrado, siempre.
 | `card_cancellation` | Fijo por tarjeta | Al cancelar una tarjeta |
 | `card_purchase_virtual` | `%` + fijo sobre el monto USD de la compra | Por cada compra con tarjeta virtual (estimado en la autorización, definitivo al liquidar; las reversas lo devuelven proporcional) |
 | `card_purchase_physical` | `%` + fijo sobre el monto USD de la compra | Por cada compra con tarjeta física (mismo ciclo que la virtual) |
+| `risk_report_person` | Fijo por informe | Al comprar un informe crediticio Qscore de una persona ([Qscore](https://docs.cbpayapp.com/es/guias/qscore)); se reembolsa automáticamente si el informe falla (`risk_report_refund`) |
+| `risk_report_company` | Fijo por informe | Al comprar un informe crediticio Qscore de una empresa |
 
 Para los servicios con `%`, la fórmula es
 `fee = ceil(monto × percent / 100) + fixed_amount` (redondeo hacia arriba al

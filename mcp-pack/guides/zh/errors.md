@@ -207,6 +207,19 @@ source_url: https://docs.cbpayapp.com/zh/errors
 | 422 | `travel_rule_incomplete_approval` | 收款机构批准时未提供付款地址；请联系支持团队 |
 | 503 | `travel_rule_unavailable` | Travel Rule 数据交换暂时不可用；请使用**相同的**幂等键重试 |
 
+### Qscore
+
+信用局端点的错误([指南](https://docs.cbpayapp.com/zh/guides/qscore))。
+
+| HTTP | `error` | 含义 |
+|---|---|---|
+| 400 | `purpose_required` | 创建报告时缺少 `purpose` — 数据保护法要求声明用途(`credit_evaluation`、`tenant_screening`、`hiring`、`supplier_onboarding` 或 `other`) |
+| 400 | `invalid_purpose` | `purpose` 不是允许的值之一(`credit_evaluation`、`tenant_screening`、`hiring`、`supplier_onboarding`、`other`)— 请修正该值 |
+| 400 | `invalid_doc_id` | `doc_id` 在给定的 `country` 无效(例如智利 RUT 校验位错误)— 修正证件格式 |
+| 400 | `invalid_subject_type` | `subject_type` 不是 `person`/`company` 且无法从证件推断 — 请显式发送 |
+| 404 | `no_score` | 该主体尚无已计算的评分 — 请先购买报告 |
+| 404 | `pdf_not_ready` | 报告 PDF 尚不可用 — 轮询详情直到 `status=ready`(`risk_report_ready` webhook 会通知你) |
+
 ### 交易防火墙
 
 被交易防火墙挂起的操作在审核时返回的错误（见[指南](https://docs.cbpayapp.com/zh/guides/transaction-reviews)）。挂起本身**不是错误**：创建请求返回 `202 Accepted` 并携带 `status: in_review` 和 `review_id`。

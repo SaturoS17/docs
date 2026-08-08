@@ -58,6 +58,8 @@ payin:   usdt_gross    = local_amount / payin_rate
 | `card_cancellation` | 每张卡固定费用 | 注销卡片时 |
 | `card_purchase_virtual` | 按消费美元金额的 `%` + 固定费用 | 每笔虚拟卡消费（授权时预估，清算时确定；冲正按比例退还） |
 | `card_purchase_physical` | 按消费美元金额的 `%` + 固定费用 | 每笔实体卡消费（周期与虚拟卡相同） |
+| `risk_report_person` | 每份报告固定费用 | 购买个人 Qscore 信用报告时([Qscore](https://docs.cbpayapp.com/zh/guides/qscore));报告失败时自动退款(`risk_report_refund`) |
+| `risk_report_company` | 每份报告固定费用 | 购买企业 Qscore 信用报告时 |
 
 对于按 `%` 收费的服务，公式为
 `fee = ceil(amount × percent / 100) + fixed_amount`（向上取整到

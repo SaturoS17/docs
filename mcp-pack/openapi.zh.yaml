@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.44'
+  version: '2.45'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -65,6 +65,9 @@ tags:
   description: 针对个人与企业的独立 AML 筛查(制裁、PEP 与负面媒体名单),含重新筛查、持续监控与可下载的 PDF 报告。
 - name: 钱包筛查
   description: 区块链地址的 AML 风险评估(制裁、非法资金暴露),按次收费;另附提现与充值的免费自动防护。
+- name: Qscore
+  description: API 优先的信用局。签发完整的信用报告，评分为 1-999（A-E 等级，无数据时为 SC），查询主体的最新评分，并管理
+    ARCO 争议。智利先行，设计上与国家无关。每份签发的报告都带有公开验证码。
 - name: 分析
 - name: Webhooks
   description: 接收签名事件通知的订阅。
@@ -362,6 +365,51 @@ paths:
                 message: this verification code does not correspond to any verification report issued by this platform
         '429':
           description: 来自该 IP 的验证尝试过多。
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many verification attempts; wait a moment and retry
+  /verify/qscore/{code}:
+    get:
+      security: []
+      tags:
+      - Qscore
+      operationId: verifyQscoreReport
+      summary: 验证 Qscore 报告的真实性（公开）
+      description: '公开端点（无需凭证），对应每份 Qscore 信用报告上打印的验证码。该代码经过加密签名：
+        被篡改或伪造的代码会返回 404 和 `valid: false`。响应仅显示非敏感事实：报告存在、
+        其评分等级（绝不返回数字分数）以及签发日期——绝不包含主体身份或信用详情。
+        浏览器获得品牌化 HTML 页面；API 客户端获得 JSON。按 IP 限流。'
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+        description: 报告上打印的验证码（报告资源的 `verify_code` 字段）。
+      responses:
+        '200':
+          description: 报告真实有效；非敏感事实。
+          content:
+            application/json:
+              example:
+                valid: true
+                type: verification_report
+                kind: qscore
+                status: ready
+                decision: B
+                date: '2026-08-08'
+                issued_by: CBPay
+        '404':
+          description: 验证码无效、被篡改或未知。
+          content:
+            application/json:
+              example:
+                valid: false
+                message: this verification code does not correspond to any verification report issued by this platform
+        '429':
+          description: 来自此 IP 的验证尝试次数过多。
           content:
             application/json:
               example:
@@ -3078,7 +3126,7 @@ paths:
                   amount: '350.00'
                   beneficiary:
                     name: João da Silva
-                    tax_id: 123.456.789-09
+                    tax_id: 123.456.789-69
                     pix_key_type: cpf
                     pix_key: '12345678909'
                   idempotency_key: br-pix-3321
@@ -5340,7 +5388,7 @@ paths:
                   customer:
                     company:
                       legal_name: Comercial Andina SpA
-                      registration_authority_identification: 76.543.210-8
+                      registration_authority_identification: 76.543.210-3
                     email: legal@andina.cl
                     country: CL
                   monitor: true
@@ -5352,7 +5400,7 @@ paths:
                       legal_name: Comercial Andina SpA
                       alias:
                       - Andina Market
-                      registration_authority_identification: 76.543.210-8
+                      registration_authority_identification: 76.543.210-3
                       place_of_registration: CL
                       incorporation_date:
                         year: 2015
@@ -7029,7 +7077,7 @@ paths:
               country: cl
               business:
                 legal_name: Comercial Andina SpA
-                tax_id: 76.543.210-8
+                tax_id: 76.543.210-3
               ubos:
               - first_name: Carlos
                 last_name: Soto
@@ -16605,6 +16653,670 @@ paths:
                 error: not_found
                 message: review not found
 
+  /v1/qscore/reports:
+    get:
+      tags: [Qscore]
+      summary: 列出信用报告
+      operationId: listQscoreReports
+      description: '返回您账户的信用报告，按最新优先排序。`from` 和 `to` 日期过滤条件（UTC，
+        两端均含）为必填。其他账户拥有的报告永不可见（所有权隔离：属于其他账户的报告 id
+        返回 `404 not_found`）。'
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+        description: 开始日期 YYYY-MM-DD（UTC，含当日）。日期无效返回 400 invalid_range。
+        example: '2026-08-01'
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+        description: 结束日期 YYYY-MM-DD（UTC，含当日）。
+        example: '2026-08-08'
+      - name: subject_id
+        in: query
+        required: false
+        schema:
+          type: string
+        description: 按主体 id 过滤（来自 GET /v1/qscore/subjects/{docId}）。
+        example: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [pending, ready, failed]
+        description: 按报告状态过滤。
+        example: ready
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 1
+        description: 页码（>= 1）。
+        example: 1
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+        description: 每页结果数（最多 200）。
+        example: 50
+      responses:
+        '200':
+          description: 报告分页。每个条目是已存储的报告对象；此列表中评分模型版本字段为
+            `score_model_version`（单报告端点以 `model_version` 返回相同的值）。
+          content:
+            application/json:
+              examples:
+                ready:
+                  summary: 包含一份已就绪报告的分页
+                  value:
+                    items:
+                    - report_id: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+                      account_id: 5f9d2c10-3e8b-4a1d-9c7a-1d2f3a4b5c6d
+                      subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                      purpose: credit_evaluation
+                      status: ready
+                      lang: es
+                      score: 742
+                      band: B
+                      score_model_version: v1
+                      reason_codes:
+                      - code: CREDIT_HISTORY_DEPTH
+                        direction: positive
+                        weight: medium
+                      - code: ACTIVE_TRADELINES
+                        direction: positive
+                        weight: low
+                      verify_code: Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a
+                      created_at: '2026-08-08T15:04:22Z'
+                      completed_at: '2026-08-08T15:04:24Z'
+                    meta:
+                      page: 1
+                      page_size: 50
+                      total: 1
+        '400':
+          description: invalid_range
+          content:
+            application/json:
+              example:
+                error: invalid_range
+                message: from/to must be valid YYYY-MM-DD dates
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden（服务已禁用、账户未验证或 scope 不足）
+    post:
+      tags: [Qscore]
+      summary: 创建信用报告
+      operationId: createQscoreReport
+      description: '为主体（个人或企业）签发一份新的信用报告，在签发时按独立费用
+        （`risk_report_person` / `risk_report_company`）计费。幂等性是强制的：
+        使用相同的 `idempotency_key` 重试会返回原始报告并带 `idempotency_hit: true`，
+        绝不重复收费。报告是同步计算的：响应通常是已完成的报告（status `ready`）
+        或失败的报告（status `failed`，带 `error_code`/`error_message`）。
+        `purpose` 字段为必填（数据保护法要求），`doc_id` 会按国家/地区验证并
+        规范化（例如带校验位的智利 RUT）。'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            examples:
+              person:
+                summary: 个人报告（智利 RUT）
+                value:
+                  doc_id: 12.345.678-5
+                  country: CL
+                  subject_type: person
+                  purpose: credit_evaluation
+                  lang: es
+                  idempotency_key: qscore-9f2b8d11
+              company:
+                summary: 企业报告（智利企业 RUT）
+                value:
+                  doc_id: 76.543.210-3
+                  country: CL
+                  subject_type: company
+                  purpose: supplier_onboarding
+                  lang: en
+                  idempotency_key: qscore-7a31c4e5
+      responses:
+        '201':
+          description: 报告已创建并完成计算。`model_version` 标识评分模型版本。状态为
+            `ready` 时嵌入完整的规范化 `report` 对象；状态为 `failed` 时
+            `error_code`/`error_message` 说明原因，并释放幂等键以便重试。
+          content:
+            application/json:
+              examples:
+                ready:
+                  summary: 报告就绪（评分已计算）
+                  value:
+                    report_id: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+                    subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                    status: ready
+                    purpose: credit_evaluation
+                    lang: es
+                    score: 742
+                    band: B
+                    model_version: v1
+                    reason_codes:
+                    - code: CREDIT_HISTORY_DEPTH
+                      direction: positive
+                      weight: medium
+                    - code: ACTIVE_TRADELINES
+                      direction: positive
+                      weight: low
+                    verify_code: Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a
+                    created_at: '2026-08-08T15:04:22Z'
+                    completed_at: '2026-08-08T15:04:24Z'
+                    report:
+                      meta:
+                        report_id: QSR-3F5C9F2D7D21
+                        lang: es
+                        purpose: credit_evaluation
+                        generated_at: '2026-08-08T15:04:24Z'
+                        verification_code: Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a
+                        verification_url: /verify/qscore/Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a
+                      identity:
+                        subject_type: person
+                        doc_id: 12.345.678-5
+                        name: Example Name
+                        country: CL
+                      score:
+                        score: 742
+                        band: B
+                        model_version: v1
+                        reason_codes:
+                        - code: CREDIT_HISTORY_DEPTH
+                          direction: positive
+                          weight: medium
+                        - code: ACTIVE_TRADELINES
+                          direction: positive
+                          weight: low
+                        computed_at: '2026-08-08T15:04:24Z'
+                      summary:
+                      - No delinquencies or adverse events on record.
+                      - Active credit history with reported tradelines.
+                      tradelines:
+                      - source: res_chile
+                        creditor: Commercial creditor
+                        kind: loan
+                        status: current
+                        currency: CLP
+                        balance: '1250000'
+                        opened_at: '2025-03-14'
+                        reported_at: '2026-08-01'
+                      delinquencies: []
+                      sources:
+                      - source: res_chile
+                        label: Commercial bulletin
+                        records: 1
+                        fetched_at: '2026-08-08T15:04:23Z'
+                no_data:
+                  summary: 无信用局数据的主体（SC 等级）
+                  value:
+                    report_id: 9b2e7a41-3c10-4e7b-8f25-9d31a2b7c5e2
+                    subject_id: 5c31a9d4-6b20-4f18-9a71-3e7b2d90c4aa
+                    status: ready
+                    purpose: hiring
+                    lang: en
+                    band: SC
+                    model_version: v1
+                    reason_codes:
+                    - code: NO_DATA
+                      direction: negative
+                      weight: high
+                    verify_code: Q9b2e7a413c104e7b8f259d31a2b7c5e2b2c3d4e5f60718293a4
+                    created_at: '2026-08-08T15:10:02Z'
+                    completed_at: '2026-08-08T15:10:03Z'
+                replay:
+                  summary: 幂等重放（200，带 idempotency_hit）
+                  value:
+                    report_id: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+                    subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                    status: ready
+                    purpose: credit_evaluation
+                    lang: es
+                    score: 742
+                    band: B
+                    model_version: v1
+                    reason_codes:
+                    - code: CREDIT_HISTORY_DEPTH
+                      direction: positive
+                      weight: medium
+                    verify_code: Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a
+                    created_at: '2026-08-08T15:04:22Z'
+                    completed_at: '2026-08-08T15:04:24Z'
+                    idempotency_hit: true
+        '400':
+          description: invalid_payload | purpose_required | invalid_purpose | invalid_doc_id | invalid_subject_type | idempotency_key_required
+          content:
+            application/json:
+              examples:
+                purpose:
+                  summary: 缺少 purpose
+                  value:
+                    error: purpose_required
+                    message: purpose is required (data protection law)
+                doc_id:
+                  summary: 身份证件无效
+                  value:
+                    error: invalid_doc_id
+                    message: doc_id is not valid for the given country
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden（服务已禁用或账户未验证）
+        '404':
+          description: not_found（未找到账户的父资源）
+        '409':
+          description: idempotency_conflict（相同键但 payload 不同，或仍在处理中）
+  /v1/qscore/reports/{id}:
+    get:
+      tags: [Qscore]
+      summary: 获取信用报告
+      operationId: getQscoreReport
+      description: '返回您账户拥有的信用报告的完整详情。当 `status` 为 `ready` 时嵌入完整的
+        规范化 `report` 对象；当为 `failed` 时，`error_code`/`error_message` 说明原因。
+        其他账户拥有的报告返回 `404 not_found`（所有权隔离）。'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+      responses:
+        '200':
+          description: 报告详情。
+          content:
+            application/json:
+              example:
+                report_id: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+                subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                status: ready
+                purpose: credit_evaluation
+                lang: es
+                score: 742
+                band: B
+                model_version: v1
+                reason_codes:
+                - code: CREDIT_HISTORY_DEPTH
+                  direction: positive
+                  weight: medium
+                - code: ACTIVE_TRADELINES
+                  direction: positive
+                  weight: low
+                verify_code: Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a
+                created_at: '2026-08-08T15:04:22Z'
+                completed_at: '2026-08-08T15:04:24Z'
+                report:
+                  meta:
+                    report_id: QSR-3F5C9F2D7D21
+                    lang: es
+                    purpose: credit_evaluation
+                    generated_at: '2026-08-08T15:04:24Z'
+                    verification_code: Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a
+                    verification_url: /verify/qscore/Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a
+                  identity:
+                    subject_type: person
+                    doc_id: 12.345.678-5
+                    name: Example Name
+                    country: CL
+                  score:
+                    score: 742
+                    band: B
+                    model_version: v1
+                    reason_codes:
+                    - code: CREDIT_HISTORY_DEPTH
+                      direction: positive
+                      weight: medium
+                    computed_at: '2026-08-08T15:04:24Z'
+                  summary:
+                  - No delinquencies or adverse events on record.
+                  sources:
+                  - source: res_chile
+                    label: Commercial bulletin
+                    records: 1
+                    fetched_at: '2026-08-08T15:04:23Z'
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden
+        '404':
+          description: not_found
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: report not found
+  /v1/qscore/reports/{id}/pdf:
+    get:
+      tags: [Qscore]
+      summary: 下载报告 PDF
+      operationId: getQscoreReportPDF
+      description: '下载信用报告的品牌化 PDF，语言为签发时所用的语言（`lang`），并打印有
+        用于公开验证的 `verify_code`。仅在报告为 `ready` 时可用——否则返回 `404
+        pdf_not_ready`。PDF 按请求即时生成；如需不可变副本请自行保存。'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+      responses:
+        '200':
+          description: 报告的 PDF 文件。
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+              example: '%PDF-1.7 (binary report content)'
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden
+        '404':
+          description: not_found | pdf_not_ready
+          content:
+            application/json:
+              example:
+                error: pdf_not_ready
+                message: the report PDF is not available yet
+  /v1/qscore/subjects/{docID}:
+    get:
+      tags: [Qscore]
+      summary: 查询主体
+      operationId: getQscoreSubject
+      description: '返回指定身份证件的主体记录（不会签发新报告，也不计费）。主体在首次为该证件
+        请求报告时自动创建。路径参数 `docId` 是签发的原始证件号（例如智利 RUT
+        `12.345.678-5`）；它会按国家/地区验证并规范化。如果主体已有评分，最新的评分会汇总在
+        `last_score` / `last_band` / `last_score_at` 中（SC 等级时没有 `last_score`）。
+        主体不存在时返回 `404 not_found`。'
+      parameters:
+      - name: docID
+        in: path
+        required: true
+        schema:
+          type: string
+        description: 在该国家/地区签发的原始证件号（例如智利的 `12.345.678-5`）。
+        example: 12.345.678-5
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+          default: CL
+        description: 证件的 ISO 国家/地区代码（默认 CL）。
+        example: CL
+      responses:
+        '200':
+          description: 主体记录及其最新评分摘要。
+          content:
+            application/json:
+              example:
+                subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                country: CL
+                doc_id: 12.345.678-5
+                subject_type: person
+                display_name: Example Name
+                last_score: 742
+                last_band: B
+                last_score_at: '2026-08-08T15:04:24Z'
+        '400':
+          description: invalid_doc_id
+          content:
+            application/json:
+              example:
+                error: invalid_doc_id
+                message: doc_id is not valid for the given country
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden
+        '404':
+          description: not_found（主体不存在）
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: subject not found
+  /v1/qscore/subjects/{docID}/score:
+    get:
+      tags: [Qscore]
+      summary: 主体的当前评分
+      operationId: getQscoreSubjectScore
+      description: '仅返回主体的最新评分——用于经常性核查的轻量查询，无需签发（或付费）
+        新报告。如果尚未为该主体计算过任何报告，则返回 `404 no_score`。
+        对于 SC 等级（无数据），不返回 `score`。'
+      parameters:
+      - name: docID
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 12.345.678-5
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+          default: CL
+        description: 证件的 ISO 国家/地区代码（默认 CL）。
+        example: CL
+      responses:
+        '200':
+          description: 主体的最新评分。
+          content:
+            application/json:
+              example:
+                subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                doc_id: 12.345.678-5
+                country: CL
+                score: 742
+                band: B
+                model_version: v1
+                computed_at: '2026-08-08T15:04:24Z'
+        '400':
+          description: invalid_doc_id
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden
+        '404':
+          description: not_found（主体不存在）| no_score
+          content:
+            application/json:
+              example:
+                error: no_score
+                message: no score has been computed for this subject yet
+  /v1/qscore/subjects/{docID}/disputes:
+    get:
+      tags: [Qscore]
+      summary: 列出主体的争议（ARCO）
+      operationId: listQscoreSubjectDisputes
+      description: '列出为主体发起的 ARCO 争议（数据主体权利：信用数据的更正和删除）。
+        可按 `status` 过滤（`open`、`under_review`、`resolved_corrected`、
+        `resolved_rejected`）。争议生命周期由组织管理员面板操作，或由您的组织通过
+        `PATCH /v1/org/qscore/disputes/{id}` 管理；每次变更都会通过电子邮件通知请求人。
+        已解决的争议绝不会删除被争议的记录：更正是一条取代原记录的新记录。'
+      parameters:
+      - name: docID
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 12.345.678-5
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+          default: CL
+        description: 证件的 ISO 国家/地区代码（默认 CL）。
+        example: CL
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [open, under_review, resolved_corrected, resolved_rejected]
+        description: 按争议状态过滤。
+        example: open
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 1
+        example: 1
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+        example: 50
+      responses:
+        '200':
+          description: 争议分页。
+          content:
+            application/json:
+              example:
+                items:
+                - dispute_id: 6a1c4e92-3b7d-4f51-9e82-1c7f3a5d8b64
+                  subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                  report_id: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+                  record_source: res_chile
+                  record_ref: BOL-2026-04512
+                  reason: The reported default was paid in full on 2026-07-30.
+                  status: open
+                  created_by: 5f9d2c10-3e8b-4a1d-9c7a-1d2f3a4b5c6d
+                  created_at: '2026-08-08T16:11:40Z'
+                meta:
+                  page: 1
+                  page_size: 50
+                  total: 1
+        '400':
+          description: invalid_doc_id
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden
+        '404':
+          description: not_found（主体不存在）
+    post:
+      tags: [Qscore]
+      summary: 发起争议（ARCO）
+      operationId: createQscoreDispute
+      description: '针对主体的特定记录发起 ARCO 争议（例如不属于他们的债务或已偿还的债务），
+        以符合数据主体的更正权。主体必须已存在（由首份报告创建）。`record_source`
+        标识被争议记录所属的数据源系列，`record_ref` 标识该来源内的记录
+        （两者在报告中显示为每个 tradeline 或不良事件的 `source` / `ref`）。
+        争议以 `open` 状态开始，其生命周期由您的组织管理。'
+      parameters:
+      - name: docID
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 12.345.678-5
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+          default: CL
+        description: 证件的 ISO 国家/地区代码（默认 CL）。
+        example: CL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              record_source: res_chile
+              record_ref: BOL-2026-04512
+              reason: The reported default was paid in full on 2026-07-30.
+              report_id: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+      responses:
+        '201':
+          description: 争议已创建，状态为 `open`。
+          content:
+            application/json:
+              example:
+                dispute_id: 6a1c4e92-3b7d-4f51-9e82-1c7f3a5d8b64
+                subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                report_id: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+                record_source: res_chile
+                record_ref: BOL-2026-04512
+                reason: The reported default was paid in full on 2026-07-30.
+                status: open
+                created_by: 5f9d2c10-3e8b-4a1d-9c7a-1d2f3a4b5c6d
+                created_at: '2026-08-08T16:11:40Z'
+        '400':
+          description: invalid_payload | invalid_doc_id
+          content:
+            application/json:
+              example:
+                error: invalid_payload
+                message: record_source and reason are required
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden（服务已禁用或账户未验证）
+        '404':
+          description: not_found（主体不存在）
+  /v1/qscore/disputes/{id}:
+    get:
+      tags: [Qscore]
+      summary: 获取争议
+      operationId: getQscoreDispute
+      description: '返回您账户拥有的 ARCO 争议的详情和当前状态。其他账户拥有的争议返回
+        `404 not_found`（所有权隔离）。'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 6a1c4e92-3b7d-4f51-9e82-1c7f3a5d8b64
+      responses:
+        '200':
+          description: 争议详情。
+          content:
+            application/json:
+              example:
+                dispute_id: 6a1c4e92-3b7d-4f51-9e82-1c7f3a5d8b64
+                subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                report_id: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+                record_source: res_chile
+                record_ref: BOL-2026-04512
+                reason: The reported default was paid in full on 2026-07-30.
+                status: under_review
+                resolution_note: Under review with the data source.
+                created_by: 5f9d2c10-3e8b-4a1d-9c7a-1d2f3a4b5c6d
+                created_at: '2026-08-08T16:11:40Z'
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden
+        '404':
+          description: not_found
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: not found
 components:
   securitySchemes:
     bearerAuth:
@@ -18929,3 +19641,91 @@ webhooks:
       responses:
         '200':
           description: '已接收。'
+  risk_report_ready:
+    post:
+      summary: Qscore 信用报告已就绪
+      description: '通过 `POST /v1/qscore/reports` 购买的 Qscore 信用报告已成功生成。payload
+        携带报告标识、生成的评分/等级以及公开的 `verify_code`（可与主体共享，作为在
+        `GET /verify/qscore/{code}` 处的真实性证明）。如果生成失败，报告状态为
+        `failed`，不会发出任何事件。当购买的报告对该主体已存在时也会发出此事件
+        （幂等重用）。
+
+
+        每次交付都包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp`
+        和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。响应 2xx；
+        最多 5 次尝试，采用递增退避。'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                report_id:
+                  type: string
+                subject_id:
+                  type: string
+                doc_id:
+                  type: string
+                country:
+                  type: string
+                subject_type:
+                  type: string
+                  enum: [person, company]
+                score:
+                  type: integer
+                band:
+                  type: string
+                  enum: [A, B, C, D, E, SC]
+                verify_code:
+                  type: string
+            example:
+              report_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              subject_id: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+              doc_id: '12983319'
+              country: CL
+              subject_type: person
+              score: 742
+              band: B
+              verify_code: Q3fa85f6457174562b3fc2c963f66afa6a1b2c3d4e5f
+      responses:
+        '200':
+          description: 返回任何 2xx 以确认交付。
+  risk_score_changed:
+    post:
+      summary: Qscore 评分已变更
+      description: '新生成的 Qscore 报告产生了与主体之前已知评分不同的分数（例如在监控
+        重新拉取或新购买时）。仅在评分实际发生变化时发出；payload 携带新旧评分/等级对，
+        便于您决定是否采取行动。订阅此事件可以在不进行轮询的情况下持续监控主体。
+
+
+        每次交付都包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp`
+        和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。响应 2xx；
+        最多 5 次尝试，采用递增退避。'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject_id:
+                  type: string
+                report_id:
+                  type: string
+                old_score:
+                  type: integer
+                new_score:
+                  type: integer
+                old_band:
+                  type: string
+                new_band:
+                  type: string
+            example:
+              subject_id: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+              report_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              old_score: 742
+              new_score: 688
+              old_band: B
+              new_band: B
+      responses:
+        '200':
+          description: 返回任何 2xx 以确认交付。

@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — convertible on demand with swaps.\nPayouts and service fees can be paid from any of the four balances\n(`PUT /v1/settlement` or per-payout `settlement_asset`), and payins\ncan auto-convert to the asset of your choice (`default_payin_asset`).\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-08-08 11:04 UTC",
-    "_content_sha256": "29bcdce274b251990f483a79f8fa63e96ce339aad640f3616176d0f9f495ae78"
+    "_generated_at": "2026-08-08 19:39 UTC",
+    "_content_sha256": "317e2b76bd86acbb6fb2849f8f7fcd58dc5e666f4ca2a7e7bf3e818634828938"
   },
   "auth": {
     "type": "bearer",
@@ -1653,7 +1653,7 @@
             "description": "Company accounts only: verifies one of YOUR end customers (a business) sending the data directly. Body: external_customer_id, country?, business (the company fields), ubos?, directors?, signers?, bank_info?, metadata?. Bills the fixed `kyb_verification` fee; `idempotency_key` required. Re-sending while open updates the same submission without charging again.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"external_customer_id\": \"cust_456\",\n  \"idempotency_key\": \"kyb-sub-cust-456-1\",\n  \"country\": \"cl\",\n  \"business\": {\n    \"legal_name\": \"Comercial Andina SpA\",\n    \"tax_id\": \"76.543.210-8\"\n  },\n  \"ubos\": [\n    {\n      \"first_name\": \"Carlos\",\n      \"last_name\": \"Soto\",\n      \"ownership_percent\": 60\n    }\n  ]\n}",
+              "raw": "{\n  \"external_customer_id\": \"cust_456\",\n  \"idempotency_key\": \"kyb-sub-cust-456-1\",\n  \"country\": \"cl\",\n  \"business\": {\n    \"legal_name\": \"Comercial Andina SpA\",\n    \"tax_id\": \"76.543.210-3\"\n  },\n  \"ubos\": [\n    {\n      \"first_name\": \"Carlos\",\n      \"last_name\": \"Soto\",\n      \"ownership_percent\": 60\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2549,6 +2549,841 @@
             },
             "description": "Signed compliance report of a KYB verification — evidence for your own auditors. Free (the service was billed when the verification was created)."
           }
+        }
+      ]
+    },
+    {
+      "name": "Qscore",
+      "item": [
+        {
+          "name": "Verify a Qscore report's authenticity (public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/verify/qscore/:code",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "verify",
+                "qscore",
+                ":code"
+              ],
+              "variable": [
+                {
+                  "key": "code",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Public endpoint (no credentials) behind the verification code printed on every Qscore credit report. The code is cryptographically signed: a tampered or made-up one answers 404 with `valid: false`. The response shows only non-sensitive facts: that the report exists, its score BAND (never the numeric score) and its issue date — never the subject's identity nor credit detail. Browsers get a branded HTML page; API clients get JSON. Rate limited per IP.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 The report is authentic; non-sensitive facts.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/verify/qscore/:code",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "verify",
+                    "qscore",
+                    ":code"
+                  ],
+                  "variable": [
+                    {
+                      "key": "code",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "The report is authentic; non-sensitive facts.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"valid\": true,\n  \"type\": \"verification_report\",\n  \"kind\": \"qscore\",\n  \"status\": \"ready\",\n  \"decision\": \"B\",\n  \"date\": \"2026-08-08\",\n  \"issued_by\": \"CBPay\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List credit reports",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/qscore/reports",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "qscore",
+                "reports"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": false,
+                  "description": "Start date YYYY-MM-DD (UTC, inclusive). An invalid date\nreturns 400 invalid_range."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": false,
+                  "description": "End date YYYY-MM-DD (UTC, inclusive)."
+                },
+                {
+                  "key": "subject_id",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by subject id (from GET /v1/qscore/subjects/{docId})."
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by report status."
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Page number (>= 1)."
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Results per page (max 200)."
+                }
+              ]
+            },
+            "description": "Returns the credit reports of your account, newest first. The\n`from` and `to` date filters (UTC, both inclusive) are mandatory. Reports\nowned by other accounts are never visible (ownership isolation: a report id\nbelonging to another account returns `404 not_found`)."
+          },
+          "response": [
+            {
+              "name": "200 Reports page. Each item is the stored report object; the\nsco",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/qscore/reports",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "qscore",
+                    "reports"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": false,
+                      "description": "Start date YYYY-MM-DD (UTC, inclusive). An invalid date\nreturns 400 invalid_range."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": false,
+                      "description": "End date YYYY-MM-DD (UTC, inclusive)."
+                    },
+                    {
+                      "key": "subject_id",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Filter by subject id (from GET /v1/qscore/subjects/{docId})."
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Filter by report status."
+                    },
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Page number (>= 1)."
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Results per page (max 200)."
+                    }
+                  ]
+                }
+              },
+              "status": "Reports page. Each item is the stored report object; the\nsco",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"items\": [\n    {\n      \"report_id\": \"3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01\",\n      \"account_id\": \"5f9d2c10-3e8b-4a1d-9c7a-1d2f3a4b5c6d\",\n      \"subject_id\": \"8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112\",\n      \"purpose\": \"credit_evaluation\",\n      \"status\": \"ready\",\n      \"lang\": \"es\",\n      \"score\": 742,\n      \"band\": \"B\",\n      \"score_model_version\": \"v1\",\n      \"reason_codes\": [\n        {\n          \"code\": \"CREDIT_HISTORY_DEPTH\",\n          \"direction\": \"positive\",\n          \"weight\": \"medium\"\n        },\n        {\n          \"code\": \"ACTIVE_TRADELINES\",\n          \"direction\": \"positive\",\n          \"weight\": \"low\"\n        }\n      ],\n      \"verify_code\": \"Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a\",\n      \"created_at\": \"2026-08-08T15:04:22Z\",\n      \"completed_at\": \"2026-08-08T15:04:24Z\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"page_size\": 50,\n    \"total\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a credit report — Person report (Chilean RUT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/qscore/reports",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "qscore",
+                "reports"
+              ]
+            },
+            "description": "Issues a new credit report for a subject (a person or a company),\nbilled as a standalone fee (`risk_report_person` / `risk_report_company`)\nat the moment of issuance. Idempotency is mandatory: retrying with the\nsame `idempotency_key` returns the original report with `idempotency_hit:\ntrue` and never charges twice. The report is computed synchronously: the\nresponse is usually the finished report (status `ready`) or a failed one\n(status `failed` with `error_code`/`error_message`). The `purpose` field\nis mandatory (data protection law) and `doc_id` is validated and\nnormalized per country (e.g. Chilean RUT with check digit).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"doc_id\": \"12.345.678-5\",\n  \"country\": \"CL\",\n  \"subject_type\": \"person\",\n  \"purpose\": \"credit_evaluation\",\n  \"lang\": \"es\",\n  \"idempotency_key\": \"qscore-9f2b8d11\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Report created and computed. `model_version` identifies the\n",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/qscore/reports",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "qscore",
+                    "reports"
+                  ]
+                }
+              },
+              "status": "Report created and computed. `model_version` identifies the\n",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"report_id\": \"3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01\",\n  \"subject_id\": \"8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112\",\n  \"status\": \"ready\",\n  \"purpose\": \"credit_evaluation\",\n  \"lang\": \"es\",\n  \"score\": 742,\n  \"band\": \"B\",\n  \"model_version\": \"v1\",\n  \"reason_codes\": [\n    {\n      \"code\": \"CREDIT_HISTORY_DEPTH\",\n      \"direction\": \"positive\",\n      \"weight\": \"medium\"\n    },\n    {\n      \"code\": \"ACTIVE_TRADELINES\",\n      \"direction\": \"positive\",\n      \"weight\": \"low\"\n    }\n  ],\n  \"verify_code\": \"Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a\",\n  \"created_at\": \"2026-08-08T15:04:22Z\",\n  \"completed_at\": \"2026-08-08T15:04:24Z\",\n  \"report\": {\n    \"meta\": {\n      \"report_id\": \"QSR-3F5C9F2D7D21\",\n      \"lang\": \"es\",\n      \"purpose\": \"credit_evaluation\",\n      \"generated_at\": \"2026-08-08T15:04:24Z\",\n      \"verification_code\": \"Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a\",\n      \"verification_url\": \"/verify/qscore/Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a\"\n    },\n    \"identity\": {\n      \"subject_type\": \"person\",\n      \"doc_id\": \"12.345.678-5\",\n      \"name\": \"Example Name\",\n      \"country\": \"CL\"\n    },\n    \"score\": {\n      \"score\": 742,\n      \"band\": \"B\",\n      \"model_version\": \"v1\",\n      \"reason_codes\": [\n        {\n          \"code\": \"CREDIT_HISTORY_DEPTH\",\n          \"direction\": \"positive\",\n          \"weight\": \"medium\"\n        },\n        {\n          \"code\": \"ACTIVE_TRADELINES\",\n          \"direction\": \"positive\",\n          \"weight\": \"low\"\n        }\n      ],\n      \"computed_at\": \"2026-08-08T15:04:24Z\"\n    },\n    \"summary\": [\n      \"No delinquencies or adverse events on record.\",\n      \"Active credit history with reported tradelines.\"\n    ],\n    \"tradelines\": [\n      {\n        \"source\": \"res_chile\",\n        \"creditor\": \"Commercial creditor\",\n        \"kind\": \"loan\",\n        \"status\": \"current\",\n        \"currency\": \"CLP\",\n        \"balance\": \"1250000\",\n        \"opened_at\": \"2025-03-14\",\n        \"reported_at\": \"2026-08-01\"\n      }\n    ],\n    \"delinquencies\": [],\n    \"sources\": [\n      {\n        \"source\": \"res_chile\",\n        \"label\": \"Commercial bulletin\",\n        \"records\": 1,\n        \"fetched_at\": \"2026-08-08T15:04:23Z\"\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a credit report — Company report (Chilean company RUT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/qscore/reports",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "qscore",
+                "reports"
+              ]
+            },
+            "description": "Issues a new credit report for a subject (a person or a company),\nbilled as a standalone fee (`risk_report_person` / `risk_report_company`)\nat the moment of issuance. Idempotency is mandatory: retrying with the\nsame `idempotency_key` returns the original report with `idempotency_hit:\ntrue` and never charges twice. The report is computed synchronously: the\nresponse is usually the finished report (status `ready`) or a failed one\n(status `failed` with `error_code`/`error_message`). The `purpose` field\nis mandatory (data protection law) and `doc_id` is validated and\nnormalized per country (e.g. Chilean RUT with check digit).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"doc_id\": \"76.543.210-3\",\n  \"country\": \"CL\",\n  \"subject_type\": \"company\",\n  \"purpose\": \"supplier_onboarding\",\n  \"lang\": \"en\",\n  \"idempotency_key\": \"qscore-7a31c4e5\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Report created and computed. `model_version` identifies the\n",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/qscore/reports",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "qscore",
+                    "reports"
+                  ]
+                }
+              },
+              "status": "Report created and computed. `model_version` identifies the\n",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"report_id\": \"3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01\",\n  \"subject_id\": \"8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112\",\n  \"status\": \"ready\",\n  \"purpose\": \"credit_evaluation\",\n  \"lang\": \"es\",\n  \"score\": 742,\n  \"band\": \"B\",\n  \"model_version\": \"v1\",\n  \"reason_codes\": [\n    {\n      \"code\": \"CREDIT_HISTORY_DEPTH\",\n      \"direction\": \"positive\",\n      \"weight\": \"medium\"\n    },\n    {\n      \"code\": \"ACTIVE_TRADELINES\",\n      \"direction\": \"positive\",\n      \"weight\": \"low\"\n    }\n  ],\n  \"verify_code\": \"Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a\",\n  \"created_at\": \"2026-08-08T15:04:22Z\",\n  \"completed_at\": \"2026-08-08T15:04:24Z\",\n  \"report\": {\n    \"meta\": {\n      \"report_id\": \"QSR-3F5C9F2D7D21\",\n      \"lang\": \"es\",\n      \"purpose\": \"credit_evaluation\",\n      \"generated_at\": \"2026-08-08T15:04:24Z\",\n      \"verification_code\": \"Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a\",\n      \"verification_url\": \"/verify/qscore/Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a\"\n    },\n    \"identity\": {\n      \"subject_type\": \"person\",\n      \"doc_id\": \"12.345.678-5\",\n      \"name\": \"Example Name\",\n      \"country\": \"CL\"\n    },\n    \"score\": {\n      \"score\": 742,\n      \"band\": \"B\",\n      \"model_version\": \"v1\",\n      \"reason_codes\": [\n        {\n          \"code\": \"CREDIT_HISTORY_DEPTH\",\n          \"direction\": \"positive\",\n          \"weight\": \"medium\"\n        },\n        {\n          \"code\": \"ACTIVE_TRADELINES\",\n          \"direction\": \"positive\",\n          \"weight\": \"low\"\n        }\n      ],\n      \"computed_at\": \"2026-08-08T15:04:24Z\"\n    },\n    \"summary\": [\n      \"No delinquencies or adverse events on record.\",\n      \"Active credit history with reported tradelines.\"\n    ],\n    \"tradelines\": [\n      {\n        \"source\": \"res_chile\",\n        \"creditor\": \"Commercial creditor\",\n        \"kind\": \"loan\",\n        \"status\": \"current\",\n        \"currency\": \"CLP\",\n        \"balance\": \"1250000\",\n        \"opened_at\": \"2025-03-14\",\n        \"reported_at\": \"2026-08-01\"\n      }\n    ],\n    \"delinquencies\": [],\n    \"sources\": [\n      {\n        \"source\": \"res_chile\",\n        \"label\": \"Commercial bulletin\",\n        \"records\": 1,\n        \"fetched_at\": \"2026-08-08T15:04:23Z\"\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get a credit report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/qscore/reports/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "qscore",
+                "reports",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Returns the full detail of a credit report owned by your\naccount. When `status` is `ready` the full normalized `report` object is\nembedded; when it is `failed`, `error_code`/`error_message` explain why.\nA report owned by another account returns `404 not_found` (ownership\nisolation)."
+          },
+          "response": [
+            {
+              "name": "200 Report detail.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/qscore/reports/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "qscore",
+                    "reports",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Report detail.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"report_id\": \"3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01\",\n  \"subject_id\": \"8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112\",\n  \"status\": \"ready\",\n  \"purpose\": \"credit_evaluation\",\n  \"lang\": \"es\",\n  \"score\": 742,\n  \"band\": \"B\",\n  \"model_version\": \"v1\",\n  \"reason_codes\": [\n    {\n      \"code\": \"CREDIT_HISTORY_DEPTH\",\n      \"direction\": \"positive\",\n      \"weight\": \"medium\"\n    },\n    {\n      \"code\": \"ACTIVE_TRADELINES\",\n      \"direction\": \"positive\",\n      \"weight\": \"low\"\n    }\n  ],\n  \"verify_code\": \"Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a\",\n  \"created_at\": \"2026-08-08T15:04:22Z\",\n  \"completed_at\": \"2026-08-08T15:04:24Z\",\n  \"report\": {\n    \"meta\": {\n      \"report_id\": \"QSR-3F5C9F2D7D21\",\n      \"lang\": \"es\",\n      \"purpose\": \"credit_evaluation\",\n      \"generated_at\": \"2026-08-08T15:04:24Z\",\n      \"verification_code\": \"Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a\",\n      \"verification_url\": \"/verify/qscore/Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a\"\n    },\n    \"identity\": {\n      \"subject_type\": \"person\",\n      \"doc_id\": \"12.345.678-5\",\n      \"name\": \"Example Name\",\n      \"country\": \"CL\"\n    },\n    \"score\": {\n      \"score\": 742,\n      \"band\": \"B\",\n      \"model_version\": \"v1\",\n      \"reason_codes\": [\n        {\n          \"code\": \"CREDIT_HISTORY_DEPTH\",\n          \"direction\": \"positive\",\n          \"weight\": \"medium\"\n        }\n      ],\n      \"computed_at\": \"2026-08-08T15:04:24Z\"\n    },\n    \"summary\": [\n      \"No delinquencies or adverse events on record.\"\n    ],\n    \"sources\": [\n      {\n        \"source\": \"res_chile\",\n        \"label\": \"Commercial bulletin\",\n        \"records\": 1,\n        \"fetched_at\": \"2026-08-08T15:04:23Z\"\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Download the report PDF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/qscore/reports/:id/pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "qscore",
+                "reports",
+                ":id",
+                "pdf"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Downloads the branded PDF of a credit report in the language it\nwas issued (`lang`), with the `verify_code` printed for public\nverification. Only available once the report is `ready` — otherwise `404\npdf_not_ready`. The PDF is generated on the fly per request; store it if\nyou need an immutable copy."
+          }
+        },
+        {
+          "name": "Look up a subject",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/qscore/subjects/:docID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "qscore",
+                "subjects",
+                ":docID"
+              ],
+              "query": [
+                {
+                  "key": "country",
+                  "value": "",
+                  "disabled": true,
+                  "description": "ISO country of the document (default CL)."
+                }
+              ],
+              "variable": [
+                {
+                  "key": "docID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Returns the subject record for a document id (no new report is\nissued and nothing is billed). Subjects are created automatically the\nfirst time a report is requested for that document. The `docId` path\nparameter is the document id as issued (e.g. a Chilean RUT like\n`12.345.678-5`); it is validated and normalized per country. If the\nsubject already has scores, the latest one is summarized in `last_score`\n/ `last_band` / `last_score_at` (`last_score` is absent for the SC band).\nA subject that does not exist returns `404 not_found`."
+          },
+          "response": [
+            {
+              "name": "200 Subject record with its latest score summary.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/qscore/subjects/:docID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "qscore",
+                    "subjects",
+                    ":docID"
+                  ],
+                  "query": [
+                    {
+                      "key": "country",
+                      "value": "",
+                      "disabled": true,
+                      "description": "ISO country of the document (default CL)."
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "key": "docID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Subject record with its latest score summary.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"subject_id\": \"8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112\",\n  \"country\": \"CL\",\n  \"doc_id\": \"12.345.678-5\",\n  \"subject_type\": \"person\",\n  \"display_name\": \"Example Name\",\n  \"last_score\": 742,\n  \"last_band\": \"B\",\n  \"last_score_at\": \"2026-08-08T15:04:24Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Current score of a subject",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/qscore/subjects/:docID/score",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "qscore",
+                "subjects",
+                ":docID",
+                "score"
+              ],
+              "query": [
+                {
+                  "key": "country",
+                  "value": "",
+                  "disabled": true,
+                  "description": "ISO country of the document (default CL)."
+                }
+              ],
+              "variable": [
+                {
+                  "key": "docID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Returns only the latest score of a subject — the cheap lookup\nfor recurring checks without issuing (or paying for) a new report.\nReturns `404 no_score` if no report has been computed yet for that\nsubject. For the SC band (no data), `score` is absent."
+          },
+          "response": [
+            {
+              "name": "200 Latest score of the subject.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/qscore/subjects/:docID/score",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "qscore",
+                    "subjects",
+                    ":docID",
+                    "score"
+                  ],
+                  "query": [
+                    {
+                      "key": "country",
+                      "value": "",
+                      "disabled": true,
+                      "description": "ISO country of the document (default CL)."
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "key": "docID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Latest score of the subject.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"subject_id\": \"8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112\",\n  \"doc_id\": \"12.345.678-5\",\n  \"country\": \"CL\",\n  \"score\": 742,\n  \"band\": \"B\",\n  \"model_version\": \"v1\",\n  \"computed_at\": \"2026-08-08T15:04:24Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List subject disputes (ARCO)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/qscore/subjects/:docID/disputes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "qscore",
+                "subjects",
+                ":docID",
+                "disputes"
+              ],
+              "query": [
+                {
+                  "key": "country",
+                  "value": "",
+                  "disabled": true,
+                  "description": "ISO country of the document (default CL)."
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by dispute status."
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ],
+              "variable": [
+                {
+                  "key": "docID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Lists the ARCO disputes opened for a subject (data subject\nrights: rectification and cancellation of credit data). Filterable by\n`status` (`open`, `under_review`, `resolved_corrected`,\n`resolved_rejected`). The dispute lifecycle is operated from the org\nadmin panel or by your organization via `PATCH\n/v1/org/qscore/disputes/{id}`; each change is notified to the requester\nby email. A resolved dispute never deletes the disputed record: the\ncorrection is a new record that supersedes it."
+          },
+          "response": [
+            {
+              "name": "200 Disputes page.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/qscore/subjects/:docID/disputes",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "qscore",
+                    "subjects",
+                    ":docID",
+                    "disputes"
+                  ],
+                  "query": [
+                    {
+                      "key": "country",
+                      "value": "",
+                      "disabled": true,
+                      "description": "ISO country of the document (default CL)."
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Filter by dispute status."
+                    },
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "key": "docID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Disputes page.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"items\": [\n    {\n      \"dispute_id\": \"6a1c4e92-3b7d-4f51-9e82-1c7f3a5d8b64\",\n      \"subject_id\": \"8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112\",\n      \"report_id\": \"3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01\",\n      \"record_source\": \"res_chile\",\n      \"record_ref\": \"BOL-2026-04512\",\n      \"reason\": \"The reported default was paid in full on 2026-07-30.\",\n      \"status\": \"open\",\n      \"created_by\": \"5f9d2c10-3e8b-4a1d-9c7a-1d2f3a4b5c6d\",\n      \"created_at\": \"2026-08-08T16:11:40Z\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"page_size\": 50,\n    \"total\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Open a dispute (ARCO)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/qscore/subjects/:docID/disputes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "qscore",
+                "subjects",
+                ":docID",
+                "disputes"
+              ],
+              "query": [
+                {
+                  "key": "country",
+                  "value": "",
+                  "disabled": true,
+                  "description": "ISO country of the document (default CL)."
+                }
+              ],
+              "variable": [
+                {
+                  "key": "docID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Opens an ARCO dispute on a specific record of a subject (e.g. a\ndebt that does not belong to them or was already paid), in compliance\nwith data subject rectification rights. The subject must already exist\n(it is created by the first report). `record_source` identifies the data\nsource family of the disputed record and `record_ref` the record inside\nthat source (both appear in the report as `source` / `ref` of each\ntradeline or adverse event). The dispute starts in `open` status and its\nlifecycle is managed by your organization.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"record_source\": \"res_chile\",\n  \"record_ref\": \"BOL-2026-04512\",\n  \"reason\": \"The reported default was paid in full on 2026-07-30.\",\n  \"report_id\": \"3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Dispute created in `open` status.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/qscore/subjects/:docID/disputes",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "qscore",
+                    "subjects",
+                    ":docID",
+                    "disputes"
+                  ],
+                  "query": [
+                    {
+                      "key": "country",
+                      "value": "",
+                      "disabled": true,
+                      "description": "ISO country of the document (default CL)."
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "key": "docID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Dispute created in `open` status.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"dispute_id\": \"6a1c4e92-3b7d-4f51-9e82-1c7f3a5d8b64\",\n  \"subject_id\": \"8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112\",\n  \"report_id\": \"3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01\",\n  \"record_source\": \"res_chile\",\n  \"record_ref\": \"BOL-2026-04512\",\n  \"reason\": \"The reported default was paid in full on 2026-07-30.\",\n  \"status\": \"open\",\n  \"created_by\": \"5f9d2c10-3e8b-4a1d-9c7a-1d2f3a4b5c6d\",\n  \"created_at\": \"2026-08-08T16:11:40Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get a dispute",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/qscore/disputes/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "qscore",
+                "disputes",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Returns the detail and current status of an ARCO dispute owned\nby your account. A dispute owned by another account returns `404\nnot_found` (ownership isolation)."
+          },
+          "response": [
+            {
+              "name": "200 Dispute detail.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/qscore/disputes/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "qscore",
+                    "disputes",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Dispute detail.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"dispute_id\": \"6a1c4e92-3b7d-4f51-9e82-1c7f3a5d8b64\",\n  \"subject_id\": \"8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112\",\n  \"report_id\": \"3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01\",\n  \"record_source\": \"res_chile\",\n  \"record_ref\": \"BOL-2026-04512\",\n  \"reason\": \"The reported default was paid in full on 2026-07-30.\",\n  \"status\": \"under_review\",\n  \"resolution_note\": \"Under review with the data source.\",\n  \"created_by\": \"5f9d2c10-3e8b-4a1d-9c7a-1d2f3a4b5c6d\",\n  \"created_at\": \"2026-08-08T16:11:40Z\"\n}"
+            }
+          ]
         }
       ]
     },
@@ -6642,7 +7477,7 @@
             "description": "Disperses fiat to a local bank account. The local amount converts to USDT at **your account's rate** (the same one returned by `GET /v1/rates`); `usdt_amount` plus the fixed fee (when configured) is debited and held until the dispersal completes. If it fails, the full debit is refunded.\n\n**Pay from any balance**: by default the debit comes from your account's default settlement asset (USDT unless changed via `PUT /v1/settlement`). Send `settlement_asset` (USDT, USDC, BTC or GOLD) to pay this specific operation from another balance: the USDT total converts to that asset at the effective settlement price of the moment (see the `settlement` block in `GET /v1/rates`) and the debit, hold and — if it fails — the refund all live in that asset for the exact same amount. If the execution price for BTC/GOLD is unavailable the request returns `503 pricing_unavailable`; volatile assets also have a per-operation limit (`422 settlement_limit_exceeded`).\n\nRequires an idempotency key (body field or `Idempotency-Key` header). Retrying with the same key returns the original payout (`200` with `idempotency_hit: true`).",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"country\": \"BR\",\n  \"currency\": \"BRL\",\n  \"method\": \"pix\",\n  \"amount\": \"350.00\",\n  \"beneficiary\": {\n    \"name\": \"João da Silva\",\n    \"tax_id\": \"123.456.789-09\",\n    \"pix_key_type\": \"cpf\",\n    \"pix_key\": \"12345678909\"\n  },\n  \"idempotency_key\": \"br-pix-3321\"\n}",
+              "raw": "{\n  \"country\": \"BR\",\n  \"currency\": \"BRL\",\n  \"method\": \"pix\",\n  \"amount\": \"350.00\",\n  \"beneficiary\": {\n    \"name\": \"João da Silva\",\n    \"tax_id\": \"123.456.789-69\",\n    \"pix_key_type\": \"cpf\",\n    \"pix_key\": \"12345678909\"\n  },\n  \"idempotency_key\": \"br-pix-3321\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10996,7 +11831,7 @@
             "description": "Screens a person or company (detected from the payload) against sanctions, PEP and adverse-media lists via the compliance service. This is list screening only — identity verification with documents and liveness lives under /v1/kyc and /v1/kyb. All identity fields are optional and forwarded whole to the screening engine; the more identity data you send (date of birth, countries, strong identifiers, aliases), the more precise the analysis. If a compliance fee is configured, it is debited before the call and refunded if the screening fails. The result is stored locally for audit history (`GET /v1/aml/screenings`). `idempotency_key` is required — replaying with the same key returns the original screening with `idempotency_hit` true and never charges twice.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"customer\": {\n    \"company\": {\n      \"legal_name\": \"Comercial Andina SpA\",\n      \"registration_authority_identification\": \"76.543.210-8\"\n    },\n    \"email\": \"legal@andina.cl\",\n    \"country\": \"CL\"\n  },\n  \"monitor\": true\n}",
+              "raw": "{\n  \"customer\": {\n    \"company\": {\n      \"legal_name\": \"Comercial Andina SpA\",\n      \"registration_authority_identification\": \"76.543.210-3\"\n    },\n    \"email\": \"legal@andina.cl\",\n    \"country\": \"CL\"\n  },\n  \"monitor\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11058,7 +11893,7 @@
             "description": "Screens a person or company (detected from the payload) against sanctions, PEP and adverse-media lists via the compliance service. This is list screening only — identity verification with documents and liveness lives under /v1/kyc and /v1/kyb. All identity fields are optional and forwarded whole to the screening engine; the more identity data you send (date of birth, countries, strong identifiers, aliases), the more precise the analysis. If a compliance fee is configured, it is debited before the call and refunded if the screening fails. The result is stored locally for audit history (`GET /v1/aml/screenings`). `idempotency_key` is required — replaying with the same key returns the original screening with `idempotency_hit` true and never charges twice.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"customer\": {\n    \"company\": {\n      \"legal_name\": \"Comercial Andina SpA\",\n      \"alias\": [\n        \"Andina Market\"\n      ],\n      \"registration_authority_identification\": \"76.543.210-8\",\n      \"place_of_registration\": \"CL\",\n      \"incorporation_date\": {\n        \"year\": 2015,\n        \"month\": 8,\n        \"day\": 1\n      },\n      \"address\": [\n        {\n          \"country\": \"CL\"\n        }\n      ]\n    },\n    \"email\": \"legal@andina.cl\",\n    \"country\": \"CL\"\n  },\n  \"monitor\": true\n}",
+              "raw": "{\n  \"customer\": {\n    \"company\": {\n      \"legal_name\": \"Comercial Andina SpA\",\n      \"alias\": [\n        \"Andina Market\"\n      ],\n      \"registration_authority_identification\": \"76.543.210-3\",\n      \"place_of_registration\": \"CL\",\n      \"incorporation_date\": {\n        \"year\": 2015,\n        \"month\": 8,\n        \"day\": 1\n      },\n      \"address\": [\n        {\n          \"country\": \"CL\"\n        }\n      ]\n    },\n    \"email\": \"legal@andina.cl\",\n    \"country\": \"CL\"\n  },\n  \"monitor\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"

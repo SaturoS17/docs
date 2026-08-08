@@ -1,5 +1,5 @@
 {
-  "count": 178,
+  "count": 184,
   "errors": [
     {
       "category": {
@@ -2141,6 +2141,90 @@
         "en": "Travel Rule exchange temporarily unavailable; retry with the **same** idempotency key",
         "es": "Intercambio Travel Rule temporalmente no disponible; reintenta con la **misma** clave de idempotencia",
         "zh": "Travel Rule 数据交换暂时不可用；请使用**相同的**幂等键重试"
+      }
+    },
+    {
+      "category": {
+        "en": "Qscore",
+        "es": "Qscore",
+        "zh": "Qscore"
+      },
+      "code": "purpose_required",
+      "http": 400,
+      "meaning": {
+        "en": "Missing `purpose` when creating a report — data protection law requires declaring it (`credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding` or `other`)",
+        "es": "Falta `purpose` al crear un informe — la ley de protección de datos exige declararlo (`credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding` u `other`)",
+        "zh": "创建报告时缺少 `purpose` — 数据保护法要求声明用途(`credit_evaluation`、`tenant_screening`、`hiring`、`supplier_onboarding` 或 `other`)"
+      }
+    },
+    {
+      "category": {
+        "en": "Qscore",
+        "es": "Qscore",
+        "zh": "Qscore"
+      },
+      "code": "invalid_purpose",
+      "http": 400,
+      "meaning": {
+        "en": "The `purpose` is not one of the allowed values (`credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding`, `other`) — fix the value",
+        "es": "El `purpose` no es uno de los valores permitidos (`credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding`, `other`) — corrige el valor",
+        "zh": "`purpose` 不是允许的值之一(`credit_evaluation`、`tenant_screening`、`hiring`、`supplier_onboarding`、`other`)— 请修正该值"
+      }
+    },
+    {
+      "category": {
+        "en": "Qscore",
+        "es": "Qscore",
+        "zh": "Qscore"
+      },
+      "code": "invalid_doc_id",
+      "http": 400,
+      "meaning": {
+        "en": "The `doc_id` is not valid for the given `country` (e.g. bad RUT check digit in Chile) — fix the document format",
+        "es": "El `doc_id` no es válido para el `country` indicado (ej. dígito verificador de RUT incorrecto en Chile) — corrige el formato del documento",
+        "zh": "`doc_id` 在给定的 `country` 无效(例如智利 RUT 校验位错误)— 修正证件格式"
+      }
+    },
+    {
+      "category": {
+        "en": "Qscore",
+        "es": "Qscore",
+        "zh": "Qscore"
+      },
+      "code": "invalid_subject_type",
+      "http": 400,
+      "meaning": {
+        "en": "`subject_type` is not `person`/`company` and could not be inferred from the document — send it explicitly",
+        "es": "`subject_type` no es `person`/`company` y no se pudo inferir del documento — envíalo explícito",
+        "zh": "`subject_type` 不是 `person`/`company` 且无法从证件推断 — 请显式发送"
+      }
+    },
+    {
+      "category": {
+        "en": "Qscore",
+        "es": "Qscore",
+        "zh": "Qscore"
+      },
+      "code": "no_score",
+      "http": 404,
+      "meaning": {
+        "en": "The subject has no computed score yet — buy a report first",
+        "es": "El sujeto aún no tiene un score calculado — compra un informe primero",
+        "zh": "该主体尚无已计算的评分 — 请先购买报告"
+      }
+    },
+    {
+      "category": {
+        "en": "Qscore",
+        "es": "Qscore",
+        "zh": "Qscore"
+      },
+      "code": "pdf_not_ready",
+      "http": 404,
+      "meaning": {
+        "en": "The report PDF is not available yet — poll the detail until `status=ready` (the `risk_report_ready` webhook tells you)",
+        "es": "El PDF del informe aún no está disponible — consulta el detalle hasta `status=ready` (el webhook `risk_report_ready` te avisa)",
+        "zh": "报告 PDF 尚不可用 — 轮询详情直到 `status=ready`(`risk_report_ready` webhook 会通知你)"
       }
     },
     {

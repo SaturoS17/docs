@@ -207,6 +207,19 @@ These codes come from **organization administration surfaces** (the [CBPay Admin
 | 422 | `travel_rule_incomplete_approval` | The receiving institution approved without providing a payment address; contact support |
 | 503 | `travel_rule_unavailable` | Travel Rule exchange temporarily unavailable; retry with the **same** idempotency key |
 
+### Qscore
+
+Errors from the credit bureau endpoints ([guide](https://docs.cbpayapp.com/en/guides/qscore)).
+
+| HTTP | `error` | Meaning |
+|---|---|---|
+| 400 | `purpose_required` | Missing `purpose` when creating a report — data protection law requires declaring it (`credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding` or `other`) |
+| 400 | `invalid_purpose` | The `purpose` is not one of the allowed values (`credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding`, `other`) — fix the value |
+| 400 | `invalid_doc_id` | The `doc_id` is not valid for the given `country` (e.g. bad RUT check digit in Chile) — fix the document format |
+| 400 | `invalid_subject_type` | `subject_type` is not `person`/`company` and could not be inferred from the document — send it explicitly |
+| 404 | `no_score` | The subject has no computed score yet — buy a report first |
+| 404 | `pdf_not_ready` | The report PDF is not available yet — poll the detail until `status=ready` (the `risk_report_ready` webhook tells you) |
+
 ### Transactional firewall
 
 Errors from the review of operations held by the transactional firewall ([guide](https://docs.cbpayapp.com/en/guides/transaction-reviews)). The hold itself is **not an error**: the create call answers `202 Accepted` with `status: in_review` and a `review_id`.

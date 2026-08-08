@@ -130,6 +130,8 @@ Para reactivarla, el mismo llamado con `{ "status": "active" }`.
 | `kyc_document_validated` / `kyb_document_validated` | Terminó el OCR de un documento subido por API |
 | `kyc_liveness_completed` | Una prueba de vida fue completada desde un liveness link |
 | `aml_screening_updated` | Novedades del screening AML (resultado, casos, riesgo, transacción revisada) |
+| `risk_report_ready` | Un informe crediticio [Qscore](https://docs.cbpayapp.com/es/guias/qscore) terminó de generarse (lleva el score y la banda) |
+| `risk_score_changed` | El score de un sujeto monitoreado se movió (re-evaluación tras nuevos datos del buró) |
 | `wallet_deposit_received` | Llegó un depósito on-chain a una [wallet segregada](https://docs.cbpayapp.com/es/guias/wallets-segregadas) (no toca el ledger) |
 | `wallet_send_status_changed` | Un envío desde una wallet segregada cambió de estado |
 | `wallet_key_exported` | Se exportó la llave privada de una wallet segregada (alerta de seguridad) |
@@ -472,6 +474,30 @@ antiguas sin datos del motor.
   "tx_id": "9a3c1e5f…",
   "amount_raw": "25000000",
   "custody": "cbpay"
+}
+```
+
+```json risk_report_ready
+{
+  "report_id": "9f1c…",
+  "subject_id": "6aa2…",
+  "doc_id": "76.123.456-7",
+  "country": "CL",
+  "subject_type": "person",
+  "score": 712,
+  "band": "B",
+  "verify_code": "Q9f1c2e7a5b6d4c8e9a0f1d2b3c4d5e6f0123456789ab"
+}
+```
+
+```json risk_score_changed
+{
+  "subject_id": "6aa2…",
+  "report_id": "9f1c…",
+  "old_score": 688,
+  "new_score": 712,
+  "old_band": "C",
+  "new_band": "B"
 }
 ```
 

@@ -7,7 +7,26 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-<Update label="2026年8月8日" description="v2.44 · 4 个版本">
+<Update label="2026年8月8日" description="v2.45 · 5 个版本">
+
+### v2.45
+
+**新增**
+
+- **Qscore — API 优先的信用局**([Qscore 指南](/zh/guides/qscore)):购买个人
+  和企业的信用报告(`POST /v1/qscore/reports`),首先在智利上线。每份报告将
+  负面记录、劳动和社保背景、未缴票据及官方公报发布汇总为 0–1000 的评分,
+  等级为 A–E(无数据时为 `SC`),并附原因代码、品牌化 PDF 和公开验证码。
+  `GET /v1/qscore/subjects/{docID}/score` 读取你已出具报告主体的当前评分,
+  `GET /v1/qscore/reports/{reportID}/pdf` 下载 PDF,数据主体更正(ARCO)流程通过
+  `POST /v1/qscore/subjects/{docID}/disputes` +
+  `GET /v1/qscore/disputes/{disputeID}` 运行。报告按证件类型计费
+  (`risk_report_person` / `risk_report_company`),并依法要求声明 `purpose`。新增 webhook:
+  `risk_report_ready` 和 `risk_score_changed`。需要 `risk` 服务标志。
+- **报告公开验证**:`GET /v1/verify/qscore/{code}` 验证印在 Qscore 报告上的
+  验证码,返回非敏感事实(主体类别、等级、签发日期)— 不含 PII。
+- 新增错误码:`purpose_required`、`invalid_purpose`、`invalid_doc_id`、`invalid_subject_type`、
+  `no_score`、`pdf_not_ready`([错误](/zh/errors))。
 
 ### v2.44
 

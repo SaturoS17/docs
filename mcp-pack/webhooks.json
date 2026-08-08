@@ -1,5 +1,5 @@
 {
-  "count": 34,
+  "count": 36,
   "events": [
     {
       "description": {
@@ -569,6 +569,50 @@
         "en": "Payout status changed",
         "es": "Estado de payout cambiado",
         "zh": "payout 状态已变更"
+      }
+    },
+    {
+      "description": {
+        "en": "A Qscore credit report purchased with `POST /v1/qscore/reports` finished generating successfully. The payload carries the report identity, the resulting score/band and the public `verify_code` (shareable with the subject as proof of authenticity at `GET /verify/qscore/{code}`). If the generation fails the report shows `status: failed` and no event is emitted. The event is also emitted when the purchased report was already available for the subject (idempotent reuse).\n\nEvery delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Respond 2xx; up to 5 attempts with incremental backoff.",
+        "es": "Un informe crediticio Qscore comprado con `POST /v1/qscore/reports` terminó de generarse con éxito. El payload lleva la identidad del informe, el score/banda resultante y el `verify_code` público (compartible con el sujeto como prueba de autenticidad en `GET /verify/qscore/{code}`). Si la generación falla, el informe queda `status: failed` y no se emite evento. El evento también se emite cuando el informe comprado ya estaba disponible para el sujeto (reuso idempotente).\n\nCada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` y `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Responde 2xx; hasta 5 intentos con backoff incremental.",
+        "zh": "通过 `POST /v1/qscore/reports` 购买的 Qscore 信用报告已成功生成。payload 携带报告标识、生成的评分/等级以及公开的 `verify_code`（可与主体共享，作为在 `GET /verify/qscore/{code}` 处的真实性证明）。如果生成失败，报告状态为 `failed`，不会发出任何事件。当购买的报告对该主体已存在时也会发出此事件 （幂等重用）。\n\n每次交付都包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`。响应 2xx； 最多 5 次尝试，采用递增退避。"
+      },
+      "event": "risk_report_ready",
+      "payload_example": {
+        "band": "B",
+        "country": "CL",
+        "doc_id": "12983319",
+        "report_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "score": 742,
+        "subject_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+        "subject_type": "person",
+        "verify_code": "Q3fa85f6457174562b3fc2c963f66afa6a1b2c3d4e5f"
+      },
+      "summary": {
+        "en": "Qscore credit report ready",
+        "es": "Informe crediticio Qscore listo",
+        "zh": "Qscore 信用报告已就绪"
+      }
+    },
+    {
+      "description": {
+        "en": "A newly generated Qscore report produced a score different from the subject's previous known score (e.g. on a monitoring re-pull or a new purchase). Emitted only when the score actually changes; the payload carries the old and new score/band pair so you can decide whether to act. Subscribe to this event to monitor a subject over time without polling.\n\nEvery delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Respond 2xx; up to 5 attempts with incremental backoff.",
+        "es": "Un informe Qscore recién generado produjo un score distinto al último conocido del sujeto (p. ej. en una re-consulta de monitoreo o una compra nueva). Se emite solo cuando el score efectivamente cambia; el payload lleva el par score/banda anterior y nuevo para que decidas si actuar. Suscríbete a este evento para monitorear un sujeto en el tiempo sin polling.\n\nCada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` y `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Responde 2xx; hasta 5 intentos con backoff incremental.",
+        "zh": "新生成的 Qscore 报告产生了与主体之前已知评分不同的分数（例如在监控 重新拉取或新购买时）。仅在评分实际发生变化时发出；payload 携带新旧评分/等级对， 便于您决定是否采取行动。订阅此事件可以在不进行轮询的情况下持续监控主体。\n\n每次交付都包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`。响应 2xx； 最多 5 次尝试，采用递增退避。"
+      },
+      "event": "risk_score_changed",
+      "payload_example": {
+        "new_band": "B",
+        "new_score": 688,
+        "old_band": "B",
+        "old_score": 742,
+        "report_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "subject_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+      },
+      "summary": {
+        "en": "Qscore score changed",
+        "es": "Cambió el score Qscore",
+        "zh": "Qscore 评分已变更"
       }
     },
     {

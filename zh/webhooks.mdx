@@ -123,6 +123,8 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
 | `kyc_document_validated` / `kyb_document_validated` | 通过 API 上传的文档已完成 OCR |
 | `kyc_liveness_completed` | 通过活体检测链接完成了一次活体检测 |
 | `aml_screening_updated` | AML 筛查更新（结果、案件、风险、已复核交易） |
+| `risk_report_ready` | [Qscore](/zh/guides/qscore) 信用报告已生成完毕(携带评分和等级) |
+| `risk_score_changed` | 受监控主体的评分发生变化(信用局新数据后的重新评估) |
 | `wallet_deposit_received` | 一笔链上充值到达[独立钱包](/zh/guides/segregated-wallets)（不触及账本） |
 | `wallet_send_status_changed` | 独立钱包发起的一笔转出状态发生变化 |
 | `wallet_key_exported` | 独立钱包的私钥被导出（安全警报） |
@@ -462,6 +464,30 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
   "tx_id": "9a3c1e5f…",
   "amount_raw": "25000000",
   "custody": "cbpay"
+}
+```
+
+```json risk_report_ready
+{
+  "report_id": "9f1c…",
+  "subject_id": "6aa2…",
+  "doc_id": "76.123.456-7",
+  "country": "CL",
+  "subject_type": "person",
+  "score": 712,
+  "band": "B",
+  "verify_code": "Q9f1c2e7a5b6d4c8e9a0f1d2b3c4d5e6f0123456789ab"
+}
+```
+
+```json risk_score_changed
+{
+  "subject_id": "6aa2…",
+  "report_id": "9f1c…",
+  "old_score": 688,
+  "new_score": 712,
+  "old_band": "C",
+  "new_band": "B"
 }
 ```
 

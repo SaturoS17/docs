@@ -1,0 +1,358 @@
+---
+title: "Qscore — buró de crédito API-first"
+description: "Compra informes crediticios completos con score para personas y empresas (Chile primero), descarga el PDF, verifícalo públicamente y gestiona disputas ARCO."
+slug: es/guias/qscore
+lang: es
+source_url: https://docs.cbpayapp.com/es/guias/qscore
+---
+> **Ambientes:** Test `https://cryptobank.qbank.cl/platform` (`pk_test_...`) - Live `https://api.qbank.cl/platform` (`pk_...`).
+
+Qscore es el buró de crédito API-first de la plataforma. Una sola llamada devuelve el **informe crediticio completo** de una persona o empresa — identidad, líneas de crédito, morosidades, quiebras, actividad comercial, datos alternativos — más un **score crediticio (1–999) con su banda y códigos de razón explicables**, renderizado como PDF brandeado y expuesto como JSON.
+
+- **Chile primero, diseño country-agnostic**: hoy los sujetos son chilenos (`country: "CL"`, RUT como `doc_id`); nuevos países se enchufan sin cambios de contrato.
+- **Frescura en vivo**: cada informe consulta las fuentes de datos al momento de la compra y declara, por fuente, si el dato está `live`, `cached` o `unavailable`. Nada de data rancia en silencio.
+- **Cumplimiento incorporado**: la `purpose` declarada es obligatoria (ley de protección de datos de Chile), cada score lleva sus códigos de razón, y cada informe incluye un código de verificación pública.
+
+> **Nota**
+Qscore es un producto pagado, gated por el service flag `risk` de tu cuenta y facturado por informe (fees standalone `risk_report_person` / `risk_report_company`). Si la generación falla después del cobro, el fee se **reembolsa automáticamente** y el informe queda `failed` con su `error_code`.
+## Cómo funciona
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Tu sistema
+    participant P as Plataforma CBPay
+    participant Q as Qbank core
+    participant S as Fuentes de datos
+    C->>P: POST /v1/qscore/reports (doc_id, purpose, idempotency_key)
+    P->>Q: POST /v1/bureau/fetch (consulta en vivo)
+    Q->>S: Consulta fuentes oficiales
+    S-->>Q: Registros de buró (deduplicados)
+    Q-->>P: Registros
+    P->>P: Calcula score v1 + construye + renderiza PDF
+    P-->>C: 201 informe listo (score, banda, JSON completo)
+    P-->>C: Webhook risk_report_ready
+    C->>P: GET /v1/qscore/reports/{report_id}/pdf
+```
+
+La generación es **síncrona**: el `POST` consulta los registros de buró, calcula el score, renderiza el PDF y devuelve el informe listo en una sola respuesta. Una fuente caída **no** hace fallar un informe pagado — se genera con la data persistida y la fuente se declara `cached` (o `unavailable` si no aportó nada) en la sección `sources`.
+
+## 1. Comprar un informe
+
+`POST /v1/qscore/reports` crea y genera el informe completo. La `idempotency_key` es **obligatoria** (el informe cobra un fee: un retry con la misma clave devuelve el informe original con `idempotency_hit: true` y jamás cobra dos veces).
+
+| Campo | Tipo | Requerido | Descripción |
+|---|---|---|---|
+| `doc_id` | string | sí | Documento del sujeto. En Chile, el RUT (`11.111.111-1`); se normaliza a su forma canónica. |
+| `country` | string | sí | País ISO 3166-1 alpha-2 del documento. Hoy `CL`. |
+| `subject_type` | string | no | `person` o `company`. Si se omite, se infiere del documento. |
+| `purpose` | string | sí | Finalidad declarada (ley de protección de datos): `credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding`, `other`. |
+| `lang` | string | no | Idioma del informe: `es` (default), `en`, `zh`. |
+| `idempotency_key` | string | sí | Tu clave única para esta compra. |
+
+#### Persona
+
+```bash Crear informe de persona
+curl -X POST "https://api.qbank.cl/platform/v1/qscore/reports" \
+  -H "Authorization: Bearer pk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "doc_id": "11.111.111-1",
+    "country": "CL",
+    "purpose": "credit_evaluation",
+    "lang": "es",
+    "idempotency_key": "qscore-2026-08-08-0001"
+  }'
+```
+
+#### Empresa
+
+```bash Crear informe de empresa
+curl -X POST "https://api.qbank.cl/platform/v1/qscore/reports" \
+  -H "Authorization: Bearer pk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "doc_id": "76.123.456-0",
+    "country": "CL",
+    "subject_type": "company",
+    "purpose": "supplier_onboarding",
+    "lang": "es",
+    "idempotency_key": "qscore-2026-08-08-0002"
+  }'
+```
+
+```json 201 Created (informe listo)
+{
+  "report_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "subject_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "status": "ready",
+  "purpose": "credit_evaluation",
+  "lang": "es",
+  "band": "B",
+  "model_version": "qscore-v1",
+  "verify_code": "Qf47ac10b58cc4372a5670e02b2c3d4791a2b3c4d5e6f",
+  "created_at": "2026-08-08T15:04:22Z",
+  "score": 742,
+  "completed_at": "2026-08-08T15:04:25Z",
+  "report": {
+    "meta": {
+      "report_id": "QSR-f47ac10b58cc",
+      "lang": "es",
+      "purpose": "credit_evaluation",
+      "generated_at": "2026-08-08T15:04:25Z",
+      "verification_code": "Qf47ac10b58cc4372a5670e02b2c3d4791a2b3c4d5e6f",
+      "verification_url": "https://business.cbpayapp.com/verify/qscore/Qf47ac10b58cc4372a5670e02b2c3d4791a2b3c4d5e6f"
+    },
+    "identity": {
+      "subject_type": "person",
+      "doc_id": "11111111-1",
+      "name": "Juan Pérez González",
+      "country": "CL"
+    },
+    "score": {
+      "score": 742,
+      "band": "B",
+      "model_version": "qscore-v1",
+      "reason_codes": [
+        {"code": "ACTIVE_TRADELINES", "direction": "positive", "weight": "medium"},
+        {"code": "CREDIT_HISTORY_DEPTH", "direction": "positive", "weight": "low"}
+      ],
+      "computed_at": "2026-08-08T15:04:25Z"
+    },
+    "summary": ["Sin morosidades vigentes registradas", "Actividad tributaria al día"],
+    "internal_score": {"available": false},
+    "sources": [
+      {"source": "res_chile", "label": "Registro de Empresas y Sociedades (RES)", "records": 2, "fetched_at": "2026-08-08T15:04:23Z", "freshness": "live"}
+    ]
+  }
+}
+```
+
+Si algo falla después del cobro del fee, el fee se reembolsa y la respuesta es el error con `error_code: "generation_failed"` persistido en el informe. Reejecutar con la **misma** `idempotency_key` devuelve el informe original (o su falla) — jamás cobra dos veces.
+
+## 2. El score (modelo v1)
+
+El score corre `qscore-v1`: base **600**, rango **1–999**, ajustado por hechos adversos (morosidades vigentes, protestos, quiebras, consultas recientes) y señales positivas (líneas activas, profundidad de historial, actividad de la empresa, datos alternativos).
+
+| Banda | Rango | Lectura |
+|---|---|---|
+| `A` | 800–999 | Excelente |
+| `B` | 650–799 | Bueno |
+| `C` | 500–649 | Regular |
+| `D` | 350–499 | Débil |
+| `E` | 1–349 | Alto riesgo |
+| `SC` | — | Sin datos del sujeto (el score es `null`) |
+
+Cada informe lleva sus `reason_codes` — la capa de explicabilidad del score:
+
+| Código | Dirección | Significado |
+|---|---|---|
+| `NO_DATA` | negative | No se encontraron registros del sujeto (banda `SC`) |
+| `BANKRUPTCY_OPEN` | negative | Procedimiento de quiebra/insolvencia vigente |
+| `OPEN_DELINQUENCY` | negative | Morosidad vigente en cobranza |
+| `PROTESTO_OPEN` | negative | Documento protestado impago (cheque/pagaré) |
+| `RECENT_DELINQUENCY` | negative | Morosidad reportada recientemente |
+| `MANY_RECENT_QUERIES` | negative | Muchos informes comprados sobre el sujeto en los últimos 90 días |
+| `ACTIVE_TRADELINES` | positive | Líneas de crédito activas y al día |
+| `CREDIT_HISTORY_DEPTH` | positive | Historial crediticio largo |
+| `COMPANY_ACTIVE` | positive | Empresa activa con actividad tributaria |
+| `COMPANY_NEW` | negative | Empresa de constitución reciente |
+| `ALTERNATIVE_POSITIVE` | positive | Datos alternativos positivos (servicios básicos, open finance) |
+| `INTERNAL_ACTIVITY` | positive | Señales internas positivas de la plataforma |
+
+## 3. Consulta e historial
+
+### Listar informes
+
+`GET /v1/qscore/reports` lista los informes comprados por tu cuenta. `from` y `to` (fechas `YYYY-MM-DD`, UTC, ambos inclusive) son **obligatorios**; los filtros `subject_id` y `status` (`pending`, `ready`, `failed`) son opcionales; paginación con `page` / `page_size` (default 50, máx 200).
+
+```bash Listar informes
+curl "https://api.qbank.cl/platform/v1/qscore/reports?from=2026-08-01&to=2026-08-31&status=ready&page=1&page_size=50" \
+  -H "Authorization: Bearer pk_live_..."
+```
+
+```json 200 OK
+{
+  "items": [
+    {
+      "report_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "account_id": "ae8c91f2-…",
+      "subject_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "purpose": "credit_evaluation",
+      "status": "ready",
+      "lang": "es",
+      "score": 742,
+      "band": "B",
+      "score_model_version": "qscore-v1",
+      "reason_codes": [{"code": "ACTIVE_TRADELINES", "direction": "positive", "weight": "medium"}],
+      "verify_code": "Qf47ac10b58cc4372a5670e02b2c3d4791a2b3c4d5e6f",
+      "created_at": "2026-08-08T15:04:22Z",
+      "completed_at": "2026-08-08T15:04:25Z"
+    }
+  ],
+  "meta": {"page": 1, "page_size": 50, "total": 1}
+}
+```
+
+### Detalle del informe
+
+`GET /v1/qscore/reports/{report_id}` devuelve el informe; cuando está `ready` incluye el objeto `report` completo (mismo shape que la respuesta de creación).
+
+### Descargar el PDF
+
+`GET /v1/qscore/reports/{report_id}/pdf` descarga el PDF brandeado (`application/pdf`, filename `qscore_<report_id>.pdf`). Mientras el informe no esté `ready` responde `404 pdf_not_ready`. El PDF es un documento privado: se descarga **autenticado** — jamás se adjunta a emails ni se expone en URLs públicas.
+
+### Ficha del sujeto y score vigente (sin comprar un informe nuevo)
+
+`GET /v1/qscore/subjects/{doc_id}?country=CL` devuelve la ficha del sujeto (identidad + último score) de un documento sobre el que ya compraste informes:
+
+```json 200 OK (ficha del sujeto)
+{
+  "subject_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "country": "CL",
+  "doc_id": "11111111-1",
+  "subject_type": "person",
+  "display_name": "Juan Pérez González",
+  "last_score": 742,
+  "last_band": "B",
+  "last_score_at": "2026-08-08T15:04:25Z"
+}
+```
+
+`GET /v1/qscore/subjects/{doc_id}/score?country=CL` devuelve solo el score vigente (`404 no_score` si el sujeto aún no tiene):
+
+```json 200 OK (score vigente)
+{
+  "subject_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "doc_id": "11111111-1",
+  "country": "CL",
+  "band": "B",
+  "model_version": "qscore-v1",
+  "computed_at": "2026-08-08T15:04:25Z",
+  "score": 742
+}
+```
+
+## 4. Estados del informe
+
+| Estado | Significado | Qué hacer |
+|---|---|---|
+| `pending` | Informe creado, generación en curso (transitorio dentro de la llamada síncrona) | Nada — la respuesta del `POST` trae el estado final |
+| `ready` | Informe generado: score, JSON completo y PDF disponibles (final) | Leer el JSON, descargar el PDF, compartir el link de verificación |
+| `failed` | La generación falló; el fee fue **reembolsado** (final) | Leer `error_code` / `error_message`, corregir la causa, comprar un informe nuevo con una `idempotency_key` **nueva** |
+
+## 5. Errores
+
+| HTTP | Código | Cuándo | Solución |
+|---|---|---|---|
+| 400 | `invalid_payload` | Falta `doc_id`/`country` o el JSON está mal formado | Envía ambos campos con un body JSON válido |
+| 400 | `purpose_required` | Falta `purpose` | Declara la finalidad (ley de protección de datos) |
+| 400 | `invalid_purpose` | `purpose` fuera de la lista cerrada | Usa `credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding` u `other` |
+| 400 | `invalid_doc_id` | El documento no es válido para el país (ej. dígito verificador del RUT incorrecto) | Corrige el formato del `doc_id` para el país |
+| 400 | `invalid_subject_type` | `subject_type` no es `person`/`company` y no pudo inferirse | Envía `subject_type` explícito |
+| 400 | `idempotency_key_required` | Falta `idempotency_key` | Envía una clave única por compra |
+| 404 | `not_found` | El informe/sujeto no existe (o pertenece a otra cuenta) | Revisa el ID |
+| 404 | `no_score` | El sujeto aún no tiene score calculado | Compra un informe primero |
+| 404 | `pdf_not_ready` | El informe aún no está `ready` | Consulta el detalle hasta `status=ready` |
+| 502 | `generation_failed` | El informe no pudo generarse tras el cobro | El fee fue reembolsado; reintenta más tarde o contacta soporte |
+
+Catálogo completo en [Errores](https://docs.cbpayapp.com/es/errores).
+
+## 6. Webhooks
+
+Suscríbete a los eventos de Qscore en tu [configuración de webhooks](https://docs.cbpayapp.com/es/webhooks). Ambos son eventos de audiencia cuenta, firmados como todo webhook.
+
+#### risk_report_ready — un informe terminó de generarse
+
+```json risk_report_ready
+{
+  "report_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "subject_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "doc_id": "11111111-1",
+  "country": "CL",
+  "subject_type": "person",
+  "score": 742,
+  "band": "B",
+  "verify_code": "Qf47ac10b58cc4372a5670e02b2c3d4791a2b3c4d5e6f"
+}
+```
+
+#### risk_score_changed — el score del sujeto se movió
+
+Se emite cuando un informe nuevo calcula un score distinto al anterior del sujeto.
+
+```json risk_score_changed
+{
+  "subject_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "report_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "old_score": 715,
+  "new_score": 742,
+  "old_band": "B",
+  "new_band": "B"
+}
+```
+
+## 7. Verificación pública
+
+Cada PDF del informe imprime un **código de verificación** y su URL. Cualquiera que tenga el código puede verificar la autenticidad del informe — sin PII — en `GET /verify/qscore/{code}` (sin auth):
+
+```json 200 OK (informe válido)
+{
+  "valid": true,
+  "type": "verification_report",
+  "kind": "qscore",
+  "status": "ready",
+  "decision": "B",
+  "date": "2026-08-08",
+  "issued_by": "CBPay"
+}
+```
+
+Un código inválido o alterado responde `404` con `{"valid": false, ...}`. El endpoint tiene rate limit por IP y no revela nada más que la validez, la banda y la fecha.
+
+## 8. Disputas ARCO
+
+Los titulares de los datos pueden ejercer sus derechos ARCO (acceso, rectificación, cancelación, oposición). Tu cuenta abre una disputa contra un registro específico de un sujeto:
+
+```bash Abrir una disputa
+curl -X POST "https://api.qbank.cl/platform/v1/qscore/subjects/11111111-1/disputes?country=CL" \
+  -H "Authorization: Bearer pk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "record_source": "res_chile",
+    "record_ref": "RES-2026-04512",
+    "reason": "La morosidad informada fue pagada el 2026-07-30",
+    "report_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+  }'
+```
+
+```json 201 Created
+{
+  "dispute_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "subject_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "report_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "record_source": "res_chile",
+  "record_ref": "RES-2026-04512",
+  "reason": "La morosidad informada fue pagada el 2026-07-30",
+  "status": "open",
+  "created_by": "ae8c91f2-…",
+  "created_at": "2026-08-08T16:11:00Z"
+}
+```
+
+Ciclo de vida de la disputa: `open` → `under_review` → `resolved_corrected` | `resolved_rejected` (final). Lístala con `GET /v1/qscore/subjects/{doc_id}/disputes?country=CL&status=open` (paginado) y lee una con `GET /v1/qscore/disputes/{dispute_id}`. La resolución la hace el admin de tu organización desde el panel de administración.
+
+## Preguntas frecuentes
+
+#### ¿El score se recalcula en cada informe?
+    Sí. Cada compra consulta las fuentes en vivo y recalcula el score con el modelo `qscore-v1` vigente. Si una fuente está caída, el informe se genera con la data persistida y la fuente se declara `cached`/`unavailable` en la sección `sources` — nunca en silencio.
+#### ¿Qué pasa si el informe falla después de cobrarme?
+    El fee se reembolsa automáticamente en el mismo flujo y el informe queda `failed` con su `error_code`. Tu `idempotency_key` reapunta a ese informe fallido; para reintentar, usa una clave nueva.
+#### ¿Por qué la finalidad es obligatoria?
+    La ley chilena de protección de datos exige una finalidad declarada y legítima para consultar datos crediticios de una persona o empresa. Se almacena con el informe y se imprime en él (auditabilidad para el titular).
+#### ¿Puedo consultar el score de alguien sin pagar un informe?
+    Sí — si ya compraste un informe de ese sujeto, `GET /v1/qscore/subjects/{doc_id}/score` devuelve el último score calculado sin costo adicional. El primer informe de un sujeto siempre es un informe completo pagado.
+#### ¿El PDF se envía por email?
+    No. El email de "informe listo" no lleva adjunto a propósito (minimización de datos de terceros). El PDF solo se descarga autenticado desde la API.
+#### ¿Qué países están soportados?
+    Chile hoy (`country: "CL"`, RUT como `doc_id`). El contrato es country-agnostic: nuevos países funcionarán con los mismos endpoints cuando se enchufen sus fuentes.

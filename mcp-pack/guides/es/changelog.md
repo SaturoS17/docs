@@ -9,7 +9,32 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-## v2.44 · 4 versiones - 8 de agosto de 2026
+## v2.45 · 5 versiones - 8 de agosto de 2026
+
+### v2.45
+
+**Agregado**
+
+- **Qscore — buró de crédito API-first** ([guía Qscore](https://docs.cbpayapp.com/es/guias/qscore)):
+  compra informes crediticios de personas y empresas
+  (`POST /v1/qscore/reports`), Chile primero. Cada informe agrega antecedentes
+  negativos, laborales y previsionales, boletas impagas y publicaciones del
+  diario oficial en un score 0–1000 con bandas A–E (`SC` cuando no hay datos),
+  códigos de razón, un PDF brandeado y un código de verificación pública.
+  `GET /v1/qscore/subjects/{docID}/score` lee el score vigente de un sujeto
+  sobre el que ya emitiste un informe, `GET /v1/qscore/reports/{reportID}/pdf`
+  descarga el PDF, y el flujo de rectificación del titular (ARCO) corre por
+  `POST /v1/qscore/subjects/{docID}/disputes` +
+  `GET /v1/qscore/disputes/{disputeID}`. Los informes se cobran por tipo de
+  documento (`risk_report_person` / `risk_report_company`) y exigen declarar el
+  `purpose` por la ley de protección de datos. Webhooks nuevos:
+  `risk_report_ready` y `risk_score_changed`. Requiere el service flag `risk`.
+- **Verificación pública de informes**: `GET /v1/verify/qscore/{code}` valida
+  el código impreso en un informe Qscore y devuelve los hechos no sensibles
+  (clase de sujeto, banda, fecha de emisión) — sin PII.
+- Códigos de error nuevos: `purpose_required`, `invalid_purpose`,
+  `invalid_doc_id`, `invalid_subject_type`, `no_score`, `pdf_not_ready`
+  ([errores](https://docs.cbpayapp.com/es/errores)).
 
 ### v2.44
 
