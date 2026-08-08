@@ -29,6 +29,35 @@ https://business.cbpayapp.com/t/{code}
 
 将链接原样转发给你的客户、支持团队或财务团队。所有持有链接的人看到同一页面。
 
+## 通过 API 获取已有交易的链接
+
+回单和邮件始终带有链接,但你无需下载任何内容即可获取:使用交易的 `kind` 和 `id` 调用 `GET /v1/track-link`,为你自己的 UI 中的**"分享链接"**按钮提供数据。
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `kind` | string | 交易所属的产品类别:`payout`、`payin`、`payin_refund`、`transfer`、`crypto_withdrawal`、`crypto_deposit`、`swap`、`card_purchase`、`banking_operation`、`wallet_send`、`wallet_deposit` |
+| `id` | string | 交易标识符 —— 与该 `kind` 对应的产品端点和 webhook 返回的 `id` 相同 |
+
+```bash
+curl -G "https://api.qbank.cl/platform/v1/track-link" \
+  -H "Authorization: Bearer $CBPAY_TOKEN" \
+  --data-urlencode "kind=payout" \
+  --data-urlencode "id=9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+```
+
+响应 `200 OK`:
+
+```json
+{
+  "track_url": "https://business.cbpayapp.com/t/P9b1deb4d3b7d4bad9bdd2b0d7b3dcb6d8f4a2c1e5b7",
+  "code": "P9b1deb4d3b7d4bad9bdd2b0d7b3dcb6d8f4a2c1e5b7"
+}
+```
+
+`code` 与打印在每张回单上的二维码使用同一个 HMAC 签名代码,因此链接是**确定性的**:对同一交易重复调用该端点始终返回相同的 URL。
+
+**谁可以调用。** 交易所属账户本身(API 密钥或成员会话)、组织管理员和平台管理员 —— 与回单相同的读取范围。范围之外的交易(或未知的 `kind`)统一返回 `404 not_found` 而非 `403`:绝不泄露交易是否存在。缺少 `kind` 或 `id` 时返回 `400 invalid_payload`。
+
 ## 页面展示内容
 
 - **状态徽章** — 公开、易读的状态（`completed`、`processing`、`failed`），附操作详情（收款人、参考号、金额、汇率）。

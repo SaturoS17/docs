@@ -8,7 +8,19 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.41 · 1 release - August 8, 2026
+## v2.42 · 2 releases - August 8, 2026
+
+### v2.42
+
+**Added**
+
+- **Tracking link from the API** ([tracking guide](https://docs.cbpayapp.com/en/guides/tracking)): the new authenticated
+  `GET /v1/track-link?kind=<kind>&id=<id>` returns the shareable public tracking link of any
+  transaction in your read scope — `{ "track_url", "code" }` — without downloading the receipt
+  PDF. It is the building block for a "Share link" button in your UI. The `code` is the same
+  deterministic HMAC code printed on every receipt, so the link is always the same for a given
+  transaction. Available to the account itself, to org admins and to platform admins; a
+  transaction outside your scope answers a uniform `404 not_found`.
 
 ### v2.41
 

@@ -29,6 +29,35 @@ Nunca construyes la URL tú mismo — la plataforma te la entrega:
 
 Reenvía el link tal cual a tu cliente, a tu mesa de soporte o a tu equipo de finanzas. Todos los que tengan el link ven la misma página.
 
+## Obtener el link de una transacción ya hecha (API)
+
+Los comprobantes y los emails siempre llevan el link, pero no necesitas descargar nada para obtenerlo: llama `GET /v1/track-link` con el `kind` y el `id` de la transacción para alimentar un botón **"Compartir link"** en tu propia UI.
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `kind` | string | Familia de la transacción: `payout`, `payin`, `payin_refund`, `transfer`, `crypto_withdrawal`, `crypto_deposit`, `swap`, `card_purchase`, `banking_operation`, `wallet_send`, `wallet_deposit` |
+| `id` | string | Identificador de la transacción — el mismo `id` que devuelven los endpoints del producto y los webhooks de ese `kind` |
+
+```bash
+curl -G "https://api.qbank.cl/platform/v1/track-link" \
+  -H "Authorization: Bearer $CBPAY_TOKEN" \
+  --data-urlencode "kind=payout" \
+  --data-urlencode "id=9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+```
+
+Respuesta `200 OK`:
+
+```json
+{
+  "track_url": "https://business.cbpayapp.com/t/P9b1deb4d3b7d4bad9bdd2b0d7b3dcb6d8f4a2c1e5b7",
+  "code": "P9b1deb4d3b7d4bad9bdd2b0d7b3dcb6d8f4a2c1e5b7"
+}
+```
+
+El `code` es el mismo código firmado con HMAC que se imprime como QR en cada comprobante, así que el link es **determinista**: llamar el endpoint dos veces para la misma transacción siempre devuelve la misma URL.
+
+**Quién puede llamarlo.** La cuenta dueña de la transacción (API key o sesión de miembro), los admins de la organización y los admins de plataforma — el mismo alcance de lectura que los comprobantes. Una transacción fuera de tu alcance (o un `kind` desconocido) responde `404 not_found`, nunca `403`: la existencia nunca se revela. Si falta `kind` o `id`, responde `400 invalid_payload`.
+
 ## Qué muestra la página
 
 - **Badge de estado** — un estado público y legible (`completed`, `processing`, `failed`) con el detalle de la operación (destinatario, referencia, montos, tasa de cambio).

@@ -8,7 +8,20 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-<Update label="8 de agosto de 2026" description="v2.41 · 1 versión">
+<Update label="8 de agosto de 2026" description="v2.42 · 2 versiones">
+
+### v2.42
+
+**Agregado**
+
+- **Link de seguimiento desde la API** ([guía de seguimiento](/es/guias/seguimiento)): el nuevo
+  endpoint autenticado `GET /v1/track-link?kind=<kind>&id=<id>` devuelve el link público
+  compartible de cualquier transacción de tu alcance de lectura — `{ "track_url", "code" }` —
+  sin descargar el PDF del comprobante. Es la pieza base de un botón "Compartir link" en tu UI.
+  El `code` es el mismo código HMAC determinista impreso en cada comprobante, así que el link
+  es siempre el mismo para una transacción dada. Disponible para la propia cuenta, para admins
+  de la organización y para admins de plataforma; una transacción fuera de tu alcance responde
+  un `404 not_found` uniforme.
 
 ### v2.41
 

@@ -8,7 +8,17 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-## v2.41 · 1 个版本 - 2026年8月8日
+## v2.42 · 2 个版本 - 2026年8月8日
+
+### v2.42
+
+**新增**
+
+- **通过 API 获取跟踪链接**([跟踪指南](https://docs.cbpayapp.com/zh/guides/tracking)):新增的认证端点
+  `GET /v1/track-link?kind=<kind>&id=<id>` 返回你读取范围内任意交易的可分享公开跟踪链接
+  —— `{ "track_url", "code" }` —— 无需下载回单 PDF。这是你 UI 中"分享链接"按钮的基础组件。
+  `code` 与每张回单上打印的 HMAC 确定性代码相同,因此同一交易的链接始终不变。账户本身、
+  组织管理员和平台管理员均可使用;范围之外的交易统一返回 `404 not_found`。
 
 ### v2.41
 

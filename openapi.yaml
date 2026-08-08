@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.41'
+  version: '2.42'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -452,6 +452,60 @@ paths:
               example:
                 error: too_many_attempts
                 message: too many verification attempts; wait a moment and retry
+  /v1/track-link:
+    get:
+      tags:
+      - Receipts
+      operationId: getTrackLink
+      summary: Get the public tracking link of a transaction
+      description: 'Returns the shareable public tracking link of any transaction in your
+        read scope, without downloading the receipt PDF — the building block for a "Share
+        link" button in your UI. The `code` is the same HMAC-signed, deterministic code
+        printed as a QR on every receipt, so calling the endpoint twice for the same
+        transaction always returns the same link, and anyone who receives the link can
+        follow the operation on the public tracking page (`GET /v1/public/track/{code}`,
+        Wise-style: timeline, receipt PDF download, three languages). Available to the
+        account itself (API key or member session), to org admins and to platform admins —
+        the same read scope as receipts. A transaction outside your scope (or an unknown
+        `kind`) answers 404, never 403: existence is never leaked.'
+      parameters:
+      - name: kind
+        in: query
+        required: true
+        schema:
+          type: string
+          enum: [payout, payin, payin_refund, transfer, crypto_withdrawal, crypto_deposit, swap, card_purchase, banking_operation, wallet_send, wallet_deposit]
+        description: Transaction family.
+      - name: id
+        in: query
+        required: true
+        schema:
+          type: string
+        description: Transaction identifier — the same id returned by the product endpoints
+          and webhooks of the chosen `kind`.
+      responses:
+        '200':
+          description: The public tracking link and its signed code.
+          content:
+            application/json:
+              example:
+                track_url: 'https://business.cbpayapp.com/t/P9b1deb4d3b7d4bad9bdd2b0d7b3dcb6d8f4a2c1e5b7'
+                code: P9b1deb4d3b7d4bad9bdd2b0d7b3dcb6d8f4a2c1e5b7
+        '400':
+          description: Missing `kind` or `id`.
+          content:
+            application/json:
+              example:
+                error: invalid_payload
+                message: kind and id are required
+        '404':
+          description: The transaction does not exist, the `kind` is unknown, or it is outside
+            your scope (uniform answer — anti-enumeration).
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: transaction not found
   /v1/public/track/{code}:
     get:
       security: []

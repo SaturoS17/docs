@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.41'
+  version: '2.42'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -411,6 +411,53 @@ paths:
               example:
                 error: too_many_attempts
                 message: too many verification attempts; wait a moment and retry
+  /v1/track-link:
+    get:
+      tags:
+      - 凭证
+      operationId: getTrackLink
+      summary: 获取交易的公开跟踪链接
+      description: '返回你读取范围内任意交易的可分享公开跟踪链接,无需下载凭证 PDF —— 是 UI 中"分享链接"按钮的基础组件。`code` 与打印在每张凭证上的二维码使用同一个
+        HMAC 签名确定性代码,因此对同一交易重复调用始终返回相同链接;任何收到链接的人都可以在公开跟踪页面(`GET
+        /v1/public/track/{code}`,Wise 风格:时间线、凭证 PDF 下载、三种语言)上跟进该笔交易。账户本身(API
+        密钥或成员会话)、组织管理员和平台管理员均可使用 —— 与凭证相同的读取范围。范围之外的交易(或未知的
+        `kind`)统一返回 404 而非 403:绝不泄露交易是否存在。'
+      parameters:
+      - name: kind
+        in: query
+        required: true
+        schema:
+          type: string
+          enum: [payout, payin, payin_refund, transfer, crypto_withdrawal, crypto_deposit, swap, card_purchase, banking_operation, wallet_send, wallet_deposit]
+        description: 交易所属的产品类别。
+      - name: id
+        in: query
+        required: true
+        schema:
+          type: string
+        description: 交易标识符 —— 与所选 `kind` 对应的产品端点和 webhook 返回的 id 相同。
+      responses:
+        '200':
+          description: 公开跟踪链接及其签名代码。
+          content:
+            application/json:
+              example:
+                track_url: 'https://business.cbpayapp.com/t/P9b1deb4d3b7d4bad9bdd2b0d7b3dcb6d8f4a2c1e5b7'
+                code: P9b1deb4d3b7d4bad9bdd2b0d7b3dcb6d8f4a2c1e5b7
+        '400':
+          description: 缺少 `kind` 或 `id`。
+          content:
+            application/json:
+              example:
+                error: invalid_payload
+                message: kind and id are required
+        '404':
+          description: 交易不存在、`kind` 未知或不在你的读取范围内(统一应答 —— 防枚举)。
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: transaction not found
   /v1/public/track/{code}:
     get:
       security: []

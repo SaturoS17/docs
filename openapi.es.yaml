@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.41'
+  version: '2.42'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -461,6 +461,62 @@ paths:
               example:
                 error: too_many_attempts
                 message: too many verification attempts; wait a moment and retry
+  /v1/track-link:
+    get:
+      tags:
+      - Comprobantes
+      operationId: getTrackLink
+      summary: Obtener el link público de seguimiento de una transacción
+      description: 'Devuelve el link público compartible de cualquier transacción
+        de tu alcance de lectura, sin descargar el PDF del comprobante — la pieza
+        base de un botón "Compartir link" en tu UI. El `code` es el mismo código
+        determinista firmado con HMAC que se imprime como QR en cada comprobante,
+        así que llamar el endpoint dos veces para la misma transacción devuelve
+        siempre el mismo link, y quien reciba el link puede seguir la operación en
+        la página pública de seguimiento (`GET /v1/public/track/{code}`, estilo
+        Wise: timeline, descarga del PDF, tres idiomas). Disponible para la propia
+        cuenta (API key o sesión de miembro), para admins de la organización y para
+        admins de plataforma — el mismo alcance de lectura que los comprobantes.
+        Una transacción fuera de tu alcance (o un `kind` desconocido) responde 404,
+        nunca 403: la existencia nunca se revela.'
+      parameters:
+      - name: kind
+        in: query
+        required: true
+        schema:
+          type: string
+          enum: [payout, payin, payin_refund, transfer, crypto_withdrawal, crypto_deposit, swap, card_purchase, banking_operation, wallet_send, wallet_deposit]
+        description: Familia de la transacción.
+      - name: id
+        in: query
+        required: true
+        schema:
+          type: string
+        description: Identificador de la transacción — el mismo id que devuelven
+          los endpoints del producto y los webhooks del `kind` elegido.
+      responses:
+        '200':
+          description: El link público de seguimiento y su código firmado.
+          content:
+            application/json:
+              example:
+                track_url: 'https://business.cbpayapp.com/t/P9b1deb4d3b7d4bad9bdd2b0d7b3dcb6d8f4a2c1e5b7'
+                code: P9b1deb4d3b7d4bad9bdd2b0d7b3dcb6d8f4a2c1e5b7
+        '400':
+          description: Falta `kind` o `id`.
+          content:
+            application/json:
+              example:
+                error: invalid_payload
+                message: kind and id are required
+        '404':
+          description: La transacción no existe, el `kind` es desconocido o está fuera
+            de tu alcance (respuesta uniforme — anti-enumeración).
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: transaction not found
   /v1/public/track/{code}:
     get:
       security: []

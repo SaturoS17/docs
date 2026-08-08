@@ -30,6 +30,35 @@ You never build the URL yourself — the platform hands it to you:
 
 Forward the link as-is to your customer, your support desk or your finance team. Everyone with the link sees the same page.
 
+## Get the link for an existing transaction (API)
+
+Receipts and emails always carry the link, but you don't need to download anything to get it: call `GET /v1/track-link` with the transaction's `kind` and `id` to power a **"Share link"** button in your own UI.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `kind` | string | Transaction family: `payout`, `payin`, `payin_refund`, `transfer`, `crypto_withdrawal`, `crypto_deposit`, `swap`, `card_purchase`, `banking_operation`, `wallet_send`, `wallet_deposit` |
+| `id` | string | Transaction identifier — the same `id` returned by the product endpoints and webhooks of that `kind` |
+
+```bash
+curl -G "https://api.qbank.cl/platform/v1/track-link" \
+  -H "Authorization: Bearer $CBPAY_TOKEN" \
+  --data-urlencode "kind=payout" \
+  --data-urlencode "id=9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+```
+
+Response `200 OK`:
+
+```json
+{
+  "track_url": "https://business.cbpayapp.com/t/P9b1deb4d3b7d4bad9bdd2b0d7b3dcb6d8f4a2c1e5b7",
+  "code": "P9b1deb4d3b7d4bad9bdd2b0d7b3dcb6d8f4a2c1e5b7"
+}
+```
+
+The `code` is the same HMAC-signed code printed as a QR on every receipt, so the link is **deterministic**: calling the endpoint twice for the same transaction always returns the same URL.
+
+**Who can call it.** The transaction's own account (API key or member session), org admins and platform admins — the same read scope as receipts. A transaction outside your scope (or an unknown `kind`) answers `404 not_found`, never `403`: existence is never leaked. A missing `kind` or `id` answers `400 invalid_payload`.
+
 ## What the page shows
 
 - **Status badge** — a public, human-readable status (`completed`, `processing`, `failed`) with the operation detail (recipient, reference, amounts, exchange rate).
