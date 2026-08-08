@@ -7,7 +7,28 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-<Update label="2026年8月7日" description="v2.39 · 3 个版本">
+<Update label="2026年8月7日" description="v2.40 · 4 个版本">
+
+### v2.40
+
+**新增**
+
+- **银行目录查询**（[付款指南](/zh/guides/payouts)）：新增的
+  `GET /v1/payouts/bank-directory/lookup` 可从嵌入式公开银行目录自动补全收款银行——`routing_number`
+  （9 位数字，仅限美国）与 `swift`（8 或 11 个字符；`XXX` 后缀会归一化为总行）二者必传其一，
+  它会解析出银行名称、城市、州和地址块，便于 payout 和交易对手表单在付款人输入时预填
+  `bank_name` 和选填的 `bank_*` 字段。返回 `404 bank_not_found` 仅表示该代码不在目录中：
+  表单保持手动填写即可。静态数据，带 `Cache-Control: public, max-age=86400`。
+- **邮政编码查询**（[AML 指南](/zh/guides/aml)）：新增的
+  `GET /v1/aml/catalogs/postal-code?country=US&code=33130` 可将美国 ZIP 编码解析为其
+  `city` 和 `state`，便于地址表单在用户输入 ZIP 时自动填充这两个字段。目前仅美国有数据集；
+  返回 `404 postal_code_not_found` 表示该 ZIP 未知（或该国家/地区没有数据集），字段保持手动填写。
+
+**修复**
+
+- **城市目录质量清理**：`GET /v1/aml/catalogs/cities` 现在按折叠形式（去除变音符号、不区分大小写）
+  对城市去重，统一夏威夷 ʻokina 字符，删除两条损坏粘连的条目，折叠内部多余空格，并以
+  `Content-Type: application/json; charset=utf-8` 提供响应。
 
 ### v2.39
 

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.39'
+  version: '2.40'
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -3617,6 +3617,107 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/payouts/bank-directory/lookup:
+    get:
+      tags:
+      - Payouts
+      operationId: lookupBankDirectory
+      summary: Busca un banco por routing number o SWIFT/BIC
+      description: 'Autocompleta el banco beneficiario desde un directorio bancario
+        público embebido — pasa exactamente uno de `routing_number` (9 dígitos, solo
+        US) o `swift` (8 u 11 caracteres; un sufijo `XXX` se normaliza a la casa
+        matriz). Úsalo para autodetectar el banco mientras el pagador escribe el
+        routing o SWIFT/BIC en formularios de payout o contraparte: un 404 significa
+        "no está en el directorio" y el formulario simplemente sigue manual. Datos
+        estáticos servidos con `Cache-Control: public, max-age=86400`; se pueden
+        cachear por un día.'
+      parameters:
+      - name: routing_number
+        in: query
+        description: ABA routing number, 9 dígitos con dígito verificador válido
+          (solo bancos US). Mutuamente excluyente con `swift`.
+        schema:
+          type: string
+          pattern: '^[0-9]{9}$'
+        example: '021000021'
+      - name: swift
+        in: query
+        description: Código SWIFT/BIC, 8 u 11 caracteres (un sufijo `XXX` se normaliza
+          a la casa matriz). Mutuamente excluyente con `routing_number`.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9]{8}([A-Za-z0-9]{3})?$'
+        example: CHASUS33
+      - name: country
+        in: query
+        description: Filtro opcional ISO 3166-1 alpha-2 para lookups por routing; solo
+          se soporta `US` (otro valor devuelve 400 `invalid_country`).
+        schema:
+          type: string
+          pattern: '^[A-Z]{2}$'
+        example: US
+      responses:
+        '200':
+          description: Banco encontrado en el directorio. `bank_phone` y
+            `directory_vintage` solo aparecen en lookups por routing;
+            `bank_state`/`bank_branch` solo cuando el dataset los tiene.
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                routing:
+                  summary: Por ABA routing number
+                  value:
+                    routing_number: '021000021'
+                    bank_name: JPMORGAN CHASE
+                    bank_city: TAMPA
+                    bank_state: FL
+                    bank_postal_code: '33610'
+                    bank_country: US
+                    bank_phone: 813-432-3700
+                    source: directory
+                    directory_vintage: fed_ach_2019
+                swift:
+                  summary: Por SWIFT/BIC
+                  value:
+                    swift: CHASUS33
+                    bank_name: JPMORGAN CHASE BANK, N.A.
+                    bank_city: NEW YORK, NY
+                    bank_country: US
+                    source: directory
+        '400':
+          description: Parámetros faltantes/en conflicto, formato inválido, o un
+            `country` distinto de `US`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid_payload:
+                  summary: Parámetros faltantes o en conflicto
+                  value:
+                    error: invalid_payload
+                    message: provide exactly one of routing_number or swift
+                invalid_country:
+                  summary: Lookup por routing con un país no-US
+                  value:
+                    error: invalid_country
+                    message: routing number lookup is only available for US
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+        '404':
+          description: El routing number o SWIFT/BIC no está en el directorio — el
+            formulario sigue manual.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: bank_not_found
+                message: no bank found for the given routing number
   /v1/payins:
     post:
       tags:
@@ -5945,6 +6046,81 @@ paths:
               example:
                 error: country_not_found
                 message: unknown country code
+  /v1/aml/catalogs/postal-code:
+    get:
+      tags:
+      - AML screening
+      operationId: getAmlCatalogPostalCode
+      summary: Busca ciudad y estado por código postal
+      description: 'Resuelve un código postal a su ciudad y estado desde un dataset
+        público embebido — hoy solo hay cobertura de ZIP codes de US. Úsalo para
+        autocompletar los campos ciudad/estado mientras el usuario escribe el ZIP en
+        formularios con dirección: un 404 significa "ZIP desconocido" (o un país sin
+        dataset) y los campos simplemente siguen manuales. Datos estáticos servidos
+        con `Cache-Control: public, max-age=86400`; se pueden cachear por un día.'
+      parameters:
+      - name: country
+        in: query
+        required: true
+        description: Código de país ISO 3166-1 alpha-2. Hoy solo `US` tiene dataset.
+        schema:
+          type: string
+          pattern: '^[A-Z]{2}$'
+        example: US
+      - name: code
+        in: query
+        required: true
+        description: Código postal a resolver (ZIP de US de 5 dígitos).
+        schema:
+          type: string
+          pattern: '^[0-9]{5}$'
+        example: '33130'
+      responses:
+        '200':
+          description: Ciudad y estado del código postal.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  country:
+                    type: string
+                    description: Código de país ISO 3166-1 alpha-2 devuelto tal cual.
+                  postal_code:
+                    type: string
+                  city:
+                    type: string
+                  state:
+                    type: string
+                    description: Sufijo de subdivisión ISO 3166-2 (ej. `FL`).
+              example:
+                country: US
+                postal_code: '33130'
+                city: Miami
+                state: FL
+        '400':
+          description: Parámetros faltantes o código postal malformado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_payload
+                message: code must be a 5-digit US ZIP
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+        '404':
+          description: Código postal desconocido, o un país sin dataset — los campos
+            de dirección siguen manuales.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: postal_code_not_found
+                message: no place found for the given postal code
   /v1/me/verification/link:
     post:
       tags:

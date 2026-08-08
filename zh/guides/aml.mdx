@@ -99,6 +99,32 @@ curl "https://api.qbank.cl/platform/v1/aml/catalogs/cities?country=US" \
 - 静态数据，响应带 `Cache-Control: public, max-age=86400` —— 可以
   缓存一天。
 
+### 邮政编码查询（美国）
+
+当表单需要填写地址时，先调用
+`GET /v1/aml/catalogs/postal-code?country=US&code=33130` 解析 ZIP，
+并预填城市和州/省：
+
+```bash
+curl "https://api.qbank.cl/platform/v1/aml/catalogs/postal-code?country=US&code=33130" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "country": "US",
+  "postal_code": "33130",
+  "city": "Miami",
+  "state": "FL"
+}
+```
+
+- 目前仅美国 ZIP 编码（5 位数字）有数据集。返回 `404
+  postal_code_not_found` 表示该 ZIP 未知 —— 或该国家/地区没有数据集 ——
+  地址字段保持手动填写即可。
+- 请求格式错误返回 `400 invalid_payload`。
+- 与其他目录相同的缓存策略：`Cache-Control: public, max-age=86400`。
+
 ## 提交筛查
 
 个人和企业使用同一个端点；类型由请求体自动识别

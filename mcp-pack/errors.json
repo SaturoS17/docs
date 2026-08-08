@@ -1,5 +1,5 @@
 {
-  "count": 176,
+  "count": 178,
   "errors": [
     {
       "category": {
@@ -1144,9 +1144,9 @@
       "code": "invalid_country",
       "http": 400,
       "meaning": {
-        "en": "Malformed or missing country code — ISO 3166-1 alpha-2 (e.g. `GET /v1/aml/catalogs/cities?country=`)",
-        "es": "Código de país mal formado o ausente — ISO 3166-1 alpha-2 (ej. `GET /v1/aml/catalogs/cities?country=`)",
-        "zh": "国家/地区代码格式错误或缺失——ISO 3166-1 alpha-2（例如 `GET /v1/aml/catalogs/cities?country=`）"
+        "en": "Malformed or missing country code — ISO 3166-1 alpha-2 (e.g. `GET /v1/aml/catalogs/cities?country=`); also a valid but unsupported country filter (e.g. a non-`US` `country` on the bank directory lookup)",
+        "es": "Código de país mal formado o ausente — ISO 3166-1 alpha-2 (ej. `GET /v1/aml/catalogs/cities?country=`); también un filtro de país válido pero no soportado (ej. un `country` distinto de `US` en el lookup del directorio bancario)",
+        "zh": "国家/地区代码格式错误或缺失——ISO 3166-1 alpha-2（例如 `GET /v1/aml/catalogs/cities?country=`）；也用于有效但不支持的国家/地区过滤条件（例如在银行目录查询中传入非 `US` 的 `country`）"
       }
     },
     {
@@ -1189,6 +1189,34 @@
         "en": "Unknown ISO 3166-1 alpha-2 country code (cities catalog)",
         "es": "Código de país ISO 3166-1 alpha-2 desconocido (catálogo de ciudades)",
         "zh": "未知的 ISO 3166-1 alpha-2 国家/地区代码（城市目录）"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "bank_not_found",
+      "http": 404,
+      "meaning": {
+        "en": "The routing number or SWIFT/BIC is not in the embedded bank directory — keep the payout/counterparty form manual",
+        "es": "El routing number o SWIFT/BIC no está en el directorio bancario embebido — el formulario de payout/contraparte sigue manual",
+        "zh": "该 routing number 或 SWIFT/BIC 不在嵌入式银行目录中——payout/交易对手表单保持手动填写"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "postal_code_not_found",
+      "http": 404,
+      "meaning": {
+        "en": "Unknown postal code, or a country without a dataset (postal code lookup) — keep the address fields manual",
+        "es": "Código postal desconocido, o un país sin dataset (lookup por código postal) — los campos de dirección siguen manuales",
+        "zh": "未知邮政编码，或该国家/地区没有数据集（邮政编码查询）——地址字段保持手动填写"
       }
     },
     {

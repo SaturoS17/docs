@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.39'
+  version: '2.40'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -3452,6 +3452,98 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/payouts/bank-directory/lookup:
+    get:
+      tags:
+      - 付款(Payouts)
+      operationId: lookupBankDirectory
+      summary: 按 routing number 或 SWIFT/BIC 查询银行
+      description: '从嵌入式公开银行目录自动补全收款银行——`routing_number`(9 位数字,仅限美国)与
+        `swift`(8 或 11 个字符;`XXX` 后缀会归一化为总行)二者必传其一。用于在付款人在 payout
+        或交易对手表单中输入 routing number 或 SWIFT/BIC 时自动识别银行:返回 404 表示"不在目录中",
+        表单保持手动填写即可。静态数据以 `Cache-Control: public, max-age=86400` 提供,可安全缓存一天。'
+      parameters:
+      - name: routing_number
+        in: query
+        description: ABA routing number,9 位数字且校验位有效(仅限美国银行)。与 `swift` 互斥。
+        schema:
+          type: string
+          pattern: '^[0-9]{9}$'
+        example: '021000021'
+      - name: swift
+        in: query
+        description: SWIFT/BIC 代码,8 或 11 个字符(`XXX` 后缀会归一化为总行)。与 `routing_number` 互斥。
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9]{8}([A-Za-z0-9]{3})?$'
+        example: CHASUS33
+      - name: country
+        in: query
+        description: 可选的 ISO 3166-1 alpha-2 过滤条件,用于 routing 查询;仅支持 `US`(其他值返回
+          400 `invalid_country`)。
+        schema:
+          type: string
+          pattern: '^[A-Z]{2}$'
+        example: US
+      responses:
+        '200':
+          description: 在目录中找到银行。`bank_phone` 和 `directory_vintage` 仅在 routing 查询时出现;`bank_state`/`bank_branch`
+            仅在数据集包含时出现。
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                routing:
+                  summary: 按 ABA routing number
+                  value:
+                    routing_number: '021000021'
+                    bank_name: JPMORGAN CHASE
+                    bank_city: TAMPA
+                    bank_state: FL
+                    bank_postal_code: '33610'
+                    bank_country: US
+                    bank_phone: 813-432-3700
+                    source: directory
+                    directory_vintage: fed_ach_2019
+                swift:
+                  summary: 按 SWIFT/BIC
+                  value:
+                    swift: CHASUS33
+                    bank_name: JPMORGAN CHASE BANK, N.A.
+                    bank_city: NEW YORK, NY
+                    bank_country: US
+                    source: directory
+        '400':
+          description: 参数缺失/冲突、格式无效,或 `country` 不是 `US`。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid_payload:
+                  summary: 参数缺失或冲突
+                  value:
+                    error: invalid_payload
+                    message: provide exactly one of routing_number or swift
+                invalid_country:
+                  summary: 以非美国国家进行 routing 查询
+                  value:
+                    error: invalid_country
+                    message: routing number lookup is only available for US
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+        '404':
+          description: 目录中没有该 routing number 或 SWIFT/BIC——表单保持手动填写。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: bank_not_found
+                message: no bank found for the given routing number
   /v1/payins:
     post:
       tags:
@@ -5673,6 +5765,77 @@ paths:
               example:
                 error: country_not_found
                 message: unknown country code
+  /v1/aml/catalogs/postal-code:
+    get:
+      tags:
+      - AML screening
+      operationId: getAmlCatalogPostalCode
+      summary: 按邮政编码查询城市和州/省
+      description: '从嵌入式公开数据集将邮政编码解析为其城市和州/省——目前仅覆盖美国 ZIP 编码。用于在地址表单中用户输入
+        ZIP 时自动填充城市/州字段:返回 404 表示"未知 ZIP"(或该国没有数据集),地址字段保持手动填写即可。静态数据以
+        `Cache-Control: public, max-age=86400` 提供,可安全缓存一天。'
+      parameters:
+      - name: country
+        in: query
+        required: true
+        description: ISO 3166-1 alpha-2 国家/地区代码。目前仅 `US` 有数据集。
+        schema:
+          type: string
+          pattern: '^[A-Z]{2}$'
+        example: US
+      - name: code
+        in: query
+        required: true
+        description: 要解析的邮政编码(5 位美国 ZIP)。
+        schema:
+          type: string
+          pattern: '^[0-9]{5}$'
+        example: '33130'
+      responses:
+        '200':
+          description: 该邮政编码对应的城市和州/省。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  country:
+                    type: string
+                    description: 原样返回的 ISO 3166-1 alpha-2 国家/地区代码。
+                  postal_code:
+                    type: string
+                  city:
+                    type: string
+                  state:
+                    type: string
+                    description: ISO 3166-2 行政区划代码后缀(如 `FL`)。
+              example:
+                country: US
+                postal_code: '33130'
+                city: Miami
+                state: FL
+        '400':
+          description: 参数缺失或邮政编码格式无效。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_payload
+                message: code must be a 5-digit US ZIP
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountRequired'
+        '404':
+          description: 未知邮政编码,或该国没有数据集——地址字段保持手动填写。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: postal_code_not_found
+                message: no place found for the given postal code
   /v1/me/verification/link:
     post:
       tags:

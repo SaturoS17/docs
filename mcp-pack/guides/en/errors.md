@@ -119,7 +119,7 @@ These codes come from **organization administration surfaces** (the [CBPay Admin
 | `query_required` | `GET /v1/resolve` needs `alias=` or `qr=` |
 | `same_email` | The new login email is the current one; use `POST /v1/me/email/verify` to verify it instead |
 | `invalid_status` / `invalid_kyc_status` / `invalid_direction` / `reason_required` / `account_id_required` / `invalid_service` / `invalid_fee` | Administration validations |
-| `invalid_country` | Malformed or missing country code — ISO 3166-1 alpha-2 (e.g. `GET /v1/aml/catalogs/cities?country=`) |
+| `invalid_country` | Malformed or missing country code — ISO 3166-1 alpha-2 (e.g. `GET /v1/aml/catalogs/cities?country=`); also a valid but unsupported country filter (e.g. a non-`US` `country` on the bank directory lookup) |
 
 ### Money and state (402 / 404 / 409 / 422)
 
@@ -128,6 +128,8 @@ These codes come from **organization administration surfaces** (the [CBPay Admin
 | 402 | `insufficient_funds` | Not enough available balance |
 | 404 | `not_found` | Resource does not exist (or belongs to another account) |
 | 404 | `country_not_found` | Unknown ISO 3166-1 alpha-2 country code (cities catalog) |
+| 404 | `bank_not_found` | The routing number or SWIFT/BIC is not in the embedded bank directory — keep the payout/counterparty form manual |
+| 404 | `postal_code_not_found` | Unknown postal code, or a country without a dataset (postal code lookup) — keep the address fields manual |
 | 404 | `recipient_not_found` | Transfer destination does not exist |
 | 404 | `verification_not_found` | The account has no submitted verification yet (`GET /v1/me/verification/report` before onboarding) |
 | 409 | `duplicate` | The resource already exists |

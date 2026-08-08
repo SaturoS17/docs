@@ -8,7 +8,39 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-<Update label="7 de agosto de 2026" description="v2.39 · 3 versiones">
+<Update label="7 de agosto de 2026" description="v2.40 · 4 versiones">
+
+### v2.40
+
+**Agregado**
+
+- **Lookup del directorio bancario** ([guía de
+  payouts](/es/guias/payouts)): el nuevo
+  `GET /v1/payouts/bank-directory/lookup` autocompleta el banco
+  beneficiario desde un directorio bancario público embebido — pasa
+  exactamente uno de `routing_number` (9 dígitos, solo US) o `swift` (8 u
+  11 caracteres; un sufijo `XXX` se normaliza a la casa matriz) y resuelve
+  el nombre del banco, ciudad, estado y bloque de dirección, así los
+  formularios de payout y contraparte pueden pre-llenar `bank_name` y los
+  campos opcionales `bank_*` mientras el pagador escribe. Un `404
+  bank_not_found` solo significa que el código no está en el directorio:
+  el formulario sigue manual. Data estática con `Cache-Control: public,
+  max-age=86400`.
+- **Lookup por código postal** ([guía AML](/es/guias/aml)): el nuevo
+  `GET /v1/aml/catalogs/postal-code?country=US&code=33130` resuelve un ZIP
+  de US a su `city` y `state`, así los formularios con dirección pueden
+  autocompletar ambos campos mientras el usuario escribe el ZIP. Hoy solo
+  US tiene dataset; un `404 postal_code_not_found` significa que el ZIP es
+  desconocido (o el país no tiene dataset) y los campos siguen manuales.
+
+**Corregido**
+
+- **Limpieza de calidad del catálogo de ciudades**:
+  `GET /v1/aml/catalogs/cities` ahora deduplica ciudades por su forma
+  plegada (sin diacríticos, sin distinción de mayúsculas), unifica el
+  okina hawaiano, elimina dos entradas corruptas pegadas, colapsa los
+  espacios internos y sirve `Content-Type: application/json;
+  charset=utf-8`.
 
 ### v2.39
 

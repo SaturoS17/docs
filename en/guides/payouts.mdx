@@ -916,7 +916,31 @@ at creation (`422`, see below). Required and optional fields:
 
 There is no US banks catalog: `bank_code` is the beneficiary bank's own
 ABA routing number (ACH/wire) or SWIFT BIC (swift), which the beneficiary
-provides.
+provides. To autodetect the bank while the sender types it, call
+`GET /v1/payouts/bank-directory/lookup` with the routing number or
+SWIFT/BIC — it resolves the bank name, city, state and address block from
+an embedded public bank directory, so you can prefill `bank_name` and the
+optional `bank_*` address fields. A `404 bank_not_found` simply means the
+code is not in the directory: keep the form manual.
+
+```bash
+curl "https://api.qbank.cl/platform/v1/payouts/bank-directory/lookup?routing_number=021000021" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "routing_number": "021000021",
+  "bank_name": "JPMORGAN CHASE",
+  "bank_city": "TAMPA",
+  "bank_state": "FL",
+  "bank_postal_code": "33610",
+  "bank_country": "US",
+  "bank_phone": "813-432-3700",
+  "source": "directory",
+  "directory_vintage": "fed_ach_2019"
+}
+```
 
 <CodeGroup>
 

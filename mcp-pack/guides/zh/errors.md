@@ -119,7 +119,7 @@ source_url: https://docs.cbpayapp.com/zh/errors
 | `query_required` | `GET /v1/resolve` 需要 `alias=` 或 `qr=` 参数 |
 | `same_email` | 新登录邮箱与当前邮箱相同；请改用 `POST /v1/me/email/verify` 进行验证 |
 | `invalid_status` / `invalid_kyc_status` / `invalid_direction` / `reason_required` / `account_id_required` / `invalid_service` / `invalid_fee` | 管理端校验 |
-| `invalid_country` | 国家/地区代码格式错误或缺失——ISO 3166-1 alpha-2（例如 `GET /v1/aml/catalogs/cities?country=`） |
+| `invalid_country` | 国家/地区代码格式错误或缺失——ISO 3166-1 alpha-2（例如 `GET /v1/aml/catalogs/cities?country=`）；也用于有效但不支持的国家/地区过滤条件（例如在银行目录查询中传入非 `US` 的 `country`） |
 
 ### 资金与状态（402 / 404 / 409 / 422）
 
@@ -128,6 +128,8 @@ source_url: https://docs.cbpayapp.com/zh/errors
 | 402 | `insufficient_funds` | 可用余额不足 |
 | 404 | `not_found` | 资源不存在（或属于其他账户） |
 | 404 | `country_not_found` | 未知的 ISO 3166-1 alpha-2 国家/地区代码（城市目录） |
+| 404 | `bank_not_found` | 该 routing number 或 SWIFT/BIC 不在嵌入式银行目录中——payout/交易对手表单保持手动填写 |
+| 404 | `postal_code_not_found` | 未知邮政编码，或该国家/地区没有数据集（邮政编码查询）——地址字段保持手动填写 |
 | 404 | `recipient_not_found` | 转账目标不存在 |
 | 404 | `verification_not_found` | 账户尚未提交任何验证（在完成入驻前调用 `GET /v1/me/verification/report`） |
 | 409 | `duplicate` | 资源已存在 |

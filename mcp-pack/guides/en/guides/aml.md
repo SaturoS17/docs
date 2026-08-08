@@ -99,6 +99,33 @@ curl "https://api.qbank.cl/platform/v1/aml/catalogs/cities?country=US" \
 - Static data served with `Cache-Control: public, max-age=86400` — safe to
   cache for a day.
 
+### Postal code lookup (US)
+
+When the form asks for an address, resolve the ZIP first with
+`GET /v1/aml/catalogs/postal-code?country=US&code=33130` and prefill city
+and state:
+
+```bash
+curl "https://api.qbank.cl/platform/v1/aml/catalogs/postal-code?country=US&code=33130" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "country": "US",
+  "postal_code": "33130",
+  "city": "Miami",
+  "state": "FL"
+}
+```
+
+- Only US ZIP codes (5 digits) have a dataset today. A `404
+  postal_code_not_found` means the ZIP is unknown — or the country has no
+  dataset — so keep the address fields manual.
+- A malformed request gets `400 invalid_payload`.
+- Same caching as the other catalogs: `Cache-Control: public,
+  max-age=86400`.
+
 ## Submit a screening
 
 One endpoint for person and company; the type is detected from the payload

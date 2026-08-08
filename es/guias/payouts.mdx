@@ -916,7 +916,32 @@ opcionales:
 
 No hay catálogo de bancos de EE. UU.: el `bank_code` es el propio routing
 ABA del banco del beneficiario (ACH/wire) o su BIC SWIFT (swift), dato que
-entrega el beneficiario.
+entrega el beneficiario. Para autodetectar el banco mientras el pagador lo
+escribe, llama `GET /v1/payouts/bank-directory/lookup` con el routing
+number o el SWIFT/BIC — resuelve el nombre del banco, ciudad, estado y
+bloque de dirección desde un directorio bancario público embebido, así
+puedes pre-llenar `bank_name` y los campos opcionales `bank_*`. Un
+`404 bank_not_found` solo significa que el código no está en el directorio:
+el formulario sigue manual.
+
+```bash
+curl "https://api.qbank.cl/platform/v1/payouts/bank-directory/lookup?routing_number=021000021" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "routing_number": "021000021",
+  "bank_name": "JPMORGAN CHASE",
+  "bank_city": "TAMPA",
+  "bank_state": "FL",
+  "bank_postal_code": "33610",
+  "bank_country": "US",
+  "bank_phone": "813-432-3700",
+  "source": "directory",
+  "directory_vintage": "fed_ach_2019"
+}
+```
 
 <CodeGroup>
 

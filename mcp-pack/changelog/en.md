@@ -8,7 +8,36 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.39 · 3 releases - August 7, 2026
+## v2.40 · 4 releases - August 7, 2026
+
+### v2.40
+
+**Added**
+
+- **Bank directory lookup** ([payouts guide](https://docs.cbpayapp.com/en/guides/payouts)): the new
+  `GET /v1/payouts/bank-directory/lookup` autocompletes the beneficiary
+  bank from an embedded public bank directory — pass exactly one of
+  `routing_number` (9 digits, US only) or `swift` (8 or 11 characters; an
+  `XXX` suffix is normalized to the head office) and it resolves the bank
+  name, city, state and address block, so payout and counterparty forms can
+  prefill `bank_name` and the optional `bank_*` fields while the sender
+  types. A `404 bank_not_found` simply means the code is not in the
+  directory: keep the form manual. Static data with `Cache-Control: public,
+  max-age=86400`.
+- **Postal code lookup** ([AML guide](https://docs.cbpayapp.com/en/guides/aml)): the new
+  `GET /v1/aml/catalogs/postal-code?country=US&code=33130` resolves a US
+  ZIP code to its `city` and `state`, so address forms can autofill both
+  fields while the user types the ZIP. Only US has a dataset today; a `404
+  postal_code_not_found` means the ZIP is unknown (or the country has no
+  dataset) and the fields stay manual.
+
+**Fixed**
+
+- **Cities catalog quality cleanup**: `GET /v1/aml/catalogs/cities` now
+  dedupes cities by their folded form (diacritic-free, case-insensitive),
+  unifies the Hawaiian ʻokina, drops two corrupted glued entries, collapses
+  internal whitespace, and serves `Content-Type: application/json;
+  charset=utf-8`.
 
 ### v2.39
 

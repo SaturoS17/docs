@@ -859,7 +859,29 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
 | `bank_address`、`bank_city`、`bank_state`、`bank_postal_code`、`bank_country`、`bank_phone` | 选填 | 选填 | 选填 | 收款银行的地址块与电话 —— 如有请提供 |
 
 美国没有银行目录：`bank_code` 是收款人银行自身的 ABA routing number
-（ACH/wire）或 SWIFT BIC（swift），由收款人提供。
+（ACH/wire）或 SWIFT BIC（swift），由收款人提供。要在付款人输入时自动识别银行，可调用
+`GET /v1/payouts/bank-directory/lookup` 并传入 routing number 或 SWIFT/BIC——它会从嵌入式公开银行目录解析出银行名称、城市、州和地址块，
+便于预填 `bank_name` 和选填的 `bank_*` 地址字段。返回 `404 bank_not_found`
+仅表示该代码不在目录中：表单保持手动填写即可。
+
+```bash
+curl "https://api.qbank.cl/platform/v1/payouts/bank-directory/lookup?routing_number=021000021" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "routing_number": "021000021",
+  "bank_name": "JPMORGAN CHASE",
+  "bank_city": "TAMPA",
+  "bank_state": "FL",
+  "bank_postal_code": "33610",
+  "bank_country": "US",
+  "bank_phone": "813-432-3700",
+  "source": "directory",
+  "directory_vintage": "fed_ach_2019"
+}
+```
 
 ```bash ach
 curl -X POST https://api.qbank.cl/platform/v1/payouts \

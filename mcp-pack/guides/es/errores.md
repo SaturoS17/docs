@@ -119,7 +119,7 @@ Estos códigos provienen de **superficies de administración de organización** 
 | `query_required` | `GET /v1/resolve` necesita `alias=` o `qr=` |
 | `same_email` | El nuevo email de login es el actual; usa `POST /v1/me/email/verify` para verificarlo |
 | `invalid_status` / `invalid_kyc_status` / `invalid_direction` / `reason_required` / `account_id_required` / `invalid_service` / `invalid_fee` | Validaciones de administración |
-| `invalid_country` | Código de país mal formado o ausente — ISO 3166-1 alpha-2 (ej. `GET /v1/aml/catalogs/cities?country=`) |
+| `invalid_country` | Código de país mal formado o ausente — ISO 3166-1 alpha-2 (ej. `GET /v1/aml/catalogs/cities?country=`); también un filtro de país válido pero no soportado (ej. un `country` distinto de `US` en el lookup del directorio bancario) |
 
 ### Dinero y estado (402 / 404 / 409 / 422)
 
@@ -128,6 +128,8 @@ Estos códigos provienen de **superficies de administración de organización** 
 | 402 | `insufficient_funds` | Saldo disponible insuficiente |
 | 404 | `not_found` | Recurso inexistente (o de otra cuenta) |
 | 404 | `country_not_found` | Código de país ISO 3166-1 alpha-2 desconocido (catálogo de ciudades) |
+| 404 | `bank_not_found` | El routing number o SWIFT/BIC no está en el directorio bancario embebido — el formulario de payout/contraparte sigue manual |
+| 404 | `postal_code_not_found` | Código postal desconocido, o un país sin dataset (lookup por código postal) — los campos de dirección siguen manuales |
 | 404 | `recipient_not_found` | Destino de transferencia inexistente |
 | 404 | `verification_not_found` | La cuenta aún no tiene ninguna verificación enviada (`GET /v1/me/verification/report` antes del onboarding) |
 | 409 | `duplicate` | El recurso ya existe |

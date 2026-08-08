@@ -105,6 +105,33 @@ curl "https://api.qbank.cl/platform/v1/aml/catalogs/cities?country=US" \
 - Data estática servida con `Cache-Control: public, max-age=86400` — se
   puede cachear por un día.
 
+### Lookup por código postal (US)
+
+Cuando el formulario pide una dirección, resuelve primero el ZIP con
+`GET /v1/aml/catalogs/postal-code?country=US&code=33130` y pre-llena ciudad
+y estado:
+
+```bash
+curl "https://api.qbank.cl/platform/v1/aml/catalogs/postal-code?country=US&code=33130" \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+{
+  "country": "US",
+  "postal_code": "33130",
+  "city": "Miami",
+  "state": "FL"
+}
+```
+
+- Hoy solo los ZIP de US (5 dígitos) tienen dataset. Un `404
+  postal_code_not_found` significa que el ZIP es desconocido — o que el país
+  no tiene dataset — así que los campos de dirección siguen manuales.
+- Una solicitud mal formada recibe `400 invalid_payload`.
+- Mismo caché que los demás catálogos: `Cache-Control: public,
+  max-age=86400`.
+
 ## Enviar el screening
 
 Un solo endpoint para persona y empresa; el tipo se detecta del payload
