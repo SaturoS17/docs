@@ -52,6 +52,11 @@ curl -o movimientos.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-0
   -H "Authorization: Bearer <token>"
 ```
 
+El export de payouts (`GET /v1/payouts?format=csv`) incluye una columna
+`bank_reference` — justo después de `status_code` — con el id de la
+transacción asignado por el banco de destino, poblado cuando el payout
+queda `completed`.
+
 ## Catálogo completo de tipos
 
 | `type` | Signo | Origen (`reference_type`) |

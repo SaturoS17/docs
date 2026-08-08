@@ -55,6 +55,8 @@ curl "https://api.qbank.cl/platform/v1/payouts/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dc
 
 > **注**
 只有操作的所有者（或组织管理员）可以下载回单：使用他人的 ID 会返回 `404 not_found`。PDF 显示的收款人数据与你提交时完全一致。
+> **注**
+出款回单包含**银行参考号**一栏 — 即收款银行分配的交易号 — 在银行确认付款后即会显示。出款在途期间该行不会出现：待状态变为 `completed` 后重新下载即可看到。
 ## 响应和 webhook 中的 `receipt_url`
 
 切勿手动拼接 URL：每个出款、入款、转账、提现、充值、兑换和银行卡交易的响应都包含 `receipt_url`，最终状态的 webhook（`payout_status_changed`、`payin_credited`、`transfer_received`、`crypto_deposit_credited`、`crypto_withdrawal_status_changed`、`card_transaction`）的载荷中也会携带它。

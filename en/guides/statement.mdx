@@ -148,6 +148,11 @@ opening_balance + total_in − total_out = closing_balance
   and net separately, and `fees_by_service` totals them.
 - In the Excel file, the **Movements** sheet uses real numeric cells: you
   can sum/pivot without cleaning anything.
+- The Excel **Payouts** sheet carries a **Bank ref** column (right after
+  the reference/concept column) with the transaction id assigned by the
+  destination bank once it confirms the payment. The statement PDF omits
+  it on purpose (table density) — the individual payout receipt does show
+  it.
 
 ## For the administrator (org admin)
 

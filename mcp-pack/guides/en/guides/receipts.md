@@ -66,6 +66,11 @@ The crypto deposit `depositID` comes from `GET /v1/crypto/transactions`
 Only the operation's owner (or the organization admin) can download the
 receipt: a foreign ID returns `404 not_found`. The PDF shows the beneficiary
 data exactly as you submitted it.
+> **Note**
+A payout receipt includes a **Bank reference** line — the transaction id
+assigned by the destination bank — as soon as the bank confirms the
+payment. While the payout is in transit the line simply does not appear:
+download the receipt again once it is `completed`.
 ## `receipt_url` in responses and webhooks
 
 Never build the URLs by hand: every payout, payin, transfer, withdrawal,

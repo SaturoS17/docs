@@ -67,6 +67,11 @@ El `depositID` de los depósitos crypto viene en `GET /v1/crypto/transactions`
 Solo el dueño de la operación (o el admin de la organización) puede
 descargar el comprobante: un ID ajeno responde `404 not_found`. El PDF
 muestra los datos del beneficiario tal como los enviaste.
+> **Nota**
+El comprobante de un payout incluye la línea **Referencia bancaria** — el
+id de la transacción asignado por el banco de destino — en cuanto el banco
+confirma el pago. Mientras el payout está en tránsito la línea simplemente
+no aparece: vuelve a descargarlo cuando quede `completed`.
 ## `receipt_url` en respuestas y webhooks
 
 No construyas las URLs a mano: toda respuesta de payout, payin,

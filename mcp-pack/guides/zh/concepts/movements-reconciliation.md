@@ -52,6 +52,8 @@ curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-
   -H "Authorization: Bearer <token>"
 ```
 
+出款导出（`GET /v1/payouts?format=csv`）包含 `bank_reference` 列（位于 `status_code` 之后），即收款银行分配的交易号，在出款完成后填充。
+
 ## 完整类型目录
 
 | `type` | 符号 | 来源（`reference_type`） |

@@ -70,6 +70,13 @@ descargar el comprobante: un ID ajeno responde `404 not_found`. El PDF
 muestra los datos del beneficiario tal como los enviaste.
 </Note>
 
+<Note>
+El comprobante de un payout incluye la línea **Referencia bancaria** — el
+id de la transacción asignado por el banco de destino — en cuanto el banco
+confirma el pago. Mientras el payout está en tránsito la línea simplemente
+no aparece: vuelve a descargarlo cuando quede `completed`.
+</Note>
+
 ## `receipt_url` en respuestas y webhooks
 
 No construyas las URLs a mano: toda respuesta de payout, payin,
