@@ -8,7 +8,13 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.47 · 7 releases - August 8, 2026
+## v2.48 · 8 releases - August 8, 2026
+
+### v2.48
+
+**Changed**
+
+- **Banking and card applications can now be held for review** ([banking guide](https://docs.cbpayapp.com/en/guides/banking), [cards guide](https://docs.cbpayapp.com/en/guides/cards), [transaction reviews](https://docs.cbpayapp.com/en/guides/transaction-reviews)): if your organization enabled application review, `POST /v1/banking/customer`, `POST /v1/banking/third-parties` and `POST /v1/cards` can answer **`202 Accepted`** with `{"status":"in_review","kind":"...","review_id":"..."}` instead of creating the resource right away — nothing is sent for processing until compliance approves the review. The opening/issuance fee is charged when the application is held and **refunded automatically** if it is rejected. A retry with the same `idempotency_key` returns the same review (`idempotency_hit: true`) and never double-charges. Track the outcome with the `txn_review_status_changed` webhook or in [Transaction reviews](https://docs.cbpayapp.com/en/guides/transaction-reviews) (kinds `banking_application` / `card_application`).
 
 ### v2.47
 

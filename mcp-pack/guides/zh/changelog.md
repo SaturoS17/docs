@@ -8,7 +8,13 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-## v2.47 · 7 个版本 - 2026年8月8日
+## v2.48 · 8 个版本 - 2026年8月8日
+
+### v2.48
+
+**变更**
+
+- **银行与开卡申请现在可被挂起审核**([银行指南](https://docs.cbpayapp.com/zh/guides/banking)、[开卡指南](https://docs.cbpayapp.com/zh/guides/cards)、[交易审核](https://docs.cbpayapp.com/zh/guides/transaction-reviews)):如果您所在的组织启用了申请审核,`POST /v1/banking/customer`、`POST /v1/banking/third-parties` 和 `POST /v1/cards` 可能会返回 **`202 Accepted`**(`{"status":"in_review","kind":"...","review_id":"..."}`),而不是立即创建资源——在合规团队批准审核之前,不会发送任何内容进行处理。开户/发卡费用在申请被挂起时收取,若被拒绝将**自动退还**。使用相同 `idempotency_key` 的重试会返回同一审核(`idempotency_hit: true`),绝不会重复收费。通过 `txn_review_status_changed` webhook 或在[交易审核](https://docs.cbpayapp.com/zh/guides/transaction-reviews)(类型 `banking_application` / `card_application`)中跟踪结果。
 
 ### v2.47
 

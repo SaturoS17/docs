@@ -8,7 +8,13 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-<Update label="8 de agosto de 2026" description="v2.47 · 7 versiones">
+<Update label="8 de agosto de 2026" description="v2.48 · 8 versiones">
+
+### v2.48
+
+**Cambiado**
+
+- **Las solicitudes de banking y tarjetas ahora pueden quedar retenidas para revisión** ([guía banking](/es/guias/banking), [guía de tarjetas](/es/guias/tarjetas), [revisiones de operaciones](/es/guias/revisiones-operaciones)): si tu organización activó la revisión de solicitudes, `POST /v1/banking/customer`, `POST /v1/banking/third-parties` y `POST /v1/cards` pueden responder **`202 Accepted`** con `{"status":"in_review","kind":"...","review_id":"..."}` en vez de crear el recurso de inmediato — nada se envía a procesamiento hasta que compliance apruebe la revisión. La comisión de apertura/emisión se cobra al retener la solicitud y se **reembolsa automáticamente** si se rechaza. Un reintento con la misma `idempotency_key` devuelve la misma revisión (`idempotency_hit: true`) y jamás cobra dos veces. Sigue el resultado con el webhook `txn_review_status_changed` o en [Revisiones de operaciones](/es/guias/revisiones-operaciones) (kinds `banking_application` / `card_application`).
 
 ### v2.47
 
