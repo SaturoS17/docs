@@ -8,7 +8,25 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-<Update label="9 de agosto de 2026" description="v2.50 · 1 versiones">
+<Update label="9 de agosto de 2026" description="v2.51 · 2 versiones">
+
+### v2.51
+
+**Agregado**
+
+- **Scoring Qscore por lote (portfolio scoring)** ([guía Scoring por lote](/es/guias/qscore-batch)):
+  sube un lote de sujetos con `POST /v1/qscore/batches` — un array JSON o un
+  string CSV, hasta 5.000 sujetos por lote — y la plataforma emite un informe
+  Qscore completo por sujeto de forma asíncrona. Las filas se validan al crear
+  (los documentos inválidos, los `subject_type` no soportados y los duplicados
+  dentro del lote se reportan en `rejected_items` y jamás se procesan); cada
+  ítem cobra el fee standalone del informe al procesarse y se reembolsa
+  automáticamente si falla de forma terminal. Al terminar el lote recibes UN
+  webhook `risk_batch_completed` y UN email con los contadores — los informes
+  individuales no emiten su propio webhook ni email. Lee los resultados por
+  ítem con `GET /v1/qscore/batches/{batchID}/items` o descárgalos con `GET
+  /v1/qscore/batches/{batchID}/results.csv`. Códigos de error nuevos:
+  `no_valid_items` y `too_many_items`.
 
 ### v2.50
 

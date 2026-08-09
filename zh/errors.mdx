@@ -225,6 +225,8 @@ description: "错误格式与完整的错误码目录"
 | 404 | `pdf_not_ready` | 报告 PDF 尚不可用 — 轮询详情直到 `status=ready`(`risk_report_ready` webhook 会通知你) |
 | 409 | `no_tax_id` | 已验证账户没有 `tax_id` 记录,自助报告无法解析其主体 — 请先完善您的已验证信息 |
 | 409 | `identity_mismatch` | 账户的 `tax_id` 与已验证的身份文件不符(自助报告)— 请联系支持;您的已验证数据必须一致 |
+| 400 | `no_valid_items` | 批次中的所有行均被拒绝(`invalid_doc_id` / `duplicate_in_batch`),且未创建任何批次 — 请在本地校验文件(每个 `doc_id` 必须通过该国校验位且保持唯一),然后使用**新的**幂等键重新提交 |
+| 400 | `too_many_items` | 单个批次最多接受 5,000 个主体 — 请将投资组合拆分为多个批次,每个批次使用各自的幂等键 |
 
 ### 交易防火墙
 

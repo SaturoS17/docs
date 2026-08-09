@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — convertible on demand with swaps.\nPayouts and service fees can be paid from any of the four balances\n(`PUT /v1/settlement` or per-payout `settlement_asset`), and payins\ncan auto-convert to the asset of your choice (`default_payin_asset`).\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-08-09 04:34 UTC",
-    "_content_sha256": "a0b7129df42fdd765ce0c7f3aa47bc1a74792e9f9dbe289b6e367f2bb8235e61"
+    "_generated_at": "2026-08-09 10:46 UTC",
+    "_content_sha256": "75112574cd4da00b2bd2d4ccae28f6fe950ed26ea50f366eef573e5bd7700f4b"
   },
   "auth": {
     "type": "bearer",
@@ -3918,6 +3918,435 @@
               "body": "{\n  \"items\": [\n    {\n      \"monitoring_id\": \"7c9e2f14-5b6a-4c8d-9e1f-3a7b5c2d8e91\",\n      \"subject_id\": \"8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112\",\n      \"active\": true,\n      \"only_material\": true,\n      \"created_at\": \"2026-08-08T16:11:40Z\",\n      \"doc_id\": \"12.345.678-5\",\n      \"country\": \"CL\",\n      \"subject_type\": \"person\",\n      \"monitor_since_score\": 500,\n      \"last_score\": 487,\n      \"last_record_count\": 2\n    }\n  ],\n  \"page\": 1,\n  \"page_size\": 50,\n  \"total\": 1\n}"
             }
           ]
+        },
+        {
+          "name": "List batch scoring jobs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/qscore/batches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "qscore",
+                "batches"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": false,
+                  "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": false,
+                  "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by batch status."
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Lists the batch scoring jobs of your account (newest first), paginated. `page` starts at 1; `page_size` defaults to 50 (maximum 200). The `from` and `to` date filters (UTC, both inclusive) are mandatory. Batches owned by other accounts are never visible (ownership isolation: a batch id from another account returns 404)."
+          },
+          "response": [
+            {
+              "name": "200 Paged batch list.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/qscore/batches",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "qscore",
+                    "batches"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": false,
+                      "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": false,
+                      "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Filter by batch status."
+                    },
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Paged batch list.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"items\": [\n    {\n      \"batch_id\": \"b7f2c1a4-3e5d-4f8a-9c2b-1d0e6a8f4c5d\",\n      \"account_id\": \"4a9c2e71-8b3d-4f2a-9c1e-5d7b2a8f3e41\",\n      \"status\": \"completed_with_errors\",\n      \"purpose\": \"credit_evaluation\",\n      \"country\": \"CL\",\n      \"lang\": \"es\",\n      \"total_items\": 4,\n      \"processed_items\": 4,\n      \"succeeded_items\": 3,\n      \"failed_items\": 1,\n      \"estimated_fee_usdt\": \"14.50\",\n      \"idempotency_key\": \"portfolio-2026-08-09-a\",\n      \"created_at\": \"2026-08-09T14:32:10Z\",\n      \"started_at\": \"2026-08-09T14:34:02Z\",\n      \"completed_at\": \"2026-08-09T14:41:37Z\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"page_size\": 50,\n    \"total\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a batch scoring job — JSON subjects (two rows rejected upfront)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/qscore/batches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "qscore",
+                "batches"
+              ]
+            },
+            "description": "Creates an asynchronous batch scoring job (portfolio scoring): the subjects are validated upfront, the batch is queued, and a background worker issues one full Qscore report per valid item. Send `subjects` (JSON array, 1 to 5000 entries) **or** `subjects_csv` (a CSV string with header `doc_id[,subject_type]`) — exactly one of the two. Rows with an invalid document id (`invalid_doc_id`) or a document duplicated inside the batch (`duplicate_in_batch`, reported with its normalized form) are rejected at creation and reported in `rejected_items`; the batch only processes the valid ones. An omitted or unrecognized `subject_type` is never an error: for `CL` it is inferred from the RUT series (first digit 5–9 → `company`, anything else → `person`). If every row is rejected, the request fails with `no_valid_items` and nothing is created. Idempotency is mandatory: retrying with the same `idempotency_key` returns the original batch with `idempotency_hit: true` and never duplicates the batch or the charges. Each item is billed the standalone report fee (`risk_report_person` / `risk_report_company`) when processed, and a terminally failed item is automatically refunded. `estimated_fee_usdt` is the upfront estimate for the valid items. When the batch finishes you receive one `risk_batch_completed` webhook and one email — the individual reports do not emit their own webhook or email.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country\": \"CL\",\n  \"purpose\": \"credit_evaluation\",\n  \"lang\": \"es\",\n  \"subjects\": [\n    {\n      \"doc_id\": \"12.345.678-5\"\n    },\n    {\n      \"doc_id\": \"15.678.234-3\"\n    },\n    {\n      \"doc_id\": \"11.222.333-9\"\n    },\n    {\n      \"doc_id\": \"76.543.210-3\",\n      \"subject_type\": \"company\"\n    },\n    {\n      \"doc_id\": \"12.345.678-9\"\n    },\n    {\n      \"doc_id\": \"12345678-5\"\n    }\n  ],\n  \"idempotency_key\": \"portfolio-2026-08-09-a\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Idempotent replay — the original batch, with `idempotency_hi",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/qscore/batches",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "qscore",
+                    "batches"
+                  ]
+                }
+              },
+              "status": "Idempotent replay — the original batch, with `idempotency_hi",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"batch_id\": \"b7f2c1a4-3e5d-4f8a-9c2b-1d0e6a8f4c5d\",\n  \"status\": \"processing\",\n  \"purpose\": \"credit_evaluation\",\n  \"country\": \"CL\",\n  \"lang\": \"es\",\n  \"total_items\": 4,\n  \"processed_items\": 2,\n  \"succeeded_items\": 2,\n  \"failed_items\": 0,\n  \"estimated_fee_usdt\": \"14.50\",\n  \"created_at\": \"2026-08-09T14:32:10Z\",\n  \"idempotency_hit\": true\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create a batch scoring job — CSV payload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/qscore/batches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "qscore",
+                "batches"
+              ]
+            },
+            "description": "Creates an asynchronous batch scoring job (portfolio scoring): the subjects are validated upfront, the batch is queued, and a background worker issues one full Qscore report per valid item. Send `subjects` (JSON array, 1 to 5000 entries) **or** `subjects_csv` (a CSV string with header `doc_id[,subject_type]`) — exactly one of the two. Rows with an invalid document id (`invalid_doc_id`) or a document duplicated inside the batch (`duplicate_in_batch`, reported with its normalized form) are rejected at creation and reported in `rejected_items`; the batch only processes the valid ones. An omitted or unrecognized `subject_type` is never an error: for `CL` it is inferred from the RUT series (first digit 5–9 → `company`, anything else → `person`). If every row is rejected, the request fails with `no_valid_items` and nothing is created. Idempotency is mandatory: retrying with the same `idempotency_key` returns the original batch with `idempotency_hit: true` and never duplicates the batch or the charges. Each item is billed the standalone report fee (`risk_report_person` / `risk_report_company`) when processed, and a terminally failed item is automatically refunded. `estimated_fee_usdt` is the upfront estimate for the valid items. When the batch finishes you receive one `risk_batch_completed` webhook and one email — the individual reports do not emit their own webhook or email.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country\": \"CL\",\n  \"purpose\": \"supplier_onboarding\",\n  \"subjects_csv\": \"doc_id,subject_type\\n12.345.678-5,person\\n76.543.210-3,company\\n96.543.210-8,company\",\n  \"idempotency_key\": \"portfolio-2026-08-09-b\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Idempotent replay — the original batch, with `idempotency_hi",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/qscore/batches",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "qscore",
+                    "batches"
+                  ]
+                }
+              },
+              "status": "Idempotent replay — the original batch, with `idempotency_hi",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"batch_id\": \"b7f2c1a4-3e5d-4f8a-9c2b-1d0e6a8f4c5d\",\n  \"status\": \"processing\",\n  \"purpose\": \"credit_evaluation\",\n  \"country\": \"CL\",\n  \"lang\": \"es\",\n  \"total_items\": 4,\n  \"processed_items\": 2,\n  \"succeeded_items\": 2,\n  \"failed_items\": 0,\n  \"estimated_fee_usdt\": \"14.50\",\n  \"created_at\": \"2026-08-09T14:32:10Z\",\n  \"idempotency_hit\": true\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get a batch scoring job",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/qscore/batches/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "qscore",
+                "batches",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Returns the batch detail: live counters, `started_at` / `completed_at`, and `error_code` / `error_message` when the batch itself failed. Ownership isolation: a batch id from another account returns 404."
+          },
+          "response": [
+            {
+              "name": "200 Batch detail.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/qscore/batches/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "qscore",
+                    "batches",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Batch detail.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"batch_id\": \"b7f2c1a4-3e5d-4f8a-9c2b-1d0e6a8f4c5d\",\n  \"status\": \"completed_with_errors\",\n  \"purpose\": \"credit_evaluation\",\n  \"country\": \"CL\",\n  \"lang\": \"es\",\n  \"total_items\": 4,\n  \"processed_items\": 4,\n  \"succeeded_items\": 3,\n  \"failed_items\": 1,\n  \"estimated_fee_usdt\": \"14.50\",\n  \"created_at\": \"2026-08-09T14:32:10Z\",\n  \"started_at\": \"2026-08-09T14:34:02Z\",\n  \"completed_at\": \"2026-08-09T14:41:37Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List batch items",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/qscore/batches/:id/items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "qscore",
+                "batches",
+                ":id",
+                "items"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by item status."
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Returns the items of the batch, paginated. `status` filters by item status (`pending`, `ready`, `failed`). Each `ready` item exposes its `report_id`, `score` and `band`; each `failed` item exposes `error_code` / `error_message`."
+          },
+          "response": [
+            {
+              "name": "200 Paged batch items.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/qscore/batches/:id/items",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "qscore",
+                    "batches",
+                    ":id",
+                    "items"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Filter by item status."
+                    },
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Paged batch items.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"items\": [\n    {\n      \"item_id\": \"e1f0a9b8-7c6d-4e5f-8a9b-0c1d2e3f4a5b\",\n      \"report_id\": \"3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01\",\n      \"doc_id\": \"12.345.678-5\",\n      \"subject_type\": \"person\",\n      \"status\": \"ready\",\n      \"score\": 715,\n      \"band\": \"B\",\n      \"created_at\": \"2026-08-09T14:32:10Z\",\n      \"completed_at\": \"2026-08-09T14:34:52Z\"\n    },\n    {\n      \"item_id\": \"f2a1b0c9-8d7e-4f6a-9b0c-1d2e3f4a5b6c\",\n      \"report_id\": \"7c9a1f3d-2e44-4b8a-9d51-0a1b2c3d4e5f\",\n      \"doc_id\": \"15.678.234-3\",\n      \"subject_type\": \"person\",\n      \"status\": \"ready\",\n      \"score\": 430,\n      \"band\": \"D\",\n      \"created_at\": \"2026-08-09T14:32:10Z\",\n      \"completed_at\": \"2026-08-09T14:35:41Z\"\n    },\n    {\n      \"item_id\": \"a3b2c1d0-9e8f-4a7b-8c1d-2e3f4a5b6c7d\",\n      \"report_id\": \"9d0e1f2a-3b4c-4d5e-8f6a-7b8c9d0e1f2a\",\n      \"doc_id\": \"76.543.210-3\",\n      \"subject_type\": \"company\",\n      \"status\": \"ready\",\n      \"score\": 604,\n      \"band\": \"C\",\n      \"created_at\": \"2026-08-09T14:32:10Z\",\n      \"completed_at\": \"2026-08-09T14:36:22Z\"\n    },\n    {\n      \"item_id\": \"b4c3d2e1-0f9a-4b8c-9d2e-3f4a5b6c7d8e\",\n      \"doc_id\": \"11.222.333-9\",\n      \"subject_type\": \"person\",\n      \"status\": \"failed\",\n      \"score\": null,\n      \"error_code\": \"generation_failed\",\n      \"error_message\": \"the report could not be generated; the fee was refunded\",\n      \"created_at\": \"2026-08-09T14:32:10Z\",\n      \"completed_at\": \"2026-08-09T14:37:05Z\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"page_size\": 50,\n    \"total\": 4\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Export batch results as CSV",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/qscore/batches/:id/results.csv",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "qscore",
+                "batches",
+                ":id",
+                "results.csv"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Downloads the batch results as a CSV file with a UTF-8 BOM (opens correctly in Excel). Header: `doc_id,subject_type,status,score, band,verify_code,report_id,error_code`. `verify_code` is the public verification code of the report (usable at `/verify/qscore/{code}`). Failed rows carry their `error_code` and no score."
+          }
         }
       ]
     },

@@ -1,5 +1,5 @@
 {
-  "count": 37,
+  "count": 38,
   "events": [
     {
       "description": {
@@ -570,6 +570,28 @@
         "en": "Payout status changed",
         "es": "Estado de payout cambiado",
         "zh": "payout 状态已变更"
+      }
+    },
+    {
+      "description": {
+        "en": "A batch scoring job created with `POST /v1/qscore/batches` finished processing all of its items. This is the single completion signal of the batch: the individual reports do **not** emit their own `risk_report_ready` webhook (and no per-item email is sent). `status` is `completed` when every item succeeded, `completed_with_errors` when at least one item failed terminally (its fee was refunded) and `failed` when the batch itself could not be processed. The counters always add up: `succeeded_items + failed_items = total_items`. Read the per-item results with `GET /v1/qscore/batches/{id}/items` or download them with `GET /v1/qscore/batches/{id}/results.csv`.\n\nEvery delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Respond 2xx; up to 5 attempts with incremental backoff.",
+        "es": "Un lote de scoring creado con `POST /v1/qscore/batches` terminó de procesar todos sus ítems. Esta es la única señal de finalización del lote: los informes individuales **no** emiten su propio webhook `risk_report_ready` (y tampoco se envía un email por ítem). `status` es `completed` cuando todos los ítems tuvieron éxito, `completed_with_errors` cuando al menos un ítem falló de forma terminal (su fee fue reembolsado) y `failed` cuando el lote mismo no pudo procesarse. Los contadores siempre cuadran: `succeeded_items + failed_items = total_items`. Lee los resultados por ítem con `GET /v1/qscore/batches/{id}/items` o descárgalos con `GET /v1/qscore/batches/{id}/results.csv`.\n\nToda entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` y `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Responde 2xx; hasta 5 intentos con backoff incremental.",
+        "zh": "使用 `POST /v1/qscore/batches` 创建的批量评分任务已完成对其所有 条目的处理。这是批次的唯一完成信号：各个报告**不会**发出自己的 `risk_report_ready` webhook（也不会按条目发送电子邮件）。`status` 在所有条目 成功时为 `completed`，在至少一个条目最终失败（其费用已退款）时为 `completed_with_errors`，在批次本身无法处理时为 `failed`。计数器始终一致： `succeeded_items + failed_items = total_items`。使用 `GET /v1/qscore/batches/{id}/items` 读取各条目结果，或使用 `GET /v1/qscore/batches/{id}/results.csv` 下载结果。\n\n每次交付都包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、 `X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`。返回 2xx；最多 5 次尝试， 采用递增退避。"
+      },
+      "event": "risk_batch_completed",
+      "payload_example": {
+        "batch_id": "b7f2c1a4-3e5d-4f8a-9c2b-1d0e6a8f4c5d",
+        "country": "CL",
+        "failed_items": 1,
+        "purpose": "credit_evaluation",
+        "status": "completed_with_errors",
+        "succeeded_items": 3,
+        "total_items": 4
+      },
+      "summary": {
+        "en": "Qscore batch scoring completed",
+        "es": "Lote de scoring Qscore completado",
+        "zh": "Qscore 批量评分已完成"
       }
     },
     {

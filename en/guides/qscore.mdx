@@ -545,6 +545,15 @@ Without a purchased `ready` report for the subject, `PUT` answers `403 report_re
 
 The alert payload (`risk_monitoring_alert`) carries the triggers (`score_drop_below`, `new_records`, `records_removed`), the current and previous score, the band and the new records — full example in [webhooks](/en/webhooks).
 
+## 10. Batch scoring (portfolios)
+
+To score a whole portfolio instead of one subject at a time, submit a **batch** with `POST /v1/qscore/batches`: up to 5,000 subjects (JSON or CSV), one shared `country` and `purpose`, and an estimated fee computed up front. The API answers `202 Accepted` immediately and a background worker generates the individual reports one by one — each item is a standard Qscore report with its own PDF, fee and automatic refund if its generation fails.
+
+- **Terminal fan-out**: when the batch finishes you receive exactly **one** `risk_batch_completed` webhook and **one** summary email (never one per subject).
+- **Follow-up**: list and inspect batches, page through their items and download the consolidated CSV at `GET /v1/qscore/batches/{id}/results.csv`.
+
+The full flow (mermaid diagram, per-item rejection, statuses, errors and FAQ) lives in the [batch scoring guide](/en/guides/qscore-batch).
+
 ## FAQ
 
 <AccordionGroup>

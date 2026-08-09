@@ -127,6 +127,7 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
 | `risk_report_ready` | [Qscore](https://docs.cbpayapp.com/zh/guides/qscore) 信用报告已生成完毕(携带评分和等级) |
 | `risk_score_changed` | 受监控主体的评分发生变化(信用局新数据后的重新评估) |
 | `risk_monitoring_alert` | 受监控的 [Qscore](https://docs.cbpayapp.com/zh/guides/qscore) 主体触发了警报:评分跌破你设定的阈值、信用局出现新记录或记录被移除 |
+| `risk_batch_completed` | 一个 Qscore 报告[批次](https://docs.cbpayapp.com/zh/guides/qscore-batch)处理完成(每个批次恰好一个 webhook,携带条目计数 — 绝不按主体逐个发送) |
 | `wallet_deposit_received` | 一笔链上充值到达[独立钱包](https://docs.cbpayapp.com/zh/guides/segregated-wallets)（不触及账本） |
 | `wallet_send_status_changed` | 独立钱包发起的一笔转出状态发生变化 |
 | `wallet_key_exported` | 独立钱包的私钥被导出（安全警报） |
@@ -515,6 +516,18 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
       "status": "open"
     }
   ]
+}
+```
+
+```json risk_batch_completed
+{
+  "batch_id": "b7f2c1a4-3e5d-4f8a-9c2b-1d0e6a8f4c5d",
+  "status": "completed_with_errors",
+  "total_items": 4,
+  "succeeded_items": 3,
+  "failed_items": 1,
+  "country": "CL",
+  "purpose": "credit_evaluation"
 }
 ```
 

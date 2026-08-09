@@ -527,6 +527,15 @@ curl -X DELETE "https://api.qbank.cl/platform/v1/qscore/subjects/11111111-1/moni
 Without a purchased `ready` report for the subject, `PUT` answers `403 report_required` — the **same** response a non-existent subject gets, by design, so the endpoint never reveals whether a document exists in the bureau. See [errors](https://docs.cbpayapp.com/en/errors).
 The alert payload (`risk_monitoring_alert`) carries the triggers (`score_drop_below`, `new_records`, `records_removed`), the current and previous score, the band and the new records — full example in [webhooks](https://docs.cbpayapp.com/en/webhooks).
 
+## 10. Batch scoring (portfolios)
+
+To score a whole portfolio instead of one subject at a time, submit a **batch** with `POST /v1/qscore/batches`: up to 5,000 subjects (JSON or CSV), one shared `country` and `purpose`, and an estimated fee computed up front. The API answers `202 Accepted` immediately and a background worker generates the individual reports one by one — each item is a standard Qscore report with its own PDF, fee and automatic refund if its generation fails.
+
+- **Terminal fan-out**: when the batch finishes you receive exactly **one** `risk_batch_completed` webhook and **one** summary email (never one per subject).
+- **Follow-up**: list and inspect batches, page through their items and download the consolidated CSV at `GET /v1/qscore/batches/{id}/results.csv`.
+
+The full flow (mermaid diagram, per-item rejection, statuses, errors and FAQ) lives in the [batch scoring guide](https://docs.cbpayapp.com/en/guides/qscore-batch).
+
 ## FAQ
 
 #### Is the score recomputed on every report?

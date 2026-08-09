@@ -8,7 +8,22 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-## v2.50 · 1 个版本 - 2026年8月9日
+## v2.51 · 2 个版本 - 2026年8月9日
+
+### v2.51
+
+**新增**
+
+- **Qscore 批量评分(组合评分)**([批量评分指南](https://docs.cbpayapp.com/zh/guides/qscore-batch)):
+  通过 `POST /v1/qscore/batches` 上传一批主体 —— JSON 数组或 CSV 字符串,
+  每批最多 5,000 个 —— 平台将异步为每个主体出具一份完整的 Qscore 报告。
+  行在创建时即完成校验(无效证件号、不支持的 `subject_type` 以及批内重复项
+  会在 `rejected_items` 中报告且不予处理);每个条目在处理时收取相应的
+  独立报告费用,若发生终态失败则自动退款。批次完成后,您将收到一个
+  `risk_batch_completed` webhook 和一封包含计数器的邮件 —— 单个报告不再
+  单独发送 webhook 或邮件。通过 `GET /v1/qscore/batches/{batchID}/items`
+  读取逐条结果,或通过 `GET /v1/qscore/batches/{batchID}/results.csv`
+  下载。新增错误码:`no_valid_items` 和 `too_many_items`。
 
 ### v2.50
 

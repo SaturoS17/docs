@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.50'
+  version: "2.51"
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -18569,6 +18569,348 @@ paths:
           description: unauthorized
         '403':
           description: forbidden (service disabled or unverified account)
+  /v1/qscore/batches:
+    get:
+      tags: [Qscore]
+      summary: List batch scoring jobs
+      operationId: listQscoreBatches
+      description: 'Lists the batch scoring jobs of your account (newest first),
+        paginated. `page` starts at 1; `page_size` defaults to 50 (maximum 200).
+        The `from` and `to` date filters (UTC, both inclusive) are mandatory.
+        Batches owned by other accounts are never visible (ownership isolation:
+        a batch id from another account returns 404).'
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: Start date (YYYY-MM-DD, UTC, inclusive).
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: End date (YYYY-MM-DD, UTC, inclusive).
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - pending
+          - processing
+          - completed
+          - completed_with_errors
+          - failed
+        description: Filter by batch status.
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+      responses:
+        '200':
+          description: Paged batch list.
+          content:
+            application/json:
+              example:
+                items:
+                - batch_id: b7f2c1a4-3e5d-4f8a-9c2b-1d0e6a8f4c5d
+                  account_id: 4a9c2e71-8b3d-4f2a-9c1e-5d7b2a8f3e41
+                  status: completed_with_errors
+                  purpose: credit_evaluation
+                  country: CL
+                  lang: es
+                  total_items: 4
+                  processed_items: 4
+                  succeeded_items: 3
+                  failed_items: 1
+                  estimated_fee_usdt: '14.50'
+                  idempotency_key: portfolio-2026-08-09-a
+                  created_at: '2026-08-09T14:32:10Z'
+                  started_at: '2026-08-09T14:34:02Z'
+                  completed_at: '2026-08-09T14:41:37Z'
+                meta:
+                  page: 1
+                  page_size: 50
+                  total: 1
+        '400':
+          description: invalid_range
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden (service disabled or unverified account)
+    post:
+      tags: [Qscore]
+      summary: Create a batch scoring job
+      operationId: createQscoreBatch
+      description: 'Creates an asynchronous batch scoring job (portfolio scoring):
+        the subjects are validated upfront, the batch is queued, and a background
+        worker issues one full Qscore report per valid item. Send `subjects` (JSON
+        array, 1 to 5000 entries) **or** `subjects_csv` (a CSV string with header
+        `doc_id[,subject_type]`) — exactly one of the two. Rows with an invalid
+        document id (`invalid_doc_id`) or a document duplicated inside the batch
+        (`duplicate_in_batch`, reported with its normalized form) are rejected at
+        creation and reported in `rejected_items`; the batch only processes the
+        valid ones. An omitted or unrecognized `subject_type` is never an error:
+        for `CL` it is inferred from the RUT series (first digit 5–9 → `company`,
+        anything else → `person`). If every row
+        is rejected, the request fails with `no_valid_items` and nothing is
+        created. Idempotency is mandatory: retrying with the same
+        `idempotency_key` returns the original batch with `idempotency_hit: true`
+        and never duplicates the batch or the charges. Each item is billed the
+        standalone report fee (`risk_report_person` / `risk_report_company`) when
+        processed, and a terminally failed item is automatically refunded.
+        `estimated_fee_usdt` is the upfront estimate for the valid items. When
+        the batch finishes you receive one `risk_batch_completed` webhook and one
+        email — the individual reports do not emit their own webhook or email.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            examples:
+              json_subjects:
+                summary: JSON subjects (two rows rejected upfront)
+                value:
+                  country: CL
+                  purpose: credit_evaluation
+                  lang: es
+                  subjects:
+                  - doc_id: 12.345.678-5
+                  - doc_id: 15.678.234-3
+                  - doc_id: 11.222.333-9
+                  - doc_id: 76.543.210-3
+                    subject_type: company
+                  - doc_id: 12.345.678-9
+                  - doc_id: 12345678-5
+                  idempotency_key: portfolio-2026-08-09-a
+              csv_subjects:
+                summary: CSV payload
+                value:
+                  country: CL
+                  purpose: supplier_onboarding
+                  subjects_csv: "doc_id,subject_type\n12.345.678-5,person\n76.543.210-3,company\n96.543.210-8,company"
+                  idempotency_key: portfolio-2026-08-09-b
+      responses:
+        '202':
+          description: 'Batch accepted for asynchronous processing. `rejected_items`
+            lists the rows rejected upfront (only present when at least one row
+            was rejected).'
+          content:
+            application/json:
+              example:
+                batch_id: b7f2c1a4-3e5d-4f8a-9c2b-1d0e6a8f4c5d
+                status: pending
+                purpose: credit_evaluation
+                country: CL
+                lang: es
+                total_items: 4
+                processed_items: 0
+                succeeded_items: 0
+                failed_items: 0
+                estimated_fee_usdt: '14.50'
+                created_at: '2026-08-09T14:32:10Z'
+                rejected_count: 2
+                rejected_items:
+                - line: 5
+                  doc_id: 12.345.678-9
+                  error_code: invalid_doc_id
+                  error: doc_id is not valid for CL
+                - line: 6
+                  doc_id: 12345678-5
+                  error_code: duplicate_in_batch
+                  error: doc_id appears more than once in the batch
+        '200':
+          description: 'Idempotent replay — the original batch, with `idempotency_hit: true`.'
+          content:
+            application/json:
+              example:
+                batch_id: b7f2c1a4-3e5d-4f8a-9c2b-1d0e6a8f4c5d
+                status: processing
+                purpose: credit_evaluation
+                country: CL
+                lang: es
+                total_items: 4
+                processed_items: 2
+                succeeded_items: 2
+                failed_items: 0
+                estimated_fee_usdt: '14.50'
+                created_at: '2026-08-09T14:32:10Z'
+                idempotency_hit: true
+        '400':
+          description: 'invalid_payload | purpose_required | invalid_purpose |
+            idempotency_key_required | no_valid_items | too_many_items'
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden (service disabled or unverified account)
+  /v1/qscore/batches/{id}:
+    get:
+      tags: [Qscore]
+      summary: Get a batch scoring job
+      operationId: getQscoreBatch
+      description: 'Returns the batch detail: live counters, `started_at` /
+        `completed_at`, and `error_code` / `error_message` when the batch itself
+        failed. Ownership isolation: a batch id from another account returns
+        404.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Batch detail.
+          content:
+            application/json:
+              example:
+                batch_id: b7f2c1a4-3e5d-4f8a-9c2b-1d0e6a8f4c5d
+                status: completed_with_errors
+                purpose: credit_evaluation
+                country: CL
+                lang: es
+                total_items: 4
+                processed_items: 4
+                succeeded_items: 3
+                failed_items: 1
+                estimated_fee_usdt: '14.50'
+                created_at: '2026-08-09T14:32:10Z'
+                started_at: '2026-08-09T14:34:02Z'
+                completed_at: '2026-08-09T14:41:37Z'
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden (service disabled or unverified account)
+        '404':
+          description: not_found
+  /v1/qscore/batches/{id}/items:
+    get:
+      tags: [Qscore]
+      summary: List batch items
+      operationId: listQscoreBatchItems
+      description: 'Returns the items of the batch, paginated. `status` filters
+        by item status (`pending`, `ready`, `failed`). Each `ready` item exposes
+        its `report_id`, `score` and `band`; each `failed` item exposes
+        `error_code` / `error_message`.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - pending
+          - ready
+          - failed
+        description: Filter by item status.
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+      responses:
+        '200':
+          description: Paged batch items.
+          content:
+            application/json:
+              example:
+                items:
+                - item_id: e1f0a9b8-7c6d-4e5f-8a9b-0c1d2e3f4a5b
+                  report_id: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+                  doc_id: 12.345.678-5
+                  subject_type: person
+                  status: ready
+                  score: 715
+                  band: B
+                  created_at: '2026-08-09T14:32:10Z'
+                  completed_at: '2026-08-09T14:34:52Z'
+                - item_id: f2a1b0c9-8d7e-4f6a-9b0c-1d2e3f4a5b6c
+                  report_id: 7c9a1f3d-2e44-4b8a-9d51-0a1b2c3d4e5f
+                  doc_id: 15.678.234-3
+                  subject_type: person
+                  status: ready
+                  score: 430
+                  band: D
+                  created_at: '2026-08-09T14:32:10Z'
+                  completed_at: '2026-08-09T14:35:41Z'
+                - item_id: a3b2c1d0-9e8f-4a7b-8c1d-2e3f4a5b6c7d
+                  report_id: 9d0e1f2a-3b4c-4d5e-8f6a-7b8c9d0e1f2a
+                  doc_id: 76.543.210-3
+                  subject_type: company
+                  status: ready
+                  score: 604
+                  band: C
+                  created_at: '2026-08-09T14:32:10Z'
+                  completed_at: '2026-08-09T14:36:22Z'
+                - item_id: b4c3d2e1-0f9a-4b8c-9d2e-3f4a5b6c7d8e
+                  doc_id: 11.222.333-9
+                  subject_type: person
+                  status: failed
+                  score: null
+                  error_code: generation_failed
+                  error_message: the report could not be generated; the fee was refunded
+                  created_at: '2026-08-09T14:32:10Z'
+                  completed_at: '2026-08-09T14:37:05Z'
+                meta:
+                  page: 1
+                  page_size: 50
+                  total: 4
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden (service disabled or unverified account)
+        '404':
+          description: not_found
+  /v1/qscore/batches/{id}/results.csv:
+    get:
+      tags: [Qscore]
+      summary: Export batch results as CSV
+      operationId: exportQscoreBatchResults
+      description: 'Downloads the batch results as a CSV file with a UTF-8 BOM
+        (opens correctly in Excel). Header: `doc_id,subject_type,status,score,
+        band,verify_code,report_id,error_code`. `verify_code` is the public
+        verification code of the report (usable at `/verify/qscore/{code}`).
+        Failed rows carry their `error_code` and no score.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: CSV file (text/csv, UTF-8 with BOM).
+          content:
+            text/csv:
+              example: "doc_id,subject_type,status,score,band,verify_code,report_id,error_code\n12.345.678-5,person,ready,715,B,Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a,3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01,\n15.678.234-3,person,ready,430,D,Q7c9a1f3d2e444b8a9d510a1b2c3d4e5fb2c3d4e5f60718293a4b5,7c9a1f3d-2e44-4b8a-9d51-0a1b2c3d4e5f,\n76.543.210-3,company,ready,604,C,Q9d0e1f2a3b4c4d5e8f6a7b8c9d0e1f2ac3d4e5f60718293a4b5c6,9d0e1f2a-3b4c-4d5e-8f6a-7b8c9d0e1f2a,\n11.222.333-9,person,failed,,,,,generation_failed\n"
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden (service disabled or unverified account)
+        '404':
+          description: not_found
 components:
   securitySchemes:
     bearerAuth:
@@ -21155,6 +21497,57 @@ webhooks:
                 currency: CLP
                 status: open
               detected_at: '2026-08-08T18:41:12Z'
+      responses:
+        '200':
+          description: Return any 2xx to acknowledge the delivery.
+  risk_batch_completed:
+    post:
+      summary: Qscore batch scoring completed
+      description: 'A batch scoring job created with `POST /v1/qscore/batches`
+        finished processing all of its items. This is the single completion
+        signal of the batch: the individual reports do **not** emit their own
+        `risk_report_ready` webhook (and no per-item email is sent). `status`
+        is `completed` when every item succeeded, `completed_with_errors` when
+        at least one item failed terminally (its fee was refunded) and `failed`
+        when the batch itself could not be processed. The counters always add
+        up: `succeeded_items + failed_items = total_items`. Read the per-item
+        results with `GET /v1/qscore/batches/{id}/items` or download them
+        with `GET /v1/qscore/batches/{id}/results.csv`.
+
+
+        Every delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
+        and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`. Respond 2xx; up
+        to 5 attempts with incremental backoff.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                batch_id:
+                  type: string
+                status:
+                  type: string
+                  enum: [completed, completed_with_errors, failed]
+                total_items:
+                  type: integer
+                succeeded_items:
+                  type: integer
+                failed_items:
+                  type: integer
+                country:
+                  type: string
+                purpose:
+                  type: string
+                  enum: [credit_evaluation, tenant_screening, hiring, supplier_onboarding, other]
+            example:
+              batch_id: b7f2c1a4-3e5d-4f8a-9c2b-1d0e6a8f4c5d
+              status: completed_with_errors
+              total_items: 4
+              succeeded_items: 3
+              failed_items: 1
+              country: CL
+              purpose: credit_evaluation
       responses:
         '200':
           description: Return any 2xx to acknowledge the delivery.

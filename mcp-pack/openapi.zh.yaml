@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.50'
+  version: "2.51"
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -17977,6 +17977,339 @@ paths:
           description: unauthorized
         '403':
           description: forbidden（服务未启用或账户未验证）
+  /v1/qscore/batches:
+    get:
+      tags: [Qscore]
+      summary: 列出批量评分任务
+      operationId: listQscoreBatches
+      description: '列出您账户的批量评分任务（最新优先），分页返回。`page` 从 1
+        开始；`page_size` 默认为 50（最大 200）。`from` 和 `to` 日期筛选（UTC，
+        均为包含）为必填。其他账户拥有的批次永不可见（按账户隔离：来自其他账户的
+        batch id 返回 404）。'
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: 起始日期（YYYY-MM-DD，UTC，包含）。
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: 结束日期（YYYY-MM-DD，UTC，包含）。
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - pending
+          - processing
+          - completed
+          - completed_with_errors
+          - failed
+        description: 按批次状态筛选。
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+      responses:
+        '200':
+          description: 分页的批次列表。
+          content:
+            application/json:
+              example:
+                items:
+                - batch_id: b7f2c1a4-3e5d-4f8a-9c2b-1d0e6a8f4c5d
+                  account_id: 4a9c2e71-8b3d-4f2a-9c1e-5d7b2a8f3e41
+                  status: completed_with_errors
+                  purpose: credit_evaluation
+                  country: CL
+                  lang: es
+                  total_items: 4
+                  processed_items: 4
+                  succeeded_items: 3
+                  failed_items: 1
+                  estimated_fee_usdt: '14.50'
+                  idempotency_key: portfolio-2026-08-09-a
+                  created_at: '2026-08-09T14:32:10Z'
+                  started_at: '2026-08-09T14:34:02Z'
+                  completed_at: '2026-08-09T14:41:37Z'
+                meta:
+                  page: 1
+                  page_size: 50
+                  total: 1
+        '400':
+          description: invalid_range
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden（服务未启用或账户未验证）
+    post:
+      tags: [Qscore]
+      summary: 创建批量评分任务
+      operationId: createQscoreBatch
+      description: '创建异步批量评分任务（组合评分）：主体会预先校验，批次进入队列，
+        后台 worker 为每个有效条目生成一份完整的 Qscore 报告。发送 `subjects`（JSON
+        数组，1 至 5000 条）**或** `subjects_csv`（带有表头 `doc_id[,subject_type]`
+        的 CSV 字符串）——两者必须且只能提供其一。文档号无效（`invalid_doc_id`）
+        或批次内文档重复
+        （`duplicate_in_batch`，以其规范化形式报告）的行会在创建时被拒绝，并在
+        `rejected_items` 中报告；
+        批次只处理有效行。省略或未识别的 `subject_type` 绝不是错误：对于
+        `CL`，系统会从 RUT 序列推断（首位数字 5–9 → `company`，其他 →
+        `person`）。如果所有行都被拒绝，请求将以 `no_valid_items` 失败，且不会
+        创建任何内容。幂等性为强制：使用相同的 `idempotency_key` 重试会返回原始批次并
+        带有 `idempotency_hit: true`，绝不会重复批次或重复扣费。每个条目在处理时收取
+        独立报告费用（`risk_report_person` / `risk_report_company`），最终失败的条目会
+        自动退款。`estimated_fee_usdt` 是针对有效条目的预先估算。批次完成后，您会收到
+        一个 `risk_batch_completed` webhook 和一封电子邮件——各个报告不会发出自己的
+        webhook 或电子邮件。'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            examples:
+              json_subjects:
+                summary: JSON 主体（两行被预先拒绝）
+                value:
+                  country: CL
+                  purpose: credit_evaluation
+                  lang: es
+                  subjects:
+                  - doc_id: 12.345.678-5
+                  - doc_id: 15.678.234-3
+                  - doc_id: 11.222.333-9
+                  - doc_id: 76.543.210-3
+                    subject_type: company
+                  - doc_id: 12.345.678-9
+                  - doc_id: 12345678-5
+                  idempotency_key: portfolio-2026-08-09-a
+              csv_subjects:
+                summary: CSV 负载
+                value:
+                  country: CL
+                  purpose: credit_evaluation
+                  subjects_csv: "doc_id,subject_type\n12.345.678-5,person\n76.543.210-3,company\n96.543.210-8,company"
+                  idempotency_key: portfolio-2026-08-09-b
+      responses:
+        '202':
+          description: '批次已接受进行异步处理。`rejected_items` 列出预先被拒绝的
+            行（仅在至少一行被拒绝时存在）。'
+          content:
+            application/json:
+              example:
+                batch_id: b7f2c1a4-3e5d-4f8a-9c2b-1d0e6a8f4c5d
+                status: pending
+                purpose: credit_evaluation
+                country: CL
+                lang: es
+                total_items: 4
+                processed_items: 0
+                succeeded_items: 0
+                failed_items: 0
+                estimated_fee_usdt: '14.50'
+                created_at: '2026-08-09T14:32:10Z'
+                rejected_count: 2
+                rejected_items:
+                - line: 5
+                  doc_id: 12.345.678-9
+                  error_code: invalid_doc_id
+                  error: doc_id is not valid for CL
+                - line: 6
+                  doc_id: 12345678-5
+                  error_code: duplicate_in_batch
+                  error: doc_id appears more than once in the batch
+        '200':
+          description: '幂等重放——原始批次，带有 `idempotency_hit: true`。'
+          content:
+            application/json:
+              example:
+                batch_id: b7f2c1a4-3e5d-4f8a-9c2b-1d0e6a8f4c5d
+                status: processing
+                purpose: credit_evaluation
+                country: CL
+                lang: es
+                total_items: 4
+                processed_items: 2
+                succeeded_items: 2
+                failed_items: 0
+                estimated_fee_usdt: '14.50'
+                created_at: '2026-08-09T14:32:10Z'
+                idempotency_hit: true
+        '400':
+          description: 'invalid_payload | purpose_required | invalid_purpose |
+            idempotency_key_required | no_valid_items | too_many_items'
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden（服务未启用或账户未验证）
+  /v1/qscore/batches/{id}:
+    get:
+      tags: [Qscore]
+      summary: 获取批量评分任务
+      operationId: getQscoreBatch
+      description: '返回批次详情：实时计数器、`started_at` / `completed_at`，以及
+        批次本身失败时的 `error_code` / `error_message`。按账户隔离：来自其他账户的
+        batch id 返回 404。'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: 批次详情。
+          content:
+            application/json:
+              example:
+                batch_id: b7f2c1a4-3e5d-4f8a-9c2b-1d0e6a8f4c5d
+                status: completed_with_errors
+                purpose: credit_evaluation
+                country: CL
+                lang: es
+                total_items: 4
+                processed_items: 4
+                succeeded_items: 3
+                failed_items: 1
+                estimated_fee_usdt: '14.50'
+                created_at: '2026-08-09T14:32:10Z'
+                started_at: '2026-08-09T14:34:02Z'
+                completed_at: '2026-08-09T14:41:37Z'
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden（服务未启用或账户未验证）
+        '404':
+          description: not_found
+  /v1/qscore/batches/{id}/items:
+    get:
+      tags: [Qscore]
+      summary: 列出批次条目
+      operationId: listQscoreBatchItems
+      description: '返回批次的条目，分页返回。`status` 按条目状态筛选（`pending`、
+        `ready`、`failed`）。每个 `ready` 条目公开其 `report_id`、`score` 和 `band`；
+        每个 `failed` 条目公开 `error_code` / `error_message`。'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - pending
+          - ready
+          - failed
+        description: 按条目状态筛选。
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+      responses:
+        '200':
+          description: 分页的批次条目。
+          content:
+            application/json:
+              example:
+                items:
+                - item_id: e1f0a9b8-7c6d-4e5f-8a9b-0c1d2e3f4a5b
+                  report_id: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+                  doc_id: 12.345.678-5
+                  subject_type: person
+                  status: ready
+                  score: 715
+                  band: B
+                  created_at: '2026-08-09T14:32:10Z'
+                  completed_at: '2026-08-09T14:34:52Z'
+                - item_id: f2a1b0c9-8d7e-4f6a-9b0c-1d2e3f4a5b6c
+                  report_id: 7c9a1f3d-2e44-4b8a-9d51-0a1b2c3d4e5f
+                  doc_id: 15.678.234-3
+                  subject_type: person
+                  status: ready
+                  score: 430
+                  band: D
+                  created_at: '2026-08-09T14:32:10Z'
+                  completed_at: '2026-08-09T14:35:41Z'
+                - item_id: a3b2c1d0-9e8f-4a7b-8c1d-2e3f4a5b6c7d
+                  report_id: 9d0e1f2a-3b4c-4d5e-8f6a-7b8c9d0e1f2a
+                  doc_id: 76.543.210-3
+                  subject_type: company
+                  status: ready
+                  score: 604
+                  band: C
+                  created_at: '2026-08-09T14:32:10Z'
+                  completed_at: '2026-08-09T14:36:22Z'
+                - item_id: b4c3d2e1-0f9a-4b8c-9d2e-3f4a5b6c7d8e
+                  doc_id: 11.222.333-9
+                  subject_type: person
+                  status: failed
+                  score: null
+                  error_code: generation_failed
+                  error_message: the report could not be generated; the fee was refunded
+                  created_at: '2026-08-09T14:32:10Z'
+                  completed_at: '2026-08-09T14:37:05Z'
+                meta:
+                  page: 1
+                  page_size: 50
+                  total: 4
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden（服务未启用或账户未验证）
+        '404':
+          description: not_found
+  /v1/qscore/batches/{id}/results.csv:
+    get:
+      tags: [Qscore]
+      summary: 将批次结果导出为 CSV
+      operationId: exportQscoreBatchResults
+      description: '将批次结果下载为带有 UTF-8 BOM 的 CSV 文件（在 Excel 中正确
+        打开）。表头：`doc_id,subject_type,status,score,band,verify_code,report_id,
+        error_code`。`verify_code` 是报告的公开验证码（可在 `/verify/qscore/{code}`
+        使用）。失败的行带有其 `error_code`，没有分数。'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: CSV 文件（text/csv，带 BOM 的 UTF-8）。
+          content:
+            text/csv:
+              example: "doc_id,subject_type,status,score,band,verify_code,report_id,error_code\n12.345.678-5,person,ready,715,B,Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a,3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01,\n15.678.234-3,person,ready,430,D,Q7c9a1f3d2e444b8a9d510a1b2c3d4e5fb2c3d4e5f60718293a4b5,7c9a1f3d-2e44-4b8a-9d51-0a1b2c3d4e5f,\n76.543.210-3,company,ready,604,C,Q9d0e1f2a3b4c4d5e8f6a7b8c9d0e1f2ac3d4e5f60718293a4b5c6,9d0e1f2a-3b4c-4d5e-8f6a-7b8c9d0e1f2a,\n11.222.333-9,person,failed,,,,,generation_failed\n"
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden（服务未启用或账户未验证）
+        '404':
+          description: not_found
 components:
   securitySchemes:
     bearerAuth:
@@ -20486,6 +20819,56 @@ webhooks:
                 currency: CLP
                 status: open
               detected_at: '2026-08-08T18:41:12Z'
+      responses:
+        '200':
+          description: 返回任何 2xx 以确认交付。
+  risk_batch_completed:
+    post:
+      summary: Qscore 批量评分已完成
+      description: '使用 `POST /v1/qscore/batches` 创建的批量评分任务已完成对其所有
+        条目的处理。这是批次的唯一完成信号：各个报告**不会**发出自己的
+        `risk_report_ready` webhook（也不会按条目发送电子邮件）。`status` 在所有条目
+        成功时为 `completed`，在至少一个条目最终失败（其费用已退款）时为
+        `completed_with_errors`，在批次本身无法处理时为 `failed`。计数器始终一致：
+        `succeeded_items + failed_items = total_items`。使用 `GET
+        /v1/qscore/batches/{id}/items` 读取各条目结果，或使用 `GET
+        /v1/qscore/batches/{id}/results.csv` 下载结果。
+
+
+        每次交付都包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、
+        `X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature =
+        hex(HMAC-SHA256(secret, timestamp + "." + body))`。返回 2xx；最多 5 次尝试，
+        采用递增退避。'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                batch_id:
+                  type: string
+                status:
+                  type: string
+                  enum: [completed, completed_with_errors, failed]
+                total_items:
+                  type: integer
+                succeeded_items:
+                  type: integer
+                failed_items:
+                  type: integer
+                country:
+                  type: string
+                purpose:
+                  type: string
+                  enum: [credit_evaluation, tenant_screening, hiring, supplier_onboarding, other]
+            example:
+              batch_id: b7f2c1a4-3e5d-4f8a-9c2b-1d0e6a8f4c5d
+              status: completed_with_errors
+              total_items: 4
+              succeeded_items: 3
+              failed_items: 1
+              country: CL
+              purpose: credit_evaluation
       responses:
         '200':
           description: 返回任何 2xx 以确认交付。

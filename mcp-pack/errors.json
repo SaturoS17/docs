@@ -1,5 +1,5 @@
 {
-  "count": 189,
+  "count": 191,
   "errors": [
     {
       "category": {
@@ -2295,6 +2295,34 @@
         "en": "The account `tax_id` does not match the verified identity document (self report) — contact support; your verified data must be consistent",
         "es": "El `tax_id` de la cuenta no calza con el documento de identidad verificado (informe self) — contacta a soporte; tus datos verificados deben ser consistentes",
         "zh": "账户的 `tax_id` 与已验证的身份文件不符(自助报告)— 请联系支持;您的已验证数据必须一致"
+      }
+    },
+    {
+      "category": {
+        "en": "Qscore",
+        "es": "Qscore",
+        "zh": "Qscore"
+      },
+      "code": "no_valid_items",
+      "http": 400,
+      "meaning": {
+        "en": "Every row of the batch was rejected (`invalid_doc_id` / `duplicate_in_batch`) and no batch was created — validate the file locally (each `doc_id` must pass the country check digit and be unique) and resubmit with a **new** idempotency key",
+        "es": "Todas las filas del lote fueron rechazadas (`invalid_doc_id` / `duplicate_in_batch`) y no se creó ningún lote — valida el archivo localmente (cada `doc_id` debe pasar el dígito verificador del país y ser único) y reenvía con una clave de idempotencia **nueva**",
+        "zh": "批次中的所有行均被拒绝(`invalid_doc_id` / `duplicate_in_batch`),且未创建任何批次 — 请在本地校验文件(每个 `doc_id` 必须通过该国校验位且保持唯一),然后使用**新的**幂等键重新提交"
+      }
+    },
+    {
+      "category": {
+        "en": "Qscore",
+        "es": "Qscore",
+        "zh": "Qscore"
+      },
+      "code": "too_many_items",
+      "http": 400,
+      "meaning": {
+        "en": "A batch accepts at most 5,000 subjects — split the portfolio into multiple batches, each with its own idempotency key",
+        "es": "Un lote acepta a lo más 5.000 sujetos — parte la cartera en varios lotes, cada uno con su propia clave de idempotencia",
+        "zh": "单个批次最多接受 5,000 个主体 — 请将投资组合拆分为多个批次,每个批次使用各自的幂等键"
       }
     },
     {

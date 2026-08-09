@@ -7,7 +7,25 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-<Update label="August 9, 2026" description="v2.50 · 1 releases">
+<Update label="August 9, 2026" description="v2.51 · 2 releases">
+
+### v2.51
+
+**Added**
+
+- **Qscore batch scoring (portfolio scoring)** ([Batch scoring guide](/en/guides/qscore-batch)):
+  upload a batch of subjects with `POST /v1/qscore/batches` — a JSON array or a
+  CSV string, up to 5,000 subjects per batch — and the platform issues one full
+  Qscore report per subject asynchronously. Rows are validated upfront (invalid
+  document ids, unsupported subject types and in-batch duplicates are reported
+  in `rejected_items` and never processed); each item is billed the standalone
+  report fee when processed and automatically refunded if it fails terminally.
+  When the batch finishes you receive one `risk_batch_completed` webhook and one
+  email with the counters — the individual reports do not emit their own webhook
+  or email. Read the per-item results with `GET
+  /v1/qscore/batches/{batchID}/items` or download them with `GET
+  /v1/qscore/batches/{batchID}/results.csv`. New error codes: `no_valid_items`
+  and `too_many_items`.
 
 ### v2.50
 

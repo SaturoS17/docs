@@ -224,6 +224,8 @@ Errores de los endpoints del buró de crédito ([guía](https://docs.cbpayapp.co
 | 404 | `pdf_not_ready` | El PDF del informe aún no está disponible — consulta el detalle hasta `status=ready` (el webhook `risk_report_ready` te avisa) |
 | 409 | `no_tax_id` | La cuenta verificada no tiene `tax_id` registrado, así que el informe self no puede resolver su sujeto — completa primero tus datos verificados |
 | 409 | `identity_mismatch` | El `tax_id` de la cuenta no calza con el documento de identidad verificado (informe self) — contacta a soporte; tus datos verificados deben ser consistentes |
+| 400 | `no_valid_items` | Todas las filas del lote fueron rechazadas (`invalid_doc_id` / `duplicate_in_batch`) y no se creó ningún lote — valida el archivo localmente (cada `doc_id` debe pasar el dígito verificador del país y ser único) y reenvía con una clave de idempotencia **nueva** |
+| 400 | `too_many_items` | Un lote acepta a lo más 5.000 sujetos — parte la cartera en varios lotes, cada uno con su propia clave de idempotencia |
 
 ### Firewall transaccional
 

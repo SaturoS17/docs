@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.50'
+  version: "2.51"
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -18599,6 +18599,351 @@ paths:
           description: unauthorized
         '403':
           description: forbidden (servicio deshabilitado o cuenta sin verificar)
+  /v1/qscore/batches:
+    get:
+      tags: [Qscore]
+      summary: Listar lotes de scoring
+      operationId: listQscoreBatches
+      description: 'Lista los lotes de scoring de tu cuenta (los más recientes
+        primero), paginados. `page` parte en 1; `page_size` por defecto 50
+        (máximo 200). Los filtros de fecha `from` y `to` (UTC, ambos inclusivos)
+        son obligatorios. Los lotes de otras cuentas nunca son visibles
+        (aislamiento por cuenta: un batch id de otra cuenta responde 404).'
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: Fecha de inicio (YYYY-MM-DD, UTC, inclusiva).
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: Fecha de término (YYYY-MM-DD, UTC, inclusiva).
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - pending
+          - processing
+          - completed
+          - completed_with_errors
+          - failed
+        description: Filtra por estado del lote.
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+      responses:
+        '200':
+          description: Página de lotes.
+          content:
+            application/json:
+              example:
+                items:
+                - batch_id: b7f2c1a4-3e5d-4f8a-9c2b-1d0e6a8f4c5d
+                  account_id: 4a9c2e71-8b3d-4f2a-9c1e-5d7b2a8f3e41
+                  status: completed_with_errors
+                  purpose: credit_evaluation
+                  country: CL
+                  lang: es
+                  total_items: 4
+                  processed_items: 4
+                  succeeded_items: 3
+                  failed_items: 1
+                  estimated_fee_usdt: '14.50'
+                  idempotency_key: portfolio-2026-08-09-a
+                  created_at: '2026-08-09T14:32:10Z'
+                  started_at: '2026-08-09T14:34:02Z'
+                  completed_at: '2026-08-09T14:41:37Z'
+                meta:
+                  page: 1
+                  page_size: 50
+                  total: 1
+        '400':
+          description: invalid_range
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden (servicio deshabilitado o cuenta sin verificar)
+    post:
+      tags: [Qscore]
+      summary: Crear un lote de scoring
+      operationId: createQscoreBatch
+      description: 'Crea un lote de scoring asíncrono (scoring de cartera): los
+        sujetos se validan por adelantado, el lote queda en cola y un worker en
+        segundo plano emite un informe Qscore completo por cada ítem válido.
+        Envía `subjects` (array JSON, de 1 a 5000 entradas) **o** `subjects_csv`
+        (un string CSV con encabezado `doc_id[,subject_type]`) — exactamente uno
+        de los dos. Las filas con un documento inválido (`invalid_doc_id`) o un
+        documento duplicado dentro del lote (`duplicate_in_batch`, reportado con
+        su forma normalizada) se rechazan al crear y
+        se reportan en `rejected_items`; el lote solo procesa las válidas. Un
+        `subject_type` omitido o no reconocido nunca es un error: para `CL` se
+        infiere de la serie del RUT (primer dígito 5–9 → `company`, cualquier
+        otro → `person`). Si
+        todas las filas se rechazan, la solicitud falla con `no_valid_items` y
+        no se crea nada. La idempotencia es obligatoria: reintentar con la misma
+        `idempotency_key` devuelve el lote original con `idempotency_hit: true`
+        y nunca duplica el lote ni los cobros. Cada ítem cobra el fee standalone
+        del informe (`risk_report_person` / `risk_report_company`) al procesarse,
+        y un ítem con falla terminal se reembolsa automáticamente.
+        `estimated_fee_usdt` es la estimación inicial para los ítems válidos.
+        Cuando el lote termina recibes un webhook `risk_batch_completed` y un
+        email — los informes individuales no emiten su propio webhook ni email.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            examples:
+              json_subjects:
+                summary: Sujetos JSON (dos filas rechazadas por adelantado)
+                value:
+                  country: CL
+                  purpose: credit_evaluation
+                  lang: es
+                  subjects:
+                  - doc_id: 12.345.678-5
+                  - doc_id: 15.678.234-3
+                  - doc_id: 11.222.333-9
+                  - doc_id: 76.543.210-3
+                    subject_type: company
+                  - doc_id: 12.345.678-9
+                  - doc_id: 12345678-5
+                  idempotency_key: portfolio-2026-08-09-a
+              csv_subjects:
+                summary: Payload CSV
+                value:
+                  country: CL
+                  purpose: credit_evaluation
+                  subjects_csv: "doc_id,subject_type\n12.345.678-5,person\n76.543.210-3,company\n96.543.210-8,company"
+                  idempotency_key: portfolio-2026-08-09-b
+      responses:
+        '202':
+          description: 'Lote aceptado para procesamiento asíncrono.
+            `rejected_items` lista las filas rechazadas por adelantado (solo
+            presente cuando al menos una fila fue rechazada).'
+          content:
+            application/json:
+              example:
+                batch_id: b7f2c1a4-3e5d-4f8a-9c2b-1d0e6a8f4c5d
+                status: pending
+                purpose: credit_evaluation
+                country: CL
+                lang: es
+                total_items: 4
+                processed_items: 0
+                succeeded_items: 0
+                failed_items: 0
+                estimated_fee_usdt: '14.50'
+                created_at: '2026-08-09T14:32:10Z'
+                rejected_count: 2
+                rejected_items:
+                - line: 5
+                  doc_id: 12.345.678-9
+                  error_code: invalid_doc_id
+                  error: doc_id is not valid for CL
+                - line: 6
+                  doc_id: 12345678-5
+                  error_code: duplicate_in_batch
+                  error: doc_id appears more than once in the batch
+        '200':
+          description: 'Replay idempotente — el lote original, con
+            `idempotency_hit: true`.'
+          content:
+            application/json:
+              example:
+                batch_id: b7f2c1a4-3e5d-4f8a-9c2b-1d0e6a8f4c5d
+                status: processing
+                purpose: credit_evaluation
+                country: CL
+                lang: es
+                total_items: 4
+                processed_items: 2
+                succeeded_items: 2
+                failed_items: 0
+                estimated_fee_usdt: '14.50'
+                created_at: '2026-08-09T14:32:10Z'
+                idempotency_hit: true
+        '400':
+          description: 'invalid_payload | purpose_required | invalid_purpose |
+            idempotency_key_required | no_valid_items | too_many_items'
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden (servicio deshabilitado o cuenta sin verificar)
+  /v1/qscore/batches/{id}:
+    get:
+      tags: [Qscore]
+      summary: Obtener un lote de scoring
+      operationId: getQscoreBatch
+      description: 'Devuelve el detalle del lote: contadores en vivo,
+        `started_at` / `completed_at`, y `error_code` / `error_message` cuando el
+        lote mismo falló. Aislamiento por cuenta: un batch id de otra cuenta
+        responde 404.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Detalle del lote.
+          content:
+            application/json:
+              example:
+                batch_id: b7f2c1a4-3e5d-4f8a-9c2b-1d0e6a8f4c5d
+                status: completed_with_errors
+                purpose: credit_evaluation
+                country: CL
+                lang: es
+                total_items: 4
+                processed_items: 4
+                succeeded_items: 3
+                failed_items: 1
+                estimated_fee_usdt: '14.50'
+                created_at: '2026-08-09T14:32:10Z'
+                started_at: '2026-08-09T14:34:02Z'
+                completed_at: '2026-08-09T14:41:37Z'
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden (servicio deshabilitado o cuenta sin verificar)
+        '404':
+          description: not_found
+  /v1/qscore/batches/{id}/items:
+    get:
+      tags: [Qscore]
+      summary: Listar ítems del lote
+      operationId: listQscoreBatchItems
+      description: 'Devuelve los ítems del lote, paginados. `status` filtra por
+        estado del ítem (`pending`, `ready`, `failed`). Cada ítem `ready` expone
+        su `report_id`, `score` y `band`; cada ítem `failed` expone `error_code`
+        / `error_message`.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - pending
+          - ready
+          - failed
+        description: Filtra por estado del ítem.
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+      responses:
+        '200':
+          description: Página de ítems del lote.
+          content:
+            application/json:
+              example:
+                items:
+                - item_id: e1f0a9b8-7c6d-4e5f-8a9b-0c1d2e3f4a5b
+                  report_id: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+                  doc_id: 12.345.678-5
+                  subject_type: person
+                  status: ready
+                  score: 715
+                  band: B
+                  created_at: '2026-08-09T14:32:10Z'
+                  completed_at: '2026-08-09T14:34:52Z'
+                - item_id: f2a1b0c9-8d7e-4f6a-9b0c-1d2e3f4a5b6c
+                  report_id: 7c9a1f3d-2e44-4b8a-9d51-0a1b2c3d4e5f
+                  doc_id: 15.678.234-3
+                  subject_type: person
+                  status: ready
+                  score: 430
+                  band: D
+                  created_at: '2026-08-09T14:32:10Z'
+                  completed_at: '2026-08-09T14:35:41Z'
+                - item_id: a3b2c1d0-9e8f-4a7b-8c1d-2e3f4a5b6c7d
+                  report_id: 9d0e1f2a-3b4c-4d5e-8f6a-7b8c9d0e1f2a
+                  doc_id: 76.543.210-3
+                  subject_type: company
+                  status: ready
+                  score: 604
+                  band: C
+                  created_at: '2026-08-09T14:32:10Z'
+                  completed_at: '2026-08-09T14:36:22Z'
+                - item_id: b4c3d2e1-0f9a-4b8c-9d2e-3f4a5b6c7d8e
+                  doc_id: 11.222.333-9
+                  subject_type: person
+                  status: failed
+                  score: null
+                  error_code: generation_failed
+                  error_message: the report could not be generated; the fee was refunded
+                  created_at: '2026-08-09T14:32:10Z'
+                  completed_at: '2026-08-09T14:37:05Z'
+                meta:
+                  page: 1
+                  page_size: 50
+                  total: 4
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden (servicio deshabilitado o cuenta sin verificar)
+        '404':
+          description: not_found
+  /v1/qscore/batches/{id}/results.csv:
+    get:
+      tags: [Qscore]
+      summary: Exportar los resultados del lote como CSV
+      operationId: exportQscoreBatchResults
+      description: 'Descarga los resultados del lote como un archivo CSV con BOM
+        UTF-8 (abre correctamente en Excel). Encabezado: `doc_id,subject_type,
+        status,score,band,verify_code,report_id,error_code`. `verify_code` es el
+        código de verificación pública del informe (utilizable en
+        `/verify/qscore/{code}`). Las filas fallidas llevan su `error_code` y
+        ningún score.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Archivo CSV (text/csv, UTF-8 con BOM).
+          content:
+            text/csv:
+              example: "doc_id,subject_type,status,score,band,verify_code,report_id,error_code\n12.345.678-5,person,ready,715,B,Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a,3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01,\n15.678.234-3,person,ready,430,D,Q7c9a1f3d2e444b8a9d510a1b2c3d4e5fb2c3d4e5f60718293a4b5,7c9a1f3d-2e44-4b8a-9d51-0a1b2c3d4e5f,\n76.543.210-3,company,ready,604,C,Q9d0e1f2a3b4c4d5e8f6a7b8c9d0e1f2ac3d4e5f60718293a4b5c6,9d0e1f2a-3b4c-4d5e-8f6a-7b8c9d0e1f2a,\n11.222.333-9,person,failed,,,,,generation_failed\n"
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden (servicio deshabilitado o cuenta sin verificar)
+        '404':
+          description: not_found
 components:
   securitySchemes:
     bearerAuth:
@@ -21187,6 +21532,59 @@ webhooks:
                 currency: CLP
                 status: open
               detected_at: '2026-08-08T18:41:12Z'
+      responses:
+        '200':
+          description: Devuelve cualquier 2xx para confirmar la entrega.
+  risk_batch_completed:
+    post:
+      summary: Lote de scoring Qscore completado
+      description: 'Un lote de scoring creado con `POST /v1/qscore/batches`
+        terminó de procesar todos sus ítems. Esta es la única señal de
+        finalización del lote: los informes individuales **no** emiten su propio
+        webhook `risk_report_ready` (y tampoco se envía un email por ítem).
+        `status` es `completed` cuando todos los ítems tuvieron éxito,
+        `completed_with_errors` cuando al menos un ítem falló de forma terminal
+        (su fee fue reembolsado) y `failed` cuando el lote mismo no pudo
+        procesarse. Los contadores siempre cuadran: `succeeded_items +
+        failed_items = total_items`. Lee los resultados por ítem con `GET
+        /v1/qscore/batches/{id}/items` o descárgalos con `GET
+        /v1/qscore/batches/{id}/results.csv`.
+
+
+        Toda entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`,
+        `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` y `X-Webhook-Signature =
+        hex(HMAC-SHA256(secret, timestamp + "." + body))`. Responde 2xx; hasta 5
+        intentos con backoff incremental.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                batch_id:
+                  type: string
+                status:
+                  type: string
+                  enum: [completed, completed_with_errors, failed]
+                total_items:
+                  type: integer
+                succeeded_items:
+                  type: integer
+                failed_items:
+                  type: integer
+                country:
+                  type: string
+                purpose:
+                  type: string
+                  enum: [credit_evaluation, tenant_screening, hiring, supplier_onboarding, other]
+            example:
+              batch_id: b7f2c1a4-3e5d-4f8a-9c2b-1d0e6a8f4c5d
+              status: completed_with_errors
+              total_items: 4
+              succeeded_items: 3
+              failed_items: 1
+              country: CL
+              purpose: credit_evaluation
       responses:
         '200':
           description: Devuelve cualquier 2xx para confirmar la entrega.

@@ -133,6 +133,7 @@ Para reactivarla, el mismo llamado con `{ "status": "active" }`.
 | `risk_report_ready` | Un informe crediticio [Qscore](https://docs.cbpayapp.com/es/guias/qscore) terminó de generarse (lleva el score y la banda) |
 | `risk_score_changed` | El score de un sujeto monitoreado se movió (re-evaluación tras nuevos datos del buró) |
 | `risk_monitoring_alert` | Un sujeto monitoreado de [Qscore](https://docs.cbpayapp.com/es/guias/qscore) gatilló una alerta: el score cayó bajo tu umbral, aparecieron registros nuevos en el buró o se eliminaron registros |
+| `risk_batch_completed` | Un [lote](https://docs.cbpayapp.com/es/guias/qscore-batch) de informes Qscore terminó de procesarse (exactamente un webhook por lote, con conteos — nunca uno por sujeto) |
 | `wallet_deposit_received` | Llegó un depósito on-chain a una [wallet segregada](https://docs.cbpayapp.com/es/guias/wallets-segregadas) (no toca el ledger) |
 | `wallet_send_status_changed` | Un envío desde una wallet segregada cambió de estado |
 | `wallet_key_exported` | Se exportó la llave privada de una wallet segregada (alerta de seguridad) |
@@ -526,6 +527,18 @@ antiguas sin datos del motor.
       "status": "open"
     }
   ]
+}
+```
+
+```json risk_batch_completed
+{
+  "batch_id": "b7f2c1a4-3e5d-4f8a-9c2b-1d0e6a8f4c5d",
+  "status": "completed_with_errors",
+  "total_items": 4,
+  "succeeded_items": 3,
+  "failed_items": 1,
+  "country": "CL",
+  "purpose": "credit_evaluation"
 }
 ```
 
