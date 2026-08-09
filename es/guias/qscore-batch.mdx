@@ -57,7 +57,7 @@ sequenceDiagram
             "subjects": [
               {"doc_id": "12.345.678-5"},
               {"doc_id": "15.678.234-3"},
-              {"doc_id": "11.222.333-1"},
+              {"doc_id": "11.222.333-9"},
               {"doc_id": "76.543.210-3", "subject_type": "company"},
               {"doc_id": "12.345.678-9"},
               {"doc_id": "12.345.678-5"}
@@ -189,37 +189,37 @@ sequenceDiagram
     {
       "items": [
         {
-          "item_id": "e1f0a9b8-7c6d-5e4f-3a2b-1c0d9e8f7a6b",
-          "report_id": "9f3b2c1d-4e5f-6a7b-8c9d-0e1f2a3b4c5d",
+          "item_id": "e1f0a9b8-7c6d-4e5f-8a9b-0c1d2e3f4a5b",
+          "report_id": "3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01",
           "doc_id": "12.345.678-5",
           "subject_type": "person",
           "status": "ready",
-          "score": 742,
+          "score": 715,
           "band": "B",
           "created_at": "2026-08-09T14:32:10Z",
-          "completed_at": "2026-08-09T14:34:55Z"
+          "completed_at": "2026-08-09T14:34:52Z"
         },
         {
-          "item_id": "f2a1b0c9-8d7e-6f5a-4b3c-2d1e0f9a8b7c",
-          "report_id": "b15c4d3e-6f7a-8b9c-0d1e-2f3a4b5c6d7e",
+          "item_id": "f2a1b0c9-8d7e-4f6a-9b0c-1d2e3f4a5b6c",
+          "report_id": "7c9a1f3d-2e44-4b8a-9d51-0a1b2c3d4e5f",
           "doc_id": "15.678.234-3",
           "subject_type": "person",
           "status": "ready",
-          "score": 611,
-          "band": "C",
+          "score": 430,
+          "band": "D",
           "created_at": "2026-08-09T14:32:10Z",
-          "completed_at": "2026-08-09T14:37:26Z"
+          "completed_at": "2026-08-09T14:35:41Z"
         },
         {
-          "item_id": "c3d2e1f0-a9b8-7c6d-5e4f-3a2b1c0d9e8f",
-          "report_id": "a04c3d2e-5f6a-7b8c-9d0e-1f2a3b4c5d6e",
+          "item_id": "a3b2c1d0-9e8f-4a7b-8c1d-2e3f4a5b6c7d",
+          "report_id": "9d0e1f2a-3b4c-4d5e-8f6a-7b8c9d0e1f2a",
           "doc_id": "76.543.210-3",
           "subject_type": "company",
           "status": "ready",
-          "score": 488,
-          "band": "D",
+          "score": 604,
+          "band": "C",
           "created_at": "2026-08-09T14:32:10Z",
-          "completed_at": "2026-08-09T14:40:12Z"
+          "completed_at": "2026-08-09T14:36:22Z"
         }
       ],
       "meta": {"page": 1, "page_size": 50, "total": 3}
@@ -230,15 +230,15 @@ sequenceDiagram
 
     ```json
     {
-      "item_id": "03b2c1d0-9e8f-7a6b-5c4d-3e2f1a0b9c8d",
-      "doc_id": "11.222.333-1",
+      "item_id": "b4c3d2e1-0f9a-4b8c-9d2e-3f4a5b6c7d8e",
+      "doc_id": "11.222.333-9",
       "subject_type": "person",
       "status": "failed",
       "score": null,
       "error_code": "generation_failed",
       "error_message": "the report could not be generated; the fee was refunded",
       "created_at": "2026-08-09T14:32:10Z",
-      "completed_at": "2026-08-09T14:38:03Z"
+      "completed_at": "2026-08-09T14:37:05Z"
     }
     ```
 
@@ -251,10 +251,10 @@ sequenceDiagram
 
     ```csv
     doc_id,subject_type,status,score,band,verify_code,report_id,error_code
-    12.345.678-5,person,ready,742,B,Q9f3b2c1d4e5f6a7b8c9d0e1f2a3b4c5d6a1b2c3d4e5,9f3b2c1d-4e5f-6a7b-8c9d-0e1f2a3b4c5d,
-    15.678.234-3,person,ready,611,C,Q15c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1122334455,b15c4d3e-6f7a-8b9c-0d1e-2f3a4b5c6d7e,
-    11.222.333-1,person,failed,,,,,,generation_failed
-    76.543.210-3,company,ready,488,D,Q76e5d4c3b2a19087f6e5d4c3b2a19087ffeeddccbbaa,a04c3d2e-5f6a-7b8c-9d0e-1f2a3b4c5d6e,
+    12.345.678-5,person,ready,715,B,Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a,3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01,
+    15.678.234-3,person,ready,430,D,Q7c9a1f3d2e444b8a9d510a1b2c3d4e5fb2c3d4e5f60718293a4b5,7c9a1f3d-2e44-4b8a-9d51-0a1b2c3d4e5f,
+    76.543.210-3,company,ready,604,C,Q9d0e1f2a3b4c4d5e8f6a7b8c9d0e1f2ac3d4e5f60718293a4b5c6,9d0e1f2a-3b4c-4d5e-8f6a-7b8c9d0e1f2a,
+    11.222.333-9,person,failed,,,,,generation_failed
     ```
 
     Cada `report_id` es un informe individual completo: puedes descargar su PDF con el endpoint estándar de [descarga de informes](/es/guias/qscore), y cualquiera puede verificar su autenticidad en `https://business.cbpayapp.com/verify/qscore/{verify_code}`.
