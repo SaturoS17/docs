@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.51"
+  version: "2.52"
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -18911,6 +18911,430 @@ paths:
           description: forbidden (service disabled or unverified account)
         '404':
           description: not_found
+  /v1/qscore/consents:
+    get:
+      tags: [Qscore]
+      summary: List consent links
+      operationId: listRiskConsents
+      description: 'Lists the consent links of your account (newest first), paginated.
+        The `from` and `to` date filters (UTC, both inclusive) are mandatory; `page`
+        starts at 1 and `page_size` defaults to 50 (maximum 200). Consents owned by
+        other accounts are never visible (ownership isolation).'
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: Start date (YYYY-MM-DD, UTC, inclusive).
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: End date (YYYY-MM-DD, UTC, inclusive).
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - pending
+          - granted
+          - revoked
+          - expired
+        description: Filter by consent status.
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+      responses:
+        '200':
+          description: Paged consent list.
+          content:
+            application/json:
+              example:
+                consents:
+                - consent_id: c1a2b3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+                  subject_id: 7e8f9a0b-1c2d-4e3f-8a9b-0c1d2e3f4a5b
+                  channel: link
+                  status: granted
+                  purpose: credit_evaluation
+                  consent_url: https://business.cbpayapp.com/consent/cns_4f9a2b7c1d8e4a0f9b3c6d5e8a7f1c2d
+                  email: maria@example.com
+                  holder_name: Maria Jose Contreras Soto
+                  created_at: '2026-08-09T15:00:00Z'
+                  updated_at: '2026-08-10T09:21:44Z'
+                  expires_at: '2026-08-16T15:00:00Z'
+                  granted_at: '2026-08-10T09:21:44Z'
+                total: 1
+                page: 1
+                page_size: 50
+        '400':
+          description: invalid_range
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden (risk service disabled or unverified account)
+    post:
+      tags: [Qscore]
+      summary: Create a consent link
+      operationId: createRiskConsent
+      description: 'Creates an authorization link for the subject (the Destacame-style
+        consent flow): you get a shareable `consent_url` and, if you pass `email`,
+        the platform emails the branded link to the holder. The holder opens the
+        public page, connects their bank through open finance and authorizes; a
+        granted consent unlocks the positive banking data of the subject in their
+        Qscore reports. `country` and `doc_id` identify the holder (the document is
+        validated with its check digit); `subject_type` is inferred from the document
+        when omitted. `purpose` is required by data protection law and `self_access`
+        is not allowed here (the holder self-report lives in `POST /v1/qscore/my-report`).
+        `expires_in_days` defaults to 7 (maximum 30). Idempotency is mandatory:
+        retrying with the same `idempotency_key` returns the original consent with
+        `idempotency_hit: true` and never duplicates the link nor re-sends the email.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              country: CL
+              doc_id: 12.345.678-5
+              purpose: credit_evaluation
+              email: maria@example.com
+              expires_in_days: 7
+              idempotency_key: consent-2026-08-09-001
+      responses:
+        '201':
+          description: Consent created (status `pending`).
+          content:
+            application/json:
+              example:
+                consent_id: c1a2b3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+                subject_id: 7e8f9a0b-1c2d-4e3f-8a9b-0c1d2e3f4a5b
+                channel: link
+                status: pending
+                purpose: credit_evaluation
+                consent_url: https://business.cbpayapp.com/consent/cns_4f9a2b7c1d8e4a0f9b3c6d5e8a7f1c2d
+                email: maria@example.com
+                created_at: '2026-08-09T15:00:00Z'
+                updated_at: '2026-08-09T15:00:00Z'
+                expires_at: '2026-08-16T15:00:00Z'
+        '200':
+          description: 'Idempotent replay — the original consent, with `idempotency_hit: true`.'
+          content:
+            application/json:
+              example:
+                consent_id: c1a2b3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+                subject_id: 7e8f9a0b-1c2d-4e3f-8a9b-0c1d2e3f4a5b
+                channel: link
+                status: pending
+                purpose: credit_evaluation
+                consent_url: https://business.cbpayapp.com/consent/cns_4f9a2b7c1d8e4a0f9b3c6d5e8a7f1c2d
+                email: maria@example.com
+                created_at: '2026-08-09T15:00:00Z'
+                updated_at: '2026-08-09T15:00:00Z'
+                expires_at: '2026-08-16T15:00:00Z'
+                idempotency_hit: true
+        '400':
+          description: 'invalid_payload | purpose_required | invalid_purpose |
+            invalid_doc_id | invalid_subject_type | invalid_email | idempotency_key_required'
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden (risk service disabled) or verification_required
+  /v1/qscore/consents/{id}:
+    get:
+      tags: [Qscore]
+      summary: Get a consent link
+      operationId: getRiskConsent
+      description: 'Returns the consent detail. Ownership is strict: a consent id
+        from another account returns 404. A `pending` consent whose TTL already
+        elapsed is lazily marked `expired` on read.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Consent detail.
+          content:
+            application/json:
+              example:
+                consent_id: c1a2b3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+                subject_id: 7e8f9a0b-1c2d-4e3f-8a9b-0c1d2e3f4a5b
+                channel: link
+                status: granted
+                purpose: credit_evaluation
+                consent_url: https://business.cbpayapp.com/consent/cns_4f9a2b7c1d8e4a0f9b3c6d5e8a7f1c2d
+                email: maria@example.com
+                holder_name: Maria Jose Contreras Soto
+                created_at: '2026-08-09T15:00:00Z'
+                updated_at: '2026-08-10T09:21:44Z'
+                expires_at: '2026-08-16T15:00:00Z'
+                granted_at: '2026-08-10T09:21:44Z'
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden (risk service disabled or unverified account)
+        '404':
+          description: not_found
+  /v1/qscore/consents/{id}/revoke:
+    post:
+      tags: [Qscore]
+      summary: Revoke a consent link
+      operationId: revokeRiskConsent
+      description: 'Revokes the consent (status `revoked`) and emits the
+        `risk_consent_revoked` webhook. A consent the holder already decided
+        (`granted`, or already `revoked`/`expired`) cannot transition again and
+        returns `409 already_decided`.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Consent revoked.
+          content:
+            application/json:
+              example:
+                consent_id: c1a2b3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+                subject_id: 7e8f9a0b-1c2d-4e3f-8a9b-0c1d2e3f4a5b
+                channel: link
+                status: revoked
+                purpose: credit_evaluation
+                consent_url: https://business.cbpayapp.com/consent/cns_4f9a2b7c1d8e4a0f9b3c6d5e8a7f1c2d
+                email: maria@example.com
+                created_at: '2026-08-09T15:00:00Z'
+                updated_at: '2026-08-10T10:02:11Z'
+                expires_at: '2026-08-16T15:00:00Z'
+                revoked_at: '2026-08-10T10:02:11Z'
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden (risk service disabled or unverified account)
+        '404':
+          description: not_found
+        '409':
+          description: already_decided
+  /consent/{token}:
+    get:
+      security: []
+      tags:
+      - Consent
+      operationId: getPublicConsent
+      summary: Read a consent request (public, holder)
+      description: 'Public view of the consent request behind a `consent_url`. The
+        URL token IS the capability (128 random bits, unique per consent): no login
+        is required, and an unknown token answers a generic 404 (anti-enumeration).
+        The response is minimal on purpose: `doc_id` is masked to its last 4
+        characters, and the email, holder identity and internal ids are never
+        exposed. Rate limited per IP.'
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Opaque consent token embedded in the `consent_url`.
+      responses:
+        '200':
+          description: Consent request summary for the holder.
+          content:
+            application/json:
+              example:
+                status: pending
+                purpose: credit_evaluation
+                country: CL
+                subject_type: person
+                doc_id: '********678-5'
+                org:
+                  name: ACME SpA
+                  website: https://acme.example.com
+                  logo_url: https://cdn.example.com/acme/logo.png
+                expires_at: '2026-08-16T15:00:00Z'
+        '404':
+          description: Unknown token.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: consent not found
+        '429':
+          description: Too many requests from this IP.
+          content:
+            application/json:
+              example:
+                error: rate_limited
+                message: too many requests
+  /consent/{token}/begin:
+    post:
+      security: []
+      tags:
+      - Consent
+      operationId: beginPublicConsent
+      summary: Start the bank connection (public, holder)
+      description: 'Opens the bank-connection session for the holder: returns the
+        `widget_token` and `public_key` the open-finance widget needs to render the
+        institution picker. Only a `pending` consent can begin; any other status
+        returns `409 already_decided`. Rate limited per IP.'
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Bank-connection session ready.
+          content:
+            application/json:
+              example:
+                widget_token: wtoken_2c7f9a1b4e5d40aa
+                public_key: pk_prod_9a8f7e6d5c
+                expires_at: '2026-08-09T15:30:00Z'
+        '404':
+          description: Unknown token.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: consent not found
+        '409':
+          description: The consent was already decided.
+          content:
+            application/json:
+              example:
+                error: already_decided
+                message: this consent link is no longer pending
+        '429':
+          description: Too many requests from this IP.
+          content:
+            application/json:
+              example:
+                error: rate_limited
+                message: too many requests
+  /consent/{token}/complete:
+    post:
+      security: []
+      tags:
+      - Consent
+      operationId: completePublicConsent
+      summary: Grant the consent after connecting the bank (public, holder)
+      description: 'Completes the flow after the holder connected their bank in the
+        widget: the platform exchanges the `exchange_token`, requires the banking
+        link to be `active` (`409 link_inactive`) and requires the holder document
+        verified by the bank to match the subject document exactly (`409
+        holder_mismatch` — an account owned by a different document can never grant
+        the consent). On success the consent becomes `granted`, the legal evidence
+        (IP and user agent) is sealed, the positive-data derivation is triggered
+        and the `risk_consent_granted` webhook is emitted.'
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              exchange_token: etok_7f3a9c1e2b4d46aa
+      responses:
+        '200':
+          description: Consent granted.
+          content:
+            application/json:
+              example:
+                status: granted
+                granted_at: '2026-08-10T09:21:44Z'
+                holder_name: Maria Jose Contreras Soto
+        '404':
+          description: Unknown token.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: consent not found
+        '409':
+          description: 'already_decided | link_inactive | holder_mismatch'
+          content:
+            application/json:
+              example:
+                error: holder_mismatch
+                message: the connected account belongs to a different document
+        '429':
+          description: Too many requests from this IP.
+          content:
+            application/json:
+              example:
+                error: rate_limited
+                message: too many requests
+        '502':
+          description: The banking aggregator could not complete the exchange.
+          content:
+            application/json:
+              example:
+                error: provider_error
+                message: the banking connection could not be completed
+  /consent/{token}/decline:
+    post:
+      security: []
+      tags:
+      - Consent
+      operationId: declinePublicConsent
+      summary: Decline the consent request (public, holder)
+      description: 'The holder rejects the request: the consent becomes `revoked`,
+        the legal evidence is sealed and the `risk_consent_revoked` webhook is
+        emitted. An already decided consent returns `409 already_decided`.'
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Consent declined.
+          content:
+            application/json:
+              example:
+                status: revoked
+        '404':
+          description: Unknown token.
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: consent not found
+        '409':
+          description: The consent was already decided.
+          content:
+            application/json:
+              example:
+                error: already_decided
+                message: this consent link is no longer pending
+        '429':
+          description: Too many requests from this IP.
+          content:
+            application/json:
+              example:
+                error: rate_limited
+                message: too many requests
 components:
   securitySchemes:
     bearerAuth:
@@ -21548,6 +21972,120 @@ webhooks:
               failed_items: 1
               country: CL
               purpose: credit_evaluation
+      responses:
+        '200':
+          description: Return any 2xx to acknowledge the delivery.
+  risk_consent_granted:
+    post:
+      summary: Qscore consent granted by the holder
+      description: 'A consent link created with `POST /v1/qscore/consents` was
+        granted: the holder opened the public page, connected their bank through
+        open finance and authorized the request (their verified document matched
+        the subject document). The consent now unlocks the positive banking data
+        of the subject in new Qscore reports. `previous_status` is `pending` in
+        practice; it is carried so a replay is easy to reconcile.
+
+
+        Every delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
+        and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`. Respond 2xx; up
+        to 5 attempts with incremental backoff.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                consent_id:
+                  type: string
+                subject_id:
+                  type: string
+                country:
+                  type: string
+                doc_id:
+                  type: string
+                subject_type:
+                  type: string
+                  enum: [person, company]
+                purpose:
+                  type: string
+                  enum: [credit_evaluation, tenant_screening, hiring, supplier_onboarding, other]
+                status:
+                  type: string
+                  enum: [granted]
+                previous_status:
+                  type: string
+                holder_name:
+                  type: string
+                openfinance_link_id:
+                  type: string
+                granted_at:
+                  type: string
+                  format: date-time
+            example:
+              consent_id: c1a2b3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+              subject_id: 7e8f9a0b-1c2d-4e3f-8a9b-0c1d2e3f4a5b
+              country: CL
+              doc_id: 12.345.678-5
+              subject_type: person
+              purpose: credit_evaluation
+              status: granted
+              previous_status: pending
+              holder_name: Maria Jose Contreras Soto
+              openfinance_link_id: lnk_9b2c4d6e8f
+              granted_at: '2026-08-10T09:21:44Z'
+      responses:
+        '200':
+          description: Return any 2xx to acknowledge the delivery.
+  risk_consent_revoked:
+    post:
+      summary: Qscore consent revoked
+      description: 'A consent link was revoked, either by the holder declining the
+        request on the public page or by your account calling `POST
+        /v1/qscore/consents/{id}/revoke`. A revoked consent no longer feeds
+        positive banking data into new Qscore reports.
+
+
+        Every delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
+        and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`. Respond 2xx; up
+        to 5 attempts with incremental backoff.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                consent_id:
+                  type: string
+                subject_id:
+                  type: string
+                country:
+                  type: string
+                doc_id:
+                  type: string
+                subject_type:
+                  type: string
+                  enum: [person, company]
+                purpose:
+                  type: string
+                  enum: [credit_evaluation, tenant_screening, hiring, supplier_onboarding, other]
+                status:
+                  type: string
+                  enum: [revoked]
+                previous_status:
+                  type: string
+                revoked_at:
+                  type: string
+                  format: date-time
+            example:
+              consent_id: c1a2b3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+              subject_id: 7e8f9a0b-1c2d-4e3f-8a9b-0c1d2e3f4a5b
+              country: CL
+              doc_id: 12.345.678-5
+              subject_type: person
+              purpose: credit_evaluation
+              status: revoked
+              previous_status: pending
+              revoked_at: '2026-08-10T10:02:11Z'
       responses:
         '200':
           description: Return any 2xx to acknowledge the delivery.

@@ -134,6 +134,8 @@ To reactivate it, same call with `{ "status": "active" }`.
 | `risk_score_changed` | The score of a monitored subject moved (re-evaluation after new bureau data) |
 | `risk_monitoring_alert` | A monitored [Qscore](/en/guides/qscore) subject triggered an alert: the score dropped below your threshold, new bureau records appeared, or records were removed |
 | `risk_batch_completed` | A [batch](/en/guides/qscore-batch) of Qscore reports finished processing (exactly one webhook per batch, with item counts — never per subject) |
+| `risk_consent_granted` | A [consent link](/en/guides/qscore-consents) was authorized by the holder — positive banking facts flow into the subject's credit file |
+| `risk_consent_revoked` | A [consent link](/en/guides/qscore-consents) was declined by the holder or revoked by your account |
 | `wallet_deposit_received` | An on-chain deposit arrived at a [segregated wallet](/en/guides/segregated-wallets) (does not touch the ledger) |
 | `wallet_send_status_changed` | A send from a segregated wallet changed status |
 | `wallet_key_exported` | A segregated wallet's private key was exported (security alert) |
@@ -541,6 +543,36 @@ engine data.
   "failed_items": 1,
   "country": "CL",
   "purpose": "credit_evaluation"
+}
+```
+
+```json risk_consent_granted
+{
+  "consent_id": "c3a1e9b2-7f4d-4c8a-9e1b-2a5c6d7e8f9a",
+  "subject_id": "s8b2c4d6-1e3f-4a5b-9c7d-8e9f0a1b2c3d",
+  "country": "CL",
+  "doc_id": "76123456-8",
+  "subject_type": "person",
+  "purpose": "credit_evaluation",
+  "status": "granted",
+  "previous_status": "pending",
+  "holder_name": "Maria Jose Contreras Soto",
+  "openfinance_link_id": "9f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c",
+  "granted_at": "2026-08-09T15:42:10Z"
+}
+```
+
+```json risk_consent_revoked
+{
+  "consent_id": "c3a1e9b2-7f4d-4c8a-9e1b-2a5c6d7e8f9a",
+  "subject_id": "s8b2c4d6-1e3f-4a5b-9c7d-8e9f0a1b2c3d",
+  "country": "CL",
+  "doc_id": "76123456-8",
+  "subject_type": "person",
+  "purpose": "credit_evaluation",
+  "status": "revoked",
+  "previous_status": "granted",
+  "revoked_at": "2026-08-11T09:05:33Z"
 }
 ```
 

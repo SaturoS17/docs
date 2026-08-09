@@ -128,6 +128,8 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
 | `risk_score_changed` | 受监控主体的评分发生变化(信用局新数据后的重新评估) |
 | `risk_monitoring_alert` | 受监控的 [Qscore](https://docs.cbpayapp.com/zh/guides/qscore) 主体触发了警报:评分跌破你设定的阈值、信用局出现新记录或记录被移除 |
 | `risk_batch_completed` | 一个 Qscore 报告[批次](https://docs.cbpayapp.com/zh/guides/qscore-batch)处理完成(每个批次恰好一个 webhook,携带条目计数 — 绝不按主体逐个发送) |
+| `risk_consent_granted` | 持有人授权了一个[授权链接](https://docs.cbpayapp.com/zh/guides/qscore-consents) — 正面的银行事实数据流入该主体的信用档案 |
+| `risk_consent_revoked` | 持有人拒绝了某个[授权链接](https://docs.cbpayapp.com/zh/guides/qscore-consents),或你的账户撤销了它 |
 | `wallet_deposit_received` | 一笔链上充值到达[独立钱包](https://docs.cbpayapp.com/zh/guides/segregated-wallets)（不触及账本） |
 | `wallet_send_status_changed` | 独立钱包发起的一笔转出状态发生变化 |
 | `wallet_key_exported` | 独立钱包的私钥被导出（安全警报） |
@@ -528,6 +530,36 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
   "failed_items": 1,
   "country": "CL",
   "purpose": "credit_evaluation"
+}
+```
+
+```json risk_consent_granted
+{
+  "consent_id": "c3a1e9b2-7f4d-4c8a-9e1b-2a5c6d7e8f9a",
+  "subject_id": "s8b2c4d6-1e3f-4a5b-9c7d-8e9f0a1b2c3d",
+  "country": "CL",
+  "doc_id": "76123456-8",
+  "subject_type": "person",
+  "purpose": "credit_evaluation",
+  "status": "granted",
+  "previous_status": "pending",
+  "holder_name": "Maria Jose Contreras Soto",
+  "openfinance_link_id": "9f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c",
+  "granted_at": "2026-08-09T15:42:10Z"
+}
+```
+
+```json risk_consent_revoked
+{
+  "consent_id": "c3a1e9b2-7f4d-4c8a-9e1b-2a5c6d7e8f9a",
+  "subject_id": "s8b2c4d6-1e3f-4a5b-9c7d-8e9f0a1b2c3d",
+  "country": "CL",
+  "doc_id": "76123456-8",
+  "subject_type": "person",
+  "purpose": "credit_evaluation",
+  "status": "revoked",
+  "previous_status": "granted",
+  "revoked_at": "2026-08-11T09:05:33Z"
 }
 ```
 

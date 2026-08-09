@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.51"
+  version: "2.52"
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -18310,6 +18310,415 @@ paths:
           description: forbidden（服务未启用或账户未验证）
         '404':
           description: not_found
+  /v1/qscore/consents:
+    get:
+      tags: [Qscore]
+      summary: 列出授权同意链接
+      operationId: listRiskConsents
+      description: '分页列出您账户的授权同意链接（最新优先）。`from` 和 `to`
+        日期筛选（UTC，首尾均含）为必填；`page` 从 1 开始；`page_size` 默认为
+        50（最大 200）。其他账户的授权记录永远不可见（账户隔离）。'
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: 起始日期（YYYY-MM-DD，UTC，含）。
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: 截止日期（YYYY-MM-DD，UTC，含）。
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - pending
+          - granted
+          - revoked
+          - expired
+        description: 按授权状态筛选。
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+      responses:
+        '200':
+          description: 分页的授权列表。
+          content:
+            application/json:
+              example:
+                consents:
+                - consent_id: c1a2b3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+                  subject_id: 7e8f9a0b-1c2d-4e3f-8a9b-0c1d2e3f4a5b
+                  channel: link
+                  status: granted
+                  purpose: credit_evaluation
+                  consent_url: https://business.cbpayapp.com/consent/cns_4f9a2b7c1d8e4a0f9b3c6d5e8a7f1c2d
+                  email: maria@example.com
+                  holder_name: Maria Jose Contreras Soto
+                  created_at: '2026-08-09T15:00:00Z'
+                  updated_at: '2026-08-10T09:21:44Z'
+                  expires_at: '2026-08-16T15:00:00Z'
+                  granted_at: '2026-08-10T09:21:44Z'
+                total: 1
+                page: 1
+                page_size: 50
+        '400':
+          description: invalid_range
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden（risk 服务未启用或账户未验证）
+    post:
+      tags: [Qscore]
+      summary: 创建授权同意链接
+      operationId: createRiskConsent
+      description: '为主体创建授权链接（Destacame 式授权同意流程）：您将获得可分享的
+        `consent_url`；若传入 `email`，平台会通过品牌化邮件将链接发送给持有人。持有人打开公开页面，
+        通过开放金融连接其银行并授权；已授予的授权会在其 Qscore 报告中解锁主体的正向银行数据。
+        `country` 和 `doc_id` 用于识别持有人（证件号会校验校验位）；省略 `subject_type`
+        时将从证件推断。依据数据保护法 `purpose` 为必填，此处不允许 `self_access`（持有人的
+        自助报告在 `POST /v1/qscore/my-report`）。`expires_in_days` 默认为 7（最大 30）。
+        幂等为强制要求：使用相同 `idempotency_key` 重试会返回原授权并带 `idempotency_hit:
+        true`，绝不重复创建链接或重复发送邮件。'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              country: CL
+              doc_id: 12.345.678-5
+              purpose: credit_evaluation
+              email: maria@example.com
+              expires_in_days: 7
+              idempotency_key: consent-2026-08-09-001
+      responses:
+        '201':
+          description: 授权已创建（状态 `pending`）。
+          content:
+            application/json:
+              example:
+                consent_id: c1a2b3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+                subject_id: 7e8f9a0b-1c2d-4e3f-8a9b-0c1d2e3f4a5b
+                channel: link
+                status: pending
+                purpose: credit_evaluation
+                consent_url: https://business.cbpayapp.com/consent/cns_4f9a2b7c1d8e4a0f9b3c6d5e8a7f1c2d
+                email: maria@example.com
+                created_at: '2026-08-09T15:00:00Z'
+                updated_at: '2026-08-09T15:00:00Z'
+                expires_at: '2026-08-16T15:00:00Z'
+        '200':
+          description: '幂等重放——返回原授权，带 `idempotency_hit: true`。'
+          content:
+            application/json:
+              example:
+                consent_id: c1a2b3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+                subject_id: 7e8f9a0b-1c2d-4e3f-8a9b-0c1d2e3f4a5b
+                channel: link
+                status: pending
+                purpose: credit_evaluation
+                consent_url: https://business.cbpayapp.com/consent/cns_4f9a2b7c1d8e4a0f9b3c6d5e8a7f1c2d
+                email: maria@example.com
+                created_at: '2026-08-09T15:00:00Z'
+                updated_at: '2026-08-09T15:00:00Z'
+                expires_at: '2026-08-16T15:00:00Z'
+                idempotency_hit: true
+        '400':
+          description: 'invalid_payload | purpose_required | invalid_purpose |
+            invalid_doc_id | invalid_subject_type | invalid_email | idempotency_key_required'
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden（risk 服务未启用）或 verification_required
+  /v1/qscore/consents/{id}:
+    get:
+      tags: [Qscore]
+      summary: 获取授权同意链接
+      operationId: getRiskConsent
+      description: '返回授权详情。归属校验严格：属于其他账户的 id 返回 404。TTL
+        已过期的 `pending` 授权会在读取时惰性标记为 `expired`。'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: 授权详情。
+          content:
+            application/json:
+              example:
+                consent_id: c1a2b3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+                subject_id: 7e8f9a0b-1c2d-4e3f-8a9b-0c1d2e3f4a5b
+                channel: link
+                status: granted
+                purpose: credit_evaluation
+                consent_url: https://business.cbpayapp.com/consent/cns_4f9a2b7c1d8e4a0f9b3c6d5e8a7f1c2d
+                email: maria@example.com
+                holder_name: Maria Jose Contreras Soto
+                created_at: '2026-08-09T15:00:00Z'
+                updated_at: '2026-08-10T09:21:44Z'
+                expires_at: '2026-08-16T15:00:00Z'
+                granted_at: '2026-08-10T09:21:44Z'
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden（risk 服务未启用或账户未验证）
+        '404':
+          description: not_found
+  /v1/qscore/consents/{id}/revoke:
+    post:
+      tags: [Qscore]
+      summary: 撤销授权同意链接
+      operationId: revokeRiskConsent
+      description: '撤销授权（状态 `revoked`）并发出 `risk_consent_revoked`
+        webhook。已被持有人决定的授权（`granted`，或已 `revoked`/`expired`）不能再次变更，
+        返回 `409 already_decided`。'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: 授权已撤销。
+          content:
+            application/json:
+              example:
+                consent_id: c1a2b3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+                subject_id: 7e8f9a0b-1c2d-4e3f-8a9b-0c1d2e3f4a5b
+                channel: link
+                status: revoked
+                purpose: credit_evaluation
+                consent_url: https://business.cbpayapp.com/consent/cns_4f9a2b7c1d8e4a0f9b3c6d5e8a7f1c2d
+                email: maria@example.com
+                created_at: '2026-08-09T15:00:00Z'
+                updated_at: '2026-08-10T10:02:11Z'
+                expires_at: '2026-08-16T15:00:00Z'
+                revoked_at: '2026-08-10T10:02:11Z'
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden（risk 服务未启用或账户未验证）
+        '404':
+          description: not_found
+        '409':
+          description: already_decided
+  /consent/{token}:
+    get:
+      security: []
+      tags:
+      - 授权同意
+      operationId: getPublicConsent
+      summary: 读取授权请求（公开，持有人）
+      description: '`consent_url` 背后的授权请求公开视图。URL 中的令牌即是能力凭证（128
+        位随机数，每个授权唯一）：无需登录，未知令牌返回通用 404（防枚举）。响应刻意保持最小化：`doc_id`
+        仅显示最后 4 个字符，邮箱、持有人身份和内部 id 绝不暴露。按 IP 限流。'
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+        description: 嵌入在 `consent_url` 中的不透明授权令牌。
+      responses:
+        '200':
+          description: 面向持有人的授权请求摘要。
+          content:
+            application/json:
+              example:
+                status: pending
+                purpose: credit_evaluation
+                country: CL
+                subject_type: person
+                doc_id: '********678-5'
+                org:
+                  name: ACME SpA
+                  website: https://acme.example.com
+                  logo_url: https://cdn.example.com/acme/logo.png
+                expires_at: '2026-08-16T15:00:00Z'
+        '404':
+          description: 未知令牌。
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: consent not found
+        '429':
+          description: 该 IP 请求过多。
+          content:
+            application/json:
+              example:
+                error: rate_limited
+                message: too many requests
+  /consent/{token}/begin:
+    post:
+      security: []
+      tags:
+      - 授权同意
+      operationId: beginPublicConsent
+      summary: 发起银行连接（公开，持有人）
+      description: '为持有人开启银行连接会话：返回开放金融组件渲染机构选择器所需的
+        `widget_token` 和 `public_key`。仅 `pending` 状态的授权可以发起；其他状态返回
+        `409 already_decided`。按 IP 限流。'
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 银行连接会话就绪。
+          content:
+            application/json:
+              example:
+                widget_token: wtoken_2c7f9a1b4e5d40aa
+                public_key: pk_prod_9a8f7e6d5c
+                expires_at: '2026-08-09T15:30:00Z'
+        '404':
+          description: 未知令牌。
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: consent not found
+        '409':
+          description: 该授权已被决定。
+          content:
+            application/json:
+              example:
+                error: already_decided
+                message: this consent link is no longer pending
+        '429':
+          description: 该 IP 请求过多。
+          content:
+            application/json:
+              example:
+                error: rate_limited
+                message: too many requests
+  /consent/{token}/complete:
+    post:
+      security: []
+      tags:
+      - 授权同意
+      operationId: completePublicConsent
+      summary: 连接银行后授予授权（公开，持有人）
+      description: '持有人在组件中连接其银行后完成流程：平台交换 `exchange_token`，要求银行
+        连接处于 `active`（`409 link_inactive`），并要求银行核验的持有人证件与主体证件完全一致
+        （`409 holder_mismatch`——属于其他证件的账户绝不能授予授权）。成功后授权变为
+        `granted`，封存法律证据（IP 和 user agent），触发正向数据衍生，并发出
+        `risk_consent_granted` webhook。'
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              exchange_token: etok_7f3a9c1e2b4d46aa
+      responses:
+        '200':
+          description: 授权已授予。
+          content:
+            application/json:
+              example:
+                status: granted
+                granted_at: '2026-08-10T09:21:44Z'
+                holder_name: Maria Jose Contreras Soto
+        '404':
+          description: 未知令牌。
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: consent not found
+        '409':
+          description: 'already_decided | link_inactive | holder_mismatch'
+          content:
+            application/json:
+              example:
+                error: holder_mismatch
+                message: the connected account belongs to a different document
+        '429':
+          description: 该 IP 请求过多。
+          content:
+            application/json:
+              example:
+                error: rate_limited
+                message: too many requests
+        '502':
+          description: 银行聚合方无法完成交换。
+          content:
+            application/json:
+              example:
+                error: provider_error
+                message: the banking connection could not be completed
+  /consent/{token}/decline:
+    post:
+      security: []
+      tags:
+      - 授权同意
+      operationId: declinePublicConsent
+      summary: 拒绝授权请求（公开，持有人）
+      description: '持有人拒绝请求：授权变为 `revoked`，封存法律证据并发出
+        `risk_consent_revoked` webhook。已被决定的授权返回 `409 already_decided`。'
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 授权已拒绝。
+          content:
+            application/json:
+              example:
+                status: revoked
+        '404':
+          description: 未知令牌。
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: consent not found
+        '409':
+          description: 该授权已被决定。
+          content:
+            application/json:
+              example:
+                error: already_decided
+                message: this consent link is no longer pending
+        '429':
+          description: 该 IP 请求过多。
+          content:
+            application/json:
+              example:
+                error: rate_limited
+                message: too many requests
 components:
   securitySchemes:
     bearerAuth:
@@ -20872,3 +21281,112 @@ webhooks:
       responses:
         '200':
           description: 返回任何 2xx 以确认交付。
+  risk_consent_granted:
+    post:
+      summary: 持有人已授予 Qscore 授权
+      description: '通过 `POST /v1/qscore/consents` 创建的授权链接已被授予：持有人打开了公开页面，
+        通过开放金融连接其银行并授权了该请求（其核验证件与主体证件一致）。该授权现在会在新的
+        Qscore 报告中解锁主体的正向银行数据。`previous_status` 实际为 `pending`；携带它便于对账重放。
+
+
+        每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp`
+        和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。请返回 2xx；最多
+        5 次尝试，递增量退避。'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                consent_id:
+                  type: string
+                subject_id:
+                  type: string
+                country:
+                  type: string
+                doc_id:
+                  type: string
+                subject_type:
+                  type: string
+                  enum: [person, company]
+                purpose:
+                  type: string
+                  enum: [credit_evaluation, tenant_screening, hiring, supplier_onboarding, other]
+                status:
+                  type: string
+                  enum: [granted]
+                previous_status:
+                  type: string
+                holder_name:
+                  type: string
+                openfinance_link_id:
+                  type: string
+                granted_at:
+                  type: string
+                  format: date-time
+            example:
+              consent_id: c1a2b3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+              subject_id: 7e8f9a0b-1c2d-4e3f-8a9b-0c1d2e3f4a5b
+              country: CL
+              doc_id: 12.345.678-5
+              subject_type: person
+              purpose: credit_evaluation
+              status: granted
+              previous_status: pending
+              holder_name: Maria Jose Contreras Soto
+              openfinance_link_id: lnk_9b2c4d6e8f
+              granted_at: '2026-08-10T09:21:44Z'
+      responses:
+        '200':
+          description: 返回任意 2xx 确认投递。
+  risk_consent_revoked:
+    post:
+      summary: Qscore 授权已撤销
+      description: '授权链接已被撤销——可能是持有人在公开页面拒绝了请求，也可能是您的账户调用了
+        `POST /v1/qscore/consents/{id}/revoke`。已撤销的授权不再为新的 Qscore 报告提供正向银行数据。
+
+
+        每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp`
+        和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。请返回 2xx；最多
+        5 次尝试，递增量退避。'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                consent_id:
+                  type: string
+                subject_id:
+                  type: string
+                country:
+                  type: string
+                doc_id:
+                  type: string
+                subject_type:
+                  type: string
+                  enum: [person, company]
+                purpose:
+                  type: string
+                  enum: [credit_evaluation, tenant_screening, hiring, supplier_onboarding, other]
+                status:
+                  type: string
+                  enum: [revoked]
+                previous_status:
+                  type: string
+                revoked_at:
+                  type: string
+                  format: date-time
+            example:
+              consent_id: c1a2b3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+              subject_id: 7e8f9a0b-1c2d-4e3f-8a9b-0c1d2e3f4a5b
+              country: CL
+              doc_id: 12.345.678-5
+              subject_type: person
+              purpose: credit_evaluation
+              status: revoked
+              previous_status: pending
+              revoked_at: '2026-08-10T10:02:11Z'
+      responses:
+        '200':
+          description: 返回任意 2xx 确认投递。

@@ -133,6 +133,8 @@ Para reactivarla, el mismo llamado con `{ "status": "active" }`.
 | `risk_score_changed` | El score de un sujeto monitoreado se movió (re-evaluación tras nuevos datos del buró) |
 | `risk_monitoring_alert` | Un sujeto monitoreado de [Qscore](/es/guias/qscore) gatilló una alerta: el score cayó bajo tu umbral, aparecieron registros nuevos en el buró o se eliminaron registros |
 | `risk_batch_completed` | Un [lote](/es/guias/qscore-batch) de informes Qscore terminó de procesarse (exactamente un webhook por lote, con conteos — nunca uno por sujeto) |
+| `risk_consent_granted` | El titular autorizó un [link de autorización](/es/guias/qscore-consents) — los hechos bancarios positivos fluyen a la ficha crediticia del sujeto |
+| `risk_consent_revoked` | El titular rechazó un [link de autorización](/es/guias/qscore-consents) o tu cuenta lo revocó |
 | `wallet_deposit_received` | Llegó un depósito on-chain a una [wallet segregada](/es/guias/wallets-segregadas) (no toca el ledger) |
 | `wallet_send_status_changed` | Un envío desde una wallet segregada cambió de estado |
 | `wallet_key_exported` | Se exportó la llave privada de una wallet segregada (alerta de seguridad) |
@@ -540,6 +542,36 @@ antiguas sin datos del motor.
   "failed_items": 1,
   "country": "CL",
   "purpose": "credit_evaluation"
+}
+```
+
+```json risk_consent_granted
+{
+  "consent_id": "c3a1e9b2-7f4d-4c8a-9e1b-2a5c6d7e8f9a",
+  "subject_id": "s8b2c4d6-1e3f-4a5b-9c7d-8e9f0a1b2c3d",
+  "country": "CL",
+  "doc_id": "76123456-8",
+  "subject_type": "person",
+  "purpose": "credit_evaluation",
+  "status": "granted",
+  "previous_status": "pending",
+  "holder_name": "Maria Jose Contreras Soto",
+  "openfinance_link_id": "9f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c",
+  "granted_at": "2026-08-09T15:42:10Z"
+}
+```
+
+```json risk_consent_revoked
+{
+  "consent_id": "c3a1e9b2-7f4d-4c8a-9e1b-2a5c6d7e8f9a",
+  "subject_id": "s8b2c4d6-1e3f-4a5b-9c7d-8e9f0a1b2c3d",
+  "country": "CL",
+  "doc_id": "76123456-8",
+  "subject_type": "person",
+  "purpose": "credit_evaluation",
+  "status": "revoked",
+  "previous_status": "granted",
+  "revoked_at": "2026-08-11T09:05:33Z"
 }
 ```
 

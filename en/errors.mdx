@@ -227,6 +227,9 @@ Errors from the credit bureau endpoints ([guide](/en/guides/qscore)).
 | 409 | `identity_mismatch` | The account `tax_id` does not match the verified identity document (self report) — contact support; your verified data must be consistent |
 | 400 | `no_valid_items` | Every row of the batch was rejected (`invalid_doc_id` / `duplicate_in_batch`) and no batch was created — validate the file locally (each `doc_id` must pass the country check digit and be unique) and resubmit with a **new** idempotency key |
 | 400 | `too_many_items` | A batch accepts at most 5,000 subjects — split the portfolio into multiple batches, each with its own idempotency key |
+| 409 | `already_decided` | The consent link was already decided (`granted`, `revoked` or `expired`) and cannot transition again — create a new link if you need a fresh authorization |
+| 409 | `link_inactive` | The banking connection behind the consent is not `active` (the widget session expired or the link was revoked) — the holder must reconnect from the same consent link |
+| 409 | `holder_mismatch` | The document verified by the bank does not match the subject `doc_id` — an account owned by a different document can never grant the consent; check that you created the link for the right document |
 
 ### Transactional firewall
 

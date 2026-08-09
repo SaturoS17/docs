@@ -1,5 +1,5 @@
 {
-  "count": 191,
+  "count": 194,
   "errors": [
     {
       "category": {
@@ -2323,6 +2323,48 @@
         "en": "A batch accepts at most 5,000 subjects — split the portfolio into multiple batches, each with its own idempotency key",
         "es": "Un lote acepta a lo más 5.000 sujetos — parte la cartera en varios lotes, cada uno con su propia clave de idempotencia",
         "zh": "单个批次最多接受 5,000 个主体 — 请将投资组合拆分为多个批次,每个批次使用各自的幂等键"
+      }
+    },
+    {
+      "category": {
+        "en": "Qscore",
+        "es": "Qscore",
+        "zh": "Qscore"
+      },
+      "code": "already_decided",
+      "http": 409,
+      "meaning": {
+        "en": "The consent link was already decided (`granted`, `revoked` or `expired`) and cannot transition again — create a new link if you need a fresh authorization",
+        "es": "El link de consentimiento ya fue decidido (`granted`, `revoked` o `expired`) y no puede transicionar de nuevo — crea un link nuevo si necesitas otra autorización",
+        "zh": "授权链接已被处理(`granted`、`revoked` 或 `expired`),无法再次变更状态 — 如需重新授权,请创建新的链接"
+      }
+    },
+    {
+      "category": {
+        "en": "Qscore",
+        "es": "Qscore",
+        "zh": "Qscore"
+      },
+      "code": "link_inactive",
+      "http": 409,
+      "meaning": {
+        "en": "The banking connection behind the consent is not `active` (the widget session expired or the link was revoked) — the holder must reconnect from the same consent link",
+        "es": "La conexión bancaria detrás del consentimiento no está `active` (la sesión del widget expiró o el vínculo se revocó) — el titular debe reconectar desde el mismo link",
+        "zh": "授权背后的银行连接未处于 `active` 状态(widget 会话已过期或链接已被撤销)— 持有人需通过同一授权链接重新连接"
+      }
+    },
+    {
+      "category": {
+        "en": "Qscore",
+        "es": "Qscore",
+        "zh": "Qscore"
+      },
+      "code": "holder_mismatch",
+      "http": 409,
+      "meaning": {
+        "en": "The document verified by the bank does not match the subject `doc_id` — an account owned by a different document can never grant the consent; check that you created the link for the right document",
+        "es": "El documento verificado por el banco no calza con el `doc_id` del sujeto — una cuenta de OTRO documento jamás otorga el consentimiento; verifica que creaste el link para el documento correcto",
+        "zh": "银行验证的证件与主体的 `doc_id` 不一致 — 属于其他证件的账户永远无法授予授权;请确认为正确的证件创建了链接"
       }
     },
     {

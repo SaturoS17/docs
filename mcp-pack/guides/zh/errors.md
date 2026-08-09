@@ -226,6 +226,9 @@ source_url: https://docs.cbpayapp.com/zh/errors
 | 409 | `identity_mismatch` | 账户的 `tax_id` 与已验证的身份文件不符(自助报告)— 请联系支持;您的已验证数据必须一致 |
 | 400 | `no_valid_items` | 批次中的所有行均被拒绝(`invalid_doc_id` / `duplicate_in_batch`),且未创建任何批次 — 请在本地校验文件(每个 `doc_id` 必须通过该国校验位且保持唯一),然后使用**新的**幂等键重新提交 |
 | 400 | `too_many_items` | 单个批次最多接受 5,000 个主体 — 请将投资组合拆分为多个批次,每个批次使用各自的幂等键 |
+| 409 | `already_decided` | 授权链接已被处理(`granted`、`revoked` 或 `expired`),无法再次变更状态 — 如需重新授权,请创建新的链接 |
+| 409 | `link_inactive` | 授权背后的银行连接未处于 `active` 状态(widget 会话已过期或链接已被撤销)— 持有人需通过同一授权链接重新连接 |
+| 409 | `holder_mismatch` | 银行验证的证件与主体的 `doc_id` 不一致 — 属于其他证件的账户永远无法授予授权;请确认为正确的证件创建了链接 |
 
 ### 交易防火墙
 

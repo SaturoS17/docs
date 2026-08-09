@@ -1,5 +1,5 @@
 {
-  "count": 38,
+  "count": 40,
   "events": [
     {
       "description": {
@@ -592,6 +592,56 @@
         "en": "Qscore batch scoring completed",
         "es": "Lote de scoring Qscore completado",
         "zh": "Qscore 批量评分已完成"
+      }
+    },
+    {
+      "description": {
+        "en": "A consent link created with `POST /v1/qscore/consents` was granted: the holder opened the public page, connected their bank through open finance and authorized the request (their verified document matched the subject document). The consent now unlocks the positive banking data of the subject in new Qscore reports. `previous_status` is `pending` in practice; it is carried so a replay is easy to reconcile.\n\nEvery delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Respond 2xx; up to 5 attempts with incremental backoff.",
+        "es": "Un link de consentimiento creado con `POST /v1/qscore/consents` fue otorgado: el titular abrio la pagina publica, conecto su banco via open finance y autorizo la solicitud (su documento verificado calzo con el documento del sujeto). El consent ahora desbloquea la data bancaria positiva del sujeto en los informes Qscore nuevos. `previous_status` es `pending` en la practica; viaja para que un replay sea facil de reconciliar.\n\nCada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` y `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Responde 2xx; hasta 5 intentos con backoff incremental.",
+        "zh": "通过 `POST /v1/qscore/consents` 创建的授权链接已被授予：持有人打开了公开页面， 通过开放金融连接其银行并授权了该请求（其核验证件与主体证件一致）。该授权现在会在新的 Qscore 报告中解锁主体的正向银行数据。`previous_status` 实际为 `pending`；携带它便于对账重放。\n\n每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`。请返回 2xx；最多 5 次尝试，递增量退避。"
+      },
+      "event": "risk_consent_granted",
+      "payload_example": {
+        "consent_id": "c1a2b3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+        "country": "CL",
+        "doc_id": "12.345.678-5",
+        "granted_at": "2026-08-10T09:21:44Z",
+        "holder_name": "Maria Jose Contreras Soto",
+        "openfinance_link_id": "lnk_9b2c4d6e8f",
+        "previous_status": "pending",
+        "purpose": "credit_evaluation",
+        "status": "granted",
+        "subject_id": "7e8f9a0b-1c2d-4e3f-8a9b-0c1d2e3f4a5b",
+        "subject_type": "person"
+      },
+      "summary": {
+        "en": "Qscore consent granted by the holder",
+        "es": "Consent Qscore otorgado por el titular",
+        "zh": "持有人已授予 Qscore 授权"
+      }
+    },
+    {
+      "description": {
+        "en": "A consent link was revoked, either by the holder declining the request on the public page or by your account calling `POST /v1/qscore/consents/{id}/revoke`. A revoked consent no longer feeds positive banking data into new Qscore reports.\n\nEvery delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Respond 2xx; up to 5 attempts with incremental backoff.",
+        "es": "Un link de consentimiento fue revocado, ya sea porque el titular rechazo la solicitud en la pagina publica o porque tu cuenta llamo `POST /v1/qscore/consents/{id}/revoke`. Un consent revocado deja de alimentar data bancaria positiva a los informes Qscore nuevos.\n\nCada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` y `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Responde 2xx; hasta 5 intentos con backoff incremental.",
+        "zh": "授权链接已被撤销——可能是持有人在公开页面拒绝了请求，也可能是您的账户调用了 `POST /v1/qscore/consents/{id}/revoke`。已撤销的授权不再为新的 Qscore 报告提供正向银行数据。\n\n每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`。请返回 2xx；最多 5 次尝试，递增量退避。"
+      },
+      "event": "risk_consent_revoked",
+      "payload_example": {
+        "consent_id": "c1a2b3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+        "country": "CL",
+        "doc_id": "12.345.678-5",
+        "previous_status": "pending",
+        "purpose": "credit_evaluation",
+        "revoked_at": "2026-08-10T10:02:11Z",
+        "status": "revoked",
+        "subject_id": "7e8f9a0b-1c2d-4e3f-8a9b-0c1d2e3f4a5b",
+        "subject_type": "person"
+      },
+      "summary": {
+        "en": "Qscore consent revoked",
+        "es": "Consent Qscore revocado",
+        "zh": "Qscore 授权已撤销"
       }
     },
     {

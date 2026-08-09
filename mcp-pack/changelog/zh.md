@@ -8,7 +8,25 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-## v2.51 · 2 个版本 - 2026年8月9日
+## v2.52 · 3 个版本 - 2026年8月9日
+
+### v2.52
+
+**新增**
+
+- **Qscore 授权链接（持有人授权）**（[授权链接指南](https://docs.cbpayapp.com/zh/guides/qscore-consents)）：
+  通过可分享的链接请求主体授权读取其银行数据 —— `POST /v1/qscore/consents`
+  （幂等，可选择以您的品牌将链接发送至持有人邮箱），随后通过
+  `GET /v1/qscore/consents` 和 `GET /v1/qscore/consents/{id}` 跟踪状态，
+  或通过 `POST /v1/qscore/consents/{id}/revoke` 撤销。持有人在公开页面
+  （无需登录）上作出决定：通过安全组件连接其银行，银行核实的持有人身份
+  必须与主体的证件完全一致（他人证件下的账户永远无法授予授权）。授权后，
+  CBPay 会将正面银行事实（账户、余额、90 天收支活动）派生至主体的信用档案 ——
+  Qscore 报告在每次生成时都会重新派生这些数据以保持新鲜。新增 webhook：
+  `risk_consent_granted` 和 `risk_consent_revoked`。新增错误码：
+  `purpose_required`、`invalid_purpose`、`invalid_doc_id`、
+  `invalid_subject_type`、`invalid_email`、`already_decided`、
+  `link_inactive` 和 `holder_mismatch`。
 
 ### v2.51
 

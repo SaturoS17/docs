@@ -8,7 +8,27 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.51 · 2 releases - August 9, 2026
+## v2.52 · 3 releases - August 9, 2026
+
+### v2.52
+
+**Added**
+
+- **Qscore consent links (holder authorization)** ([consent links guide](https://docs.cbpayapp.com/en/guides/qscore-consents)):
+  ask a subject to authorize read access to their banking data with a shareable
+  link — `POST /v1/qscore/consents` (idempotent, optionally emailed to the
+  holder with your branding), then track with `GET /v1/qscore/consents` and
+  `GET /v1/qscore/consents/{id}`, or cancel with `POST
+  /v1/qscore/consents/{id}/revoke`. The holder decides on a public page (no
+  login): they connect their bank through the secure widget and the verified
+  holder identity must match the subject's document exactly (an account under
+  a different document never grants consent). Once granted, CBPay derives
+  positive banking facts (accounts, balances, 90-day income/expense activity)
+  into the subject's credit file — Qscore reports re-derive them on every
+  generation so the data stays fresh. New webhooks: `risk_consent_granted`
+  and `risk_consent_revoked`. New error codes: `purpose_required`,
+  `invalid_purpose`, `invalid_doc_id`, `invalid_subject_type`,
+  `invalid_email`, `already_decided`, `link_inactive` and `holder_mismatch`.
 
 ### v2.51
 

@@ -226,6 +226,9 @@ Errores de los endpoints del buró de crédito ([guía](https://docs.cbpayapp.co
 | 409 | `identity_mismatch` | El `tax_id` de la cuenta no calza con el documento de identidad verificado (informe self) — contacta a soporte; tus datos verificados deben ser consistentes |
 | 400 | `no_valid_items` | Todas las filas del lote fueron rechazadas (`invalid_doc_id` / `duplicate_in_batch`) y no se creó ningún lote — valida el archivo localmente (cada `doc_id` debe pasar el dígito verificador del país y ser único) y reenvía con una clave de idempotencia **nueva** |
 | 400 | `too_many_items` | Un lote acepta a lo más 5.000 sujetos — parte la cartera en varios lotes, cada uno con su propia clave de idempotencia |
+| 409 | `already_decided` | El link de consentimiento ya fue decidido (`granted`, `revoked` o `expired`) y no puede transicionar de nuevo — crea un link nuevo si necesitas otra autorización |
+| 409 | `link_inactive` | La conexión bancaria detrás del consentimiento no está `active` (la sesión del widget expiró o el vínculo se revocó) — el titular debe reconectar desde el mismo link |
+| 409 | `holder_mismatch` | El documento verificado por el banco no calza con el `doc_id` del sujeto — una cuenta de OTRO documento jamás otorga el consentimiento; verifica que creaste el link para el documento correcto |
 
 ### Firewall transaccional
 
