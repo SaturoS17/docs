@@ -9,6 +9,14 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+## v2.50 · 1 versiones - 9 de agosto de 2026
+
+### v2.50
+
+**Agregado**
+
+- Los informes Qscore de empresa ahora pueden incluir el bloque `peer_benchmark`: la posición del score dentro de su segmento de industria (mismo país, misma industria ISIC). Reporta el código y nombre del segmento (`segment_code`/`segment_label`), el número de empresas comparables (`peers`), el `percentile` (porcentaje de pares con score menor) y el `median_score` del segmento. El bloque se publica solo con al menos 5 empresas comparables y únicamente en informes de empresa.
+
 ## v2.49 · 9 versiones - 8 de agosto de 2026
 
 ### v2.49

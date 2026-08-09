@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.49'
+  version: '2.50'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -17453,6 +17453,71 @@ paths:
                         label: Commercial bulletin
                         records: 1
                         fetched_at: '2026-08-08T15:04:23Z'
+                ready_company:
+                  summary: Company report with industry peer benchmark
+                  value:
+                    report_id: 7c9a1f3d-2e44-4b8a-9d51-0a1b2c3d4e5f
+                    subject_id: 5b7d0e2a-2c34-4f6a-8b11-7d8e9f0a1b2c
+                    status: ready
+                    purpose: credit_evaluation
+                    lang: es
+                    score: 712
+                    band: B
+                    model_version: qscore-v2
+                    reason_codes:
+                    - code: ACTIVE_TRADELINES
+                      direction: positive
+                      weight: medium
+                    verify_code: Q7c9a1f3d2e444b8a9d510a1b2c3d4e5fa1b2c3d4e5f60718293a
+                    created_at: '2026-08-08T14:52:03Z'
+                    completed_at: '2026-08-08T14:52:05Z'
+                    report:
+                      meta:
+                        report_id: QSR-7C9A1F3D2E44
+                        lang: es
+                        purpose: credit_evaluation
+                        generated_at: '2026-08-08T14:52:05Z'
+                        verification_code: Q7c9a1f3d2e444b8a9d510a1b2c3d4e5fa1b2c3d4e5f60718293a
+                        verification_url: /verify/qscore/Q7c9a1f3d2e444b8a9d510a1b2c3d4e5fa1b2c3d4e5f60718293a
+                      identity:
+                        subject_type: company
+                        doc_id: 76.123.456-0
+                        name: Example Company SpA
+                        country: CL
+                      score:
+                        score: 712
+                        band: B
+                        model_version: qscore-v2
+                        reason_codes:
+                        - code: ACTIVE_TRADELINES
+                          direction: positive
+                          weight: medium
+                        computed_at: '2026-08-08T14:52:05Z'
+                      peer_benchmark:
+                        available: true
+                        segment_code: '6499'
+                        segment_label: Other financial service activities
+                        peers: 12
+                        percentile: 75
+                        median_score: 640
+                      summary:
+                      - No delinquencies or adverse events on record.
+                      - Active credit history with reported tradelines.
+                      tradelines:
+                      - source: res_chile
+                        creditor: Commercial creditor
+                        kind: loan
+                        status: current
+                        currency: CLP
+                        balance: '1250000'
+                        opened_at: '2025-03-14'
+                        reported_at: '2026-08-01'
+                      delinquencies: []
+                      sources:
+                      - source: res_chile
+                        label: Commercial bulletin
+                        records: 1
+                        fetched_at: '2026-08-08T14:52:04Z'
                 no_data:
                   summary: Subject with no bureau data (SC band)
                   value:
@@ -17538,39 +17603,15 @@ paths:
           description: Report detail.
           content:
             application/json:
-              example:
-                report_id: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
-                subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
-                status: ready
-                purpose: credit_evaluation
-                lang: es
-                score: 742
-                band: B
-                model_version: v1
-                reason_codes:
-                - code: CREDIT_HISTORY_DEPTH
-                  direction: positive
-                  weight: medium
-                - code: ACTIVE_TRADELINES
-                  direction: positive
-                  weight: low
-                verify_code: Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a
-                created_at: '2026-08-08T15:04:22Z'
-                completed_at: '2026-08-08T15:04:24Z'
-                report:
-                  meta:
-                    report_id: QSR-3F5C9F2D7D21
-                    lang: es
+              examples:
+                ready_person:
+                  summary: Person report (ready)
+                  value:
+                    report_id: 3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01
+                    subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                    status: ready
                     purpose: credit_evaluation
-                    generated_at: '2026-08-08T15:04:24Z'
-                    verification_code: Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a
-                    verification_url: /verify/qscore/Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a
-                  identity:
-                    subject_type: person
-                    doc_id: 12.345.678-5
-                    name: Example Name
-                    country: CL
-                  score:
+                    lang: es
                     score: 742
                     band: B
                     model_version: v1
@@ -17578,14 +17619,106 @@ paths:
                     - code: CREDIT_HISTORY_DEPTH
                       direction: positive
                       weight: medium
-                    computed_at: '2026-08-08T15:04:24Z'
-                  summary:
-                  - No delinquencies or adverse events on record.
-                  sources:
-                  - source: res_chile
-                    label: Commercial bulletin
-                    records: 1
-                    fetched_at: '2026-08-08T15:04:23Z'
+                    - code: ACTIVE_TRADELINES
+                      direction: positive
+                      weight: low
+                    verify_code: Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a
+                    created_at: '2026-08-08T15:04:22Z'
+                    completed_at: '2026-08-08T15:04:24Z'
+                    report:
+                      meta:
+                        report_id: QSR-3F5C9F2D7D21
+                        lang: es
+                        purpose: credit_evaluation
+                        generated_at: '2026-08-08T15:04:24Z'
+                        verification_code: Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a
+                        verification_url: /verify/qscore/Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a
+                      identity:
+                        subject_type: person
+                        doc_id: 12.345.678-5
+                        name: Example Name
+                        country: CL
+                      score:
+                        score: 742
+                        band: B
+                        model_version: v1
+                        reason_codes:
+                        - code: CREDIT_HISTORY_DEPTH
+                          direction: positive
+                          weight: medium
+                        computed_at: '2026-08-08T15:04:24Z'
+                      summary:
+                      - No delinquencies or adverse events on record.
+                      sources:
+                      - source: res_chile
+                        label: Commercial bulletin
+                        records: 1
+                        fetched_at: '2026-08-08T15:04:23Z'
+                ready_company:
+                  summary: Company report with industry peer benchmark
+                  value:
+                    report_id: 7c9a1f3d-2e44-4b8a-9d51-0a1b2c3d4e5f
+                    subject_id: 5b7d0e2a-2c34-4f6a-8b11-7d8e9f0a1b2c
+                    status: ready
+                    purpose: credit_evaluation
+                    lang: es
+                    score: 712
+                    band: B
+                    model_version: qscore-v2
+                    reason_codes:
+                    - code: ACTIVE_TRADELINES
+                      direction: positive
+                      weight: medium
+                    verify_code: Q7c9a1f3d2e444b8a9d510a1b2c3d4e5fa1b2c3d4e5f60718293a
+                    created_at: '2026-08-08T14:52:03Z'
+                    completed_at: '2026-08-08T14:52:05Z'
+                    report:
+                      meta:
+                        report_id: QSR-7C9A1F3D2E44
+                        lang: es
+                        purpose: credit_evaluation
+                        generated_at: '2026-08-08T14:52:05Z'
+                        verification_code: Q7c9a1f3d2e444b8a9d510a1b2c3d4e5fa1b2c3d4e5f60718293a
+                        verification_url: /verify/qscore/Q7c9a1f3d2e444b8a9d510a1b2c3d4e5fa1b2c3d4e5f60718293a
+                      identity:
+                        subject_type: company
+                        doc_id: 76.123.456-0
+                        name: Example Company SpA
+                        country: CL
+                      score:
+                        score: 712
+                        band: B
+                        model_version: qscore-v2
+                        reason_codes:
+                        - code: ACTIVE_TRADELINES
+                          direction: positive
+                          weight: medium
+                        computed_at: '2026-08-08T14:52:05Z'
+                      peer_benchmark:
+                        available: true
+                        segment_code: '6499'
+                        segment_label: Other financial service activities
+                        peers: 12
+                        percentile: 75
+                        median_score: 640
+                      summary:
+                      - No delinquencies or adverse events on record.
+                      - Active credit history with reported tradelines.
+                      tradelines:
+                      - source: res_chile
+                        creditor: Commercial creditor
+                        kind: loan
+                        status: current
+                        currency: CLP
+                        balance: '1250000'
+                        opened_at: '2025-03-14'
+                        reported_at: '2026-08-01'
+                      delinquencies: []
+                      sources:
+                      - source: res_chile
+                        label: Commercial bulletin
+                        records: 1
+                        fetched_at: '2026-08-08T14:52:04Z'
         '401':
           description: unauthorized
         '403':

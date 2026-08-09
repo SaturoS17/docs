@@ -8,6 +8,14 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+## v2.50 · 1 个版本 - 2026年8月9日
+
+### v2.50
+
+**新增**
+
+- Qscore 企业报告现在可能包含 `peer_benchmark` 块：评分在其行业细分中的相对位置（相同国家、相同 ISIC 行业）。报告包含行业代码与名称（`segment_code`/`segment_label`）、可比企业数量（`peers`）、`percentile`（评分更低的同业占比）以及该细分的 `median_score`（评分中位数）。该块仅在至少有 5 家可比企业时发布，且仅适用于企业报告。
+
 ## v2.49 · 9 个版本 - 2026年8月8日
 
 ### v2.49

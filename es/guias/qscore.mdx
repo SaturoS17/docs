@@ -233,6 +233,39 @@ Cada informe lleva sus `reason_codes` — la capa de explicabilidad del score:
 | `ALTERNATIVE_POSITIVE` | positive | Datos alternativos positivos (servicios básicos, open finance) |
 | `INTERNAL_ACTIVITY` | positive | Señales internas positivas de la plataforma |
 
+### Comparación con pares de la industria (solo informes de empresa)
+
+Los informes de **empresa** pueden incluir el bloque `peer_benchmark`: la posición del score **dentro de su segmento** — mismo país y misma industria (clasificación ISIC, tomada del registro tributario).
+
+```json
+"peer_benchmark": {
+  "available": true,
+  "segment_code": "6499",
+  "segment_label": "Other financial service activities",
+  "peers": 12,
+  "percentile": 75,
+  "median_score": 640
+}
+```
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `available` | booleano | `true` cuando hay una población comparable suficiente. |
+| `segment_code` / `segment_label` | string | Código y nombre de la industria del sujeto (ISIC). |
+| `peers` | número | Empresas comparables consideradas. |
+| `percentile` | número | Porcentaje de pares con score **menor** (75 = mejor que el 75% del segmento). |
+| `median_score` | número | Score mediano del segmento. |
+
+Reglas del benchmark:
+
+- **Solo informes de empresa** — los informes de persona nunca lo incluyen (el bloque se omite).
+- **La industria sale del registro tributario** y queda asociada al sujeto (la última conocida manda).
+- **La población comparable es el último score de cada empresa** del mismo país e industria, excluyendo al sujeto evaluado.
+- **Se publica solo con al menos 5 empresas comparables** — con menos, el bloque no aparece en el informe (nunca se inventa contexto estadístico).
+- `percentile` se lee como "mejor que el N% del segmento"; `median_score` es la mediana del segmento.
+
+El PDF del informe incluye la sección de comparación con pares solo cuando el bloque está disponible.
+
 ## 3. Consulta e historial
 
 ### Listar informes

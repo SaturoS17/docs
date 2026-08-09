@@ -223,6 +223,39 @@ Every report carries its `reason_codes` — the explainability layer of the scor
 | `ALTERNATIVE_POSITIVE` | positive | Positive alternative data (utilities, open finance) |
 | `INTERNAL_ACTIVITY` | positive | Positive internal platform signals |
 
+### Industry peer benchmark (company reports only)
+
+**Company** reports may include the `peer_benchmark` block: the score's position **within its segment** — same country and same industry (ISIC classification, from the tax registry).
+
+```json
+"peer_benchmark": {
+  "available": true,
+  "segment_code": "6499",
+  "segment_label": "Other financial service activities",
+  "peers": 12,
+  "percentile": 75,
+  "median_score": 640
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `available` | boolean | `true` when there is a large enough comparable population. |
+| `segment_code` / `segment_label` | string | The subject's industry code and label (ISIC). |
+| `peers` | number | Comparable companies considered. |
+| `percentile` | number | Percentage of peers with a **lower** score (75 = better than 75% of the segment). |
+| `median_score` | number | Segment median score. |
+
+Benchmark rules:
+
+- **Company reports only** — person reports never include it (the block is omitted).
+- **The industry comes from the tax registry** and is stamped on the subject (the latest known value wins).
+- **The comparable population is the latest score of each company** in the same country and industry, excluding the evaluated subject.
+- **Published only with at least 5 comparable companies** — below that, the block is omitted from the report (statistical context is never invented).
+- `percentile` reads as "better than N% of the segment"; `median_score` is the segment median.
+
+The report PDF includes the peer comparison section only when the block is available.
+
 ## 3. Query and history
 
 ### List reports

@@ -233,6 +233,39 @@ curl -X POST "https://api.qbank.cl/platform/v1/qscore/reports" \
 | `ALTERNATIVE_POSITIVE` | positive | 正面替代数据（水电费、开放金融） |
 | `INTERNAL_ACTIVITY` | positive | 平台内部正面信号 |
 
+### 行业同业基准（仅企业报告）
+
+**企业**报告可能包含 `peer_benchmark` 块：评分在其**细分行业**中的相对位置——相同国家、相同行业（ISIC 分类，取自税务登记）。
+
+```json
+"peer_benchmark": {
+  "available": true,
+  "segment_code": "6499",
+  "segment_label": "Other financial service activities",
+  "peers": 12,
+  "percentile": 75,
+  "median_score": 640
+}
+```
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `available` | 布尔值 | 有足够可比群体时为 `true`。 |
+| `segment_code` / `segment_label` | 字符串 | 主体的行业代码与名称（ISIC）。 |
+| `peers` | 数字 | 参与比较的企业数量。 |
+| `percentile` | 数字 | 评分**更低**的同业占比（75 = 优于 75% 的同业）。 |
+| `median_score` | 数字 | 该细分行业的评分中位数。 |
+
+基准规则：
+
+- **仅企业报告** — 个人报告永不包含该块（直接省略）。
+- **行业取自税务登记**，并记录在主体上（以最新值为准）。
+- **可比群体为同国家同行业每家企业的最新评分**，不含被评估主体。
+- **可比企业少于 5 家时不发布** — 该块将从报告中省略（绝不虚构统计背景）。
+- `percentile` 读作"优于 N% 的同业"；`median_score` 为该细分行业的评分中位数。
+
+报告 PDF 仅在该块可用时包含同业对比部分。
+
 ## 3. 查询与历史
 
 ### 列出报告
