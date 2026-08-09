@@ -8,7 +8,29 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.48 · 8 releases - August 8, 2026
+## v2.49 · 9 releases - August 8, 2026
+
+### v2.49
+
+**Added**
+
+- **Qscore — your own credit report, free** ([Qscore guide](https://docs.cbpayapp.com/en/guides/qscore)):
+  the holder of a verified account can now pull THEIR OWN Qscore credit
+  report — the ARCO / data-protection right of access — with `POST
+  /v1/qscore/my-report` (optionally `{"lang":"es"|"en"|"zh"}`), read the
+  latest one with `GET /v1/qscore/my-report` and download the branded PDF
+  with `GET /v1/qscore/my-report/pdf`. Unlike a purchased report, the self
+  report is **free** (no fee), the subject identity comes from the verified
+  `tax_id` of the account (the request never accepts a `doc_id` — pulling a
+  third party's report through these endpoints is impossible by design), one
+  NEW report can be generated every 30 days (within the window the existing
+  one is returned with `idempotency_hit: true`), and self reports are
+  excluded from the subject's query count, so checking your own report never
+  penalizes your score. The `risk_report_ready` webhook of a self report
+  carries `purpose: "self_access"`. The commercial endpoint `POST
+  /v1/qscore/reports` now rejects `purpose: "self_access"` with `400
+  invalid_purpose`. New error codes: `kyc_required`, `no_tax_id`,
+  `invalid_tax_id` ([errors](https://docs.cbpayapp.com/en/errors)).
 
 ### v2.48
 

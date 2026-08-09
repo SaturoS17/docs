@@ -14,7 +14,7 @@ Qscore es el buró de crédito API-first de la plataforma. Una sola llamada devu
 - **Cumplimiento incorporado**: la `purpose` declarada es obligatoria (ley de protección de datos de Chile), cada score lleva sus códigos de razón, y cada informe incluye un código de verificación pública.
 
 > **Nota**
-Qscore es un producto pagado, gated por el service flag `risk` de tu cuenta y facturado por informe (fees standalone `risk_report_person` / `risk_report_company`). Si la generación falla después del cobro, el fee se **reembolsa automáticamente** y el informe queda `failed` con su `error_code`.
+Qscore es un producto pagado, gated por el service flag `risk` de tu cuenta y facturado por informe (fees standalone `risk_report_person` / `risk_report_company`). Si la generación falla después del cobro, el fee se **reembolsa automáticamente** y el informe queda `failed` con su `error_code`. Excepción: **tu propio informe (self)** es gratis — ver "Tu propio informe (self)" más abajo.
 ## Cómo funciona
 
 ```mermaid
@@ -37,6 +37,69 @@ sequenceDiagram
 
 La generación es **síncrona**: el `POST` consulta los registros de buró, calcula el score, renderiza el PDF y devuelve el informe listo en una sola respuesta. Una fuente caída **no** hace fallar un informe pagado — se genera con la data persistida y la fuente se declara `cached` (o `unavailable` si no aportó nada) en la sección `sources`.
 
+## Tu propio informe (self)
+
+Si tienes una **cuenta verificada** (KYC/KYB aprobado), puedes generar y descargar **tu propio informe Qscore** directamente. Es tu derecho de acceso a tus datos personales (ARCO / Ley 21.719 de Chile), no una compra:
+
+- **Gratis**: nunca cobra fee.
+- **Sin penalización al score**: los informes self quedan excluidos del conteo de consultas de tu score — revisar tu propio informe jamás lo perjudica.
+- **Anti-oráculo por diseño**: la identidad del sujeto sale del `tax_id` verificado en tu KYC/KYB. El request **no** acepta `doc_id` — pedir el informe de un tercero por estos endpoints es imposible.
+- **Límite de frecuencia**: un informe **nuevo** cada 30 días. Si ya tienes uno `ready` dentro de la ventana, el `POST` lo devuelve con `idempotency_hit: true` (HTTP 200) en vez de generar otro.
+
+### Generar (o reusar) tu informe
+
+`POST /v1/qscore/my-report` — el body es opcional: `{"lang": "es"|"en"|"zh"}` (default `es`). La generación es **síncrona**: la respuesta trae el informe terminado. No necesitas `idempotency_key` — la idempotencia es determinista por cuenta, sujeto y día (un doble submit el mismo día devuelve el informe ya creado).
+
+```bash Genera tu propio informe
+curl -X POST "https://api.qbank.cl/platform/v1/qscore/my-report" \
+  -H "Authorization: Bearer pk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{"lang": "es"}'
+```
+
+```json 201 Created (informe nuevo generado)
+{
+  "report_id": "9f1c2d3e-4a5b-4c6d-8e7f-0a1b2c3d4e5f",
+  "subject_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "status": "ready",
+  "purpose": "self_access",
+  "lang": "es",
+  "band": "B",
+  "model_version": "qscore-v2",
+  "verify_code": "Q9f1c2d3e4a5b4c6d8e7f0a1b2c3d4e5f1a2b3c4d5e6f",
+  "created_at": "2026-08-08T15:04:12Z",
+  "score": 742,
+  "reason_codes": ["RC01", "RC07"],
+  "completed_at": "2026-08-08T15:04:19Z",
+  "report": { "...": "informe completo JSON" }
+}
+```
+
+Una segunda llamada dentro de los 30 días responde `200 OK` con el mismo informe y `"idempotency_hit": true`. Si la generación falla, la respuesta es `201` con `status: "failed"` y su `error_code` / `error_message` (nada se cobró — el informe self es gratis).
+
+### Leer tu último informe
+
+`GET /v1/qscore/my-report` devuelve tu informe self más reciente (cualquier estado) sin generar uno nuevo — `404 not_found` si nunca generaste uno.
+
+### Descargar el PDF
+
+`GET /v1/qscore/my-report/pdf` descarga el PDF de tu último informe self (`Content-Disposition: attachment; filename="qscore_self_<id>.pdf"`). Si el informe aún no está `ready`, responde `404 pdf_not_ready`.
+
+El PDF lleva el mismo código de verificación pública que cualquier informe Qscore — cualquiera que lo tenga puede comprobar su autenticidad en `GET /verify/qscore/{code}` (ver "Verificación pública" más abajo).
+
+### Errores del informe self
+
+| HTTP | Código | Cuándo | Solución |
+|---|---|---|---|
+| 403 | `kyc_required` | El KYC/KYB de tu cuenta no está aprobado | Completa primero la verificación de identidad |
+| 409 | `no_tax_id` | Tu cuenta no tiene un tax id verificado registrado | Completa tu perfil verificado o contacta a soporte |
+| 400 | `invalid_tax_id` | El tax id registrado no es válido para el país de la cuenta | Contacta a soporte para corregir tus datos verificados |
+| 409 | `identity_mismatch` | El `tax_id` de la cuenta no calza con el documento de identidad verificado (fue sobrescrito) | Contacta a soporte — tus datos verificados deben ser consistentes |
+| 404 | `not_found` | Nunca generaste un informe self (`GET`) | Genera uno con `POST /v1/qscore/my-report` |
+| 404 | `pdf_not_ready` | El informe aún no está `ready` o no tiene PDF | Reintenta la descarga cuando el informe esté `ready` |
+
+> **Nota**
+El endpoint comercial `POST /v1/qscore/reports` **rechaza** `purpose: "self_access"` con `400 invalid_purpose` — el acceso self solo va por `/v1/qscore/my-report`. El webhook `risk_report_ready` de un informe self lleva un campo extra `"purpose": "self_access"` en su payload (los informes comerciales lo omiten).
 ## 1. Comprar un informe
 
 `POST /v1/qscore/reports` crea y genera el informe completo. La `idempotency_key` es **obligatoria** (el informe cobra un fee: un retry con la misma clave devuelve el informe original con `idempotency_hit: true` y jamás cobra dos veces).
@@ -247,7 +310,7 @@ curl "https://api.qbank.cl/platform/v1/qscore/reports?from=2026-08-01&to=2026-08
 |---|---|---|---|
 | 400 | `invalid_payload` | Falta `doc_id`/`country` o el JSON está mal formado | Envía ambos campos con un body JSON válido |
 | 400 | `purpose_required` | Falta `purpose` | Declara la finalidad (ley de protección de datos) |
-| 400 | `invalid_purpose` | `purpose` fuera de la lista cerrada | Usa `credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding` u `other` |
+| 400 | `invalid_purpose` | `purpose` fuera de la lista cerrada, o `self_access` enviado al endpoint comercial | Usa `credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding` u `other` — el acceso self va por `POST /v1/qscore/my-report` |
 | 400 | `invalid_doc_id` | El documento no es válido para el país (ej. dígito verificador del RUT incorrecto) | Corrige el formato del `doc_id` para el país |
 | 400 | `invalid_subject_type` | `subject_type` no es `person`/`company` y no pudo inferirse | Envía `subject_type` explícito |
 | 400 | `idempotency_key_required` | Falta `idempotency_key` | Envía una clave única por compra |
@@ -276,6 +339,8 @@ Suscríbete a los eventos de Qscore en tu [configuración de webhooks](https://d
   "verify_code": "Qf47ac10b58cc4372a5670e02b2c3d4791a2b3c4d5e6f"
 }
 ```
+
+Un informe self (ver "Tu propio informe (self)") emite el mismo evento con un campo extra `"purpose": "self_access"`; los informes comerciales lo omiten.
 
 #### risk_score_changed — el score del sujeto se movió
 

@@ -1,5 +1,5 @@
 {
-  "count": 185,
+  "count": 189,
   "errors": [
     {
       "category": {
@@ -2166,9 +2166,9 @@
       "code": "invalid_purpose",
       "http": 400,
       "meaning": {
-        "en": "The `purpose` is not one of the allowed values (`credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding`, `other`) — fix the value",
-        "es": "El `purpose` no es uno de los valores permitidos (`credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding`, `other`) — corrige el valor",
-        "zh": "`purpose` 不是允许的值之一(`credit_evaluation`、`tenant_screening`、`hiring`、`supplier_onboarding`、`other`)— 请修正该值"
+        "en": "The `purpose` is not one of the allowed values (`credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding`, `other`) — fix the value. `self_access` is rejected here: your own report only goes through `POST /v1/qscore/my-report`",
+        "es": "El `purpose` no es uno de los valores permitidos (`credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding`, `other`) — corrige el valor. `self_access` se rechaza aquí: tu propio informe solo va por `POST /v1/qscore/my-report`",
+        "zh": "`purpose` 不是允许的值之一(`credit_evaluation`、`tenant_screening`、`hiring`、`supplier_onboarding`、`other`)— 请修正该值。`self_access` 在此被拒绝:您自己的报告只能通过 `POST /v1/qscore/my-report` 获取"
       }
     },
     {
@@ -2197,6 +2197,34 @@
         "en": "`subject_type` is not `person`/`company` and could not be inferred from the document — send it explicitly",
         "es": "`subject_type` no es `person`/`company` y no se pudo inferir del documento — envíalo explícito",
         "zh": "`subject_type` 不是 `person`/`company` 且无法从证件推断 — 请显式发送"
+      }
+    },
+    {
+      "category": {
+        "en": "Qscore",
+        "es": "Qscore",
+        "zh": "Qscore"
+      },
+      "code": "invalid_tax_id",
+      "http": 400,
+      "meaning": {
+        "en": "The verified `tax_id` of the account is not valid for its country (self report) — contact support to fix your verified data",
+        "es": "El `tax_id` verificado de la cuenta no es válido para su país (informe self) — contacta a soporte para corregir tus datos verificados",
+        "zh": "账户已验证的 `tax_id` 在其国家/地区无效(自助报告)— 请联系客服修正您的已验证信息"
+      }
+    },
+    {
+      "category": {
+        "en": "Qscore",
+        "es": "Qscore",
+        "zh": "Qscore"
+      },
+      "code": "kyc_required",
+      "http": 403,
+      "meaning": {
+        "en": "Pulling your own report requires an approved KYC/KYB — complete the identity verification first",
+        "es": "Generar tu propio informe exige un KYC/KYB aprobado — completa primero la verificación de identidad",
+        "zh": "生成您自己的报告需要已批准的 KYC/KYB — 请先完成身份验证"
       }
     },
     {
@@ -2239,6 +2267,34 @@
         "en": "The report PDF is not available yet — poll the detail until `status=ready` (the `risk_report_ready` webhook tells you)",
         "es": "El PDF del informe aún no está disponible — consulta el detalle hasta `status=ready` (el webhook `risk_report_ready` te avisa)",
         "zh": "报告 PDF 尚不可用 — 轮询详情直到 `status=ready`(`risk_report_ready` webhook 会通知你)"
+      }
+    },
+    {
+      "category": {
+        "en": "Qscore",
+        "es": "Qscore",
+        "zh": "Qscore"
+      },
+      "code": "no_tax_id",
+      "http": 409,
+      "meaning": {
+        "en": "The verified account has no `tax_id` on file, so the self report cannot resolve its subject — complete your verified data first",
+        "es": "La cuenta verificada no tiene `tax_id` registrado, así que el informe self no puede resolver su sujeto — completa primero tus datos verificados",
+        "zh": "已验证账户没有 `tax_id` 记录,自助报告无法解析其主体 — 请先完善您的已验证信息"
+      }
+    },
+    {
+      "category": {
+        "en": "Qscore",
+        "es": "Qscore",
+        "zh": "Qscore"
+      },
+      "code": "identity_mismatch",
+      "http": 409,
+      "meaning": {
+        "en": "The account `tax_id` does not match the verified identity document (self report) — contact support; your verified data must be consistent",
+        "es": "El `tax_id` de la cuenta no calza con el documento de identidad verificado (informe self) — contacta a soporte; tus datos verificados deben ser consistentes",
+        "zh": "账户的 `tax_id` 与已验证的身份文件不符(自助报告)— 请联系支持;您的已验证数据必须一致"
       }
     },
     {

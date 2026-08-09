@@ -215,12 +215,16 @@ Errors from the credit bureau endpoints ([guide](/en/guides/qscore)).
 | HTTP | `error` | Meaning |
 |---|---|---|
 | 400 | `purpose_required` | Missing `purpose` when creating a report — data protection law requires declaring it (`credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding` or `other`) |
-| 400 | `invalid_purpose` | The `purpose` is not one of the allowed values (`credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding`, `other`) — fix the value |
+| 400 | `invalid_purpose` | The `purpose` is not one of the allowed values (`credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding`, `other`) — fix the value. `self_access` is rejected here: your own report only goes through `POST /v1/qscore/my-report` |
 | 400 | `invalid_doc_id` | The `doc_id` is not valid for the given `country` (e.g. bad RUT check digit in Chile) — fix the document format |
 | 400 | `invalid_subject_type` | `subject_type` is not `person`/`company` and could not be inferred from the document — send it explicitly |
+| 400 | `invalid_tax_id` | The verified `tax_id` of the account is not valid for its country (self report) — contact support to fix your verified data |
+| 403 | `kyc_required` | Pulling your own report requires an approved KYC/KYB — complete the identity verification first |
 | 403 | `report_required` | Enabling monitoring requires a purchased report for that subject — buy one first ([guide](/en/guides/qscore)); for privacy, a subject that does not exist gets this same response |
 | 404 | `no_score` | The subject has no computed score yet — buy a report first |
 | 404 | `pdf_not_ready` | The report PDF is not available yet — poll the detail until `status=ready` (the `risk_report_ready` webhook tells you) |
+| 409 | `no_tax_id` | The verified account has no `tax_id` on file, so the self report cannot resolve its subject — complete your verified data first |
+| 409 | `identity_mismatch` | The account `tax_id` does not match the verified identity document (self report) — contact support; your verified data must be consistent |
 
 ### Transactional firewall
 

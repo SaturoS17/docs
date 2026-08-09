@@ -215,12 +215,16 @@ description: "错误格式与完整的错误码目录"
 | HTTP | `error` | 含义 |
 |---|---|---|
 | 400 | `purpose_required` | 创建报告时缺少 `purpose` — 数据保护法要求声明用途(`credit_evaluation`、`tenant_screening`、`hiring`、`supplier_onboarding` 或 `other`) |
-| 400 | `invalid_purpose` | `purpose` 不是允许的值之一(`credit_evaluation`、`tenant_screening`、`hiring`、`supplier_onboarding`、`other`)— 请修正该值 |
+| 400 | `invalid_purpose` | `purpose` 不是允许的值之一(`credit_evaluation`、`tenant_screening`、`hiring`、`supplier_onboarding`、`other`)— 请修正该值。`self_access` 在此被拒绝:您自己的报告只能通过 `POST /v1/qscore/my-report` 获取 |
 | 400 | `invalid_doc_id` | `doc_id` 在给定的 `country` 无效(例如智利 RUT 校验位错误)— 修正证件格式 |
 | 400 | `invalid_subject_type` | `subject_type` 不是 `person`/`company` 且无法从证件推断 — 请显式发送 |
+| 400 | `invalid_tax_id` | 账户已验证的 `tax_id` 在其国家/地区无效(自助报告)— 请联系客服修正您的已验证信息 |
+| 403 | `kyc_required` | 生成您自己的报告需要已批准的 KYC/KYB — 请先完成身份验证 |
 | 403 | `report_required` | 启用监控需要先购买该主体的报告 — 请先购买([指南](/zh/guides/qscore));出于隐私保护,主体不存在时也会返回相同的响应 |
 | 404 | `no_score` | 该主体尚无已计算的评分 — 请先购买报告 |
 | 404 | `pdf_not_ready` | 报告 PDF 尚不可用 — 轮询详情直到 `status=ready`(`risk_report_ready` webhook 会通知你) |
+| 409 | `no_tax_id` | 已验证账户没有 `tax_id` 记录,自助报告无法解析其主体 — 请先完善您的已验证信息 |
+| 409 | `identity_mismatch` | 账户的 `tax_id` 与已验证的身份文件不符(自助报告)— 请联系支持;您的已验证数据必须一致 |
 
 ### 交易防火墙
 

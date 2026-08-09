@@ -15,7 +15,7 @@ Qscore 是平台的 API 优先征信局。一次调用即可返回个人或企�
 - **内置合规**：声明的 `purpose` 为必填（智利数据保护法），每个评分都带有原因码，每份报告都包含公开验证码。
 
 <Note>
-Qscore 是付费产品，由您账户的 `risk` 服务标志门控，按报告计费（独立费用 `risk_report_person` / `risk_report_company`）。如果收费后生成失败，费用将**自动退还**，报告以 `failed` 结束并带有 `error_code`。
+Qscore 是付费产品，由您账户的 `risk` 服务标志门控，按报告计费（独立费用 `risk_report_person` / `risk_report_company`）。如果收费后生成失败，费用将**自动退还**，报告以 `failed` 结束并带有 `error_code`。例外：**您自己的报告（自助）是免费的**——见下文"您自己的报告（自助）"。
 </Note>
 
 ## 工作原理
@@ -39,6 +39,71 @@ sequenceDiagram
 ```
 
 生成是**同步的**：`POST` 获取征信记录、计算评分、渲染 PDF，并在单个响应中返回就绪的报告。某个来源宕机**不会**导致付费报告失败——报告将使用持久化数据生成，该来源在 `sources` 部分声明为 `cached`（如果完全没有贡献则声明为 `unavailable`）。
+
+## 您自己的报告（自助）
+
+如果您持有**已验证账户**（KYC/KYB 已批准），您可以直接生成并下载**您自己的 Qscore 报告**。这是您访问个人数据的权利（ARCO / 智利第 21.719 号法律），而不是购买：
+
+- **免费**：永不收取费用。
+- **不影响评分**：自助报告不计入您评分的查询次数——查看自己的报告绝不会损害评分。
+- **设计上防预言机**：主体身份来自您 KYC/KYB 中已验证的 `tax_id`。请求**不**接受 `doc_id`——通过这些端点请求他人报告是不可能的。
+- **频率限制**：每 30 天一份**新**报告。如果您在窗口期内已有 `ready` 报告，`POST` 将返回该报告并带 `idempotency_hit: true`（HTTP 200），而不会生成新报告。
+
+### 生成（或复用）您的报告
+
+`POST /v1/qscore/my-report` — 请求体可选：`{"lang": "es"|"en"|"zh"}`（默认 `es`）。生成是**同步的**：响应携带已完成的报告。无需 `idempotency_key`——幂等性按账户、主体和日期确定（同一天重复提交将返回已创建的报告）。
+
+```bash 生成您自己的报告
+curl -X POST "https://api.qbank.cl/platform/v1/qscore/my-report" \
+  -H "Authorization: Bearer pk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{"lang": "zh"}'
+```
+
+```json 201 Created（已生成新报告）
+{
+  "report_id": "9f1c2d3e-4a5b-4c6d-8e7f-0a1b2c3d4e5f",
+  "subject_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "status": "ready",
+  "purpose": "self_access",
+  "lang": "zh",
+  "band": "B",
+  "model_version": "qscore-v2",
+  "verify_code": "Q9f1c2d3e4a5b4c6d8e7f0a1b2c3d4e5f1a2b3c4d5e6f",
+  "created_at": "2026-08-08T15:04:12Z",
+  "score": 742,
+  "reason_codes": ["RC01", "RC07"],
+  "completed_at": "2026-08-08T15:04:19Z",
+  "report": { "...": "完整报告 JSON" }
+}
+```
+
+30 天内再次调用将返回 `200 OK`，携带同一报告并带 `"idempotency_hit": true`。如果生成失败，响应为 `201`，`status: "failed"` 并带 `error_code` / `error_message`（未收取任何费用——自助报告是免费的）。
+
+### 读取您的最新报告
+
+`GET /v1/qscore/my-report` 返回您最近的自助报告（任何状态），不生成新报告——如果您从未生成过，则返回 `404 not_found`。
+
+### 下载 PDF
+
+`GET /v1/qscore/my-report/pdf` 下载您最新自助报告的 PDF（`Content-Disposition: attachment; filename="qscore_self_<id>.pdf"`）。如果报告尚未 `ready`，则返回 `404 pdf_not_ready`。
+
+PDF 带有与任何 Qscore 报告相同的公开验证码——任何持有它的人都可以在 `GET /verify/qscore/{code}` 验证其真实性（见下文"公开验证"）。
+
+### 自助报告错误
+
+| HTTP | 代码 | 何时 | 解决方案 |
+|---|---|---|---|
+| 403 | `kyc_required` | 您账户的 KYC/KYB 未获批准 | 请先完成身份验证 |
+| 409 | `no_tax_id` | 您的账户没有已验证的税号记录 | 请完成您的已验证资料或联系支持 |
+| 400 | `invalid_tax_id` | 已登记的税号对账户所在国家无效 | 请联系支持更正您的已验证数据 |
+| 409 | `identity_mismatch` | 账户的 `tax_id` 与已验证的身份文件不符（已被覆盖） | 请联系支持 —— 您的已验证数据必须一致 |
+| 404 | `not_found` | 您从未生成过自助报告（`GET`） | 使用 `POST /v1/qscore/my-report` 生成 |
+| 404 | `pdf_not_ready` | 报告尚未 `ready` 或没有 PDF | 在报告 `ready` 后重试下载 |
+
+<Note>
+商业端点 `POST /v1/qscore/reports` 会以 `400 invalid_purpose` **拒绝** `purpose: "self_access"`——自助访问只能通过 `/v1/qscore/my-report`。自助报告的 `risk_report_ready` webhook 在 `data` 中带有额外的 `"purpose": "self_access"` 字段（商业报告省略该字段）。
+</Note>
 
 ## 1. 购买报告
 
@@ -255,7 +320,7 @@ curl "https://api.qbank.cl/platform/v1/qscore/reports?from=2026-08-01&to=2026-08
 |---|---|---|---|
 | 400 | `invalid_payload` | 缺少 `doc_id`/`country` 或 JSON 格式错误 | 使用有效的 JSON body 发送两个字段 |
 | 400 | `purpose_required` | 缺少 `purpose` | 声明用途（数据保护法） |
-| 400 | `invalid_purpose` | `purpose` 不在封闭列表中 | 使用 `credit_evaluation`、`tenant_screening`、`hiring`、`supplier_onboarding` 或 `other` |
+| 400 | `invalid_purpose` | `purpose` 不在封闭列表中，或者您在 `POST /v1/qscore/reports` 中发送了 `self_access`（该值保留给自助服务） | 使用 `credit_evaluation`、`tenant_screening`、`hiring`、`supplier_onboarding` 或 `other`；对于您自己的报告，请使用 `POST /v1/qscore/my-report` |
 | 400 | `invalid_doc_id` | 证件在该国家/地区无效（例如 RUT 校验位错误） | 修正该国家/地区的 `doc_id` 格式 |
 | 400 | `invalid_subject_type` | `subject_type` 不是 `person`/`company` 且无法推断 | 显式发送 `subject_type` |
 | 400 | `idempotency_key_required` | 缺少 `idempotency_key` | 每次购买发送唯一密钥 |
@@ -285,6 +350,8 @@ curl "https://api.qbank.cl/platform/v1/qscore/reports?from=2026-08-01&to=2026-08
   "verify_code": "Qf47ac10b58cc4372a5670e02b2c3d4791a2b3c4d5e6f"
 }
 ```
+
+自助报告（见"您自己的报告（自助）"）会发出相同的事件，并带有额外的 `"purpose": "self_access"` 字段；商业报告省略该字段。
 
   </Accordion>
   <Accordion title="risk_score_changed — 主体的评分发生变化">

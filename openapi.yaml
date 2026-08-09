@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.48'
+  version: '2.49'
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -17638,6 +17638,257 @@ paths:
               example:
                 error: pdf_not_ready
                 message: the report PDF is not available yet
+  /v1/qscore/my-report:
+    post:
+      tags: [Qscore]
+      summary: Generate your own credit report (self)
+      operationId: createQscoreSelfReport
+      description: 'Generates (or reuses) the Qscore credit report of the
+        authenticated account holder — the ARCO / data-protection right of
+        access to one''s own credit information. Unlike `POST
+        /v1/qscore/reports`, this endpoint is FREE (no fee is charged) and the
+        subject identity is derived from the verified account: the `tax_id`
+        validated during KYC/KYB. The request does NOT accept a `doc_id` —
+        requesting a third party''s report through this endpoint is impossible
+        by design (anti-oracle).
+
+        Frequency limit: one NEW self report every 30 days. If a `ready` self
+        report already exists within that window, the endpoint returns `200`
+        with the existing report and `idempotency_hit: true` (reused);
+        otherwise it generates a new one and returns `201`. A double submit on
+        the same day returns the already-created report (deterministic
+        idempotency per account + subject + day). Self reports are excluded
+        from the subject''s query count, so pulling your own report never
+        penalizes your score. The report is computed synchronously: the
+        response is the finished report (status `ready`) or a failed one
+        (status `failed` with `error_code`/`error_message`).'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            examples:
+              default:
+                summary: Default language (es)
+                value: {}
+              lang:
+                summary: Pick the report language
+                value:
+                  lang: en
+      responses:
+        '200':
+          description: 'A ready self report already existed within the 30-day
+            window; it is returned with `idempotency_hit: true` (no new report
+            is generated).'
+          content:
+            application/json:
+              example:
+                report_id: 7d2c1a90-4e55-4b3a-9f0c-1a2b3c4d5e6f
+                subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                status: ready
+                purpose: self_access
+                lang: es
+                score: 742
+                band: B
+                model_version: qscore-v2
+                reason_codes:
+                - code: CREDIT_HISTORY_DEPTH
+                  direction: positive
+                  weight: medium
+                verify_code: Q7d2c1a904e554b3a9f0c1a2b3c4d5e6fa1b2c3d4e5f60718293a
+                created_at: '2026-08-02T11:20:10Z'
+                completed_at: '2026-08-02T11:20:12Z'
+                idempotency_hit: true
+        '201':
+          description: 'Self report created and computed. When status is
+            `ready`, the full normalized `report` object is embedded; when
+            status is `failed`, `error_code`/`error_message` explain why.'
+          content:
+            application/json:
+              examples:
+                ready:
+                  summary: Report ready (score computed)
+                  value:
+                    report_id: 7d2c1a90-4e55-4b3a-9f0c-1a2b3c4d5e6f
+                    subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                    status: ready
+                    purpose: self_access
+                    lang: es
+                    score: 742
+                    band: B
+                    model_version: qscore-v2
+                    reason_codes:
+                    - code: CREDIT_HISTORY_DEPTH
+                      direction: positive
+                      weight: medium
+                    - code: ACTIVE_TRADELINES
+                      direction: positive
+                      weight: low
+                    verify_code: Q7d2c1a904e554b3a9f0c1a2b3c4d5e6fa1b2c3d4e5f60718293a
+                    created_at: '2026-08-08T15:04:22Z'
+                    completed_at: '2026-08-08T15:04:24Z'
+                    report:
+                      meta:
+                        report_id: QSR-7D2C1A904E55
+                        lang: es
+                        purpose: self_access
+                        generated_at: '2026-08-08T15:04:24Z'
+                        verification_code: Q7d2c1a904e554b3a9f0c1a2b3c4d5e6fa1b2c3d4e5f60718293a
+                        verification_url: /verify/qscore/Q7d2c1a904e554b3a9f0c1a2b3c4d5e6fa1b2c3d4e5f60718293a
+                      identity:
+                        subject_type: person
+                        doc_id: 12.345.678-5
+                        name: Example Name
+                        country: CL
+                      score:
+                        score: 742
+                        band: B
+                        model_version: qscore-v2
+                        reason_codes:
+                        - code: CREDIT_HISTORY_DEPTH
+                          direction: positive
+                          weight: medium
+                        computed_at: '2026-08-08T15:04:24Z'
+                      summary:
+                      - No delinquencies or adverse events on record.
+                      sources:
+                      - source: bureau
+                        label: Commercial bulletin
+                        records: 1
+                        fetched_at: '2026-08-08T15:04:23Z'
+                no_data:
+                  summary: Holder with no bureau data (SC band)
+                  value:
+                    report_id: 9b2e7a41-3c10-4e7b-8f25-9d31a2b7c5e2
+                    subject_id: 5c31a9d4-6b20-4f18-9a71-3e7b2d90c4aa
+                    status: ready
+                    purpose: self_access
+                    lang: en
+                    band: SC
+                    model_version: qscore-v2
+                    reason_codes:
+                    - code: NO_DATA
+                      direction: negative
+                      weight: high
+                    verify_code: Q9b2e7a413c104e7b8f259d31a2b7c5e2b2c3d4e5f60718293a4
+                    created_at: '2026-08-08T15:10:02Z'
+                    completed_at: '2026-08-08T15:10:03Z'
+        '400':
+          description: invalid_tax_id | invalid_payload (e.g. unsupported lang)
+          content:
+            application/json:
+              example:
+                error: invalid_tax_id
+                message: the verified tax id of the account is not valid for its country
+        '401':
+          description: unauthorized
+        '403':
+          description: 'kyc_required (the account does not have an approved
+            KYC/KYB) | forbidden (service disabled)'
+          content:
+            application/json:
+              example:
+                error: kyc_required
+                message: an approved identity verification is required to pull your own report
+        '409':
+          description: no_tax_id (the verified account has no tax id on file)
+          content:
+            application/json:
+              example:
+                error: no_tax_id
+                message: the account has no verified tax id
+    get:
+      tags: [Qscore]
+      summary: Get your latest self credit report
+      operationId: getQscoreSelfReport
+      description: 'Returns the most recent self report of the authenticated
+        account holder (any status), without generating a new one. Returns
+        `404 not_found` if the holder has never generated a self report. When
+        `status` is `ready` the full normalized `report` object is embedded;
+        when it is `failed`, `error_code`/`error_message` explain why.'
+      responses:
+        '200':
+          description: Latest self report.
+          content:
+            application/json:
+              example:
+                report_id: 7d2c1a90-4e55-4b3a-9f0c-1a2b3c4d5e6f
+                subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                status: ready
+                purpose: self_access
+                lang: es
+                score: 742
+                band: B
+                model_version: qscore-v2
+                reason_codes:
+                - code: CREDIT_HISTORY_DEPTH
+                  direction: positive
+                  weight: medium
+                verify_code: Q7d2c1a904e554b3a9f0c1a2b3c4d5e6fa1b2c3d4e5f60718293a
+                created_at: '2026-08-08T15:04:22Z'
+                completed_at: '2026-08-08T15:04:24Z'
+                report:
+                  meta:
+                    report_id: QSR-7D2C1A904E55
+                    lang: es
+                    purpose: self_access
+                    generated_at: '2026-08-08T15:04:24Z'
+                    verification_code: Q7d2c1a904e554b3a9f0c1a2b3c4d5e6fa1b2c3d4e5f60718293a
+                    verification_url: /verify/qscore/Q7d2c1a904e554b3a9f0c1a2b3c4d5e6fa1b2c3d4e5f60718293a
+                  identity:
+                    subject_type: person
+                    doc_id: 12.345.678-5
+                    name: Example Name
+                    country: CL
+                  score:
+                    score: 742
+                    band: B
+                    model_version: qscore-v2
+                    computed_at: '2026-08-08T15:04:24Z'
+                  summary:
+                  - No delinquencies or adverse events on record.
+        '401':
+          description: unauthorized
+        '403':
+          description: kyc_required | forbidden
+        '404':
+          description: not_found (no self report has ever been generated)
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: resource not found
+  /v1/qscore/my-report/pdf:
+    get:
+      tags: [Qscore]
+      summary: Download your own report PDF
+      operationId: getQscoreSelfReportPDF
+      description: 'Downloads the branded PDF of the most recent self report
+        of the authenticated account holder, in the language it was issued
+        (`lang`), with the `verify_code` printed for public verification at
+        `GET /verify/qscore/{code}`. Only available once the report is
+        `ready` — otherwise `404 pdf_not_ready`. The response is a binary
+        download (`Content-Disposition: attachment;
+        filename="qscore_self_<id>.pdf"`).'
+      responses:
+        '200':
+          description: PDF file of the self report.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+              example: '%PDF-1.7 (binary report content)'
+        '401':
+          description: unauthorized
+        '403':
+          description: kyc_required | forbidden
+        '404':
+          description: not_found | pdf_not_ready
+          content:
+            application/json:
+              example:
+                error: pdf_not_ready
+                message: the report PDF is not available yet
   /v1/qscore/subjects/{docID}:
     get:
       tags: [Qscore]
@@ -20593,6 +20844,10 @@ webhooks:
         The event is also emitted when the purchased report was already available
         for the subject (idempotent reuse).
 
+        The same event fires for a SELF report generated by the account holder
+        with `POST /v1/qscore/my-report`; in that case the payload adds
+        `purpose: "self_access"` (absent for purchased reports).
+
 
         Every delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
         and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`. Respond 2xx; up
@@ -20614,6 +20869,10 @@ webhooks:
                 subject_type:
                   type: string
                   enum: [person, company]
+                purpose:
+                  type: string
+                  description: 'Present only for self reports: `self_access`.'
+                  enum: [self_access]
                 score:
                   type: integer
                 band:

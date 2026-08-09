@@ -7,7 +7,25 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-<Update label="2026年8月8日" description="v2.48 · 8 个版本">
+<Update label="2026年8月8日" description="v2.49 · 9 个版本">
+
+### v2.49
+
+**新增**
+
+- **Qscore —— 您自己的信用报告,免费**([Qscore 指南](/zh/guides/qscore)):已验证账户的
+  持有人现在可以获取其本人的 Qscore 信用报告 —— 即 ARCO / 数据保护访问权 ——
+  通过 `POST /v1/qscore/my-report`(可选 `{"lang":"es"|"en"|"zh"}`)生成,
+  通过 `GET /v1/qscore/my-report` 读取最新报告,并通过
+  `GET /v1/qscore/my-report/pdf` 下载品牌化 PDF。与购买的报告不同,自助报告
+  **免费**(不收取费用),主体身份来自账户已验证的 `tax_id`(请求从不接受
+  `doc_id` —— 通过这些端点获取第三方报告在设计上是不可能的),每 30 天可生成
+  一份新报告(在该时间窗口内将返回现有报告并带 `idempotency_hit: true`),
+  且自助报告不计入主体的查询次数,因此查看您自己的报告绝不会影响您的评分。
+  自助报告的 `risk_report_ready` webhook 会携带 `purpose: "self_access"`。
+  商业端点 `POST /v1/qscore/reports` 现在会拒绝 `purpose: "self_access"`,
+  返回 `400 invalid_purpose`。新增错误码:`kyc_required`、`no_tax_id`、
+  `invalid_tax_id`([错误](/zh/errors))。
 
 ### v2.48
 

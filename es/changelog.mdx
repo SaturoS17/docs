@@ -8,7 +8,30 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-<Update label="8 de agosto de 2026" description="v2.48 · 8 versiones">
+<Update label="8 de agosto de 2026" description="v2.49 · 9 versiones">
+
+### v2.49
+
+**Agregado**
+
+- **Qscore — tu propio informe crediticio, gratis** ([guía Qscore](/es/guias/qscore)):
+  el titular de una cuenta verificada ahora puede generar SU PROPIO informe
+  crediticio Qscore — el derecho de acceso ARCO / de protección de datos —
+  con `POST /v1/qscore/my-report` (opcional `{"lang":"es"|"en"|"zh"}`),
+  leer el más reciente con `GET /v1/qscore/my-report` y descargar el PDF
+  brandeado con `GET /v1/qscore/my-report/pdf`. A diferencia del informe
+  comprado, el informe self es **gratuito** (sin comisión), la identidad del
+  sujeto sale del `tax_id` verificado de la cuenta (el request jamás acepta
+  un `doc_id` — pedir el informe de un tercero por estos endpoints es
+  imposible por diseño), se puede generar UN informe nuevo cada 30 días
+  (dentro de la ventana se devuelve el existente con `idempotency_hit:
+  true`), y los informes self quedan excluidos del conteo de consultas del
+  sujeto, así que revisar tu propio informe jamás penaliza tu score. El
+  webhook `risk_report_ready` de un informe self lleva `purpose:
+  "self_access"`. El endpoint comercial `POST /v1/qscore/reports` ahora
+  rechaza `purpose: "self_access"` con `400 invalid_purpose`. Nuevos códigos
+  de error: `kyc_required`, `no_tax_id`, `invalid_tax_id`
+  ([errores](/es/errores)).
 
 ### v2.48
 

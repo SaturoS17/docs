@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: '2.48'
+  version: '2.49'
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -17105,6 +17105,246 @@ paths:
               example:
                 error: pdf_not_ready
                 message: the report PDF is not available yet
+  /v1/qscore/my-report:
+    post:
+      tags: [Qscore]
+      summary: 生成您自己的信用报告（自助）
+      operationId: createQscoreSelfReport
+      description: '生成（或复用）已认证账户持有人的 Qscore 信用报告——即 ARCO/数据保护法
+        规定的查阅本人信用信息的权利。与 `POST /v1/qscore/reports` 不同，此端点免费
+        （不收取任何费用），且主体身份来自已验证的账户：KYC/KYB 过程中验证过的
+        `tax_id`。请求不接受 `doc_id`——从设计上就无法通过此端点请求第三方的报告
+        （防预言机）。
+
+        频率限制：每 30 天生成一份新的自助报告。如果该时间窗口内已存在 `ready`
+        状态的自助报告，端点返回 `200` 及现有报告，并带 `idempotency_hit: true`
+        （复用）；否则生成新报告并返回 `201`。同一天重复提交会返回已创建的报告
+        （按账户 + 主体 + 日期的确定性幂等）。自助报告不计入主体的查询次数，
+        因此查看自己的报告绝不会影响您的评分。报告是同步计算的：响应即为完成的
+        报告（状态 `ready`）或失败的报告（状态 `failed`，带 `error_code`/
+        `error_message`）。'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            examples:
+              default:
+                summary: 默认语言（es）
+                value: {}
+              lang:
+                summary: 选择报告语言
+                value:
+                  lang: en
+      responses:
+        '200':
+          description: '30 天窗口内已存在 `ready` 状态的自助报告；返回该报告并带
+            `idempotency_hit: true`（不生成新报告）。'
+          content:
+            application/json:
+              example:
+                report_id: 7d2c1a90-4e55-4b3a-9f0c-1a2b3c4d5e6f
+                subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                status: ready
+                purpose: self_access
+                lang: es
+                score: 742
+                band: B
+                model_version: qscore-v2
+                reason_codes:
+                - code: CREDIT_HISTORY_DEPTH
+                  direction: positive
+                  weight: medium
+                verify_code: Q7d2c1a904e554b3a9f0c1a2b3c4d5e6fa1b2c3d4e5f60718293a
+                created_at: '2026-08-02T11:20:10Z'
+                completed_at: '2026-08-02T11:20:12Z'
+                idempotency_hit: true
+        '201':
+          description: 自助报告已创建并完成计算。状态为 `ready` 时，响应内嵌完整的
+            规范化 `report` 对象；状态为 `failed` 时，`error_code`/`error_message`
+            说明原因。
+          content:
+            application/json:
+              examples:
+                ready:
+                  summary: 报告就绪（已计算评分）
+                  value:
+                    report_id: 7d2c1a90-4e55-4b3a-9f0c-1a2b3c4d5e6f
+                    subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                    status: ready
+                    purpose: self_access
+                    lang: es
+                    score: 742
+                    band: B
+                    model_version: qscore-v2
+                    reason_codes:
+                    - code: CREDIT_HISTORY_DEPTH
+                      direction: positive
+                      weight: medium
+                    - code: ACTIVE_TRADELINES
+                      direction: positive
+                      weight: low
+                    verify_code: Q7d2c1a904e554b3a9f0c1a2b3c4d5e6fa1b2c3d4e5f60718293a
+                    created_at: '2026-08-08T15:04:22Z'
+                    completed_at: '2026-08-08T15:04:24Z'
+                    report:
+                      meta:
+                        report_id: QSR-7D2C1A904E55
+                        lang: es
+                        purpose: self_access
+                        generated_at: '2026-08-08T15:04:24Z'
+                        verification_code: Q7d2c1a904e554b3a9f0c1a2b3c4d5e6fa1b2c3d4e5f60718293a
+                        verification_url: /verify/qscore/Q7d2c1a904e554b3a9f0c1a2b3c4d5e6fa1b2c3d4e5f60718293a
+                      identity:
+                        subject_type: person
+                        doc_id: 12.345.678-5
+                        name: Example Name
+                        country: CL
+                      score:
+                        score: 742
+                        band: B
+                        model_version: qscore-v2
+                        reason_codes:
+                        - code: CREDIT_HISTORY_DEPTH
+                          direction: positive
+                          weight: medium
+                        computed_at: '2026-08-08T15:04:24Z'
+                      summary:
+                      - No delinquencies or adverse events on record.
+                      sources:
+                      - source: bureau
+                        label: Commercial bulletin
+                        records: 1
+                        fetched_at: '2026-08-08T15:04:23Z'
+                no_data:
+                  summary: 无征信数据的持有人（SC 等级）
+                  value:
+                    report_id: 9b2e7a41-3c10-4e7b-8f25-9d31a2b7c5e2
+                    subject_id: 5c31a9d4-6b20-4f18-9a71-3e7b2d90c4aa
+                    status: ready
+                    purpose: self_access
+                    lang: en
+                    band: SC
+                    model_version: qscore-v2
+                    reason_codes:
+                    - code: NO_DATA
+                      direction: negative
+                      weight: high
+                    verify_code: Q9b2e7a413c104e7b8f259d31a2b7c5e2b2c3d4e5f60718293a4
+                    created_at: '2026-08-08T15:10:02Z'
+                    completed_at: '2026-08-08T15:10:03Z'
+        '400':
+          description: invalid_tax_id | invalid_payload（如不支持的 lang）
+          content:
+            application/json:
+              example:
+                error: invalid_tax_id
+                message: the verified tax id of the account is not valid for its country
+        '401':
+          description: unauthorized
+        '403':
+          description: kyc_required（账户没有已批准的 KYC/KYB）| forbidden（服务已禁用）
+          content:
+            application/json:
+              example:
+                error: kyc_required
+                message: an approved identity verification is required to pull your own report
+        '409':
+          description: no_tax_id（已验证的账户没有登记税号）
+          content:
+            application/json:
+              example:
+                error: no_tax_id
+                message: the account has no verified tax id
+    get:
+      tags: [Qscore]
+      summary: 获取您最新的自助信用报告
+      operationId: getQscoreSelfReport
+      description: '返回已认证账户持有人最新的自助报告（任何状态），不生成新报告。
+        如果持有人从未生成过自助报告，则返回 `404 not_found`。当 `status` 为
+        `ready` 时，响应内嵌完整的规范化 `report` 对象；为 `failed` 时，
+        `error_code`/`error_message` 说明原因。'
+      responses:
+        '200':
+          description: 最新的自助报告。
+          content:
+            application/json:
+              example:
+                report_id: 7d2c1a90-4e55-4b3a-9f0c-1a2b3c4d5e6f
+                subject_id: 8f5fb0d2-1d45-4a0e-9d5c-2d39f2b7a112
+                status: ready
+                purpose: self_access
+                lang: es
+                score: 742
+                band: B
+                model_version: qscore-v2
+                reason_codes:
+                - code: CREDIT_HISTORY_DEPTH
+                  direction: positive
+                  weight: medium
+                verify_code: Q7d2c1a904e554b3a9f0c1a2b3c4d5e6fa1b2c3d4e5f60718293a
+                created_at: '2026-08-08T15:04:22Z'
+                completed_at: '2026-08-08T15:04:24Z'
+                report:
+                  meta:
+                    report_id: QSR-7D2C1A904E55
+                    lang: es
+                    purpose: self_access
+                    generated_at: '2026-08-08T15:04:24Z'
+                    verification_code: Q7d2c1a904e554b3a9f0c1a2b3c4d5e6fa1b2c3d4e5f60718293a
+                    verification_url: /verify/qscore/Q7d2c1a904e554b3a9f0c1a2b3c4d5e6fa1b2c3d4e5f60718293a
+                  identity:
+                    subject_type: person
+                    doc_id: 12.345.678-5
+                    name: Example Name
+                    country: CL
+                  score:
+                    score: 742
+                    band: B
+                    model_version: qscore-v2
+                    computed_at: '2026-08-08T15:04:24Z'
+                  summary:
+                  - No delinquencies or adverse events on record.
+        '401':
+          description: unauthorized
+        '403':
+          description: kyc_required | forbidden
+        '404':
+          description: not_found（从未生成过自助报告）
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: resource not found
+  /v1/qscore/my-report/pdf:
+    get:
+      tags: [Qscore]
+      summary: 下载您自己的报告 PDF
+      operationId: getQscoreSelfReportPDF
+      description: '下载已认证账户持有人最新自助报告的品牌化 PDF，语言为签发时所用的
+        语言（`lang`），并打印有用于在 `GET /verify/qscore/{code}` 公开验证的
+        `verify_code`。仅在报告为 `ready` 时可用——否则返回 `404 pdf_not_ready`。
+        响应为二进制下载（`Content-Disposition: attachment;
+        filename="qscore_self_<id>.pdf"`）。'
+      responses:
+        '200':
+          description: 自助报告的 PDF 文件。
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+              example: '%PDF-1.7 (binary report content)'
+        '401':
+          description: unauthorized
+        '403':
+          description: kyc_required | forbidden
+        '404':
+          description: not_found | pdf_not_ready
+          content:
+            application/json:
+              example:
+                error: pdf_not_ready
+                message: the report PDF is not available yet
   /v1/qscore/subjects/{docID}:
     get:
       tags: [Qscore]
@@ -19942,6 +20182,9 @@ webhooks:
         `failed`，不会发出任何事件。当购买的报告对该主体已存在时也会发出此事件
         （幂等重用）。
 
+        当账户持有人通过 `POST /v1/qscore/my-report` 生成自助报告时，也会触发同一事件；
+        此时 payload 会额外包含 `purpose: "self_access"`（购买的报告没有此字段）。
+
 
         每次交付都包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp`
         和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。响应 2xx；
@@ -19963,6 +20206,10 @@ webhooks:
                 subject_type:
                   type: string
                   enum: [person, company]
+                purpose:
+                  type: string
+                  description: 仅自助报告存在：`self_access`。
+                  enum: [self_access]
                 score:
                   type: integer
                 band:

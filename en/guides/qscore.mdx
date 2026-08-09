@@ -15,7 +15,7 @@ Qscore is the API-first credit bureau of the platform. One call returns a **comp
 - **Compliance built in**: the declared `purpose` is mandatory (Chilean data protection law), every score carries its reason codes, and every report includes a public verification code.
 
 <Note>
-Qscore is a paid product gated by the `risk` service flag of your account and billed per report (`risk_report_person` / `risk_report_company` standalone fees). If the generation fails after the charge, the fee is **refunded automatically** and the report ends `failed` with its `error_code`.
+Qscore is a paid product gated by the `risk` service flag of your account and billed per report (`risk_report_person` / `risk_report_company` standalone fees). If the generation fails after the charge, the fee is **refunded automatically** and the report ends `failed` with its `error_code`. The exception is **your own report**: a verified account holder generates their self report for free — see "Your own report (self)" below.
 </Note>
 
 ## How it works
@@ -39,6 +39,71 @@ sequenceDiagram
 ```
 
 Generation is **synchronous**: the `POST` fetches the bureau records, computes the score, renders the PDF and returns the ready report in a single response. A source that is down does **not** fail a paid report — it is generated with the persisted data and the source is declared `cached` (or `unavailable` if it contributed nothing) in the `sources` section.
+
+## Your own report (self)
+
+If you hold a **verified account** (approved KYC/KYB), you can generate and download **your own Qscore report** directly. This is your right of access to your personal data (ARCO / Chilean Law 21.719), not a purchase:
+
+- **Free**: no fee is charged, ever.
+- **No score penalty**: self reports are excluded from the inquiry count of your score — checking your own report never hurts it.
+- **Anti-oracle by design**: the subject identity comes from the `tax_id` verified in your KYC/KYB. The request does **not** accept a `doc_id` — asking for someone else's report through these endpoints is impossible.
+- **Frequency limit**: one **new** report every 30 days. If you already have a `ready` report within the window, the `POST` returns it with `idempotency_hit: true` (HTTP 200) instead of generating another.
+
+### Generate (or reuse) your report
+
+`POST /v1/qscore/my-report` — the body is optional: `{"lang": "es"|"en"|"zh"}` (default `es`). Generation is **synchronous**: the response carries the finished report. No `idempotency_key` is needed — idempotency is deterministic per account, subject and day (a double submit on the same day returns the already-created report).
+
+```bash Generate your own report
+curl -X POST "https://api.qbank.cl/platform/v1/qscore/my-report" \
+  -H "Authorization: Bearer pk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{"lang": "es"}'
+```
+
+```json 201 Created (new report generated)
+{
+  "report_id": "9f1c2d3e-4a5b-4c6d-8e7f-0a1b2c3d4e5f",
+  "subject_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "status": "ready",
+  "purpose": "self_access",
+  "lang": "es",
+  "band": "B",
+  "model_version": "qscore-v2",
+  "verify_code": "Q9f1c2d3e4a5b4c6d8e7f0a1b2c3d4e5f1a2b3c4d5e6f",
+  "created_at": "2026-08-08T15:04:12Z",
+  "score": 742,
+  "reason_codes": ["RC01", "RC07"],
+  "completed_at": "2026-08-08T15:04:19Z",
+  "report": { "...": "full report JSON" }
+}
+```
+
+A second call within 30 days answers `200 OK` with the same report and `"idempotency_hit": true`. If the generation fails, the response is `201` with `status: "failed"` and its `error_code` / `error_message` (nothing was charged — the self report is free).
+
+### Read your latest report
+
+`GET /v1/qscore/my-report` returns your most recent self report (any status) without generating a new one — `404 not_found` if you never generated one.
+
+### Download the PDF
+
+`GET /v1/qscore/my-report/pdf` downloads the PDF of your latest self report (`Content-Disposition: attachment; filename="qscore_self_<id>.pdf"`). If the report is not `ready` yet, it answers `404 pdf_not_ready`.
+
+The PDF carries the same public verification code as any Qscore report — anyone holding it can check its authenticity at `GET /verify/qscore/{code}` (see "Public verification" below).
+
+### Self-report errors
+
+| HTTP | Code | When | Solution |
+|---|---|---|---|
+| 403 | `kyc_required` | Your account's KYC/KYB is not approved | Complete identity verification first |
+| 409 | `no_tax_id` | Your account has no verified tax id on file | Complete your verified profile or contact support |
+| 400 | `invalid_tax_id` | The tax id on file is not valid for the account country | Contact support to fix your verified data |
+| 409 | `identity_mismatch` | The account `tax_id` does not match the verified identity document (it was overridden) | Contact support — your verified data must be consistent |
+| 404 | `not_found` | You never generated a self report (`GET`) | Generate one with `POST /v1/qscore/my-report` |
+| 404 | `pdf_not_ready` | The report is not `ready` yet or has no PDF | Retry the download once the report is `ready` |
+
+<Note>
+The commercial endpoint `POST /v1/qscore/reports` **rejects** `purpose: "self_access"` with `400 invalid_purpose` — self access only goes through `/v1/qscore/my-report`. The `risk_report_ready` webhook of a self report carries an extra `"purpose": "self_access"` field in its payload.
+</Note>
 
 ## 1. Buy a report
 
@@ -255,7 +320,7 @@ curl "https://api.qbank.cl/platform/v1/qscore/reports?from=2026-08-01&to=2026-08
 |---|---|---|---|
 | 400 | `invalid_payload` | `doc_id`/`country` missing or malformed JSON | Send both fields with a valid JSON body |
 | 400 | `purpose_required` | `purpose` missing | Declare the purpose (data protection law) |
-| 400 | `invalid_purpose` | `purpose` outside the closed list | Use `credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding` or `other` |
+| 400 | `invalid_purpose` | `purpose` outside the closed list, or `self_access` sent to the commercial endpoint | Use `credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding` or `other` — self access goes through `POST /v1/qscore/my-report` |
 | 400 | `invalid_doc_id` | The document is not valid for the country (e.g. bad RUT check digit) | Fix the `doc_id` format for the country |
 | 400 | `invalid_subject_type` | `subject_type` is not `person`/`company` and could not be inferred | Send `subject_type` explicitly |
 | 400 | `idempotency_key_required` | Missing `idempotency_key` | Send a unique key per purchase |
@@ -285,6 +350,8 @@ Subscribe to the Qscore events in your [webhook settings](/en/webhooks). All thr
   "verify_code": "Qf47ac10b58cc4372a5670e02b2c3d4791a2b3c4d5e6f"
 }
 ```
+
+A self report (see "Your own report (self)") emits the same event with an extra `"purpose": "self_access"` field; commercial reports omit it.
 
   </Accordion>
   <Accordion title="risk_score_changed — the subject's score moved">

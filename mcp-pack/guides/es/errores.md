@@ -214,12 +214,16 @@ Errores de los endpoints del buró de crédito ([guía](https://docs.cbpayapp.co
 | HTTP | `error` | Significado |
 |---|---|---|
 | 400 | `purpose_required` | Falta `purpose` al crear un informe — la ley de protección de datos exige declararlo (`credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding` u `other`) |
-| 400 | `invalid_purpose` | El `purpose` no es uno de los valores permitidos (`credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding`, `other`) — corrige el valor |
+| 400 | `invalid_purpose` | El `purpose` no es uno de los valores permitidos (`credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding`, `other`) — corrige el valor. `self_access` se rechaza aquí: tu propio informe solo va por `POST /v1/qscore/my-report` |
 | 400 | `invalid_doc_id` | El `doc_id` no es válido para el `country` indicado (ej. dígito verificador de RUT incorrecto en Chile) — corrige el formato del documento |
 | 400 | `invalid_subject_type` | `subject_type` no es `person`/`company` y no se pudo inferir del documento — envíalo explícito |
+| 400 | `invalid_tax_id` | El `tax_id` verificado de la cuenta no es válido para su país (informe self) — contacta a soporte para corregir tus datos verificados |
+| 403 | `kyc_required` | Generar tu propio informe exige un KYC/KYB aprobado — completa primero la verificación de identidad |
 | 403 | `report_required` | Activar el monitoreo exige un informe comprado de ese sujeto — compra uno primero ([guía](https://docs.cbpayapp.com/es/guias/qscore)); por privacidad, un sujeto inexistente recibe esta misma respuesta |
 | 404 | `no_score` | El sujeto aún no tiene un score calculado — compra un informe primero |
 | 404 | `pdf_not_ready` | El PDF del informe aún no está disponible — consulta el detalle hasta `status=ready` (el webhook `risk_report_ready` te avisa) |
+| 409 | `no_tax_id` | La cuenta verificada no tiene `tax_id` registrado, así que el informe self no puede resolver su sujeto — completa primero tus datos verificados |
+| 409 | `identity_mismatch` | El `tax_id` de la cuenta no calza con el documento de identidad verificado (informe self) — contacta a soporte; tus datos verificados deben ser consistentes |
 
 ### Firewall transaccional
 
