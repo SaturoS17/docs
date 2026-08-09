@@ -5,7 +5,7 @@ slug: es/guias/revisiones-operaciones
 lang: es
 source_url: https://docs.cbpayapp.com/es/guias/revisiones-operaciones
 ---
-Cuando tu organización tiene el **firewall transaccional** activado, algunas operaciones de dinero (payouts, retiros crypto, payins o transferencias banking) pueden quedar **retenidas para revisión manual** antes de ejecutarse. Esta guía te muestra cómo consultar esas revisiones y responder cuando te pidan información.
+Cuando tu organización tiene el **firewall transaccional** activado, algunas operaciones de dinero (payouts, retiros crypto, payins o transferencias banking) pueden quedar **retenidas para revisión manual** antes de ejecutarse — y si tu organización además activó la **revisión de solicitudes**, crear un perfil banking, registrar un tercero bancario o emitir una tarjeta puede quedar retenido de la misma forma. Esta guía te muestra cómo consultar esas revisiones y responder cuando te pidan información.
 
 > **Nota**
 ¿Pruebas de integración? En el ambiente de test (`https://cryptobank.qbank.cl/platform`, keys `pk_test_`) el firewall se comporta igual que en producción cuando tu org lo activa. Detalles en [Ambientes y pruebas](https://docs.cbpayapp.com/es/entorno-y-pruebas).
@@ -115,11 +115,36 @@ Una revisión de otra cuenta responde `404 not_found` (nunca `403`, para no filt
 |---|---|---|
 | `in_review` | La operación está siendo revisada por el equipo de compliance | Espera — no necesitas hacer nada |
 | `info_requested` | Te pidieron información adicional | Sube los documentos solicitados lo antes posible |
-| `released` | La revisión aprobó la operación | La operación ya se ejecutó (o está en camino) |
-| `rejected` | La revisión rechazó la operación | La operación se canceló; si había fondos retenidos, se devolvieron a tu saldo |
+| `released` | La revisión aprobó la operación | La operación ya se ejecutó (o está en camino) — para una solicitud, el perfil banking o la tarjeta ya fueron creados |
+| `rejected` | La revisión rechazó la operación | La operación se canceló; los fondos retenidos vuelven a tu saldo — y una solicitud rechazada reembolsa su fee |
 
 > **Nota**
-**Rechazo automático por plazo.** Si tu organización configuró un plazo de revisión, una revisión que nadie decide dentro de esa ventana (contada desde su último cambio de estado — subir evidencia reinicia el reloj) queda **automáticamente rechazada** por un barrido horario: la operación se cancela, los fondos retenidos vuelven a tu saldo y recibes el mismo email y webhook `txn_review_status_changed` que con un rechazo manual. En el detalle, el `decision_note` lleva el aviso estándar de plazo vencido.
+**Rechazo automático por plazo.** Si tu organización configuró un plazo de revisión, una revisión que nadie decide dentro de esa ventana (contada desde su último cambio de estado — subir evidencia reinicia el reloj) queda **automáticamente rechazada** por un barrido horario: la operación se cancela, los fondos retenidos vuelven a tu saldo y recibes el mismo email y webhook `txn_review_status_changed` que con un rechazo manual. En el detalle, el `decision_note` lleva el aviso estándar de plazo vencido. **Las revisiones de solicitudes jamás se auto-rechazan**: una solicitud banking o de tarjeta retenida siempre espera una decisión humana, sin plazo.
+## Solicitudes retenidas (banking y tarjetas)
+
+Si tu organización activó la **revisión de solicitudes** (dos toggles separados, uno para banking y otro para tarjetas), estas llamadas también pueden quedar retenidas antes de procesarse:
+
+- `POST /v1/banking/customer` — apertura de tu propio perfil banking
+- `POST /v1/banking/third-parties` — registro de un tercero para banking
+- `POST /v1/cards` — emisión de una tarjeta (virtual o física)
+
+Una solicitud retenida responde **`202 Accepted`** en vez de `201`:
+
+```json
+{
+  "status": "in_review",
+  "kind": "card_application",
+  "review_id": "7a3f2b1c-0000-4000-8000-000000000001",
+  "message": "application received; it is pending review by our compliance team"
+}
+```
+
+Un reintento con la misma `idempotency_key` devuelve el mismo `202` con `idempotency_hit: true` — jamás abre una segunda revisión.
+
+- **El fee de la solicitud se cobra al retenerla.** Si la revisión se rechaza, el fee se **reembolsa automáticamente**; si se aprueba, el perfil o la tarjeta se crean en ese momento.
+- **Sigue el resultado** con el webhook `txn_review_status_changed` (el `kind` será `banking_application` o `card_application`) o consultando `GET /v1/me/txn-reviews`.
+- La revisión también puede pedir información (`info_requested`) — sube los documentos igual que en una revisión transaccional.
+
 ## Sube documentos cuando te los pidan
 
 Si tu revisión está en `info_requested`, sube los archivos de respaldo. El body es el **binario crudo** del archivo, el nombre viaja en el query param `name` y el tipo en el header `Content-Type`:
@@ -184,6 +209,8 @@ Cada vez que el estado de una revisión tuya cambia, recibes este webhook:
 
 > **Nota**
 El payload del webhook es **neutro** por diseño: incluye el estado y el resumen de la operación, pero jamás el motivo interno de la revisión ni notas de compliance.
+
+Para revisiones de solicitudes (`kind`: `banking_application` / `card_application`) el payload omite `amount` y `asset`; `method` lleva el flujo de la solicitud (`self`/`third_party`) o el tipo de tarjeta (`virtual`/`physical`).
 ## Errores propios
 
 | HTTP | Código | Solución |
@@ -213,3 +240,5 @@ La operación se cancela. Si había fondos retenidos (por ejemplo, en un payout)
 No directamente. Si necesitas cancelarla, contacta al equipo de compliance de tu organización — ellos pueden rechazarla desde su panel.
 #### ¿Por qué no veo el motivo de la retención?
 Por seguridad y para no comprometer investigaciones de compliance, el motivo interno nunca se expone al usuario final. Solo verás el mensaje de información solicitada cuando te pidan documentos.
+#### Creé un perfil banking o una tarjeta y recibí un 202 — ¿qué pasó?
+Tu organización activó la revisión de solicitudes: la llamada quedó retenida antes de procesarse. Todavía no se crea nada — cuando compliance apruebe la revisión, el perfil o la tarjeta se crean automáticamente y recibes el webhook `txn_review_status_changed` con `status: released`. El fee de la solicitud se cobró al retenerla; si la revisión se rechaza, el fee se reembolsa a tu saldo automáticamente.

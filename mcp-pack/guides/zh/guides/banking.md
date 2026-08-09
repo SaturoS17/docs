@@ -66,7 +66,11 @@ curl -X POST https://api.qbank.cl/platform/v1/banking/customer \
 }
 ```
 
-如果您的账户已有银行客户档案——`409 banking_customer_exists`。可随时查询状态：
+如果您的账户已有银行客户档案——`409 banking_customer_exists`。
+
+> **注**
+**申请审核。** 如果您的组织启用了银行申请审核，此请求可能返回 **`202 Accepted`**（`{"status":"in_review","kind":"banking_application","review_id":"…"}`）而不是 `201`——只有在合规团队批准审核后才会创建银行资料。银行资料费用在申请挂起时收取，**如果被拒绝则自动退还**。通过 webhook `txn_review_status_changed` 或[交易审核](https://docs.cbpayapp.com/zh/guides/transaction-reviews)跟踪结果。
+可随时查询状态：
 
 ```bash
 curl https://api.qbank.cl/platform/v1/banking/customer \
@@ -213,6 +217,8 @@ curl -X POST https://api.qbank.cl/platform/v1/banking/third-parties \
 
 > **注**
 `documents_synced` 表示自动加载到该第三方银行档案中的验证证件数量。如果某份证件未能同步（或银行要求额外类别），请通过下方的手动证件流程上传，然后执行 `submit`。
+> **注**
+**申请审核。** 启用银行申请审核后，注册第三方也可能返回 **`202 Accepted`**（`kind: banking_application`）：只有在审核通过后才会注册第三方，注册费用在被拒绝时自动退还。通过 `txn_review_status_changed` 或[交易审核](https://docs.cbpayapp.com/zh/guides/transaction-reviews)跟踪结果。
 请保存 `third_party_id`：所有第三方路由都使用它。列出与查询（GET 中包含实时的验证状态）：
 
 ```bash

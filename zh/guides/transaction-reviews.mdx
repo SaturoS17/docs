@@ -4,7 +4,7 @@ icon: "shield-check"
 description: "查询并回应交易防火墙对您资金操作的审核"
 ---
 
-当您所在的组织启用**交易防火墙**后，部分资金操作（付款、加密货币提现、收款、银行转账）可能会在执行前被**挂起以进行人工审核**。本指南介绍如何查询这些审核，以及在被要求提供信息时如何回应。
+当您所在的组织启用**交易防火墙**后，部分资金操作（付款、加密货币提现、收款、银行转账）可能会在执行前被**挂起以进行人工审核**——如果您的组织还启用了**申请审核**，创建银行资料、注册银行第三方或开卡也可能以同样方式被挂起。本指南介绍如何查询这些审核，以及在被要求提供信息时如何回应。
 
 <Note>
 集成测试？在测试环境（`https://cryptobank.qbank.cl/platform`，`pk_test_` 密钥）中，组织启用防火墙后其行为与生产环境完全一致。详见[环境与测试](/zh/environment-testing)。
@@ -120,12 +120,37 @@ curl https://api.qbank.cl/platform/v1/me/txn-reviews/7a3f2b1c-0000-4000-8000-000
 |---|---|---|
 | `in_review` | 操作正由合规团队审核 | 等待——无需任何操作 |
 | `info_requested` | 被要求提供补充信息 | 尽快上传所需文件 |
-| `released` | 审核已通过该操作 | 操作已执行（或正在执行中） |
-| `rejected` | 审核拒绝了该操作 | 操作已取消；如有挂起资金，将退回您的余额 |
+| `released` | 审核已通过该操作 | 操作已执行（或正在执行中）——对于申请，银行资料或卡片已创建 |
+| `rejected` | 审核拒绝了该操作 | 操作已取消；挂起资金退回您的余额——被拒绝的申请将退还其费用 |
 
 <Note>
-**按期限自动拒绝。** 如果您的组织配置了审核期限，在该期限内（自审核的最后一次状态变化起算——上传证据会重置时钟）无人决定的审核，将被每小时扫描**自动拒绝**：操作被取消，被扣留的资金退回您的余额，您会收到与手动拒绝相同的邮件和 `txn_review_status_changed` webhook。在详情中，`decision_note` 会带有期限已过期的标准通知。
+**按期限自动拒绝。** 如果您的组织配置了审核期限，在该期限内（自审核的最后一次状态变化起算——上传证据会重置时钟）无人决定的审核，将被每小时扫描**自动拒绝**：操作被取消，被扣留的资金退回您的余额，您会收到与手动拒绝相同的邮件和 `txn_review_status_changed` webhook。在详情中，`decision_note` 会带有期限已过期的标准通知。**申请审核永不会被自动拒绝**：被挂起的银行或开卡申请始终等待人工决定，没有期限。
 </Note>
+
+## 被挂起的申请（银行与开卡）
+
+如果您的组织启用了**申请审核**（两个独立开关，分别对应银行和开卡），以下请求也可能在处理前被挂起：
+
+- `POST /v1/banking/customer` —— 开通您自己的银行资料
+- `POST /v1/banking/third-parties` —— 注册银行第三方
+- `POST /v1/cards` —— 开卡（虚拟卡或实体卡）
+
+被挂起的申请返回 **`202 Accepted`** 而不是 `201`：
+
+```json
+{
+  "status": "in_review",
+  "kind": "card_application",
+  "review_id": "7a3f2b1c-0000-4000-8000-000000000001",
+  "message": "application received; it is pending review by our compliance team"
+}
+```
+
+使用相同 `idempotency_key` 的重试会返回相同的 `202` 负载并带有 `idempotency_hit: true`——绝不会创建第二条审核。
+
+- **申请费用在挂起时收取。** 如果审核被拒绝，费用将**自动退还**；如果审核通过，银行资料或卡片会立即创建。
+- **通过 webhook `txn_review_status_changed` 跟踪结果**（`kind` 为 `banking_application` 或 `card_application`），或轮询 `GET /v1/me/txn-reviews`。
+- 审核也可能要求补充信息（`info_requested`）——上传文件的方式与交易审核完全相同。
 
 ## 按要求上传文件
 
@@ -191,6 +216,8 @@ curl "https://api.qbank.cl/platform/v1/me/txn-reviews/7a3f2b1c-0000-4000-8000-00
 
 <Note>
 webhook 负载刻意保持**中性**：只携带状态和操作摘要，绝不携带内部审核原因或合规备注。
+
+对于申请审核（`kind`：`banking_application` / `card_application`），负载省略 `amount` 和 `asset`；`method` 携带申请流程（`self`/`third_party`）或卡片类型（`virtual`/`physical`）。
 </Note>
 
 ## 专属错误
@@ -232,4 +259,8 @@ webhook 负载刻意保持**中性**：只携带状态和操作摘要，绝不�
 <Accordion title="为什么我看不到挂起原因？">
 出于安全考虑且不损害合规调查，内部原因绝不向最终用户暴露。只有在被要求提供文件时，您才会看到信息请求消息。
 </Accordion>
+<Accordion title="我创建了银行资料或卡片，却收到了 202——发生了什么？">
+您的组织启用了申请审核：请求在处理前被挂起。此时尚未创建任何内容——合规团队批准审核后，银行资料或卡片会自动创建，您会收到带有 `status: released` 的 webhook `txn_review_status_changed`。申请费用在挂起时已收取；如果审核被拒绝，费用将自动退回到您的余额。
+</Accordion>
+
 </AccordionGroup>

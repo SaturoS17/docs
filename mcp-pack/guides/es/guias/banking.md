@@ -78,6 +78,9 @@ Respuesta `201`:
 ```
 
 Si tu cuenta ya tiene perfil bancario — `409 banking_customer_exists`.
+
+> **Nota**
+**Revisión de solicitudes.** Si tu organización activó la revisión de solicitudes banking, esta llamada puede responder **`202 Accepted`** con `{"status":"in_review","kind":"banking_application","review_id":"…"}` en vez de `201` — el perfil se crea solo cuando compliance aprueba la revisión. El fee del perfil banking se cobra al retener la solicitud y **se reembolsa automáticamente si se rechaza**. Sigue el resultado con el webhook `txn_review_status_changed` o en [Revisiones de operaciones](https://docs.cbpayapp.com/es/guias/revisiones-operaciones).
 Consulta el estado en cualquier momento:
 
 ```bash
@@ -256,6 +259,8 @@ Respuesta `201`:
 cargados automáticamente en el perfil bancario del tercero. Si alguno no se
 pudo sincronizar (o el banco pide categorías adicionales), súbelo por el
 flujo manual de documentos de más abajo y luego haz `submit`.
+> **Nota**
+**Revisión de solicitudes.** Con la revisión de solicitudes banking activada, registrar un tercero también puede responder **`202 Accepted`** (`kind: banking_application`): el tercero se registra solo cuando la revisión se aprueba, y el fee de registro se reembolsa automáticamente si se rechaza. Síguelo vía `txn_review_status_changed` o en [Revisiones de operaciones](https://docs.cbpayapp.com/es/guias/revisiones-operaciones).
 Guarda el `third_party_id`: todas las rutas del tercero lo usan. Lista y
 consulta (el GET trae el estado de verificación en vivo):
 

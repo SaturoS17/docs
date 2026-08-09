@@ -274,6 +274,8 @@ Respuesta (misma forma en todos los casos):
 }
 ```
 
+> **Nota**
+**Revisión de solicitudes.** Si tu organización activó la revisión de solicitudes de tarjetas, `POST /v1/cards` puede responder **`202 Accepted`** con `{"status":"in_review","kind":"card_application","review_id":"…"}` en vez de `201` — la tarjeta se emite solo cuando compliance aprueba la revisión. El fee de creación se cobra al retener la solicitud y **se reembolsa automáticamente si se rechaza**. Sigue el resultado con el webhook `txn_review_status_changed` o en [Revisiones de operaciones](https://docs.cbpayapp.com/es/guias/revisiones-operaciones).
 Puedes fijar el saldo de gasto desde el inicio agregando
 `"spending_asset": "USDC"` al body de creación (USDT si no lo mandas).
 

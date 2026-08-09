@@ -4,7 +4,7 @@ icon: "shield-check"
 description: "Query and respond to transactional firewall reviews on your money operations"
 ---
 
-When your organization has the **transactional firewall** enabled, some money operations (payouts, crypto withdrawals, payins or banking transfers) may be **held for manual review** before they execute. This guide shows you how to query those reviews and respond when information is requested.
+When your organization has the **transactional firewall** enabled, some money operations (payouts, crypto withdrawals, payins or banking transfers) may be **held for manual review** before they execute — and if your organization also enabled **application review**, creating a banking profile, registering a banking third party or issuing a card can be held the same way. This guide shows you how to query those reviews and respond when information is requested.
 
 <Note>
 Integration testing? In the test environment (`https://cryptobank.qbank.cl/platform`, `pk_test_` keys) the firewall behaves exactly like production once your org enables it. Details in [Environments and testing](/en/environment-testing).
@@ -120,12 +120,37 @@ A review belonging to another account answers `404 not_found` (never `403`, so e
 |---|---|---|
 | `in_review` | The operation is being reviewed by the compliance team | Wait — no action needed |
 | `info_requested` | You were asked for additional information | Upload the requested documents as soon as possible |
-| `released` | The review approved the operation | The operation already executed (or is on its way) |
-| `rejected` | The review rejected the operation | The operation was cancelled; any held funds were returned to your balance |
+| `released` | The review approved the operation | The operation already executed (or is on its way) — for an application, the banking profile or card was created |
+| `rejected` | The review rejected the operation | The operation was cancelled; any held funds were returned to your balance — and a rejected application refunds its fee |
 
 <Note>
-**Automatic rejection by deadline.** If your organization configured a review deadline, a review nobody decides within that window (counted from its last status change — uploading evidence resets the clock) is **automatically rejected** by an hourly sweep: the operation is cancelled, held funds return to your balance, and you receive the same email and `txn_review_status_changed` webhook as with a manual rejection. On the detail, the `decision_note` carries the standard deadline notice.
+**Automatic rejection by deadline.** If your organization configured a review deadline, a review nobody decides within that window (counted from its last status change — uploading evidence resets the clock) is **automatically rejected** by an hourly sweep: the operation is cancelled, held funds return to your balance, and you receive the same email and `txn_review_status_changed` webhook as with a manual rejection. On the detail, the `decision_note` carries the standard deadline notice. **Application reviews are never auto-rejected**: a held banking or card application always waits for a human decision, with no deadline.
 </Note>
+
+## Held applications (banking and cards)
+
+If your organization enabled **application review** (two separate toggles, one for banking and one for cards), these requests can also be held before they are processed:
+
+- `POST /v1/banking/customer` — opening your own banking profile
+- `POST /v1/banking/third-parties` — registering a third party for banking
+- `POST /v1/cards` — issuing a card (virtual or physical)
+
+A held application answers **`202 Accepted`** instead of `201`:
+
+```json
+{
+  "status": "in_review",
+  "kind": "card_application",
+  "review_id": "7a3f2b1c-0000-4000-8000-000000000001",
+  "message": "application received; it is pending review by our compliance team"
+}
+```
+
+A retry with the same `idempotency_key` returns the same `202` payload with `idempotency_hit: true` — it never opens a second review.
+
+- **The application fee is charged when the application is held.** If the review is rejected, the fee is **automatically refunded**; if it is approved, the profile or card is created at that moment.
+- **Follow the result** with the webhook `txn_review_status_changed` (`kind` will be `banking_application` or `card_application`) or by polling `GET /v1/me/txn-reviews`.
+- The review can also request information (`info_requested`) — upload documents exactly like with a transactional review.
 
 ## Upload documents when asked
 
@@ -191,6 +216,8 @@ Whenever the status of one of your reviews changes, you receive this webhook:
 
 <Note>
 The webhook payload is **neutral** by design: it carries the status and the operation summary, but never the internal review reason or compliance notes.
+
+For application reviews (`kind`: `banking_application` / `card_application`) the payload omits `amount` and `asset`; `method` carries the application flow (`self`/`third_party`) or the card type (`virtual`/`physical`).
 </Note>
 
 ## Own errors
@@ -232,4 +259,8 @@ Not directly. If you need to cancel it, contact your organization's compliance t
 <Accordion title="Why can't I see the hold reason?">
 For security and to avoid compromising compliance investigations, the internal reason is never exposed to the end user. You will only see the information request message when documents are asked of you.
 </Accordion>
+<Accordion title="I created a banking profile or a card and got a 202 — what happened?">
+Your organization enabled application review: the request was held before processing. Nothing is created yet — when compliance approves the review, the profile or card is created automatically and you receive the webhook `txn_review_status_changed` with `status: released`. The application fee was charged at hold time; if the review is rejected, the fee is refunded to your balance automatically.
+</Accordion>
+
 </AccordionGroup>

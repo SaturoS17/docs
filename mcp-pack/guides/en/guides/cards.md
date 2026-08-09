@@ -273,6 +273,8 @@ Response (same shape in every case):
 }
 ```
 
+> **Note**
+**Application review.** If your organization enabled card application review, `POST /v1/cards` can answer **`202 Accepted`** with `{"status":"in_review","kind":"card_application","review_id":"…"}` instead of `201` — the card is issued only when compliance approves the review. The creation fee is charged when the application is held and **refunded automatically if it is rejected**. Track the result with the webhook `txn_review_status_changed` or in [Transaction reviews](https://docs.cbpayapp.com/en/guides/transaction-reviews).
 You can pin the spending balance from the start by adding
 `"spending_asset": "USDC"` to the creation body (USDT if omitted).
 

@@ -77,7 +77,11 @@ Response `201`:
 ```
 
 If your account already has a banking profile —
-`409 banking_customer_exists`. Check the state at any time:
+`409 banking_customer_exists`.
+
+> **Note**
+**Application review.** If your organization enabled banking application review, this request can answer **`202 Accepted`** with `{"status":"in_review","kind":"banking_application","review_id":"…"}` instead of `201` — the profile is created only when compliance approves the review. The banking profile fee is charged when the application is held and **refunded automatically if it is rejected**. Track the result with the webhook `txn_review_status_changed` or in [Transaction reviews](https://docs.cbpayapp.com/en/guides/transaction-reviews).
+Check the state at any time:
 
 ```bash
 curl https://api.qbank.cl/platform/v1/banking/customer \
@@ -251,6 +255,8 @@ Response `201`:
 automatically into the third party's banking profile. If one could not be
 synced (or the bank requests additional categories), upload it through the
 manual document flow below and then `submit`.
+> **Note**
+**Application review.** With banking application review enabled, registering a third party can also answer **`202 Accepted`** (`kind: banking_application`): the third party is registered only when the review is approved, and the registration fee is refunded automatically on rejection. Track it via `txn_review_status_changed` or [Transaction reviews](https://docs.cbpayapp.com/en/guides/transaction-reviews).
 Save the `third_party_id`: every third-party route uses it. List and fetch
 (the GET carries the live verification status):
 

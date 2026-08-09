@@ -210,6 +210,8 @@ curl -X POST https://api.qbank.cl/platform/v1/cards \
 }
 ```
 
+> **注**
+**申请审核。** 如果您的组织启用了开卡申请审核，`POST /v1/cards` 可能返回 **`202 Accepted`**（`{"status":"in_review","kind":"card_application","review_id":"…"}`）而不是 `201`——只有在合规团队批准审核后才会开卡。开卡费用在申请挂起时收取，**如果被拒绝则自动退还**。通过 webhook `txn_review_status_changed` 或[交易审核](https://docs.cbpayapp.com/zh/guides/transaction-reviews)跟踪结果。
 您可以在创建请求体中添加 `"spending_asset": "USDC"` 从一开始就固定消费余额（省略时为 USDT）。
 
 > **重要**
