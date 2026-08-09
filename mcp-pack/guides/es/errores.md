@@ -229,6 +229,9 @@ Errores de los endpoints del buró de crédito ([guía](https://docs.cbpayapp.co
 | 409 | `already_decided` | El link de consentimiento ya fue decidido (`granted`, `revoked` o `expired`) y no puede transicionar de nuevo — crea un link nuevo si necesitas otra autorización |
 | 409 | `link_inactive` | La conexión bancaria detrás del consentimiento no está `active` (la sesión del widget expiró o el vínculo se revocó) — el titular debe reconectar desde el mismo link |
 | 409 | `holder_mismatch` | El documento verificado por el banco no calza con el `doc_id` del sujeto — una cuenta de OTRO documento jamás otorga el consentimiento; verifica que creaste el link para el documento correcto |
+| 409 | `seal_companies_only` | El sello público Qscore es solo para cuentas **empresa** — las cuentas persona no tienen sello ([guía](https://docs.cbpayapp.com/es/guias/qscore-seal)) |
+| 409 | `seal_not_eligible` | El Qscore de la cuenta no califica ahora para un sello público (banda A o B con una evaluación de no más de 90 días) — compra un informe fresco ([guía](https://docs.cbpayapp.com/es/guias/qscore)) y, si la banda sigue bajo B, el sello no estará disponible hasta que el score mejore |
+| 404 | `no_active_seal` | La cuenta no tiene un sello activo que revocar — activa uno primero con `POST /v1/qscore/my-seal`; un sello revocado queda revocado permanentemente (crea uno nuevo) |
 
 ### Firewall transaccional
 

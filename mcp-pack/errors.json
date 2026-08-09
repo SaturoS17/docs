@@ -1,5 +1,5 @@
 {
-  "count": 194,
+  "count": 197,
   "errors": [
     {
       "category": {
@@ -2365,6 +2365,48 @@
         "en": "The document verified by the bank does not match the subject `doc_id` — an account owned by a different document can never grant the consent; check that you created the link for the right document",
         "es": "El documento verificado por el banco no calza con el `doc_id` del sujeto — una cuenta de OTRO documento jamás otorga el consentimiento; verifica que creaste el link para el documento correcto",
         "zh": "银行验证的证件与主体的 `doc_id` 不一致 — 属于其他证件的账户永远无法授予授权;请确认为正确的证件创建了链接"
+      }
+    },
+    {
+      "category": {
+        "en": "Qscore",
+        "es": "Qscore",
+        "zh": "Qscore"
+      },
+      "code": "seal_companies_only",
+      "http": 409,
+      "meaning": {
+        "en": "The public Qscore seal is only available for **company** accounts — person accounts have no seal (guide)",
+        "es": "El sello público Qscore es solo para cuentas **empresa** — las cuentas persona no tienen sello (guía)",
+        "zh": "Qscore 公开印章仅适用于**企业**账户 — 个人账户没有印章(指南)"
+      }
+    },
+    {
+      "category": {
+        "en": "Qscore",
+        "es": "Qscore",
+        "zh": "Qscore"
+      },
+      "code": "seal_not_eligible",
+      "http": 409,
+      "meaning": {
+        "en": "The account's Qscore does not currently qualify for a public seal (band A or B with an evaluation no older than 90 days) — buy a fresh report (guide) and, if the band stays below B, the seal stays unavailable until the score improves",
+        "es": "El Qscore de la cuenta no califica ahora para un sello público (banda A o B con una evaluación de no más de 90 días) — compra un informe fresco (guía) y, si la banda sigue bajo B, el sello no estará disponible hasta que el score mejore",
+        "zh": "该账户的 Qscore 当前不符合公开印章资格(等级 A 或 B,且评估不超过 90 天)— 请先购买最新报告(指南);若等级仍低于 B,印章在分数提升前不可用"
+      }
+    },
+    {
+      "category": {
+        "en": "Qscore",
+        "es": "Qscore",
+        "zh": "Qscore"
+      },
+      "code": "no_active_seal",
+      "http": 404,
+      "meaning": {
+        "en": "The account has no active seal to revoke — activate one first with `POST /v1/qscore/my-seal`; a revoked seal stays revoked permanently (create a new one instead)",
+        "es": "La cuenta no tiene un sello activo que revocar — activa uno primero con `POST /v1/qscore/my-seal`; un sello revocado queda revocado permanentemente (crea uno nuevo)",
+        "zh": "该账户没有可撤销的有效印章 — 请先通过 `POST /v1/qscore/my-seal` 激活;已撤销的印章将永久失效(可创建新印章)"
       }
     },
     {

@@ -8,7 +8,24 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-## v2.52 · 3 个版本 - 2026年8月9日
+## v2.53 · 4 个版本 - 2026年8月9日
+
+### v2.53
+
+**新增**
+
+- **Qscore 可验证公开印章**（[印章指南](https://docs.cbpayapp.com/zh/guides/qscore-seal)）：
+  等级为 A 或 B 且评估新鲜（不超过 90 天）的企业账户可以激活公开可验证印章 ——
+  `POST /v1/qscore/my-seal`（设计上幂等：重放返回 200 及当前印章），
+  通过 `GET /v1/qscore/my-seal` 查询，随后分享公开页面或嵌入实时 SVG 徽章
+  （`badge_url`）。页面和徽章在每次访问时实时重新评估资格：若分数降至 B
+  级以下或评估超过 90 天，印章将切换为"已失效"——绝不透露原因或数字分数
+  （反预言机）。持有人可随时通过 `DELETE /v1/qscore/my-seal` 撤销；撤销对该印章
+  永久生效，并可立即激活新印章。新增公开端点：`GET
+  /platform/verify/qscore/seal/{code}`（JSON，或面向浏览器的品牌化 HTML
+  页面）和 `GET /platform/verify/qscore/seal/{code}/badge.svg`（可嵌入实时
+  徽章）。新增错误码：`seal_companies_only`、`seal_not_eligible` 和
+  `no_active_seal`。无新增 webhook。
 
 ### v2.52
 

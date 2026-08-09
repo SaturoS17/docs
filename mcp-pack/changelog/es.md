@@ -9,7 +9,28 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-## v2.52 · 3 versiones - 9 de agosto de 2026
+## v2.53 · 4 versiones - 9 de agosto de 2026
+
+### v2.53
+
+**Agregado**
+
+- **Sello público verificable Qscore** ([guía del sello](https://docs.cbpayapp.com/es/guias/qscore-seal)):
+  las cuentas empresa con banda A o B y una evaluación fresca (de no más de 90
+  días) pueden activar un sello público verificable — `POST /v1/qscore/my-seal`
+  (idempotente por diseño: un replay responde 200 con el sello vigente), lo
+  consultas con `GET /v1/qscore/my-seal`, y luego compartes la página pública
+  o embebes el badge SVG en vivo (`badge_url`). La página y el badge
+  re-evalúan la elegibilidad en cada vista: si el score cae bajo la banda B o
+  la evaluación supera los 90 días, el sello pasa a "no vigente" — jamás
+  revela la razón ni el score numérico (anti-oráculo). El titular puede
+  revocarlo en cualquier momento con `DELETE /v1/qscore/my-seal`; la
+  revocación es permanente para ese sello y se puede activar uno nuevo de
+  inmediato. Endpoints públicos nuevos: `GET
+  /platform/verify/qscore/seal/{code}` (JSON, o página HTML brandeada para
+  browsers) y `GET /platform/verify/qscore/seal/{code}/badge.svg` (badge en
+  vivo embebible). Códigos de error nuevos: `seal_companies_only`,
+  `seal_not_eligible` y `no_active_seal`. Sin webhooks nuevos.
 
 ### v2.52
 

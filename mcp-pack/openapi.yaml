@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.52"
+  version: "2.53"
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -456,6 +456,104 @@ paths:
               example:
                 error: too_many_attempts
                 message: too many verification attempts; wait a moment and retry
+  /verify/qscore/seal/{code}:
+    get:
+      security: []
+      tags:
+      - Qscore
+      operationId: verifyQscoreSeal
+      summary: Check a Qscore seal's current validity (public)
+      description: 'Public endpoint (no credentials) behind the Qscore seal a company
+        activates with `POST /v1/qscore/my-seal`. The code is cryptographically signed:
+        a tampered or made-up one answers 404 with `valid: false`. Eligibility is
+        evaluated LIVE on every call: the band (A or B) is shown only while the seal is
+        active AND the subject still qualifies (band A/B with an evaluation no older
+        than 90 days). A seal that no longer qualifies answers `seal_status:
+        not_current` — anti-oracle: the band it fell to, the numeric score and the
+        reason are never revealed. The numeric score NEVER appears on any public
+        surface. Browsers get a branded HTML page (`Accept: text/html`); API clients
+        get JSON. Rate limited per IP.'
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Public verification code of the seal (the `verify_code` field of the seal resource).
+      responses:
+        '200':
+          description: The seal state, evaluated live.
+          content:
+            application/json:
+              examples:
+                active:
+                  summary: Current seal (active and still eligible)
+                  value:
+                    valid: true
+                    type: qscore_seal
+                    seal_status: active
+                    band: A
+                    evaluated_at: '2026-08-07'
+                    company_name: Comercial Andes SpA
+                    doc_id: 76.543.210-3
+                    country: CL
+                revoked:
+                  summary: Seal revoked by the holder (permanent for that code)
+                  value:
+                    valid: false
+                    seal_status: revoked
+                    revoked_at: '2026-08-09'
+                not_current:
+                  summary: Seal no longer eligible (band dropped or score stale) — reason never revealed
+                  value:
+                    valid: false
+                    seal_status: not_current
+        '404':
+          description: Invalid, tampered or unknown verification code.
+          content:
+            application/json:
+              example:
+                valid: false
+                seal_status: not_current
+        '429':
+          description: Too many verification attempts from this IP.
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many verification attempts; wait a moment and retry
+  /verify/qscore/seal/{code}/badge.svg:
+    get:
+      security: []
+      tags:
+      - Qscore
+      operationId: verifyQscoreSealBadge
+      summary: Embeddable SVG badge with the live seal state (public)
+      description: 'Public endpoint (no credentials) that renders the embeddable Qscore
+        seal as an SVG image (180x64, dark background). While the seal is active and
+        the subject still qualifies, the badge shows the current band letter (A or B)
+        in green with the label "VERIFICADO"; otherwise the same URL renders a grey
+        badge labeled "NO VIGENTE" — it never shows a stale band and never breaks the
+        host page. `Cache-Control: public, max-age=300` (viewers may cache the image
+        for up to 5 minutes). Answers 404 with an empty body only for invalid or
+        tampered codes.'
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Public verification code of the seal (the `verify_code` field of the seal resource).
+      responses:
+        '200':
+          description: The SVG badge with the live seal state.
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+              example: '<svg xmlns="http://www.w3.org/2000/svg" width="180" height="64">...</svg>'
+        '404':
+          description: Invalid, tampered or unknown verification code (empty body).
   /verify/receipts/{code}:
     get:
       security: []
@@ -18022,6 +18120,237 @@ paths:
               example:
                 error: pdf_not_ready
                 message: the report PDF is not available yet
+  /v1/qscore/my-seal:
+    post:
+      tags:
+      - Qscore
+      operationId: activateMyQscoreSeal
+      summary: Activate my verifiable public Qscore seal
+      description: 'Activates the public Qscore seal for the authenticated company
+        account. Eligibility (checked live): band A or B with an evaluation no older
+        than 90 days — `seal_not_eligible` otherwise; the product is company-only
+        (`seal_companies_only` for person accounts). Requires no request body and is
+        idempotent by design: activating when the seal is already active answers 200
+        with the current seal and `idempotency_hit: true` — no duplicate is ever
+        created. An activation notice email is sent to the account holder (org branding).'
+      responses:
+        '201':
+          description: Seal activated.
+          content:
+            application/json:
+              example:
+                seal:
+                  id: becb6a82-3f52-4d7a-9c2f-8a1d4e5f6a70
+                  status: active
+                  verify_code: SA710B276F30387B2A96BF2BBF7632D138e23224b7d36b7b064a35f958b6b230a2
+                  verify_url: https://api.qbank.cl/platform/verify/qscore/seal/SA710B276F30387B2A96BF2BBF7632D138e23224b7d36b7b064a35f958b6b230a2
+                  badge_url: https://api.qbank.cl/platform/verify/qscore/seal/SA710B276F30387B2A96BF2BBF7632D138e23224b7d36b7b064a35f958b6b230a2/badge.svg
+                  created_at: '2026-08-09T15:04:22Z'
+                subject_id: c9558a4b-374f-4599-b638-c93ec5489e84
+                eligibility:
+                  eligible: true
+                  band: A
+                  score: 845
+                  evaluated_at: '2026-08-07'
+        '200':
+          description: The seal was already active (safe replay).
+          content:
+            application/json:
+              example:
+                seal:
+                  id: becb6a82-3f52-4d7a-9c2f-8a1d4e5f6a70
+                  status: active
+                  verify_code: SA710B276F30387B2A96BF2BBF7632D138e23224b7d36b7b064a35f958b6b230a2
+                  verify_url: https://api.qbank.cl/platform/verify/qscore/seal/SA710B276F30387B2A96BF2BBF7632D138e23224b7d36b7b064a35f958b6b230a2
+                  badge_url: https://api.qbank.cl/platform/verify/qscore/seal/SA710B276F30387B2A96BF2BBF7632D138e23224b7d36b7b064a35f958b6b230a2/badge.svg
+                  created_at: '2026-08-09T15:04:22Z'
+                subject_id: c9558a4b-374f-4599-b638-c93ec5489e84
+                eligibility:
+                  eligible: true
+                  band: A
+                  score: 845
+                  evaluated_at: '2026-08-07'
+                idempotency_hit: true
+        '400':
+          description: The account's tax_id is missing or invalid.
+          content:
+            application/json:
+              examples:
+                invalid_tax_id:
+                  summary: Invalid tax ID
+                  value:
+                    error: invalid_tax_id
+                    message: the tax_id on your account is not a valid document for its
+                      country
+        '403':
+          description: The account identity is not verified.
+          content:
+            application/json:
+              example:
+                error: kyc_required
+                message: identity verification (KYC/KYB) is required to activate your public seal
+        '409':
+          description: Business rule conflict.
+          content:
+            application/json:
+              examples:
+                seal_companies_only:
+                  summary: Person account
+                  value:
+                    error: seal_companies_only
+                    message: the public seal is only available for company accounts
+                seal_not_eligible:
+                  summary: Band below B or stale evaluation
+                  value:
+                    error: seal_not_eligible
+                    message: your Qscore does not currently qualify for a public seal
+                no_tax_id:
+                  summary: Account has no tax_id
+                  value:
+                    error: no_tax_id
+                    message: complete your account's tax_id to activate your public seal
+                identity_mismatch:
+                  summary: tax_id does not match the verified identity
+                  value:
+                    error: identity_mismatch
+                    message: the tax_id on your account does not match your verified identity
+    get:
+      tags:
+      - Qscore
+      operationId: getMyQscoreSeal
+      summary: Get my Qscore seal status
+      description: 'Returns the seal of the authenticated account (`null` if there is
+        none) plus its live eligibility. An active seal includes `verify_code`,
+        `verify_url` and `badge_url`; a revoked seal keeps only `revoked_at` (its URLs
+        stop working permanently). Person accounts always get `seal: null` with
+        `eligibility.reason: "companies_only"`.'
+      responses:
+        '200':
+          description: Current seal and live eligibility.
+          content:
+            application/json:
+              examples:
+                active:
+                  summary: Company with an active seal
+                  value:
+                    subject_id: c9558a4b-374f-4599-b638-c93ec5489e84
+                    seal:
+                      id: becb6a82-3f52-4d7a-9c2f-8a1d4e5f6a70
+                      status: active
+                      verify_code: SA710B276F30387B2A96BF2BBF7632D138e23224b7d36b7b064a35f958b6b230a2
+                      verify_url: https://api.qbank.cl/platform/verify/qscore/seal/SA710B276F30387B2A96BF2BBF7632D138e23224b7d36b7b064a35f958b6b230a2
+                      badge_url: https://api.qbank.cl/platform/verify/qscore/seal/SA710B276F30387B2A96BF2BBF7632D138e23224b7d36b7b064a35f958b6b230a2/badge.svg
+                      created_at: '2026-08-09T15:04:22Z'
+                    eligibility:
+                      eligible: true
+                      band: A
+                      score: 845
+                      evaluated_at: '2026-08-07'
+                no_seal:
+                  summary: Company that never activated (or after revocation)
+                  value:
+                    subject_id: c9558a4b-374f-4599-b638-c93ec5489e84
+                    seal: null
+                    eligibility:
+                      eligible: false
+                      reason: score_stale
+                      band: B
+                      score: 702
+                      evaluated_at: '2026-04-29'
+                person:
+                  summary: Person account (companies only)
+                  value:
+                    subject_id: e2518c9a-5f5e-4f6d-b6f8-991dd296b6cd
+                    seal: null
+                    eligibility:
+                      eligible: false
+                      reason: companies_only
+        '400':
+          description: The account's tax_id is missing or invalid.
+          content:
+            application/json:
+              example:
+                error: invalid_tax_id
+                message: the tax_id on your account is not a valid document for its country
+        '403':
+          description: The account identity is not verified.
+          content:
+            application/json:
+              example:
+                error: kyc_required
+                message: identity verification (KYC/KYB) is required to use your Qscore seal
+        '409':
+          description: Business rule conflict.
+          content:
+            application/json:
+              examples:
+                no_tax_id:
+                  summary: Account has no tax_id
+                  value:
+                    error: no_tax_id
+                    message: complete your account's tax_id to use your Qscore seal
+                identity_mismatch:
+                  summary: tax_id does not match the verified identity
+                  value:
+                    error: identity_mismatch
+                    message: the tax_id on your account does not match your verified identity
+    delete:
+      tags:
+      - Qscore
+      operationId: revokeMyQscoreSeal
+      summary: Revoke my Qscore seal
+      description: 'Revokes the active seal of the authenticated account. Immediate and
+        PERMANENT for that seal: its public URL and badge switch to "not current"
+        (the URL keeps answering — it never breaks a page that embedded it). It cannot
+        be undone, but the account can activate a NEW seal (with a different code) at
+        any time, as long as it is still eligible. A revocation notice email is sent
+        to the account holder (org branding).'
+      responses:
+        '200':
+          description: Seal revoked.
+          content:
+            application/json:
+              example:
+                seal:
+                  id: becb6a82-3f52-4d7a-9c2f-8a1d4e5f6a70
+                  status: revoked
+                  revoked_at: '2026-08-09T18:41:07Z'
+        '400':
+          description: The account's tax_id is missing or invalid.
+          content:
+            application/json:
+              example:
+                error: invalid_tax_id
+                message: the tax_id on your account is not a valid document for its country
+        '403':
+          description: The account identity is not verified.
+          content:
+            application/json:
+              example:
+                error: kyc_required
+                message: identity verification (KYC/KYB) is required to use your Qscore seal
+        '404':
+          description: There is no active seal to revoke.
+          content:
+            application/json:
+              example:
+                error: no_active_seal
+                message: you have no active seal
+        '409':
+          description: Business rule conflict.
+          content:
+            application/json:
+              examples:
+                no_tax_id:
+                  summary: Account has no tax_id
+                  value:
+                    error: no_tax_id
+                    message: complete your account's tax_id to use your Qscore seal
+                identity_mismatch:
+                  summary: tax_id does not match the verified identity
+                  value:
+                    error: identity_mismatch
+                    message: the tax_id on your account does not match your verified identity
   /v1/qscore/subjects/{docID}:
     get:
       tags: [Qscore]

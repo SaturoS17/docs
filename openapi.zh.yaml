@@ -415,6 +415,97 @@ paths:
               example:
                 error: too_many_attempts
                 message: too many verification attempts; wait a moment and retry
+  /verify/qscore/seal/{code}:
+    get:
+      security: []
+      tags:
+      - Qscore
+      operationId: verifyQscoreSeal
+      summary: 查询 Qscore 印章的当前有效性（公开）
+      description: '公开端点（无需凭证），对应企业通过 `POST /v1/qscore/my-seal` 激活的 Qscore
+        印章。验证码经过加密签名：被篡改或伪造的代码返回 404 且 `valid: false`。每次调用都会实时
+        评估资格：仅当印章处于激活状态且主体仍符合条件（等级 A/B 且评估不超过 90 天）时才显示
+        等级（A 或 B）。不再符合条件的印章返回 `seal_status: not_current`——反预言机：绝不透露
+        降至的等级、数字分数或原因。数字分数绝不出现在任何公开界面上。浏览器获得品牌化 HTML
+        页面（`Accept: text/html`）；API 客户端获得 JSON。按 IP 限流。'
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+        description: 印章的公开验证码（印章资源的 `verify_code` 字段）。
+      responses:
+        '200':
+          description: 印章状态，实时评估。
+          content:
+            application/json:
+              examples:
+                active:
+                  summary: 有效印章（激活且仍符合条件）
+                  value:
+                    valid: true
+                    type: qscore_seal
+                    seal_status: active
+                    band: A
+                    evaluated_at: '2026-08-07'
+                    company_name: Comercial Andes SpA
+                    doc_id: 76.543.210-3
+                    country: CL
+                revoked:
+                  summary: 印章被持有人撤销（对该代码永久生效）
+                  value:
+                    valid: false
+                    seal_status: revoked
+                    revoked_at: '2026-08-09'
+                not_current:
+                  summary: 印章不再符合条件（等级下降或分数过期）——绝不透露原因
+                  value:
+                    valid: false
+                    seal_status: not_current
+        '404':
+          description: 验证码无效、被篡改或未知。
+          content:
+            application/json:
+              example:
+                valid: false
+                seal_status: not_current
+        '429':
+          description: 来自此 IP 的验证尝试次数过多。
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many verification attempts; wait a moment and retry
+  /verify/qscore/seal/{code}/badge.svg:
+    get:
+      security: []
+      tags:
+      - Qscore
+      operationId: verifyQscoreSealBadge
+      summary: 可嵌入的 SVG 徽章，显示印章的实时状态（公开）
+      description: '公开端点（无需凭证），将可嵌入的 Qscore 印章渲染为 SVG 图像（180x64，
+        深色背景）。当印章处于激活状态且主体仍符合条件时，徽章以绿色显示当前等级字母
+        （A 或 B）和 "VERIFICADO" 标签；否则，同一 URL 渲染灰色的 "NO VIGENTE" 徽章——
+        绝不显示过期的等级，也绝不破坏宿主页面。`Cache-Control: public, max-age=300`
+        （访问者可缓存图像最多 5 分钟）。仅对无效或被篡改的代码返回 404（空响应体）。'
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+        description: 印章的公开验证码（印章资源的 `verify_code` 字段）。
+      responses:
+        '200':
+          description: 带有印章实时状态的 SVG 徽章。
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+              example: '<svg xmlns="http://www.w3.org/2000/svg" width="180" height="64">...</svg>'
+        '404':
+          description: 验证码无效、被篡改或未知（空响应体）。
   /verify/receipts/{code}:
     get:
       security: []
@@ -17478,6 +17569,237 @@ paths:
               example:
                 error: pdf_not_ready
                 message: the report PDF is not available yet
+  /v1/qscore/my-seal:
+    post:
+      tags: [Qscore]
+      operationId: activateMyQscoreSeal
+      summary: 激活我的可公开验证的 Qscore 印章
+      description: '为经过身份验证的企业账户激活公开的 Qscore 印章。资格条件（实时评估）：
+        等级为 A 或 B，且评估时间不超过 90 天——否则返回 `seal_not_eligible`；本产品仅限企业
+        （个人账户返回 `seal_companies_only`）。无需请求体，设计上幂等：印章已激活时再次激活
+        返回 200 和当前印章及 `idempotency_hit: true`——绝不会创建重复印章。激活通知邮件将
+        发送给账户持有人（组织品牌）。'
+      responses:
+        '201':
+          description: 印章已激活。
+          content:
+            application/json:
+              example:
+                seal:
+                  id: becb6a82-3f52-4d7a-9c2f-8a1d4e5f6a70
+                  status: active
+                  verify_code: SA710B276F30387B2A96BF2BBF7632D138e23224b7d36b7b064a35f958b6b230a2
+                  verify_url: https://api.qbank.cl/platform/verify/qscore/seal/SA710B276F30387B2A96BF2BBF7632D138e23224b7d36b7b064a35f958b6b230a2
+                  badge_url: https://api.qbank.cl/platform/verify/qscore/seal/SA710B276F30387B2A96BF2BBF7632D138e23224b7d36b7b064a35f958b6b230a2/badge.svg
+                  created_at: '2026-08-09T15:04:22Z'
+                subject_id: c9558a4b-374f-4599-b638-c93ec5489e84
+                eligibility:
+                  eligible: true
+                  band: A
+                  score: 845
+                  evaluated_at: '2026-08-07'
+        '200':
+          description: 印章已处于激活状态（安全重放）。
+          content:
+            application/json:
+              example:
+                seal:
+                  id: becb6a82-3f52-4d7a-9c2f-8a1d4e5f6a70
+                  status: active
+                  verify_code: SA710B276F30387B2A96BF2BBF7632D138e23224b7d36b7b064a35f958b6b230a2
+                  verify_url: https://api.qbank.cl/platform/verify/qscore/seal/SA710B276F30387B2A96BF2BBF7632D138e23224b7d36b7b064a35f958b6b230a2
+                  badge_url: https://api.qbank.cl/platform/verify/qscore/seal/SA710B276F30387B2A96BF2BBF7632D138e23224b7d36b7b064a35f958b6b230a2/badge.svg
+                  created_at: '2026-08-09T15:04:22Z'
+                subject_id: c9558a4b-374f-4599-b638-c93ec5489e84
+                eligibility:
+                  eligible: true
+                  band: A
+                  score: 845
+                  evaluated_at: '2026-08-07'
+                idempotency_hit: true
+        '400':
+          description: 账户的 tax_id 缺失或无效。
+          content:
+            application/json:
+              examples:
+                invalid_tax_id:
+                  summary: 无效的税号
+                  value:
+                    error: invalid_tax_id
+                    message: the tax_id on your account is not a valid document for its
+                      country
+        '403':
+          description: kyc_required（账户没有已批准的 KYC/KYB）| forbidden（服务已禁用）
+          content:
+            application/json:
+              example:
+                error: kyc_required
+                message: identity verification (KYC/KYB) is required to activate your
+                  public seal
+        '409':
+          description: 业务规则冲突。
+          content:
+            application/json:
+              examples:
+                seal_companies_only:
+                  summary: 个人账户
+                  value:
+                    error: seal_companies_only
+                    message: the public seal is only available for company accounts
+                seal_not_eligible:
+                  summary: 等级低于 B 或评估已过期
+                  value:
+                    error: seal_not_eligible
+                    message: your Qscore does not currently qualify for a public seal
+                no_tax_id:
+                  summary: 账户没有 tax_id
+                  value:
+                    error: no_tax_id
+                    message: complete your account's tax_id to activate your public seal
+                identity_mismatch:
+                  summary: tax_id 与已验证身份不匹配
+                  value:
+                    error: identity_mismatch
+                    message: the tax_id on your account does not match your verified
+                      identity
+    get:
+      tags: [Qscore]
+      operationId: getMyQscoreSeal
+      summary: 查询我的 Qscore 印章状态
+      description: '返回已认证账户的印章（没有则为 `null`）及其实时资格。激活的印章包含
+        `verify_code`、`verify_url` 和 `badge_url`；已撤销的印章仅保留 `revoked_at`
+        （其 URL 永久失效）。个人账户始终收到 `seal: null` 和
+        `eligibility.reason: "companies_only"`。'
+      responses:
+        '200':
+          description: 当前印章和实时资格。
+          content:
+            application/json:
+              examples:
+                active:
+                  summary: 拥有激活印章的企业
+                  value:
+                    subject_id: c9558a4b-374f-4599-b638-c93ec5489e84
+                    seal:
+                      id: becb6a82-3f52-4d7a-9c2f-8a1d4e5f6a70
+                      status: active
+                      verify_code: SA710B276F30387B2A96BF2BBF7632D138e23224b7d36b7b064a35f958b6b230a2
+                      verify_url: https://api.qbank.cl/platform/verify/qscore/seal/SA710B276F30387B2A96BF2BBF7632D138e23224b7d36b7b064a35f958b6b230a2
+                      badge_url: https://api.qbank.cl/platform/verify/qscore/seal/SA710B276F30387B2A96BF2BBF7632D138e23224b7d36b7b064a35f958b6b230a2/badge.svg
+                      created_at: '2026-08-09T15:04:22Z'
+                    eligibility:
+                      eligible: true
+                      band: A
+                      score: 845
+                      evaluated_at: '2026-08-07'
+                no_seal:
+                  summary: 从未激活的企业（或撤销后）
+                  value:
+                    subject_id: c9558a4b-374f-4599-b638-c93ec5489e84
+                    seal: null
+                    eligibility:
+                      eligible: false
+                      reason: score_stale
+                      band: B
+                      score: 702
+                      evaluated_at: '2026-04-29'
+                person:
+                  summary: 个人账户（仅限企业）
+                  value:
+                    subject_id: e2518c9a-5f5e-4f6d-b6f8-991dd296b6cd
+                    seal: null
+                    eligibility:
+                      eligible: false
+                      reason: companies_only
+        '400':
+          description: 账户的 tax_id 缺失或无效。
+          content:
+            application/json:
+              example:
+                error: invalid_tax_id
+                message: the tax_id on your account is not a valid document for its
+                  country
+        '403':
+          description: kyc_required（账户没有已批准的 KYC/KYB）| forbidden（服务已禁用）
+          content:
+            application/json:
+              example:
+                error: kyc_required
+                message: identity verification (KYC/KYB) is required to use your Qscore
+                  seal
+        '409':
+          description: 业务规则冲突。
+          content:
+            application/json:
+              examples:
+                no_tax_id:
+                  summary: 账户没有 tax_id
+                  value:
+                    error: no_tax_id
+                    message: complete your account's tax_id to use your Qscore seal
+                identity_mismatch:
+                  summary: tax_id 与已验证身份不匹配
+                  value:
+                    error: identity_mismatch
+                    message: the tax_id on your account does not match your verified
+                      identity
+    delete:
+      tags: [Qscore]
+      operationId: revokeMyQscoreSeal
+      summary: 撤销我的 Qscore 印章
+      description: '撤销已认证账户的激活印章。立即生效且对该印章永久有效：其公开 URL 和
+        徽章切换为"无效"状态（URL 继续响应——绝不会破坏嵌入它的页面）。无法撤消，
+        但只要账户仍然符合条件，随时可以激活一个（不同代码的）新印章。撤销通知邮件
+        将发送给账户持有人（组织品牌）。'
+      responses:
+        '200':
+          description: 印章已撤销。
+          content:
+            application/json:
+              example:
+                seal:
+                  id: becb6a82-3f52-4d7a-9c2f-8a1d4e5f6a70
+                  status: revoked
+                  revoked_at: '2026-08-09T18:41:07Z'
+        '400':
+          description: 账户的 tax_id 缺失或无效。
+          content:
+            application/json:
+              example:
+                error: invalid_tax_id
+                message: the tax_id on your account is not a valid document for its
+                  country
+        '403':
+          description: kyc_required（账户没有已批准的 KYC/KYB）| forbidden（服务已禁用）
+          content:
+            application/json:
+              example:
+                error: kyc_required
+                message: identity verification (KYC/KYB) is required to use your Qscore
+                  seal
+        '404':
+          description: 没有可撤销的激活印章。
+          content:
+            application/json:
+              example:
+                error: no_active_seal
+                message: you have no active seal
+        '409':
+          description: 业务规则冲突。
+          content:
+            application/json:
+              examples:
+                no_tax_id:
+                  summary: 账户没有 tax_id
+                  value:
+                    error: no_tax_id
+                    message: complete your account's tax_id to use your Qscore seal
+                identity_mismatch:
+                  summary: tax_id 与已验证身份不匹配
+                  value:
+                    error: identity_mismatch
+                    message: the tax_id on your account does not match your verified
+                      identity
   /v1/qscore/subjects/{docID}:
     get:
       tags: [Qscore]

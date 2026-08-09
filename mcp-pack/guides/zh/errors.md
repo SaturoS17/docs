@@ -229,6 +229,9 @@ source_url: https://docs.cbpayapp.com/zh/errors
 | 409 | `already_decided` | 授权链接已被处理(`granted`、`revoked` 或 `expired`),无法再次变更状态 — 如需重新授权,请创建新的链接 |
 | 409 | `link_inactive` | 授权背后的银行连接未处于 `active` 状态(widget 会话已过期或链接已被撤销)— 持有人需通过同一授权链接重新连接 |
 | 409 | `holder_mismatch` | 银行验证的证件与主体的 `doc_id` 不一致 — 属于其他证件的账户永远无法授予授权;请确认为正确的证件创建了链接 |
+| 409 | `seal_companies_only` | Qscore 公开印章仅适用于**企业**账户 — 个人账户没有印章([指南](https://docs.cbpayapp.com/zh/guides/qscore-seal)) |
+| 409 | `seal_not_eligible` | 该账户的 Qscore 当前不符合公开印章资格(等级 A 或 B,且评估不超过 90 天)— 请先购买最新报告([指南](https://docs.cbpayapp.com/zh/guides/qscore));若等级仍低于 B,印章在分数提升前不可用 |
+| 404 | `no_active_seal` | 该账户没有可撤销的有效印章 — 请先通过 `POST /v1/qscore/my-seal` 激活;已撤销的印章将永久失效(可创建新印章) |
 
 ### 交易防火墙
 

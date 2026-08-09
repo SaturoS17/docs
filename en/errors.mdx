@@ -230,6 +230,9 @@ Errors from the credit bureau endpoints ([guide](/en/guides/qscore)).
 | 409 | `already_decided` | The consent link was already decided (`granted`, `revoked` or `expired`) and cannot transition again — create a new link if you need a fresh authorization |
 | 409 | `link_inactive` | The banking connection behind the consent is not `active` (the widget session expired or the link was revoked) — the holder must reconnect from the same consent link |
 | 409 | `holder_mismatch` | The document verified by the bank does not match the subject `doc_id` — an account owned by a different document can never grant the consent; check that you created the link for the right document |
+| 409 | `seal_companies_only` | The public Qscore seal is only available for **company** accounts — person accounts have no seal ([guide](/en/guides/qscore-seal)) |
+| 409 | `seal_not_eligible` | The account's Qscore does not currently qualify for a public seal (band A or B with an evaluation no older than 90 days) — buy a fresh report ([guide](/en/guides/qscore)) and, if the band stays below B, the seal stays unavailable until the score improves |
+| 404 | `no_active_seal` | The account has no active seal to revoke — activate one first with `POST /v1/qscore/my-seal`; a revoked seal stays revoked permanently (create a new one instead) |
 
 ### Transactional firewall
 
