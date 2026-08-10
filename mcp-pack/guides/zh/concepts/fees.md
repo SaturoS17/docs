@@ -35,7 +35,7 @@ payin:   usdt_gross    = local_amount / payin_rate
 |---|---|---|
 | `payout` | 每笔固定费用（外汇定价已包含在您的汇率中） | 创建出款时（包含在 `total_debit` 中） |
 | `payin` | 每笔固定费用（外汇定价已包含在您的 `payin_rate` 中） | 入账时（您收到 `usdt_gross − fee`） |
-| `payin_card` | 按收款金额的 `%` + 固定费用，可按处理币种设置不同的 `%`（例如 BOB 与 USD）。若您的账户未配置该服务，则适用通用的 `payin` 费用 | 银行卡支付的收款入账时（`method: "card"` 直接收款、用卡支付的收款链接或订阅扣款） |
+| `payin_card` | 按收款金额的 `%` + 固定费用，可按处理币种设置不同的 `%`（例如 BOB 与 USD）。若您的账户未配置该服务，则适用通用的 `payin` 费用。可配置结算延迟（见[银行卡收款结算延迟](#银行卡收款结算延迟)） | 银行卡支付的收款入账时（`method: "card"` 直接收款、用卡支付的收款链接或订阅扣款）；配置了延迟时，在到达预定时间时入账 |
 | `funding` | 按充值金额的 `%` + 固定费用 | 链上充值入账时 |
 | `withdrawal` | 按提现金额的 `%` + 固定费用 | 创建时（包含在 `total_debit` 中） |
 | `wallet_creation` | 每个钱包固定费用 | 每次创建钱包时（个人：每条网络 1 个；企业：不限）。查询已有钱包始终免费 |
@@ -51,7 +51,12 @@ payin:   usdt_gross    = local_amount / payin_rate
 | `address_screening` | 每次扫描固定费用 | 评估区块链地址风险时（[钱包筛查](https://docs.cbpayapp.com/zh/guides/screenings)）；自动的提现/充值防护免费 |
 | `banking_customer` | 每个档案固定费用 | 创建您的银行档案时（[银行服务](https://docs.cbpayapp.com/zh/guides/banking)） |
 | `banking_account` | 每个账户固定费用 | 开立每个银行账户时 |
-| `banking_operation` | 每笔付款固定费用 | 发送每笔银行付款时（用 `prepare` 报价免费） |
+| `banking_deposit` | 按存款金额的 `%` + 固定费用，以操作币种计收，上限为存款金额 | 入账银行存款贷记时（见[按通道计收的银行费用](#按通道计收的银行费用)） |
+| `banking_transfer_ach` | 按金额的 `%` + 固定费用，以操作币种计收 | 发出 ACH 转账时 |
+| `banking_transfer_swift` | 按金额的 `%` + 固定费用，以操作币种计收 | 发出 SWIFT 转账时 |
+| `banking_transfer_wire` | 按金额的 `%` + 固定费用，以操作币种计收 | 发出 wire（Fedwire）转账时 |
+| `banking_transfer_sepa` | 按金额的 `%` + 固定费用，以操作币种计收 | 发出 SEPA 转账时 |
+| `banking_operation` | 每笔付款固定费用 — 旧版兜底，仅当通道没有专属配置时收取 | 发送每笔银行付款时（用 `prepare` 报价免费） |
 | `card_creation_virtual` | 每张卡固定费用 | 发行虚拟卡时（[卡片](https://docs.cbpayapp.com/zh/guides/cards)） |
 | `card_creation_physical` | 每张卡固定费用 | 发行实体卡时 |
 | `card_monthly` | 每月固定费用 | 每张有效卡的月费（无余额时卡片将被冻结 — 不产生欠款） |
@@ -70,6 +75,50 @@ payin:   usdt_gross    = local_amount / payin_rate
 失败时会自动退款
 （`compliance_refund` / `verification_fee_refund` / `wallet_creation_refund`
 / `wallet_service_refund` / `banking_fee_refund`）。
+## 银行卡收款结算延迟
+
+银行卡收款可配置**结算延迟**（`settlement_hours`，整数小时数；`0` =
+立即入账 — 默认值）。配置延迟后，已确认的银行卡收款**不会**立即贷记
+余额：收款保持 `pending` 状态，并在创建、查询和列表响应中携带
+`settle_at` 时间戳（RFC 3339），所有后续动作都在到达该时间时发生：
+
+- 执行余额入账（含其 `payin_card` 费用），
+- `payin_credited` webhook 与最终状态送达您的集成，
+- 用卡支付的收款链接关闭为已支付，
+- 自动换汇（如已配置）执行。
+
+```json
+{
+  "id": "pay_…",
+  "status": "pending",
+  "settle_at": "2026-08-10T15:04:05Z"
+}
+```
+
+`settle_at = created_at + settlement_hours` — 延迟从收款创建时开始计算
+（≈ 处理商确认扣款时）。审批或分配时已超过期限的收款会立即入账。后台
+任务每分钟结算一次到期收款。
+
+> **注**
+结算延迟由 CBPay 在您账户的 `payin_card` 费用中配置。您的集成只需读取
+`settle_at`：webhook 和最终状态不变，只是在结算时送达。
+## 按通道计收的银行费用
+
+银行业务收取**以操作币种计收的交易型费用**（即操作所动的
+`BANK_USD` / `BANK_EUR` 余额）：
+
+- **存款**（`banking_deposit`）：在入账的存款贷记时收取，上限为存
+  款金额（`min(fee, amount)`）— 小额存款永远不会导致负余额。
+- **转账**（`banking_transfer_ach`、`banking_transfer_swift`、
+  `banking_transfer_wire`、`banking_transfer_sepa`）：在**发出时**收
+  取；您的可用余额必须以操作币种覆盖 `金额 + 费用`，否则请求将以
+  `402 insufficient_funds` 被拒。若转账随后被最终拒绝，费用将退还。
+- **兜底**：没有专属配置（账户级和默认级都没有）的通道使用旧版
+  `banking_operation` 固定费用（以 USDT 计）。配置为 `0%` + `0` 固定
+  费用的通道为**明确免费** — 不会落入兜底。
+
+当收取通道费用时，调度响应会暴露 `banking_fee` 和 `banking_fee_asset`（收取的金额及其 `BANK_*` 货币），因此每笔费用都可归属到其通道。
+
 ## 内部转账：始终免费
 
 CBPay 账户之间的转账（`POST /v1/transfers`）**不收取任何费用**，

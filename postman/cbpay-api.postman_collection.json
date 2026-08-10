@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — convertible on demand with swaps.\nPayouts and service fees can be paid from any of the four balances\n(`PUT /v1/settlement` or per-payout `settlement_asset`), and payins\ncan auto-convert to the asset of your choice (`default_payin_asset`).\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-08-09 17:07 UTC",
-    "_content_sha256": "2426e0c350bff5489fe3a0d65285ee7807853ca4ef70fd08a5449cb4b9e11fc2"
+    "_generated_at": "2026-08-10 02:25 UTC",
+    "_content_sha256": "ba8bdcd1a90e5133ac9a5255012950c1170f94fed3666e850cf2b4b29336a7f2"
   },
   "auth": {
     "type": "bearer",
@@ -861,13 +861,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": true,
-                  "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Filter from this date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": true,
-                  "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Filter up to this date (YYYY-MM-DD, organization timezone, inclusive)."
                 }
               ]
             },
@@ -909,13 +909,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": true,
-                      "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Filter from this date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": true,
-                      "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Filter up to this date (YYYY-MM-DD, organization timezone, inclusive)."
                     }
                   ]
                 }
@@ -2733,13 +2733,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": false,
-                  "description": "Start date YYYY-MM-DD (UTC, inclusive). An invalid date\nreturns 400 invalid_range."
+                  "description": "Start date YYYY-MM-DD (organization timezone, inclusive). An invalid date\nreturns 400 invalid_range."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": false,
-                  "description": "End date YYYY-MM-DD (UTC, inclusive)."
+                  "description": "End date YYYY-MM-DD (organization timezone, inclusive)."
                 },
                 {
                   "key": "subject_id",
@@ -2767,7 +2767,7 @@
                 }
               ]
             },
-            "description": "Returns the credit reports of your account, newest first. The\n`from` and `to` date filters (UTC, both inclusive) are mandatory. Reports\nowned by other accounts are never visible (ownership isolation: a report id\nbelonging to another account returns `404 not_found`)."
+            "description": "Returns the credit reports of your account, newest first. The\n`from` and `to` date filters (organization timezone, both inclusive) are mandatory. Reports\nowned by other accounts are never visible (ownership isolation: a report id\nbelonging to another account returns `404 not_found`)."
           },
           "response": [
             {
@@ -2789,13 +2789,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": false,
-                      "description": "Start date YYYY-MM-DD (UTC, inclusive). An invalid date\nreturns 400 invalid_range."
+                      "description": "Start date YYYY-MM-DD (organization timezone, inclusive). An invalid date\nreturns 400 invalid_range."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": false,
-                      "description": "End date YYYY-MM-DD (UTC, inclusive)."
+                      "description": "End date YYYY-MM-DD (organization timezone, inclusive)."
                     },
                     {
                       "key": "subject_id",
@@ -4178,13 +4178,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": false,
-                  "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": false,
-                  "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "End date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "status",
@@ -4206,7 +4206,7 @@
                 }
               ]
             },
-            "description": "Lists the batch scoring jobs of your account (newest first), paginated. `page` starts at 1; `page_size` defaults to 50 (maximum 200). The `from` and `to` date filters (UTC, both inclusive) are mandatory. Batches owned by other accounts are never visible (ownership isolation: a batch id from another account returns 404)."
+            "description": "Lists the batch scoring jobs of your account (newest first), paginated. `page` starts at 1; `page_size` defaults to 50 (maximum 200). The `from` and `to` date filters (organization timezone, both inclusive) are mandatory. Batches owned by other accounts are never visible (ownership isolation: a batch id from another account returns 404)."
           },
           "response": [
             {
@@ -4228,13 +4228,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": false,
-                      "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": false,
-                      "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "End date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "status",
@@ -4607,13 +4607,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": false,
-                  "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": false,
-                  "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "End date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "status",
@@ -4635,7 +4635,7 @@
                 }
               ]
             },
-            "description": "Lists the consent links of your account (newest first), paginated. The `from` and `to` date filters (UTC, both inclusive) are mandatory; `page` starts at 1 and `page_size` defaults to 50 (maximum 200). Consents owned by other accounts are never visible (ownership isolation)."
+            "description": "Lists the consent links of your account (newest first), paginated. The `from` and `to` date filters (organization timezone, both inclusive) are mandatory; `page` starts at 1 and `page_size` defaults to 50 (maximum 200). Consents owned by other accounts are never visible (ownership isolation)."
           },
           "response": [
             {
@@ -4657,13 +4657,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": false,
-                      "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": false,
-                      "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "End date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "status",
@@ -5415,7 +5415,7 @@
                 "branding"
               ]
             },
-            "description": "Effective branding of the platform you operate on (name, colors, logos in base64) so a white-label front end can theme itself from the API instead of hardcoding assets. `logo_url`/`symbol_url` are public CDN URLs for the same logos — prefer them over the base64 payloads. Read-only, no PII."
+            "description": "Effective branding of the platform you operate on (name, colors, logos in base64) so a white-label front end can theme itself from the API instead of hardcoding assets. `logo_url`/`symbol_url` are public CDN URLs for the same logos — prefer them over the base64 payloads. Read-only, no PII. `timezone` is the IANA timezone of the organization (default `America/New_York`) — every `from`/`to` date filter and every daily bucket of the platform is interpreted in that zone."
           },
           "response": [
             {
@@ -5442,7 +5442,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"brand_name\": \"CBPay\",\n  \"website\": \"www.cbpayapp.com\",\n  \"footer_address\": \"Miami: 25 SW 9th STREET, Suite 406, Miami, FL 33130\",\n  \"support_email\": \"\",\n  \"colors\": {\n    \"primary\": \"#FBC140\",\n    \"header\": \"#2E2E2E\",\n    \"accent\": \"#A16207\"\n  },\n  \"logo_png_base64\": \"iVBORw0KGgoAAAANSUhEUg...\",\n  \"symbol_png_base64\": \"iVBORw0KGgoAAAANSUhEUg...\",\n  \"logo_url\": \"https://cdn.cbpayapp.com/public/branding/default/logo.png\",\n  \"symbol_url\": \"https://cdn.cbpayapp.com/public/branding/default/symbol.png\"\n}"
+              "body": "{\n  \"brand_name\": \"CBPay\",\n  \"website\": \"www.cbpayapp.com\",\n  \"footer_address\": \"Miami: 25 SW 9th STREET, Suite 406, Miami, FL 33130\",\n  \"support_email\": \"\",\n  \"colors\": {\n    \"primary\": \"#FBC140\",\n    \"header\": \"#2E2E2E\",\n    \"accent\": \"#A16207\"\n  },\n  \"logo_png_base64\": \"iVBORw0KGgoAAAANSUhEUg...\",\n  \"symbol_png_base64\": \"iVBORw0KGgoAAAANSUhEUg...\",\n  \"logo_url\": \"https://cdn.cbpayapp.com/public/branding/default/logo.png\",\n  \"symbol_url\": \"https://cdn.cbpayapp.com/public/branding/default/symbol.png\",\n  \"timezone\": \"America/New_York\"\n}"
             }
           ]
         },
@@ -6735,7 +6735,7 @@
                 }
               ]
             },
-            "description": "Money operations of the account held by the transactional firewall (payouts, crypto withdrawals, payins, banking transfers) with their review status. Filter by `status` and date range (`from`/`to`, UTC, both inclusive). When a review moves to `info_requested`, upload the requested documents with `POST /v1/me/txn-reviews/{reviewID}/files` — the operation stays held until the compliance team decides."
+            "description": "Money operations of the account held by the transactional firewall (payouts, crypto withdrawals, payins, banking transfers) with their review status. Filter by `status` and date range (`from`/`to`, organization timezone, both inclusive). When a review moves to `info_requested`, upload the requested documents with `POST /v1/me/txn-reviews/{reviewID}/files` — the operation stays held until the compliance team decides."
           },
           "response": [
             {
@@ -7864,13 +7864,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": false,
-                  "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": false,
-                  "description": "End date (YYYY-MM-DD, UTC, inclusive). Max range 366 days."
+                  "description": "End date (YYYY-MM-DD, organization timezone, inclusive). Max range 366 days."
                 }
               ]
             },
@@ -7896,13 +7896,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": false,
-                      "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": false,
-                      "description": "End date (YYYY-MM-DD, UTC, inclusive). Max range 366 days."
+                      "description": "End date (YYYY-MM-DD, organization timezone, inclusive). Max range 366 days."
                     }
                   ]
                 }
@@ -7916,7 +7916,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"from\": \"2026-06-12\",\n  \"to\": \"2026-07-11\",\n  \"granularity\": \"day\",\n  \"timezone\": \"UTC\",\n  \"assets\": {\n    \"USDT\": {\n      \"series\": [\n        {\n          \"date\": \"2026-06-12\",\n          \"balance\": \"100.000000\"\n        },\n        {\n          \"date\": \"2026-06-13\",\n          \"balance\": \"100.000000\"\n        },\n        {\n          \"date\": \"2026-07-11\",\n          \"balance\": \"125.430000\"\n        }\n      ],\n      \"first\": \"100.000000\",\n      \"last\": \"125.430000\",\n      \"change_pct\": \"25.43\"\n    },\n    \"BTC\": {\n      \"series\": [\n        {\n          \"date\": \"2026-06-12\",\n          \"balance\": \"0.00060000\"\n        },\n        {\n          \"date\": \"2026-07-11\",\n          \"balance\": \"0.00060000\"\n        }\n      ],\n      \"first\": \"0.00060000\",\n      \"last\": \"0.00060000\",\n      \"change_pct\": \"0.00\"\n    },\n    \"BANK_USD\": {\n      \"series\": [\n        {\n          \"date\": \"2026-06-12\",\n          \"balance\": \"1500.00\"\n        },\n        {\n          \"date\": \"2026-07-11\",\n          \"balance\": \"1725.50\"\n        }\n      ],\n      \"first\": \"1500.00\",\n      \"last\": \"1725.50\",\n      \"change_pct\": \"15.03\"\n    }\n  },\n  \"total_usd\": {\n    \"series\": [\n      {\n        \"date\": \"2026-06-12\",\n        \"balance_usd\": \"163.73\"\n      },\n      {\n        \"date\": \"2026-07-11\",\n        \"balance_usd\": \"191.34\"\n      }\n    ],\n    \"first\": \"163.73\",\n    \"last\": \"191.34\",\n    \"change_pct\": \"16.86\",\n    \"spot_priced_dates\": [],\n    \"unpriced_assets\": []\n  },\n  \"period\": {\n    \"in_usd\": \"280.20\",\n    \"out_usd\": \"254.77\",\n    \"net_usd\": \"25.43\"\n  },\n  \"current\": {\n    \"items\": [\n      {\n        \"asset\": \"USDT\",\n        \"available\": \"125.430000\",\n        \"held\": \"10.000000\",\n        \"usd_estimate\": \"135.43\"\n      },\n      {\n        \"asset\": \"USDC\",\n        \"available\": \"0.000000\",\n        \"held\": \"0.000000\",\n        \"usd_estimate\": \"0.00\"\n      },\n      {\n        \"asset\": \"BTC\",\n        \"available\": \"0.00060000\",\n        \"held\": \"0.00000000\",\n        \"usd_estimate\": \"65.91\"\n      },\n      {\n        \"asset\": \"GOLD\",\n        \"available\": \"0.000000\",\n        \"held\": \"0.000000\",\n        \"usd_estimate\": \"0.00\"\n      }\n    ],\n    \"net_worth_usd_estimate\": \"201.34\"\n  }\n}"
+              "body": "{\n  \"account_id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"from\": \"2026-06-12\",\n  \"to\": \"2026-07-11\",\n  \"granularity\": \"day\",\n  \"timezone\": \"America/New_York\",\n  \"assets\": {\n    \"USDT\": {\n      \"series\": [\n        {\n          \"date\": \"2026-06-12\",\n          \"balance\": \"100.000000\"\n        },\n        {\n          \"date\": \"2026-06-13\",\n          \"balance\": \"100.000000\"\n        },\n        {\n          \"date\": \"2026-07-11\",\n          \"balance\": \"125.430000\"\n        }\n      ],\n      \"first\": \"100.000000\",\n      \"last\": \"125.430000\",\n      \"change_pct\": \"25.43\"\n    },\n    \"BTC\": {\n      \"series\": [\n        {\n          \"date\": \"2026-06-12\",\n          \"balance\": \"0.00060000\"\n        },\n        {\n          \"date\": \"2026-07-11\",\n          \"balance\": \"0.00060000\"\n        }\n      ],\n      \"first\": \"0.00060000\",\n      \"last\": \"0.00060000\",\n      \"change_pct\": \"0.00\"\n    },\n    \"BANK_USD\": {\n      \"series\": [\n        {\n          \"date\": \"2026-06-12\",\n          \"balance\": \"1500.00\"\n        },\n        {\n          \"date\": \"2026-07-11\",\n          \"balance\": \"1725.50\"\n        }\n      ],\n      \"first\": \"1500.00\",\n      \"last\": \"1725.50\",\n      \"change_pct\": \"15.03\"\n    }\n  },\n  \"total_usd\": {\n    \"series\": [\n      {\n        \"date\": \"2026-06-12\",\n        \"balance_usd\": \"163.73\"\n      },\n      {\n        \"date\": \"2026-07-11\",\n        \"balance_usd\": \"191.34\"\n      }\n    ],\n    \"first\": \"163.73\",\n    \"last\": \"191.34\",\n    \"change_pct\": \"16.86\",\n    \"spot_priced_dates\": [],\n    \"unpriced_assets\": []\n  },\n  \"period\": {\n    \"in_usd\": \"280.20\",\n    \"out_usd\": \"254.77\",\n    \"net_usd\": \"25.43\"\n  },\n  \"current\": {\n    \"items\": [\n      {\n        \"asset\": \"USDT\",\n        \"available\": \"125.430000\",\n        \"held\": \"10.000000\",\n        \"usd_estimate\": \"135.43\"\n      },\n      {\n        \"asset\": \"USDC\",\n        \"available\": \"0.000000\",\n        \"held\": \"0.000000\",\n        \"usd_estimate\": \"0.00\"\n      },\n      {\n        \"asset\": \"BTC\",\n        \"available\": \"0.00060000\",\n        \"held\": \"0.00000000\",\n        \"usd_estimate\": \"65.91\"\n      },\n      {\n        \"asset\": \"GOLD\",\n        \"available\": \"0.000000\",\n        \"held\": \"0.000000\",\n        \"usd_estimate\": \"0.00\"\n      }\n    ],\n    \"net_worth_usd_estimate\": \"201.34\"\n  }\n}"
             }
           ]
         },
@@ -7961,13 +7961,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": true,
-                  "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Filter from this date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": true,
-                  "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Filter up to this date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "format",
@@ -8020,13 +8020,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": true,
-                      "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Filter from this date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": true,
-                      "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Filter up to this date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "format",
@@ -8116,13 +8116,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": false,
-                  "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": false,
-                  "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "End date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "granularity",
@@ -8160,13 +8160,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": false,
-                      "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": false,
-                      "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "End date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "granularity",
@@ -8216,13 +8216,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": false,
-                  "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": false,
-                  "description": "End date (YYYY-MM-DD, UTC, inclusive). Max range: 400 days."
+                  "description": "End date (YYYY-MM-DD, organization timezone, inclusive). Max range: 400 days."
                 },
                 {
                   "key": "format",
@@ -8260,13 +8260,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": false,
-                      "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": false,
-                      "description": "End date (YYYY-MM-DD, UTC, inclusive). Max range: 400 days."
+                      "description": "End date (YYYY-MM-DD, organization timezone, inclusive). Max range: 400 days."
                     },
                     {
                       "key": "format",
@@ -8342,13 +8342,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": true,
-                  "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Filter from this date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": true,
-                  "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Filter up to this date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "format",
@@ -8401,13 +8401,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": true,
-                      "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Filter from this date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": true,
-                      "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Filter up to this date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "format",
@@ -10184,13 +10184,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": true,
-                  "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Filter from this date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": true,
-                  "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Filter up to this date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "format",
@@ -10243,13 +10243,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": true,
-                      "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Filter from this date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": true,
-                      "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Filter up to this date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "format",
@@ -11807,13 +11807,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": true,
-                  "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Filter from this date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": true,
-                  "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Filter up to this date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "format",
@@ -11856,13 +11856,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": true,
-                      "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Filter from this date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": true,
-                      "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Filter up to this date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "format",
@@ -12768,13 +12768,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": true,
-                  "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Filter from this date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": true,
-                  "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Filter up to this date (YYYY-MM-DD, organization timezone, inclusive)."
                 }
               ]
             },
@@ -12810,13 +12810,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": true,
-                      "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Filter from this date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": true,
-                      "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Filter up to this date (YYYY-MM-DD, organization timezone, inclusive)."
                     }
                   ]
                 }
@@ -13093,13 +13093,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": false,
-                  "description": "Start date YYYY-MM-DD (UTC, inclusive)."
+                  "description": "Start date YYYY-MM-DD (organization timezone, inclusive)."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": false,
-                  "description": "End date YYYY-MM-DD (UTC, inclusive)."
+                  "description": "End date YYYY-MM-DD (organization timezone, inclusive)."
                 },
                 {
                   "key": "risk",
@@ -13143,13 +13143,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": false,
-                      "description": "Start date YYYY-MM-DD (UTC, inclusive)."
+                      "description": "Start date YYYY-MM-DD (organization timezone, inclusive)."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": false,
-                      "description": "End date YYYY-MM-DD (UTC, inclusive)."
+                      "description": "End date YYYY-MM-DD (organization timezone, inclusive)."
                     },
                     {
                       "key": "risk",
@@ -13933,13 +13933,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": false,
-                  "description": "Start date YYYY-MM-DD (UTC, inclusive)."
+                  "description": "Start date YYYY-MM-DD (organization timezone, inclusive)."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": false,
-                  "description": "End date YYYY-MM-DD (UTC, inclusive)."
+                  "description": "End date YYYY-MM-DD (organization timezone, inclusive)."
                 },
                 {
                   "key": "risk",
@@ -13983,13 +13983,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": false,
-                      "description": "Start date YYYY-MM-DD (UTC, inclusive)."
+                      "description": "Start date YYYY-MM-DD (organization timezone, inclusive)."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": false,
-                      "description": "End date YYYY-MM-DD (UTC, inclusive)."
+                      "description": "End date YYYY-MM-DD (organization timezone, inclusive)."
                     },
                     {
                       "key": "risk",
@@ -14852,13 +14852,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": true,
-                  "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Filter from this date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": true,
-                  "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Filter up to this date (YYYY-MM-DD, organization timezone, inclusive)."
                 }
               ]
             },
@@ -14899,13 +14899,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": true,
-                      "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Filter from this date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": true,
-                      "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Filter up to this date (YYYY-MM-DD, organization timezone, inclusive)."
                     }
                   ]
                 }
@@ -15479,13 +15479,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": false,
-                  "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": false,
-                  "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "End date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "merchant_id",
@@ -15535,13 +15535,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": false,
-                      "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": false,
-                      "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "End date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "merchant_id",
@@ -15869,13 +15869,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": false,
-                  "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": false,
-                  "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "End date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "merchant_id",
@@ -15907,13 +15907,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": false,
-                      "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": false,
-                      "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "End date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "merchant_id",
@@ -16398,13 +16398,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": true,
-                  "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": true,
-                  "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "End date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "page",
@@ -16441,13 +16441,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": true,
-                      "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": true,
-                      "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "End date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "page",
@@ -16867,13 +16867,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": true,
-                  "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": true,
-                  "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "End date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "page",
@@ -16918,13 +16918,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": true,
-                      "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": true,
-                      "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "End date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "page",
@@ -16981,13 +16981,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": true,
-                  "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": true,
-                  "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "End date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "page",
@@ -17032,13 +17032,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": true,
-                      "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": true,
-                      "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "End date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "page",
@@ -17095,13 +17095,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": true,
-                  "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": true,
-                  "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "End date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "page",
@@ -17146,13 +17146,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": true,
-                      "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": true,
-                      "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "End date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "page",
@@ -18598,7 +18598,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"customer_id\": \"9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d\",\n  \"provider_id\": \"BNK-88f13a\",\n  \"status\": \"draft\",\n  \"data\": {\n    \"item\": {\n      \"type\": \"INDIVIDUAL\",\n      \"name\": \"Ana Perez Rojas\"\n    }\n  },\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"banking_fee\": \"5.000000\"\n}"
+              "body": "{\n  \"customer_id\": \"9f2b1c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d\",\n  \"provider_id\": \"BNK-88f13a\",\n  \"status\": \"draft\",\n  \"data\": {\n    \"item\": {\n      \"type\": \"INDIVIDUAL\",\n      \"name\": \"Ana Perez Rojas\"\n    }\n  },\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"banking_fee\": \"5.000000\",\n  \"banking_fee_asset\": \"USDT\"\n}"
             }
           ]
         },
@@ -18822,7 +18822,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"account_id\": \"c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5\",\n  \"provider_id\": \"BNK-ACC-4471\",\n  \"status\": \"active\",\n  \"data\": {\n    \"currency\": \"USD\",\n    \"name\": \"Operating USD\",\n    \"accountNumber\": \"0532013000\",\n    \"routingNumber\": \"011000138\"\n  },\n  \"banking_fee\": \"1.000000\"\n}"
+              "body": "{\n  \"account_id\": \"c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5\",\n  \"provider_id\": \"BNK-ACC-4471\",\n  \"status\": \"active\",\n  \"data\": {\n    \"currency\": \"USD\",\n    \"name\": \"Operating USD\",\n    \"accountNumber\": \"0532013000\",\n    \"routingNumber\": \"011000138\"\n  },\n  \"banking_fee\": \"1.000000\",\n  \"banking_fee_asset\": \"USDT\"\n}"
             }
           ]
         },
@@ -19682,7 +19682,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"third_party_id\": \"7f2a1b3c-0000-1111-2222-333344445555\",\n  \"customer_id\": \"cus_abc123\",\n  \"kind\": \"third_party\",\n  \"status\": \"pending\",\n  \"verification_id\": \"c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f\",\n  \"documents_synced\": 2,\n  \"registered_at\": \"2026-07-10T15:00:00Z\",\n  \"banking_fee\": \"1.000000\"\n}"
+              "body": "{\n  \"third_party_id\": \"7f2a1b3c-0000-1111-2222-333344445555\",\n  \"customer_id\": \"cus_abc123\",\n  \"kind\": \"third_party\",\n  \"status\": \"pending\",\n  \"verification_id\": \"c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f\",\n  \"documents_synced\": 2,\n  \"registered_at\": \"2026-07-10T15:00:00Z\",\n  \"banking_fee\": \"1.000000\",\n  \"banking_fee_asset\": \"USDT\"\n}"
             }
           ]
         },
@@ -20028,7 +20028,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"account_id\": \"c4d10000-aaaa-bbbb-cccc-ddddeeeeffff\",\n  \"status\": \"active\",\n  \"banking_fee\": \"1.000000\"\n}"
+              "body": "{\n  \"account_id\": \"c4d10000-aaaa-bbbb-cccc-ddddeeeeffff\",\n  \"status\": \"active\",\n  \"banking_fee\": \"1.000000\",\n  \"banking_fee_asset\": \"USDT\"\n}"
             }
           ]
         },
@@ -20148,13 +20148,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": true,
-                  "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Filter from this date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": true,
-                  "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Filter up to this date (YYYY-MM-DD, organization timezone, inclusive)."
                 }
               ]
             },
@@ -20195,13 +20195,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": true,
-                      "description": "Filter from this date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Filter from this date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": true,
-                      "description": "Filter up to this date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Filter up to this date (YYYY-MM-DD, organization timezone, inclusive)."
                     }
                   ]
                 }
@@ -21108,13 +21108,13 @@
                   "key": "from",
                   "value": "",
                   "disabled": true,
-                  "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                 },
                 {
                   "key": "to",
                   "value": "",
                   "disabled": true,
-                  "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                  "description": "End date (YYYY-MM-DD, organization timezone, inclusive)."
                 }
               ]
             },
@@ -21150,13 +21150,13 @@
                       "key": "from",
                       "value": "",
                       "disabled": true,
-                      "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "Start date (YYYY-MM-DD, organization timezone, inclusive)."
                     },
                     {
                       "key": "to",
                       "value": "",
                       "disabled": true,
-                      "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                      "description": "End date (YYYY-MM-DD, organization timezone, inclusive)."
                     }
                   ]
                 }
@@ -21580,7 +21580,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"account_id\": \"ae8cf540-22a9-414d-82cc-8ac04732be4f\",\n  \"from\": \"2026-07-01\",\n  \"to\": \"2026-07-10\",\n  \"granularity\": \"day\",\n  \"timezone\": \"UTC\",\n  \"gross_volume\": {\n    \"in\": \"636936.87\",\n    \"out\": \"270118.87\",\n    \"total\": \"907055.74\",\n    \"series\": [\n      {\n        \"date\": \"2026-07-01\",\n        \"in\": \"51023.10\",\n        \"out\": \"31210.44\",\n        \"total\": \"82233.54\"\n      }\n    ],\n    \"previous_period\": {\n      \"in\": \"512300.00\",\n      \"out\": \"241000.10\",\n      \"total\": \"753300.10\"\n    },\n    \"change_pct\": \"20.41\",\n    \"unpriced_assets\": []\n  },\n  \"transactions\": {\n    \"total\": 92,\n    \"series\": [\n      {\n        \"date\": \"2026-07-01\",\n        \"in\": 3,\n        \"out\": 5,\n        \"total\": 8\n      }\n    ],\n    \"previous_period\": {\n      \"total\": 71\n    },\n    \"change_pct\": \"29.58\"\n  },\n  \"new_users\": {\n    \"total\": 11,\n    \"series\": [\n      {\n        \"date\": \"2026-07-01\",\n        \"count\": 1\n      }\n    ],\n    \"previous_period\": {\n      \"total\": 6\n    },\n    \"change_pct\": \"83.33\"\n  },\n  \"by_country\": [\n    {\n      \"country\": \"BR\",\n      \"payouts\": {\n        \"count\": 18,\n        \"volume_usd\": \"3410.20\"\n      },\n      \"payins\": {\n        \"count\": 4,\n        \"volume_usd\": \"820.00\"\n      },\n      \"total_usd\": \"4230.20\"\n    }\n  ],\n  \"sections\": {\n    \"payouts\": {\n      \"count\": 24,\n      \"volume_usd\": \"5120.40\",\n      \"fees_usd\": \"7.20\",\n      \"by_status\": [\n        {\n          \"key\": \"completed\",\n          \"count\": 21,\n          \"volume_usd\": \"4980.10\"\n        }\n      ],\n      \"by_country\": [\n        {\n          \"country\": \"BR\",\n          \"count\": 18,\n          \"volume_usd\": \"3410.20\",\n          \"local_volume\": {\n            \"BRL\": \"17550\"\n          }\n        }\n      ],\n      \"by_method\": [\n        {\n          \"key\": \"pix\",\n          \"count\": 18,\n          \"volume_usd\": \"3410.20\"\n        }\n      ]\n    },\n    \"cards\": {\n      \"count\": 12,\n      \"volume_usd\": \"230.50\",\n      \"active_cards\": 1,\n      \"by_status\": [\n        {\n          \"status\": \"settled\",\n          \"count\": 10,\n          \"volume_usd\": \"205.00\"\n        }\n      ],\n      \"top_merchants\": [\n        {\n          \"merchant\": \"AMAZON\",\n          \"count\": 4,\n          \"volume_usd\": \"98.20\"\n        }\n      ]\n    },\n    \"banking\": {\n      \"new_third_parties\": 11,\n      \"new_accounts\": 14,\n      \"operations\": 6,\n      \"volume\": {\n        \"in\": {\n          \"count\": 4,\n          \"volume_usd\": \"1200.00\"\n        },\n        \"out\": {\n          \"count\": 9,\n          \"volume_usd\": \"3450.00\"\n        },\n        \"volume_usd\": \"4650.00\"\n      },\n      \"fees_usd\": \"18.00\"\n    },\n    \"verifications\": {\n      \"submissions\": [\n        {\n          \"kind\": \"kyc\",\n          \"status\": \"approved\",\n          \"count\": 3\n        }\n      ],\n      \"fees_usd\": \"9.00\",\n      \"fees_by_kind\": {\n        \"kyc_verification\": {\n          \"count\": 3,\n          \"fees_usd\": \"6.00\"\n        },\n        \"kyb_verification\": {\n          \"count\": 1,\n          \"fees_usd\": \"3.00\"\n        }\n      }\n    },\n    \"adjustments\": {\n      \"count\": 2,\n      \"volume_usd\": \"2000.00\"\n    }\n  },\n  \"spending\": {\n    \"total_usd\": \"34.50\",\n    \"by_service\": {\n      \"banking_customer\": {\n        \"count\": 11,\n        \"fees_usd\": \"11.00\"\n      }\n    }\n  },\n  \"balances\": {\n    \"items\": [\n      {\n        \"asset\": \"USDT\",\n        \"available\": \"1520.250000\",\n        \"held\": \"0.000000\",\n        \"usd_estimate\": \"1520.25\"\n      }\n    ],\n    \"net_worth_usd_estimate\": \"1833.93\"\n  }\n}"
+              "body": "{\n  \"account_id\": \"ae8cf540-22a9-414d-82cc-8ac04732be4f\",\n  \"from\": \"2026-07-01\",\n  \"to\": \"2026-07-10\",\n  \"granularity\": \"day\",\n  \"timezone\": \"America/New_York\",\n  \"gross_volume\": {\n    \"in\": \"636936.87\",\n    \"out\": \"270118.87\",\n    \"total\": \"907055.74\",\n    \"series\": [\n      {\n        \"date\": \"2026-07-01\",\n        \"in\": \"51023.10\",\n        \"out\": \"31210.44\",\n        \"total\": \"82233.54\"\n      }\n    ],\n    \"previous_period\": {\n      \"in\": \"512300.00\",\n      \"out\": \"241000.10\",\n      \"total\": \"753300.10\"\n    },\n    \"change_pct\": \"20.41\",\n    \"unpriced_assets\": []\n  },\n  \"transactions\": {\n    \"total\": 92,\n    \"series\": [\n      {\n        \"date\": \"2026-07-01\",\n        \"in\": 3,\n        \"out\": 5,\n        \"total\": 8\n      }\n    ],\n    \"previous_period\": {\n      \"total\": 71\n    },\n    \"change_pct\": \"29.58\"\n  },\n  \"new_users\": {\n    \"total\": 11,\n    \"series\": [\n      {\n        \"date\": \"2026-07-01\",\n        \"count\": 1\n      }\n    ],\n    \"previous_period\": {\n      \"total\": 6\n    },\n    \"change_pct\": \"83.33\"\n  },\n  \"by_country\": [\n    {\n      \"country\": \"BR\",\n      \"payouts\": {\n        \"count\": 18,\n        \"volume_usd\": \"3410.20\"\n      },\n      \"payins\": {\n        \"count\": 4,\n        \"volume_usd\": \"820.00\"\n      },\n      \"total_usd\": \"4230.20\"\n    }\n  ],\n  \"sections\": {\n    \"payouts\": {\n      \"count\": 24,\n      \"volume_usd\": \"5120.40\",\n      \"fees_usd\": \"7.20\",\n      \"by_status\": [\n        {\n          \"key\": \"completed\",\n          \"count\": 21,\n          \"volume_usd\": \"4980.10\"\n        }\n      ],\n      \"by_country\": [\n        {\n          \"country\": \"BR\",\n          \"count\": 18,\n          \"volume_usd\": \"3410.20\",\n          \"local_volume\": {\n            \"BRL\": \"17550\"\n          }\n        }\n      ],\n      \"by_method\": [\n        {\n          \"key\": \"pix\",\n          \"count\": 18,\n          \"volume_usd\": \"3410.20\"\n        }\n      ]\n    },\n    \"cards\": {\n      \"count\": 12,\n      \"volume_usd\": \"230.50\",\n      \"active_cards\": 1,\n      \"by_status\": [\n        {\n          \"status\": \"settled\",\n          \"count\": 10,\n          \"volume_usd\": \"205.00\"\n        }\n      ],\n      \"top_merchants\": [\n        {\n          \"merchant\": \"AMAZON\",\n          \"count\": 4,\n          \"volume_usd\": \"98.20\"\n        }\n      ]\n    },\n    \"banking\": {\n      \"new_third_parties\": 11,\n      \"new_accounts\": 14,\n      \"operations\": 6,\n      \"volume\": {\n        \"in\": {\n          \"count\": 4,\n          \"volume_usd\": \"1200.00\"\n        },\n        \"out\": {\n          \"count\": 9,\n          \"volume_usd\": \"3450.00\"\n        },\n        \"volume_usd\": \"4650.00\"\n      },\n      \"fees_usd\": \"18.00\"\n    },\n    \"verifications\": {\n      \"submissions\": [\n        {\n          \"kind\": \"kyc\",\n          \"status\": \"approved\",\n          \"count\": 3\n        }\n      ],\n      \"fees_usd\": \"9.00\",\n      \"fees_by_kind\": {\n        \"kyc_verification\": {\n          \"count\": 3,\n          \"fees_usd\": \"6.00\"\n        },\n        \"kyb_verification\": {\n          \"count\": 1,\n          \"fees_usd\": \"3.00\"\n        }\n      }\n    },\n    \"adjustments\": {\n      \"count\": 2,\n      \"volume_usd\": \"2000.00\"\n    }\n  },\n  \"spending\": {\n    \"total_usd\": \"34.50\",\n    \"by_service\": {\n      \"banking_customer\": {\n        \"count\": 11,\n        \"fees_usd\": \"11.00\"\n      }\n    }\n  },\n  \"balances\": {\n    \"items\": [\n      {\n        \"asset\": \"USDT\",\n        \"available\": \"1520.250000\",\n        \"held\": \"0.000000\",\n        \"usd_estimate\": \"1520.25\"\n      }\n    ],\n    \"net_worth_usd_estimate\": \"1833.93\"\n  }\n}"
             }
           ]
         }

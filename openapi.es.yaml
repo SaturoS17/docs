@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.52"
+  version: "2.55"
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -1440,7 +1440,7 @@ paths:
       description: Branding efectivo de la plataforma donde operas (nombre, colores, logos en base64)
         para que un front white-label se auto-tematice desde la API en vez de hardcodear assets. `logo_url`/`symbol_url`
         son URLs públicas de CDN de los mismos logos — prefiérelas por sobre los payloads base64. Solo
-        lectura, sin PII.
+        lectura, sin PII. `timezone` es la zona horaria IANA de la organización (default `America/New_York`) — cada filtro de fecha `from`/`to` y cada bucket diario de la plataforma se interpreta en esa zona.
       responses:
         '200':
           description: Branding efectivo.
@@ -1459,6 +1459,7 @@ paths:
                 symbol_png_base64: iVBORw0KGgoAAAANSUhEUg...
                 logo_url: https://cdn.cbpayapp.com/public/branding/default/logo.png
                 symbol_url: https://cdn.cbpayapp.com/public/branding/default/symbol.png
+                timezone: America/New_York
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/auth/register:
@@ -2482,14 +2483,14 @@ paths:
         schema:
           type: string
           format: date
-        description: Fecha inicial (YYYY-MM-DD, UTC, inclusive).
+        description: Fecha inicial (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: to
         in: query
         required: true
         schema:
           type: string
           format: date
-        description: Fecha final (YYYY-MM-DD, UTC, inclusive). Rango máximo 366 días.
+        description: Fecha final (YYYY-MM-DD, zona horaria de la organización, inclusive). Rango máximo 366 días.
       responses:
         '200':
           description: Serie diaria de saldo por asset más el agregado USD.
@@ -2509,7 +2510,7 @@ paths:
                     example: day
                   timezone:
                     type: string
-                    example: UTC
+                    example: America/New_York
                   assets:
                     type: object
                     description: 'Una serie de saldo de cierre diario por asset. Incluye los saldos operativos
@@ -2607,7 +2608,7 @@ paths:
                 from: '2026-06-12'
                 to: '2026-07-11'
                 granularity: day
-                timezone: UTC
+                timezone: America/New_York
                 assets:
                   USDT:
                     series:
@@ -2734,13 +2735,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Filtra desde esta fecha (YYYY-MM-DD, UTC, inclusive).
+        description: Filtra desde esta fecha (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: Filtra hasta esta fecha (YYYY-MM-DD, UTC, inclusive).
+        description: Filtra hasta esta fecha (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: format
         in: query
         description: 'Exporta las mismas filas como archivo: `csv` o `xlsx` (descarga contable, hasta
@@ -2979,14 +2980,14 @@ paths:
         schema:
           type: string
           format: date
-        description: Fecha inicial (YYYY-MM-DD, UTC, inclusive).
+        description: Fecha inicial (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: to
         in: query
         required: true
         schema:
           type: string
           format: date
-        description: Fecha final (YYYY-MM-DD, UTC, inclusive).
+        description: Fecha final (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: granularity
         in: query
         schema:
@@ -3724,13 +3725,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Filtra desde esta fecha (YYYY-MM-DD, UTC, inclusive).
+        description: Filtra desde esta fecha (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: Filtra hasta esta fecha (YYYY-MM-DD, UTC, inclusive).
+        description: Filtra hasta esta fecha (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: format
         in: query
         description: 'Exporta las mismas filas como archivo: `csv` o `xlsx` (descarga contable, hasta
@@ -4541,13 +4542,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Filtra desde esta fecha (YYYY-MM-DD, UTC, inclusive).
+        description: Filtra desde esta fecha (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: Filtra hasta esta fecha (YYYY-MM-DD, UTC, inclusive).
+        description: Filtra hasta esta fecha (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: format
         in: query
         description: 'Exporta las mismas filas como archivo: `csv` o `xlsx` (descarga contable, hasta
@@ -5238,13 +5239,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Filtra desde esta fecha (YYYY-MM-DD, UTC, inclusive).
+        description: Filtra desde esta fecha (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: Filtra hasta esta fecha (YYYY-MM-DD, UTC, inclusive).
+        description: Filtra hasta esta fecha (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: format
         in: query
         description: 'Exporta las mismas filas como archivo: `csv` o `xlsx` (descarga contable, hasta
@@ -5528,13 +5529,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Filtra desde esta fecha (YYYY-MM-DD, UTC, inclusive).
+        description: Filtra desde esta fecha (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: Filtra hasta esta fecha (YYYY-MM-DD, UTC, inclusive).
+        description: Filtra hasta esta fecha (YYYY-MM-DD, zona horaria de la organización, inclusive).
       responses:
         '200':
           description: Depósitos y retiros.
@@ -5898,13 +5899,13 @@ paths:
         required: true
         schema:
           type: string
-        description: Fecha inicio YYYY-MM-DD (UTC, inclusive).
+        description: Fecha inicio YYYY-MM-DD (zona horaria de la organización, inclusive).
       - name: to
         in: query
         required: true
         schema:
           type: string
-        description: Fecha fin YYYY-MM-DD (UTC, inclusive).
+        description: Fecha fin YYYY-MM-DD (zona horaria de la organización, inclusive).
       - name: risk
         in: query
         schema:
@@ -6857,13 +6858,13 @@ paths:
         required: true
         schema:
           type: string
-        description: Fecha inicial YYYY-MM-DD (UTC, inclusive).
+        description: Fecha inicial YYYY-MM-DD (zona horaria de la organización, inclusive).
       - name: to
         in: query
         required: true
         schema:
           type: string
-        description: Fecha final YYYY-MM-DD (UTC, inclusive).
+        description: Fecha final YYYY-MM-DD (zona horaria de la organización, inclusive).
       - name: risk
         in: query
         schema:
@@ -7032,13 +7033,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Desde esta fecha (YYYY-MM-DD, UTC, inclusive).
+        description: Desde esta fecha (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: Hasta esta fecha (YYYY-MM-DD, UTC, inclusive).
+        description: Hasta esta fecha (YYYY-MM-DD, zona horaria de la organización, inclusive).
       responses:
         '200':
           description: Links KYC paginados.
@@ -9505,14 +9506,14 @@ paths:
         schema:
           type: string
           format: date
-        description: Start date (YYYY-MM-DD, UTC, inclusive).
+        description: Start date (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: to
         in: query
         required: true
         schema:
           type: string
           format: date
-        description: End date (YYYY-MM-DD, UTC, inclusive).
+        description: End date (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: merchant_id
         in: query
         schema:
@@ -9884,14 +9885,14 @@ paths:
         schema:
           type: string
           format: date
-        description: Start date (YYYY-MM-DD, UTC, inclusive).
+        description: Start date (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: to
         in: query
         required: true
         schema:
           type: string
           format: date
-        description: End date (YYYY-MM-DD, UTC, inclusive).
+        description: End date (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: merchant_id
         in: query
         schema:
@@ -10104,13 +10105,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Desde esta fecha (YYYY-MM-DD, UTC, inclusive).
+        description: Desde esta fecha (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: Hasta esta fecha (YYYY-MM-DD, UTC, inclusive).
+        description: Hasta esta fecha (YYYY-MM-DD, zona horaria de la organización, inclusive).
       responses:
         '200':
           description: Swaps paginados.
@@ -10829,13 +10830,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Fecha inicial (YYYY-MM-DD, UTC, inclusive).
+        description: Fecha inicial (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: Fecha final (YYYY-MM-DD, UTC, inclusive).
+        description: Fecha final (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: page
         in: query
         schema:
@@ -11058,13 +11059,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Fecha inicial (YYYY-MM-DD, UTC, inclusive).
+        description: Fecha inicial (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: Fecha final (YYYY-MM-DD, UTC, inclusive).
+        description: Fecha final (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: page
         in: query
         schema:
@@ -11111,13 +11112,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Fecha inicial (YYYY-MM-DD, UTC, inclusive).
+        description: Fecha inicial (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: Fecha final (YYYY-MM-DD, UTC, inclusive).
+        description: Fecha final (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: page
         in: query
         schema:
@@ -11265,13 +11266,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Fecha inicial (YYYY-MM-DD, UTC, inclusive).
+        description: Fecha inicial (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: Fecha final (YYYY-MM-DD, UTC, inclusive).
+        description: Fecha final (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: page
         in: query
         schema:
@@ -13252,6 +13253,7 @@ paths:
                     name: Ana Perez Rojas
                 created_at: '2026-07-07T12:00:00Z'
                 banking_fee: '5.000000'
+                banking_fee_asset: USDT
         '202':
           description: Solicitud retenida para revisión (la organización tiene la revisión de solicitudes activada).
             El recurso se crea solo cuando compliance aprueba la revisión; la comisión de emisión/apertura se cobra al
@@ -13473,6 +13475,7 @@ paths:
                   accountNumber: '0532013000'
                   routingNumber: 011000138
                 banking_fee: '1.000000'
+                banking_fee_asset: USDT
         '202':
           description: Solicitud retenida para revisión (la organización tiene la revisión de solicitudes activada).
             El recurso se crea solo cuando compliance aprueba la revisión; la comisión de emisión/apertura se cobra al
@@ -14034,6 +14037,7 @@ paths:
                   type: WITHDRAW
                   paymentType: SEPA_CT
                 banking_fee: '2.000000'
+                banking_fee_asset: BANK_EUR
         '200':
           description: Replay idempotente de una operación existente (sin cobro nuevo).
           content:
@@ -14228,14 +14232,14 @@ paths:
         schema:
           type: string
           format: date
-        description: Fecha inicial (YYYY-MM-DD, UTC, inclusive).
+        description: Fecha inicial (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: to
         in: query
         required: true
         schema:
           type: string
           format: date
-        description: 'Fecha final (YYYY-MM-DD, UTC, inclusive). Rango máximo: 400 días.'
+        description: 'Fecha final (YYYY-MM-DD, zona horaria de la organización, inclusive). Rango máximo: 400 días.'
       - name: format
         in: query
         schema:
@@ -14636,13 +14640,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Desde esta fecha (YYYY-MM-DD, UTC, inclusive).
+        description: Desde esta fecha (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: Hasta esta fecha (YYYY-MM-DD, UTC, inclusive).
+        description: Hasta esta fecha (YYYY-MM-DD, zona horaria de la organización, inclusive).
       responses:
         '200':
           description: Tarjetas paginadas.
@@ -15146,13 +15150,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Fecha inicial (YYYY-MM-DD, UTC, inclusive).
+        description: Fecha inicial (YYYY-MM-DD, zona horaria de la organización, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: Fecha final (YYYY-MM-DD, UTC, inclusive).
+        description: Fecha final (YYYY-MM-DD, zona horaria de la organización, inclusive).
       responses:
         '200':
           description: Historial de desafíos (auditoría).
@@ -15505,7 +15509,7 @@ paths:
                 from: '2026-07-01'
                 to: '2026-07-10'
                 granularity: day
-                timezone: UTC
+                timezone: America/New_York
                 gross_volume:
                   in: '636936.87'
                   out: '270118.87'
@@ -15683,6 +15687,7 @@ paths:
                 documents_synced: 2
                 registered_at: '2026-07-10T15:00:00Z'
                 banking_fee: '1.000000'
+                banking_fee_asset: USDT
         '202':
           description: Solicitud retenida para revisión (la organización tiene la revisión de solicitudes activada).
             El recurso se crea solo cuando compliance aprueba la revisión; la comisión de emisión/apertura se cobra al
@@ -15845,6 +15850,7 @@ paths:
                 account_id: c4d10000-aaaa-bbbb-cccc-ddddeeeeffff
                 status: active
                 banking_fee: '1.000000'
+                banking_fee_asset: USDT
         '202':
           description: Solicitud retenida para revisión (la organización tiene la revisión de solicitudes activada).
             El recurso se crea solo cuando compliance aprueba la revisión; la comisión de emisión/apertura se cobra al
@@ -17077,7 +17083,7 @@ paths:
       operationId: listMyTxnReviews
       summary: Mis revisiones de operaciones
       description: |-
-        Operaciones de dinero de la cuenta retenidas por el firewall transaccional (payouts, retiros crypto, payins, transferencias banking) con su estado de revisión. Filtra por `status` y rango de fechas (`from`/`to`, UTC, ambos inclusive). Cuando una revisión llega a `info_requested`, sube los documentos pedidos con `POST /v1/me/txn-reviews/{reviewID}/files` — la operación sigue retenida hasta que el equipo de cumplimiento decida.
+        Operaciones de dinero de la cuenta retenidas por el firewall transaccional (payouts, retiros crypto, payins, transferencias banking) con su estado de revisión. Filtra por `status` y rango de fechas (`from`/`to`, zona horaria de la organización, ambos inclusive). Cuando una revisión llega a `info_requested`, sube los documentos pedidos con `POST /v1/me/txn-reviews/{reviewID}/files` — la operación sigue retenida hasta que el equipo de cumplimiento decida.
       parameters:
       - name: status
         in: query
@@ -17355,7 +17361,7 @@ paths:
       operationId: listQscoreReports
       description: 'Devuelve los informes crediticios de tu cuenta, del más reciente al más antiguo. Los
 
-        filtros de fecha `from` y `to` (UTC, ambos inclusivos) son obligatorios. Los informes
+        filtros de fecha `from` y `to` (zona horaria de la organización, ambos inclusivos) son obligatorios. Los informes
 
         de otras cuentas nunca son visibles (aislamiento por cuenta: un id de informe
 
@@ -17366,7 +17372,7 @@ paths:
         required: true
         schema:
           type: string
-        description: 'Fecha de inicio YYYY-MM-DD (UTC, inclusiva). Una fecha inválida
+        description: 'Fecha de inicio YYYY-MM-DD (zona horaria de la organización, inclusiva). Una fecha inválida
 
           devuelve 400 invalid_range.'
         example: '2026-08-01'
@@ -17375,7 +17381,7 @@ paths:
         required: true
         schema:
           type: string
-        description: Fecha de término YYYY-MM-DD (UTC, inclusiva).
+        description: Fecha de término YYYY-MM-DD (zona horaria de la organización, inclusiva).
         example: '2026-08-08'
       - name: subject_id
         in: query
@@ -18942,7 +18948,7 @@ paths:
       operationId: listQscoreBatches
       description: 'Lista los lotes de scoring de tu cuenta (los más recientes
         primero), paginados. `page` parte en 1; `page_size` por defecto 50
-        (máximo 200). Los filtros de fecha `from` y `to` (UTC, ambos inclusivos)
+        (máximo 200). Los filtros de fecha `from` y `to` (zona horaria de la organización, ambos inclusivos)
         son obligatorios. Los lotes de otras cuentas nunca son visibles
         (aislamiento por cuenta: un batch id de otra cuenta responde 404).'
       parameters:
@@ -18952,14 +18958,14 @@ paths:
         schema:
           type: string
           format: date
-        description: Fecha de inicio (YYYY-MM-DD, UTC, inclusiva).
+        description: Fecha de inicio (YYYY-MM-DD, zona horaria de la organización, inclusiva).
       - name: to
         in: query
         required: true
         schema:
           type: string
           format: date
-        description: Fecha de término (YYYY-MM-DD, UTC, inclusiva).
+        description: Fecha de término (YYYY-MM-DD, zona horaria de la organización, inclusiva).
       - name: status
         in: query
         schema:
@@ -19286,7 +19292,7 @@ paths:
       summary: Listar links de consentimiento
       operationId: listRiskConsents
       description: 'Lista los links de consentimiento de tu cuenta (mas recientes
-        primero), paginado. Los filtros de fecha `from` y `to` (UTC, ambos
+        primero), paginado. Los filtros de fecha `from` y `to` (zona horaria de la organización, ambos
         inclusivos) son obligatorios; `page` parte en 1 y `page_size` por defecto
         es 50 (maximo 200). Los consents de otras cuentas jamas son visibles
         (aislamiento por cuenta).'
@@ -19297,14 +19303,14 @@ paths:
         schema:
           type: string
           format: date
-        description: Fecha inicial (YYYY-MM-DD, UTC, inclusiva).
+        description: Fecha inicial (YYYY-MM-DD, zona horaria de la organización, inclusiva).
       - name: to
         in: query
         required: true
         schema:
           type: string
           format: date
-        description: Fecha final (YYYY-MM-DD, UTC, inclusiva).
+        description: Fecha final (YYYY-MM-DD, zona horaria de la organización, inclusiva).
       - name: status
         in: query
         schema:
@@ -20592,6 +20598,11 @@ components:
           - compliance_rescreen
           - compliance_transaction
           - compliance_monitoring
+          - banking_deposit
+          - banking_transfer_ach
+          - banking_transfer_swift
+          - banking_transfer_wire
+          - banking_transfer_sepa
         country:
           type: string
         currency:
@@ -20607,6 +20618,15 @@ components:
         fixed_amount:
           type: string
           example: '0.30'
+        settlement_hours:
+          type: integer
+          description: >-
+            Solo payins con tarjeta (`payin_card`) — delay de acreditación configurable en horas.
+            `0` (default) acredita el payin apenas se confirma el cobro con tarjeta; un valor
+            positivo deja el payin `pending` con un timestamp `settle_at` hasta que vence el
+            delay y luego lo acredita automáticamente. En otro servicio o negativo se rechaza
+            con `invalid_settlement_hours`.
+          example: 24
         status:
           type: string
           example: active
@@ -20798,6 +20818,17 @@ components:
         updated_at:
           type: string
           format: date-time
+        settle_at:
+          type: string
+          format: date-time
+          description: >-
+            Solo payins con tarjeta que tienen un delay de acreditación configurado —
+            cuándo se acreditará este payin pendiente (`created_at` más las
+            `settlement_hours` de la comisión `payin_card`). El crédito del saldo, el
+            webhook de acreditación, el cierre del link de checkout y la auto-conversión
+            ocurren todos en ese momento; un payin cuyo plazo ya venció al aprobarse o
+            asignarse se acredita de inmediato. Ausente cuando el payin se acredita al
+            confirmarse.
         fx_rate:
           type: string
           description: Tu tasa de payin al momento del abono (presente una vez que el pago fue recibido

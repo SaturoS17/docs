@@ -252,7 +252,7 @@ doc_id,subject_type,status,score,band,verify_code,report_id,error_code
 Each `report_id` is a full individual report: you can download its PDF with the standard [report download](https://docs.cbpayapp.com/en/guides/qscore) endpoint, and anyone can verify its authenticity at `https://business.cbpayapp.com/verify/qscore/{verify_code}`.
 ## List and search your batches
 
-`GET /v1/qscore/batches` returns your batches paginated, with optional `from`/`to` date filters (`YYYY-MM-DD`, UTC, both inclusive — an invalid date yields `400 invalid_range`):
+`GET /v1/qscore/batches` returns your batches paginated, with optional `from`/`to` date filters (`YYYY-MM-DD`, organization timezone, both inclusive — an invalid date yields `400 invalid_range`):
 
 ```bash
 curl "https://api.qbank.cl/platform/v1/qscore/batches?page=1&page_size=50&from=2026-08-01&to=2026-08-09" \

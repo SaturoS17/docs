@@ -425,6 +425,12 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
   重新输入卡号 —— 勾选"记住此设备"后 30 天内无需再次验证。详见
   [已保存卡片](/zh/guides/stored-cards-subscriptions#付款人在支付页面上发现自己的卡片)。
 - 同样支持 USD（`currency: "USD"`）。
+- **结算延迟**：当 `payin_card` 费用配置了大于零的 `settlement_hours`
+  时，扣款获批后收款保持 `pending`，并在响应中附带 `settle_at`
+  时间戳（RFC 3339，create/GET/列表响应中均有），而非立即入账。到达
+  `settle_at` 时才执行入账：余额、`payin_credited` webhook、最终状态、
+  收银台链接关闭和自动兑换均在结算时发生。详见
+  [费用——银行卡收款结算延迟](/zh/concepts/fees#银行卡收款结算延迟)。
 
 </Tab>
 <Tab title="巴拉圭">
@@ -1039,7 +1045,7 @@ curl "https://api.qbank.cl/platform/v1/payins?from=2026-07-01&to=2026-07-08&stat
   -H "Authorization: Bearer <token>"
 ```
 
-`from`/`to` 使用 `YYYY-MM-DD`（UTC）；日期无效时返回
+`from`/`to` 使用 `YYYY-MM-DD`（组织时区）；日期无效时返回
 `400 invalid_range`。
 
 ## 常见错误

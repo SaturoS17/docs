@@ -19,11 +19,17 @@ lives in your bank accounts**, not in the CBPay balance.
 | Bank balances | Your bank accounts | `GET /v1/banking/accounts/{id}/balance` |
 
 > **Note**
-Banking fees (`banking_customer`, `banking_account`, `banking_operation`)
-are fixed, debited from your **USDT balance** when each operation executes,
-and **refunded automatically** if the operation fails. With a fee of 0
-(the default) the service is free. The `banking_fee` field on each
-response shows what was charged.
+Banking fees come in two shapes. **Standalone fixed fees**
+(`banking_customer`, `banking_account`, `banking_operation`) are debited
+from your **USDT balance** when each operation executes and **refunded
+automatically** if it fails. **Transactional rail fees**
+(`banking_deposit`, `banking_transfer_ach`, `banking_transfer_swift`,
+`banking_transfer_wire`, `banking_transfer_sepa`) are a percentage plus a
+fixed amount charged **in the operation currency** (your `BANK_USD` /
+`BANK_EUR` balance) — see [rail fees](#rail-fees-deposits-and-transfers).
+With a fee of 0 (the default) the service is free. The `banking_fee` and
+`banking_fee_asset` fields on each response show what was charged and in
+which currency.
 ## The full flow
 
 ```mermaid
@@ -371,7 +377,9 @@ curl -X POST https://api.qbank.cl/platform/v1/banking/operations/prepare \
   }'
 ```
 
-Execute with an idempotency key (`banking_operation` is charged here):
+Execute with an idempotency key (the rail fee — or the legacy
+`banking_operation` fee when the rail has no configuration — is charged
+here):
 
 ```bash WITHDRAW (to a beneficiary)
 curl -X POST https://api.qbank.cl/platform/v1/banking/operations \
@@ -413,9 +421,14 @@ Response `202`:
   "status": "pending",
   "idempotency_key": "platform:…:acme-payment-0071",
   "data": { "…": "…" },
-  "banking_fee": "2.000000"
+  "banking_fee": "2.000000",
+  "banking_fee_asset": "BANK_USD"
 }
 ```
+
+`banking_fee` and `banking_fee_asset` only appear when a fee was charged.
+With a per-rail fee the asset is the operation currency (`BANK_USD` /
+`BANK_EUR`); with the legacy fallback it is `USDT`.
 
 - The final state arrives through the `banking_operation_status_changed`
   webhook (`completed` / `failed`); you can also poll
@@ -465,6 +478,31 @@ it carries the identifiers and the new status only, never the enriched
 fields. When it fires, fetch the operation detail to read the direction,
 amount, counterparty and reference. See [webhooks](https://docs.cbpayapp.com/en/webhooks).
 
+## Rail fees (deposits and transfers)
+
+On top of the standalone fixed fees, banking supports **transactional fees
+per rail** — a percentage plus a fixed amount, always charged **in the
+operation currency** (`BANK_USD` / `BANK_EUR`), never in USDT:
+
+| Service | Applies to | When it is charged |
+|---|---|---|
+| `banking_deposit` | Incoming deposits (USD/EUR) | When the deposit is credited — **capped at the deposit amount** (`fee = min(fee, amount)`), so a small deposit never goes negative |
+| `banking_transfer_ach` | Outgoing ACH transfers | At dispatch, with a fail-closed balance check |
+| `banking_transfer_swift` | Outgoing SWIFT transfers | At dispatch, with a fail-closed balance check |
+| `banking_transfer_wire` | Outgoing wire transfers (FEDWIRE) | At dispatch, with a fail-closed balance check |
+| `banking_transfer_sepa` | Outgoing SEPA transfers | At dispatch, with a fail-closed balance check |
+
+For **transfers** the available balance must cover `amount + fee` — if it
+does not, the API answers `402 insufficient_funds` and the operation is
+**not created**. If the operation is definitively rejected right after
+dispatch, the fee is **refunded automatically** (same discipline as the
+legacy fee).
+
+**Fallback:** if the rail has no specific configuration (neither at account
+nor at platform level), the legacy `banking_operation` fee (fixed, in USDT)
+applies. A rail configured with 0% + 0 fixed is **explicitly free** — it
+does *not* fall back to the legacy fee.
+
 ## Operation statuses
 
 | Status | Meaning |
@@ -480,7 +518,7 @@ amount, counterparty and reference. See [webhooks](https://docs.cbpayapp.com/en/
 | HTTP | `error` | What to do |
 |---|---|---|
 | 400 | `idempotency_key_required` | Send the key in body or header |
-| 402 | `insufficient_funds` | Not enough USDT balance for the banking fee |
+| 402 | `insufficient_funds` | Not enough balance: with a per-rail fee the check is `balance ≥ amount + fee` in the **operation currency** (`BANK_USD`/`BANK_EUR`); with the legacy fallback it is your USDT balance |
 | 403 | `account_blocked` | The account is not active; contact the CBPay team |
 | 409 | `banking_customer_exists` | Your account already has a banking profile (`GET /v1/banking/customer`) |
 | 409 | `no_banking_customer` | Create your profile first (`POST /v1/banking/customer`) |
@@ -501,10 +539,12 @@ The general error catalog lives in [Errors](https://docs.cbpayapp.com/en/errors)
 No. Banking money lives in your bank accounts and is queried with
 `GET /v1/banking/accounts/{id}/balance`. The authoritative balance is the
 bank's; your [statement](https://docs.cbpayapp.com/en/guides/statement) reconciles it in the
-`BANK_USD`/`BANK_EUR` mirror balances. Only the banking **fees** are
-debited from your USDT balance.
+`BANK_USD`/`BANK_EUR` mirror balances. **Per-rail fees** are charged in the
+operation currency (your `BANK_USD`/`BANK_EUR` balance); only the legacy
+`banking_operation` fallback fee is debited from your USDT balance.
 #### What happens to the fee if an operation fails?
-It is refunded automatically — profile, account and operation fees alike.
+It is refunded automatically — profile, account and operation fees alike,
+including per-rail fees (refunded on the definitive synchronous rejection).
 A retry with the same `Idempotency-Key` returns the original operation
 (`idempotency_hit: true`) and never charges twice.
 #### How many bank accounts can I open?

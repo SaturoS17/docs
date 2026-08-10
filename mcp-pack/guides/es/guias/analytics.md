@@ -32,7 +32,7 @@ curl "https://api.qbank.cl/platform/v1/analytics/summary?from=2026-07-01&to=2026
 
 | Parámetro | Requerido | Descripción |
 |---|---|---|
-| `from` / `to` | Sí | Rango `YYYY-MM-DD` en UTC, ambos inclusive; máximo 366 días |
+| `from` / `to` | Sí | Rango `YYYY-MM-DD` en la zona horaria de tu organización, ambos inclusive; máximo 366 días |
 | `granularity` | No | `day` (default), `week` (semanas lunes-domingo) o `month` |
 
 Solo ves los datos de **tu propia cuenta**. Todos los montos van como
@@ -257,7 +257,7 @@ curl "https://api.qbank.cl/platform/v1/balances/history?from=2026-06-12&to=2026-
 
 | Parámetro | Requerido | Descripción |
 |---|---|---|
-| `from` / `to` | Sí | Rango `YYYY-MM-DD` en UTC, ambos inclusive; máximo 366 días |
+| `from` / `to` | Sí | Rango `YYYY-MM-DD` en la zona horaria de tu organización, ambos inclusive; máximo 366 días |
 
 ```json
 {
@@ -265,7 +265,7 @@ curl "https://api.qbank.cl/platform/v1/balances/history?from=2026-06-12&to=2026-
   "from": "2026-06-12",
   "to": "2026-07-11",
   "granularity": "day",
-  "timezone": "UTC",
+  "timezone": "America/New_York",
   "assets": {
     "USDT": {
       "series": [
@@ -318,7 +318,7 @@ curl "https://api.qbank.cl/platform/v1/balances/history?from=2026-06-12&to=2026-
 }
 ```
 
-- Cada punto es el **saldo disponible al cierre del día** (UTC); los días
+- Cada punto es el **saldo disponible al cierre del día** (en la zona horaria de tu organización); los días
   sin movimientos arrastran el saldo del día anterior, así la serie queda
   lista para graficar sin huecos.
 - `assets` incluye también los espejos de las cuentas banking (`BANK_USD`,
@@ -347,7 +347,7 @@ curl "https://api.qbank.cl/platform/v1/rates/history?from=2026-06-12&to=2026-07-
 
 | Parámetro | Requerido | Descripción |
 |---|---|---|
-| `from` / `to` | Sí | Rango `YYYY-MM-DD` en UTC, ambos inclusive |
+| `from` / `to` | Sí | Rango `YYYY-MM-DD` en la zona horaria de tu organización, ambos inclusive |
 | `granularity` | No | `day` (default, máx 366 días) o `hour` (máx 31 días) |
 | `currency` | No | Filtra una moneda (ej. `CLP`) |
 
@@ -405,8 +405,11 @@ curl "https://api.qbank.cl/platform/v1/rates/history?from=2026-06-12&to=2026-07-
 ## FAQ
 
 #### ¿En qué zona horaria están los buckets?
-UTC, igual que los filtros `from`/`to` de toda la API. Si tu front muestra
-otra zona, convierte las etiquetas al renderizar.
+La zona horaria de tu organización (nombre IANA, default
+`America/New_York`), igual que los filtros `from`/`to` de toda la API
+de plataforma. La respuesta la repite en el campo `timezone`. Un admin
+de plataforma la cambia con `PUT /v1/admin/orgs/{orgID}/settings`
+(clave `timezone`).
 #### ¿Qué cuenta como volumen y qué no?
 Entra todo lo que movió plata hacia/desde tu cuenta: payins, depósitos
 crypto y transferencias recibidas (in); payouts, retiros, transferencias

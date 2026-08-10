@@ -44,7 +44,7 @@ curl -OJ "https://api.qbank.cl/platform/v1/reports/statement?from=2026-01-01&to=
   -H "Authorization: Bearer <token>"
 ```
 
-- `from` / `to`: fechas `YYYY-MM-DD` inclusive, en UTC. Rango máximo:
+- `from` / `to`: fechas `YYYY-MM-DD` inclusive, en la zona horaria de tu organización. Rango máximo:
   400 días.
 - `lang=es|en`: idioma del PDF/Excel (default `es`).
 - Los archivos llegan con `Content-Disposition: attachment` y nombre
@@ -178,7 +178,7 @@ período (detallada en la documentación de administración).
 
 #### ¿Cada cuánto se genera la cartola?
 Bajo demanda — cada consulta la construye en vivo desde el ledger para el
-rango `from`/`to` que pases (ambos obligatorios, `YYYY-MM-DD`, UTC).
+rango `from`/`to` que pases (ambos obligatorios, `YYYY-MM-DD`, zona horaria de tu organización).
 #### ¿Qué significa balanced: true?
 Cada asset concilia de forma independiente: `apertura + abonos − cargos =
 cierre` para USDT, USDC, BTC, GOLD y los espejos banking. Si algún asset no

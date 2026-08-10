@@ -20,11 +20,16 @@ cuentas bancarias**, no en el saldo CBPay.
 | Saldos bancarios | Tus cuentas bancarias | `GET /v1/banking/accounts/{id}/balance` |
 
 <Note>
-Las comisiones de banking (`banking_customer`, `banking_account`,
-`banking_operation`) son fijas, se debitan de tu **saldo USDT** al ejecutar
-cada operación y se **reembolsan automáticamente** si la operación falla.
-Con comisión 0 (el default) el servicio es gratis. El campo `banking_fee`
-de cada respuesta te muestra lo cobrado.
+Las comisiones de banking vienen en dos formas. Las **fijas standalone**
+(`banking_customer`, `banking_account`, `banking_operation`) se debitan de tu
+**saldo USDT** al ejecutar cada operación y se **reembolsan automáticamente**
+si falla. Las **transaccionales por riel** (`banking_deposit`,
+`banking_transfer_ach`, `banking_transfer_swift`, `banking_transfer_wire`,
+`banking_transfer_sepa`) son un porcentaje más un monto fijo cobrado **en la
+moneda de la operación** (tu saldo `BANK_USD` / `BANK_EUR`) — ver
+[comisiones por riel](#comisiones-por-riel-depositos-y-transferencias). Con
+comisión 0 (el default) el servicio es gratis. Los campos `banking_fee` y
+`banking_fee_asset` de cada respuesta te muestran lo cobrado y en qué moneda.
 </Note>
 
 ## El flujo completo
@@ -392,7 +397,8 @@ curl -X POST https://api.qbank.cl/platform/v1/banking/operations/prepare \
   }'
 ```
 
-Ejecuta con clave de idempotencia (se cobra `banking_operation` aquí):
+Ejecuta con clave de idempotencia (aquí se cobra la comisión del riel — o la
+legacy `banking_operation` cuando el riel no tiene configuración):
 
 <CodeGroup>
 
@@ -438,9 +444,14 @@ Respuesta `202`:
   "status": "pending",
   "idempotency_key": "platform:…:pago-acme-0071",
   "data": { "…": "…" },
-  "banking_fee": "2.000000"
+  "banking_fee": "2.000000",
+  "banking_fee_asset": "BANK_USD"
 }
 ```
+
+`banking_fee` y `banking_fee_asset` solo aparecen cuando se cobró una
+comisión. Con una comisión por riel el asset es la moneda de la operación
+(`BANK_USD` / `BANK_EUR`); con el fallback legacy es `USDT`.
 
 - El estado final llega por el webhook `banking_operation_status_changed`
   (`completed` / `failed`); también puedes consultar
@@ -495,6 +506,32 @@ enriquecidos. Cuando llegue, consulta el detalle de la operación para leer
 la dirección, el monto, la contraparte y la referencia. Ver
 [webhooks](/es/webhooks).
 
+## Comisiones por riel (depósitos y transferencias)
+
+Además de las comisiones fijas standalone, banking soporta **comisiones
+transaccionales por riel** — un porcentaje más un monto fijo, siempre
+cobradas **en la moneda de la operación** (`BANK_USD` / `BANK_EUR`), nunca
+en USDT:
+
+| Servicio | Aplica a | Cuándo se cobra |
+|---|---|---|
+| `banking_deposit` | Depósitos entrantes (USD/EUR) | Al acreditar el depósito — **con tope en el monto del depósito** (`fee = min(fee, monto)`), así un depósito chico nunca queda en negativo |
+| `banking_transfer_ach` | Transferencias salientes ACH | Al despachar, con chequeo de saldo fail-closed |
+| `banking_transfer_swift` | Transferencias salientes SWIFT | Al despachar, con chequeo de saldo fail-closed |
+| `banking_transfer_wire` | Transferencias salientes wire (FEDWIRE) | Al despachar, con chequeo de saldo fail-closed |
+| `banking_transfer_sepa` | Transferencias salientes SEPA | Al despachar, con chequeo de saldo fail-closed |
+
+En las **transferencias** el saldo disponible debe cubrir `monto + comisión`
+— si no alcanza, la API responde `402 insufficient_funds` y la operación
+**no se crea**. Si la operación es rechazada de forma definitiva justo
+después del despacho, la comisión se **reembolsa automáticamente** (la misma
+disciplina de la comisión legacy).
+
+**Fallback:** si el riel no tiene configuración específica (ni a nivel cuenta
+ni plataforma), se cobra la legacy `banking_operation` (fija, en USDT). Un
+riel configurado con 0% + 0 fijo queda **explícitamente gratis** — NO cae al
+fallback.
+
 ## Estados de operación
 
 | Estado | Significado |
@@ -510,7 +547,7 @@ la dirección, el monto, la contraparte y la referencia. Ver
 | HTTP | `error` | Qué hacer |
 |---|---|---|
 | 400 | `idempotency_key_required` | Envía la clave en body o header |
-| 402 | `insufficient_funds` | Saldo USDT insuficiente para la comisión de banking |
+| 402 | `insufficient_funds` | Saldo insuficiente: con comisión por riel el chequeo es `saldo ≥ monto + comisión` en la **moneda de la operación** (`BANK_USD`/`BANK_EUR`); con el fallback legacy es tu saldo USDT |
 | 403 | `account_blocked` | La cuenta no está activa; contacta al equipo de CBPay |
 | 409 | `banking_customer_exists` | Tu cuenta ya tiene perfil bancario (`GET /v1/banking/customer`) |
 | 409 | `no_banking_customer` | Crea primero tu perfil (`POST /v1/banking/customer`) |
@@ -529,13 +566,15 @@ la dirección, el monto, la contraparte y la referencia. Ver
 No. El dinero banking vive en tus cuentas bancarias y se consulta con
 `GET /v1/banking/accounts/{id}/balance`. El saldo autoritativo es el del
 banco; tu [cartola](/es/guias/cartola) lo concilia en los saldos espejo
-`BANK_USD`/`BANK_EUR`. Solo las **comisiones** banking se debitan de tu
-saldo USDT.
+`BANK_USD`/`BANK_EUR`. Las **comisiones por riel** se cobran en la moneda de
+la operación (tu saldo `BANK_USD`/`BANK_EUR`); solo la comisión legacy
+`banking_operation` se debita de tu saldo USDT.
 </Accordion>
 <Accordion title="¿Qué pasa con la comisión si una operación falla?">
 Se reembolsa automáticamente — comisiones de perfil, cuenta y operación por
-igual. Un reintento con la misma `Idempotency-Key` devuelve la operación
-original (`idempotency_hit: true`) y jamás cobra dos veces.
+igual, incluidas las comisiones por riel (reembolsadas en el rechazo
+definitivo síncrono). Un reintento con la misma `Idempotency-Key` devuelve
+la operación original (`idempotency_hit: true`) y jamás cobra dos veces.
 </Accordion>
 <Accordion title="¿Cuántas cuentas bancarias puedo abrir?">
 Una por moneda (USD, EUR). Además, las cuentas **persona** pueden tener

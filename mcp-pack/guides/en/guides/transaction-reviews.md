@@ -60,7 +60,7 @@ Response:
 ### Filters
 
 - `?status=` — `in_review`, `info_requested`, `released`, `rejected` or `all` (empty = open: `in_review` + `info_requested`). Any other value ⇒ `400 invalid_status`.
-- `?from=` / `?to=` — date range (`YYYY-MM-DD`, UTC, both inclusive). Invalid date ⇒ `400 invalid_range`.
+- `?from=` / `?to=` — date range (`YYYY-MM-DD`, organization timezone, both inclusive). Invalid date ⇒ `400 invalid_range`.
 - `?page=` / `?page_size=` — pagination (default 50, max 200).
 
 ## Review detail

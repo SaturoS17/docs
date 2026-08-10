@@ -203,7 +203,7 @@ curl "https://api.qbank.cl/platform/v1/movements?asset=GOLD&from=2026-07-01&to=2
 所有列表接口（`/v1/movements`、`/v1/payouts`、`/v1/payins`、
 `/v1/crypto/transactions`、`/v1/banking/operations`）都支持分页
 （`page`、`page_size` 最大 200）以及 `from`/`to` 日期筛选
-（YYYY-MM-DD，UTC，闭区间）。
+（YYYY-MM-DD，组织时区，闭区间）。
 
 ## 操作状态
 

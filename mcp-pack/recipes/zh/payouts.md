@@ -269,7 +269,7 @@ curl "https://api.qbank.cl/platform/v1/payouts?from=2026-07-01&to=2026-07-08&sta
 }
 ```
 
-`from`/`to` 使用 `YYYY-MM-DD`（UTC，两端均含）；日期无效时返回
+`from`/`to` 使用 `YYYY-MM-DD`（组织时区，两端均含）；日期无效时返回
 `400 invalid_range`。
 
 ## 各国示例

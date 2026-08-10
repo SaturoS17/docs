@@ -36,7 +36,7 @@ curl "https://api.qbank.cl/platform/v1/movements?from=2026-07-01&to=2026-07-08&p
 }
 ```
 
-筛选参数：`from`/`to`（`YYYY-MM-DD`，UTC）、`type`、`asset`、`page`、
+筛选参数：`from`/`to`（`YYYY-MM-DD`，组织时区）、`type`、`asset`、`page`、
 `page_size`（最大 200）。每条记录都携带 `reference_type` +
 `reference_id`：即产生该记录的业务资源。
 

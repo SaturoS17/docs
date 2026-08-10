@@ -36,7 +36,7 @@ de las tasas de tu cuenta para ese país. Cotizado = cobrado, siempre.
 |---|---|---|
 | `payout` | Fijo por operación (el pricing FX ya está en tu tasa) | Al crear el payout (incluido en `total_debit`) |
 | `payin` | Fijo por operación (el pricing FX ya está en tu `payin_rate`) | Al acreditar (recibes `usdt_gross − fee`) |
-| `payin_card` | `%` sobre el cobro + fijo, con `%` propio por moneda procesada (ej. BOB vs USD). Si tu cuenta no lo tiene configurado, aplica el fee `payin` genérico | Al acreditar un cobro pagado con tarjeta (payin directo `method: "card"`, link de checkout pagado con tarjeta o cobro de suscripción) |
+| `payin_card` | `%` sobre el cobro + fijo, con `%` propio por moneda procesada (ej. BOB vs USD). Si tu cuenta no lo tiene configurado, aplica el fee `payin` genérico. Puede llevar una demora de acreditación (ver [Settlement de payins con tarjeta](#settlement-de-payins-con-tarjeta)) | Al acreditar un cobro pagado con tarjeta (payin directo `method: "card"`, link de checkout pagado con tarjeta o cobro de suscripción); con demora configurada, al llegar la hora programada |
 | `funding` | `%` sobre el depósito + fijo | Al acreditar el depósito on-chain |
 | `withdrawal` | `%` sobre el retiro + fijo | Al crear el retiro (incluido en `total_debit`) |
 | `wallet_creation` | Fijo por wallet | Al crear cada wallet (personas: 1 por red; empresas: ilimitadas). Consultar wallets existentes es siempre gratis |
@@ -52,7 +52,12 @@ de las tasas de tu cuenta para ese país. Cotizado = cobrado, siempre.
 | `address_screening` | Fijo por scan | Al evaluar el riesgo de una dirección blockchain ([screening de wallets](/es/guias/screenings)); la protección automática de retiros/depósitos es gratis |
 | `banking_customer` | Fijo por perfil | Al crear tu perfil bancario ([banking](/es/guias/banking)) |
 | `banking_account` | Fijo por cuenta | Al abrir cada cuenta bancaria |
-| `banking_operation` | Fijo por pago | Al enviar cada pago bancario (cotizar con `prepare` es gratis) |
+| `banking_deposit` | `%` sobre el depósito + fijo, en la moneda de la operación, con tope en el monto del depósito | Al acreditar un depósito bancario entrante (ver [Comisiones banking por riel](#comisiones-banking-por-riel)) |
+| `banking_transfer_ach` | `%` + fijo sobre el monto, en la moneda de la operación | Al despachar una transferencia ACH |
+| `banking_transfer_swift` | `%` + fijo sobre el monto, en la moneda de la operación | Al despachar una transferencia SWIFT |
+| `banking_transfer_wire` | `%` + fijo sobre el monto, en la moneda de la operación | Al despachar una transferencia wire (Fedwire) |
+| `banking_transfer_sepa` | `%` + fijo sobre el monto, en la moneda de la operación | Al despachar una transferencia SEPA |
+| `banking_operation` | Fijo por pago — fallback legacy, se cobra solo cuando el riel no tiene configuración específica | Al enviar cada pago bancario (cotizar con `prepare` es gratis) |
 | `card_creation_virtual` | Fijo por tarjeta | Al emitir una tarjeta virtual ([tarjetas](/es/guias/tarjetas)) |
 | `card_creation_physical` | Fijo por tarjeta | Al emitir una tarjeta física |
 | `card_monthly` | Fijo mensual | Mensualidad por tarjeta activa (sin saldo, la tarjeta se congela — sin deuda) |
@@ -72,6 +77,63 @@ wallets y banking) se reembolsan automáticamente si la operación falla
 aguas arriba (`compliance_refund` / `verification_fee_refund` /
 `wallet_creation_refund` / `wallet_service_refund` / `banking_fee_refund`).
 </Note>
+
+## Settlement de payins con tarjeta
+
+Los cobros con tarjeta pueden llevar una **demora de acreditación**
+(`settlement_hours`, entero en horas; `0` = acreditación inmediata — el
+default). Con demora configurada, un cobro confirmado **no** acredita tu
+saldo de inmediato: el payin queda `pending` con un timestamp `settle_at`
+(RFC 3339) en las respuestas de creación, consulta y listado, y TODO
+ocurre al llegar esa hora:
+
+- se ejecuta el crédito del saldo (con su fee `payin_card`),
+- el webhook `payin_credited` y el estado final llegan a tu integración,
+- un link de checkout pagado con tarjeta cierra como pagado, y
+- corre la auto-conversión (cuando está configurada).
+
+```json
+{
+  "id": "pay_…",
+  "status": "pending",
+  "settle_at": "2026-08-10T15:04:05Z"
+}
+```
+
+`settle_at = created_at + settlement_hours` — la demora corre desde la
+creación del payin (≈ cuando el procesador confirma el cobro). Un payin
+cuyo plazo ya venció al aprobarse o asignarse se acredita de inmediato.
+Un worker acredita los payins vencidos cada minuto.
+
+<Note>
+La demora la configura CBPay en el fee `payin_card` de tu cuenta. Para tu
+integración solo cambia leer `settle_at`: los webhooks y estados finales
+son los mismos, entregados al settlement.
+</Note>
+
+## Comisiones banking por riel
+
+Las operaciones banking llevan **comisiones transaccionales en la moneda
+de la operación** (el saldo `BANK_USD` / `BANK_EUR` que la operación
+mueve):
+
+- **Depósitos** (`banking_deposit`): se cobran al acreditar el depósito
+  entrante, con tope en el monto (`min(fee, monto)`) — un depósito chico
+  jamás deja el saldo en negativo.
+- **Transferencias** (`banking_transfer_ach`, `banking_transfer_swift`,
+  `banking_transfer_wire`, `banking_transfer_sepa`): se cobran **al
+  despachar**; tu saldo disponible debe cubrir `monto + fee` en la moneda
+  de la operación o el request se rechaza con `402 insufficient_funds`.
+  Si la transferencia es rechazada en forma definitiva después, el fee se
+  reembolsa.
+- **Fallback**: un riel sin configuración propia (ni en tu cuenta ni por
+  defecto) usa el fee fijo legacy `banking_operation` en USDT. Un riel
+  configurado con `0%` + `0` fijo es **explícitamente gratis** — no cae
+  al fallback.
+
+Cuando aplica un fee de riel, la respuesta del despacho expone
+`banking_fee` y `banking_fee_asset` (el monto cobrado y su moneda
+`BANK_*`), así cada cobro es atribuible a su riel.
 
 ## Transferencias internas: siempre gratis
 

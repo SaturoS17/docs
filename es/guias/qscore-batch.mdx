@@ -263,7 +263,7 @@ sequenceDiagram
 
 ## Lista y busca tus lotes
 
-`GET /v1/qscore/batches` devuelve tu historial paginado, con filtros `from` / `to` (`YYYY-MM-DD`, UTC, ambos inclusivos):
+`GET /v1/qscore/batches` devuelve tu historial paginado, con filtros `from` / `to` (`YYYY-MM-DD`, zona horaria de tu organización, ambos inclusivos):
 
 ```bash
 curl "https://api.qbank.cl/platform/v1/qscore/batches?from=2026-08-01&to=2026-08-09&page=1&page_size=50" \

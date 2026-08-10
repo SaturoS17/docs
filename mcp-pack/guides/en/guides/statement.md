@@ -43,7 +43,7 @@ curl -OJ "https://api.qbank.cl/platform/v1/reports/statement?from=2026-01-01&to=
   -H "Authorization: Bearer <token>"
 ```
 
-- `from` / `to`: `YYYY-MM-DD` dates, inclusive, in UTC. Maximum range:
+- `from` / `to`: `YYYY-MM-DD` dates, inclusive, in your organization timezone. Maximum range:
   400 days.
 - `lang=es|en`: language of the PDF/Excel (default `es`).
 - Files arrive with `Content-Disposition: attachment` and the name
@@ -174,7 +174,7 @@ the period (detailed in the administration documentation).
 
 #### How often is the statement generated?
 On demand — every request builds it live from the ledger for the `from`/`to`
-range you pass (both required, `YYYY-MM-DD`, UTC).
+range you pass (both required, `YYYY-MM-DD`, organization timezone).
 #### What does balanced: true mean?
 Each asset reconciles independently: `opening + credits − debits = closing`
 for USDT, USDC, BTC, GOLD and the banking mirrors. If any asset does not

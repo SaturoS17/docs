@@ -270,7 +270,7 @@ The report PDF includes the peer comparison section only when the block is avail
 
 ### List reports
 
-`GET /v1/qscore/reports` lists the reports purchased by your account. `from` and `to` (dates `YYYY-MM-DD`, UTC, both inclusive) are **mandatory**; filters `subject_id` and `status` (`pending`, `ready`, `failed`) are optional; pagination with `page` / `page_size` (default 50, max 200).
+`GET /v1/qscore/reports` lists the reports purchased by your account. `from` and `to` (dates `YYYY-MM-DD`, organization timezone, both inclusive) are **mandatory**; filters `subject_id` and `status` (`pending`, `ready`, `failed`) are optional; pagination with `page` / `page_size` (default 50, max 200).
 
 ```bash List reports
 curl "https://api.qbank.cl/platform/v1/qscore/reports?from=2026-08-01&to=2026-08-31&status=ready&page=1&page_size=50" \

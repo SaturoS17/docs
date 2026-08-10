@@ -270,7 +270,7 @@ El PDF del informe incluye la sección de comparación con pares solo cuando el 
 
 ### Listar informes
 
-`GET /v1/qscore/reports` lista los informes comprados por tu cuenta. `from` y `to` (fechas `YYYY-MM-DD`, UTC, ambos inclusive) son **obligatorios**; los filtros `subject_id` y `status` (`pending`, `ready`, `failed`) son opcionales; paginación con `page` / `page_size` (default 50, máx 200).
+`GET /v1/qscore/reports` lista los informes comprados por tu cuenta. `from` y `to` (fechas `YYYY-MM-DD`, zona horaria de tu organización, ambos inclusive) son **obligatorios**; los filtros `subject_id` y `status` (`pending`, `ready`, `failed`) son opcionales; paginación con `page` / `page_size` (default 50, máx 200).
 
 ```bash Listar informes
 curl "https://api.qbank.cl/platform/v1/qscore/reports?from=2026-08-01&to=2026-08-31&status=ready&page=1&page_size=50" \

@@ -435,6 +435,14 @@ Comparte la `payment_url` (link, redirección o WebView). Detalles del flujo:
   código por 30 días. Detalle en
   [tarjetas guardadas](https://docs.cbpayapp.com/es/guias/stored-cards-subscriptions#el-pagador-descubre-sus-tarjetas-en-la-página-de-pago).
 - Funciona también en USD (`currency: "USD"`).
+- **Settlement diferido**: cuando la comisión de `payin_card` está
+  configurada con `settlement_hours` sobre cero, un cobro aprobado deja el
+  payin `pending` con un timestamp `settle_at` (RFC 3339, presente en las
+  respuestas de create/GET/lista) en vez de acreditarse de inmediato. A
+  `settle_at` corre la acreditación: saldo, webhook `payin_credited`,
+  estado final, cierre del link de checkout y auto-conversión — todo
+  ocurre al vencimiento. Detalle en
+  [comisiones — settlement de payins con tarjeta](https://docs.cbpayapp.com/es/conceptos/comisiones#settlement-de-payins-con-tarjeta).
 
 #### Paraguay
 
@@ -1044,7 +1052,7 @@ curl "https://api.qbank.cl/platform/v1/payins?from=2026-07-01&to=2026-07-08&stat
   -H "Authorization: Bearer <token>"
 ```
 
-`from`/`to` van en `YYYY-MM-DD` (UTC); fecha inválida responde
+`from`/`to` van en `YYYY-MM-DD` (zona horaria de tu organización); fecha inválida responde
 `400 invalid_range`.
 
 ## Errores frecuentes

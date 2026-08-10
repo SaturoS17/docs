@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.52"
+  version: "2.55"
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -1342,7 +1342,7 @@ paths:
       operationId: getBranding
       summary: 获取平台品牌
       description: 你所在平台的有效品牌(名称、颜色、base64 logo),让白标前端可从 API 自动取得主题而无需硬编码资源。`logo_url`/`symbol_url` 是同一批
-        logo 的公共 CDN URL——优先于 base64 载荷使用。只读,无 PII。
+        logo 的公共 CDN URL——优先于 base64 载荷使用。只读,无 PII。 `timezone` 为组织的 IANA 时区（默认 `America/New_York`）：平台所有 `from`/`to` 日期过滤与每日分桶均按此时区解释。
       responses:
         '200':
           description: 有效品牌。
@@ -1361,6 +1361,7 @@ paths:
                 symbol_png_base64: iVBORw0KGgoAAAANSUhEUg...
                 logo_url: https://cdn.cbpayapp.com/public/branding/default/logo.png
                 symbol_url: https://cdn.cbpayapp.com/public/branding/default/symbol.png
+                timezone: America/New_York
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/auth/register:
@@ -2344,14 +2345,14 @@ paths:
         schema:
           type: string
           format: date
-        description: 开始日期(YYYY-MM-DD,UTC,含当日)。
+        description: 开始日期(YYYY-MM-DD,组织时区,含当日)。
       - name: to
         in: query
         required: true
         schema:
           type: string
           format: date
-        description: 结束日期(YYYY-MM-DD,UTC,含当日)。最大范围 366 天。
+        description: 结束日期(YYYY-MM-DD,组织时区,含当日)。最大范围 366 天。
       responses:
         '200':
           description: 每个资产的每日余额序列,外加 USD 汇总。
@@ -2371,7 +2372,7 @@ paths:
                     example: day
                   timezone:
                     type: string
-                    example: UTC
+                    example: America/New_York
                   assets:
                     type: object
                     description: 每个资产一条每日收盘余额序列。包含运营余额(USDT、USDC、BTC、GOLD)以及以自身货币计的银行账户镜像(BANK_USD、BANK_EUR);银行序列不计入
@@ -2464,7 +2465,7 @@ paths:
                 from: '2026-06-12'
                 to: '2026-07-11'
                 granularity: day
-                timezone: UTC
+                timezone: America/New_York
                 assets:
                   USDT:
                     series:
@@ -2591,13 +2592,13 @@ paths:
         schema:
           type: string
           format: date
-        description: 从此日期起过滤(YYYY-MM-DD,UTC,含当日)。
+        description: 从此日期起过滤(YYYY-MM-DD,组织时区,含当日)。
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: 过滤至此日期(YYYY-MM-DD,UTC,含当日)。
+        description: 过滤至此日期(YYYY-MM-DD,组织时区,含当日)。
       - name: format
         in: query
         description: 将相同的行导出为文件：`csv` 或 `xlsx`（会计级下载，最多 10,000 行；相同的过滤器和日期范围）。省略则返回 JSON 视图。
@@ -2822,14 +2823,14 @@ paths:
         schema:
           type: string
           format: date
-        description: 开始日期(YYYY-MM-DD,UTC,含当日)。
+        description: 开始日期(YYYY-MM-DD,组织时区,含当日)。
       - name: to
         in: query
         required: true
         schema:
           type: string
           format: date
-        description: 结束日期(YYYY-MM-DD,UTC,含当日)。
+        description: 结束日期(YYYY-MM-DD,组织时区,含当日)。
       - name: granularity
         in: query
         schema:
@@ -3541,13 +3542,13 @@ paths:
         schema:
           type: string
           format: date
-        description: 从此日期起过滤(YYYY-MM-DD,UTC,含当日)。
+        description: 从此日期起过滤(YYYY-MM-DD,组织时区,含当日)。
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: 过滤至此日期(YYYY-MM-DD,UTC,含当日)。
+        description: 过滤至此日期(YYYY-MM-DD,组织时区,含当日)。
       - name: format
         in: query
         description: 将相同的行导出为文件：`csv` 或 `xlsx`（会计级下载，最多 10,000 行；相同的过滤器和日期范围）。省略则返回 JSON 视图。
@@ -4293,13 +4294,13 @@ paths:
         schema:
           type: string
           format: date
-        description: 从此日期起过滤(YYYY-MM-DD,UTC,含当日)。
+        description: 从此日期起过滤(YYYY-MM-DD,组织时区,含当日)。
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: 过滤至此日期(YYYY-MM-DD,UTC,含当日)。
+        description: 过滤至此日期(YYYY-MM-DD,组织时区,含当日)。
       - name: format
         in: query
         description: 将相同的行导出为文件：`csv` 或 `xlsx`（会计级下载，最多 10,000 行；相同的过滤器和日期范围）。省略则返回 JSON 视图。
@@ -4970,13 +4971,13 @@ paths:
         schema:
           type: string
           format: date
-        description: 从此日期起过滤(YYYY-MM-DD,UTC,含当日)。
+        description: 从此日期起过滤(YYYY-MM-DD,组织时区,含当日)。
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: 过滤至此日期(YYYY-MM-DD,UTC,含当日)。
+        description: 过滤至此日期(YYYY-MM-DD,组织时区,含当日)。
       - name: format
         in: query
         description: 将相同的行导出为文件：`csv` 或 `xlsx`（会计级下载，最多 10,000 行；相同的过滤器和日期范围）。省略则返回 JSON 视图。
@@ -5251,13 +5252,13 @@ paths:
         schema:
           type: string
           format: date
-        description: 从此日期起过滤(YYYY-MM-DD,UTC,含当日)。
+        description: 从此日期起过滤(YYYY-MM-DD,组织时区,含当日)。
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: 过滤至此日期(YYYY-MM-DD,UTC,含当日)。
+        description: 过滤至此日期(YYYY-MM-DD,组织时区,含当日)。
       responses:
         '200':
           description: 充值与提现。
@@ -5610,13 +5611,13 @@ paths:
         required: true
         schema:
           type: string
-        description: 开始日期 YYYY-MM-DD（UTC，含当日）。
+        description: 开始日期 YYYY-MM-DD（组织时区，含当日）。
       - name: to
         in: query
         required: true
         schema:
           type: string
-        description: 结束日期 YYYY-MM-DD（UTC，含当日）。
+        description: 结束日期 YYYY-MM-DD（组织时区，含当日）。
       - name: risk
         in: query
         schema:
@@ -6535,13 +6536,13 @@ paths:
         required: true
         schema:
           type: string
-        description: 开始日期 YYYY-MM-DD(UTC,含当日)。
+        description: 开始日期 YYYY-MM-DD(组织时区,含当日)。
       - name: to
         in: query
         required: true
         schema:
           type: string
-        description: 结束日期 YYYY-MM-DD(UTC,含当日)。
+        description: 结束日期 YYYY-MM-DD(组织时区,含当日)。
       - name: risk
         in: query
         schema:
@@ -6707,13 +6708,13 @@ paths:
         schema:
           type: string
           format: date
-        description: 从此日期起过滤(YYYY-MM-DD,UTC,含当日)。
+        description: 从此日期起过滤(YYYY-MM-DD,组织时区,含当日)。
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: 过滤至此日期(YYYY-MM-DD,UTC,含当日)。
+        description: 过滤至此日期(YYYY-MM-DD,组织时区,含当日)。
       responses:
         '200':
           description: KYC 链接分页。
@@ -9142,14 +9143,14 @@ paths:
         schema:
           type: string
           format: date
-        description: Start date (YYYY-MM-DD, UTC, inclusive).
+        description: Start date (YYYY-MM-DD, organization timezone, inclusive).
       - name: to
         in: query
         required: true
         schema:
           type: string
           format: date
-        description: End date (YYYY-MM-DD, UTC, inclusive).
+        description: End date (YYYY-MM-DD, organization timezone, inclusive).
       - name: merchant_id
         in: query
         schema:
@@ -9521,14 +9522,14 @@ paths:
         schema:
           type: string
           format: date
-        description: Start date (YYYY-MM-DD, UTC, inclusive).
+        description: Start date (YYYY-MM-DD, organization timezone, inclusive).
       - name: to
         in: query
         required: true
         schema:
           type: string
           format: date
-        description: End date (YYYY-MM-DD, UTC, inclusive).
+        description: End date (YYYY-MM-DD, organization timezone, inclusive).
       - name: merchant_id
         in: query
         schema:
@@ -9738,13 +9739,13 @@ paths:
         schema:
           type: string
           format: date
-        description: 从此日期起过滤(YYYY-MM-DD,UTC,含当日)。
+        description: 从此日期起过滤(YYYY-MM-DD,组织时区,含当日)。
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: 过滤至此日期(YYYY-MM-DD,UTC,含当日)。
+        description: 过滤至此日期(YYYY-MM-DD,组织时区,含当日)。
       responses:
         '200':
           description: swaps 分页。
@@ -10446,13 +10447,13 @@ paths:
         schema:
           type: string
           format: date
-        description: 开始日期(YYYY-MM-DD,UTC,含当日)。
+        description: 开始日期(YYYY-MM-DD,组织时区,含当日)。
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: 结束日期(YYYY-MM-DD,UTC,含当日)。
+        description: 结束日期(YYYY-MM-DD,组织时区,含当日)。
       - name: page
         in: query
         schema:
@@ -10672,13 +10673,13 @@ paths:
         schema:
           type: string
           format: date
-        description: 开始日期(YYYY-MM-DD,UTC,含当日)。
+        description: 开始日期(YYYY-MM-DD,组织时区,含当日)。
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: 结束日期(YYYY-MM-DD,UTC,含当日)。
+        description: 结束日期(YYYY-MM-DD,组织时区,含当日)。
       - name: page
         in: query
         schema:
@@ -10725,13 +10726,13 @@ paths:
         schema:
           type: string
           format: date
-        description: 开始日期(YYYY-MM-DD,UTC,含当日)。
+        description: 开始日期(YYYY-MM-DD,组织时区,含当日)。
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: 结束日期(YYYY-MM-DD,UTC,含当日)。
+        description: 结束日期(YYYY-MM-DD,组织时区,含当日)。
       - name: page
         in: query
         schema:
@@ -10876,13 +10877,13 @@ paths:
         schema:
           type: string
           format: date
-        description: 开始日期(YYYY-MM-DD,UTC,含当日)。
+        description: 开始日期(YYYY-MM-DD,组织时区,含当日)。
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: 结束日期(YYYY-MM-DD,UTC,含当日)。
+        description: 结束日期(YYYY-MM-DD,组织时区,含当日)。
       - name: page
         in: query
         schema:
@@ -12837,6 +12838,7 @@ paths:
                     name: Ana Perez Rojas
                 created_at: '2026-07-07T12:00:00Z'
                 banking_fee: '5.000000'
+                banking_fee_asset: USDT
         '202':
           description: 申请已被挂起等待审核（组织已启用申请审核）。只有在合规团队批准审核后才会创建资源；开户/发卡费用在挂起时收取，若审核被拒绝将自动退还。请通过
             `txn_review_status_changed` webhook 或 `GET /v1/me/txn-reviews` 跟踪结果。
@@ -13052,6 +13054,7 @@ paths:
                   accountNumber: '0532013000'
                   routingNumber: 011000138
                 banking_fee: '1.000000'
+                banking_fee_asset: USDT
         '202':
           description: 申请已被挂起等待审核（组织已启用申请审核）。只有在合规团队批准审核后才会创建资源；开户/发卡费用在挂起时收取，若审核被拒绝将自动退还。请通过
             `txn_review_status_changed` webhook 或 `GET /v1/me/txn-reviews` 跟踪结果。
@@ -13607,6 +13610,7 @@ paths:
                   type: WITHDRAW
                   paymentType: SEPA_CT
                 banking_fee: '2.000000'
+                banking_fee_asset: BANK_EUR
         '200':
           description: 既有操作的幂等重放(不产生新扣费)。
           content:
@@ -13793,14 +13797,14 @@ paths:
         schema:
           type: string
           format: date
-        description: 开始日期(YYYY-MM-DD,UTC,含当日)。
+        description: 开始日期(YYYY-MM-DD,组织时区,含当日)。
       - name: to
         in: query
         required: true
         schema:
           type: string
           format: date
-        description: 结束日期(YYYY-MM-DD,UTC,含当日)。最大范围:400 天。
+        description: 结束日期(YYYY-MM-DD,组织时区,含当日)。最大范围:400 天。
       - name: format
         in: query
         schema:
@@ -14182,13 +14186,13 @@ paths:
         schema:
           type: string
           format: date
-        description: 从此日期起过滤(YYYY-MM-DD,UTC,含当日)。
+        description: 从此日期起过滤(YYYY-MM-DD,组织时区,含当日)。
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: 过滤至此日期(YYYY-MM-DD,UTC,含当日)。
+        description: 过滤至此日期(YYYY-MM-DD,组织时区,含当日)。
       responses:
         '200':
           description: 卡片分页。
@@ -14675,13 +14679,13 @@ paths:
         schema:
           type: string
           format: date
-        description: 开始日期(YYYY-MM-DD,UTC,含当日)。
+        description: 开始日期(YYYY-MM-DD,组织时区,含当日)。
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: 结束日期(YYYY-MM-DD,UTC,含当日)。
+        description: 结束日期(YYYY-MM-DD,组织时区,含当日)。
       responses:
         '200':
           description: 挑战历史(审计)。
@@ -15016,7 +15020,7 @@ paths:
                 from: '2026-07-01'
                 to: '2026-07-10'
                 granularity: day
-                timezone: UTC
+                timezone: America/New_York
                 gross_volume:
                   in: '636936.87'
                   out: '270118.87'
@@ -15191,6 +15195,7 @@ paths:
                 documents_synced: 2
                 registered_at: '2026-07-10T15:00:00Z'
                 banking_fee: '1.000000'
+                banking_fee_asset: USDT
         '202':
           description: 申请已被挂起等待审核（组织已启用申请审核）。只有在合规团队批准审核后才会创建资源；开户/发卡费用在挂起时收取，若审核被拒绝将自动退还。请通过
             `txn_review_status_changed` webhook 或 `GET /v1/me/txn-reviews` 跟踪结果。
@@ -15351,6 +15356,7 @@ paths:
                 account_id: c4d10000-aaaa-bbbb-cccc-ddddeeeeffff
                 status: active
                 banking_fee: '1.000000'
+                banking_fee_asset: USDT
         '202':
           description: 申请已被挂起等待审核（组织已启用申请审核）。只有在合规团队批准审核后才会创建资源；开户/发卡费用在挂起时收取，若审核被拒绝将自动退还。请通过
             `txn_review_status_changed` webhook 或 `GET /v1/me/txn-reviews` 跟踪结果。
@@ -16546,7 +16552,7 @@ paths:
       operationId: listMyTxnReviews
       summary: 我的交易审核
       description: |-
-        账户被交易防火墙挂起的资金操作（付款、加密货币提现、收款、银行转账）及其审核状态。可按 `status` 和日期范围（`from`/`to`，UTC，均含边界）过滤。当审核进入 `info_requested` 时，请通过 `POST /v1/me/txn-reviews/{reviewID}/files` 上传所需文件——在合规团队作出决定前，该操作将保持挂起状态。
+        账户被交易防火墙挂起的资金操作（付款、加密货币提现、收款、银行转账）及其审核状态。可按 `status` 和日期范围（`from`/`to`，组织时区，均含边界）过滤。当审核进入 `info_requested` 时，请通过 `POST /v1/me/txn-reviews/{reviewID}/files` 上传所需文件——在合规团队作出决定前，该操作将保持挂起状态。
       parameters:
       - name: status
         in: query
@@ -16822,7 +16828,7 @@ paths:
       tags: [Qscore]
       summary: 列出信用报告
       operationId: listQscoreReports
-      description: '返回您账户的信用报告，按最新优先排序。`from` 和 `to` 日期过滤条件（UTC，
+      description: '返回您账户的信用报告，按最新优先排序。`from` 和 `to` 日期过滤条件（组织时区，
         两端均含）为必填。其他账户拥有的报告永不可见（所有权隔离：属于其他账户的报告 id
         返回 `404 not_found`）。'
       parameters:
@@ -16831,14 +16837,14 @@ paths:
         required: true
         schema:
           type: string
-        description: 开始日期 YYYY-MM-DD（UTC，含当日）。日期无效返回 400 invalid_range。
+        description: 开始日期 YYYY-MM-DD（组织时区，含当日）。日期无效返回 400 invalid_range。
         example: '2026-08-01'
       - name: to
         in: query
         required: true
         schema:
           type: string
-        description: 结束日期 YYYY-MM-DD（UTC，含当日）。
+        description: 结束日期 YYYY-MM-DD（组织时区，含当日）。
         example: '2026-08-08'
       - name: subject_id
         in: query
@@ -18305,7 +18311,7 @@ paths:
       summary: 列出批量评分任务
       operationId: listQscoreBatches
       description: '列出您账户的批量评分任务（最新优先），分页返回。`page` 从 1
-        开始；`page_size` 默认为 50（最大 200）。`from` 和 `to` 日期筛选（UTC，
+        开始；`page_size` 默认为 50（最大 200）。`from` 和 `to` 日期筛选（组织时区，
         均为包含）为必填。其他账户拥有的批次永不可见（按账户隔离：来自其他账户的
         batch id 返回 404）。'
       parameters:
@@ -18315,14 +18321,14 @@ paths:
         schema:
           type: string
           format: date
-        description: 起始日期（YYYY-MM-DD，UTC，包含）。
+        description: 起始日期（YYYY-MM-DD，组织时区，包含）。
       - name: to
         in: query
         required: true
         schema:
           type: string
           format: date
-        description: 结束日期（YYYY-MM-DD，UTC，包含）。
+        description: 结束日期（YYYY-MM-DD，组织时区，包含）。
       - name: status
         in: query
         schema:
@@ -18638,7 +18644,7 @@ paths:
       summary: 列出授权同意链接
       operationId: listRiskConsents
       description: '分页列出您账户的授权同意链接（最新优先）。`from` 和 `to`
-        日期筛选（UTC，首尾均含）为必填；`page` 从 1 开始；`page_size` 默认为
+        日期筛选（组织时区，首尾均含）为必填；`page` 从 1 开始；`page_size` 默认为
         50（最大 200）。其他账户的授权记录永远不可见（账户隔离）。'
       parameters:
       - name: from
@@ -18647,14 +18653,14 @@ paths:
         schema:
           type: string
           format: date
-        description: 起始日期（YYYY-MM-DD，UTC，含）。
+        description: 起始日期（YYYY-MM-DD，组织时区，含）。
       - name: to
         in: query
         required: true
         schema:
           type: string
           format: date
-        description: 截止日期（YYYY-MM-DD，UTC，含）。
+        description: 截止日期（YYYY-MM-DD，组织时区，含）。
       - name: status
         in: query
         schema:
@@ -20004,6 +20010,11 @@ components:
           - compliance_rescreen
           - compliance_transaction
           - compliance_monitoring
+          - banking_deposit
+          - banking_transfer_ach
+          - banking_transfer_swift
+          - banking_transfer_wire
+          - banking_transfer_sepa
         country:
           type: string
         currency:
@@ -20019,6 +20030,14 @@ components:
         fixed_amount:
           type: string
           example: '0.30'
+        settlement_hours:
+          type: integer
+          description: >-
+            仅适用于银行卡收款(`payin_card`)—— 可配置的结算延迟(小时)。`0`(默认)在
+            银行卡扣款确认后立即入账;大于 0 时收款保持 `pending` 并带 `settle_at`
+            时间戳,延迟到期后自动入账。用于其他服务或为负数将被拒绝并返回
+            `invalid_settlement_hours`。
+          example: 24
         status:
           type: string
           example: active
@@ -20198,6 +20217,14 @@ components:
         updated_at:
           type: string
           format: date-time
+        settle_at:
+          type: string
+          format: date-time
+          description: >-
+            仅适用于配置了结算延迟的银行卡收款 —— 该 pending 收款入账的时间点(`created_at`
+            加上 `payin_card` 费用的 `settlement_hours`)。余额入账、入账 webhook、checkout
+            链接关闭和自动兑换均在该时刻发生;若延迟在批准或分配时已到期,则立即入账。
+            收款在确认时入账时该字段不存在。
         fx_rate:
           type: string
           description: 入账时你的 payin 汇率(付款被接收并转换后出现)。

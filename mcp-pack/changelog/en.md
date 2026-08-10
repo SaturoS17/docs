@@ -8,7 +8,50 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.53 · 4 releases - August 9, 2026
+## v2.55 · 6 releases - August 9, 2026
+
+### v2.55
+
+**Added**
+
+- **Configurable card payin settlement** ([fees](https://docs.cbpayapp.com/en/concepts/fees#card-payin-settlement-delay)):
+  the `payin_card` fee configuration now accepts `settlement_hours`
+  (integer ≥ 0, default `0` = immediate credit, exactly as before). With a
+  delay configured, an approved card charge leaves the payin `pending` with
+  a new `settle_at` timestamp (RFC 3339) in the create, detail and list
+  responses — the balance credit, the `payin_credited` webhook, the
+  checkout link closing and the auto-conversion all happen at `settle_at`
+  (a worker settles due payins every minute). A payin whose deadline
+  already passed when it gets approved or assigned credits immediately.
+  Sending `settlement_hours` for any other service (or a negative value)
+  answers `400 invalid_settlement_hours`.
+- **Banking rail fees** ([fees](https://docs.cbpayapp.com/en/concepts/fees#banking-rail-fees)): five
+  new transactional fee services — `banking_deposit`,
+  `banking_transfer_ach`, `banking_transfer_swift`, `banking_transfer_wire`
+  and `banking_transfer_sepa` — percent + fixed, charged in the operation
+  currency (`BANK_USD` / `BANK_EUR`). Deposits are charged when credited
+  (capped at the deposit amount, so a small deposit never goes negative);
+  outbound transfers are charged at dispatch with a fail-closed
+  `balance >= amount + fee` check and the fee is refunded if the transfer
+  is definitively rejected. A rail with no specific configuration falls
+  back to the legacy `banking_operation` service; a rail configured at 0% +
+  0 fixed is explicitly free and never falls back.
+
+### v2.54
+
+**Changed**
+
+- **Date filters now use your organization's timezone**: every `from`/`to`
+  date filter (`YYYY-MM-DD`) on platform listings (payouts, payins, crypto
+  withdrawals, banking transfers, expenses, statement, analytics, revenue)
+  now interprets the day in your organization's timezone instead of UTC.
+  `from` is midnight of that day in your zone (inclusive) and `to` is
+  midnight of the next day in your zone (exclusive). The timezone is an
+  organization setting (`timezone`, IANA name) managed by the platform —
+  the default is `America/New_York` — and the current value is exposed in
+  `GET /v1/branding` as `timezone`. Daily buckets of analytics and revenue
+  also group by your organization's civil day. No request shape changed:
+  only the calendar day a `YYYY-MM-DD` filter covers.
 
 ### v2.53
 

@@ -252,7 +252,7 @@ doc_id,subject_type,status,score,band,verify_code,report_id,error_code
 Cada `report_id` es un informe individual completo: puedes descargar su PDF con el endpoint estándar de [descarga de informes](https://docs.cbpayapp.com/es/guias/qscore), y cualquiera puede verificar su autenticidad en `https://business.cbpayapp.com/verify/qscore/{verify_code}`.
 ## Lista y busca tus lotes
 
-`GET /v1/qscore/batches` devuelve tu historial paginado, con filtros `from` / `to` (`YYYY-MM-DD`, UTC, ambos inclusivos):
+`GET /v1/qscore/batches` devuelve tu historial paginado, con filtros `from` / `to` (`YYYY-MM-DD`, zona horaria de tu organización, ambos inclusivos):
 
 ```bash
 curl "https://api.qbank.cl/platform/v1/qscore/batches?from=2026-08-01&to=2026-08-09&page=1&page_size=50" \

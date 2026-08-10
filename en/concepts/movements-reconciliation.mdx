@@ -36,7 +36,7 @@ curl "https://api.qbank.cl/platform/v1/movements?from=2026-07-01&to=2026-07-08&p
 }
 ```
 
-Filters: `from`/`to` (`YYYY-MM-DD`, UTC), `type`, `asset`, `page`,
+Filters: `from`/`to` (`YYYY-MM-DD`, organization timezone), `type`, `asset`, `page`,
 `page_size` (max 200). Every entry carries `reference_type` +
 `reference_id`: the business resource that originated it.
 

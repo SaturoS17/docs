@@ -120,6 +120,7 @@ description: "错误格式与完整的错误码目录"
 | `query_required` | `GET /v1/resolve` 需要 `alias=` 或 `qr=` 参数 |
 | `same_email` | 新登录邮箱与当前邮箱相同；请改用 `POST /v1/me/email/verify` 进行验证 |
 | `invalid_status` / `invalid_kyc_status` / `invalid_direction` / `reason_required` / `account_id_required` / `invalid_service` / `invalid_fee` | 管理端校验 |
+| `invalid_settlement_hours` | `settlement_hours` 仅支持 `payin_card` 费用服务，且必须是非负整数（`0` = 立即入账）— 参见[费用](/zh/concepts/fees) |
 | `invalid_country` | 国家/地区代码格式错误或缺失——ISO 3166-1 alpha-2（例如 `GET /v1/aml/catalogs/cities?country=`）；也用于有效但不支持的国家/地区过滤条件（例如在银行目录查询中传入非 `US` 的 `country`） |
 
 ### 资金与状态（402 / 404 / 409 / 422）
@@ -241,7 +242,7 @@ description: "错误格式与完整的错误码目录"
 | HTTP | `error` | 含义 |
 |---|---|---|
 | 400 | `invalid_status` | `status` 过滤条件无效——请使用 `in_review`、`info_requested`、`released`、`rejected` 或 `all` |
-| 400 | `invalid_range` | `from`/`to` 日期无效——格式为 `YYYY-MM-DD`（UTC） |
+| 400 | `invalid_range` | `from`/`to` 日期无效——格式为 `YYYY-MM-DD`（组织时区） |
 | 400 | `invalid_name` | 缺少查询参数 `name` 中的文件名（最多 200 个字符，不含路径分隔符） |
 | 400 | `empty_file` | 文件请求体为空 |
 | 404 | `not_found` | 该审核或文件不属于您的账户——设计上绝不返回 403 |

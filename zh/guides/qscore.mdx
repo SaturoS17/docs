@@ -270,7 +270,7 @@ curl -X POST "https://api.qbank.cl/platform/v1/qscore/reports" \
 
 ### 列出报告
 
-`GET /v1/qscore/reports` 列出您账户购买的报告。`from` 和 `to`（日期 `YYYY-MM-DD`，UTC，两端均包含）为**必填**；`subject_id` 和 `status`（`pending`、`ready`、`failed`）为可选筛选；使用 `page` / `page_size` 分页（默认 50，最大 200）。
+`GET /v1/qscore/reports` 列出您账户购买的报告。`from` 和 `to`（日期 `YYYY-MM-DD`，组织时区，两端均包含）为**必填**；`subject_id` 和 `status`（`pending`、`ready`、`failed`）为可选筛选；使用 `page` / `page_size` 分页（默认 50，最大 200）。
 
 ```bash 列出报告
 curl "https://api.qbank.cl/platform/v1/qscore/reports?from=2026-08-01&to=2026-08-31&status=ready&page=1&page_size=50" \

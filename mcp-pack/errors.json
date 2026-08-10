@@ -1,5 +1,5 @@
 {
-  "count": 197,
+  "count": 198,
   "errors": [
     {
       "category": {
@@ -1133,6 +1133,20 @@
         "en": "Administration validations",
         "es": "Validaciones de administración",
         "zh": "管理端校验"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_settlement_hours",
+      "http": 400,
+      "meaning": {
+        "en": "`settlement_hours` is only accepted on the `payin_card` fee service and must be a non-negative integer (`0` = immediate credit) — see fees",
+        "es": "`settlement_hours` solo se acepta en el servicio de comisión `payin_card` y debe ser un entero no negativo (`0` = acreditación inmediata) — ver comisiones",
+        "zh": "`settlement_hours` 仅支持 `payin_card` 费用服务，且必须是非负整数（`0` = 立即入账）— 参见费用"
       }
     },
     {
@@ -2418,9 +2432,9 @@
       "code": "invalid_range",
       "http": 400,
       "meaning": {
-        "en": "Invalid `from`/`to` dates — `YYYY-MM-DD` format (UTC)",
-        "es": "Fechas `from`/`to` inválidas — formato `YYYY-MM-DD` (UTC)",
-        "zh": "`from`/`to` 日期无效——格式为 `YYYY-MM-DD`（UTC）"
+        "en": "Invalid `from`/`to` dates — `YYYY-MM-DD` format (organization timezone)",
+        "es": "Fechas `from`/`to` inválidas — formato `YYYY-MM-DD` (zona horaria de tu organización)",
+        "zh": "`from`/`to` 日期无效——格式为 `YYYY-MM-DD`（组织时区）"
       }
     },
     {

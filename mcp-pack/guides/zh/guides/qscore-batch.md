@@ -252,7 +252,7 @@ doc_id,subject_type,status,score,band,verify_code,report_id,error_code
 每个 `report_id` 都是一份完整的单独报告:您可以使用标准的[报告下载](https://docs.cbpayapp.com/zh/guides/qscore)端点下载其 PDF,任何人都可以在 `https://business.cbpayapp.com/verify/qscore/{verify_code}` 验证其真实性。
 ## 列出并检索您的批次
 
-`GET /v1/qscore/batches` 返回您账户的批次,按最新排序,支持分页(`page`、`page_size`,默认 50,上限 200)并按 `from` / `to`(`YYYY-MM-DD`,UTC,首尾均含)过滤:
+`GET /v1/qscore/batches` 返回您账户的批次,按最新排序,支持分页(`page`、`page_size`,默认 50,上限 200)并按 `from` / `to`(`YYYY-MM-DD`,组织时区,首尾均含)过滤:
 
 ```bash
 curl "https://api.qbank.cl/platform/v1/qscore/batches?from=2026-08-01&to=2026-08-09&page=1&page_size=50" \

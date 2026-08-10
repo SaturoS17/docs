@@ -40,7 +40,7 @@ curl -OJ "https://api.qbank.cl/platform/v1/reports/statement?from=2026-01-01&to=
   -H "Authorization: Bearer <token>"
 ```
 
-- `from` / `to`：`YYYY-MM-DD` 格式的日期，均含当日，UTC 时区。最大范围：400 天。
+- `from` / `to`：`YYYY-MM-DD` 格式的日期，均含当日，按贵组织时区。最大范围：400 天。
 - `lang=es|en`：PDF/Excel 的语言（默认 `es`）。
 - 文件以 `Content-Disposition: attachment` 送达，文件名为 `cartola_cbpay_<account>_<from>_<to>.pdf/.xlsx`。
 
@@ -140,7 +140,7 @@ curl "https://api.qbank.cl/platform/v1/accounts/{accountID}/reports/statement?fr
 
 #### 对账单多久生成一次？
 按需生成 —— 每次请求都根据你传入的 `from`/`to` 区间（两者必填，
-`YYYY-MM-DD`，UTC）从账本实时构建。
+`YYYY-MM-DD`，组织时区）从账本实时构建。
 #### balanced: true 是什么意思？
 每种资产独立核对：`期初 + 入账 − 出账 = 期末`，覆盖 USDT、USDC、BTC、
 GOLD 和 banking 镜像。任一资产不平时该标志为 `false` —— 请报告给你的

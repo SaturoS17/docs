@@ -8,7 +8,45 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-## v2.53 · 4 个版本 - 2026年8月9日
+## v2.55 · 6 个版本 - 2026年8月9日
+
+### v2.55
+
+**新增**
+
+- **可配置的银行卡收款结算延迟**
+  （[费用](https://docs.cbpayapp.com/zh/concepts/fees#银行卡收款结算延迟)）：`payin_card`
+  服务的费用配置现在接受 `settlement_hours` 字段（整数 ≥ 0，默认 `0`
+  = 立即入账，与之前完全一致）。配置延迟后，已批准的银行卡扣款会使收款保持
+  `pending` 状态，并在创建、详情和列表响应中返回新的 `settle_at`
+  时间戳（RFC 3339）——余额入账、`payin_credited` webhook、
+  收银台链接关闭和自动兑换全部在 `settle_at`
+  时发生（worker 每分钟结算一次到期的收款）。在批准或分配时已超过期限的收款会立即入账。对任何其他服务发送
+  `settlement_hours`（或负数）将返回 `400 invalid_settlement_hours`。
+- **按通道计收的银行费用**
+  （[费用](https://docs.cbpayapp.com/zh/concepts/fees#按通道计收的银行费用)）：新增五个交易型费用服务
+  —— `banking_deposit`、`banking_transfer_ach`、
+  `banking_transfer_swift`、`banking_transfer_wire` 和
+  `banking_transfer_sepa` —— 按百分比 + 固定费用计收，以操作货币
+  （`BANK_USD` / `BANK_EUR`）收取。存款在入账时收取
+  （以存款金额为上限，小额存款不会出现负数）；转出转账在发起时收取，
+  并强制执行 `余额 >= 金额 + 手续费`
+  的校验，若转账被最终拒付则退还手续费。未配置特定通道时回退到旧的
+  `banking_operation` 服务；通道配置为 0% + 0 固定费用表示明确免费，
+  不会回退。
+
+### v2.54
+
+**变更**
+
+- **日期筛选器现在使用贵组织的时区**：平台所有列表（payouts、payins、
+  加密货币提现、银行转账、费用、对账单、分析、收入）的 `from`/`to`
+  日期筛选器（`YYYY-MM-DD`）现在按贵组织的时区解释日期，而不再使用
+  UTC。`from` 为该日期在您时区的午夜（含），`to` 为次日午夜（不含）。
+  时区是组织级设置（`timezone`，IANA 名称），由平台管理——默认为
+  `America/New_York`——当前值通过 `GET /v1/branding` 以 `timezone`
+  字段暴露。分析与收入的每日分桶也按贵组织的民用日聚合。请求格式
+  未变：仅 `YYYY-MM-DD` 筛选器所覆盖的日历日发生变化。
 
 ### v2.53
 

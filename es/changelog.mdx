@@ -8,7 +8,56 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-<Update label="9 de agosto de 2026" description="v2.53 · 4 versiones">
+<Update label="9 de agosto de 2026" description="v2.55 · 6 versiones">
+
+### v2.55
+
+**Agregado**
+
+- **Settlement configurable de payins con tarjeta**
+  ([comisiones](/es/conceptos/comisiones#settlement-de-payins-con-tarjeta)):
+  la configuración de comisión del servicio `payin_card` ahora acepta
+  `settlement_hours` (entero ≥ 0, default `0` = acreditación inmediata,
+  exactamente como antes). Con un plazo configurado, un cobro con tarjeta
+  aprobado deja el payin `pending` con un timestamp nuevo `settle_at`
+  (RFC 3339) en las respuestas de creación, detalle y lista — la
+  acreditación del saldo, el webhook `payin_credited`, el cierre del link
+  de checkout y la auto-conversión ocurren todos al `settle_at` (un worker
+  acredita los payins vencidos cada minuto). Un payin cuyo plazo ya venció
+  al aprobarse o asignarse se acredita de inmediato. Enviar
+  `settlement_hours` para cualquier otro servicio (o un valor negativo)
+  responde `400 invalid_settlement_hours`.
+- **Comisiones banking por riel**
+  ([comisiones](/es/conceptos/comisiones#comisiones-banking-por-riel)):
+  cinco servicios de comisión transaccionales nuevos — `banking_deposit`,
+  `banking_transfer_ach`, `banking_transfer_swift`,
+  `banking_transfer_wire` y `banking_transfer_sepa` — porcentaje + fijo,
+  cobrados en la moneda de la operación (`BANK_USD` / `BANK_EUR`). Los
+  depósitos se cobran al acreditarse (con tope en el monto del depósito:
+  un depósito chico nunca queda en negativo); las transferencias salientes
+  se cobran al despacharse con un chequeo fail-closed
+  `balance >= monto + comisión`, y la comisión se reembolsa si la
+  transferencia es rechazada en definitivo. Un riel sin configuración
+  específica cae al servicio legacy `banking_operation`; un riel
+  configurado en 0% + 0 fijo es explícitamente gratis y nunca cae al
+  fallback.
+
+### v2.54
+
+**Cambiado**
+
+- **Los filtros de fecha ahora usan la zona horaria de tu organización**:
+  cada filtro de fecha `from`/`to` (`YYYY-MM-DD`) de los listados de la
+  plataforma (payouts, payins, retiros crypto, transferencias banking,
+  gastos, cartola, analytics, revenue) ahora interpreta el día en la zona
+  horaria de tu organización en vez de UTC. `from` es la medianoche de ese
+  día en tu zona (inclusive) y `to` es la medianoche del día siguiente en
+  tu zona (exclusive). La zona es una setting de la organización
+  (`timezone`, nombre IANA) administrada por la plataforma — el default es
+  `America/New_York` — y el valor vigente se expone en `GET /v1/branding`
+  como `timezone`. Los buckets diarios de analytics y revenue también
+  agrupan por el día civil de tu organización. No cambió ningún shape:
+  solo el día calendario que cubre un filtro `YYYY-MM-DD`.
 
 ### v2.53
 

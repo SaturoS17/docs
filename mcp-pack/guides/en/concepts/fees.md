@@ -37,7 +37,7 @@ depends on your account's rates for that country. Quoted = charged, always.
 |---|---|---|
 | `payout` | Fixed per operation (FX pricing is already in your rate) | At payout creation (included in `total_debit`) |
 | `payin` | Fixed per operation (FX pricing is already in your `payin_rate`) | On credit (you receive `usdt_gross − fee`) |
-| `payin_card` | `%` over the collection + fixed, with its own `%` per processed currency (e.g. BOB vs USD). If your account has none configured, the generic `payin` fee applies | When a card-paid collection is credited (direct `method: "card"` payin, checkout link paid with card, or subscription charge) |
+| `payin_card` | `%` over the collection + fixed, with its own `%` per processed currency (e.g. BOB vs USD). If your account has none configured, the generic `payin` fee applies. Can carry a settlement delay (see [Card payin settlement delay](#card-payin-settlement-delay)) | When a card-paid collection is credited (direct `method: "card"` payin, checkout link paid with card, or subscription charge); with a delay configured, when the scheduled time is reached |
 | `funding` | `%` over the deposit + fixed | When the on-chain deposit is credited |
 | `withdrawal` | `%` over the withdrawal + fixed | At creation (included in `total_debit`) |
 | `wallet_creation` | Fixed per wallet | On every wallet creation (persons: 1 per network; companies: unlimited). Fetching existing wallets is always free |
@@ -53,7 +53,12 @@ depends on your account's rates for that country. Quoted = charged, always.
 | `address_screening` | Fixed per scan | When assessing a blockchain address' risk ([wallet screening](https://docs.cbpayapp.com/en/guides/screenings)); the automatic withdrawal/deposit protection is free |
 | `banking_customer` | Fixed per profile | When creating your banking profile ([banking](https://docs.cbpayapp.com/en/guides/banking)) |
 | `banking_account` | Fixed per account | When opening each bank account |
-| `banking_operation` | Fixed per payment | When sending each bank payment (quoting with `prepare` is free) |
+| `banking_deposit` | `%` over the deposit + fixed, in the operation currency, capped at the deposit amount | When an incoming bank deposit is credited (see [Banking rail fees](#banking-rail-fees)) |
+| `banking_transfer_ach` | `%` + fixed over the amount, in the operation currency | When an ACH transfer is dispatched |
+| `banking_transfer_swift` | `%` + fixed over the amount, in the operation currency | When a SWIFT transfer is dispatched |
+| `banking_transfer_wire` | `%` + fixed over the amount, in the operation currency | When a wire (Fedwire) transfer is dispatched |
+| `banking_transfer_sepa` | `%` + fixed over the amount, in the operation currency | When a SEPA transfer is dispatched |
+| `banking_operation` | Fixed per payment — legacy fallback, charged only when the rail has no specific configuration | When sending each bank payment (quoting with `prepare` is free) |
 | `card_creation_virtual` | Fixed per card | When issuing a virtual card ([cards](https://docs.cbpayapp.com/en/guides/cards)) |
 | `card_creation_physical` | Fixed per card | When issuing a physical card |
 | `card_monthly` | Fixed monthly | Monthly fee per active card (with no balance the card is frozen — no debt) |
@@ -72,6 +77,60 @@ Standalone fixed charges (compliance, KYC/KYB verification, wallet creation
 and banking) are refunded automatically if the upstream operation fails
 (`compliance_refund` / `verification_fee_refund` / `wallet_creation_refund`
 / `wallet_service_refund` / `banking_fee_refund`).
+## Card payin settlement delay
+
+Card collections can carry a **settlement delay** (`settlement_hours`, an
+integer number of hours; `0` = immediate credit — the default). With a
+delay configured, a confirmed card payment does **not** credit your balance
+right away: the payin stays `pending` with a `settle_at` timestamp
+(RFC 3339) in the create, get and list responses, and everything happens
+when that time is reached:
+
+- the balance credit executes (with its `payin_card` fee),
+- the `payin_credited` webhook and the final status reach your integration,
+- a checkout link paid with card closes as paid, and
+- the automatic conversion (when configured) runs.
+
+```json
+{
+  "id": "pay_…",
+  "status": "pending",
+  "settle_at": "2026-08-10T15:04:05Z"
+}
+```
+
+`settle_at = created_at + settlement_hours` — the delay counts from the
+payin creation (≈ when the charge is confirmed at the processor). A payin
+whose deadline has already passed by the time it is approved or assigned
+credits immediately. A worker settles due payins every minute.
+
+> **Note**
+The settlement delay is configured by CBPay on the `payin_card` fee of your
+account. Nothing changes for your integration beyond reading `settle_at`:
+the webhooks and final states are the same, just delivered at settlement.
+## Banking rail fees
+
+Banking operations carry **transactional fees in the operation currency**
+(the `BANK_USD` / `BANK_EUR` balance the operation moves):
+
+- **Deposits** (`banking_deposit`): charged when the incoming deposit is
+  credited, capped at the deposit amount (`min(fee, amount)`) — a small
+  deposit never leaves a negative balance.
+- **Transfers** (`banking_transfer_ach`, `banking_transfer_swift`,
+  `banking_transfer_wire`, `banking_transfer_sepa`): charged **at
+  dispatch**; your available balance must cover `amount + fee` in the
+  operation currency or the request is declined with `402
+  insufficient_funds`. If the transfer is definitively rejected
+  afterwards, the fee is refunded.
+- **Fallback**: a rail without its own configuration (neither on your
+  account nor as a default) uses the legacy `banking_operation` fixed fee
+  in USDT. A rail configured with `0%` + `0` fixed is **explicitly free**
+  — it does not fall back.
+
+When a rail fee applies, the dispatch response exposes `banking_fee` and
+`banking_fee_asset` (the charged amount and its `BANK_*` currency), so each
+charge is attributable to its rail.
+
 ## Internal transfers: always free
 
 Transfers between CBPay accounts (`POST /v1/transfers`) carry **no fee**,

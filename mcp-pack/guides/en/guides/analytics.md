@@ -32,7 +32,7 @@ curl "https://api.qbank.cl/platform/v1/analytics/summary?from=2026-07-01&to=2026
 
 | Parameter | Required | Description |
 |---|---|---|
-| `from` / `to` | Yes | `YYYY-MM-DD` range in UTC, both inclusive; 366 days max |
+| `from` / `to` | Yes | `YYYY-MM-DD` range in your organization's timezone, both inclusive; 366 days max |
 | `granularity` | No | `day` (default), `week` (Monday-Sunday) or `month` |
 
 You only see **your own account's** data. All amounts are USD decimal
@@ -257,7 +257,7 @@ curl "https://api.qbank.cl/platform/v1/balances/history?from=2026-06-12&to=2026-
 
 | Parameter | Required | Description |
 |---|---|---|
-| `from` / `to` | Yes | `YYYY-MM-DD` range in UTC, both inclusive; max 366 days |
+| `from` / `to` | Yes | `YYYY-MM-DD` range in your organization's timezone, both inclusive; max 366 days |
 
 ```json
 {
@@ -265,7 +265,7 @@ curl "https://api.qbank.cl/platform/v1/balances/history?from=2026-06-12&to=2026-
   "from": "2026-06-12",
   "to": "2026-07-11",
   "granularity": "day",
-  "timezone": "UTC",
+  "timezone": "America/New_York",
   "assets": {
     "USDT": {
       "series": [
@@ -318,7 +318,7 @@ curl "https://api.qbank.cl/platform/v1/balances/history?from=2026-06-12&to=2026-
 }
 ```
 
-- Each point is the **available balance at that day's close** (UTC); days
+- Each point is the **available balance at that day's close** (in your organization's timezone); days
   without movements carry the previous day's balance forward, so the
   series has no gaps and charts directly.
 - `assets` also includes the banking account mirrors (`BANK_USD`,
@@ -349,7 +349,7 @@ curl "https://api.qbank.cl/platform/v1/rates/history?from=2026-06-12&to=2026-07-
 
 | Parameter | Required | Description |
 |---|---|---|
-| `from` / `to` | Yes | `YYYY-MM-DD` range in UTC, both inclusive |
+| `from` / `to` | Yes | `YYYY-MM-DD` range in your organization's timezone, both inclusive |
 | `granularity` | No | `day` (default, max 366 days) or `hour` (max 31 days) |
 | `currency` | No | Filter one currency (e.g. `CLP`) |
 
@@ -407,8 +407,10 @@ curl "https://api.qbank.cl/platform/v1/rates/history?from=2026-06-12&to=2026-07-
 ## FAQ
 
 #### Which timezone are buckets in?
-UTC, same as the `from`/`to` filters across the whole API. If your front
-shows another timezone, convert the labels when rendering.
+Your organization's timezone (IANA name, default `America/New_York`),
+same as the `from`/`to` filters across the whole platform API. The
+response echoes it in the `timezone` field. A platform admin changes it
+with `PUT /v1/admin/orgs/{orgID}/settings` (key `timezone`).
 #### What counts as volume and what does not?
 Everything that moved money to/from your account: payins, crypto deposits
 and received transfers (in); payouts, withdrawals, sent transfers and card

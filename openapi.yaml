@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.53"
+  version: "2.55"
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -1427,7 +1427,7 @@ paths:
       summary: Get the platform branding
       description: Effective branding of the platform you operate on (name, colors, logos in base64) so
         a white-label front end can theme itself from the API instead of hardcoding assets. `logo_url`/`symbol_url`
-        are public CDN URLs for the same logos — prefer them over the base64 payloads. Read-only, no PII.
+        are public CDN URLs for the same logos — prefer them over the base64 payloads. Read-only, no PII. `timezone` is the IANA timezone of the organization (default `America/New_York`) — every `from`/`to` date filter and every daily bucket of the platform is interpreted in that zone.
       responses:
         '200':
           description: Effective branding.
@@ -1446,6 +1446,7 @@ paths:
                 symbol_png_base64: iVBORw0KGgoAAAANSUhEUg...
                 logo_url: https://cdn.cbpayapp.com/public/branding/default/logo.png
                 symbol_url: https://cdn.cbpayapp.com/public/branding/default/symbol.png
+                timezone: America/New_York
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/auth/register:
@@ -2468,14 +2469,14 @@ paths:
         schema:
           type: string
           format: date
-        description: Start date (YYYY-MM-DD, UTC, inclusive).
+        description: Start date (YYYY-MM-DD, organization timezone, inclusive).
       - name: to
         in: query
         required: true
         schema:
           type: string
           format: date
-        description: End date (YYYY-MM-DD, UTC, inclusive). Max range 366 days.
+        description: End date (YYYY-MM-DD, organization timezone, inclusive). Max range 366 days.
       responses:
         '200':
           description: Daily balance series per asset plus USD aggregate.
@@ -2495,7 +2496,7 @@ paths:
                     example: day
                   timezone:
                     type: string
-                    example: UTC
+                    example: America/New_York
                   assets:
                     type: object
                     description: 'One daily closing-balance series per asset. Includes the operational
@@ -2592,7 +2593,7 @@ paths:
                 from: '2026-06-12'
                 to: '2026-07-11'
                 granularity: day
-                timezone: UTC
+                timezone: America/New_York
                 assets:
                   USDT:
                     series:
@@ -2719,13 +2720,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Filter from this date (YYYY-MM-DD, UTC, inclusive).
+        description: Filter from this date (YYYY-MM-DD, organization timezone, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: Filter up to this date (YYYY-MM-DD, UTC, inclusive).
+        description: Filter up to this date (YYYY-MM-DD, organization timezone, inclusive).
       - name: format
         in: query
         description: 'Export the same rows as a file: `csv` or `xlsx` (accounting-grade download, up to
@@ -2964,14 +2965,14 @@ paths:
         schema:
           type: string
           format: date
-        description: Start date (YYYY-MM-DD, UTC, inclusive).
+        description: Start date (YYYY-MM-DD, organization timezone, inclusive).
       - name: to
         in: query
         required: true
         schema:
           type: string
           format: date
-        description: End date (YYYY-MM-DD, UTC, inclusive).
+        description: End date (YYYY-MM-DD, organization timezone, inclusive).
       - name: granularity
         in: query
         schema:
@@ -3707,13 +3708,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Filter from this date (YYYY-MM-DD, UTC, inclusive).
+        description: Filter from this date (YYYY-MM-DD, organization timezone, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: Filter up to this date (YYYY-MM-DD, UTC, inclusive).
+        description: Filter up to this date (YYYY-MM-DD, organization timezone, inclusive).
       - name: format
         in: query
         description: 'Export the same rows as a file: `csv` or `xlsx` (accounting-grade download, up to
@@ -4519,13 +4520,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Filter from this date (YYYY-MM-DD, UTC, inclusive).
+        description: Filter from this date (YYYY-MM-DD, organization timezone, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: Filter up to this date (YYYY-MM-DD, UTC, inclusive).
+        description: Filter up to this date (YYYY-MM-DD, organization timezone, inclusive).
       - name: format
         in: query
         description: 'Export the same rows as a file: `csv` or `xlsx` (accounting-grade download, up to
@@ -5216,13 +5217,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Filter from this date (YYYY-MM-DD, UTC, inclusive).
+        description: Filter from this date (YYYY-MM-DD, organization timezone, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: Filter up to this date (YYYY-MM-DD, UTC, inclusive).
+        description: Filter up to this date (YYYY-MM-DD, organization timezone, inclusive).
       - name: format
         in: query
         description: 'Export the same rows as a file: `csv` or `xlsx` (accounting-grade download, up to
@@ -5506,13 +5507,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Filter from this date (YYYY-MM-DD, UTC, inclusive).
+        description: Filter from this date (YYYY-MM-DD, organization timezone, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: Filter up to this date (YYYY-MM-DD, UTC, inclusive).
+        description: Filter up to this date (YYYY-MM-DD, organization timezone, inclusive).
       responses:
         '200':
           description: Deposits and withdrawals.
@@ -5876,13 +5877,13 @@ paths:
         required: true
         schema:
           type: string
-        description: Start date YYYY-MM-DD (UTC, inclusive).
+        description: Start date YYYY-MM-DD (organization timezone, inclusive).
       - name: to
         in: query
         required: true
         schema:
           type: string
-        description: End date YYYY-MM-DD (UTC, inclusive).
+        description: End date YYYY-MM-DD (organization timezone, inclusive).
       - name: risk
         in: query
         schema:
@@ -6835,13 +6836,13 @@ paths:
         required: true
         schema:
           type: string
-        description: Start date YYYY-MM-DD (UTC, inclusive).
+        description: Start date YYYY-MM-DD (organization timezone, inclusive).
       - name: to
         in: query
         required: true
         schema:
           type: string
-        description: End date YYYY-MM-DD (UTC, inclusive).
+        description: End date YYYY-MM-DD (organization timezone, inclusive).
       - name: risk
         in: query
         schema:
@@ -7010,13 +7011,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Filter from this date (YYYY-MM-DD, UTC, inclusive).
+        description: Filter from this date (YYYY-MM-DD, organization timezone, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: Filter up to this date (YYYY-MM-DD, UTC, inclusive).
+        description: Filter up to this date (YYYY-MM-DD, organization timezone, inclusive).
       responses:
         '200':
           description: Paged KYC links.
@@ -9484,14 +9485,14 @@ paths:
         schema:
           type: string
           format: date
-        description: Start date (YYYY-MM-DD, UTC, inclusive).
+        description: Start date (YYYY-MM-DD, organization timezone, inclusive).
       - name: to
         in: query
         required: true
         schema:
           type: string
           format: date
-        description: End date (YYYY-MM-DD, UTC, inclusive).
+        description: End date (YYYY-MM-DD, organization timezone, inclusive).
       - name: merchant_id
         in: query
         schema:
@@ -9863,14 +9864,14 @@ paths:
         schema:
           type: string
           format: date
-        description: Start date (YYYY-MM-DD, UTC, inclusive).
+        description: Start date (YYYY-MM-DD, organization timezone, inclusive).
       - name: to
         in: query
         required: true
         schema:
           type: string
           format: date
-        description: End date (YYYY-MM-DD, UTC, inclusive).
+        description: End date (YYYY-MM-DD, organization timezone, inclusive).
       - name: merchant_id
         in: query
         schema:
@@ -10083,13 +10084,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Filter from this date (YYYY-MM-DD, UTC, inclusive).
+        description: Filter from this date (YYYY-MM-DD, organization timezone, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: Filter up to this date (YYYY-MM-DD, UTC, inclusive).
+        description: Filter up to this date (YYYY-MM-DD, organization timezone, inclusive).
       responses:
         '200':
           description: Paged swaps.
@@ -10807,13 +10808,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Start date (YYYY-MM-DD, UTC, inclusive).
+        description: Start date (YYYY-MM-DD, organization timezone, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: End date (YYYY-MM-DD, UTC, inclusive).
+        description: End date (YYYY-MM-DD, organization timezone, inclusive).
       - name: page
         in: query
         schema:
@@ -11036,13 +11037,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Start date (YYYY-MM-DD, UTC, inclusive).
+        description: Start date (YYYY-MM-DD, organization timezone, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: End date (YYYY-MM-DD, UTC, inclusive).
+        description: End date (YYYY-MM-DD, organization timezone, inclusive).
       - name: page
         in: query
         schema:
@@ -11089,13 +11090,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Start date (YYYY-MM-DD, UTC, inclusive).
+        description: Start date (YYYY-MM-DD, organization timezone, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: End date (YYYY-MM-DD, UTC, inclusive).
+        description: End date (YYYY-MM-DD, organization timezone, inclusive).
       - name: page
         in: query
         schema:
@@ -11243,13 +11244,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Start date (YYYY-MM-DD, UTC, inclusive).
+        description: Start date (YYYY-MM-DD, organization timezone, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: End date (YYYY-MM-DD, UTC, inclusive).
+        description: End date (YYYY-MM-DD, organization timezone, inclusive).
       - name: page
         in: query
         schema:
@@ -13228,6 +13229,7 @@ paths:
                     name: Ana Perez Rojas
                 created_at: '2026-07-07T12:00:00Z'
                 banking_fee: '5.000000'
+                banking_fee_asset: USDT
         '202':
           description: Application held for review (the organization has application review enabled). The resource is
             created only when compliance approves the review; the issuance/profile fee is charged when the application
@@ -13449,6 +13451,7 @@ paths:
                   accountNumber: '0532013000'
                   routingNumber: 011000138
                 banking_fee: '1.000000'
+                banking_fee_asset: USDT
         '202':
           description: Application held for review (the organization has application review enabled). The resource is
             created only when compliance approves the review; the issuance/profile fee is charged when the application
@@ -14009,6 +14012,7 @@ paths:
                   type: WITHDRAW
                   paymentType: SEPA_CT
                 banking_fee: '2.000000'
+                banking_fee_asset: BANK_EUR
         '200':
           description: Idempotency replay of an existing operation (no new charge).
           content:
@@ -14201,14 +14205,14 @@ paths:
         schema:
           type: string
           format: date
-        description: Start date (YYYY-MM-DD, UTC, inclusive).
+        description: Start date (YYYY-MM-DD, organization timezone, inclusive).
       - name: to
         in: query
         required: true
         schema:
           type: string
           format: date
-        description: 'End date (YYYY-MM-DD, UTC, inclusive). Max range: 400 days.'
+        description: 'End date (YYYY-MM-DD, organization timezone, inclusive). Max range: 400 days.'
       - name: format
         in: query
         schema:
@@ -14609,13 +14613,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Filter from this date (YYYY-MM-DD, UTC, inclusive).
+        description: Filter from this date (YYYY-MM-DD, organization timezone, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: Filter up to this date (YYYY-MM-DD, UTC, inclusive).
+        description: Filter up to this date (YYYY-MM-DD, organization timezone, inclusive).
       responses:
         '200':
           description: Paged cards.
@@ -15118,13 +15122,13 @@ paths:
         schema:
           type: string
           format: date
-        description: Start date (YYYY-MM-DD, UTC, inclusive).
+        description: Start date (YYYY-MM-DD, organization timezone, inclusive).
       - name: to
         in: query
         schema:
           type: string
           format: date
-        description: End date (YYYY-MM-DD, UTC, inclusive).
+        description: End date (YYYY-MM-DD, organization timezone, inclusive).
       responses:
         '200':
           description: Challenge history (audit).
@@ -15476,7 +15480,7 @@ paths:
                 from: '2026-07-01'
                 to: '2026-07-10'
                 granularity: day
-                timezone: UTC
+                timezone: America/New_York
                 gross_volume:
                   in: '636936.87'
                   out: '270118.87'
@@ -15654,6 +15658,7 @@ paths:
                 documents_synced: 2
                 registered_at: '2026-07-10T15:00:00Z'
                 banking_fee: '1.000000'
+                banking_fee_asset: USDT
         '202':
           description: Application held for review (the organization has application review enabled). The resource is
             created only when compliance approves the review; the issuance/profile fee is charged when the application
@@ -15816,6 +15821,7 @@ paths:
                 account_id: c4d10000-aaaa-bbbb-cccc-ddddeeeeffff
                 status: active
                 banking_fee: '1.000000'
+                banking_fee_asset: USDT
         '202':
           description: Application held for review (the organization has application review enabled). The resource is
             created only when compliance approves the review; the issuance/profile fee is charged when the application
@@ -17049,7 +17055,7 @@ paths:
       operationId: listMyTxnReviews
       summary: List my transaction reviews
       description: |-
-        Money operations of the account held by the transactional firewall (payouts, crypto withdrawals, payins, banking transfers) with their review status. Filter by `status` and date range (`from`/`to`, UTC, both inclusive). When a review moves to `info_requested`, upload the requested documents with `POST /v1/me/txn-reviews/{reviewID}/files` — the operation stays held until the compliance team decides.
+        Money operations of the account held by the transactional firewall (payouts, crypto withdrawals, payins, banking transfers) with their review status. Filter by `status` and date range (`from`/`to`, organization timezone, both inclusive). When a review moves to `info_requested`, upload the requested documents with `POST /v1/me/txn-reviews/{reviewID}/files` — the operation stays held until the compliance team decides.
       parameters:
       - name: status
         in: query
@@ -17327,7 +17333,7 @@ paths:
       operationId: listQscoreReports
       description: 'Returns the credit reports of your account, newest first. The
 
-        `from` and `to` date filters (UTC, both inclusive) are mandatory. Reports
+        `from` and `to` date filters (organization timezone, both inclusive) are mandatory. Reports
 
         owned by other accounts are never visible (ownership isolation: a report id
 
@@ -17338,7 +17344,7 @@ paths:
         required: true
         schema:
           type: string
-        description: 'Start date YYYY-MM-DD (UTC, inclusive). An invalid date
+        description: 'Start date YYYY-MM-DD (organization timezone, inclusive). An invalid date
 
           returns 400 invalid_range.'
         example: '2026-08-01'
@@ -17347,7 +17353,7 @@ paths:
         required: true
         schema:
           type: string
-        description: End date YYYY-MM-DD (UTC, inclusive).
+        description: End date YYYY-MM-DD (organization timezone, inclusive).
         example: '2026-08-08'
       - name: subject_id
         in: query
@@ -18905,7 +18911,7 @@ paths:
       operationId: listQscoreBatches
       description: 'Lists the batch scoring jobs of your account (newest first),
         paginated. `page` starts at 1; `page_size` defaults to 50 (maximum 200).
-        The `from` and `to` date filters (UTC, both inclusive) are mandatory.
+        The `from` and `to` date filters (organization timezone, both inclusive) are mandatory.
         Batches owned by other accounts are never visible (ownership isolation:
         a batch id from another account returns 404).'
       parameters:
@@ -18915,14 +18921,14 @@ paths:
         schema:
           type: string
           format: date
-        description: Start date (YYYY-MM-DD, UTC, inclusive).
+        description: Start date (YYYY-MM-DD, organization timezone, inclusive).
       - name: to
         in: query
         required: true
         schema:
           type: string
           format: date
-        description: End date (YYYY-MM-DD, UTC, inclusive).
+        description: End date (YYYY-MM-DD, organization timezone, inclusive).
       - name: status
         in: query
         schema:
@@ -19246,7 +19252,7 @@ paths:
       summary: List consent links
       operationId: listRiskConsents
       description: 'Lists the consent links of your account (newest first), paginated.
-        The `from` and `to` date filters (UTC, both inclusive) are mandatory; `page`
+        The `from` and `to` date filters (organization timezone, both inclusive) are mandatory; `page`
         starts at 1 and `page_size` defaults to 50 (maximum 200). Consents owned by
         other accounts are never visible (ownership isolation).'
       parameters:
@@ -19256,14 +19262,14 @@ paths:
         schema:
           type: string
           format: date
-        description: Start date (YYYY-MM-DD, UTC, inclusive).
+        description: Start date (YYYY-MM-DD, organization timezone, inclusive).
       - name: to
         in: query
         required: true
         schema:
           type: string
           format: date
-        description: End date (YYYY-MM-DD, UTC, inclusive).
+        description: End date (YYYY-MM-DD, organization timezone, inclusive).
       - name: status
         in: query
         schema:
@@ -20553,6 +20559,11 @@ components:
           - compliance_rescreen
           - compliance_transaction
           - compliance_monitoring
+          - banking_deposit
+          - banking_transfer_ach
+          - banking_transfer_swift
+          - banking_transfer_wire
+          - banking_transfer_sepa
         country:
           type: string
         currency:
@@ -20568,6 +20579,15 @@ components:
         fixed_amount:
           type: string
           example: '0.30'
+        settlement_hours:
+          type: integer
+          description: >-
+            Card payins (`payin_card`) only — configurable settlement delay in hours.
+            `0` (default) credits the payin as soon as the card charge confirms; a
+            positive value keeps the payin `pending` with a `settle_at` timestamp
+            until the delay elapses, then credits it automatically. Rejected with
+            `invalid_settlement_hours` on any other service or when negative.
+          example: 24
         status:
           type: string
           example: active
@@ -20758,6 +20778,16 @@ components:
         updated_at:
           type: string
           format: date-time
+        settle_at:
+          type: string
+          format: date-time
+          description: >-
+            Card payins with a configured settlement delay only — when this pending
+            payin will be credited (`created_at` plus the `payin_card` fee config's
+            `settlement_hours`). Balance credit, the credited webhook, checkout link
+            closure and auto-conversion all happen at that moment; a payin whose
+            delay has already elapsed when it is approved or assigned is credited
+            immediately. Absent when the payin settles on confirmation.
         fx_rate:
           type: string
           description: Your payin rate at credit time (present once the payment was received and converted).

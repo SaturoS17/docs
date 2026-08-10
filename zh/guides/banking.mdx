@@ -16,7 +16,7 @@ import { EnvUrls } from "/snippets/env-urls.jsx";
 | 银行余额 | 您的银行账户 | `GET /v1/banking/accounts/{id}/balance` |
 
 <Note>
-银行服务费用（`banking_customer`、`banking_account`、`banking_operation`）为固定金额，在每笔操作执行时从您的 **USDT 余额**扣除，若操作失败则**自动退款**。费用为 0（默认值）时服务免费。每个响应中的 `banking_fee` 字段显示实际扣费金额。
+银行服务费用有两种形式。**独立固定费用**（`banking_customer`、`banking_account`、`banking_operation`）在每笔操作执行时从您的 **USDT 余额**扣除，若操作失败则**自动退款**。**按通道的交易费用**（`banking_deposit`、`banking_transfer_ach`、`banking_transfer_swift`、`banking_transfer_wire`、`banking_transfer_sepa`）为百分比加固定金额，**以操作货币**（您的 `BANK_USD` / `BANK_EUR` 余额）计收——参见下文「通道费用（存款与转账）」一节。费用为 0（默认值）时服务免费。每个响应中的 `banking_fee` 和 `banking_fee_asset` 字段显示实际扣费金额及币种。
 </Note>
 
 ## 完整流程
@@ -334,7 +334,7 @@ curl -X POST https://api.qbank.cl/platform/v1/banking/operations/prepare \
   }'
 ```
 
-带幂等键执行（`banking_operation` 费用在此处计收）：
+带幂等键执行（在此计收通道费用——若该通道无配置则计收旧的 `banking_operation` 费用）：
 
 <CodeGroup>
 
@@ -380,9 +380,12 @@ curl -X POST https://api.qbank.cl/platform/v1/banking/operations \
   "status": "pending",
   "idempotency_key": "platform:…:acme-payment-0071",
   "data": { "…": "…" },
-  "banking_fee": "2.000000"
+  "banking_fee": "2.000000",
+  "banking_fee_asset": "BANK_USD"
 }
 ```
+
+`banking_fee` 和 `banking_fee_asset` 仅在收取费用时出现。按通道计费时，币种为操作货币（`BANK_USD` / `BANK_EUR`）；使用旧版回退时为 `USDT`。
 
 - 最终状态通过 `banking_operation_status_changed` webhook 送达（`completed` / `failed`）；您也可以轮询 `GET /v1/banking/operations/{id}`。操作达到最终状态后，webhook 中会包含其 `receipt_url`，并可通过 `GET /v1/banking/operations/{id}/receipt` 下载 PDF 凭证（[凭证](/zh/guides/receipts)）。
 - 使用相同 `Idempotency-Key` 的重试会返回原始操作（`idempotency_hit: true`），**不会再次收取费用**。
@@ -424,6 +427,26 @@ curl "https://api.qbank.cl/platform/v1/banking/operations?from=2026-07-01&to=202
 请查询操作详情以读取方向、金额、对手方和参考号。参见
 [webhooks](/zh/webhooks)。
 
+## 通道费用（存款与转账）
+
+除了独立固定费用外，banking 还支持**按通道的交易费用**——百分比加固定金额，始终**以操作货币**（`BANK_USD` / `BANK_EUR`）计收，绝不使用 USDT：
+
+| 服务 | 适用于 | 计收时机 |
+|---|---|---|
+| `banking_deposit` | 入账存款（USD/EUR） | 存款入账时——**以存款金额为上限**（`fee = min(fee, amount)`），小额存款永远不会变成负数 |
+| `banking_transfer_ach` | 转出 ACH 转账 | 发起时，带 fail-closed 余额校验 |
+| `banking_transfer_swift` | 转出 SWIFT 转账 | 发起时，带 fail-closed 余额校验 |
+| `banking_transfer_wire` | 转出 wire 转账（FEDWIRE） | 发起时，带 fail-closed 余额校验 |
+| `banking_transfer_sepa` | 转出 SEPA 转账 | 发起时，带 fail-closed 余额校验 |
+
+对于**转账**，可用余额必须覆盖 `金额 + 费用`——否则 API 返回
+`402 insufficient_funds`，且操作**不会被创建**。如果操作在发起后被
+明确同步拒绝，费用将**自动退还**（与旧版费用相同的纪律）。
+
+**回退规则：** 如果通道没有专属配置（账户级和平台级都没有），则适用旧的
+`banking_operation` 费用（固定金额，USDT）。通道配置为 0% + 0 固定费用表示
+**明确免费**——*不会*回退到旧版费用。
+
 ## 操作状态
 
 | 状态 | 含义 |
@@ -439,7 +462,7 @@ curl "https://api.qbank.cl/platform/v1/banking/operations?from=2026-07-01&to=202
 | HTTP | `error` | 处理方式 |
 |---|---|---|
 | 400 | `idempotency_key_required` | 在请求体或请求头中发送该 key |
-| 402 | `insufficient_funds` | USDT 余额不足以支付银行服务费 |
+| 402 | `insufficient_funds` | 余额不足：按通道计费时校验为 `余额 ≥ 金额 + 费用`，以**操作货币**（`BANK_USD`/`BANK_EUR`）计；使用旧版回退时为您的 USDT 余额 |
 | 403 | `account_blocked` | 账户未处于活跃状态；请联系 CBPay 团队 |
 | 409 | `banking_customer_exists` | 您的账户已有银行客户档案（`GET /v1/banking/customer`） |
 | 409 | `no_banking_customer` | 请先创建您的档案（`POST /v1/banking/customer`） |
@@ -458,10 +481,12 @@ curl "https://api.qbank.cl/platform/v1/banking/operations?from=2026-07-01&to=202
 不会。Banking 资金存放在你的银行账户中，通过
 `GET /v1/banking/accounts/{id}/balance` 查询。权威余额始终以银行为准；你的
 [对账单](/zh/guides/statement) 会在 `BANK_USD`/`BANK_EUR` 镜像余额中对其
-进行核对。只有 banking **手续费**才会从你的 USDT 余额中扣除。
+进行核对。**按通道的费用**以操作货币计收（您的 `BANK_USD`/`BANK_EUR` 余额）；
+只有旧的 `banking_operation` 回退费用才从您的 USDT 余额中扣除。
 </Accordion>
 <Accordion title="操作失败时手续费会怎样？">
-自动退款 —— 档案、账户和操作的手续费一视同仁。使用相同的
+自动退款 —— 档案、账户和操作的手续费一视同仁，包括按通道的费用
+（在明确同步拒绝时退还）。使用相同的
 `Idempotency-Key` 重试会返回原始操作（`idempotency_hit: true`），绝不会
 重复收费。
 </Accordion>

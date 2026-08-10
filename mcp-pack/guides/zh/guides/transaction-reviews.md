@@ -60,7 +60,7 @@ curl "https://api.qbank.cl/platform/v1/me/txn-reviews?from=2026-07-01&to=2026-08
 ### 过滤条件
 
 - `?status=` —— `in_review`、`info_requested`、`released`、`rejected` 或 `all`（为空 = 未决：`in_review` + `info_requested`）。其他值 ⇒ `400 invalid_status`。
-- `?from=` / `?to=` —— 日期范围（`YYYY-MM-DD`，UTC，均含边界）。日期无效 ⇒ `400 invalid_range`。
+- `?from=` / `?to=` —— 日期范围（`YYYY-MM-DD`，组织时区，均含边界）。日期无效 ⇒ `400 invalid_range`。
 - `?page=` / `?page_size=` —— 分页（默认 50，最大 200）。
 
 ## 审核详情

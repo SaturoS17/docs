@@ -120,6 +120,7 @@ Estos códigos provienen de **superficies de administración de organización** 
 | `query_required` | `GET /v1/resolve` necesita `alias=` o `qr=` |
 | `same_email` | El nuevo email de login es el actual; usa `POST /v1/me/email/verify` para verificarlo |
 | `invalid_status` / `invalid_kyc_status` / `invalid_direction` / `reason_required` / `account_id_required` / `invalid_service` / `invalid_fee` | Validaciones de administración |
+| `invalid_settlement_hours` | `settlement_hours` solo se acepta en el servicio de comisión `payin_card` y debe ser un entero no negativo (`0` = acreditación inmediata) — ver [comisiones](/es/conceptos/comisiones) |
 | `invalid_country` | Código de país mal formado o ausente — ISO 3166-1 alpha-2 (ej. `GET /v1/aml/catalogs/cities?country=`); también un filtro de país válido pero no soportado (ej. un `country` distinto de `US` en el lookup del directorio bancario) |
 
 ### Dinero y estado (402 / 404 / 409 / 422)
@@ -241,7 +242,7 @@ Errores de la revisión de operaciones retenidas por el firewall transaccional (
 | HTTP | `error` | Significado |
 |---|---|---|
 | 400 | `invalid_status` | El filtro `status` no es válido — usa `in_review`, `info_requested`, `released`, `rejected` o `all` |
-| 400 | `invalid_range` | Fechas `from`/`to` inválidas — formato `YYYY-MM-DD` (UTC) |
+| 400 | `invalid_range` | Fechas `from`/`to` inválidas — formato `YYYY-MM-DD` (zona horaria de tu organización) |
 | 400 | `invalid_name` | Falta el nombre del archivo en el query param `name` (máx. 200 caracteres, sin separadores de ruta) |
 | 400 | `empty_file` | El body del archivo llegó vacío |
 | 404 | `not_found` | La revisión o el archivo no pertenecen a tu cuenta — por diseño nunca se responde 403 |

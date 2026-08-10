@@ -60,7 +60,7 @@ Respuesta:
 ### Filtros
 
 - `?status=` — `in_review`, `info_requested`, `released`, `rejected` o `all` (vacío = abiertas: `in_review` + `info_requested`). Otro valor ⇒ `400 invalid_status`.
-- `?from=` / `?to=` — rango de fechas (`YYYY-MM-DD`, UTC, ambos inclusive). Fecha inválida ⇒ `400 invalid_range`.
+- `?from=` / `?to=` — rango de fechas (`YYYY-MM-DD`, zona horaria de tu organización, ambos inclusive). Fecha inválida ⇒ `400 invalid_range`.
 - `?page=` / `?page_size=` — paginación (default 50, máximo 200).
 
 ## Detalle de una revisión

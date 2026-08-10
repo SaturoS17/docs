@@ -218,7 +218,7 @@ curl "https://api.qbank.cl/platform/v1/movements?asset=GOLD&from=2026-07-01&to=2
 Todos los listados (`/v1/movements`, `/v1/payouts`, `/v1/payins`,
 `/v1/crypto/transactions`, `/v1/banking/operations`) aceptan paginación
 (`page`, `page_size` hasta 200) y filtros de fecha `from`/`to`
-(YYYY-MM-DD, UTC, inclusive).
+(YYYY-MM-DD, zona horaria de la organización, inclusive).
 
 ## Estados de operación
 

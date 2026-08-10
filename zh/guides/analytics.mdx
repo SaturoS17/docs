@@ -32,7 +32,7 @@ curl "https://api.qbank.cl/platform/v1/analytics/summary?from=2026-07-01&to=2026
 
 | 参数 | 是否必填 | 说明 |
 |---|---|---|
-| `from` / `to` | 是 | `YYYY-MM-DD` 格式的 UTC 范围，两端均包含；最长 366 天 |
+| `from` / `to` | 是 | `YYYY-MM-DD` 格式，按贵组织时区的范围，两端均包含；最长 366 天 |
 | `granularity` | 否 | `day`（默认）、`week`（周一至周日）或 `month` |
 
 您只能看到**自己账户**的数据。所有金额均为美元十进制字符串；
@@ -259,7 +259,7 @@ curl "https://api.qbank.cl/platform/v1/balances/history?from=2026-06-12&to=2026-
 
 | 参数 | 是否必填 | 说明 |
 |---|---|---|
-| `from` / `to` | 是 | `YYYY-MM-DD` 格式的 UTC 范围，两端均包含；最长 366 天 |
+| `from` / `to` | 是 | `YYYY-MM-DD` 格式，按贵组织时区的范围，两端均包含；最长 366 天 |
 
 ```json
 {
@@ -267,7 +267,7 @@ curl "https://api.qbank.cl/platform/v1/balances/history?from=2026-06-12&to=2026-
   "from": "2026-06-12",
   "to": "2026-07-11",
   "granularity": "day",
-  "timezone": "UTC",
+  "timezone": "America/New_York",
   "assets": {
     "USDT": {
       "series": [
@@ -320,7 +320,7 @@ curl "https://api.qbank.cl/platform/v1/balances/history?from=2026-06-12&to=2026-
 }
 ```
 
-- 每个数据点是**当日收盘时的可用余额**（UTC）；没有变动的日子会
+- 每个数据点是**当日收盘时的可用余额**（按贵组织时区）；没有变动的日子会
   沿用前一天的余额，因此序列没有缺口，可直接绘图。
 - `assets` 还包含银行账户镜像（`BANK_USD`、`BANK_EUR`），以其自身
   货币（2 位小数）作为独立序列提供——适合在图表上做"Bank USD"/
@@ -346,7 +346,7 @@ curl "https://api.qbank.cl/platform/v1/rates/history?from=2026-06-12&to=2026-07-
 
 | 参数 | 是否必填 | 说明 |
 |---|---|---|
-| `from` / `to` | 是 | `YYYY-MM-DD` 格式的 UTC 范围，两端均包含 |
+| `from` / `to` | 是 | `YYYY-MM-DD` 格式，按贵组织时区的范围，两端均包含 |
 | `granularity` | 否 | `day`（默认，最长 366 天）或 `hour`（最长 31 天） |
 | `currency` | 否 | 筛选单一货币（例如 `CLP`） |
 
@@ -405,8 +405,10 @@ curl "https://api.qbank.cl/platform/v1/rates/history?from=2026-06-12&to=2026-07-
 
 <AccordionGroup>
 <Accordion title="时间桶使用哪个时区？">
-UTC，与整个 API 中的 `from`/`to` 过滤器一致。若您的前端展示其他
-时区，请在渲染时转换标签。
+贵组织的时区（IANA 名称，默认 `America/New_York`），与整个平台
+API 的 `from`/`to` 过滤器一致。响应会在 `timezone` 字段中回显。
+平台管理员可通过 `PUT /v1/admin/orgs/{orgID}/settings`（键
+`timezone`）更改。
 </Accordion>
 <Accordion title="哪些计入交易量，哪些不计入？">
 所有向您账户流入/流出资金的操作：收款、加密货币充值和收到的转账

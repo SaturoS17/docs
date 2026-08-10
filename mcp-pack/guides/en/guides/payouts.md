@@ -278,7 +278,7 @@ curl "https://api.qbank.cl/platform/v1/payouts?from=2026-07-01&to=2026-07-08&sta
 }
 ```
 
-`from`/`to` use `YYYY-MM-DD` (UTC, both inclusive); an invalid date
+`from`/`to` use `YYYY-MM-DD` (organization timezone, both inclusive); an invalid date
 responds `400 invalid_range`.
 
 ## Examples by country
