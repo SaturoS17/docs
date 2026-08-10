@@ -127,7 +127,7 @@ Estos códigos provienen de **superficies de administración de organización** 
 
 | HTTP | `error` | Significado |
 |---|---|---|
-| 402 | `insufficient_funds` | Saldo disponible insuficiente |
+| 402 | `insufficient_funds` | Saldo disponible insuficiente — en transferencias banking salientes el chequeo incluye la comisión del riel (`saldo >= monto + comisión`); la operación no se crea si no se cumple |
 | 404 | `not_found` | Recurso inexistente (o de otra cuenta) |
 | 404 | `country_not_found` | Código de país ISO 3166-1 alpha-2 desconocido (catálogo de ciudades) |
 | 404 | `bank_not_found` | El routing number o SWIFT/BIC no está en el directorio bancario embebido — el formulario de payout/contraparte sigue manual |

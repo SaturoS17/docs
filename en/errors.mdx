@@ -127,7 +127,7 @@ These codes come from **organization administration surfaces** (the [CBPay Admin
 
 | HTTP | `error` | Meaning |
 |---|---|---|
-| 402 | `insufficient_funds` | Not enough available balance |
+| 402 | `insufficient_funds` | Not enough available balance — on outbound banking transfers the check includes the rail fee (`balance >= amount + fee`); the operation is not created when it does not hold |
 | 404 | `not_found` | Resource does not exist (or belongs to another account) |
 | 404 | `country_not_found` | Unknown ISO 3166-1 alpha-2 country code (cities catalog) |
 | 404 | `bank_not_found` | The routing number or SWIFT/BIC is not in the embedded bank directory — keep the payout/counterparty form manual |

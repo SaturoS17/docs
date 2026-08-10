@@ -1172,9 +1172,9 @@
       "code": "insufficient_funds",
       "http": 402,
       "meaning": {
-        "en": "Not enough available balance",
-        "es": "Saldo disponible insuficiente",
-        "zh": "可用余额不足"
+        "en": "Not enough available balance — on outbound banking transfers the check includes the rail fee (`balance >= amount + fee`); the operation is not created when it does not hold",
+        "es": "Saldo disponible insuficiente — en transferencias banking salientes el chequeo incluye la comisión del riel (`saldo >= monto + comisión`); la operación no se crea si no se cumple",
+        "zh": "可用余额不足——对于银行转出，校验包含通道费用（`余额 ≥ 金额 + 费用`）；不满足时不会创建该操作"
       }
     },
     {
