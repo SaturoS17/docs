@@ -3582,6 +3582,90 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/payouts/documents:
+    post:
+      tags:
+      - Payouts
+      operationId: uploadPayoutDocument
+      summary: 上传付款支持文件
+      description: |-
+        上传 US/USD 通道对每笔出站转账（`ach`、`wire` 和 `swift`）都要求附带的支持文件（发票/收据）。以原始二进制正文发送，并携带其 `Content-Type`（PDF、PNG、JPEG、WEBP、TXT、CSV、DOC(X) 或 XLS(X)，最大 50 MB），文件名通过查询参数 `name` 传递。返回的 `document_key` 在创建付款（`POST /v1/payouts`）时作为 `options.supporting_document_key` 传递；可选的 `options.document_reference_number` 仅在 `ach`/`wire` 中发送给银行。未附文件创建的 US/USD 付款将以 `400 supporting_document_required` 失败；使用其他账户上传的 key 将以 `400 invalid_document_key` 失败。
+      parameters:
+      - name: name
+        in: query
+        required: true
+        description: 原始文件名（最多 200 个字符，不含路径分隔符）。
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/pdf:
+            schema:
+              type: string
+              format: binary
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
+          image/png:
+            schema:
+              type: string
+              format: binary
+          text/csv:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '201':
+          description: 文件已存储；将 `document_key` 用作付款的 `options.supporting_document_key`。
+          content:
+            application/json:
+              example:
+                document_key: payout-docs/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d/7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f/a3f2b1c4-0000-4000-8000-0000000000ab
+                file_name: invoice-221.pdf
+                content_type: application/pdf
+                size_bytes: 482110
+        '400':
+          description: 验证错误。
+          content:
+            application/json:
+              examples:
+                invalid_name:
+                  summary: 缺少文件名
+                  value:
+                    error: invalid_file_name
+                    message: query param name is required (1-200 chars, no path separators)
+                empty_file:
+                  summary: 正文为空
+                  value:
+                    error: empty_file
+                    message: the file body is empty or could not be read
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '413':
+          description: 文件超过 50 MB。
+          content:
+            application/json:
+              example:
+                error: file_too_large
+                message: the file exceeds the 50 MiB limit
+        '415':
+          description: 不支持的内容类型。
+          content:
+            application/json:
+              example:
+                error: unsupported_media_type
+                message: unsupported content type (pdf, images, office documents, text)
+        '503':
+          description: 私有存储不可用。
+          content:
+            application/json:
+              example:
+                error: storage_unavailable
+                message: the file could not be stored right now; try again
   /v1/payouts/{payoutID}:
     get:
       tags:

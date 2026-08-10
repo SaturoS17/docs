@@ -3766,6 +3766,90 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/payouts/documents:
+    post:
+      tags:
+      - Payouts
+      operationId: uploadPayoutDocument
+      summary: Subir el documento de respaldo de un payout
+      description: |-
+        Sube el documento de respaldo (factura/recibo) que el corredor US/USD exige en TODA transferencia saliente (`ach`, `wire` y `swift`). Envía el binario crudo con su `Content-Type` (PDF, PNG, JPEG, WEBP, TXT, CSV, DOC(X) o XLS(X), hasta 50 MB) y el nombre del archivo en el query param `name`. El `document_key` devuelto viaja como `options.supporting_document_key` al crear el payout (`POST /v1/payouts`); el opcional `options.document_reference_number` se envía al banco solo en `ach`/`wire`. Un payout US/USD creado sin el documento falla con `400 supporting_document_required`; una key subida por otra cuenta falla con `400 invalid_document_key`.
+      parameters:
+      - name: name
+        in: query
+        required: true
+        description: Nombre original del archivo (máx. 200 caracteres, sin separadores de ruta).
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/pdf:
+            schema:
+              type: string
+              format: binary
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
+          image/png:
+            schema:
+              type: string
+              format: binary
+          text/csv:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '201':
+          description: Documento almacenado; usa `document_key` como `options.supporting_document_key` del payout.
+          content:
+            application/json:
+              example:
+                document_key: payout-docs/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d/7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f/a3f2b1c4-0000-4000-8000-0000000000ab
+                file_name: invoice-221.pdf
+                content_type: application/pdf
+                size_bytes: 482110
+        '400':
+          description: Error de validación.
+          content:
+            application/json:
+              examples:
+                invalid_name:
+                  summary: Falta el nombre del archivo
+                  value:
+                    error: invalid_file_name
+                    message: query param name is required (1-200 chars, no path separators)
+                empty_file:
+                  summary: Body vacío
+                  value:
+                    error: empty_file
+                    message: the file body is empty or could not be read
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '413':
+          description: El archivo supera los 50 MB.
+          content:
+            application/json:
+              example:
+                error: file_too_large
+                message: the file exceeds the 50 MiB limit
+        '415':
+          description: Tipo de contenido no soportado.
+          content:
+            application/json:
+              example:
+                error: unsupported_media_type
+                message: unsupported content type (pdf, images, office documents, text)
+        '503':
+          description: Almacenamiento privado no disponible.
+          content:
+            application/json:
+              example:
+                error: storage_unavailable
+                message: the file could not be stored right now; try again
   /v1/payouts/{payoutID}:
     get:
       tags:

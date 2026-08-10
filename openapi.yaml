@@ -3749,6 +3749,90 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/payouts/documents:
+    post:
+      tags:
+      - Payouts
+      operationId: uploadPayoutDocument
+      summary: Upload a payout supporting document
+      description: |-
+        Uploads the supporting document (invoice/receipt) that the US/USD corridor requires on EVERY outbound transfer (`ach`, `wire` and `swift`). Send the raw binary body with its `Content-Type` (PDF, PNG, JPEG, WEBP, TXT, CSV, DOC(X) or XLS(X), up to 50 MB) and the filename in the `name` query param. The returned `document_key` travels as `options.supporting_document_key` when creating the payout (`POST /v1/payouts`); the optional `options.document_reference_number` is sent to the bank on `ach`/`wire` only. A US/USD payout created without the document fails with `400 supporting_document_required`; a key uploaded by another account fails with `400 invalid_document_key`.
+      parameters:
+      - name: name
+        in: query
+        required: true
+        description: Original filename (max 200 chars, no path separators).
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/pdf:
+            schema:
+              type: string
+              format: binary
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
+          image/png:
+            schema:
+              type: string
+              format: binary
+          text/csv:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '201':
+          description: Document stored; use `document_key` as `options.supporting_document_key` of the payout.
+          content:
+            application/json:
+              example:
+                document_key: payout-docs/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d/7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f/a3f2b1c4-0000-4000-8000-0000000000ab
+                file_name: invoice-221.pdf
+                content_type: application/pdf
+                size_bytes: 482110
+        '400':
+          description: Validation error.
+          content:
+            application/json:
+              examples:
+                invalid_name:
+                  summary: Missing filename
+                  value:
+                    error: invalid_file_name
+                    message: query param name is required (1-200 chars, no path separators)
+                empty_file:
+                  summary: Empty body
+                  value:
+                    error: empty_file
+                    message: the file body is empty or could not be read
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '413':
+          description: The file exceeds 50 MB.
+          content:
+            application/json:
+              example:
+                error: file_too_large
+                message: the file exceeds the 50 MiB limit
+        '415':
+          description: Unsupported content type.
+          content:
+            application/json:
+              example:
+                error: unsupported_media_type
+                message: unsupported content type (pdf, images, office documents, text)
+        '503':
+          description: Private storage unavailable.
+          content:
+            application/json:
+              example:
+                error: storage_unavailable
+                message: the file could not be stored right now; try again
   /v1/payouts/{payoutID}:
     get:
       tags:
