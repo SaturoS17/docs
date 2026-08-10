@@ -80,7 +80,9 @@ payin:   usdt_gross    = local_amount / payin_rate
 银行卡收款可配置**结算延迟**（`settlement_hours`，整数小时数；`0` =
 立即入账 — 默认值）。配置延迟后，已确认的银行卡收款**不会**立即贷记
 余额：收款保持 `pending` 状态，并在创建、查询和列表响应中携带
-`settle_at` 时间戳（RFC 3339），所有后续动作都在到达该时间时发生：
+`settle_at` 时间戳（RFC 3339）；在付款确认时仅发出一次
+`payin_settlement_scheduled` webhook（幂等），携带计划的入账金额。
+所有后续动作都在到达该时间时发生：
 
 - 执行余额入账（含其 `payin_card` 费用），
 - `payin_credited` webhook 与最终状态送达您的集成，
@@ -100,8 +102,9 @@ payin:   usdt_gross    = local_amount / payin_rate
 任务每分钟结算一次到期收款。
 
 > **注**
-结算延迟由 CBPay 在您账户的 `payin_card` 费用中配置。您的集成只需读取
-`settle_at`：webhook 和最终状态不变，只是在结算时送达。
+结算延迟由 CBPay 在您账户的 `payin_card` 费用中配置。您的集成新增一个
+信号 — 确认时的 `payin_settlement_scheduled` — 并读取 `settle_at`；
+入账、`payin_credited` 和最终状态不变，只是在结算时送达。
 ## 按通道计收的银行费用
 
 银行业务收取**以操作币种计收的交易型费用**（即操作所动的

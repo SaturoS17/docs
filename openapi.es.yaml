@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.56"
+  version: "2.57"
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -10211,6 +10211,7 @@ paths:
                   - payin_credited
                   - payin_expired
                   - payin_refunded
+                  - payin_settlement_scheduled
                   - payout_status_changed
                   - transfer_received
                   - crypto_deposit_credited
@@ -21523,6 +21524,42 @@ webhooks:
               receipt_url: https://api.qbank.cl/platform/v1/payin-refunds/6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c/receipt
               created_at: '2026-07-25T13:10:00Z'
               updated_at: '2026-07-25T13:10:03Z'
+      responses:
+        '200':
+          description: Devuelve cualquier 2xx para confirmar la entrega.
+  payin_settlement_scheduled:
+    post:
+      summary: Acreditación de cobro programada
+      description: 'Un cobro con tarjeta quedó pagado y su acreditación se programó para un
+        `settle_at` futuro porque tu organización configuró una demora de settlement
+        (`settlement_hours`) en el servicio `payin_card`. Se emite exactamente una vez al
+        confirmarse el pago (idempotente — un retry de la misma confirmación no lo re-emite).
+        `usdt_net` es el monto que se acreditará al vencimiento (bruto − comisión); los montos
+        pueden venir vacíos (`""`) en filas históricas sin bruto/comisión. Al llegar el
+        `settle_at`, el worker de settlement acredita el saldo y emite `payin_credited` (el
+        flujo de siempre, sin cambios).
+
+
+        Cada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
+        y `X-Webhook-Signature = hex(HMAC-SHA256(secreto, timestamp + "." + cuerpo))`. Responde 2xx;
+        hasta 5 intentos con backoff incremental.'
+      requestBody:
+        content:
+          application/json:
+            example:
+              event_type: payin_settlement_scheduled
+              payin_id: 8b3e1c2d-4f5a-6b7c-8d9e-0f1a2b3c4d5e
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              country: US
+              currency: USD
+              local_amount: '498.75'
+              fx_rate: '1.010202'
+              usdt_gross: '493.811881'
+              fee: '27.159654'
+              usdt_net: '466.652227'
+              status: pending
+              settle_at: '2026-08-12T14:08:33Z'
+              receipt_url: https://api.qbank.cl/platform/v1/payins/8b3e1c2d-4f5a-6b7c-8d9e-0f1a2b3c4d5e/receipt
       responses:
         '200':
           description: Devuelve cualquier 2xx para confirmar la entrega.

@@ -415,7 +415,9 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
 - 同样支持 USD（`currency: "USD"`）。
 - **结算延迟**：当 `payin_card` 费用配置了大于零的 `settlement_hours`
   时，扣款获批后收款保持 `pending`，并在响应中附带 `settle_at`
-  时间戳（RFC 3339，create/GET/列表响应中均有），而非立即入账。到达
+  时间戳（RFC 3339，create/GET/列表响应中均有），而非立即入账；并在付款
+  确认时仅发出一次 `payin_settlement_scheduled` webhook，携带计划的入账
+  金额。到达
   `settle_at` 时才执行入账：余额、`payin_credited` webhook、最终状态、
   收银台链接关闭和自动兑换均在结算时发生。详见
   [费用——银行卡收款结算延迟](https://docs.cbpayapp.com/zh/concepts/fees#银行卡收款结算延迟)。

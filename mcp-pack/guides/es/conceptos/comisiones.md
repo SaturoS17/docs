@@ -83,8 +83,10 @@ Los cobros con tarjeta pueden llevar una **demora de acreditación**
 (`settlement_hours`, entero en horas; `0` = acreditación inmediata — el
 default). Con demora configurada, un cobro confirmado **no** acredita tu
 saldo de inmediato: el payin queda `pending` con un timestamp `settle_at`
-(RFC 3339) en las respuestas de creación, consulta y listado, y TODO
-ocurre al llegar esa hora:
+(RFC 3339) en las respuestas de creación, consulta y listado, y al
+confirmarse el pago se emite el webhook `payin_settlement_scheduled`
+exactamente una vez (idempotente) con los montos programados. Todo lo
+demás ocurre al llegar esa hora:
 
 - se ejecuta el crédito del saldo (con su fee `payin_card`),
 - el webhook `payin_credited` y el estado final llegan a tu integración,
@@ -105,9 +107,10 @@ cuyo plazo ya venció al aprobarse o asignarse se acredita de inmediato.
 Un worker acredita los payins vencidos cada minuto.
 
 > **Nota**
-La demora la configura CBPay en el fee `payin_card` de tu cuenta. Para tu
-integración solo cambia leer `settle_at`: los webhooks y estados finales
-son los mismos, entregados al settlement.
+La demora la configura CBPay en el fee `payin_card` de tu cuenta. Tu
+integración gana una señal — `payin_settlement_scheduled` al confirmarse —
+y lee `settle_at`; el crédito, `payin_credited` y los estados finales no
+cambian, solo se entregan al settlement.
 ## Comisiones banking por riel
 
 Las operaciones banking llevan **comisiones transaccionales en la moneda

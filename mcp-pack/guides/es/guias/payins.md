@@ -438,7 +438,9 @@ Comparte la `payment_url` (link, redirección o WebView). Detalles del flujo:
 - **Settlement diferido**: cuando la comisión de `payin_card` está
   configurada con `settlement_hours` sobre cero, un cobro aprobado deja el
   payin `pending` con un timestamp `settle_at` (RFC 3339, presente en las
-  respuestas de create/GET/lista) en vez de acreditarse de inmediato. A
+  respuestas de create/GET/lista) en vez de acreditarse de inmediato, y al
+  confirmarse el pago se emite el webhook `payin_settlement_scheduled`
+  exactamente una vez con los montos programados. A
   `settle_at` corre la acreditación: saldo, webhook `payin_credited`,
   estado final, cierre del link de checkout y auto-conversión — todo
   ocurre al vencimiento. Detalle en

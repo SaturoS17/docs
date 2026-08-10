@@ -8,7 +8,21 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-## v2.56 · 1 个版本 - 2026年8月10日
+## v2.57 · 2 个版本 - 2026年8月10日
+
+### v2.57
+
+**新增**
+
+- **新 webhook 事件 `payin_settlement_scheduled`**：当您的组织为银行卡 payin
+  配置了延迟结算（`settlement_hours > 0`）时，已支付的银行卡 payin 会保持
+  `pending` 状态，并带有未来的 `settle_at`，直到结算 worker 释放资金。
+  从现在起，付款确认的那一刻您将收到恰好一次的
+  `payin_settlement_scheduled`（幂等——重试不会重复发送），其中包含完整报价：
+  `usdt_gross`、`fee`、`usdt_net`（到期时将入账的金额）、`settle_at` 和
+  `receipt_url`。此前唯一的信号只是 payin 处于 `pending` 而没有任何确认。
+  到期时，worker 会入账余额并照常发送 `payin_credited`。订阅方式与任何账户事件相同：
+  `event_type: "payin_settlement_scheduled"`。
 
 ### v2.56
 

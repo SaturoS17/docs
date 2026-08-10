@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.56"
+  version: "2.57"
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -9845,6 +9845,7 @@ paths:
                   - payin_credited
                   - payin_expired
                   - payin_refunded
+                  - payin_settlement_scheduled
                   - payout_status_changed
                   - transfer_received
                   - crypto_deposit_credited
@@ -20806,6 +20807,39 @@ webhooks:
               receipt_url: https://api.qbank.cl/platform/v1/payin-refunds/6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c/receipt
               created_at: '2026-07-25T13:10:00Z'
               updated_at: '2026-07-25T13:10:03Z'
+      responses:
+        '200':
+          description: 返回任意 2xx 以确认投递。
+  payin_settlement_scheduled:
+    post:
+      summary: 收款入账已计划
+      description: '一笔银行卡收款已支付,且因贵组织在 `payin_card` 服务上配置了结算延迟
+        (`settlement_hours`),其入账被安排到未来的 `settle_at`。该事件在支付确认时恰好发出一次
+        (幂等——同一确认的重试不会重复发送)。`usdt_net` 是到期将入账的金额(总额 − 手续费);
+        对于没有总额/手续费的历史记录,金额字段可能为空(`""`)。到达 `settle_at` 时,结算 worker
+        会入账余额并发出 `payin_credited`(现有流程,不变)。
+
+
+        每次交付都包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp`
+        和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。响应 2xx；
+        最多 5 次尝试，采用递增退避。'
+      requestBody:
+        content:
+          application/json:
+            example:
+              event_type: payin_settlement_scheduled
+              payin_id: 8b3e1c2d-4f5a-6b7c-8d9e-0f1a2b3c4d5e
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              country: US
+              currency: USD
+              local_amount: '498.75'
+              fx_rate: '1.010202'
+              usdt_gross: '493.811881'
+              fee: '27.159654'
+              usdt_net: '466.652227'
+              status: pending
+              settle_at: '2026-08-12T14:08:33Z'
+              receipt_url: https://api.qbank.cl/platform/v1/payins/8b3e1c2d-4f5a-6b7c-8d9e-0f1a2b3c4d5e/receipt
       responses:
         '200':
           description: 返回任意 2xx 以确认投递。

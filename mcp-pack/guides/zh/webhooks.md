@@ -106,6 +106,7 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
 | `payin_credited` | 收到一笔法币代收并已入账 |
 | `payin_expired` | 一笔待支付的代收（二维码 / checkout）已过期或失败，未收到付款 |
 | `payin_refunded` | 银行卡收款的[退款](https://docs.cbpayapp.com/zh/guides/refunds)已到达最终状态（包含发卡行发起的拒付） |
+| `payin_settlement_scheduled` | 一笔银行卡收款已支付，其入账被安排到未来的 `settle_at`（机构配置的结算延迟）。在付款确认时仅发出一次；余额在到期时入账，届时发出 `payin_credited` |
 | `payout_status_changed` | 一笔付款（payout）状态发生变化 |
 | `transfer_received` | 账户收到一笔内部转账 |
 | `crypto_deposit_credited` | 一笔链上充值已确认并入账 |
@@ -181,6 +182,27 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
   "receipt_url": "https://api.qbank.cl/platform/v1/payin-refunds/3a7d…/receipt"
 }
 ```
+
+```json payin_settlement_scheduled
+{
+  "payin_id": "8b3e…",
+  "account_id": "ae8c…",
+  "country": "US",
+  "currency": "USD",
+  "local_amount": "498.75",
+  "fx_rate": "1.010202",
+  "usdt_gross": "493.811881",
+  "fee": "27.159654",
+  "usdt_net": "466.652227",
+  "status": "pending",
+  "settle_at": "2026-08-12T14:08:33Z",
+  "receipt_url": "https://api.qbank.cl/platform/v1/payins/8b3e…/receipt"
+}
+```
+
+`usdt_net` 是到期时将入账的金额（总额 − 手续费）。
+对于没有总额/手续费的历史记录，金额字段可能为空（`""`）。
+到达 `settle_at` 时，结算 worker 入账余额并发出 `payin_credited`（原有流程不变）。
 
 ```json payout_status_changed
 {

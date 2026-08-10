@@ -84,8 +84,10 @@ Card collections can carry a **settlement delay** (`settlement_hours`, an
 integer number of hours; `0` = immediate credit — the default). With a
 delay configured, a confirmed card payment does **not** credit your balance
 right away: the payin stays `pending` with a `settle_at` timestamp
-(RFC 3339) in the create, get and list responses, and everything happens
-when that time is reached:
+(RFC 3339) in the create, get and list responses, and the
+`payin_settlement_scheduled` webhook fires exactly once at confirmation
+(idempotent) with the scheduled amounts. Everything else happens when that
+time is reached:
 
 - the balance credit executes (with its `payin_card` fee),
 - the `payin_credited` webhook and the final status reach your integration,
@@ -107,8 +109,9 @@ credits immediately. A worker settles due payins every minute.
 
 <Note>
 The settlement delay is configured by CBPay on the `payin_card` fee of your
-account. Nothing changes for your integration beyond reading `settle_at`:
-the webhooks and final states are the same, just delivered at settlement.
+account. Your integration gains one signal — `payin_settlement_scheduled`
+at confirmation — and reads `settle_at`; the credit, `payin_credited` and
+final states are unchanged, just delivered at settlement.
 </Note>
 
 ## Banking rail fees

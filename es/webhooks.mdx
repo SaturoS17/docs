@@ -111,6 +111,7 @@ Para reactivarla, el mismo llamado con `{ "status": "active" }`.
 | `payin_credited` | Un cobro fiat fue recibido y abonado |
 | `payin_expired` | Un cobro activo (QR / checkout) venció o falló sin recibir el pago |
 | `payin_refunded` | Una [devolución](/es/guias/devoluciones) de un cobro con tarjeta llegó a estado final (incluye el contracargo impuesto por el emisor) |
+| `payin_settlement_scheduled` | Un cobro con tarjeta quedó pagado y su acreditación se programó para un `settle_at` futuro (espera de settlement configurada por la org). Se emite exactamente una vez al confirmarse el pago; el saldo se acredita al vencimiento y ahí se emite `payin_credited` |
 | `payout_status_changed` | Un payout cambió de estado |
 | `transfer_received` | La cuenta recibió una transferencia interna |
 | `crypto_deposit_credited` | Un depósito on-chain fue confirmado y abonado |
@@ -188,6 +189,28 @@ Para reactivarla, el mismo llamado con `{ "status": "active" }`.
   "receipt_url": "https://api.qbank.cl/platform/v1/payin-refunds/3a7d…/receipt"
 }
 ```
+
+```json payin_settlement_scheduled
+{
+  "payin_id": "8b3e…",
+  "account_id": "ae8c…",
+  "country": "US",
+  "currency": "USD",
+  "local_amount": "498.75",
+  "fx_rate": "1.010202",
+  "usdt_gross": "493.811881",
+  "fee": "27.159654",
+  "usdt_net": "466.652227",
+  "status": "pending",
+  "settle_at": "2026-08-12T14:08:33Z",
+  "receipt_url": "https://api.qbank.cl/platform/v1/payins/8b3e…/receipt"
+}
+```
+
+`usdt_net` es el monto que se acreditará al vencimiento (bruto − comisión).
+Los montos pueden venir vacíos (`""`) en filas históricas sin bruto/comisión.
+Al llegar el `settle_at`, el worker de settlement acredita el saldo y emite
+`payin_credited` (el flujo de siempre, sin cambios).
 
 ```json payout_status_changed
 {

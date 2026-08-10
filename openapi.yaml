@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.56"
+  version: "2.57"
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -10190,6 +10190,7 @@ paths:
                   - payin_credited
                   - payin_expired
                   - payin_refunded
+                  - payin_settlement_scheduled
                   - payout_status_changed
                   - transfer_received
                   - crypto_deposit_credited
@@ -21478,6 +21479,41 @@ webhooks:
               receipt_url: https://api.qbank.cl/platform/v1/payin-refunds/6f1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c/receipt
               created_at: '2026-07-25T13:10:00Z'
               updated_at: '2026-07-25T13:10:03Z'
+      responses:
+        '200':
+          description: Return any 2xx to acknowledge the delivery.
+  payin_settlement_scheduled:
+    post:
+      summary: Payin settlement scheduled
+      description: 'A card payin was paid and its credit was scheduled for a future `settle_at`
+        because your organization configured a settlement delay (`settlement_hours`) on the
+        `payin_card` service. Emitted exactly once when the payment is confirmed (idempotent —
+        a retry of the same confirmation does not re-emit it). `usdt_net` is the amount that
+        will be credited when due (gross − fee); amount fields may come back empty (`""`) on
+        historical rows without gross/fee. When `settle_at` is reached, the settlement worker
+        credits the balance and emits `payin_credited` (the existing flow, unchanged).
+
+
+        Every delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
+        and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`. Respond 2xx; up
+        to 5 attempts with incremental backoff.'
+      requestBody:
+        content:
+          application/json:
+            example:
+              event_type: payin_settlement_scheduled
+              payin_id: 8b3e1c2d-4f5a-6b7c-8d9e-0f1a2b3c4d5e
+              account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+              country: US
+              currency: USD
+              local_amount: '498.75'
+              fx_rate: '1.010202'
+              usdt_gross: '493.811881'
+              fee: '27.159654'
+              usdt_net: '466.652227'
+              status: pending
+              settle_at: '2026-08-12T14:08:33Z'
+              receipt_url: https://api.qbank.cl/platform/v1/payins/8b3e1c2d-4f5a-6b7c-8d9e-0f1a2b3c4d5e/receipt
       responses:
         '200':
           description: Return any 2xx to acknowledge the delivery.

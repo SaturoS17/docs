@@ -7,7 +7,23 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-<Update label="August 10, 2026" description="v2.56 · 1 release">
+<Update label="August 10, 2026" description="v2.57 · 2 releases">
+
+### v2.57
+
+**Added**
+
+- **New webhook event `payin_settlement_scheduled`**: when your organization
+  has a settlement delay configured for card payins (`settlement_hours > 0`),
+  a paid card payin stays `pending` with a future `settle_at` until the
+  settlement worker releases the funds. From today, the moment the payment is
+  confirmed you receive `payin_settlement_scheduled` exactly once
+  (idempotent — a retry never re-emits it) with the full quote: `usdt_gross`,
+  `fee`, `usdt_net` (the amount that will be credited at maturity),
+  `settle_at` and `receipt_url`. Previously the only signal was the payin
+  sitting in `pending` with no confirmation. At maturity the worker credits
+  the balance and emits `payin_credited` as usual. Subscribe with
+  `event_type: "payin_settlement_scheduled"` like any account event.
 
 ### v2.56
 

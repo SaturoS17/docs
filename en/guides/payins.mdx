@@ -448,10 +448,11 @@ Share the `payment_url` (link, redirect or WebView). Flow details:
 - **Settlement delay**: when your `payin_card` fee is configured with
   `settlement_hours` above zero, an approved charge leaves the payin
   `pending` with a `settle_at` timestamp (RFC 3339, included in the
-  create/GET/list responses) instead of crediting immediately. At
-  `settle_at` the credit runs: balance, `payin_credited` webhook, final
-  status, checkout link closing and auto-conversion all happen at
-  settlement. Details in
+  create/GET/list responses) instead of crediting immediately, and the
+  `payin_settlement_scheduled` webhook fires exactly once at confirmation
+  with the scheduled amounts. At `settle_at` the credit runs: balance,
+  `payin_credited` webhook, final status, checkout link closing and
+  auto-conversion all happen at settlement. Details in
   [fees — card payin settlement delay](/en/concepts/fees#card-payin-settlement-delay).
 
 </Tab>
