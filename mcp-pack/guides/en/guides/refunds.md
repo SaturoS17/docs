@@ -21,7 +21,7 @@ It is the mirror image of a payin: a payin credits, a refund debits.
 | Requirement | Detail |
 |---|---|
 | Method | Card payins only (`method: "card"`, including checkout paid by card and MIT charges on a stored card) |
-| Status | The payin must be `credited` (the money reached your balance) |
+| Status | The payin must be `credited` **with its balance already available** — a card payin under a settlement delay (`settlement_pending: true`, balance landing at `settle_at`) cannot be refunded until the settlement releases |
 | Balance | You need enough **USDT balance** at the time you request it |
 | Amount | Full or partial; several partials on the same payin add up to the cap |
 
@@ -319,6 +319,7 @@ credentials and without seeing personal data. Details in
 | 404 | `not_found` | The payin (or the refund) does not exist on your account. |
 | 409 | `idempotency_conflict` | Another refund with that key is in flight; check its status. |
 | 422 | `payin_not_refundable` | The payin is not credited or has no processor reference. |
+| 422 | `settlement_pending` | The payin's balance is scheduled for settlement and is not available yet; refund it after it is released (at `settle_at`, or earlier if your org admin releases it). |
 | 422 | `refund_not_supported` | That rail cannot be refunded (QR, transfer, dedicated account, collect). POS charges are refunded through the crypto rail. |
 | 422 | `refund_exceeds_payin` | The requested sum exceeds what is left to refund. |
 

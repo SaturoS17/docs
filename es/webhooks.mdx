@@ -111,7 +111,7 @@ Para reactivarla, el mismo llamado con `{ "status": "active" }`.
 | `payin_credited` | Un cobro fiat fue recibido y abonado |
 | `payin_expired` | Un cobro activo (QR / checkout) venció o falló sin recibir el pago |
 | `payin_refunded` | Una [devolución](/es/guias/devoluciones) de un cobro con tarjeta llegó a estado final (incluye el contracargo impuesto por el emisor) |
-| `payin_settlement_scheduled` | Un cobro con tarjeta quedó pagado y su acreditación se programó para un `settle_at` futuro (espera de settlement configurada por la org). Se emite exactamente una vez al confirmarse el pago; el saldo se acredita al vencimiento y ahí se emite `payin_credited` |
+| `payin_settlement_scheduled` | Un cobro con tarjeta quedó confirmado (`credited`, se emitió `payin_credited`) y su saldo se programó para un `settle_at` futuro (espera de settlement configurada por la org). Se emite exactamente una vez al confirmarse el pago; el saldo queda disponible al vencimiento |
 | `payout_status_changed` | Un payout cambió de estado |
 | `transfer_received` | La cuenta recibió una transferencia interna |
 | `crypto_deposit_credited` | Un depósito on-chain fue confirmado y abonado |
@@ -201,11 +201,21 @@ Para reactivarla, el mismo llamado con `{ "status": "active" }`.
   "usdt_gross": "493.811881",
   "fee": "27.159654",
   "usdt_net": "466.652227",
-  "status": "pending",
+  "status": "credited",
   "settle_at": "2026-08-12T14:08:33Z",
   "receipt_url": "https://api.qbank.cl/platform/v1/payins/8b3e…/receipt"
 }
 ```
+
+<Note>
+Con una demora de settlement configurada, ambos webhooks se emiten **al
+confirmarse el pago**: primero `payin_settlement_scheduled` (el saldo
+quedó programado para `settle_at`) y después `payin_credited` (el payin
+quedó confirmado, `status: credited`). Lo único que espera al `settle_at`
+es la disponibilidad del saldo — la respuesta del payin lleva
+`settlement_pending: true` mientras está pendiente y `settled_at` cuando
+cae en el ledger.
+</Note>
 
 `usdt_net` es el monto que se acreditará al vencimiento (bruto − comisión).
 Los montos pueden venir vacíos (`""`) en filas históricas sin bruto/comisión.

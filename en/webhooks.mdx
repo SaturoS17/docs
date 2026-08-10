@@ -112,7 +112,7 @@ To reactivate it, same call with `{ "status": "active" }`.
 | `payin_credited` | A fiat collection was received and credited |
 | `payin_expired` | An active collection (QR / checkout) expired or failed without receiving the payment |
 | `payin_refunded` | A [refund](/en/guides/refunds) of a card payin reached a final state (includes issuer-imposed chargebacks) |
-| `payin_settlement_scheduled` | A card payin was paid and its credit was scheduled for a future `settle_at` (org-configured settlement delay). Emitted exactly once at payment confirmation; the balance credits when due and `payin_credited` fires then |
+| `payin_settlement_scheduled` | A card payin was confirmed (`credited`, `payin_credited` fired) and its balance was scheduled for a future `settle_at` (org-configured settlement delay). Emitted exactly once at payment confirmation; the balance becomes available when due |
 | `payout_status_changed` | A payout changed state |
 | `transfer_received` | The account received an internal transfer |
 | `crypto_deposit_credited` | An on-chain deposit was confirmed and credited |
@@ -202,11 +202,20 @@ To reactivate it, same call with `{ "status": "active" }`.
   "usdt_gross": "493.811881",
   "fee": "27.159654",
   "usdt_net": "466.652227",
-  "status": "pending",
+  "status": "credited",
   "settle_at": "2026-08-12T14:08:33Z",
   "receipt_url": "https://api.qbank.cl/platform/v1/payins/8b3e…/receipt"
 }
 ```
+
+<Note>
+With a settlement delay configured, both webhooks fire **at payment
+confirmation**: `payin_settlement_scheduled` first (the balance is
+scheduled for `settle_at`) and then `payin_credited` (the payin is
+confirmed, `status: credited`). What waits until `settle_at` is only the
+balance availability — the payin response carries `settlement_pending:
+true` while it is pending and `settled_at` once it lands.
+</Note>
 
 `usdt_net` is the amount that will be credited when due (gross − fee).
 Amounts may come back empty (`""`) on historical rows without gross/fee.

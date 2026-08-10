@@ -59,7 +59,11 @@ stateDiagram-v2
 
 - `pending` — 收款单已创建并等待付款。QR 和支付页面会过期
   （无人付款则变为 `expired`）。
-- `credited` — 已收到付款，按您的 `payin_rate` 换算并入账。
+- `credited` — 已收到付款，按您的 `payin_rate` 换算并入账。若配置了
+  银行卡结算延迟，收款在支付确认时即达到 `credited`，但**余额**稍后
+  才到账：`settle_at` 未到期时响应带有 `settlement_pending: true` 且
+  `settled_at: null`（见
+  [银行卡收款结算延迟](/zh/concepts/fees#银行卡收款结算延迟)）。
 - `unassigned` — 收到一笔无法匹配到任何账户的入金；由管理员手动
   分配，随后按目标账户的汇率与费用入账。
 - `failed` — 收款失败（例如付款人拒绝了 collect 扣款）。

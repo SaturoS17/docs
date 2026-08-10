@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.57"
+  version: "2.58"
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -4669,6 +4669,23 @@ paths:
                   reference: CB68JZCT46QE
                   created_at: '2026-07-21T12:00:00Z'
                   updated_at: '2026-07-21T12:00:00Z'
+                - payin_id: 8b3e1c4d-5a6f-7b8c-9d0e-1f2a3b4c5d6e
+                  account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                  kind: card
+                  country: US
+                  currency: USD
+                  method: card
+                  local_amount: '498.75'
+                  status: credited
+                  reference: CARD-8842
+                  created_at: '2026-08-10T14:08:33Z'
+                  updated_at: '2026-08-10T14:08:40Z'
+                  fx_rate: '1.010202'
+                  usdt_gross: '493.811881'
+                  fee: '27.159654'
+                  usdt_credited: '466.652227'
+                  settle_at: '2026-08-12T14:08:33Z'
+                  settlement_pending: true
         '403':
           $ref: '#/components/responses/Forbidden'
         '401':
@@ -4714,7 +4731,10 @@ paths:
       description: >-
         Returns money to the cardholder and reverses the credit on your balance.
         Only card-acquired payins in status `credited` can be refunded
-        (`refund_not_supported` on the other rails). The gross amount is debited:
+        (`refund_not_supported` on the other rails) — and only once their balance
+        is actually available: a credited payin whose settlement is still pending
+        (`settlement_pending: true`, balance lands at `settle_at`) is declined
+        with `422 settlement_pending`. The gross amount is debited:
         the fee and the FX spread of the original payin are NOT refundable.
         `idempotency_key` is mandatory; a replay returns the same refund with
         `idempotency_hit` and never sends a second refund to the processor.
@@ -4856,8 +4876,11 @@ paths:
         '422':
           description: >-
             `payin_not_refundable`, `refund_not_supported`, `refund_exceeds_payin`,
-            or a refund the processor declined (the body is the refund with
-            `status: failed` and `failure_reason`; the debit was reversed in full).
+            `settlement_pending` (the payin is confirmed but its balance is still
+            scheduled for a future `settle_at` — wait for it or ask your org admin
+            to release the settlement first), or a refund the processor declined
+            (the body is the refund with `status: failed` and `failure_reason`;
+            the debit was reversed in full).
           content:
             application/json:
               schema:
@@ -20692,9 +20715,10 @@ components:
           type: integer
           description: >-
             Card payins (`payin_card`) only — configurable settlement delay in hours.
-            `0` (default) credits the payin as soon as the card charge confirms; a
-            positive value keeps the payin `pending` with a `settle_at` timestamp
-            until the delay elapses, then credits it automatically. Rejected with
+            `0` (default) settles the balance as soon as the card charge confirms; a
+            positive value confirms the payin as `credited` right away (webhook and
+            checkout closure included) but holds the BALANCE scheduled at `settle_at`
+            until the delay elapses, then settles it automatically. Rejected with
             `invalid_settlement_hours` on any other service or when negative.
           example: 24
         status:
@@ -20891,12 +20915,30 @@ components:
           type: string
           format: date-time
           description: >-
-            Card payins with a configured settlement delay only — when this pending
-            payin will be credited (`created_at` plus the `payin_card` fee config's
-            `settlement_hours`). Balance credit, the credited webhook, checkout link
-            closure and auto-conversion all happen at that moment; a payin whose
-            delay has already elapsed when it is approved or assigned is credited
-            immediately. Absent when the payin settles on confirmation.
+            Card payins with a configured settlement delay only — when this
+            payin's balance becomes available (`created_at` plus the
+            `payin_card` fee config's `settlement_hours`). The payin itself is
+            confirmed right away: the status is `credited` and the
+            `payin_credited` webhook fires at payment time; what waits until
+            `settle_at` is the BALANCE credit (and the auto-conversion, when
+            configured). A payin whose delay has already elapsed when it is
+            approved or assigned settles immediately. Absent when the balance
+            settles on confirmation.
+        settlement_pending:
+          type: boolean
+          description: >-
+            Present (true) while a `credited` card payin's balance is still
+            scheduled for `settle_at`. While set, the payin cannot be refunded
+            (`422 settlement_pending`) — the funds are not in your balance yet.
+            Absent once the balance lands.
+        settled_at:
+          type: string
+          format: date-time
+          description: >-
+            When the balance of this credited payin actually landed in your
+            ledger — right at confirmation for payins without a settlement
+            delay, or when the scheduled settlement ran (or was released early
+            by your org admin) for delayed card payins.
         fx_rate:
           type: string
           description: Your payin rate at credit time (present once the payment was received and converted).
@@ -21569,13 +21611,15 @@ webhooks:
   payin_settlement_scheduled:
     post:
       summary: Payin settlement scheduled
-      description: 'A card payin was paid and its credit was scheduled for a future `settle_at`
+      description: 'A card payin was paid and its balance was scheduled for a future `settle_at`
         because your organization configured a settlement delay (`settlement_hours`) on the
         `payin_card` service. Emitted exactly once when the payment is confirmed (idempotent —
-        a retry of the same confirmation does not re-emit it). `usdt_net` is the amount that
-        will be credited when due (gross − fee); amount fields may come back empty (`""`) on
-        historical rows without gross/fee. When `settle_at` is reached, the settlement worker
-        credits the balance and emits `payin_credited` (the existing flow, unchanged).
+        a retry of the same confirmation does not re-emit it). `status` is `credited` from the
+        start: the payin is confirmed and `payin_credited` fires right away — what waits until
+        `settle_at` is only the BALANCE. `usdt_net` is the amount that lands when due (gross −
+        fee); amount fields may come back empty (`""`) on historical rows without gross/fee.
+        When `settle_at` is reached, the settlement worker releases the balance (the payin then
+        carries `settled_at` instead of `settlement_pending`).
 
 
         Every delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
@@ -21595,7 +21639,7 @@ webhooks:
               usdt_gross: '493.811881'
               fee: '27.159654'
               usdt_net: '466.652227'
-              status: pending
+              status: credited
               settle_at: '2026-08-12T14:08:33Z'
               receipt_url: https://api.qbank.cl/platform/v1/payins/8b3e1c2d-4f5a-6b7c-8d9e-0f1a2b3c4d5e/receipt
       responses:

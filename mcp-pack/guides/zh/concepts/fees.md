@@ -78,33 +78,41 @@ payin:   usdt_gross    = local_amount / payin_rate
 ## 银行卡收款结算延迟
 
 银行卡收款可配置**结算延迟**（`settlement_hours`，整数小时数；`0` =
-立即入账 — 默认值）。配置延迟后，已确认的银行卡收款**不会**立即贷记
-余额：收款保持 `pending` 状态，并在创建、查询和列表响应中携带
-`settle_at` 时间戳（RFC 3339）；在付款确认时仅发出一次
-`payin_settlement_scheduled` webhook（幂等），携带计划的入账金额。
-所有后续动作都在到达该时间时发生：
+无延迟 — 默认值）。配置延迟后，已确认的银行卡收款会**立即确认该收款**：
+状态变为 `credited`，`payin_credited` webhook 立即发出，用卡支付的
+收银台链接随即关闭为已支付。等待的是**余额**：它在结算执行时进入您的
+账本 —— 到达 `settle_at` 时（后台任务每分钟结算一次到期收款），或
+机构管理员在面板中手动提前释放时。
 
-- 执行余额入账（含其 `payin_card` 费用），
-- `payin_credited` webhook 与最终状态送达您的集成，
-- 用卡支付的收款链接关闭为已支付，
-- 自动换汇（如已配置）执行。
+余额待结算期间，收款响应（创建、查询和列表）携带 `settle_at`
+（RFC 3339）和 `settlement_pending: true`；余额到账后则携带
+`settled_at`。在付款确认时还会仅发出一次 `payin_settlement_scheduled`
+webhook（幂等），携带 `status: "credited"`、计划的入账金额和
+`settle_at`，便于您的集成区分"已付款、余额已排期"与"已付款、余额
+已可用"。
 
 ```json
 {
   "id": "pay_…",
-  "status": "pending",
-  "settle_at": "2026-08-10T15:04:05Z"
+  "status": "credited",
+  "settle_at": "2026-08-10T15:04:05Z",
+  "settlement_pending": true
 }
 ```
 
 `settle_at = created_at + settlement_hours` — 延迟从收款创建时开始计算
-（≈ 处理商确认扣款时）。审批或分配时已超过期限的收款会立即入账。后台
-任务每分钟结算一次到期收款。
+（≈ 处理商确认扣款时）。审批或分配时已超过期限的收款会立即结算（无
+`settlement_pending`）。自动换汇（如已配置）在余额结算时执行，而非
+在此之前。
 
+> **重要**
+结算仍待处理的收款**无法退款**：退款会借记您的余额，而这笔资金尚未
+释放，因此请求将以 `422 settlement_pending` 被拒。请等待 `settle_at`
+到期，或先请机构管理员手动释放结算 —— 之后退款即可正常进行。
 > **注**
-结算延迟由 CBPay 在您账户的 `payin_card` 费用中配置。您的集成新增一个
-信号 — 确认时的 `payin_settlement_scheduled` — 并读取 `settle_at`；
-入账、`payin_credited` 和最终状态不变，只是在结算时送达。
+结算延迟由 CBPay 在您账户的 `payin_card` 费用中配置。您的确认信号不变
+—— `payin_settlement_scheduled` 和 `payin_credited` 都在付款时送达；
+只有余额的可用性等待 `settle_at`。
 ## 按通道计收的银行费用
 
 银行业务收取**以操作币种计收的交易型费用**（即操作所动的

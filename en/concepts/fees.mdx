@@ -81,37 +81,50 @@ and banking) are refunded automatically if the upstream operation fails
 ## Card payin settlement delay
 
 Card collections can carry a **settlement delay** (`settlement_hours`, an
-integer number of hours; `0` = immediate credit — the default). With a
-delay configured, a confirmed card payment does **not** credit your balance
-right away: the payin stays `pending` with a `settle_at` timestamp
-(RFC 3339) in the create, get and list responses, and the
-`payin_settlement_scheduled` webhook fires exactly once at confirmation
-(idempotent) with the scheduled amounts. Everything else happens when that
-time is reached:
+integer number of hours; `0` = no delay — the default). With a delay
+configured, a confirmed card payment **confirms the payin right away**:
+the status becomes `credited`, the `payin_credited` webhook fires
+immediately, and a checkout link paid with card closes as paid. What waits
+is the **balance**: it lands in your ledger when the settlement runs — at
+`settle_at` (a worker settles due payins every minute) or earlier if your
+org admin releases it manually from the panel.
 
-- the balance credit executes (with its `payin_card` fee),
-- the `payin_credited` webhook and the final status reach your integration,
-- a checkout link paid with card closes as paid, and
-- the automatic conversion (when configured) runs.
+While the balance is pending, the payin response (create, get and list)
+carries `settle_at` (RFC 3339) and `settlement_pending: true`; once the
+balance lands it carries `settled_at` instead. At confirmation the
+`payin_settlement_scheduled` webhook also fires exactly once (idempotent)
+with `status: "credited"`, the scheduled amounts and `settle_at`, so your
+integration can tell "paid, balance scheduled" apart from "paid, balance
+already available".
 
 ```json
 {
   "id": "pay_…",
-  "status": "pending",
-  "settle_at": "2026-08-10T15:04:05Z"
+  "status": "credited",
+  "settle_at": "2026-08-10T15:04:05Z",
+  "settlement_pending": true
 }
 ```
 
 `settle_at = created_at + settlement_hours` — the delay counts from the
 payin creation (≈ when the charge is confirmed at the processor). A payin
 whose deadline has already passed by the time it is approved or assigned
-credits immediately. A worker settles due payins every minute.
+settles immediately (no `settlement_pending`). The automatic conversion
+(when configured) runs when the balance settles, not before.
+
+<Warning>
+A payin whose settlement is still pending **cannot be refunded**: the
+refund debits your balance and those funds are not released yet, so the
+request is declined with `422 settlement_pending`. Wait for `settle_at`
+or ask your org admin to release the settlement first — then the refund
+works as usual.
+</Warning>
 
 <Note>
-The settlement delay is configured by CBPay on the `payin_card` fee of your
-account. Your integration gains one signal — `payin_settlement_scheduled`
-at confirmation — and reads `settle_at`; the credit, `payin_credited` and
-final states are unchanged, just delivered at settlement.
+The settlement delay is configured by CBPay on the `payin_card` fee of
+your account. Your confirmation signals are unchanged —
+`payin_settlement_scheduled` and `payin_credited` arrive at payment time;
+only the balance availability waits for `settle_at`.
 </Note>
 
 ## Banking rail fees

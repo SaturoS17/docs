@@ -106,7 +106,7 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
 | `payin_credited` | 收到一笔法币代收并已入账 |
 | `payin_expired` | 一笔待支付的代收（二维码 / checkout）已过期或失败，未收到付款 |
 | `payin_refunded` | 银行卡收款的[退款](https://docs.cbpayapp.com/zh/guides/refunds)已到达最终状态（包含发卡行发起的拒付） |
-| `payin_settlement_scheduled` | 一笔银行卡收款已支付，其入账被安排到未来的 `settle_at`（机构配置的结算延迟）。在付款确认时仅发出一次；余额在到期时入账，届时发出 `payin_credited` |
+| `payin_settlement_scheduled` | 一笔银行卡收款已确认（`credited`，已发出 `payin_credited`），其余额被安排到未来的 `settle_at`（机构配置的结算延迟）。在付款确认时仅发出一次；余额在到期时可用 |
 | `payout_status_changed` | 一笔付款（payout）状态发生变化 |
 | `transfer_received` | 账户收到一笔内部转账 |
 | `crypto_deposit_credited` | 一笔链上充值已确认并入账 |
@@ -194,12 +194,18 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
   "usdt_gross": "493.811881",
   "fee": "27.159654",
   "usdt_net": "466.652227",
-  "status": "pending",
+  "status": "credited",
   "settle_at": "2026-08-12T14:08:33Z",
   "receipt_url": "https://api.qbank.cl/platform/v1/payins/8b3e…/receipt"
 }
 ```
 
+> **注**
+配置结算延迟后，两个 webhook 都在**付款确认时**发出：先是
+`payin_settlement_scheduled`（余额已排期至 `settle_at`），然后是
+`payin_credited`（收款已确认，`status: credited`）。等到
+`settle_at` 的只有余额的可用性 —— 收款响应在待结算期间携带
+`settlement_pending: true`，余额到账后携带 `settled_at`。
 `usdt_net` 是到期时将入账的金额（总额 − 手续费）。
 对于没有总额/手续费的历史记录，金额字段可能为空（`""`）。
 到达 `settle_at` 时，结算 worker 入账余额并发出 `payin_credited`（原有流程不变）。

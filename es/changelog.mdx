@@ -8,7 +8,36 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-<Update label="10 de agosto de 2026" description="v2.57 · 2 versiones">
+<Update label="10 de agosto de 2026" description="v2.58 · 3 versiones">
+
+### v2.58
+
+**Cambiado**
+
+- **Los payins con tarjeta con liquidación diferida se confirman `credited`
+  de inmediato**
+  ([comisiones](/es/conceptos/comisiones#settlement-de-payins-con-tarjeta)):
+  con `settlement_hours > 0`, un cobro con tarjeta pagado ahora pasa a
+  `status: credited` **al momento del pago** — el webhook `payin_credited`
+  se emite de inmediato y un link de checkout pagado con tarjeta cierra como
+  pagado. Lo que espera es solo el **saldo**: cae en tu ledger al llegar
+  `settle_at` (el worker de liquidación corre cada minuto) o antes si un
+  org-admin lo libera manualmente. Antes el payin quedaba `pending` y
+  `payin_credited` recién se emitía al liquidarse.
+- **Campos nuevos del payin**: mientras el saldo está programado, las
+  respuestas de create/GET/lista llevan `settle_at` (RFC 3339) y
+  `settlement_pending: true`; cuando el saldo cae, llevan `settled_at` en su
+  lugar.
+- **Payload de `payin_settlement_scheduled`**: el webhook ahora reporta
+  `status: "credited"` (antes `pending`), en línea con la confirmación
+  inmediata.
+
+**Agregado**
+
+- **Nuevo error `settlement_pending`** (`422`): devolver un cobro con
+  tarjeta cuyo saldo sigue programado para settlement se rechaza hasta que
+  los fondos se liberen (al llegar `settle_at`, o antes por liberación de un
+  org-admin). Detalle en [devoluciones](/es/guias/devoluciones).
 
 ### v2.57
 

@@ -434,13 +434,14 @@ Share the `payment_url` (link, redirect or WebView). Flow details:
   [stored cards](https://docs.cbpayapp.com/en/guides/stored-cards-subscriptions#the-payer-discovers-their-cards-on-the-payment-page).
 - It also works in USD (`currency: "USD"`).
 - **Settlement delay**: when your `payin_card` fee is configured with
-  `settlement_hours` above zero, an approved charge leaves the payin
-  `pending` with a `settle_at` timestamp (RFC 3339, included in the
-  create/GET/list responses) instead of crediting immediately, and the
+  `settlement_hours` above zero, an approved charge confirms the payin as
+  `credited` immediately — the `payin_credited` webhook fires and the
+  checkout closes as paid — but the **balance** only becomes available at
+  `settle_at` (RFC 3339, in the create/GET/list responses together with
+  `settlement_pending: true`), or earlier if your org admin releases it
+  manually; once released, the payin carries `settled_at`. The
   `payin_settlement_scheduled` webhook fires exactly once at confirmation
-  with the scheduled amounts. At `settle_at` the credit runs: balance,
-  `payin_credited` webhook, final status, checkout link closing and
-  auto-conversion all happen at settlement. Details in
+  with `status: "credited"` and the scheduled amounts. Details in
   [fees — card payin settlement delay](https://docs.cbpayapp.com/en/concepts/fees#card-payin-settlement-delay).
 
 #### Paraguay

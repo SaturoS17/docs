@@ -192,6 +192,7 @@ description: "错误格式与完整的错误码目录"
 | 422 | `payin_not_refundable` | 该收款未入账或没有处理机构凭证，无法[退款](/zh/guides/refunds) |
 | 422 | `refund_not_supported` | 该通道不支持[退款](/zh/guides/refunds)（QR、报备转账、专属账户、代扣）。POS 收款通过加密通道退款 |
 | 422 | `refund_exceeds_payin` | [退款](/zh/guides/refunds)超过该收款的剩余可退金额；余额未变动 |
+| 422 | `settlement_pending` | 该收款的余额仍在[结算](/zh/concepts/fees#银行卡收款结算延迟)排期中，释放（到达 `settle_at` 或由组织管理员释放）前无法[退款](/zh/guides/refunds) |
 | 400 | `invalid_amount` | [退款](/zh/guides/refunds)的 `amount` 必须是以收款币种表示的正十进制数 |
 
 ### 合规（403 / 503）

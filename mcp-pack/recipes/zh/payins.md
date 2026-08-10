@@ -414,12 +414,13 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
   [已保存卡片](https://docs.cbpayapp.com/zh/guides/stored-cards-subscriptions#付款人在支付页面上发现自己的卡片)。
 - 同样支持 USD（`currency: "USD"`）。
 - **结算延迟**：当 `payin_card` 费用配置了大于零的 `settlement_hours`
-  时，扣款获批后收款保持 `pending`，并在响应中附带 `settle_at`
-  时间戳（RFC 3339，create/GET/列表响应中均有），而非立即入账；并在付款
-  确认时仅发出一次 `payin_settlement_scheduled` webhook，携带计划的入账
-  金额。到达
-  `settle_at` 时才执行入账：余额、`payin_credited` webhook、最终状态、
-  收银台链接关闭和自动兑换均在结算时发生。详见
+  时，扣款获批后收款会立即确认为 `credited` —— `payin_credited`
+  webhook 随即发出，收银台链接关闭为已支付 —— 但**余额**要到
+  `settle_at`（RFC 3339，create/GET/列表响应中均携带，同时带有
+  `settlement_pending: true`）才可用，或由机构管理员在面板中手动提前
+  释放；释放后收款携带 `settled_at`。`payin_settlement_scheduled`
+  webhook 在付款确认时仅发出一次，携带 `status: "credited"` 和计划的
+  入账金额。详见
   [费用——银行卡收款结算延迟](https://docs.cbpayapp.com/zh/concepts/fees#银行卡收款结算延迟)。
 
 #### 巴拉圭

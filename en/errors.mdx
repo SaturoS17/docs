@@ -192,6 +192,7 @@ These codes come from **organization administration surfaces** (the [CBPay Admin
 | 422 | `payin_not_refundable` | The payin is not credited or has no processor credential; it cannot be [refunded](/en/guides/refunds) |
 | 422 | `refund_not_supported` | That rail does not support [refunds](/en/guides/refunds) (QR, announced transfer, dedicated account, collect). POS charges are refunded through the crypto rail |
 | 422 | `refund_exceeds_payin` | The [refund](/en/guides/refunds) exceeds what is left to refund on the payin; your balance was not touched |
+| 422 | `settlement_pending` | The payin's balance is still scheduled for [settlement](/en/concepts/fees#card-payin-settlement-delay) and cannot be [refunded](/en/guides/refunds) until it is released (at `settle_at` or by an org-admin release) |
 | 400 | `invalid_amount` | The [refund](/en/guides/refunds) `amount` must be a positive decimal in the payin currency |
 
 ### Compliance (403 / 503)

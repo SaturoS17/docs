@@ -4442,6 +4442,23 @@ paths:
                   reference: CB68JZCT46QE
                   created_at: '2026-07-21T12:00:00Z'
                   updated_at: '2026-07-21T12:00:00Z'
+                - payin_id: 8b3e1c4d-5a6f-7b8c-9d0e-1f2a3b4c5d6e
+                  account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                  kind: card
+                  country: US
+                  currency: USD
+                  method: card
+                  local_amount: '498.75'
+                  status: credited
+                  reference: CARD-8842
+                  created_at: '2026-08-10T14:08:33Z'
+                  updated_at: '2026-08-10T14:08:40Z'
+                  fx_rate: '1.010202'
+                  usdt_gross: '493.811881'
+                  fee: '27.159654'
+                  usdt_credited: '466.652227'
+                  settle_at: '2026-08-12T14:08:33Z'
+                  settlement_pending: true
         '403':
           $ref: '#/components/responses/Forbidden'
         '401':
@@ -4486,7 +4503,9 @@ paths:
       summary: 退款一笔卡片收款
       description: >-
         将资金退还给持卡人，并冲销你余额中的入账。仅支持状态为 `credited` 的卡片收款
-        （其他通道返回 `refund_not_supported`）。按毛额扣款：原收款的手续费与汇率点差
+        （其他通道返回 `refund_not_supported`）—— 且仅当其余额实际可用时：结算仍待处理的
+        已确认收款（`settlement_pending: true`，余额在 `settle_at` 到账）将以
+        `422 settlement_pending` 被拒。按毛额扣款：原收款的手续费与汇率点差
         不可退还。`idempotency_key` 为必填；重放会返回同一笔退款并带 `idempotency_hit`，
         绝不会向处理方发送第二次退款。调用方为会话时需要 OTP（API key 豁免）。
       parameters:
@@ -4624,7 +4643,9 @@ paths:
                 message: another refund with this key is in flight
         '422':
           description: >-
-            `payin_not_refundable`、`refund_not_supported`、`refund_exceeds_payin`，
+            `payin_not_refundable`、`refund_not_supported`、`refund_exceeds_payin`、
+            `settlement_pending`（收款已确认，但其余额仍排期在未来的 `settle_at`
+            —— 请等待到期，或先请机构管理员释放结算），
             或处理方拒绝的退款（响应体即该退款，`status: failed` 并带 `failure_reason`；
             扣款已全额冲回）。
           content:
@@ -20138,9 +20159,9 @@ components:
           type: integer
           description: >-
             仅适用于银行卡收款(`payin_card`)—— 可配置的结算延迟(小时)。`0`(默认)在
-            银行卡扣款确认后立即入账;大于 0 时收款保持 `pending` 并带 `settle_at`
-            时间戳,延迟到期后自动入账。用于其他服务或为负数将被拒绝并返回
-            `invalid_settlement_hours`。
+            银行卡扣款确认后立即入账余额;大于 0 时收款会立即确认为 `credited`(包括
+            webhook 和收银台关闭),但余额会按 `settle_at` 排期,延迟到期后自动结算。
+            用于其他服务或为负数将被拒绝并返回 `invalid_settlement_hours`。
           example: 24
         status:
           type: string
@@ -20325,10 +20346,23 @@ components:
           type: string
           format: date-time
           description: >-
-            仅适用于配置了结算延迟的银行卡收款 —— 该 pending 收款入账的时间点(`created_at`
-            加上 `payin_card` 费用的 `settlement_hours`)。余额入账、入账 webhook、checkout
-            链接关闭和自动兑换均在该时刻发生;若延迟在批准或分配时已到期,则立即入账。
-            收款在确认时入账时该字段不存在。
+            仅适用于配置了结算延迟的银行卡收款 —— 该收款的余额何时可用(`created_at`
+            加上 `payin_card` 费用配置的 `settlement_hours`)。收款本身立即确认:状态为
+            `credited`,`payin_credited` webhook 在付款时发出;等待到 `settle_at` 的只是
+            余额入账(以及自动换汇,如已配置)。在批准或分配时延迟已到期的收款会立即结算。
+            余额在确认时即结算的收款不包含此字段。
+        settlement_pending:
+          type: boolean
+          description: >-
+            当一笔 `credited` 状态的银行卡收款的余额仍在等待 `settle_at` 结算时存在
+            (为 true)。在此期间该收款无法退款(`422 settlement_pending`)——资金尚未
+            进入您的余额。余额到账后此字段消失。
+        settled_at:
+          type: string
+          format: date-time
+          description: >-
+            该已确认收款的余额实际进入您账本的时间 —— 无结算延迟的收款在确认时即为
+            此时间;延迟结算的银行卡收款则在计划结算执行时(或机构管理员手动提前释放时)。
         fx_rate:
           type: string
           description: 入账时你的 payin 汇率(付款被接收并转换后出现)。
@@ -20896,12 +20930,13 @@ webhooks:
           description: 返回任意 2xx 以确认投递。
   payin_settlement_scheduled:
     post:
-      summary: 收款入账已计划
+      summary: 收款结算已计划
       description: '一笔银行卡收款已支付,且因贵组织在 `payin_card` 服务上配置了结算延迟
-        (`settlement_hours`),其入账被安排到未来的 `settle_at`。该事件在支付确认时恰好发出一次
-        (幂等——同一确认的重试不会重复发送)。`usdt_net` 是到期将入账的金额(总额 − 手续费);
+        (`settlement_hours`),其余额被安排到未来的 `settle_at`。该事件在支付确认时恰好发出一次
+        (幂等——同一确认的重试不会重复发送)。`status` 从一开始就是 `credited`:收款已确认,
+        `payin_credited` 会立即发出——等待到 `settle_at` 的只是余额。`usdt_net` 是到期将入账的金额(总额 − 手续费);
         对于没有总额/手续费的历史记录,金额字段可能为空(`""`)。到达 `settle_at` 时,结算 worker
-        会入账余额并发出 `payin_credited`(现有流程,不变)。
+        会释放余额(此后该收款携带 `settled_at`,不再有 `settlement_pending`)。
 
 
         每次交付都包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp`
@@ -20921,7 +20956,7 @@ webhooks:
               usdt_gross: '493.811881'
               fee: '27.159654'
               usdt_net: '466.652227'
-              status: pending
+              status: credited
               settle_at: '2026-08-12T14:08:33Z'
               receipt_url: https://api.qbank.cl/platform/v1/payins/8b3e1c2d-4f5a-6b7c-8d9e-0f1a2b3c4d5e/receipt
       responses:

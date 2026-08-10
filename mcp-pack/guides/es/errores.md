@@ -191,6 +191,7 @@ Estos códigos provienen de **superficies de administración de organización** 
 | 422 | `payin_not_refundable` | El cobro no está acreditado o no tiene credencial del procesador; no se puede [devolver](https://docs.cbpayapp.com/es/guias/devoluciones) |
 | 422 | `refund_not_supported` | Ese rail no admite [devoluciones](https://docs.cbpayapp.com/es/guias/devoluciones) (QR, transferencia anunciada, cuenta dedicada, collect). Los cobros POS se devuelven por el riel crypto |
 | 422 | `refund_exceeds_payin` | La [devolución](https://docs.cbpayapp.com/es/guias/devoluciones) supera lo que queda por devolver del cobro; tu saldo no se tocó |
+| 422 | `settlement_pending` | El saldo del cobro sigue programado para [settlement](https://docs.cbpayapp.com/es/conceptos/comisiones#settlement-de-payins-con-tarjeta) y no se puede [devolver](https://docs.cbpayapp.com/es/guias/devoluciones) hasta liberarse (a `settle_at` o por liberación del admin de la organización) |
 | 400 | `invalid_amount` | El `amount` de la [devolución](https://docs.cbpayapp.com/es/guias/devoluciones) debe ser un decimal positivo en la moneda del cobro |
 
 ### Cumplimiento (403 / 503)

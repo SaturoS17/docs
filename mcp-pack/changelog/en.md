@@ -8,7 +8,33 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.57 · 2 releases - August 10, 2026
+## v2.58 · 3 releases - August 10, 2026
+
+### v2.58
+
+**Changed**
+
+- **Card payins with a settlement delay confirm as `credited` right away**
+  ([fees](https://docs.cbpayapp.com/en/concepts/fees#card-payin-settlement-delay)): with
+  `settlement_hours > 0`, a paid card payin now flips to `status: credited`
+  **at payment time** — the `payin_credited` webhook fires immediately and a
+  card-paid checkout link closes as paid. What waits is only the **balance**:
+  it lands in your ledger at `settle_at` (the settlement worker runs every
+  minute) or earlier if your org admin releases it manually. Previously the
+  payin stayed `pending` and `payin_credited` only fired at settlement.
+- **New payin fields**: while the balance is scheduled, the create/GET/list
+  responses carry `settle_at` (RFC 3339) and `settlement_pending: true`;
+  once the balance lands they carry `settled_at` instead.
+- **`payin_settlement_scheduled` payload**: the webhook now reports
+  `status: "credited"` (was `pending`), matching the immediate
+  confirmation.
+
+**Added**
+
+- **New error `settlement_pending`** (`422`): refunding a card payin whose
+  balance is still scheduled for settlement is declined until the funds are
+  released (at `settle_at`, or earlier by an org-admin release). Details in
+  [refunds](https://docs.cbpayapp.com/en/guides/refunds).
 
 ### v2.57
 

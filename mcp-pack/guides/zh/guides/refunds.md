@@ -18,7 +18,7 @@ source_url: https://docs.cbpayapp.com/zh/guides/refunds
 | 条件 | 说明 |
 |---|---|
 | 方式 | 仅限**银行卡**收款（`method: "card"`，含以卡支付的 Checkout 与已保存卡的 MIT 扣款） |
-| 状态 | 收款必须为 `credited`（资金已到你的余额） |
+| 状态 | 收款必须为 `credited` **且余额已可用** —— 处于结算延迟窗口内的银行卡收款（`settlement_pending: true`，余额在 `settle_at` 到账）在结算释放前无法退款 |
 | 余额 | 发起时需有足够的 **USDT 余额** |
 | 金额 | 全额或部分；同一笔收款的多次部分退款会累计至上限 |
 
@@ -298,6 +298,7 @@ curl -L https://api.qbank.cl/platform/v1/payin-refunds/3a7d51c8-…/receipt \
 | 404 | `not_found` | 该收款（或退款）在你的账户下不存在。 |
 | 409 | `idempotency_conflict` | 已有使用该键的退款在处理中；请查询其状态。 |
 | 422 | `payin_not_refundable` | 收款未入账，或没有处理机构侧的凭据。 |
+| 422 | `settlement_pending` | 该收款的余额仍在结算排期中，尚不可用；请在释放后退款（到达 `settle_at` 时自动释放，或由您的组织管理员提前释放）。 |
 | 422 | `refund_not_supported` | 该通道不支持退款（二维码、转账、专属账户、collect）。POS 收款通过加密通道退款。 |
 | 422 | `refund_exceeds_payin` | 请求金额合计超过剩余可退金额。 |
 

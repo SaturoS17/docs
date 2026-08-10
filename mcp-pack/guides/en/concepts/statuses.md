@@ -61,7 +61,11 @@ The refund already happened in every case: verify it in
 - `pending` — the charge exists and awaits payment. QRs and payment pages
   expire (`expired` if nobody pays).
 - `credited` — payment received, converted at your `payin_rate` and
-  credited.
+  credited. With a card settlement delay configured, the payin reaches
+  `credited` at payment confirmation but the **balance** lands later:
+  while `settle_at` is in the future the response carries
+  `settlement_pending: true` and `settled_at: null` (see
+  [Card payin settlement delay](https://docs.cbpayapp.com/en/concepts/fees#card-payin-settlement-delay)).
 - `unassigned` — a deposit arrived that could not be matched to any
   account; the administrator routes it manually and it is then credited
   with the destination account's rate and fees.

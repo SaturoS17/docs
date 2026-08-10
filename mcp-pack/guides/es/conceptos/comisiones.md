@@ -80,37 +80,49 @@ aguas arriba (`compliance_refund` / `verification_fee_refund` /
 ## Settlement de payins con tarjeta
 
 Los cobros con tarjeta pueden llevar una **demora de acreditación**
-(`settlement_hours`, entero en horas; `0` = acreditación inmediata — el
-default). Con demora configurada, un cobro confirmado **no** acredita tu
-saldo de inmediato: el payin queda `pending` con un timestamp `settle_at`
-(RFC 3339) en las respuestas de creación, consulta y listado, y al
-confirmarse el pago se emite el webhook `payin_settlement_scheduled`
-exactamente una vez (idempotente) con los montos programados. Todo lo
-demás ocurre al llegar esa hora:
+(`settlement_hours`, entero en horas; `0` = sin demora — el default). Con
+demora configurada, un cobro confirmado **confirma el payin de inmediato**:
+el estado pasa a `credited`, el webhook `payin_credited` se emite al
+momento y un link de checkout pagado con tarjeta cierra como pagado. Lo
+que espera es el **saldo**: cae en tu ledger cuando corre el settlement —
+al llegar `settle_at` (un worker liquida los payins vencidos cada minuto)
+o antes si un org-admin lo libera manualmente desde el panel.
 
-- se ejecuta el crédito del saldo (con su fee `payin_card`),
-- el webhook `payin_credited` y el estado final llegan a tu integración,
-- un link de checkout pagado con tarjeta cierra como pagado, y
-- corre la auto-conversión (cuando está configurada).
+Mientras el saldo está pendiente, la respuesta del payin (creación,
+consulta y listado) lleva `settle_at` (RFC 3339) y
+`settlement_pending: true`; cuando el saldo cae, lleva `settled_at` en su
+lugar. Al confirmarse el pago también se emite el webhook
+`payin_settlement_scheduled` exactamente una vez (idempotente) con
+`status: "credited"`, los montos programados y `settle_at`, así tu
+integración distingue "pagado, saldo programado" de "pagado, saldo ya
+disponible".
 
 ```json
 {
   "id": "pay_…",
-  "status": "pending",
-  "settle_at": "2026-08-10T15:04:05Z"
+  "status": "credited",
+  "settle_at": "2026-08-10T15:04:05Z",
+  "settlement_pending": true
 }
 ```
 
 `settle_at = created_at + settlement_hours` — la demora corre desde la
 creación del payin (≈ cuando el procesador confirma el cobro). Un payin
-cuyo plazo ya venció al aprobarse o asignarse se acredita de inmediato.
-Un worker acredita los payins vencidos cada minuto.
+cuyo plazo ya venció al aprobarse o asignarse se liquida de inmediato (sin
+`settlement_pending`). La auto-conversión (cuando está configurada) corre
+cuando el saldo se liquida, no antes.
 
+> **Importante**
+Un payin con el settlement aún pendiente **no se puede devolver**: la
+devolución debita tu saldo y esa plata aún no se libera, así que el
+request se rechaza con `422 settlement_pending`. Espera al `settle_at` o
+pide a un org-admin que libere el saldo primero — después la devolución
+funciona como siempre.
 > **Nota**
-La demora la configura CBPay en el fee `payin_card` de tu cuenta. Tu
-integración gana una señal — `payin_settlement_scheduled` al confirmarse —
-y lee `settle_at`; el crédito, `payin_credited` y los estados finales no
-cambian, solo se entregan al settlement.
+La demora la configura CBPay en el fee `payin_card` de tu cuenta. Tus
+señales de confirmación no cambian — `payin_settlement_scheduled` y
+`payin_credited` llegan al momento del pago; solo la disponibilidad del
+saldo espera al `settle_at`.
 ## Comisiones banking por riel
 
 Las operaciones banking llevan **comisiones transaccionales en la moneda

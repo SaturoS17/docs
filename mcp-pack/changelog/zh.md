@@ -8,7 +8,30 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-## v2.57 · 2 个版本 - 2026年8月10日
+## v2.58 · 3 个版本 - 2026年8月10日
+
+### v2.58
+
+**变更**
+
+- **配置结算延迟的银行卡收款会立即确认为 `credited`**
+  （[费用](https://docs.cbpayapp.com/zh/concepts/fees#银行卡收款结算延迟)）：当
+  `settlement_hours > 0` 时，已支付的银行卡收款现在会在**付款时**变为
+  `status: credited` —— `payin_credited` webhook 立即发出，以卡支付的收银台
+  链接随即关闭为已支付。等待的只有**余额**：它在到达 `settle_at` 时进入您的账本
+  （结算 worker 每分钟运行一次），或由机构管理员提前手动释放。此前收款会保持
+  `pending`，且 `payin_credited` 仅在结算时才发出。
+- **收款新增字段**：余额排期期间，create/GET/列表响应携带
+  `settle_at`（RFC 3339）和 `settlement_pending: true`；余额到账后则携带
+  `settled_at`。
+- **`payin_settlement_scheduled` 负载**：该 webhook 现在报告
+  `status: "credited"`（原为 `pending`），与即时确认保持一致。
+
+**新增**
+
+- **新错误 `settlement_pending`**（`422`）：对余额仍在结算排期中的银行卡收款
+  发起退款将被拒绝，直到资金释放（到达 `settle_at`，或由机构管理员提前释放）。
+  详见[退款](https://docs.cbpayapp.com/zh/guides/refunds)。
 
 ### v2.57
 

@@ -436,14 +436,15 @@ Comparte la `payment_url` (link, redirección o WebView). Detalles del flujo:
   [tarjetas guardadas](https://docs.cbpayapp.com/es/guias/stored-cards-subscriptions#el-pagador-descubre-sus-tarjetas-en-la-página-de-pago).
 - Funciona también en USD (`currency: "USD"`).
 - **Settlement diferido**: cuando la comisión de `payin_card` está
-  configurada con `settlement_hours` sobre cero, un cobro aprobado deja el
-  payin `pending` con un timestamp `settle_at` (RFC 3339, presente en las
-  respuestas de create/GET/lista) en vez de acreditarse de inmediato, y al
-  confirmarse el pago se emite el webhook `payin_settlement_scheduled`
-  exactamente una vez con los montos programados. A
-  `settle_at` corre la acreditación: saldo, webhook `payin_credited`,
-  estado final, cierre del link de checkout y auto-conversión — todo
-  ocurre al vencimiento. Detalle en
+  configurada con `settlement_hours` sobre cero, un cobro aprobado confirma
+  el payin como `credited` de inmediato — se emite el webhook
+  `payin_credited` y el checkout cierra como pagado — pero el **saldo**
+  queda disponible recién al llegar `settle_at` (RFC 3339, presente en las
+  respuestas de create/GET/lista junto a `settlement_pending: true`), o
+  antes si un org-admin lo libera manualmente; una vez liberado, el payin
+  lleva `settled_at`. El webhook `payin_settlement_scheduled` se emite
+  exactamente una vez al confirmarse el pago, con `status: "credited"` y
+  los montos programados. Detalle en
   [comisiones — settlement de payins con tarjeta](https://docs.cbpayapp.com/es/conceptos/comisiones#settlement-de-payins-con-tarjeta).
 
 #### Paraguay

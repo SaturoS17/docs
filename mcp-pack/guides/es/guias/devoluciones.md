@@ -21,7 +21,7 @@ Es lo contrario de un cobro: el cobro acredita, la devolución debita.
 | Requisito | Detalle |
 |---|---|
 | Método | Solo cobros con **tarjeta** (`method: "card"`, incluye checkout pagado con tarjeta y cargos MIT sobre tarjeta guardada) |
-| Estado | El cobro debe estar `credited` (la plata llegó a tu saldo) |
+| Estado | El cobro debe estar `credited` **y con su saldo ya disponible** — un cobro con tarjeta bajo una ventana de settlement (`settlement_pending: true`, saldo que cae a `settle_at`) no se puede devolver hasta que se libere el settlement |
 | Saldo | Necesitas **saldo USDT** suficiente al momento de pedirla |
 | Monto | Total o parcial; varias parciales sobre el mismo cobro suman hasta el tope |
 
@@ -319,6 +319,7 @@ verificación, sin credenciales y sin ver datos personales. Detalle en
 | 404 | `not_found` | El cobro (o la devolución) no existe en tu cuenta. |
 | 409 | `idempotency_conflict` | Hay otra devolución en vuelo con esa clave; consulta su estado. |
 | 422 | `payin_not_refundable` | El cobro no está acreditado o no tiene referencia del procesador. |
+| 422 | `settlement_pending` | El saldo del cobro está programado para settlement y aún no está disponible; devuélvelo después de liberarse (al llegar `settle_at`, o antes si tu admin de organización lo libera). |
 | 422 | `refund_not_supported` | Ese riel no admite devolución (QR, transferencia, CLABE, collect). Los cobros POS se devuelven por el riel crypto. |
 | 422 | `refund_exceeds_payin` | La suma pedida supera lo que queda por devolver. |
 

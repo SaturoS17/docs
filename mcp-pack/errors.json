@@ -1,5 +1,5 @@
 {
-  "count": 198,
+  "count": 199,
   "errors": [
     {
       "category": {
@@ -2015,6 +2015,20 @@
         "en": "The refund exceeds what is left to refund on the payin; your balance was not touched",
         "es": "La devolución supera lo que queda por devolver del cobro; tu saldo no se tocó",
         "zh": "退款超过该收款的剩余可退金额；余额未变动"
+      }
+    },
+    {
+      "category": {
+        "en": "Money and state (402 / 404 / 409 / 422)",
+        "es": "Dinero y estado (402 / 404 / 409 / 422)",
+        "zh": "资金与状态（402 / 404 / 409 / 422）"
+      },
+      "code": "settlement_pending",
+      "http": 422,
+      "meaning": {
+        "en": "The payin's balance is still scheduled for settlement and cannot be refunded until it is released (at `settle_at` or by an org-admin release)",
+        "es": "El saldo del cobro sigue programado para settlement y no se puede devolver hasta liberarse (a `settle_at` o por liberación del admin de la organización)",
+        "zh": "该收款的余额仍在结算排期中，释放（到达 `settle_at` 或由组织管理员释放）前无法退款"
       }
     },
     {

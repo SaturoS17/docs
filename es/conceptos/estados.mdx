@@ -59,7 +59,12 @@ El reembolso ya ocurrió en todos los casos: verifícalo en
 
 - `pending` — el cargo existe y espera el pago. Los QR y páginas de pago
   tienen vencimiento (`expired` si nadie paga).
-- `credited` — pago recibido, convertido a tu `payin_rate` y abonado.
+- `credited` — pago recibido, convertido a tu `payin_rate` y abonado. Con
+  una ventana de settlement configurada para tarjeta, el cobro llega a
+  `credited` al confirmarse el pago pero el **saldo** cae después: mientras
+  `settle_at` está en el futuro la respuesta trae `settlement_pending: true`
+  y `settled_at: null` (ver
+  [Settlement de payins con tarjeta](/es/conceptos/comisiones#settlement-de-payins-con-tarjeta)).
 - `unassigned` — llegó un depósito que no se pudo asociar a ninguna cuenta;
   el administrador lo asigna manualmente y entonces se acredita con la tasa
   y comisiones de la cuenta destino.

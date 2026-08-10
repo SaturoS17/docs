@@ -549,9 +549,9 @@
     },
     {
       "description": {
-        "en": "A card payin was paid and its credit was scheduled for a future `settle_at` because your organization configured a settlement delay (`settlement_hours`) on the `payin_card` service. Emitted exactly once when the payment is confirmed (idempotent — a retry of the same confirmation does not re-emit it). `usdt_net` is the amount that will be credited when due (gross − fee); amount fields may come back empty (`\"\"`) on historical rows without gross/fee. When `settle_at` is reached, the settlement worker credits the balance and emits `payin_credited` (the existing flow, unchanged).\n\nEvery delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Respond 2xx; up to 5 attempts with incremental backoff.",
-        "es": "Un cobro con tarjeta quedó pagado y su acreditación se programó para un `settle_at` futuro porque tu organización configuró una demora de settlement (`settlement_hours`) en el servicio `payin_card`. Se emite exactamente una vez al confirmarse el pago (idempotente — un retry de la misma confirmación no lo re-emite). `usdt_net` es el monto que se acreditará al vencimiento (bruto − comisión); los montos pueden venir vacíos (`\"\"`) en filas históricas sin bruto/comisión. Al llegar el `settle_at`, el worker de settlement acredita el saldo y emite `payin_credited` (el flujo de siempre, sin cambios).\n\nCada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` y `X-Webhook-Signature = hex(HMAC-SHA256(secreto, timestamp + \".\" + cuerpo))`. Responde 2xx; hasta 5 intentos con backoff incremental.",
-        "zh": "一笔银行卡收款已支付,且因贵组织在 `payin_card` 服务上配置了结算延迟 (`settlement_hours`),其入账被安排到未来的 `settle_at`。该事件在支付确认时恰好发出一次 (幂等——同一确认的重试不会重复发送)。`usdt_net` 是到期将入账的金额(总额 − 手续费); 对于没有总额/手续费的历史记录,金额字段可能为空(`\"\"`)。到达 `settle_at` 时,结算 worker 会入账余额并发出 `payin_credited`(现有流程,不变)。\n\n每次交付都包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`。响应 2xx； 最多 5 次尝试，采用递增退避。"
+        "en": "A card payin was paid and its balance was scheduled for a future `settle_at` because your organization configured a settlement delay (`settlement_hours`) on the `payin_card` service. Emitted exactly once when the payment is confirmed (idempotent — a retry of the same confirmation does not re-emit it). `status` is `credited` from the start: the payin is confirmed and `payin_credited` fires right away — what waits until `settle_at` is only the BALANCE. `usdt_net` is the amount that lands when due (gross − fee); amount fields may come back empty (`\"\"`) on historical rows without gross/fee. When `settle_at` is reached, the settlement worker releases the balance (the payin then carries `settled_at` instead of `settlement_pending`).\n\nEvery delivery includes `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` and `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`. Respond 2xx; up to 5 attempts with incremental backoff.",
+        "es": "Un cobro con tarjeta quedó pagado y su SALDO se programó para un `settle_at` futuro porque tu organización configuró una demora de settlement (`settlement_hours`) en el servicio `payin_card`. Se emite exactamente una vez al confirmarse el pago (idempotente — un retry de la misma confirmación no lo re-emite). El `status` es `credited` desde el inicio: el payin queda confirmado y `payin_credited` se emite al momento del pago — lo que espera al `settle_at` es solo el SALDO. `usdt_net` es el monto que se acreditará al vencimiento (bruto − comisión); los montos pueden venir vacíos (`\"\"`) en filas históricas sin bruto/comisión. Al llegar el `settle_at`, el worker de settlement libera el saldo (el payin pasa a llevar `settled_at` en vez de `settlement_pending`).\n\nCada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp` y `X-Webhook-Signature = hex(HMAC-SHA256(secreto, timestamp + \".\" + cuerpo))`. Responde 2xx; hasta 5 intentos con backoff incremental.",
+        "zh": "一笔银行卡收款已支付,且因贵组织在 `payin_card` 服务上配置了结算延迟 (`settlement_hours`),其余额被安排到未来的 `settle_at`。该事件在支付确认时恰好发出一次 (幂等——同一确认的重试不会重复发送)。`status` 从一开始就是 `credited`:收款已确认, `payin_credited` 会立即发出——等待到 `settle_at` 的只是余额。`usdt_net` 是到期将入账的金额(总额 − 手续费); 对于没有总额/手续费的历史记录,金额字段可能为空(`\"\"`)。到达 `settle_at` 时,结算 worker 会释放余额(此后该收款携带 `settled_at`,不再有 `settlement_pending`)。\n\n每次交付都包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp` 和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + \".\" + body))`。响应 2xx； 最多 5 次尝试，采用递增退避。"
       },
       "event": "payin_settlement_scheduled",
       "payload_example": {
@@ -565,14 +565,14 @@
         "payin_id": "8b3e1c2d-4f5a-6b7c-8d9e-0f1a2b3c4d5e",
         "receipt_url": "https://api.qbank.cl/platform/v1/payins/8b3e1c2d-4f5a-6b7c-8d9e-0f1a2b3c4d5e/receipt",
         "settle_at": "2026-08-12T14:08:33Z",
-        "status": "pending",
+        "status": "credited",
         "usdt_gross": "493.811881",
         "usdt_net": "466.652227"
       },
       "summary": {
         "en": "Payin settlement scheduled",
         "es": "Acreditación de cobro programada",
-        "zh": "收款入账已计划"
+        "zh": "收款结算已计划"
       }
     },
     {

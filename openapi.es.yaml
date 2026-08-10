@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.57"
+  version: "2.58"
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -4691,6 +4691,23 @@ paths:
                   reference: CB68JZCT46QE
                   created_at: '2026-07-21T12:00:00Z'
                   updated_at: '2026-07-21T12:00:00Z'
+                - payin_id: 8b3e1c4d-5a6f-7b8c-9d0e-1f2a3b4c5d6e
+                  account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+                  kind: card
+                  country: US
+                  currency: USD
+                  method: card
+                  local_amount: '498.75'
+                  status: credited
+                  reference: CARD-8842
+                  created_at: '2026-08-10T14:08:33Z'
+                  updated_at: '2026-08-10T14:08:40Z'
+                  fx_rate: '1.010202'
+                  usdt_gross: '493.811881'
+                  fee: '27.159654'
+                  usdt_credited: '466.652227'
+                  settle_at: '2026-08-12T14:08:33Z'
+                  settlement_pending: true
         '403':
           $ref: '#/components/responses/Forbidden'
         '401':
@@ -4736,7 +4753,10 @@ paths:
       description: >-
         Devuelve la plata al tarjetahabiente y reversa el abono en tu saldo. Solo
         se devuelven cobros con tarjeta en estado `credited` (`refund_not_supported`
-        en los demás rieles). Se debita el bruto: la comisión y el spread FX del
+        en los demás rieles) — y solo cuando su saldo ya está disponible: un payin
+        `credited` cuyo settlement sigue pendiente (`settlement_pending: true`, el
+        saldo cae al llegar `settle_at`) se rechaza con `422 settlement_pending`.
+        Se debita el bruto: la comisión y el spread FX del
         cobro original NO son reembolsables. La `idempotency_key` es obligatoria;
         un reintento devuelve la MISMA devolución con `idempotency_hit` y jamás
         manda una segunda devolución al procesador. Exige OTP cuando el llamante
@@ -4878,6 +4898,9 @@ paths:
         '422':
           description: >-
             `payin_not_refundable`, `refund_not_supported`, `refund_exceeds_payin`,
+            `settlement_pending` (el payin está confirmado pero su saldo sigue
+            programado para un `settle_at` futuro — espera al vencimiento o pide a
+            un org-admin que libere el settlement primero),
             o una devolución que el procesador rechazó (el cuerpo es la devolución
             con `status: failed` y `failure_reason`; el débito se reversó completo).
           content:
@@ -20732,11 +20755,12 @@ components:
         settlement_hours:
           type: integer
           description: >-
-            Solo payins con tarjeta (`payin_card`) — delay de acreditación configurable en horas.
-            `0` (default) acredita el payin apenas se confirma el cobro con tarjeta; un valor
-            positivo deja el payin `pending` con un timestamp `settle_at` hasta que vence el
-            delay y luego lo acredita automáticamente. En otro servicio o negativo se rechaza
-            con `invalid_settlement_hours`.
+            Solo payins con tarjeta (`payin_card`) — demora de acreditación del SALDO
+            configurable en horas. `0` (default) liquida el saldo apenas se confirma el cobro
+            con tarjeta; un valor positivo confirma el payin como `credited` de inmediato
+            (webhook y cierre del checkout incluidos) pero deja el SALDO programado con un
+            `settle_at` hasta que vence la demora, y luego lo liquida automáticamente. En otro
+            servicio o negativo se rechaza con `invalid_settlement_hours`.
           example: 24
         status:
           type: string
@@ -20933,13 +20957,29 @@ components:
           type: string
           format: date-time
           description: >-
-            Solo payins con tarjeta que tienen un delay de acreditación configurado —
-            cuándo se acreditará este payin pendiente (`created_at` más las
-            `settlement_hours` de la comisión `payin_card`). El crédito del saldo, el
-            webhook de acreditación, el cierre del link de checkout y la auto-conversión
-            ocurren todos en ese momento; un payin cuyo plazo ya venció al aprobarse o
-            asignarse se acredita de inmediato. Ausente cuando el payin se acredita al
-            confirmarse.
+            Solo payins con tarjeta que tienen una demora de settlement configurada —
+            cuándo queda disponible el SALDO de este payin (`created_at` más las
+            `settlement_hours` de la comisión `payin_card`). El payin queda confirmado
+            de inmediato: el estado es `credited` y el webhook `payin_credited` se emite
+            al momento del pago; lo que espera al `settle_at` es solo el crédito del
+            saldo (y la auto-conversión, cuando está configurada). Un payin cuya demora
+            ya venció al aprobarse o asignarse se liquida de inmediato. Ausente cuando
+            el saldo se liquida al confirmarse.
+        settlement_pending:
+          type: boolean
+          description: >-
+            Presente (true) mientras el saldo de un payin con tarjeta `credited` sigue
+            programado para su `settle_at`. Mientras esté presente, el payin no se puede
+            devolver (`422 settlement_pending`) — la plata aún no está en tu saldo.
+            Ausente una vez que el saldo cae en el ledger.
+        settled_at:
+          type: string
+          format: date-time
+          description: >-
+            Cuándo cayó realmente en tu ledger el saldo de este payin acreditado —
+            al confirmarse para payins sin demora de settlement, o cuando corrió el
+            settlement programado (o un org-admin lo liberó antes) para payins con
+            tarjeta diferidos.
         fx_rate:
           type: string
           description: Tu tasa de payin al momento del abono (presente una vez que el pago fue recibido
@@ -21614,14 +21654,16 @@ webhooks:
   payin_settlement_scheduled:
     post:
       summary: Acreditación de cobro programada
-      description: 'Un cobro con tarjeta quedó pagado y su acreditación se programó para un
+      description: 'Un cobro con tarjeta quedó pagado y su SALDO se programó para un
         `settle_at` futuro porque tu organización configuró una demora de settlement
         (`settlement_hours`) en el servicio `payin_card`. Se emite exactamente una vez al
         confirmarse el pago (idempotente — un retry de la misma confirmación no lo re-emite).
+        El `status` es `credited` desde el inicio: el payin queda confirmado y `payin_credited`
+        se emite al momento del pago — lo que espera al `settle_at` es solo el SALDO.
         `usdt_net` es el monto que se acreditará al vencimiento (bruto − comisión); los montos
         pueden venir vacíos (`""`) en filas históricas sin bruto/comisión. Al llegar el
-        `settle_at`, el worker de settlement acredita el saldo y emite `payin_credited` (el
-        flujo de siempre, sin cambios).
+        `settle_at`, el worker de settlement libera el saldo (el payin pasa a llevar
+        `settled_at` en vez de `settlement_pending`).
 
 
         Cada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
@@ -21641,7 +21683,7 @@ webhooks:
               usdt_gross: '493.811881'
               fee: '27.159654'
               usdt_net: '466.652227'
-              status: pending
+              status: credited
               settle_at: '2026-08-12T14:08:33Z'
               receipt_url: https://api.qbank.cl/platform/v1/payins/8b3e1c2d-4f5a-6b7c-8d9e-0f1a2b3c4d5e/receipt
       responses:
