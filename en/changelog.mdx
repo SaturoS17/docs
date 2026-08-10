@@ -7,6 +7,25 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="August 10, 2026" description="v2.56 · 1 release">
+
+### v2.56
+
+**Changed**
+
+- **Neutral balance summary on banking balances**: `GET
+  /v1/banking/accounts/{bankAccountID}/balance` and `GET
+  /v1/banking/third-parties/{thirdPartyID}/accounts/{bankAccountID}/balance`
+  now return three optional top-level fields next to the (unchanged)
+  `balance` object: `available` and `held` as flat decimal strings (e.g.
+  `"1250.00"`, `"0.00"`) and `currency` (ISO 4217, e.g. `"USD"`). They are
+  the recommended way to read the amount — previously the amount only
+  existed nested inside the rail-native `balance` object, whose shape
+  varies per rail. The `balance` object keeps the full account detail
+  (display name, requisites to receive money).
+
+</Update>
+
 <Update label="August 9, 2026" description="v2.55 · 6 releases">
 
 ### v2.55

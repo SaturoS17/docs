@@ -7,6 +7,23 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年8月10日" description="v2.56 · 1 个版本">
+
+### v2.56
+
+**变更**
+
+- **银行余额新增中性摘要字段**：`GET
+  /v1/banking/accounts/{bankAccountID}/balance` 和 `GET
+  /v1/banking/third-parties/{thirdPartyID}/accounts/{bankAccountID}/balance`
+  现在在（不变的）`balance` 对象之外返回三个可选的顶层字段：`available` 和
+  `held` 为平面小数字符串（如 `"1250.00"`、`"0.00"`），`currency` 为 ISO
+  4217 货币代码（如 `"USD"`）。这是读取金额的推荐方式——此前金额仅嵌套在通道原生的
+  `balance` 对象内，其结构因通道而异。`balance`
+  对象保留完整的账户详情（显示名称、收款要素）。
+
+</Update>
+
 <Update label="2026年8月9日" description="v2.55 · 6 个版本">
 
 ### v2.55

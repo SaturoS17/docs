@@ -9,6 +9,23 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+## v2.56 · 1 versión - 10 de agosto de 2026
+
+### v2.56
+
+**Cambiado**
+
+- **Resumen neutro de saldo en los balances banking**: `GET
+  /v1/banking/accounts/{bankAccountID}/balance` y `GET
+  /v1/banking/third-parties/{thirdPartyID}/accounts/{bankAccountID}/balance`
+  ahora devuelven tres campos opcionales de nivel superior junto al objeto
+  `balance` (que no cambia): `available` y `held` como strings decimales
+  planos (ej. `"1250.00"`, `"0.00"`) y `currency` (ISO 4217, ej. `"USD"`).
+  Son la forma recomendada de leer el monto — antes el monto solo existía
+  anidado dentro del objeto `balance` nativo del rail, cuya forma varía por
+  rail. El objeto `balance` conserva el detalle completo de la cuenta
+  (nombre visible, requisites para recibir fondos).
+
 ## v2.55 · 6 versiones - 9 de agosto de 2026
 
 ### v2.55

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.55"
+  version: "2.56"
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -13201,7 +13201,8 @@ paths:
           type: string
       responses:
         '200':
-          description: 银行侧的实时余额。
+          description: 银行侧的实时余额。推荐的读取方式是顶层中性摘要字段（`available`、`held`、`currency`——平面小数字符串，在通道支持该摘要时返回）；`balance`
+            对象保留完整的通道原生账户详情（显示名称、收款要素）。
           content:
             application/json:
               schema:
@@ -13210,9 +13211,16 @@ paths:
               example:
                 account_id: c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5
                 provider_id: BNK-ACC-4471
+                available: '1250.00'
+                held: '0.00'
+                currency: USD
                 balance:
+                  name: OPERATING USD
                   currency: USD
-                  available: '1250.00'
+                  balance:
+                    money:
+                      units: '1250'
+                      nanos: 0
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -15409,12 +15417,23 @@ paths:
           type: string
       responses:
         '200':
-          description: 实时余额。
+          description: 实时余额。推荐的读取方式是顶层中性摘要字段（`available`、`held`、`currency`——平面小数字符串，在通道支持该摘要时返回）；`balance`
+            对象保留完整的通道原生账户详情。
           content:
             application/json:
               example:
-                currency: USD
+                account_id: c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5
+                provider_id: BNK-ACC-4471
                 available: '0.00'
+                held: '0.00'
+                currency: USD
+                balance:
+                  name: OPERATING USD
+                  currency: USD
+                  balance:
+                    money:
+                      units: '0'
+                      nanos: 0
         '404':
           description: not_found
   /v1/auth/password/forgot:

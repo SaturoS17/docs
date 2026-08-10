@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.55"
+  version: "2.56"
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -13600,7 +13600,11 @@ paths:
           type: string
       responses:
         '200':
-          description: Live balance at the bank.
+          description: Live balance at the bank. The recommended way to read the
+            amount is the neutral top-level summary (`available`, `held`,
+            `currency` — flat decimal strings, present when the rail supports the
+            summary); the `balance` object keeps the full rail-native account
+            detail (display name, requisites to receive money).
           content:
             application/json:
               schema:
@@ -13609,9 +13613,16 @@ paths:
               example:
                 account_id: c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5
                 provider_id: BNK-ACC-4471
+                available: '1250.00'
+                held: '0.00'
+                currency: USD
                 balance:
+                  name: OPERATING USD
                   currency: USD
-                  available: '1250.00'
+                  balance:
+                    money:
+                      units: '1250'
+                      nanos: 0
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -15876,12 +15887,25 @@ paths:
           type: string
       responses:
         '200':
-          description: Live balance.
+          description: Live balance. The recommended way to read the amount is
+            the neutral top-level summary (`available`, `held`, `currency` —
+            flat decimal strings, present when the rail supports the summary);
+            the `balance` object keeps the full rail-native account detail.
           content:
             application/json:
               example:
-                currency: USD
+                account_id: c4d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5
+                provider_id: BNK-ACC-4471
                 available: '0.00'
+                held: '0.00'
+                currency: USD
+                balance:
+                  name: OPERATING USD
+                  currency: USD
+                  balance:
+                    money:
+                      units: '0'
+                      nanos: 0
         '404':
           description: not_found
   /v1/auth/password/forgot:
