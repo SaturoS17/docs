@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.58"
+  version: "2.59"
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -3236,15 +3236,41 @@ paths:
 
                     on every transfer — `name`, `email`, `account_number`,
 
-                    `country_code`, `address`, `city`, `postal_code`, `bank_name` and
+                    `country_code`, `address`, `city`, `postal_code`, `bank_name`,
 
-                    `bank_code` (ABA routing number for `ach`/`wire`, SWIFT BIC for
+                    `bank_country` and `bank_code` (ABA routing number for
 
-                    `swift`); `account_type` (`CHECKING`/`SAVING`) is required for
+                    `ach`/`wire`, SWIFT BIC for `swift`); `account_type`
 
-                    `ach`. The receiving bank''s address block and `bank_phone` are
+                    (`CHECKING`/`SAVING`) is required for `ach`. The beneficiary
 
-                    optional but recommended.
+                    may live in ANY country (`country_code` is free — e.g. an ACH
+
+                    to a US bank for someone living in Germany); `state` is
+
+                    required only when `country_code` is `US`. The receiving bank
+
+                    must be in the US for `ach`/`wire` (`bank_country: "US"` — the
+
+                    domestic rails do not pay banks abroad) along with its full
+
+                    address block (`bank_address`, `bank_city`, `bank_postal_code`,
+
+                    and `bank_state` for US banks); for `swift` the bank address
+
+                    block is optional (the rail derives it from the BIC) and
+
+                    `bank_country` may be any country. Annex-B jurisdictions
+
+                    (CU/IR/KP/SY) stay blocked for both the beneficiary and the
+
+                    bank country (`422 prohibited_country`). Every USD bank-rail
+
+                    transfer also requires a supporting document (invoice/receipt)
+
+                    uploaded first via `POST /v1/payouts/documents` — see the
+
+                    payout guide.
 
                     '
                 beneficiary_contact_id:
@@ -3492,8 +3518,42 @@ paths:
                     postal_code: '33131'
                     bank_name: Example Bank
                     bank_code: '021000089'
+                    bank_address: 500 Main Street
+                    bank_city: New York
+                    bank_state: NY
+                    bank_postal_code: '10001'
+                    bank_country: US
                   description: Invoice 2210
                   idempotency_key: us-ach-2210
+              us_ach_international_beneficiary:
+                summary: United States — ACH, beneficiary living abroad (USD)
+                description: 'The beneficiary may live in any country; the receiving
+                  bank stays in the US (`bank_country: "US"`). `state` is not
+                  required for non-US beneficiaries and the postal code has no ZIP
+                  format check.'
+                value:
+                  country: US
+                  currency: USD
+                  method: ach
+                  amount: '480.00'
+                  beneficiary:
+                    name: Anna Schmidt
+                    email: anna.schmidt@example.com
+                    account_number: '123456789012'
+                    account_type: CHECKING
+                    country_code: DE
+                    address: Friedrichstrasse 100
+                    city: Berlin
+                    postal_code: '10117'
+                    bank_name: Example Bank
+                    bank_code: '021000089'
+                    bank_address: 500 Main Street
+                    bank_city: New York
+                    bank_state: NY
+                    bank_postal_code: '10001'
+                    bank_country: US
+                  description: Invoice 2215
+                  idempotency_key: us-ach-2215
               us_wire:
                 summary: United States — domestic wire (USD, min 25.00)
                 value:
@@ -3538,6 +3598,7 @@ paths:
                     postal_code: '33131'
                     bank_name: Example Bank
                     bank_code: CHASUS33XXX
+                    bank_country: US
                   description: Invoice 2212
                   idempotency_key: us-swift-2212
               cl_paid_from_btc:

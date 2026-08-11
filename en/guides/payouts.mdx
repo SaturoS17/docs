@@ -312,7 +312,7 @@ when configured; `0.30` here).
 | EC | `cash_pickup` / `cnb` | `name`, `document_value`, `sender_name` — the beneficiary withdraws with their ID |
 | PY | `bank_transfer` | `name` (max 35 chars), `tax_id`, `bank_code`, `account_number` |
 | AR | `bank_transfer` | `name`, `tax_id` (11-digit CUIT/CUIL), `account_number` (22-digit CBU or CVU; USD is CBU-only) |
-| US | `ach` / `wire` / `swift` | `name`, `account_number`, `email`, `country_code`, `address`, `city`, `postal_code`, `bank_name`, `bank_code` (ABA routing for `ach`/`wire`, SWIFT BIC for `swift`; + `account_type` `CHECKING`/`SAVING` for `ach`) |
+| US | `ach` / `wire` / `swift` | `name`, `account_number`, `email`, `country_code` (any country), `address`, `city`, `postal_code` (+ `state` if `country_code` is `US`), `bank_name`, `bank_country` (`US` on `ach`/`wire`), `bank_code` (ABA routing for `ach`/`wire`, SWIFT BIC for `swift`; + `account_type` `CHECKING`/`SAVING` for `ach`) |
 
 
 <Tabs>
@@ -920,21 +920,31 @@ Payouts in **USD** to US bank accounts, with three methods:
 
 The US banking rail requires the beneficiary's **complete identity and
 postal address on every transfer** — an incomplete beneficiary is rejected
-at creation (`422`, see below). Required and optional fields:
+at creation (`422`, see below). The beneficiary's `country_code` is their
+**country of residence and can be ANY country** (for example, an ACH
+transfer to a US bank for a beneficiary living in Germany); what stays
+fixed is the **bank**: on `ach`/`wire` the receiving bank must be in the
+US (`bank_country: "US"`), while `swift` is international by design. The
+compliance floor (Cuba, Iran, North Korea and Syria) remains blocked for
+the beneficiary's country AND the bank's country. Required and optional
+fields:
 
 | Field | `ach` | `wire` | `swift` | Notes |
 |---|---|---|---|---|
 | `name` | required | required | required | Full legal name of the holder |
 | `account_number` | required | required | required | US bank account number |
 | `email` | required | required | required | The rail registers it for every beneficiary |
-| `country_code` | required | required | required | ISO-3166 alpha-2 (`US` for a domestic account) |
+| `country_code` | required | required | required | ISO-3166 alpha-2 of the **beneficiary's residence** — any country (not just `US`) |
 | `address`, `city`, `postal_code` | required | required | required | Full postal address of the beneficiary |
-| `state` | optional | optional | optional | 2-letter state code |
+| `state` | conditional | conditional | conditional | Required **only if `country_code` is `US`** (2-letter state code); optional otherwise |
 | `phone` | optional | optional | optional | Beneficiary contact phone |
 | `bank_name` | required | required | required | Receiving bank's name |
 | `bank_code` | required | required | required | **ABA routing number** (9 digits) for `ach`/`wire`; **SWIFT BIC** for `swift` |
 | `account_type` | required | — | — | `CHECKING` or `SAVING` |
-| `bank_address`, `bank_city`, `bank_state`, `bank_postal_code`, `bank_country`, `bank_phone` | optional | optional | optional | Receiving bank's address block and phone — send them when you have them |
+| `bank_country` | required (`US`) | required (`US`) | required | Receiving bank's country — **fixed to `US` on `ach`/`wire`**; any country on `swift` |
+| `bank_address`, `bank_city`, `bank_postal_code` | required | required | optional | Receiving bank's address block |
+| `bank_state` | required (US bank) | required (US bank) | optional | 2-letter state code of the receiving bank |
+| `bank_phone` | optional | optional | optional | Receiving bank's phone |
 
 There is no US banks catalog: `bank_code` is the beneficiary bank's own
 ABA routing number (ACH/wire) or SWIFT BIC (swift), which the beneficiary
@@ -986,10 +996,46 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
       "state": "FL",
       "postal_code": "33131",
       "bank_name": "Example Bank",
-      "bank_code": "021000089"
+      "bank_code": "021000089",
+      "bank_address": "270 Park Ave",
+      "bank_city": "New York",
+      "bank_state": "NY",
+      "bank_postal_code": "10017",
+      "bank_country": "US"
     },
     "description": "Invoice 2210",
     "idempotency_key": "us-ach-2210"
+  }'
+```
+
+```bash ach (beneficiary outside the US)
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "US",
+    "currency": "USD",
+    "method": "ach",
+    "amount": "250.00",
+    "beneficiary": {
+      "name": "Anna Becker",
+      "email": "anna.becker@example.com",
+      "account_number": "123456789012",
+      "account_type": "CHECKING",
+      "country_code": "DE",
+      "address": "Friedrichstrasse 100",
+      "city": "Berlin",
+      "postal_code": "10117",
+      "bank_name": "Example Bank",
+      "bank_code": "021000089",
+      "bank_address": "270 Park Ave",
+      "bank_city": "New York",
+      "bank_state": "NY",
+      "bank_postal_code": "10017",
+      "bank_country": "US"
+    },
+    "description": "Invoice 2210",
+    "idempotency_key": "us-ach-2210-de"
   }'
 ```
 
@@ -1012,7 +1058,12 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
       "state": "FL",
       "postal_code": "33131",
       "bank_name": "Example Bank",
-      "bank_code": "021000089"
+      "bank_code": "021000089",
+      "bank_address": "270 Park Ave",
+      "bank_city": "New York",
+      "bank_state": "NY",
+      "bank_postal_code": "10017",
+      "bank_country": "US"
     },
     "description": "Invoice 2211",
     "idempotency_key": "us-wire-2211"
@@ -1038,7 +1089,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
       "state": "FL",
       "postal_code": "33131",
       "bank_name": "Example Bank",
-      "bank_code": "CHASUS33XXX"
+      "bank_code": "CHASUS33XXX",
+      "bank_country": "US"
     },
     "description": "Invoice 2212",
     "idempotency_key": "us-swift-2212"
@@ -1090,6 +1142,65 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
 </Tab>
 </Tabs>
 
+## Mandatory supporting document on USD transfers
+
+EVERY outbound **USD** transfer over a bank rail (`ach`, `wire` or
+`swift`) requires an attached **supporting document** (invoice or
+receipt) — it is a requirement of the processing bank and applies to
+**any USD corridor**, not just the US one (for example, also to an
+international SWIFT such as `PY/USD/swift`).
+
+<Steps>
+<Step title="Upload the document">
+Send the file with `POST /v1/payouts/documents`: raw binary body with
+its `Content-Type` (PDF, PNG, JPEG, WEBP, TXT, CSV, DOC(X) or XLS(X),
+up to 50 MB) and the filename in the `name` query param.
+
+```bash
+curl -X POST "https://api.qbank.cl/platform/v1/payouts/documents?name=invoice-2210.pdf" \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/pdf" \
+  --data-binary "@invoice-2210.pdf"
+```
+
+```json
+{
+  "document_key": "payout-docs/9f1c…/org/…/3c2e…"
+}
+```
+</Step>
+<Step title="Pass it when creating the payout">
+The `document_key` travels in `options.supporting_document_key`. On
+`ach`/`wire` you can add `options.document_reference_number` (invoice
+or document reference number) — it is sent to the bank.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "US",
+    "currency": "USD",
+    "method": "ach",
+    "amount": "250.00",
+    "beneficiary": { "…": "…" },
+    "options": {
+      "supporting_document_key": "payout-docs/9f1c…/org/…/3c2e…",
+      "document_reference_number": "INV-2210"
+    },
+    "idempotency_key": "us-ach-2210"
+  }'
+```
+</Step>
+</Steps>
+
+- A USD bank-rail payout created **without the document** is rejected at
+  creation with `400 supporting_document_required` (no debit).
+- A key uploaded by **another account** is rejected with
+  `400 invalid_document_key`.
+- The `document_key` stays stored: if the create fails for another
+  reason, you reuse it on the retry — **no need to re-upload the file**.
+
 ## QR payout
 
 Paying a collection QR (Bolivia, Brazil PIX) now has its own guide:
@@ -1105,6 +1216,8 @@ Paying a collection QR (Bolivia, Brazil PIX) now has its own guide:
 |---|---|---|
 | 400 | `idempotency_key_required` | Send the key in body or header |
 | 400 | `beneficiary_required` | Include the `beneficiary` object |
+| 400 | `supporting_document_required` | USD bank-rail transfer without the attached supporting document — upload it with `POST /v1/payouts/documents` and pass `options.supporting_document_key` (see [supporting document](/en/guides/payouts#mandatory-supporting-document-on-usd-transfers)) |
+| 400 | `invalid_document_key` | The `supporting_document_key` does not belong to your account — upload the document with your own credentials and use the returned key |
 | 402 | `insufficient_funds` | Fund the account; the payout was not created |
 | 403 | `account_blocked` | The account is not active; contact the CBPay team |
 | 403 | `service_disabled` | Payouts is not enabled for your account — see [services](/en/concepts/services) |

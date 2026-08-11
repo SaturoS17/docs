@@ -9,6 +9,29 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+## v2.59 - 11 de agosto de 2026
+
+### v2.59
+
+**Cambiado**
+
+- **Payouts USD por rail bancario: el beneficiario puede vivir en cualquier
+  país** ([guía de payouts](https://docs.cbpayapp.com/es/guias/payouts)): en transferencias `ach`,
+  `wire` y `swift` el `country_code` del beneficiario ya no está fijo en
+  `US` — por ejemplo, un ACH a una cuenta de banco de EE. UU. para alguien
+  que vive en Alemania. El banco receptor sigue en EE. UU. para
+  `ach`/`wire` (`bank_country: "US"` — los rails domésticos no pagan a
+  bancos del exterior); para `swift` el banco puede estar en cualquier
+  país. `state` se exige solo cuando el beneficiario vive en EE. UU. Las
+  jurisdicciones del Anexo B (CU/IR/KP/SY) siguen bloqueadas tanto para el
+  beneficiario como para el país del banco.
+- **Documento de respaldo obligatorio en toda transferencia USD por rail
+  bancario**: los payouts USD por `ach`, `wire` y `swift` siempre exigen un
+  documento de respaldo (factura/recibo) subido primero con
+  `POST /v1/payouts/documents`, sin importar el país del beneficiario —
+  antes el requisito dependía del país. Si falta el documento, la API
+  responde `400 supporting_document_required`.
+
 ## v2.58 · 3 versiones - 10 de agosto de 2026
 
 ### v2.58

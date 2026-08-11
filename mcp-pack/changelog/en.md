@@ -8,6 +8,28 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+## v2.59 - August 11, 2026
+
+### v2.59
+
+**Changed**
+
+- **USD bank-rail payouts: the beneficiary may live in any country**
+  ([payouts guide](https://docs.cbpayapp.com/en/guides/payouts)): for `ach`, `wire` and `swift`
+  transfers the beneficiary's `country_code` is no longer fixed to `US` —
+  for example, an ACH to a US bank account for someone living in Germany.
+  The receiving bank stays in the US for `ach`/`wire`
+  (`bank_country: "US"` — domestic rails do not pay banks abroad); for
+  `swift` the bank may be in any country. `state` is required only when
+  the beneficiary lives in the US. Annex-B jurisdictions (CU/IR/KP/SY)
+  stay blocked for both the beneficiary and the bank country.
+- **Supporting document required on every USD bank-rail transfer**: USD
+  payouts via `ach`, `wire` and `swift` always require a supporting
+  document (invoice/receipt) uploaded first via
+  `POST /v1/payouts/documents`, regardless of the beneficiary's country —
+  previously the requirement depended on the country. A missing document
+  returns `400 supporting_document_required`.
+
 ## v2.58 · 3 releases - August 10, 2026
 
 ### v2.58

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.58"
+  version: "2.59"
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -3253,15 +3253,43 @@ paths:
 
                     `account_number`, `country_code`, `address`, `city`,
 
-                    `postal_code`, `bank_name` y `bank_code` (routing ABA para
+                    `postal_code`, `bank_name`, `bank_country` y `bank_code`
 
-                    `ach`/`wire`, BIC SWIFT para `swift`); `account_type`
+                    (routing ABA para `ach`/`wire`, BIC SWIFT para `swift`);
 
-                    (`CHECKING`/`SAVING`) es requerido para `ach`. El bloque de
+                    `account_type` (`CHECKING`/`SAVING`) es requerido para `ach`.
 
-                    dirección del banco receptor y `bank_phone` son opcionales pero
+                    El beneficiario puede vivir en CUALQUIER país (`country_code`
 
-                    recomendados.
+                    es libre — ej. un ACH a un banco de EE. UU. para alguien que
+
+                    vive en Alemania); `state` es requerido solo cuando
+
+                    `country_code` es `US`. El banco receptor debe estar en EE.
+
+                    UU. para `ach`/`wire` (`bank_country: "US"` — los rails
+
+                    domésticos no pagan a bancos fuera de EE. UU.) junto con su
+
+                    bloque de dirección completo (`bank_address`, `bank_city`,
+
+                    `bank_postal_code` y `bank_state` para bancos de EE. UU.);
+
+                    para `swift` el bloque de dirección del banco es opcional (el
+
+                    rail lo deriva del BIC) y `bank_country` puede ser cualquier
+
+                    país. Las jurisdicciones del Anexo B (CU/IR/KP/SY) siguen
+
+                    bloqueadas para el país del beneficiario Y del banco (`422
+
+                    prohibited_country`). Toda transferencia USD por rail
+
+                    bancario exige además un documento de respaldo
+
+                    (invoice/recibo) subido antes con `POST
+
+                    /v1/payouts/documents` — ver la guía de payouts.
 
                     '
                 beneficiary_contact_id:
@@ -3509,8 +3537,38 @@ paths:
                     postal_code: '33131'
                     bank_name: Example Bank
                     bank_code: '021000089'
+                    bank_address: 500 Main Street
+                    bank_city: New York
+                    bank_state: NY
+                    bank_postal_code: '10001'
+                    bank_country: US
                   description: Factura 2210
                   idempotency_key: us-ach-2210
+              us_ach_international_beneficiary:
+                summary: Estados Unidos — ACH con beneficiario fuera de EE. UU. (banco en EE. UU.)
+                value:
+                  country: US
+                  currency: USD
+                  method: ach
+                  amount: '250.00'
+                  beneficiary:
+                    name: Anna Schmidt
+                    email: anna.schmidt@example.com
+                    account_number: '123456789012'
+                    account_type: CHECKING
+                    country_code: DE
+                    address: Friedrichstrasse 100
+                    city: Berlin
+                    postal_code: '10117'
+                    bank_name: Example Bank
+                    bank_code: '021000089'
+                    bank_address: 500 Main Street
+                    bank_city: New York
+                    bank_state: NY
+                    bank_postal_code: '10001'
+                    bank_country: US
+                  description: Factura 2215
+                  idempotency_key: us-ach-2215
               us_wire:
                 summary: Estados Unidos — wire doméstico (USD, mín 25.00)
                 value:
@@ -3555,6 +3613,7 @@ paths:
                     postal_code: '33131'
                     bank_name: Example Bank
                     bank_code: CHASUS33XXX
+                    bank_country: US
                   description: Factura 2212
                   idempotency_key: us-swift-2212
               cl_paid_from_btc:

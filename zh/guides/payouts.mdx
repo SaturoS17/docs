@@ -898,21 +898,29 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
 - **`swift`** —— 通过 SWIFT 的国际美元电汇，最低 **USD 25.00**。
 
 美国银行通道要求**每笔转账都附带收款人完整的身份与邮政地址** ——
-收款人信息不完整会在创建时被拒绝（`422`，见下文）。必填与选填字段：
+收款人信息不完整会在创建时被拒绝（`422`，见下文）。收款人的
+`country_code` 是其**居住国，可以是任何国家**（例如：向居住在德国的
+收款人的美国银行账户发起 ACH 转账）；保持不变的是**银行**：在
+`ach`/`wire` 中收款银行必须位于美国（`bank_country: "US"`），而
+`swift` 本身就是国际化的。合规底线（古巴、伊朗、朝鲜和叙利亚）对
+收款人所在国和银行所在国均保持封锁。必填与选填字段：
 
 | 字段 | `ach` | `wire` | `swift` | 说明 |
 |---|---|---|---|---|
 | `name` | 必填 | 必填 | 必填 | 账户持有人的完整法定姓名 |
 | `account_number` | 必填 | 必填 | 必填 | 美国银行账户号码 |
 | `email` | 必填 | 必填 | 必填 | 通道会为每个收款人登记该邮箱 |
-| `country_code` | 必填 | 必填 | 必填 | ISO-3166 alpha-2（美国境内账户为 `US`） |
+| `country_code` | 必填 | 必填 | 必填 | **收款人居住国**的 ISO-3166 alpha-2 —— 任何国家（不仅限于 `US`） |
 | `address`、`city`、`postal_code` | 必填 | 必填 | 必填 | 收款人的完整邮政地址 |
-| `state` | 选填 | 选填 | 选填 | 两位字母的州代码 |
+| `state` | 条件必填 | 条件必填 | 条件必填 | **仅当 `country_code` 为 `US` 时**必填（两位字母的州代码）；其他国家选填 |
 | `phone` | 选填 | 选填 | 选填 | 收款人联系电话 |
 | `bank_name` | 必填 | 必填 | 必填 | 收款银行名称 |
 | `bank_code` | 必填 | 必填 | 必填 | `ach`/`wire` 用 **ABA routing number**（9 位数字）；`swift` 用 **SWIFT BIC** |
 | `account_type` | 必填 | — | — | `CHECKING` 或 `SAVING` |
-| `bank_address`、`bank_city`、`bank_state`、`bank_postal_code`、`bank_country`、`bank_phone` | 选填 | 选填 | 选填 | 收款银行的地址块与电话 —— 如有请提供 |
+| `bank_country` | 必填（`US`） | 必填（`US`） | 必填 | 收款银行所在国 —— **`ach`/`wire` 固定为 `US`**；`swift` 可为任何国家 |
+| `bank_address`、`bank_city`、`bank_postal_code` | 必填 | 必填 | 选填 | 收款银行的地址块 |
+| `bank_state` | 必填（美国银行） | 必填（美国银行） | 选填 | 收款银行的两位字母州代码 |
+| `bank_phone` | 选填 | 选填 | 选填 | 收款银行电话 |
 
 美国没有银行目录：`bank_code` 是收款人银行自身的 ABA routing number
 （ACH/wire）或 SWIFT BIC（swift），由收款人提供。要在付款人输入时自动识别银行，可调用
@@ -961,10 +969,46 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
       "state": "FL",
       "postal_code": "33131",
       "bank_name": "Example Bank",
-      "bank_code": "021000089"
+      "bank_code": "021000089",
+      "bank_address": "270 Park Ave",
+      "bank_city": "New York",
+      "bank_state": "NY",
+      "bank_postal_code": "10017",
+      "bank_country": "US"
     },
     "description": "Invoice 2210",
     "idempotency_key": "us-ach-2210"
+  }'
+```
+
+```bash ach（美国境外的收款人）
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "US",
+    "currency": "USD",
+    "method": "ach",
+    "amount": "250.00",
+    "beneficiary": {
+      "name": "Anna Becker",
+      "email": "anna.becker@example.com",
+      "account_number": "123456789012",
+      "account_type": "CHECKING",
+      "country_code": "DE",
+      "address": "Friedrichstrasse 100",
+      "city": "Berlin",
+      "postal_code": "10117",
+      "bank_name": "Example Bank",
+      "bank_code": "021000089",
+      "bank_address": "270 Park Ave",
+      "bank_city": "New York",
+      "bank_state": "NY",
+      "bank_postal_code": "10017",
+      "bank_country": "US"
+    },
+    "description": "Invoice 2210",
+    "idempotency_key": "us-ach-2210-de"
   }'
 ```
 
@@ -987,7 +1031,12 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
       "state": "FL",
       "postal_code": "33131",
       "bank_name": "Example Bank",
-      "bank_code": "021000089"
+      "bank_code": "021000089",
+      "bank_address": "270 Park Ave",
+      "bank_city": "New York",
+      "bank_state": "NY",
+      "bank_postal_code": "10017",
+      "bank_country": "US"
     },
     "description": "Invoice 2211",
     "idempotency_key": "us-wire-2211"
@@ -1013,7 +1062,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
       "state": "FL",
       "postal_code": "33131",
       "bank_name": "Example Bank",
-      "bank_code": "CHASUS33XXX"
+      "bank_code": "CHASUS33XXX",
+      "bank_country": "US"
     },
     "description": "Invoice 2212",
     "idempotency_key": "us-swift-2212"
@@ -1057,6 +1107,45 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
   | `crypto_activity` | 该付款是否涉及加密货币买卖活动（`Yes`/`No`） | `No` |
   | `payment_gateway` | 入金网关声明 | 通道默认值 |
 
+### 美元转账的强制支持文件
+
+银行要求**每笔通过银行通道（`ach`/`wire`/`swift`）的美元转账都附带
+支持文件**（发票或收据），无论通道国家如何 —— 包括国际 SWIFT
+（例如 `PY/USD/swift`）。没有该文件，创建将以
+`400 supporting_document_required` 被拒绝，且不会扣款：
+
+<Steps>
+  <Step title="上传文件">
+    使用 `POST /v1/payouts/documents` 发送文件：请求体为**原始文件二进制**，
+    通过 `Content-Type` 请求头声明类型（PDF、PNG、JPEG、WEBP、TXT、CSV、
+    DOC(X) 或 XLS(X)，最大 50 MB），文件名通过 `name` 查询参数传递。
+
+    ```bash
+    curl -X POST "https://api.qbank.cl/platform/v1/payouts/documents?name=invoice-2210.pdf" \
+      -H "Authorization: Bearer <token>" \
+      -H "Content-Type: application/pdf" \
+      --data-binary "@invoice-2210.pdf"
+    ```
+
+    ```json
+    {
+      "document_key": "payout-docs/9f1c…/org/…/3c2e…",
+      "file_name": "invoice-2210.pdf",
+      "content_type": "application/pdf",
+      "size_bytes": 48213
+    }
+    ```
+
+    该文件将存储在私有存储中，仅对您的组织可见。
+  </Step>
+  <Step title="创建出金时传递该 key">
+    在 `options.supporting_document_key` 中发送该 key，并可选择在
+    `options.document_reference_number` 中附上发票编号（`ach`/`wire`）。
+    如果文件已上传，使用**相同的** `idempotency_key` 重试被拒绝的创建
+    不会重复上传。
+  </Step>
+</Steps>
+
 </Tab>
 </Tabs>
 
@@ -1074,6 +1163,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
 |---|---|---|
 | 400 | `idempotency_key_required` | 在请求体或请求头中发送该键 |
 | 400 | `beneficiary_required` | 包含 `beneficiary` 对象 |
+| 400 | `supporting_document_required` | 美元银行通道转账缺少随附的支持文件 —— 使用 `POST /v1/payouts/documents` 上传并在 `options.supporting_document_key` 中传递（参见[支持文件](/zh/guides/payouts#美元转账的强制支持文件)） |
+| 400 | `invalid_document_key` | 该 `supporting_document_key` 不属于您的账户 —— 请使用您自己的凭据上传文件并使用返回的 key |
 | 402 | `insufficient_funds` | 为账户充值；该出金未被创建 |
 | 403 | `account_blocked` | 账户未处于激活状态；请联系 CBPay 团队 |
 | 403 | `service_disabled` | 您的账户未启用出金服务 —— 参见[服务](/zh/concepts/services) |

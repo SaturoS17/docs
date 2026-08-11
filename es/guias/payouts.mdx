@@ -311,7 +311,7 @@ las de tu cuenta en `GET /v1/rates`; el débito es `usdt_amount + fee`
 | EC | `cash_pickup` / `cnb` | `name`, `document_value`, `sender_name` — el beneficiario retira con su documento |
 | PY | `bank_transfer` | `name` (≤35), `tax_id`, `bank_code`, `account_number` |
 | AR | `bank_transfer` | `name`, `tax_id` (CUIT/CUIL de 11 dígitos), `account_number` (CBU o CVU de 22 dígitos; USD solo CBU) |
-| US | `ach` / `wire` / `swift` | `name`, `account_number`, `email`, `country_code`, `address`, `city`, `postal_code`, `bank_name`, `bank_code` (routing ABA para `ach`/`wire`, BIC SWIFT para `swift`; + `account_type` `CHECKING`/`SAVING` para `ach`) |
+| US | `ach` / `wire` / `swift` | `name`, `account_number`, `email`, `country_code` (cualquier país), `address`, `city`, `postal_code` (+ `state` si `country_code` es `US`), `bank_name`, `bank_country` (`US` en `ach`/`wire`), `bank_code` (routing ABA para `ach`/`wire`, BIC SWIFT para `swift`; + `account_type` `CHECKING`/`SAVING` para `ach`) |
 
 
 <Tabs>
@@ -919,22 +919,32 @@ Payouts en **USD** a cuentas bancarias de EE. UU., con tres métodos:
 
 El riel bancario de EE. UU. exige la **identidad y dirección postal
 completas del beneficiario en cada transferencia** — un beneficiario
-incompleto se rechaza al crear (`422`, ver abajo). Campos requeridos y
-opcionales:
+incompleto se rechaza al crear (`422`, ver abajo). El beneficiario puede
+**vivir en cualquier país**: `country_code` es libre (por ejemplo, un ACH
+a un banco de EE. UU. para un beneficiario que vive en Alemania). Lo que
+sigue fijo es el **banco receptor**: en `ach`/`wire` debe ser un banco de
+EE. UU. (`bank_country: "US"` — el riel doméstico no paga a bancos fuera
+de EE. UU.); en `swift` el banco puede ser de cualquier país. Las
+jurisdicciones del Anexo B (CU/IR/KP/SY) siguen bloqueadas para el país
+del beneficiario **y** del banco (`422 prohibited_country`). Campos
+requeridos y opcionales:
 
 | Campo | `ach` | `wire` | `swift` | Notas |
 |---|---|---|---|---|
 | `name` | requerido | requerido | requerido | Nombre legal completo del titular |
-| `account_number` | requerido | requerido | requerido | Número de cuenta bancaria US |
+| `account_number` | requerido | requerido | requerido | Número de cuenta bancaria |
 | `email` | requerido | requerido | requerido | El riel lo registra para cada beneficiario |
-| `country_code` | requerido | requerido | requerido | ISO-3166 alpha-2 (`US` para cuenta doméstica) |
-| `address`, `city`, `postal_code` | requerido | requerido | requerido | Dirección postal completa del beneficiario |
-| `state` | opcional | opcional | opcional | Código de estado de 2 letras |
+| `country_code` | requerido | requerido | requerido | ISO-3166 alpha-2 de **residencia del beneficiario** — cualquier país (no solo `US`) |
+| `address`, `city`, `postal_code` | requerido | requerido | requerido | Dirección postal completa del beneficiario (sin validación de formato ZIP fuera de EE. UU.) |
+| `state` | condicional | condicional | condicional | Requerido **solo si `country_code` es `US`** (código de estado de 2 letras); opcional en el resto |
 | `phone` | opcional | opcional | opcional | Teléfono de contacto del beneficiario |
 | `bank_name` | requerido | requerido | requerido | Nombre del banco receptor |
+| `bank_country` | requerido (`US`) | requerido (`US`) | requerido | País del banco receptor — **fijo en `US` para `ach`/`wire`**; cualquier país en `swift` |
 | `bank_code` | requerido | requerido | requerido | **Routing number ABA** (9 dígitos) para `ach`/`wire`; **BIC SWIFT** para `swift` |
 | `account_type` | requerido | — | — | `CHECKING` o `SAVING` |
-| `bank_address`, `bank_city`, `bank_state`, `bank_postal_code`, `bank_country`, `bank_phone` | opcional | opcional | opcional | Bloque de dirección y teléfono del banco receptor — envíalos cuando los tengas |
+| `bank_address`, `bank_city`, `bank_postal_code` | requerido | requerido | opcional | Dirección del banco receptor — en `swift` el riel la deriva del BIC |
+| `bank_state` | requerido (banco US) | requerido (banco US) | opcional | Estado del banco cuando `bank_country` es `US` |
+| `bank_phone` | opcional | opcional | opcional | Teléfono del banco receptor |
 
 No hay catálogo de bancos de EE. UU.: el `bank_code` es el propio routing
 ABA del banco del beneficiario (ACH/wire) o su BIC SWIFT (swift), dato que
@@ -987,10 +997,46 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
       "state": "FL",
       "postal_code": "33131",
       "bank_name": "Example Bank",
-      "bank_code": "021000089"
+      "bank_code": "021000089",
+      "bank_address": "500 Main Street",
+      "bank_city": "New York",
+      "bank_state": "NY",
+      "bank_postal_code": "10001",
+      "bank_country": "US"
     },
     "description": "Factura 2210",
     "idempotency_key": "us-ach-2210"
+  }'
+```
+
+```bash ach (beneficiario fuera de EE. UU.)
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "US",
+    "currency": "USD",
+    "method": "ach",
+    "amount": "250.00",
+    "beneficiary": {
+      "name": "Anna Schmidt",
+      "email": "anna.schmidt@example.com",
+      "account_number": "123456789012",
+      "account_type": "CHECKING",
+      "country_code": "DE",
+      "address": "Friedrichstrasse 100",
+      "city": "Berlin",
+      "postal_code": "10117",
+      "bank_name": "Example Bank",
+      "bank_code": "021000089",
+      "bank_address": "500 Main Street",
+      "bank_city": "New York",
+      "bank_state": "NY",
+      "bank_postal_code": "10001",
+      "bank_country": "US"
+    },
+    "description": "Factura 2215",
+    "idempotency_key": "us-ach-2215"
   }'
 ```
 
@@ -1013,7 +1059,12 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
       "state": "FL",
       "postal_code": "33131",
       "bank_name": "Example Bank",
-      "bank_code": "021000089"
+      "bank_code": "021000089",
+      "bank_address": "500 Main Street",
+      "bank_city": "New York",
+      "bank_state": "NY",
+      "bank_postal_code": "10001",
+      "bank_country": "US"
     },
     "description": "Factura 2211",
     "idempotency_key": "us-wire-2211"
@@ -1039,7 +1090,8 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
       "state": "FL",
       "postal_code": "33131",
       "bank_name": "Example Bank",
-      "bank_code": "CHASUS33XXX"
+      "bank_code": "CHASUS33XXX",
+      "bank_country": "US"
     },
     "description": "Factura 2212",
     "idempotency_key": "us-swift-2212"
@@ -1091,6 +1143,65 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
 </Tab>
 </Tabs>
 
+## Documento de respaldo obligatorio en transferencias USD
+
+TODA transferencia saliente en **USD** por rail bancario (`ach`, `wire` o
+`swift`) exige un **documento de respaldo** (factura o recibo) adjunto —
+es un requisito del banco procesador y aplica a **cualquier corredor USD**,
+no solo al de EE. UU. (por ejemplo, también a un SWIFT internacional como
+`PY/USD/swift`).
+
+<Steps>
+<Step title="Sube el documento">
+Envía el archivo con `POST /v1/payouts/documents`: binario crudo con su
+`Content-Type` (PDF, PNG, JPEG, WEBP, TXT, CSV, DOC(X) o XLS(X), hasta
+50 MB) y el nombre del archivo en el query param `name`.
+
+```bash
+curl -X POST "https://api.qbank.cl/platform/v1/payouts/documents?name=factura-2210.pdf" \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/pdf" \
+  --data-binary "@factura-2210.pdf"
+```
+
+```json
+{
+  "document_key": "payout-docs/9f1c…/org/…/3c2e…"
+}
+```
+</Step>
+<Step title="Pásalo al crear el payout">
+El `document_key` viaja en `options.supporting_document_key`. En
+`ach`/`wire` puedes agregar `options.document_reference_number` (número
+de factura o referencia del documento) — se envía al banco.
+
+```bash
+curl -X POST https://api.qbank.cl/platform/v1/payouts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "US",
+    "currency": "USD",
+    "method": "ach",
+    "amount": "250.00",
+    "beneficiary": { "…": "…" },
+    "options": {
+      "supporting_document_key": "payout-docs/9f1c…/org/…/3c2e…",
+      "document_reference_number": "INV-2210"
+    },
+    "idempotency_key": "us-ach-2210"
+  }'
+```
+</Step>
+</Steps>
+
+- Un payout USD por rail bancario creado **sin el documento** se rechaza
+  al crear con `400 supporting_document_required` (sin débito).
+- Una key subida por **otra cuenta** se rechaza con
+  `400 invalid_document_key`.
+- La `document_key` queda almacenada: si el create falla por otra causa,
+  la reutilizas en el reintento — **no necesitas re-subir el archivo**.
+
 ## Payout QR
 
 Pagar un QR de cobro (Bolivia, PIX de Brasil) ahora tiene su propia guía:
@@ -1106,6 +1217,8 @@ Pagar un QR de cobro (Bolivia, PIX de Brasil) ahora tiene su propia guía:
 |---|---|---|
 | 400 | `idempotency_key_required` | Envía la clave en body o header |
 | 400 | `beneficiary_required` | Incluye el objeto `beneficiary` |
+| 400 | `supporting_document_required` | La transferencia USD por rail bancario exige el documento de respaldo — súbelo con `POST /v1/payouts/documents` y pásalo en `options.supporting_document_key` |
+| 400 | `invalid_document_key` | La `supporting_document_key` no pertenece a tu cuenta — sube el documento con tu propia sesión |
 | 402 | `insufficient_funds` | Fondea la cuenta; el payout no se creó |
 | 403 | `account_blocked` | La cuenta no está activa; contacta al equipo de CBPay |
 | 403 | `service_disabled` | Payouts no está habilitado para tu cuenta — ver [servicios](/es/conceptos/servicios) |

@@ -7,6 +7,26 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年8月11日" description="v2.59">
+
+### v2.59
+
+**变更**
+
+- **美元银行通道付款：收款人可居住在任何国家**
+  （[付款指南](/zh/guides/payouts)）：对于 `ach`、`wire` 和 `swift`
+  转账，收款人的 `country_code` 不再固定为 `US` —— 例如，可以为居住在德国的人
+  向美国银行账户发起 ACH。对于 `ach`/`wire`，接收银行必须在美国
+  （`bank_country: "US"` —— 国内通道不向境外银行付款）；对于 `swift`，银行可位于
+  任何国家。仅当收款人居住在美国时才要求 `state`。附录 B 司法管辖区
+  （CU/IR/KP/SY）对收款人和银行所在国家均保持封锁。
+- **每笔美元银行通道转账均要求支持文件**：通过 `ach`、`wire` 和 `swift`
+  发起的美元付款始终要求先通过 `POST /v1/payouts/documents` 上传支持文件
+  （发票/收据），无论收款人所在国家 —— 此前该要求取决于国家。缺少文件将返回
+  `400 supporting_document_required`。
+
+</Update>
+
 <Update label="2026年8月10日" description="v2.58 · 3 个版本">
 
 ### v2.58

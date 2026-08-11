@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.57"
+  version: "2.59"
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -3079,13 +3079,31 @@ paths:
 
                     `email`、`account_number`、`country_code`、`address`、`city`、
 
-                    `postal_code`、`bank_name` 和 `bank_code`(`ach`/`wire` 用 ABA
+                    `postal_code`、`bank_name`、`bank_country` 和 `bank_code`(`ach`/`wire`
 
-                    routing number,`swift` 用 SWIFT BIC);`ach` 还必须提供
+                    用 ABA routing number,`swift` 用 SWIFT BIC);`ach` 还必须提供
 
-                    `account_type`(`CHECKING`/`SAVING`)。收款银行的地址块与
+                    `account_type`(`CHECKING`/`SAVING`)。收款人可居住在任何国家
 
-                    `bank_phone` 为选填,但建议提供。
+                    (`country_code` 不限 —— 例如向居住德国的收款人的美国银行账户发起
+
+                    ACH);仅当 `country_code` 为 `US` 时 `state` 为必填。`ach`/`wire`
+
+                    的收款银行必须位于美国(`bank_country: "US"` —— 本地通道无法向
+
+                    美国以外的银行付款),并需完整银行地址块(`bank_address`、
+
+                    `bank_city`、`bank_postal_code`,美国银行还需 `bank_state`);
+
+                    `swift` 的银行地址块为选填(通道可从 BIC 推导),`bank_country`
+
+                    可为任意国家。附件 B 所列辖区(CU/IR/KP/SY)对收款人国家和银行
+
+                    国家仍然封锁(`422 prohibited_country`)。所有 USD 银行通道转账
+
+                    还须先通过 `POST /v1/payouts/documents` 上传支持文件(发票/收据)
+
+                    —— 详见 payouts 指南。
 
                     '
                 beneficiary_contact_id:
@@ -3330,8 +3348,38 @@ paths:
                     postal_code: '33131'
                     bank_name: Example Bank
                     bank_code: '021000089'
+                    bank_address: 500 Main Street
+                    bank_city: New York
+                    bank_state: NY
+                    bank_postal_code: '10001'
+                    bank_country: US
                   description: Invoice 2210
                   idempotency_key: us-ach-2210
+              us_ach_international_beneficiary:
+                summary: 美国 — 收款人在美国境外的 ACH(银行为美国银行)
+                value:
+                  country: US
+                  currency: USD
+                  method: ach
+                  amount: '250.00'
+                  beneficiary:
+                    name: Anna Schmidt
+                    email: anna.schmidt@example.com
+                    account_number: '123456789012'
+                    account_type: CHECKING
+                    country_code: DE
+                    address: Friedrichstrasse 100
+                    city: Berlin
+                    postal_code: '10117'
+                    bank_name: Example Bank
+                    bank_code: '021000089'
+                    bank_address: 500 Main Street
+                    bank_city: New York
+                    bank_state: NY
+                    bank_postal_code: '10001'
+                    bank_country: US
+                  description: Invoice 2215
+                  idempotency_key: us-ach-2215
               us_wire:
                 summary: 美国 — 境内电汇(USD,最低 25.00)
                 value:
@@ -3376,6 +3424,7 @@ paths:
                     postal_code: '33131'
                     bank_name: Example Bank
                     bank_code: CHASUS33XXX
+                    bank_country: US
                   description: Invoice 2212
                   idempotency_key: us-swift-2212
               cl_paid_from_btc:
