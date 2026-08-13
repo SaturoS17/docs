@@ -155,7 +155,10 @@ En ese momento tu saldo ya refleja el débito: `total_debit` pasó de
 `available` a `held` (en el saldo del `settlement_asset`).
 
 > **Nota**
-**`bank_reference` — el id propio del banco para la transferencia.** Mientras
+**`bank_reference` — el id propio del banco para la transferencia.** En US ACH,
+wire y SWIFT es la referencia CBF que vuelve **de inmediato** al crear (el
+payout sigue `processing` hasta que el banco confirma). En el resto de
+corredores queda vacio (`""`) hasta `completed`. Mientras
 el payout está en curso viene vacío (`""`); cuando el payout queda
 `completed`, lleva el id de transacción asignado por el banco/rail de
 destino. Es el valor que el beneficiario puede usar para cruzar el pago con
@@ -1070,20 +1073,15 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
   "fee": "0.300000",
   "total_debit": "250.801002",
   "status": "processing",
-  "bank_reference": ""
+  "bank_reference": "CBF1234567890123"
 }
 ```
 
-- **El primer payout a un beneficiario nuevo puede quedarse `processing`
-  más tiempo**: el riel revisa a los beneficiarios nuevos antes de mover
-  plata, así que la respuesta puede volver con `status: "processing"` y
-  `status_code: "pending_aml"`. La transferencia se ejecuta sola cuando el
-  riel aprueba al beneficiario — el estado final siempre llega por el
-  webhook `payout_status_changed` (con conciliación periódica de respaldo).
-  Los payouts siguientes al mismo beneficiario van directo.
-- Si el riel **rechaza al beneficiario**, el payout termina
-  `status: "failed"` con `status_code: "counterparty_rejected"` y el
-  débito se reembolsa automáticamente.
+- **Los payouts US quedan `processing` hasta que el banco confirma el pago manual.**
+  El create ya devuelve el CBF en `bank_reference`. Escucha
+  `payout_status_changed` para `completed` o `failed` (reembolsado).
+- En este riel no hay un hold AML extra del beneficiario: el operador
+  paga a mano y el poller reconcilia.
 - **Mínimos**: `wire` y `swift` exigen al menos **USD 25.00**; bajo eso la
   creación se rechaza con `422` y `status_message`
   `"…payouts require an amount of at least USD 25"`. ACH no tiene mínimo
@@ -1226,11 +1224,8 @@ beneficiario o contacta a tu equipo CBPay.
 Reintenta con la **misma** `idempotency_key`: recibes el payout original
 (`idempotency_hit: true`) — jamás un duplicado. Una clave nueva es un
 payout nuevo e independiente.
-#### ¿Por qué mi primer payout US a un beneficiario nuevo sigue en processing?
-El riel US/USD revisa a cada beneficiario nuevo antes de mover plata: el
-payout queda `processing` con `status_code: "pending_aml"` hasta que el
-riel lo aprueba, y luego se ejecuta solo. El estado final llega por el
-webhook `payout_status_changed` — los siguientes payouts a ese mismo
-beneficiario ya no esperan. Si el riel rechaza al beneficiario, el payout
-termina `failed` con `status_code: "counterparty_rejected"` y el débito se
-reembolsa.
+#### Por que mi payout US ACH/wire/SWIFT sigue processing?
+Los payouts del riel bancario US los paga el operador a mano. El create
+ya trae el CBF en `bank_reference` y queda `processing` hasta que el banco
+confirma. Escucha `payout_status_changed` para el estado final; un fallo
+reembolsa el debito solo.

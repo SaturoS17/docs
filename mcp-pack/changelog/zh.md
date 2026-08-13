@@ -8,6 +8,14 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+## v2.60 - 2026年8月12日
+
+### v2.60
+
+**变更**
+
+- **US ACH、wire 与 SWIFT 立即返回 `bank_reference`。** 创建响应保持 `processing`，并已带上受益人（以及你）可与银行核对的 CBF 参考号。银行确认后 payout 才会完成 — 请监听 `payout_status_changed`。其他通道的 `bank_reference` 仍在渠道报告前为空。
+
 ## v2.59 - 2026年8月11日
 
 ### v2.59

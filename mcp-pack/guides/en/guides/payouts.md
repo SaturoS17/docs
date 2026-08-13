@@ -155,12 +155,13 @@ At that moment your balance already reflects the debit: `total_debit` moved
 from `available` into `held` (on the `settlement_asset` balance).
 
 > **Note**
-**`bank_reference` — the bank's own id for the transfer.** While the payout
-is in flight it comes back empty (`""`); once the payout is `completed`, it
-carries the transaction id assigned by the destination bank/rail. It is the
-value the beneficiary can use to cross-check the payment with their bank,
-and it also appears in the `payout_status_changed` webhook, the PDF receipt,
-the payouts CSV export and the statement.
+**`bank_reference` — the bank's own id for the transfer.** On US ACH, wire
+and SWIFT it is the CBF reference returned **immediately** at create (the
+payout stays `processing` until the bank confirms). On other corridors it
+stays empty (`""`) until the payout is `completed`. It is the value the
+beneficiary can use to cross-check the payment with their bank, and it also
+appears in the `payout_status_changed` webhook, the PDF receipt, the payouts
+CSV export and the statement.
 ### Paying from another balance (`settlement_asset`)
 
 By default the debit comes from your default settlement asset (USDT unless
@@ -1069,20 +1070,15 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
   "fee": "0.300000",
   "total_debit": "250.801002",
   "status": "processing",
-  "bank_reference": ""
+  "bank_reference": "CBF1234567890123"
 }
 ```
 
-- **First payout to a brand-new beneficiary may stay `processing` longer**:
-  the rail reviews new beneficiaries before moving money, so the response
-  can come back with `status: "processing"` and
-  `status_code: "pending_aml"`. The transfer executes automatically once
-  the rail approves the beneficiary — you always get the final state via
-  the `payout_status_changed` webhook (with periodic reconciliation as
-  backup). Subsequent payouts to the same beneficiary go straight through.
-- If the rail **rejects the beneficiary**, the payout ends
-  `status: "failed"` with `status_code: "counterparty_rejected"` and the
-  debit is refunded automatically.
+- **US payouts stay `processing` until the bank confirms the manual payment.**
+  Create already returns the CBF in `bank_reference`. Listen to
+  `payout_status_changed` for `completed` or `failed` (refunded).
+- There is no extra AML hold of the beneficiary in this rail: the operator
+  pays by hand and the poller reconciles.
 - **Minimums**: `wire` and `swift` require at least **USD 25.00**; below
   that the creation is rejected with `422` and `status_message`
   `"…payouts require an amount of at least USD 25"`. ACH has no validated
@@ -1225,11 +1221,8 @@ data or contact your CBPay team.
 Retry with the **same** `idempotency_key`: you get the original payout
 back (`idempotency_hit: true`) — never a duplicate. A new key is a new,
 independent payout.
-#### Why is my first US payout to a new beneficiary still processing?
-The US/USD rail reviews every brand-new beneficiary before moving money:
-the payout stays `processing` with `status_code: "pending_aml"` until the
-rail approves the beneficiary, and then executes automatically. You receive
-the final state via the `payout_status_changed` webhook — the next payouts
-to that same beneficiary no longer wait. If the rail rejects the
-beneficiary, the payout ends `failed` with
-`status_code: "counterparty_rejected"` and the debit is refunded.
+#### Why is my US ACH/wire/SWIFT payout still processing?
+US bank-rail payouts are paid by the operator by hand. Create already
+returns the CBF in `bank_reference` and stays `processing` until the bank
+confirms. Listen to `payout_status_changed` for the final state; a failure
+refunds the debit automatically.

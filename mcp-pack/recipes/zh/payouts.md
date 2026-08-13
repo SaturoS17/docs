@@ -151,7 +151,7 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
 `held`（在 `settlement_asset` 对应的余额上）。
 
 > **注**
-**`bank_reference` —— 银行为该笔转账分配的交易编号。** 出金处理期间该字段为空（`""`）；
+**`bank_reference` —— 银行为该笔转账分配的交易编号。** US ACH/wire/SWIFT 在创建时**立即**返回 CBF（payout 保持 `processing` 直至银行确认）；其他通道在完成前为空（`""`）；
 当出金状态变为 `completed` 时，它会带上目的地银行/通道分配的交易编号。收款人可使用该编号
 与自己的银行核对付款。该字段同时出现在 `payout_status_changed` Webhook、PDF 回执、
 出金 CSV 导出以及对账单中。
@@ -1042,17 +1042,14 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
   "fee": "0.300000",
   "total_debit": "250.801002",
   "status": "processing",
-  "bank_reference": ""
+  "bank_reference": "CBF1234567890123"
 }
 ```
 
-- **向全新收款人发起的第一笔 payout 可能会在 `processing` 停留更久**：
-  通道会先审核新收款人再动资金，因此响应可能返回
-  `status: "processing"` 和 `status_code: "pending_aml"`。通道批准收款人后，
-  转账会自动执行 —— 最终状态总会通过 `payout_status_changed` webhook 送达
-  （并有定期对账作为兜底）。之后向同一收款人的 payout 将直接执行。
-- 如果通道**拒绝该收款人**，payout 会以 `status: "failed"`、
-  `status_code: "counterparty_rejected"` 结束，扣款自动退还。
+- **美国 payout 会保持 `processing`，直到银行确认人工付款。**
+  创建响应已在 `bank_reference` 返回 CBF。监听 `payout_status_changed`
+  以获得 `completed` 或 `failed`（已退款）。
+- 该通道没有额外的收款人 AML hold：运营方手工付款，poller 对账。
 - **最低金额**：`wire` 和 `swift` 至少 **USD 25.00**；低于该金额会在创建时
   被拒绝（`422`，`status_message` 为
   `"…payouts require an amount of at least USD 25"`）。ACH 无已验证的最低金额。
@@ -1169,9 +1166,6 @@ webhook 或 `GET` 等待最终状态 —— 它一定会到达，失败时会自
 用**相同**的 `idempotency_key` 重试：会返回原始 payout
 （`idempotency_hit: true`）—— 绝不会重复。新的 key 是一笔全新的独立
 payout。
-#### 为什么我向新收款人发起的第一笔美国 payout 一直处于 processing？
-US/USD 通道在动用资金前会审核每个全新收款人：payout 保持
-`processing` 且 `status_code: "pending_aml"`，直到通道批准收款人后自动执行。
-最终状态通过 `payout_status_changed` webhook 送达 —— 之后向同一收款人的
-payout 不再需要等待。如果通道拒绝该收款人，payout 以 `failed`、
-`status_code: "counterparty_rejected"` 结束，扣款自动退还。
+#### 为什么我的美国 ACH/wire/SWIFT payout 一直处于 processing？
+创建时就已经返回 `bank_reference`（CBF）。payout 保持 `processing`，直到银行确认人工付款。
+监听 `payout_status_changed` 以获得 `completed` 或 `failed`（已退款）。该通道没有额外的收款人 AML hold。

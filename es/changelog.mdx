@@ -8,6 +8,16 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="12 de agosto de 2026" description="v2.60">
+
+### v2.60
+
+**Cambiado**
+
+- **US ACH, wire y SWIFT devuelven `bank_reference` de inmediato.** El create queda `processing` y ya trae la referencia CBF con la que el beneficiario (y tu) cruzan el pago con el banco. El payout completa cuando el banco confirma — escucha `payout_status_changed`. En el resto de corredores `bank_reference` sigue vacio hasta que el rail lo reporta.
+
+</Update>
+
 <Update label="11 de agosto de 2026" description="v2.59">
 
 ### v2.59

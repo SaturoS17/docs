@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.59"
+  version: "2.60"
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -20893,7 +20893,7 @@ components:
           type: string
         bank_reference:
           type: string
-          description: Bank/rail transaction reference (e.g. the bank's transfer id, which the beneficiary can use to cross-check the payment with their bank). Empty until the rail reports it.
+          description: Bank/rail transaction reference (e.g. the bank's transfer id, which the beneficiary can use to cross-check the payment with their bank). On US ACH/wire/SWIFT it is the CBF reference returned immediately at create; on other corridors it stays empty until the rail reports it.
         created_at:
           type: string
           format: date-time

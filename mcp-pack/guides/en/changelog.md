@@ -8,6 +8,14 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+## v2.60 - August 12, 2026
+
+### v2.60
+
+**Changed**
+
+- **US ACH, wire and SWIFT return `bank_reference` immediately.** The create response stays `processing` and already carries the CBF reference the beneficiary (and you) can match with the bank. The payout completes when the bank confirms — listen to `payout_status_changed`. Other corridors still leave `bank_reference` empty until the rail reports it.
+
 ## v2.59 - August 11, 2026
 
 ### v2.59
