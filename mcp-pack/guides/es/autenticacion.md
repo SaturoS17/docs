@@ -168,7 +168,8 @@ curl -X PATCH https://api.qbank.cl/platform/v1/me \
     "display_name": "Comercial Andina SpA",
     "tax_id": "76.543.210-8",
     "phone": "+56 9 1234 5678",
-    "country": "CL"
+    "country": "CL",
+    "locale": "en"
   }'
 ```
 
@@ -181,15 +182,17 @@ curl -X PATCH https://api.qbank.cl/platform/v1/me \
   "tax_id": "76.543.210-8",
   "phone": "+56 9 1234 5678",
   "country": "CL",
+  "locale": "en",
   "status": "active",
   "kyc_status": "approved",
   "created_at": "2026-06-01T12:00:00Z"
 }
 ```
 
-`PATCH /v1/me` acepta `display_name`, `tax_id`, `phone` y `country` (envía
-solo los que cambian). El `email`, `status` y `kyc_status` no se
-autogestionan: los resuelve el administrador.
+`PATCH /v1/me` acepta `display_name`, `tax_id`, `phone`, `country` y `locale` (envía
+solo los que cambian). Un `locale` vacío guarda `en`; valores inválidos devuelven `400 invalid_locale`.
+El `email`, `status` y `kyc_status` no se autogestionan: los resuelve el administrador.
+Ver [Idioma y locale](https://docs.cbpayapp.com/es/guias/idioma).
 
 ## Miembros de una empresa
 

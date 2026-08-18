@@ -33,7 +33,8 @@ flowchart LR
 ## Profile data and verified identity
 
 `PATCH /v1/me` updates your profile data (`display_name`, `tax_id`, `phone`,
-`country`). But once your identity verification (KYC/KYB) is **approved**,
+`country`, `locale`). `locale` stays editable after KYC. See [Locale and language](/en/guides/locale).
+But once your identity verification (KYC/KYB) is **approved**,
 your name, tax ID and country are **filled automatically from the verified
 identity** — what the verification confirmed, not what was self-declared —
 and they become **immutable** through this endpoint:

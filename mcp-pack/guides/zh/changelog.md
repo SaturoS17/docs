@@ -8,6 +8,20 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+## v2.61 - 2026年8月17日
+
+### v2.61
+
+**新增**
+
+- **账户 locale `en` / `es` / `zh`。** `GET /v1/me` 现在返回 `locale`。`PATCH /v1/me` 发送 `{ "locale": "en" | "es" | "zh" }` 即可持久化；空字符串存为英语；其他非空值返回 `400 invalid_locale`（`"locale must be en, es or zh"`）。新账户在创建时选择 locale（请求体，然后是 `Accept-Language`，然后是组织的 `default_locale`，最后是英语）。指南：[语言与 locale](https://docs.cbpayapp.com/zh/guides/locale)。
+
+**变更**
+
+- **面向人的界面默认英语。** 托管页面（收银台、公开 tracker、收据、状态页、Qscore 印章、核验报告）、收据/对账单 PDF 以及 CSV **表头** 解析为 `en`，除非有效的 `?lang=` / `?locale=`、账户资料、组织默认值或 `Accept-Language` 另有指定。无效的 query locale 会被忽略（绝不会 `400`）。API JSON 与 webhook 仍为英语。
+- **付款人 cookie `cbpay_pay_locale`**（30 天，`Secure`，`SameSite=Lax`）用于公开页面；不会翻译 JSON。
+- **既有账户保持西班牙语。** 部署时的一次性步骤会为尚无 locale 的账户写入 `locale=es`，以免现网西语客户被切到英语。新账户仍默认英语。
+
 ## v2.60 - 2026年8月12日
 
 ### v2.60

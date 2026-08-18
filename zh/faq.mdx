@@ -39,6 +39,13 @@ URL 和密钥。完整指南见[环境与测试](/zh/environment-testing)。
 服务器到服务器的流程请始终使用 **API 密钥**（`pk_…`，永不过期）。JWT 会话（24 小时）用于有用户登录的前端。两者都放在 `Authorization: Bearer <token>` 中传递（或使用 `X-API-Key`）。
 </Accordion>
 
+<Accordion title="本次部署后我的账户会使用哪种语言？">
+现有账户会预配置为 `locale=es`（部署时一次性迁移，不是接口）。
+新账户默认英语，除非注册请求体、`Accept-Language` 或组织 `default_locale` 另有指定。
+可用 `PATCH /v1/me` `{ "locale": "en" }` 更改。JSON API 响应始终为英语。
+见[语言与 locale](/zh/guides/locale)。
+</Accordion>
+
 </AccordionGroup>
 
 ## 资金与汇率

@@ -28,7 +28,8 @@ flowchart LR
 ## 档案数据与已验证身份
 
 `PATCH /v1/me` 用于更新档案数据（`display_name`、`tax_id`、`phone`、
-`country`）。但身份验证（KYC/KYB）**获批**后，姓名、税号和国家会
+`country`、`locale`）。`locale` 在 KYC 之后仍可编辑。见[语言与 locale](/zh/guides/locale)。
+但身份验证（KYC/KYB）**获批**后，姓名、税号和国家会
 **自动由已验证的身份填充**——以验证确认的信息为准，而非自行申报的内容——
 并且通过此端点变为**不可修改**：
 

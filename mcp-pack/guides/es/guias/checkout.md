@@ -238,6 +238,13 @@ Errores propios del link (los ve quien abre la página):
 | 422 | `collect_rejected` | El rail rechazó el cobro pull (OTP inválida o datos incorrectos); el link sigue pendiente |
 | 429 | `too_many_attempts` | Rate limit por IP de la página pública |
 | 503 | `pricing_unavailable` | Cotización temporalmente no disponible; reintentar en un momento |
+
+## Idioma
+
+La página hospedada de checkout sigue la cadena pública: `?lang=` / `?locale=` (un valor inválido se ignora),
+luego la cookie del pagador `cbpay_pay_locale`, luego la cuenta del comercio, luego el `default_locale` de la org, luego `Accept-Language`, luego inglés.
+El JSON de la API sigue en inglés. Detalle: [Idioma y locale](https://docs.cbpayapp.com/es/guias/idioma).
+
 ## FAQ
 
 #### ¿El mismo link se puede pagar dos veces?

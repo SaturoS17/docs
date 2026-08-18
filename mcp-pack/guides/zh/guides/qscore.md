@@ -48,7 +48,7 @@ sequenceDiagram
 
 ### 生成（或复用）您的报告
 
-`POST /v1/qscore/my-report` — 请求体可选：`{"lang": "es"|"en"|"zh"}`（默认 `es`）。生成是**同步的**：响应携带已完成的报告。无需 `idempotency_key`——幂等性按账户、主体和日期确定（同一天重复提交将返回已创建的报告）。
+`POST /v1/qscore/my-report` — 请求体可选：`{"lang": "en"|"es"|"zh"}`（默认 `en`）。生成是**同步的**：响应携带已完成的报告。无需 `idempotency_key`——幂等性按账户、主体和日期确定（同一天重复提交将返回已创建的报告）。
 
 ```bash 生成您自己的报告
 curl -X POST "https://api.qbank.cl/platform/v1/qscore/my-report" \
@@ -110,7 +110,7 @@ PDF 带有与任何 Qscore 报告相同的公开验证码——任何持有它�
 | `country` | string | 是 | 证件的 ISO 3166-1 alpha-2 国家代码。目前为 `CL`。 |
 | `subject_type` | string | 否 | `person` 或 `company`。如果省略，将从证件推断。 |
 | `purpose` | string | 是 | 声明的用途（数据保护法）：`credit_evaluation`、`tenant_screening`、`hiring`、`supplier_onboarding`、`other`。 |
-| `lang` | string | 否 | 报告语言：`es`（默认）、`en`、`zh`。 |
+| `lang` | string | 否 | 报告语言：`en`（默认）、`es`、`zh`。 |
 | `idempotency_key` | string | 是 | 您此次购买的唯一密钥。 |
 
 #### 个人

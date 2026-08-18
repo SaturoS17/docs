@@ -45,7 +45,8 @@ Filters: `from`/`to` (`YYYY-MM-DD`, organization timezone), `type`, `asset`, `pa
 
 Add `format=csv` or `format=xlsx` to download the same rows as an
 accounting-ready file (up to 10,000 rows per download). Also available on
-the `payouts`, `payins` and `transfers` listings:
+the `payouts`, `payins` and `transfers` listings. CSV **headers** follow
+the account locale; cell values stay raw:
 
 ```bash
 curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-01&to=2026-07-13&format=xlsx" \

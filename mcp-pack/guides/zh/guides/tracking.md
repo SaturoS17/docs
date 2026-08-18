@@ -184,7 +184,7 @@ curl -OJ "https://api.qbank.cl/platform/v1/public/track/P9b1deb4d.../receipt.pdf
 
 页面和 PDF 完全支持三种语言 — **英语、西班牙语和简体中文**：
 
-- 托管页面以访问者的首选语言渲染（使用已保存的偏好；默认为英语），并将其作为 `?lang=en|es|zh` 传给 API。
+- 解析顺序（公开链）：`?lang=` / `?locale=`（无效值会被忽略，永不 400），然后是付款人 cookie `cbpay_pay_locale`（HttpOnly=false、Secure、SameSite=Lax、30 天），然后是商户账户，然后是组织 `default_locale`，然后是 Accept-Language，最后是英语。门户 SSR cookie `cbpay_lang` 是另一枚前端 cookie——API 不读取它。
 - JSON API 使用同一参数在服务端翻译 `fields`/`amounts` 标签。
 - PDF 完全以所请求的语言渲染，包括中文。
 

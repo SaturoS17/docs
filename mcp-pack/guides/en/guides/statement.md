@@ -45,9 +45,8 @@ curl -OJ "https://api.qbank.cl/platform/v1/reports/statement?from=2026-01-01&to=
 
 - `from` / `to`: `YYYY-MM-DD` dates, inclusive, in your organization timezone. Maximum range:
   400 days.
-- `lang=es|en`: language of the PDF/Excel (default `es`).
-- Files arrive with `Content-Disposition: attachment` and the name
-  `cartola_cbpay_<account>_<from>_<to>.pdf/.xlsx`.
+- `lang=en|es|zh`: language of the PDF/Excel (default `en`). Also `Content-Language`.
+- Files arrive with `Content-Disposition: attachment`. The basename follows the locale (`statement_…` / `cartola_…` / `对账单_…`).
 
 ## What it contains
 

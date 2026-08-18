@@ -110,6 +110,7 @@ source_url: https://docs.cbpayapp.com/zh/errors
 | `invalid_event_type` / `weak_secret` / `invalid_callback_url` | Webhook 订阅无效 |
 | `invalid_phone` | 手机号无法规范化为 E.164 格式（联系人和 `to_phone`） |
 | `invalid_language` | PDF 报告的 `lang` 不是 `en`、`es` 或 `zh`（AML 报告与验证报告） |
+| `invalid_locale` | `PATCH /v1/me`（或注册）发送了非空且不属于 `en` / `es` / `zh` 的 locale。空字符串会存为英语。不同于 `invalid_language`（PDF 报告的 `lang`），也不同于组织管理员在 `default_locale` 上的 `invalid_value` |
 | `invalid_format` | 验证报告的 `format` 不是 `pdf` 或 `json` |
 | `batch_too_large` | 联系人导入超过 1,000 条（请分批上传） |
 | `invalid_alias` | 别名须为 4–20 个字符（a-z、0-9、点、下划线、连字符），首尾为字母或数字，且不能是保留词 |

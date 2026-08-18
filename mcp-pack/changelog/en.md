@@ -8,6 +8,20 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+## v2.61 - August 17, 2026
+
+### v2.61
+
+**Added**
+
+- **Account locale `en` / `es` / `zh`.** `GET /v1/me` now returns `locale`. `PATCH /v1/me` with `{ "locale": "en" | "es" | "zh" }` persists it; an empty string stores English; any other non-empty value returns `400 invalid_locale` (`"locale must be en, es or zh"`). New accounts pick locale at birth (body, then `Accept-Language`, then the org `default_locale`, then English). Guide: [Locale and language](https://docs.cbpayapp.com/en/guides/locale).
+
+**Changed**
+
+- **Human surfaces default to English.** Hosted pages (checkout, public tracker, receipts, status, Qscore seal, verification report), PDF receipts/statements and CSV **headers** resolve `en` unless a valid `?lang=` / `?locale=`, the account profile, the org default or `Accept-Language` says otherwise. Invalid query locale is ignored (never `400`). API JSON bodies and webhooks stay in English.
+- **Payer cookie `cbpay_pay_locale`** (30 days, `Secure`, `SameSite=Lax`) on public pages; it does not translate JSON.
+- **Existing accounts keep Spanish.** A one-shot deploy step stamps `locale=es` on accounts that had no locale so live Hispanic clients do not flip to English. New accounts still default to English.
+
 ## v2.60 - August 12, 2026
 
 ### v2.60

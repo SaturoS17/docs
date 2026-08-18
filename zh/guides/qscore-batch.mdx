@@ -139,7 +139,7 @@ sequenceDiagram
     |---|---|---|
     | `country` | string | 必填。目前为 `CL`。 |
     | `purpose` | string | 必填。封闭列表(智利 Ley 20.575):`credit_evaluation`、`tenant_screening`、`hiring`、`supplier_onboarding`、`other`。批次中**不允许** `self_access` — 主体本人的报告通过 [my-report](/zh/guides/qscore) 免费获取。 |
-    | `lang` | string | `es`(默认)、`en` 或 `zh` — 生成的 PDF 报告语言。 |
+    | `lang` | string | `en`(默认)、`es` 或 `zh` — 生成的 PDF 报告语言。 |
     | `subjects` | array | 1–5,000 条:`{doc_id, subject_type?}`。与 `subjects_csv` 互斥。 |
     | `subjects_csv` | string | CSV 文本,表头 `doc_id[,subject_type]`,最大 5 MB。与 `subjects` 互斥。 |
     | `subject_type` | string | 每行可选:`person` 或 `company`。`CL` 中省略**或无法识别**时按 RUT 号段推断(首位 5–9 → `company`,其余 → `person`)。 |
@@ -256,6 +256,8 @@ sequenceDiagram
     76.543.210-3,company,ready,604,C,Q9d0e1f2a3b4c4d5e8f6a7b8c9d0e1f2ac3d4e5f60718293a4b5c6,9d0e1f2a-3b4c-4d5e-8f6a-7b8c9d0e1f2a,
     11.222.333-9,person,failed,,,,,generation_failed
     ```
+
+    可见 CSV 表头跟随账户 locale；上面的示例显示单元格的原始键。
 
     每个 `report_id` 都是一份完整的单独报告:您可以使用标准的[报告下载](/zh/guides/qscore)端点下载其 PDF,任何人都可以在 `https://business.cbpayapp.com/verify/qscore/{verify_code}` 验证其真实性。
   </Step>

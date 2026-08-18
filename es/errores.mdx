@@ -111,6 +111,7 @@ Estos códigos provienen de **superficies de administración de organización** 
 | `invalid_event_type` / `weak_secret` / `invalid_callback_url` | Suscripción de webhook inválida |
 | `invalid_phone` | Teléfono no normalizable a E.164 (contactos y `to_phone`) |
 | `invalid_language` | `lang` del informe PDF no es `en`, `es` ni `zh` (informe AML e informe de verificación) |
+| `invalid_locale` | `PATCH /v1/me` (o el registro) envió un locale no vacío fuera de `en` / `es` / `zh`. El string vacío guarda inglés. Distinto de `invalid_language` (`lang` de informe PDF) y del `invalid_value` de org-admin en `default_locale` |
 | `invalid_format` | `format` del informe de verificación no es `pdf` ni `json` |
 | `batch_too_large` | Import de contactos con más de 1.000 entradas (pagina la subida) |
 | `invalid_alias` | El alias debe tener 4–20 caracteres (a-z, 0-9, punto, guion bajo, guion), empezar/terminar alfanumérico y no ser palabra reservada |

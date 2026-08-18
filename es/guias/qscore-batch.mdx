@@ -139,7 +139,7 @@ sequenceDiagram
     |---|---|---|
     | `country` | string | Requerido. `CL` hoy. |
     | `purpose` | string | Requerido. Lista cerrada (Ley 20.575): `credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding`, `other`. `self_access` **no está permitido** en lotes — el informe del propio titular es gratis vía [my-report](/es/guias/qscore). |
-    | `lang` | string | `es` (default), `en` o `zh` — idioma de los PDF generados. |
+    | `lang` | string | `en` (default), `es` o `zh` — idioma de los PDF generados. |
     | `subjects` | array | 1–5.000 ítems: `{doc_id, subject_type?}`. Excluyente con `subjects_csv`. |
     | `subjects_csv` | string | Texto CSV con encabezado `doc_id[,subject_type]`, hasta 5 MB. Excluyente con `subjects`. |
     | `subject_type` | string | Opcional por fila: `person` o `company`. Si se omite **o no se reconoce** para `CL`, se infiere de la serie del RUT (primer dígito 5–9 → `company`; cualquier otro → `person`). |
@@ -256,6 +256,8 @@ sequenceDiagram
     76.543.210-3,company,ready,604,C,Q9d0e1f2a3b4c4d5e8f6a7b8c9d0e1f2ac3d4e5f60718293a4b5c6,9d0e1f2a-3b4c-4d5e-8f6a-7b8c9d0e1f2a,
     11.222.333-9,person,failed,,,,,generation_failed
     ```
+
+    Los encabezados CSV visibles siguen el locale de la cuenta; el ejemplo de arriba muestra las claves crudas de las celdas.
 
     Cada `report_id` es un informe individual completo: puedes descargar su PDF con el endpoint estándar de [descarga de informes](/es/guias/qscore), y cualquiera puede verificar su autenticidad en `https://business.cbpayapp.com/verify/qscore/{verify_code}`.
   </Step>

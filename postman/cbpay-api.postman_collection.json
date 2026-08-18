@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — convertible on demand with swaps.\nPayouts and service fees can be paid from any of the four balances\n(`PUT /v1/settlement` or per-payout `settlement_asset`), and payins\ncan auto-convert to the asset of your choice (`default_payin_asset`).\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-08-11 19:53 UTC",
-    "_content_sha256": "3146c00278d0a52d4ca25b97639b4c950dfbac906a005341b7ace2167cf5969d"
+    "_generated_at": "2026-08-18 04:59 UTC",
+    "_content_sha256": "0b16b9857a17363aaf0692651cc4897d6c6056295e0b5f9b5be59d575a11f2bb"
   },
   "auth": {
     "type": "bearer",
@@ -4584,7 +4584,7 @@
                 }
               ]
             },
-            "description": "Downloads the batch results as a CSV file with a UTF-8 BOM (opens correctly in Excel). Header: `doc_id,subject_type,status,score, band,verify_code,report_id,error_code`. `verify_code` is the public verification code of the report (usable at `/verify/qscore/{code}`). Failed rows carry their `error_code` and no score."
+            "description": "Downloads the batch results as a CSV file with a UTF-8 BOM (opens correctly in Excel). Visible headers follow the account locale; raw cell keys are `doc_id,subject_type,status,score,band,verify_code,report_id,error_code`. `verify_code` is the public verification code of the report (usable at `/verify/qscore/{code}`). Failed rows carry their `error_code` and no score."
           }
         },
         {
@@ -5488,7 +5488,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"org_id\": \"1c9e7a2b-5f6d-4e3a-8c1b-2a9d8e7f6a5b\",\n  \"type\": \"person\",\n  \"status\": \"active\",\n  \"kyc_status\": \"approved\",\n  \"email\": \"ana@example.com\",\n  \"display_name\": \"Ana Perez\",\n  \"tax_id\": \"12345678-9\",\n  \"phone\": \"+56912345678\",\n  \"country\": \"CL\",\n  \"profile\": {},\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:00Z\"\n}"
+              "body": "{\n  \"id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"org_id\": \"1c9e7a2b-5f6d-4e3a-8c1b-2a9d8e7f6a5b\",\n  \"type\": \"person\",\n  \"status\": \"active\",\n  \"kyc_status\": \"approved\",\n  \"email\": \"ana@example.com\",\n  \"display_name\": \"Ana Perez\",\n  \"tax_id\": \"12345678-9\",\n  \"phone\": \"+56912345678\",\n  \"country\": \"CL\",\n  \"locale\": \"en\",\n  \"profile\": {},\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:00Z\"\n}"
             }
           ]
         },
@@ -5515,7 +5515,7 @@
             "description": "Once your identity verification is approved, `display_name`, `tax_id` and `country` are filled from the verified identity and locked (`409 identity_locked`); `phone` stays editable with its own verification flow.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"phone\": \"+56987654321\"\n}",
+              "raw": "{\n  \"phone\": \"+56987654321\",\n  \"locale\": \"en\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5548,7 +5548,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"org_id\": \"1c9e7a2b-5f6d-4e3a-8c1b-2a9d8e7f6a5b\",\n  \"type\": \"person\",\n  \"status\": \"active\",\n  \"kyc_status\": \"approved\",\n  \"email\": \"ana@example.com\",\n  \"display_name\": \"Ana Perez\",\n  \"tax_id\": \"12345678-9\",\n  \"phone\": \"+56987654321\",\n  \"country\": \"CL\",\n  \"profile\": {},\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:00Z\"\n}"
+              "body": "{\n  \"id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n  \"org_id\": \"1c9e7a2b-5f6d-4e3a-8c1b-2a9d8e7f6a5b\",\n  \"type\": \"person\",\n  \"status\": \"active\",\n  \"kyc_status\": \"approved\",\n  \"email\": \"ana@example.com\",\n  \"display_name\": \"Ana Perez\",\n  \"tax_id\": \"12345678-9\",\n  \"phone\": \"+56987654321\",\n  \"country\": \"CL\",\n  \"locale\": \"en\",\n  \"profile\": {},\n  \"created_at\": \"2026-07-07T12:00:00Z\",\n  \"updated_at\": \"2026-07-07T12:00:00Z\"\n}"
             }
           ]
         },
@@ -7003,7 +7003,7 @@
             "description": "Creates a person or company account with its owner login member and\nreturns a session token. One endpoint for both types: `type` is data.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"org\": \"cbpay\",\n  \"type\": \"person\",\n  \"email\": \"ana@example.com\",\n  \"password\": \"a-secure-password\",\n  \"display_name\": \"Ana Perez\",\n  \"country\": \"CL\"\n}",
+              "raw": "{\n  \"org\": \"cbpay\",\n  \"type\": \"person\",\n  \"email\": \"ana@example.com\",\n  \"password\": \"a-secure-password\",\n  \"display_name\": \"Ana Perez\",\n  \"country\": \"CL\",\n  \"locale\": \"en\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -7040,7 +7040,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"account\": {\n    \"id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n    \"org_id\": \"1c9e7a2b-5f6d-4e3a-8c1b-2a9d8e7f6a5b\",\n    \"type\": \"person\",\n    \"status\": \"active\",\n    \"kyc_status\": \"approved\",\n    \"email\": \"ana@example.com\",\n    \"display_name\": \"Ana Perez\",\n    \"tax_id\": \"12345678-9\",\n    \"phone\": \"+56912345678\",\n    \"country\": \"CL\",\n    \"profile\": {},\n    \"created_at\": \"2026-07-07T12:00:00Z\",\n    \"updated_at\": \"2026-07-07T12:00:00Z\"\n  },\n  \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…\",\n  \"expires_at\": \"2026-07-08T12:00:00Z\",\n  \"refresh_token\": \"rt_6a1e6c22-93a1-4f0e-a7d1-1f2e3c4b5a69.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\",\n  \"refresh_expires_at\": \"2026-08-06T12:00:00Z\"\n}"
+              "body": "{\n  \"account\": {\n    \"id\": \"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\",\n    \"org_id\": \"1c9e7a2b-5f6d-4e3a-8c1b-2a9d8e7f6a5b\",\n    \"type\": \"person\",\n    \"status\": \"active\",\n    \"kyc_status\": \"approved\",\n    \"email\": \"ana@example.com\",\n    \"display_name\": \"Ana Perez\",\n    \"tax_id\": \"12345678-9\",\n    \"phone\": \"+56912345678\",\n    \"country\": \"CL\",\n    \"locale\": \"en\",\n    \"profile\": {},\n    \"created_at\": \"2026-07-07T12:00:00Z\",\n    \"updated_at\": \"2026-07-07T12:00:00Z\"\n  },\n  \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…\",\n  \"expires_at\": \"2026-07-08T12:00:00Z\",\n  \"refresh_token\": \"rt_6a1e6c22-93a1-4f0e-a7d1-1f2e3c4b5a69.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\",\n  \"refresh_expires_at\": \"2026-08-06T12:00:00Z\"\n}"
             }
           ]
         },
@@ -8234,7 +8234,7 @@
                   "key": "lang",
                   "value": "",
                   "disabled": true,
-                  "description": "Language of the PDF/Excel output."
+                  "description": "Language of the PDF/Excel output. Defaults to English."
                 }
               ]
             },
@@ -8278,7 +8278,7 @@
                       "key": "lang",
                       "value": "",
                       "disabled": true,
-                      "description": "Language of the PDF/Excel output."
+                      "description": "Language of the PDF/Excel output. Defaults to English."
                     }
                   ]
                 }
@@ -11458,7 +11458,7 @@
                 }
               ]
             },
-            "description": "Branded PDF receipt with a public verification code. Use `?lang=es|en`."
+            "description": "Branded PDF receipt with a public verification code. Use `?lang=en|es|zh` (default `en`)."
           }
         },
         {

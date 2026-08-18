@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.60"
+  version: "2.61"
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -1410,6 +1410,13 @@ paths:
                 country:
                   type: string
                   description: ISO 3166-1 alpha-2 国家代码。
+                locale:
+                  type: string
+                  enum:
+                  - en
+                  - es
+                  - zh
+                  description: 注册时的首选 locale。省略时依次跟随 Accept-Language、组织默认值，最后为英语。
                 profile:
                   type: object
                   description: 自由格式的档案数据。
@@ -1420,6 +1427,7 @@ paths:
               password: a-secure-password
               display_name: Ana Perez
               country: CL
+              locale: en
       responses:
         '201':
           description: 账户已创建。
@@ -1454,6 +1462,7 @@ paths:
                   tax_id: 12345678-9
                   phone: '+56912345678'
                   country: CL
+                  locale: en
                   profile: &id002 {}
                   created_at: '2026-07-07T12:00:00Z'
                   updated_at: '2026-07-07T12:00:00Z'
@@ -2127,8 +2136,12 @@ paths:
                   type: string
                 country:
                   type: string
+                locale:
+                  type: string
+                  description: 首选 locale（`en`、`es` 或 `zh`）。空字符串会存为 `en`。无效值返回 400 `invalid_locale`。
             example:
               phone: '+56987654321'
+              locale: en
       responses:
         '200':
           description: 更新后的账户。
@@ -2147,9 +2160,28 @@ paths:
                 tax_id: 12345678-9
                 phone: '+56987654321'
                 country: CL
+                locale: en
                 profile: *id002
                 created_at: '2026-07-07T12:00:00Z'
                 updated_at: '2026-07-07T12:00:00Z'
+        '400':
+          description: 无效 locale（`invalid_locale`）。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_locale
+                message: locale must be en, es or zh
+        '400':
+          description: 无效 locale（`invalid_locale`）。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_locale
+                message: locale must be en, es or zh
         '409':
           description: 验证通过后身份字段将被锁定。
           content:
@@ -4860,7 +4892,7 @@ paths:
       - Payins
       operationId: getPayinRefundReceipt
       summary: 退款凭证（PDF）
-      description: 带公开验证码的品牌化 PDF 凭证。使用 `?lang=es|en`。
+      description: 带公开验证码的品牌化 PDF 凭证。使用 `?lang=en|es|zh`（默认 `en`）。
       parameters:
       - name: refundID
         in: path
@@ -13983,10 +14015,11 @@ paths:
         schema:
           type: string
           enum:
-          - es
           - en
-          default: es
-        description: PDF/Excel 输出的语言。
+          - es
+          - zh
+          default: en
+        description: PDF/Excel 输出的语言。默认为英语。
       responses:
         '200':
           description: 对账单(JSON)或文件字节(pdf/xlsx)。
@@ -18790,8 +18823,9 @@ paths:
       summary: 将批次结果导出为 CSV
       operationId: exportQscoreBatchResults
       description: '将批次结果下载为带有 UTF-8 BOM 的 CSV 文件（在 Excel 中正确
-        打开）。表头：`doc_id,subject_type,status,score,band,verify_code,report_id,
-        error_code`。`verify_code` 是报告的公开验证码（可在 `/verify/qscore/{code}`
+        打开）。可见表头跟随账户 locale；单元格原始键为
+        `doc_id,subject_type,status,score,band,verify_code,report_id,error_code`。
+        `verify_code` 是报告的公开验证码（可在 `/verify/qscore/{code}`
         使用）。失败的行带有其 `error_code`，没有分数。'
       parameters:
       - name: id
@@ -18805,7 +18839,7 @@ paths:
           description: CSV 文件（text/csv，带 BOM 的 UTF-8）。
           content:
             text/csv:
-              example: "doc_id,subject_type,status,score,band,verify_code,report_id,error_code\n12.345.678-5,person,ready,715,B,Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a,3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01,\n15.678.234-3,person,ready,430,D,Q7c9a1f3d2e444b8a9d510a1b2c3d4e5fb2c3d4e5f60718293a4b5,7c9a1f3d-2e44-4b8a-9d51-0a1b2c3d4e5f,\n76.543.210-3,company,ready,604,C,Q9d0e1f2a3b4c4d5e8f6a7b8c9d0e1f2ac3d4e5f60718293a4b5c6,9d0e1f2a-3b4c-4d5e-8f6a-7b8c9d0e1f2a,\n11.222.333-9,person,failed,,,,,generation_failed\n"
+              example: "证件号,主体类型,状态,分数,等级,核验码,报告 ID,错误码\n12.345.678-5,person,ready,715,B,Q3f5c9f2d7d214b8c9a2d2d5f6a1b8c01a1b2c3d4e5f60718293a,3f5c9f2d-7d21-4b8c-9a2d-2d5f6a1b8c01,\n15.678.234-3,person,ready,430,D,Q7c9a1f3d2e444b8a9d510a1b2c3d4e5fb2c3d4e5f60718293a4b5,7c9a1f3d-2e44-4b8a-9d51-0a1b2c3d4e5f,\n76.543.210-3,company,ready,604,C,Q9d0e1f2a3b4c4d5e8f6a7b8c9d0e1f2ac3d4e5f60718293a4b5c6,9d0e1f2a-3b4c-4d5e-8f6a-7b8c9d0e1f2a,\n11.222.333-9,person,failed,,,,,generation_failed\n"
         '401':
           description: unauthorized
         '403':
@@ -19238,10 +19272,11 @@ components:
       schema:
         type: string
         enum:
-        - es
         - en
-        default: es
-      description: PDF 凭证的语言。
+        - es
+        - zh
+        default: en
+      description: PDF 凭证的语言。默认为英语。
     cardID:
       name: cardID
       in: path
@@ -20053,6 +20088,14 @@ components:
           type: string
         country:
           type: string
+        locale:
+          type: string
+          enum:
+          - en
+          - es
+          - zh
+          description: 首选人工界面 locale。JSON API 响应与 webhook 仍为英语。
+          example: en
         profile:
           type: object
         created_at:

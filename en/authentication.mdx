@@ -185,7 +185,8 @@ curl -X PATCH https://api.qbank.cl/platform/v1/me \
     "display_name": "Comercial Andina SpA",
     "tax_id": "76.543.210-8",
     "phone": "+56 9 1234 5678",
-    "country": "CL"
+    "country": "CL",
+    "locale": "en"
   }'
 ```
 
@@ -198,15 +199,17 @@ curl -X PATCH https://api.qbank.cl/platform/v1/me \
   "tax_id": "76.543.210-8",
   "phone": "+56 9 1234 5678",
   "country": "CL",
+  "locale": "en",
   "status": "active",
   "kyc_status": "approved",
   "created_at": "2026-06-01T12:00:00Z"
 }
 ```
 
-`PATCH /v1/me` accepts `display_name`, `tax_id`, `phone` and `country`
-(send only the ones that change). `email`, `status` and `kyc_status` are
-not self-managed: the administrator resolves them.
+`PATCH /v1/me` accepts `display_name`, `tax_id`, `phone`, `country` and `locale`
+(send only the ones that change). Empty `locale` stores `en`; invalid values return `400 invalid_locale`.
+`email`, `status` and `kyc_status` are not self-managed: the administrator resolves them.
+See [Locale and language](/en/guides/locale).
 
 ## Company members
 

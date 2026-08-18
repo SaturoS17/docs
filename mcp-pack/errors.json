@@ -1,5 +1,5 @@
 {
-  "count": 199,
+  "count": 200,
   "errors": [
     {
       "category": {
@@ -923,6 +923,20 @@
         "en": "The PDF report `lang` is not `en`, `es` or `zh` (AML report and verification report)",
         "es": "`lang` del informe PDF no es `en`, `es` ni `zh` (informe AML e informe de verificación)",
         "zh": "PDF 报告的 `lang` 不是 `en`、`es` 或 `zh`（AML 报告与验证报告）"
+      }
+    },
+    {
+      "category": {
+        "en": "Validation (400)",
+        "es": "Validación (400)",
+        "zh": "校验（400）"
+      },
+      "code": "invalid_locale",
+      "http": 400,
+      "meaning": {
+        "en": "`PATCH /v1/me` (or register) sent a non-empty locale outside `en` / `es` / `zh`. Empty string stores English. Distinct from `invalid_language` (PDF report `lang`) and from org-admin `invalid_value` on `default_locale`",
+        "es": "`PATCH /v1/me` (o el registro) envió un locale no vacío fuera de `en` / `es` / `zh`. El string vacío guarda inglés. Distinto de `invalid_language` (`lang` de informe PDF) y del `invalid_value` de org-admin en `default_locale`",
+        "zh": "`PATCH /v1/me`（或注册）发送了非空且不属于 `en` / `es` / `zh` 的 locale。空字符串会存为英语。不同于 `invalid_language`（PDF 报告的 `lang`），也不同于组织管理员在 `default_locale` 上的 `invalid_value`"
       }
     },
     {

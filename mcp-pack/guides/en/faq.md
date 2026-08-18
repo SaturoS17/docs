@@ -45,6 +45,11 @@ and money already in flight are never blocked.
 For server-to-server processes always use an **API key** (`pk_…`, never
 expires). JWT sessions (24 h) are for front-ends with users who log in.
 Both travel in `Authorization: Bearer <token>` (or `X-API-Key`).
+#### What language will my account use after this deploy?
+Existing accounts are pre-configured `locale=es` (one-shot at deploy, not an endpoint).
+New accounts are born English unless register body, `Accept-Language`, or the org `default_locale` says otherwise.
+Change yours with `PATCH /v1/me` `{ "locale": "en" }`. JSON API responses stay in English either way.
+See [Locale and language](https://docs.cbpayapp.com/en/guides/locale).
 ## Money and rates
 
 #### What currency is my balance in?

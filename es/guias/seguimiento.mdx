@@ -187,7 +187,7 @@ El link es una capacidad: **quien tenga el link puede ver la transacción**. Com
 
 La página y el PDF son completamente trilingües — **inglés, español y chino simplificado**:
 
-- La página hospedada se renderiza en el idioma preferido del visitante (preferencia guardada; inglés por defecto) y lo pasa a la API como `?lang=en|es|zh`.
+- Resolución (cadena pública): `?lang=` / `?locale=` (un valor inválido se ignora, nunca 400), luego cookie del pagador `cbpay_pay_locale` (HttpOnly=false, Secure, SameSite=Lax, 30 días), luego la cuenta del comercio, luego el `default_locale` de la org, luego Accept-Language, luego inglés. La cookie SSR del portal `cbpay_lang` es otra cookie del front: la API no la lee.
 - La API JSON traduce las etiquetas de `fields`/`amounts` en el servidor con el mismo parámetro.
 - El PDF se renderiza completamente en el idioma pedido, chino incluido.
 

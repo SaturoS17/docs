@@ -111,6 +111,7 @@ These codes come from **organization administration surfaces** (the [CBPay Admin
 | `invalid_event_type` / `weak_secret` / `invalid_callback_url` | Invalid webhook subscription |
 | `invalid_phone` | Phone not normalizable to E.164 (contacts and `to_phone`) |
 | `invalid_language` | The PDF report `lang` is not `en`, `es` or `zh` (AML report and verification report) |
+| `invalid_locale` | `PATCH /v1/me` (or register) sent a non-empty locale outside `en` / `es` / `zh`. Empty string stores English. Distinct from `invalid_language` (PDF report `lang`) and from org-admin `invalid_value` on `default_locale` |
 | `invalid_format` | The verification report `format` is not `pdf` or `json` |
 | `batch_too_large` | Contact import with more than 1,000 entries (paginate the upload) |
 | `invalid_alias` | Alias must be 4–20 chars (a-z, 0-9, dot, underscore, hyphen), start/end alphanumeric, and not a reserved word |

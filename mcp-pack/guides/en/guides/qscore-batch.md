@@ -131,7 +131,7 @@ Invalid rows are **rejected at creation time** and reported in `rejected_items` 
 |---|---|---|
 | `country` | string | Required. `CL` today. |
 | `purpose` | string | Required. Closed list (Ley 20.575): `credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding`, `other`. `self_access` is **not allowed** in batches — the holder's own report is free via [my-report](https://docs.cbpayapp.com/en/guides/qscore). |
-| `lang` | string | `es` (default), `en` or `zh` — language of the generated PDF reports. |
+| `lang` | string | `en` (default), `es` or `zh` — language of the generated PDF reports. |
 | `subjects` | array | 1–5,000 items: `{doc_id, subject_type?}`. XOR with `subjects_csv`. |
 | `subjects_csv` | string | CSV text with header `doc_id[,subject_type]`, up to 5 MB. XOR with `subjects`. |
 | `subject_type` | string | Optional per row: `person` or `company`. If omitted **or unrecognized** for `CL`, it is inferred from the RUT series (first digit 5–9 → `company`; anything else → `person`). |
@@ -248,6 +248,8 @@ doc_id,subject_type,status,score,band,verify_code,report_id,error_code
 76.543.210-3,company,ready,604,C,Q9d0e1f2a3b4c4d5e8f6a7b8c9d0e1f2ac3d4e5f60718293a4b5c6,9d0e1f2a-3b4c-4d5e-8f6a-7b8c9d0e1f2a,
 11.222.333-9,person,failed,,,,,generation_failed
 ```
+
+Visible CSV headers follow the account locale; the example above shows the raw cell keys.
 
 Each `report_id` is a full individual report: you can download its PDF with the standard [report download](https://docs.cbpayapp.com/en/guides/qscore) endpoint, and anyone can verify its authenticity at `https://business.cbpayapp.com/verify/qscore/{verify_code}`.
 ## List and search your batches

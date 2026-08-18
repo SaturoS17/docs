@@ -187,7 +187,7 @@ The link is a capability: **whoever has the link can see the transaction**. Shar
 
 The page and the PDF are fully trilingual — **English, Spanish and Simplified Chinese**:
 
-- The hosted page renders in the visitor's preferred language (stored preference, English by default) and passes it to the API as `?lang=en|es|zh`.
+- Resolution (public chain): `?lang=` / `?locale=` (invalid values are ignored, never 400), then payer cookie `cbpay_pay_locale` (HttpOnly=false, Secure, SameSite=Lax, 30 days), then the merchant account, then the org `default_locale`, then Accept-Language, then English. The portal SSR cookie `cbpay_lang` is a separate front cookie — the API does not read it.
 - The JSON API translates `fields`/`amounts` labels server-side with the same parameter.
 - The PDF renders entirely in the requested language, Chinese included.
 

@@ -48,7 +48,7 @@ Si tienes una **cuenta verificada** (KYC/KYB aprobado), puedes generar y descarg
 
 ### Generar (o reusar) tu informe
 
-`POST /v1/qscore/my-report` — el body es opcional: `{"lang": "es"|"en"|"zh"}` (default `es`). La generación es **síncrona**: la respuesta trae el informe terminado. No necesitas `idempotency_key` — la idempotencia es determinista por cuenta, sujeto y día (un doble submit el mismo día devuelve el informe ya creado).
+`POST /v1/qscore/my-report` — el body es opcional: `{"lang": "en"|"es"|"zh"}` (default `en`). La generación es **síncrona**: la respuesta trae el informe terminado. No necesitas `idempotency_key` — la idempotencia es determinista por cuenta, sujeto y día (un doble submit el mismo día devuelve el informe ya creado).
 
 ```bash Genera tu propio informe
 curl -X POST "https://api.qbank.cl/platform/v1/qscore/my-report" \
@@ -110,7 +110,7 @@ El endpoint comercial `POST /v1/qscore/reports` **rechaza** `purpose: "self_acce
 | `country` | string | sí | País ISO 3166-1 alpha-2 del documento. Hoy `CL`. |
 | `subject_type` | string | no | `person` o `company`. Si se omite, se infiere del documento. |
 | `purpose` | string | sí | Finalidad declarada (ley de protección de datos): `credit_evaluation`, `tenant_screening`, `hiring`, `supplier_onboarding`, `other`. |
-| `lang` | string | no | Idioma del informe: `es` (default), `en`, `zh`. |
+| `lang` | string | no | Idioma del informe: `en` (default), `es`, `zh`. |
 | `idempotency_key` | string | sí | Tu clave única para esta compra. |
 
 #### Persona

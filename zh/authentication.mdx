@@ -178,7 +178,8 @@ curl -X PATCH https://api.qbank.cl/platform/v1/me \
     "display_name": "Comercial Andina SpA",
     "tax_id": "76.543.210-8",
     "phone": "+56 9 1234 5678",
-    "country": "CL"
+    "country": "CL",
+    "locale": "en"
   }'
 ```
 
@@ -197,9 +198,10 @@ curl -X PATCH https://api.qbank.cl/platform/v1/me \
 }
 ```
 
-`PATCH /v1/me` 接受 `display_name`、`tax_id`、`phone` 和 `country`
-（只需发送有变更的字段）。`email`、`status` 和 `kyc_status` 不可
-自行管理：由管理员处理。
+`PATCH /v1/me` 接受 `display_name`、`tax_id`、`phone`、`country` 和 `locale`
+（只需发送有变更的字段）。空 `locale` 会存为 `en`；无效值返回 `400 invalid_locale`。
+`email`、`status` 和 `kyc_status` 不可自行管理：由管理员处理。
+见[语言与 locale](/zh/guides/locale)。
 
 ## 企业成员
 

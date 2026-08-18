@@ -46,6 +46,11 @@ Para procesos servidor-a-servidor usa siempre una **API key** (`pk_…`, no
 expira). Las sesiones JWT (24 h) son para front-ends con usuarios que
 inician sesión. Ambas van en `Authorization: Bearer <token>` (o
 `X-API-Key`).
+#### ¿Qué idioma usará mi cuenta después de este deploy?
+Las cuentas existentes quedan preconfiguradas `locale=es` (one-shot en el deploy, no es un endpoint).
+Las cuentas nuevas nacen en inglés salvo body de registro, `Accept-Language` o `default_locale` de la org.
+Cámbialo con `PATCH /v1/me` `{ "locale": "en" }`. Las respuestas JSON de la API siguen en inglés.
+Ver [Idioma y locale](https://docs.cbpayapp.com/es/guias/idioma).
 ## Dinero y tasas
 
 #### ¿En qué moneda está mi saldo?

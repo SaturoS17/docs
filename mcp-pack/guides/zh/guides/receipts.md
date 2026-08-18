@@ -30,7 +30,7 @@ sequenceDiagram
 
 ## 下载回单
 
-每个提供 `GET /{id}` 的交易类资源都有其 `GET .../receipt`。PDF 默认使用西班牙语；添加 `?lang=en` 可获取英文版。
+每个提供 `GET /{id}` 的交易类资源都有其 `GET .../receipt`。PDF 默认英语；传入 `?lang=es` 或 `?lang=zh` 可获取西班牙语或中文。付款人页面也可能持久化 `cbpay_pay_locale`。
 
 | 操作 | 端点 |
 |---|---|

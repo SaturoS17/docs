@@ -45,7 +45,7 @@ curl "https://api.qbank.cl/platform/v1/movements?from=2026-07-01&to=2026-07-08&p
 
 添加 `format=csv` 或 `format=xlsx`，可将相同的行下载为可直接用于会计
 的文件（每次下载最多 10,000 行）。`payouts`、`payins` 与 `transfers`
-列表同样支持：
+列表同样支持。CSV **表头**跟随账户 locale；单元格保持原始值：
 
 ```bash
 curl -o movements.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-01&to=2026-07-13&format=xlsx" \

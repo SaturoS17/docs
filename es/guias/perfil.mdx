@@ -33,7 +33,8 @@ flowchart LR
 ## Datos del perfil e identidad verificada
 
 `PATCH /v1/me` actualiza los datos del perfil (`display_name`, `tax_id`,
-`phone`, `country`). Pero con la verificación de identidad (KYC/KYB)
+`phone`, `country`, `locale`). `locale` sigue editable tras el KYC. Ver [Idioma y locale](/es/guias/idioma).
+Pero con la verificación de identidad (KYC/KYB)
 **aprobada**, el nombre, el tax ID y el país se **rellenan automáticamente
 desde la identidad verificada** — lo que confirmó la verificación, no lo
 autodeclarado — y quedan **inmutables** por este endpoint:

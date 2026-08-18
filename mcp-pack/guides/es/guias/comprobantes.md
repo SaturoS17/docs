@@ -39,7 +39,7 @@ sequenceDiagram
 ## Descargar un comprobante
 
 Todo recurso transaccional con `GET /{id}` tiene su `GET .../receipt`. El
-PDF sale en español por defecto; agrega `?lang=en` para inglés.
+PDF sale en inglés por defecto; pasa `?lang=es` o `?lang=zh` para español o chino. Las páginas del pagador también pueden persistir `cbpay_pay_locale`.
 
 | Operación | Endpoint |
 |---|---|

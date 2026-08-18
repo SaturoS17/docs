@@ -42,8 +42,8 @@ curl -OJ "https://api.qbank.cl/platform/v1/reports/statement?from=2026-01-01&to=
 ```
 
 - `from` / `to`：`YYYY-MM-DD` 格式的日期，均含当日，按贵组织时区。最大范围：400 天。
-- `lang=es|en`：PDF/Excel 的语言（默认 `es`）。
-- 文件以 `Content-Disposition: attachment` 送达，文件名为 `cartola_cbpay_<account>_<from>_<to>.pdf/.xlsx`。
+- `lang=en|es|zh`：PDF/Excel 的语言（默认 `en`）。同时带 `Content-Language`。
+- 文件以 `Content-Disposition: attachment` 送达。文件名随 locale（`statement_…` / `cartola_…` / `对账单_…`）。
 
 ## 包含哪些内容
 

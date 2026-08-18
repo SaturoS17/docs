@@ -38,7 +38,7 @@ sequenceDiagram
 ## Downloading a receipt
 
 Every transactional resource with `GET /{id}` has its `GET .../receipt`.
-The PDF defaults to Spanish; add `?lang=en` for English.
+The PDF defaults to English; pass `?lang=es` or `?lang=zh` for Spanish or Chinese. Payer pages may also persist `cbpay_pay_locale`.
 
 | Operation | Endpoint |
 |---|---|

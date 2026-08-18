@@ -26,6 +26,11 @@ URL 和密钥。完整指南见[环境与测试](https://docs.cbpayapp.com/zh/en
 该服务未对您的账户启用（服务按照您的商务协议逐账户开通）。查看 `GET /v1/services` 获取您可用功能的完整清单——它也便于您决定在 UI 中展示什么——如需开通某项服务，请联系 CBPay 团队。读取操作和已在途的资金绝不会被阻断。
 #### 我应该使用哪种凭证：JWT 会话还是 API 密钥？
 服务器到服务器的流程请始终使用 **API 密钥**（`pk_…`，永不过期）。JWT 会话（24 小时）用于有用户登录的前端。两者都放在 `Authorization: Bearer <token>` 中传递（或使用 `X-API-Key`）。
+#### 本次部署后我的账户会使用哪种语言？
+现有账户会预配置为 `locale=es`（部署时一次性迁移，不是接口）。
+新账户默认英语，除非注册请求体、`Accept-Language` 或组织 `default_locale` 另有指定。
+可用 `PATCH /v1/me` `{ "locale": "en" }` 更改。JSON API 响应始终为英语。
+见[语言与 locale](https://docs.cbpayapp.com/zh/guides/locale)。
 ## 资金与汇率
 
 #### 我的余额是什么货币？

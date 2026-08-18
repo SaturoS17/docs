@@ -45,7 +45,8 @@ Filtros: `from`/`to` (`YYYY-MM-DD`, zona horaria de la organización), `type`, `
 
 Agrega `format=csv` o `format=xlsx` para descargar las mismas filas como
 archivo listo para contabilidad (hasta 10.000 filas por descarga). También
-disponible en los listados de `payouts`, `payins` y `transfers`:
+disponible en los listados de `payouts`, `payins` y `transfers`. Los
+**encabezados** CSV siguen el locale de la cuenta; las celdas siguen crudas:
 
 ```bash
 curl -o movimientos.xlsx "https://api.qbank.cl/platform/v1/movements?from=2026-07-01&to=2026-07-13&format=xlsx" \
