@@ -2173,15 +2173,6 @@ paths:
               example:
                 error: invalid_locale
                 message: locale must be en, es or zh
-        '400':
-          description: 无效 locale（`invalid_locale`）。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: invalid_locale
-                message: locale must be en, es or zh
         '409':
           description: 验证通过后身份字段将被锁定。
           content:
