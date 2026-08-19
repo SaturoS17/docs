@@ -8,6 +8,21 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+<Update label="19 de agosto de 2026" description="v2.62">
+
+### v2.62
+
+**Cambiado**
+
+- **El estado/región de facturación ahora es obligatorio en la página hospedada de tarjetas cuando el país de facturación lo exige.** Los países cuyas subdivisiones ISO 3166-2 son obligatorias para capturar el cobro (p. ej. Estados Unidos, Canadá, Brasil) ahora muestran al pagador un campo **Estado / Región** requerido alimentado por el catálogo de subdivisiones; el valor viaja como `administrative_area` de la dirección de facturación. En los países sin subdivisiones obligatorias el campo sigue opcional. Guía: [Pagos con tarjeta](/es/guias/payins).
+- **Los cargos con tarjeta guardada (MIT) validan la dirección de facturación antes de despachar el cobro.** Una tarjeta guardada con dirección completa sigue operando sin cambios. Si la tarjeta guardada no tiene una dirección utilizable en archivo, el cobro se rechaza con `422 core_rejected` y un mensaje que pide al pagador guardar la tarjeta de nuevo con `save_card: true` — sin mover plata. Guía: [Tarjetas guardadas y suscripciones](/es/guias/stored-cards-subscriptions).
+
+**Corregido**
+
+- **Las transacciones con tarjeta autorizadas pero nunca capturadas por falta del estado/región de facturación ya no pueden ocurrir.** La dirección de facturación se valida por adelantado — en la página hospedada para el pagador y antes del despacho en los cargos con tarjeta guardada — y los nombres de subdivisión se normalizan al código ISO 3166-2 que el riel exige (p. ej. "California" → `CA`).
+
+</Update>
+
 <Update label="17 de agosto de 2026" description="v2.61">
 
 ### v2.61

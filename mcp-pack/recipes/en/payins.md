@@ -412,9 +412,30 @@ Response `201`:
 Share the `payment_url` (link, redirect or WebView). Flow details:
 
 - `customer` is an **optional** prefill of the billing details (`email`,
-  `first_name`, `last_name`, `address`, `city`, `country` — plain text,
-  max 120 chars per field); the payer can complete/correct them on the
-  page.
+  `first_name`, `last_name`, `address`, `city`, `administrative_area`,
+  `postal_code`, `country` — plain text, max 120 chars per field); the
+  payer can complete/correct them on the page. `administrative_area` is
+  the billing state/region: an ISO 3166-2 code (`US-CA`) or its suffix
+  (`CA`).
+
+**Billing address — state/region required by country**: the hosted page
+collects the **full billing address** (name, email, street, country, city,
+state/region and postal code). The **state/region** field is **mandatory
+whenever the billing country has ISO 3166-2 subdivisions** (for example
+the United States, Canada, Mexico, Brazil or Chile): the payer picks it
+from a dropdown fed by the address catalog, and the page does not submit
+the payment without it. If the country has no subdivisions in the
+catalog, the field is hidden. The value travels as `administrative_area`
+(ISO 3166-2). The billing address is validated **before** the charge is
+sent for authorization: if it is incomplete, or the state/region is
+missing for a country that requires it, the payment is rejected with
+`invalid_payload` and **no authorization is created on the card**.
+
+> **Note**
+A card authorization created with an incomplete billing address can be
+declined later at capture by the issuer. Always collect the full billing
+address — including the state/region when the country has subdivisions —
+so the payment can be captured.
 - `success_url` / `failure_url` (optional, public https) redirect the payer
   when done; without them the page shows the final result.
 - `expires_at` (optional, RFC3339, at least 15 minutes ahead) shortens the

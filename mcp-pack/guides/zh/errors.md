@@ -147,7 +147,7 @@ source_url: https://docs.cbpayapp.com/zh/errors
 | 409 | `no_banking_customer` | 在没有银行账户资料的情况下发起银行操作（请先 `POST /v1/banking/customer`） |
 | 409 | `banking_customer_exists` | 该账户已有银行账户资料（每个账户仅限一个） |
 | 422 | `currency_not_supported` | 该货币没有汇率 |
-| 422 | `core_rejected` | 处理方拒绝了该操作 |
+| 422 | `core_rejected` | 处理方拒绝了该操作 —— 当消息报告**账单地址不完整**（或缺少州/省）时，已保存的卡没有可用的账单地址：请让付款人通过 `save_card: true` 重新保存 |
 | 422 | `recipient_unavailable` | 目标账户无法接收 |
 | 422 | `recipient_ambiguous` | 多个账户共用该 `to_phone` 号码（请使用 `to_account_id` 或 `to_email`） |
 | 422 | `contact_not_linked` | 该联系人没有可转账的已关联 CBPay 账户 |

@@ -125,6 +125,22 @@ Response `201` — an approved charge credits your balance automatically
 An issuer decline responds `422` with the payin in `failed` and a
 `failure_reason`. A retry with the same `idempotency_key` returns the
 original payin and **never charges twice**.
+
+#### Billing address on file (required for capture)
+
+The processor requires a **complete billing address** to capture a
+merchant-initiated charge. The platform stores the billing details the
+payer entered when saving the card and merges them into every MIT charge
+automatically — cards saved with a complete address keep working with no
+change on your side.
+
+If the stored credential has **no usable billing address** (older cards
+saved before this requirement), the charge is rejected **before any money
+moves** with `422 core_rejected` and a message telling you the billing
+address is incomplete. The fix is to have the payer save the card again
+(a fresh consented payment with `save_card: true` captures the full
+billing address, including the state/region when the country requires
+one — see [Billing address: state/region required by country](https://docs.cbpayapp.com/en/guides/payins#billing-address-stateregion-required-by-country)).
 To revoke a saved card (at the payer's request or on suspicion):
 `DELETE /v1/stored-cards/{stored_card_id}` — charges stop working
 immediately and you receive `stored_card_revoked`
@@ -253,7 +269,7 @@ cancels its subscriptions (`cancel_reason: card_revoked`).
 | 409 | `idempotency_conflict` | Same key with a different payload — use a new key |
 | 409 | `subscription_state` | The current state does not allow that action (e.g. resuming a canceled plan) |
 | 422 | `stored_card_revoked` | The card credential was revoked; ask the payer to save it again |
-| 422 | `core_rejected` | The charge was declined by the rail — the message carries the reason |
+| 422 | `core_rejected` | The charge was declined by the rail — the message carries the reason. When it reports an **incomplete billing address** (or a missing state/region), the stored card has no usable billing address on file: have the payer save the card again with `save_card: true` |
 
 The general error catalog lives in [Errors](https://docs.cbpayapp.com/en/errors).
 

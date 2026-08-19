@@ -8,6 +8,19 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+## v2.62 - August 19, 2026
+
+### v2.62
+
+**Changed**
+
+- **Billing state/region is now required on the hosted card payment page when the billing country requires it.** Countries whose ISO 3166-2 subdivisions are mandatory to capture a card charge (e.g. the United States, Canada, Brazil) now show the payer a required **State / Region** field fed by the subdivision catalog; the value travels as `administrative_area` of the billing address. In countries without mandatory subdivisions the field stays optional. Guide: [Card payments](https://docs.cbpayapp.com/en/guides/payins).
+- **Stored-card (MIT) charges validate the billing address before the charge is dispatched.** A card saved with a complete billing address keeps working unchanged. If the stored card has no usable billing address on file, the charge is rejected with `422 core_rejected` and a message asking the payer to save the card again with `save_card: true` — no money moves. Guide: [Stored cards & subscriptions](https://docs.cbpayapp.com/en/guides/stored-cards-subscriptions).
+
+**Fixed**
+
+- **Authorized-but-never-captured card transactions caused by a missing billing state/region can no longer occur.** The billing address is validated up front — on the hosted page for the payer, and before dispatch for stored-card charges — and subdivision names are normalized to the ISO 3166-2 code the rail expects (e.g. "California" → `CA`).
+
 ## v2.61 - August 17, 2026
 
 ### v2.61
