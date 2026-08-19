@@ -426,9 +426,31 @@ Respuesta `201`:
 Comparte la `payment_url` (link, redirección o WebView). Detalles del flujo:
 
 - `customer` es un prefill **opcional** de los datos de facturación
-  (`email`, `first_name`, `last_name`, `address`, `city`, `country` —
-  texto plano, máx 120 caracteres por campo); el pagador puede
-  completarlos/corregirlos en la página.
+  (`email`, `first_name`, `last_name`, `address`, `city`,
+  `administrative_area`, `postal_code`, `country` — texto plano, máx 120
+  caracteres por campo); el pagador puede completarlos/corregirlos en la
+  página. `administrative_area` es el estado/región de facturación: un
+  código ISO 3166-2 (`US-CA`) o su sufijo (`CA`).
+
+**Dirección de facturación — estado/región requerido según el país**: la
+página hosted recolecta la **dirección de facturación completa** (nombre,
+correo, calle, país, ciudad, estado/región y código postal). El campo
+**estado/región** es **obligatorio siempre que el país de facturación tenga
+subdivisiones ISO 3166-2** (por ejemplo Estados Unidos, Canadá, México,
+Brasil o Chile): el pagador lo elige de una lista desplegable alimentada por
+el catálogo de direcciones, y la página no envía el pago sin él. Si el país
+no tiene subdivisiones en el catálogo, el campo se oculta. El valor viaja
+como `administrative_area` (ISO 3166-2). La dirección de facturación se
+valida **antes** de enviar el cargo a autorización: si está incompleta, o
+falta el estado/región en un país que lo exige, el pago se rechaza con
+`invalid_payload` y **no se crea ninguna autorización sobre la tarjeta**.
+
+<Note>
+Una autorización creada con una dirección de facturación incompleta puede
+ser rechazada después al momento de la captura por el emisor. Recolecta
+siempre la dirección de facturación completa — incluido el estado/región
+cuando el país tiene subdivisiones — para que el pago pueda capturarse.
+</Note>
 - `success_url` / `failure_url` (opcionales, https públicas) redirigen al
   pagador al terminar; sin ellas la página muestra el resultado final.
 - `expires_at` (opcional, RFC3339, mínimo 15 minutos) acorta la vigencia de

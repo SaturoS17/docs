@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.61"
+  version: "2.62"
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -12248,7 +12248,7 @@ paths:
                 reference: 3c5b002c-af76-4235-8145-9f07fef073fd
                 idempotency_hit: true
         '422':
-          description: 'Card declined by the issuer, or the stored card is revoked.'
+          description: 'Card declined by the issuer, the stored card is revoked, or the charge was rejected before capture (e.g. the stored card has an incomplete billing address on file).'
           content:
             application/json:
               schema:
@@ -12264,6 +12264,10 @@ paths:
                   value:
                     error: stored_card_revoked
                     message: the stored card is revoked
+                core_rejected:
+                  value:
+                    error: core_rejected
+                    message: 'bill_to is incomplete and the stored credential has no billing address on file: send bill_to (first_name, last_name, email, address1, locality, postal_code, country) or re-register the card'
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.61"
+  version: "2.62"
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -11855,7 +11855,7 @@ paths:
                 reference: 3c5b002c-af76-4235-8145-9f07fef073fd
                 idempotency_hit: true
         '422':
-          description: '发卡行拒绝，或已存卡已被撤销。'
+          description: '发卡行拒绝、已存卡已被撤销，或扣款在捕获前被拒绝（例如已存卡存档的账单地址不完整）。'
           content:
             application/json:
               schema:
@@ -11871,6 +11871,10 @@ paths:
                   value:
                     error: stored_card_revoked
                     message: the stored card is revoked
+                core_rejected:
+                  value:
+                    error: core_rejected
+                    message: 'bill_to is incomplete and the stored credential has no billing address on file: send bill_to (first_name, last_name, email, address1, locality, postal_code, country) or re-register the card'
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':

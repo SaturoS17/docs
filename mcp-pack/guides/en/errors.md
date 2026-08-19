@@ -147,7 +147,7 @@ These codes come from **organization administration surfaces** (the [CBPay Admin
 | 409 | `no_banking_customer` | Banking operation without a banking profile (`POST /v1/banking/customer` first) |
 | 409 | `banking_customer_exists` | The account already has a banking profile (one per account) |
 | 422 | `currency_not_supported` | No FX rate for that currency |
-| 422 | `core_rejected` | The processor rejected the operation |
+| 422 | `core_rejected` | The processor rejected the operation — when the message reports an **incomplete billing address** (or a missing state/region), the stored card has no usable billing address on file: have the payer save it again with `save_card: true` |
 | 422 | `recipient_unavailable` | The destination account cannot receive |
 | 422 | `recipient_ambiguous` | More than one account shares the `to_phone` number (use `to_account_id` or `to_email`) |
 | 422 | `contact_not_linked` | The contact has no linked CBPay account to transfer to |

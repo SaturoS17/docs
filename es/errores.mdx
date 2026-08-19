@@ -148,7 +148,7 @@ Estos códigos provienen de **superficies de administración de organización** 
 | 409 | `no_banking_customer` | Operación banking sin perfil bancario creado (`POST /v1/banking/customer` primero) |
 | 409 | `banking_customer_exists` | La cuenta ya tiene perfil bancario (es uno por cuenta) |
 | 422 | `currency_not_supported` | Sin tasa FX para esa moneda |
-| 422 | `core_rejected` | El procesador rechazó la operación |
+| 422 | `core_rejected` | El procesador rechazó la operación — cuando el mensaje reporta una **dirección de facturación incompleta** (o estado/región faltante), la tarjeta guardada no tiene una dirección utilizable en archivo: pide al pagador guardarla de nuevo con `save_card: true` |
 | 422 | `recipient_unavailable` | La cuenta destino no puede recibir |
 | 422 | `recipient_ambiguous` | Más de una cuenta comparte el teléfono de `to_phone` (usa `to_account_id` o `to_email`) |
 | 422 | `contact_not_linked` | El contacto no tiene cuenta CBPay asociada para transferirle |
