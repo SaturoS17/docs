@@ -9,6 +9,14 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+## v2.63 - 20 de agosto de 2026
+
+### v2.63
+
+**Corregido**
+
+- **El mensaje de `verifications_unavailable` ya no afirma que se reembolsó una comisión.** Un 503 de verificación de identidad no implica reembolso: el endpoint de documentos de verificación nunca cobra comisión y el onboarding propio no tiene fee. El copy ahora solo pide reintentar más tarde. Referencia: [Errores](https://docs.cbpayapp.com/es/errores) y la [guía KYC](https://docs.cbpayapp.com/es/guias/kyc).
+
 ## v2.62 - 19 de agosto de 2026
 
 ### v2.62

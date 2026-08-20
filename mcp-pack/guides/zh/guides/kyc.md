@@ -680,7 +680,7 @@ curl "https://api.qbank.cl/platform/verify/reports/Bc3d4e5f6a7b84c9d0e1f2a3b4c5d
 | 404 | `not_found` | 链接/提交件不存在或不属于您 | 检查 id |
 | 404 | `verification_not_found` | 在没有已登记验证的情况下请求自己的报告 | 请先完成您的入驻验证 |
 | 409 | `already_verified` | 已批准的账户又申请入驻链接 | 无需处理 |
-| 503 | `verifications_unavailable` | 服务暂时不可用（费用已退款） | 稍后重试 |
+| 503 | `verifications_unavailable` | 身份验证暂时不可用 | 稍后重试 |
 
 ## 常见问题
 

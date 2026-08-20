@@ -8,6 +8,14 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+## v2.63 - 2026年8月20日
+
+### v2.63
+
+**修复**
+
+- **`verifications_unavailable` 的提示不再声称已退还费用。** 身份验证返回 503 并不意味着退款：验证文档接口从不收费，自助入驻也不收取任何费用。该提示现在仅建议稍后重试。参考：[错误](https://docs.cbpayapp.com/zh/errors) 与 [KYC 指南](https://docs.cbpayapp.com/zh/guides/kyc)。
+
 ## v2.62 - 2026年8月19日
 
 ### v2.62
