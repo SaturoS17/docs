@@ -8,6 +8,14 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+## v2.63 - August 20, 2026
+
+### v2.63
+
+**Fixed**
+
+- **The `verifications_unavailable` error no longer claims a fee was refunded.** A 503 from identity verification does not imply any refund: the verification documents endpoint never charges a fee and self-onboarding carries no fee. The copy now only asks you to retry later. Reference: [Errors](https://docs.cbpayapp.com/en/errors) and the [KYC guide](https://docs.cbpayapp.com/en/guides/kyc).
+
 ## v2.62 - August 19, 2026
 
 ### v2.62
