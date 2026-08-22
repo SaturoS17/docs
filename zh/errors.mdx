@@ -267,6 +267,21 @@ description: "错误格式与完整的错误码目录"
 | 500 | `streaming_unsupported` | 该连接不支持流式传输（中间代理在缓冲）— 关闭缓冲或改用 Webhook |
 | 503 | `stream_unavailable` | 无法打开事件流；请携带 `Last-Event-ID` 退避重试 |
 
+### 消息签名与钱包绑定
+
+来自钱包消息签名的错误码（EVM 上的 EIP-191、TRON 上的 TIP-191）：使用隔离钱包的服务端签名（`POST /v1/segregated-wallets/{id}/signatures`，会生成可公开验证的签名证明），以及通过挑战绑定外部钱包（`POST /v1/wallet-links/challenges` → 用你的钱包签名挑战 → `POST /v1/wallet-links/verify`）。
+
+| HTTP | `error` | 含义 |
+|---|---|---|
+| 400 | `unsupported_chain` | `chain` 必须是 `tron` 或 `eth` |
+| 400 | `invalid_statement` | `statement` 超过 280 个字符 — 请缩短（注意：签名信封本身最多接受 140 个字符） |
+| 409 | `proof_not_signable` | 该证明已不再处于可签名状态（已签名、已过期或已取消）— 请重新申请 |
+| 409 | `custody_transferred` | 钱包托管权已转移给客户，无法再使用服务端签名 — 请用您自己的私钥签名 |
+| 409 | `challenge_consumed` | 该挑战已被使用或已失效 — 请重新申请 |
+| 410 | `challenge_expired` | 该挑战已过期 — 请重新申请并在有效期内完成签名 |
+| 422 | `signature_mismatch` | 签名与挑战地址不匹配 — 请用要绑定的钱包对挑战原文进行签名 |
+| 422 | `sign_rejected` | 签名方拒绝了该请求 — `message` 中包含已脱敏的原因。141–280 个字符的 `statement` 也会在此处被拒绝（信封最多接受 140 个字符） |
+
 ### 服务端（5xx）
 
 | HTTP | `error` | 含义 |

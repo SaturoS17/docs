@@ -7,6 +7,20 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+<Update label="2026年8月21日" description="v2.64">
+
+### v2.64
+
+**新增**
+
+- **签名证明 —— 使用钱包签名消息（EIP-191 / TIP-191）。** 通过对结构化反钓鱼信封（域名、用途、账户、nonce 以及 10 分钟有效期窗口 —— 绝不是自由格式消息）的加密签名来证明对钱包的控制。两种流程：通过 `POST /v1/segregated-wallets/{walletID}/signatures` 对**隔离钱包**进行服务端签名（成员会话需要 OTP 验证），以及通过 `POST /v1/wallet-links/challenges` + `POST /v1/wallet-links/verify` 以签名挑战**绑定外部钱包**（MetaMask、TronLink）。指南：[签名证明](/zh/guides/signature-proofs)。
+- **证明管理。** `GET /v1/signature-proofs`（分页，支持 `from`/`to`/`status`/`purpose` 筛选）、`GET /v1/signature-proofs/{proofID}` 和 `POST /v1/signature-proofs/{proofID}/revoke`。已绑定的钱包通过 `GET /v1/wallet-links` 列出，通过 `DELETE /v1/wallet-links/{linkID}` 撤销。
+- **公开验证。** 每个证明都带有 `proof_code` 和 `verify_url`；任何人都可以在 `GET /v1/public/signature-proofs/{code}` 无需身份验证即可验证 —— 状态、有效期窗口、链、地址以及（已签名时）签名和消息哈希。
+- **Webhook `wallet_signature_created` 和 `wallet_linked`。** 在创建证明和绑定外部钱包时发出。参考：[Webhooks](/zh/webhooks)。
+- **每次服务端签名都会发送安全邮件。** 账户持有人会收到一封品牌化邮件，其中包含每次签名的钱包、链、用途和时间戳。
+
+</Update>
+
 <Update label="2026年8月20日" description="v2.63">
 
 ### v2.63

@@ -9,6 +9,18 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+## v2.64 - 21 de agosto de 2026
+
+### v2.64
+
+**Agregado**
+
+- **Pruebas de firma — firma de mensajes con wallets (EIP-191 / TIP-191).** Prueba el control de una wallet con una firma criptográfica sobre un sobre estructurado anti-phishing (dominio, propósito, cuenta, nonce y una ventana de validez de 10 minutos — nunca un mensaje libre). Dos flujos: firma server-side de una **wallet segregada** con `POST /v1/segregated-wallets/{walletID}/signatures` (con gate de OTP para sesiones de miembro) y **vinculación de wallet externa** (MetaMask, TronLink) por challenge firmado con `POST /v1/wallet-links/challenges` + `POST /v1/wallet-links/verify`. Guía: [Pruebas de firma](https://docs.cbpayapp.com/es/guias/pruebas-de-firma).
+- **Gestión de proofs.** `GET /v1/signature-proofs` (paginado, filtros `from`/`to`/`status`/`purpose`), `GET /v1/signature-proofs/{proofID}` y `POST /v1/signature-proofs/{proofID}/revoke`. Las wallets vinculadas se listan con `GET /v1/wallet-links` y se revocan con `DELETE /v1/wallet-links/{linkID}`.
+- **Verificación pública.** Cada proof lleva un `proof_code` y una `verify_url`; cualquiera puede verificarlo sin autenticación en `GET /v1/public/signature-proofs/{code}` — estado, ventana de validez, red, dirección y (cuando está firmado) la firma y el hash del mensaje.
+- **Webhooks `wallet_signature_created` y `wallet_linked`.** Se emiten al crear un proof y al vincular una wallet externa. Referencia: [Webhooks](https://docs.cbpayapp.com/es/webhooks).
+- **Email de seguridad en cada firma server-side.** El titular de la cuenta recibe un email brandeado con la wallet, la red, el propósito y la fecha de cada firma.
+
 ## v2.63 - 20 de agosto de 2026
 
 ### v2.63

@@ -1,5 +1,5 @@
 {
-  "count": 200,
+  "count": 208,
   "errors": [
     {
       "category": {
@@ -2631,6 +2631,118 @@
         "en": "The stream could not be opened; retry with backoff and keep your `Last-Event-ID`",
         "es": "No se pudo abrir el stream; reintenta con backoff conservando tu `Last-Event-ID`",
         "zh": "无法打开事件流；请携带 `Last-Event-ID` 退避重试"
+      }
+    },
+    {
+      "category": {
+        "en": "Message signing & wallet linking",
+        "es": "Firma de mensajes y vinculación de wallets",
+        "zh": "消息签名与钱包绑定"
+      },
+      "code": "unsupported_chain",
+      "http": 400,
+      "meaning": {
+        "en": "The `chain` must be `tron` or `eth`",
+        "es": "La `chain` debe ser `tron` o `eth`",
+        "zh": "`chain` 必须是 `tron` 或 `eth`"
+      }
+    },
+    {
+      "category": {
+        "en": "Message signing & wallet linking",
+        "es": "Firma de mensajes y vinculación de wallets",
+        "zh": "消息签名与钱包绑定"
+      },
+      "code": "invalid_statement",
+      "http": 400,
+      "meaning": {
+        "en": "The `statement` exceeds 280 characters — shorten it (note: the signed envelope itself accepts at most 140)",
+        "es": "El `statement` supera los 280 caracteres — acórtalo (ojo: el sobre firmado acepta máximo 140)",
+        "zh": "`statement` 超过 280 个字符 — 请缩短（注意：签名信封本身最多接受 140 个字符）"
+      }
+    },
+    {
+      "category": {
+        "en": "Message signing & wallet linking",
+        "es": "Firma de mensajes y vinculación de wallets",
+        "zh": "消息签名与钱包绑定"
+      },
+      "code": "proof_not_signable",
+      "http": 409,
+      "meaning": {
+        "en": "The proof is no longer in a signable state (already signed, expired or canceled) — request a new one",
+        "es": "El comprobante ya no está en un estado firmable (ya firmado, expirado o cancelado) — solicita uno nuevo",
+        "zh": "该证明已不再处于可签名状态（已签名、已过期或已取消）— 请重新申请"
+      }
+    },
+    {
+      "category": {
+        "en": "Message signing & wallet linking",
+        "es": "Firma de mensajes y vinculación de wallets",
+        "zh": "消息签名与钱包绑定"
+      },
+      "code": "custody_transferred",
+      "http": 409,
+      "meaning": {
+        "en": "The wallet's custody was transferred to the client, so server-side signing is no longer possible — sign with your own key",
+        "es": "La custodia de la wallet fue transferida al cliente, así que la firma server-side ya no es posible — firma con tu propia clave",
+        "zh": "钱包托管权已转移给客户，无法再使用服务端签名 — 请用您自己的私钥签名"
+      }
+    },
+    {
+      "category": {
+        "en": "Message signing & wallet linking",
+        "es": "Firma de mensajes y vinculación de wallets",
+        "zh": "消息签名与钱包绑定"
+      },
+      "code": "challenge_consumed",
+      "http": 409,
+      "meaning": {
+        "en": "This challenge was already used or is no longer valid — request a new one",
+        "es": "Este desafío ya fue usado o ya no es válido — solicita uno nuevo",
+        "zh": "该挑战已被使用或已失效 — 请重新申请"
+      }
+    },
+    {
+      "category": {
+        "en": "Message signing & wallet linking",
+        "es": "Firma de mensajes y vinculación de wallets",
+        "zh": "消息签名与钱包绑定"
+      },
+      "code": "challenge_expired",
+      "http": 410,
+      "meaning": {
+        "en": "This challenge expired — request a new one and sign it within its validity window",
+        "es": "Este desafío expiró — solicita uno nuevo y fírmalo dentro de su ventana de validez",
+        "zh": "该挑战已过期 — 请重新申请并在有效期内完成签名"
+      }
+    },
+    {
+      "category": {
+        "en": "Message signing & wallet linking",
+        "es": "Firma de mensajes y vinculación de wallets",
+        "zh": "消息签名与钱包绑定"
+      },
+      "code": "signature_mismatch",
+      "http": 422,
+      "meaning": {
+        "en": "The signature does not match the challenge address — sign the exact challenge message with the wallet you are linking",
+        "es": "La firma no corresponde a la dirección del desafío — firma el mensaje exacto del desafío con la wallet que estás vinculando",
+        "zh": "签名与挑战地址不匹配 — 请用要绑定的钱包对挑战原文进行签名"
+      }
+    },
+    {
+      "category": {
+        "en": "Message signing & wallet linking",
+        "es": "Firma de mensajes y vinculación de wallets",
+        "zh": "消息签名与钱包绑定"
+      },
+      "code": "sign_rejected",
+      "http": 422,
+      "meaning": {
+        "en": "The signer rejected the request — the `message` carries the scrubbed reason. A `statement` of 141–280 characters also lands here (the envelope accepts at most 140)",
+        "es": "El firmante rechazó la solicitud — el `message` trae la razón saneada. Un `statement` de 141–280 caracteres también cae aquí (el sobre acepta máximo 140)",
+        "zh": "签名方拒绝了该请求 — `message` 中包含已脱敏的原因。141–280 个字符的 `statement` 也会在此处被拒绝（信封最多接受 140 个字符）"
       }
     },
     {
