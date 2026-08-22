@@ -266,6 +266,21 @@ Codes from [`GET /v1/events`](https://docs.cbpayapp.com/en/realtime-events) and 
 | 500 | `streaming_unsupported` | The connection does not support streaming (an intermediate proxy is buffering) — remove the buffering or fall back to webhooks |
 | 503 | `stream_unavailable` | The stream could not be opened; retry with backoff and keep your `Last-Event-ID` |
 
+### Message signing & wallet linking
+
+Codes from message signing with wallets (EIP-191 on EVM, TIP-191 on TRON): server-side signing with segregated wallets (`POST /v1/segregated-wallets/{id}/signatures`, which issues a publicly verifiable signature proof) and external wallet linking via challenge (`POST /v1/wallet-links/challenges` → sign the challenge with your wallet → `POST /v1/wallet-links/verify`).
+
+| HTTP | `error` | Meaning |
+|---|---|---|
+| 400 | `unsupported_chain` | The `chain` must be `tron` or `eth` |
+| 400 | `invalid_statement` | The `statement` exceeds 280 characters — shorten it (note: the signed envelope itself accepts at most 140) |
+| 409 | `proof_not_signable` | The proof is no longer in a signable state (already signed, expired or canceled) — request a new one |
+| 409 | `custody_transferred` | The wallet's custody was transferred to the client, so server-side signing is no longer possible — sign with your own key |
+| 409 | `challenge_consumed` | This challenge was already used or is no longer valid — request a new one |
+| 410 | `challenge_expired` | This challenge expired — request a new one and sign it within its validity window |
+| 422 | `signature_mismatch` | The signature does not match the challenge address — sign the exact challenge message with the wallet you are linking |
+| 422 | `sign_rejected` | The signer rejected the request — the `message` carries the scrubbed reason. A `statement` of 141–280 characters also lands here (the envelope accepts at most 140) |
+
 ### Service (5xx)
 
 | HTTP | `error` | Meaning |

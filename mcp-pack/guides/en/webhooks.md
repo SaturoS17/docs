@@ -143,6 +143,8 @@ To reactivate it, same call with `{ "status": "active" }`.
 | `wallet_key_exported` | A segregated wallet's private key was exported (security alert) |
 | `wallet_external_movement` | On-chain movement of a segregated wallet that did not go through the platform (expected under `client` custody) |
 | `wallet_key_compromise_suspected` | **Critical alarm**: external outflow from a `cbpay`-custody wallet — possible key compromise |
+| `wallet_signature_created` | A signature proof was created with a segregated wallet (EIP-191 / TIP-191 message signing) |
+| `wallet_linked` | An external wallet (`custody=client`) was linked to the account by a signed nonce challenge |
 | `txn_review_status_changed` | An operation held by the [transactional firewall](https://docs.cbpayapp.com/en/guides/transaction-reviews) changed review state (`in_review` / `info_requested` / `released` / `rejected`) — neutral payload, internal reasons never travel; a rejection can also come from the automatic deadline sweep (auto-rejection) |
 | `corridor_status_changed` | A payment corridor changed availability (`operational` / `degraded` / `down`) — broadcast, see the [service status guide](https://docs.cbpayapp.com/en/service-status) |
 | `balance_adjusted` | An administrator applied a manual credit or debit to a balance |
@@ -510,6 +512,29 @@ engine data.
   "tx_id": "9a3c1e5f…",
   "amount_raw": "25000000",
   "custody": "cbpay"
+}
+```
+
+```json wallet_signature_created
+{
+  "proof_id": "c41d…",
+  "account_id": "ae8c…",
+  "wallet_id": "b7e3…",
+  "chain": "eth",
+  "address": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F",
+  "purpose": "wallet_ownership",
+  "proof_code": "G9f2c…",
+  "verify_url": "https://api.qbank.cl/platform/v1/public/signature-proofs/G9f2c…"
+}
+```
+
+```json wallet_linked
+{
+  "link_id": "d52e…",
+  "account_id": "ae8c…",
+  "chain": "eth",
+  "address": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F",
+  "proof_id": "c41d…"
 }
 ```
 

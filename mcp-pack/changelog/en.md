@@ -8,6 +8,18 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+## v2.64 - August 21, 2026
+
+### v2.64
+
+**Added**
+
+- **Signature proofs — message signing with wallets (EIP-191 / TIP-191).** Prove control of a wallet with a cryptographic signature over a structured anti-phishing envelope (domain, purpose, account, nonce and a 10-minute validity window — never a free-form message). Two flows: server-side signing of a **segregated wallet** with `POST /v1/segregated-wallets/{walletID}/signatures` (OTP-gated for member sessions), and **wallet linking** of an external wallet (MetaMask, TronLink) by signed challenge with `POST /v1/wallet-links/challenges` + `POST /v1/wallet-links/verify`. Guide: [Signature proofs](https://docs.cbpayapp.com/en/guides/signature-proofs).
+- **Proof management.** `GET /v1/signature-proofs` (paginated, `from`/`to`/`status`/`purpose` filters), `GET /v1/signature-proofs/{proofID}` and `POST /v1/signature-proofs/{proofID}/revoke`. Linked wallets are listed with `GET /v1/wallet-links` and revoked with `DELETE /v1/wallet-links/{linkID}`.
+- **Public verification.** Every proof carries a `proof_code` and a `verify_url`; anyone can verify it without authentication at `GET /v1/public/signature-proofs/{code}` — status, validity window, chain, address and (when signed) the signature and message hash.
+- **Webhooks `wallet_signature_created` and `wallet_linked`.** Emitted when a proof is created and when an external wallet is linked. Reference: [Webhooks](https://docs.cbpayapp.com/en/webhooks).
+- **Security email on every server-side signature.** The account holder receives a branded email with the wallet, chain, purpose and timestamp of each signature.
+
 ## v2.63 - August 20, 2026
 
 ### v2.63

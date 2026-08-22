@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — convertible on demand with swaps.\nPayouts and service fees can be paid from any of the four balances\n(`PUT /v1/settlement` or per-payout `settlement_asset`), and payins\ncan auto-convert to the asset of your choice (`default_payin_asset`).\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-08-18 04:59 UTC",
-    "_content_sha256": "0b16b9857a17363aaf0692651cc4897d6c6056295e0b5f9b5be59d575a11f2bb"
+    "_generated_at": "2026-08-22 02:34 UTC",
+    "_content_sha256": "e53593c354cd7906b0db42c53f9166709bfeb6d681edccbfe6c8459997b2ed5f"
   },
   "auth": {
     "type": "bearer",
@@ -4884,6 +4884,498 @@
                 }
               ],
               "body": "{\n  \"consent_id\": \"c1a2b3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d\",\n  \"subject_id\": \"7e8f9a0b-1c2d-4e3f-8a9b-0c1d2e3f4a5b\",\n  \"channel\": \"link\",\n  \"status\": \"revoked\",\n  \"purpose\": \"credit_evaluation\",\n  \"consent_url\": \"https://business.cbpayapp.com/consent/cns_4f9a2b7c1d8e4a0f9b3c6d5e8a7f1c2d\",\n  \"email\": \"maria@example.com\",\n  \"created_at\": \"2026-08-09T15:00:00Z\",\n  \"updated_at\": \"2026-08-10T10:02:11Z\",\n  \"expires_at\": \"2026-08-16T15:00:00Z\",\n  \"revoked_at\": \"2026-08-10T10:02:11Z\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Signature proofs",
+      "item": [
+        {
+          "name": "Verify a signature proof (public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/public/signature-proofs/:code",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "public",
+                "signature-proofs",
+                ":code"
+              ],
+              "variable": [
+                {
+                  "key": "code",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Public endpoint (no credentials) that verifies a wallet signature proof by its public capability code (the `proof_code`, which starts with `G`). Returns JSON by default; with `Accept: text/html` it renders a branded verification page. Anti-enumeration: an invalid or unknown code returns the same generic 404. Shares the per-IP rate limit of the public verification endpoints. The signature and message hash are exposed because they are the material of the public proof (no PII).",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 The proof verification result. `valid` is true only when the",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/public/signature-proofs/:code",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "public",
+                    "signature-proofs",
+                    ":code"
+                  ],
+                  "variable": [
+                    {
+                      "key": "code",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "The proof verification result. `valid` is true only when the",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"proof_code\": \"Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a\",\n  \"status\": \"signed\",\n  \"valid\": true,\n  \"chain\": \"eth\",\n  \"address\": \"0x71C7656EC7ab88b098defB751B7401B5f6d8976F\",\n  \"purpose\": \"wallet_ownership\",\n  \"statement\": \"I control this wallet\",\n  \"issued_at\": \"2026-08-21T14:03:11Z\",\n  \"expires_at\": \"2026-08-21T14:13:11Z\",\n  \"signed_at\": \"2026-08-21T14:03:11Z\",\n  \"message_hash\": \"3f8a1c4e9b2d6f70a5c8e1b4d7f2093a4c6e8f10b3d5f709e2a4c6d8f0b1c3d5\",\n  \"signature\": \"8ba1f109551bd432803012645ac136ddd64dba72a0c9e0b1f5b1a2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00112233445566771b\",\n  \"verified_live\": true\n}"
+            }
+          ]
+        },
+        {
+          "name": "List signature proofs of a segregated wallet",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/signatures",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "segregated-wallets",
+                ":walletID",
+                "signatures"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true,
+                  "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ],
+              "variable": [
+                {
+                  "key": "walletID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Paginated list of the signature proofs issued by this segregated wallet."
+          },
+          "response": [
+            {
+              "name": "200 Paginated list of signature proofs.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/signatures",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "segregated-wallets",
+                    ":walletID",
+                    "signatures"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": true,
+                      "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                    },
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "key": "walletID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Paginated list of signature proofs.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"proofs\": [\n    {\n      \"proof_id\": \"c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90\",\n      \"account_id\": \"ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d\",\n      \"wallet_id\": \"b7e39c14-2d56-4e78-8a01-3c5d7e9f1b24\",\n      \"chain\": \"eth\",\n      \"address\": \"0x71C7656EC7ab88b098defB751B7401B5f6d8976F\",\n      \"purpose\": \"wallet_ownership\",\n      \"statement\": \"I control this wallet\",\n      \"envelope\": \"CBPay Signature Proof\\nDomain: https://api.qbank.cl/platform\\nPurpose: wallet_ownership\\nWallet: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\\nNonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7\\nIssued: 2026-08-21T14:03:11Z\\nExpires: 2026-08-21T14:13:11Z\\nStatement: \\\"I control this wallet\\\"\",\n      \"nonce\": \"9f2c41d2a887f3e4b219c6d2e8f1a5b7\",\n      \"proof_code\": \"Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a\",\n      \"status\": \"signed\",\n      \"issued_at\": \"2026-08-21T14:03:11Z\",\n      \"expires_at\": \"2026-08-21T14:13:11Z\",\n      \"signed_at\": \"2026-08-21T14:03:11Z\",\n      \"created_at\": \"2026-08-21T14:03:11Z\",\n      \"verify_url\": \"https://api.qbank.cl/platform/v1/public/signature-proofs/Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a\"\n    }\n  ],\n  \"page\": 1,\n  \"page_size\": 50\n}"
+            }
+          ]
+        },
+        {
+          "name": "Sign a message with a segregated wallet",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/signatures",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "segregated-wallets",
+                ":walletID",
+                "signatures"
+              ],
+              "variable": [
+                {
+                  "key": "walletID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Creates a signature proof: the segregated wallet (custody=cbpay) signs a structured CBPay Signature Proof envelope (anti-phishing) with the chain-native standard — EIP-191 for ETH/EVM, TIP-191 for TRON. The proof is persisted and publicly verifiable at `verify_url` (no auth). OTP-gated: the request must carry a valid `X-OTP-Token` challenge (human session; API keys are not allowed). The envelope lives 10 minutes; a signed proof stays publicly verifiable after expiry. Emits the `wallet_signature_created` webhook and a security email to the account owner.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"purpose\": \"wallet_ownership\",\n  \"statement\": \"I control this wallet\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Signature proof created and signed.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/segregated-wallets/:walletID/signatures",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "segregated-wallets",
+                    ":walletID",
+                    "signatures"
+                  ],
+                  "variable": [
+                    {
+                      "key": "walletID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Signature proof created and signed.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"proof\": {\n    \"proof_id\": \"c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90\",\n    \"account_id\": \"ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d\",\n    \"wallet_id\": \"b7e39c14-2d56-4e78-8a01-3c5d7e9f1b24\",\n    \"chain\": \"eth\",\n    \"address\": \"0x71C7656EC7ab88b098defB751B7401B5f6d8976F\",\n    \"purpose\": \"wallet_ownership\",\n    \"statement\": \"I control this wallet\",\n    \"envelope\": \"CBPay Signature Proof\\nDomain: https://api.qbank.cl/platform\\nPurpose: wallet_ownership\\nWallet: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\\nNonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7\\nIssued: 2026-08-21T14:03:11Z\\nExpires: 2026-08-21T14:13:11Z\\nStatement: \\\"I control this wallet\\\"\",\n    \"nonce\": \"9f2c41d2a887f3e4b219c6d2e8f1a5b7\",\n    \"proof_code\": \"Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a\",\n    \"status\": \"signed\",\n    \"issued_at\": \"2026-08-21T14:03:11Z\",\n    \"expires_at\": \"2026-08-21T14:13:11Z\",\n    \"signed_at\": \"2026-08-21T14:03:11Z\",\n    \"created_at\": \"2026-08-21T14:03:11Z\",\n    \"signature\": \"8ba1f109551bd432803012645ac136ddd64dba72a0c9e0b1f5b1a2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00112233445566771b\",\n    \"message_hash\": \"3f8a1c4e9b2d6f70a5c8e1b4d7f2093a4c6e8f10b3d5f709e2a4c6d8f0b1c3d5\",\n    \"verify_url\": \"https://api.qbank.cl/platform/v1/public/signature-proofs/Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "List signature proofs of the account",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/signature-proofs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "signature-proofs"
+              ],
+              "query": [
+                {
+                  "key": "purpose",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Optional purpose filter (exact match)."
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true,
+                  "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Paginated list of the signature proofs of the authenticated account, with optional `purpose` filter."
+          },
+          "response": [
+            {
+              "name": "200 Paginated list of signature proofs.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/signature-proofs",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "signature-proofs"
+                  ],
+                  "query": [
+                    {
+                      "key": "purpose",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Optional purpose filter (exact match)."
+                    },
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Start date (YYYY-MM-DD, UTC, inclusive)."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": true,
+                      "description": "End date (YYYY-MM-DD, UTC, inclusive)."
+                    },
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Paginated list of signature proofs.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"proofs\": [\n    {\n      \"proof_id\": \"c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90\",\n      \"account_id\": \"ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d\",\n      \"wallet_id\": \"b7e39c14-2d56-4e78-8a01-3c5d7e9f1b24\",\n      \"chain\": \"eth\",\n      \"address\": \"0x71C7656EC7ab88b098defB751B7401B5f6d8976F\",\n      \"purpose\": \"wallet_ownership\",\n      \"statement\": \"I control this wallet\",\n      \"envelope\": \"CBPay Signature Proof\\nDomain: https://api.qbank.cl/platform\\nPurpose: wallet_ownership\\nWallet: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\\nNonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7\\nIssued: 2026-08-21T14:03:11Z\\nExpires: 2026-08-21T14:13:11Z\\nStatement: \\\"I control this wallet\\\"\",\n      \"nonce\": \"9f2c41d2a887f3e4b219c6d2e8f1a5b7\",\n      \"proof_code\": \"Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a\",\n      \"status\": \"signed\",\n      \"issued_at\": \"2026-08-21T14:03:11Z\",\n      \"expires_at\": \"2026-08-21T14:13:11Z\",\n      \"signed_at\": \"2026-08-21T14:03:11Z\",\n      \"created_at\": \"2026-08-21T14:03:11Z\",\n      \"signature\": \"8ba1f109551bd432803012645ac136ddd64dba72a0c9e0b1f5b1a2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00112233445566771b\",\n      \"message_hash\": \"3f8a1c4e9b2d6f70a5c8e1b4d7f2093a4c6e8f10b3d5f709e2a4c6d8f0b1c3d5\",\n      \"verify_url\": \"https://api.qbank.cl/platform/v1/public/signature-proofs/Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a\"\n    }\n  ],\n  \"page\": 1,\n  \"page_size\": 50\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get a signature proof",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/signature-proofs/:proofID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "signature-proofs",
+                ":proofID"
+              ],
+              "variable": [
+                {
+                  "key": "proofID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Returns the detail of one signature proof of the account."
+          },
+          "response": [
+            {
+              "name": "200 Signature proof detail.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/signature-proofs/:proofID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "signature-proofs",
+                    ":proofID"
+                  ],
+                  "variable": [
+                    {
+                      "key": "proofID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Signature proof detail.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"proof\": {\n    \"proof_id\": \"c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90\",\n    \"account_id\": \"ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d\",\n    \"wallet_id\": \"b7e39c14-2d56-4e78-8a01-3c5d7e9f1b24\",\n    \"chain\": \"eth\",\n    \"address\": \"0x71C7656EC7ab88b098defB751B7401B5f6d8976F\",\n    \"purpose\": \"wallet_ownership\",\n    \"statement\": \"I control this wallet\",\n    \"envelope\": \"CBPay Signature Proof\\nDomain: https://api.qbank.cl/platform\\nPurpose: wallet_ownership\\nWallet: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\\nNonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7\\nIssued: 2026-08-21T14:03:11Z\\nExpires: 2026-08-21T14:13:11Z\\nStatement: \\\"I control this wallet\\\"\",\n    \"nonce\": \"9f2c41d2a887f3e4b219c6d2e8f1a5b7\",\n    \"proof_code\": \"Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a\",\n    \"status\": \"signed\",\n    \"issued_at\": \"2026-08-21T14:03:11Z\",\n    \"expires_at\": \"2026-08-21T14:13:11Z\",\n    \"signed_at\": \"2026-08-21T14:03:12Z\",\n    \"created_at\": \"2026-08-21T14:03:11Z\",\n    \"signature\": \"8ba1f109551bd432803012645ac136ddd64dba72a0c9e0b1f5b1a2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00112233445566771b\",\n    \"message_hash\": \"3f8a1c4e9b2d6f70a5c8e1b4d7f2093a4c6e8f10b3d5f709e2a4c6d8f0b1c3d5\",\n    \"verify_url\": \"https://api.qbank.cl/platform/v1/public/signature-proofs/Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Revoke a signature proof",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/signature-proofs/:proofID/revoke",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "signature-proofs",
+                ":proofID",
+                "revoke"
+              ],
+              "variable": [
+                {
+                  "key": "proofID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Revokes a signature proof. Idempotent: revoking an already revoked proof returns the same state. The public verification page immediately shows the proof as revoked."
+          },
+          "response": [
+            {
+              "name": "200 Proof revoked.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/signature-proofs/:proofID/revoke",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "signature-proofs",
+                    ":proofID",
+                    "revoke"
+                  ],
+                  "variable": [
+                    {
+                      "key": "proofID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Proof revoked.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"proof\": {\n    \"proof_id\": \"c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90\",\n    \"account_id\": \"ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d\",\n    \"wallet_id\": \"b7e39c14-2d56-4e78-8a01-3c5d7e9f1b24\",\n    \"chain\": \"eth\",\n    \"address\": \"0x71C7656EC7ab88b098defB751B7401B5f6d8976F\",\n    \"purpose\": \"wallet_ownership\",\n    \"statement\": \"I control this wallet\",\n    \"envelope\": \"CBPay Signature Proof\\nDomain: https://api.qbank.cl/platform\\nPurpose: wallet_ownership\\nWallet: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\\nNonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7\\nIssued: 2026-08-21T14:03:11Z\\nExpires: 2026-08-21T14:13:11Z\\nStatement: \\\"I control this wallet\\\"\",\n    \"nonce\": \"9f2c41d2a887f3e4b219c6d2e8f1a5b7\",\n    \"proof_code\": \"Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a\",\n    \"status\": \"revoked\",\n    \"issued_at\": \"2026-08-21T14:03:11Z\",\n    \"expires_at\": \"2026-08-21T14:13:11Z\",\n    \"signed_at\": \"2026-08-21T14:03:12Z\",\n    \"revoked_at\": \"2026-08-21T16:40:02Z\",\n    \"created_at\": \"2026-08-21T14:03:11Z\",\n    \"verify_url\": \"https://api.qbank.cl/platform/v1/public/signature-proofs/Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a\"\n  }\n}"
             }
           ]
         }
@@ -17853,6 +18345,269 @@
                 }
               ],
               "body": "{\n  \"wallet_id\": \"b7e3a1c2-9f4d-4a8b-8c1e-2d3f4a5b6c7d\",\n  \"auto_forward\": {\n    \"enabled\": true,\n    \"linked_address\": \"TColdWallet00000000000000000000000\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Wallet links",
+      "item": [
+        {
+          "name": "Create a wallet link challenge",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/wallet-links/challenges",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "wallet-links",
+                "challenges"
+              ]
+            },
+            "description": "Creates a nonce challenge to link an external wallet (custody=client) to the account. The wallet owner signs the structured envelope with the chain-native standard (EIP-191 / TIP-191) and the signature is submitted to `POST /v1/wallet-links/verify`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chain\": \"eth\",\n  \"address\": \"0x71C7656EC7ab88b098defB751B7401B5f6d8976F\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Challenge created.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/wallet-links/challenges",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "wallet-links",
+                    "challenges"
+                  ]
+                }
+              },
+              "status": "Challenge created.",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"challenge\": {\n    \"link_id\": \"d52e7b91-4c68-4f89-1b23-5d7e9f0a2c46\",\n    \"chain\": \"eth\",\n    \"address\": \"0x71C7656EC7ab88b098defB751B7401B5f6d8976F\",\n    \"nonce\": \"9f2c41d2a887f3e4b219c6d2e8f1a5b7\",\n    \"envelope\": \"CBPay Signature Proof\\nDomain: https://api.qbank.cl/platform\\nPurpose: wallet_link\\nWallet: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\\nAccount: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d\\nNonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7\\nIssued: 2026-08-21T14:03:11Z\\nExpires: 2026-08-21T14:13:11Z\",\n    \"expires_at\": \"2026-08-21T14:13:11Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Verify a wallet link challenge",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/wallet-links/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "wallet-links",
+                "verify"
+              ]
+            },
+            "description": "Verifies the signature of a wallet link challenge and links the external wallet (custody=client) to the account. Emits the `wallet_linked` webhook.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nonce\": \"9f2c41d2a887f3e4b219c6d2e8f1a5b7\",\n  \"signature\": \"8ba1f109551bd432803012645ac136ddd64dba72a0c9e0b1f5b1a2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00112233445566771b\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Wallet linked.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/wallet-links/verify",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "wallet-links",
+                    "verify"
+                  ]
+                }
+              },
+              "status": "Wallet linked.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"link\": {\n    \"link_id\": \"d52e7b91-4c68-4f89-1b23-5d7e9f0a2c46\",\n    \"account_id\": \"ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d\",\n    \"chain\": \"eth\",\n    \"address\": \"0x71C7656EC7ab88b098defB751B7401B5f6d8976F\",\n    \"status\": \"linked\",\n    \"expires_at\": \"2026-08-21T14:13:11Z\",\n    \"created_at\": \"2026-08-21T14:03:11Z\",\n    \"proof_id\": \"c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90\",\n    \"verified_at\": \"2026-08-21T14:05:41Z\"\n  },\n  \"proof\": {\n    \"proof_id\": \"c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90\",\n    \"account_id\": \"ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d\",\n    \"chain\": \"eth\",\n    \"address\": \"0x71C7656EC7ab88b098defB751B7401B5f6d8976F\",\n    \"purpose\": \"wallet_link\",\n    \"envelope\": \"CBPay Signature Proof\\nDomain: https://api.qbank.cl/platform\\nPurpose: wallet_link\\nWallet: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\\nAccount: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d\\nNonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7\\nIssued: 2026-08-21T14:03:11Z\\nExpires: 2026-08-21T14:13:11Z\",\n    \"nonce\": \"9f2c41d2a887f3e4b219c6d2e8f1a5b7\",\n    \"signature\": \"8ba1f109551bd432803012645ac136ddd64dba72a0c9e0b1f5b1a2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00112233445566771b\",\n    \"message_hash\": \"5c35a1c2e9f84d1b7a06e3f2d49871c5b6a0e4d38f71c2b5963a84d0e1f2c3b4\",\n    \"proof_code\": \"Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a\",\n    \"status\": \"signed\",\n    \"issued_at\": \"2026-08-21T14:03:11Z\",\n    \"expires_at\": \"2026-08-21T14:13:11Z\",\n    \"signed_at\": \"2026-08-21T14:05:41Z\",\n    \"created_at\": \"2026-08-21T14:03:11Z\",\n    \"verify_url\": \"https://api.qbank.cl/platform/v1/public/signature-proofs/Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "List linked wallets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/wallet-links",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "wallet-links"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Paginated list of the external wallets linked to the account."
+          },
+          "response": [
+            {
+              "name": "200 Paginated list of linked wallets.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/wallet-links",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "wallet-links"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Paginated list of linked wallets.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"links\": [\n    {\n      \"link_id\": \"d52e7b91-4c68-4f89-1b23-5d7e9f0a2c46\",\n      \"account_id\": \"ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d\",\n      \"chain\": \"eth\",\n      \"address\": \"0x71C7656EC7ab88b098defB751B7401B5f6d8976F\",\n      \"status\": \"linked\",\n      \"expires_at\": \"2026-08-21T14:13:11Z\",\n      \"created_at\": \"2026-08-21T14:03:11Z\",\n      \"proof_id\": \"c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90\",\n      \"verified_at\": \"2026-08-21T14:05:41Z\"\n    }\n  ],\n  \"page\": 1,\n  \"page_size\": 50,\n  \"total\": 1\n}"
+            }
+          ]
+        },
+        {
+          "name": "Revoke a wallet link",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/wallet-links/:linkID",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "wallet-links",
+                ":linkID"
+              ],
+              "variable": [
+                {
+                  "key": "linkID",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Revokes a wallet link. The external wallet keeps its custody; only the ownership attestation is revoked."
+          },
+          "response": [
+            {
+              "name": "200 Link revoked.",
+              "originalRequest": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/wallet-links/:linkID",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "wallet-links",
+                    ":linkID"
+                  ],
+                  "variable": [
+                    {
+                      "key": "linkID",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Link revoked.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"link\": {\n    \"link_id\": \"d52e7b91-4c68-4f89-1b23-5d7e9f0a2c46\",\n    \"account_id\": \"ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d\",\n    \"chain\": \"eth\",\n    \"address\": \"0x71C7656EC7ab88b098defB751B7401B5f6d8976F\",\n    \"status\": \"revoked\",\n    \"expires_at\": \"2026-08-21T14:13:11Z\",\n    \"created_at\": \"2026-08-21T14:03:11Z\",\n    \"proof_id\": \"c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90\",\n    \"verified_at\": \"2026-08-21T14:05:41Z\",\n    \"revoked_at\": \"2026-08-21T18:12:03Z\"\n  }\n}"
             }
           ]
         }

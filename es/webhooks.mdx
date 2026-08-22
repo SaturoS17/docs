@@ -141,6 +141,8 @@ Para reactivarla, el mismo llamado con `{ "status": "active" }`.
 | `wallet_key_exported` | Se exportó la llave privada de una wallet segregada (alerta de seguridad) |
 | `wallet_external_movement` | Movimiento on-chain de una wallet segregada que no pasó por la plataforma (esperable en custodia `client`) |
 | `wallet_key_compromise_suspected` | **Alarma crítica**: salida externa desde una wallet con custodia `cbpay` — posible llave comprometida |
+| `wallet_signature_created` | Se creó una prueba de firma con una wallet segregada (firma de mensajes EIP-191 / TIP-191) |
+| `wallet_linked` | Se vinculó una wallet externa (`custody=client`) a la cuenta mediante un desafío nonce firmado |
 | `txn_review_status_changed` | Una operación retenida por el [firewall transaccional](/es/guias/revisiones-operaciones) cambió de estado de revisión (`in_review` / `info_requested` / `released` / `rejected`) — payload neutro, sin motivos internos; un rechazo también puede venir del barrido automático por plazo (auto-rechazo) |
 | `corridor_status_changed` | Un corredor de pago cambió su disponibilidad (`operational` / `degraded` / `down`) — broadcast, ver la [guía de estado del servicio](/es/estado-del-servicio) |
 | `balance_adjusted` | Un administrador aplicó un abono o cargo manual sobre un saldo |
@@ -513,6 +515,29 @@ antiguas sin datos del motor.
   "tx_id": "9a3c1e5f…",
   "amount_raw": "25000000",
   "custody": "cbpay"
+}
+```
+
+```json wallet_signature_created
+{
+  "proof_id": "c41d…",
+  "account_id": "ae8c…",
+  "wallet_id": "b7e3…",
+  "chain": "eth",
+  "address": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F",
+  "purpose": "wallet_ownership",
+  "proof_code": "G9f2c…",
+  "verify_url": "https://api.qbank.cl/platform/v1/public/signature-proofs/G9f2c…"
+}
+```
+
+```json wallet_linked
+{
+  "link_id": "d52e…",
+  "account_id": "ae8c…",
+  "chain": "eth",
+  "address": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F",
+  "proof_id": "c41d…"
 }
 ```
 

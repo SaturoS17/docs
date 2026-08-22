@@ -79,6 +79,12 @@ tags:
   description: Wallets on-chain con saldo propio (empresas ilimitadas; personas 1 por combinación red+activo)
     — crear, importar, enviar, exportar la llave privada y auto-forward. El saldo vive on-chain, nunca
     en el ledger.
+- name: Pruebas de firma
+  description: Firma criptográfica de mensajes con wallets (EIP-191 ETH/EVM, TIP-191 TRON) — crear,
+    listar, consultar y revocar pruebas de firma con verificación pública.
+- name: Vínculos de wallets
+  description: Vincula wallets externas (custody=client) a tu cuenta firmando un desafío nonce —
+    crear desafíos, verificar firmas, listar y revocar vínculos.
 - name: QR Crypto POS
   description: "Cobros QR crypto con monto para procesadores con POS físicos (cuentas empresa): merchants verificados, dirección exclusiva + QR por cobro, detección temprana del pago, conciliación por merchant y devoluciones por el riel de retiro crypto."
 - name: KYC / KYB
@@ -786,6 +792,61 @@ paths:
               example:
                 error: too_many_attempts
                 message: too many requests; wait a moment and retry
+  /v1/public/signature-proofs/{code}:
+    get:
+      security: []
+      tags:
+      - Pruebas de firma
+      operationId: verifySignatureProofPublic
+      summary: Verificación pública de una prueba de firma (sin auth)
+      description: "Verifica públicamente una prueba de firma de wallet por su código\n
+        de capacidad `proof_code` (empieza con `G`). Sin autenticación: quien tiene el\n
+        link puede verificar la prueba. Si el cliente pide HTML (`Accept: text/html`),\n
+        devuelve una página brandeada; en cualquier otro caso devuelve JSON. La firma\n
+        y el hash del mensaje se exponen porque son el material de la prueba pública.\n\n
+        Anti-enumeración: un código inválido, adulterado o inexistente devuelve el MISMO\n
+        404 genérico. Rate limit por IP."
+      parameters:
+      - name: code
+        in: path
+        required: true
+        description: Código público de la prueba (capability code HMAC, empieza con `G`).
+        schema:
+          type: string
+        example: Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+      responses:
+        '200':
+          description: Detalle verificable de la prueba (JSON) o página brandeada (HTML).
+          content:
+            application/json:
+              example:
+                proof_code: Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+                status: signed
+                valid: true
+                chain: eth
+                address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+                purpose: wallet_ownership
+                statement: I control this wallet
+                issued_at: '2026-08-21T14:03:11Z'
+                expires_at: '2026-08-21T14:13:11Z'
+                signed_at: '2026-08-21T14:03:11Z'
+                message_hash: '3f8a1c4e9b2d6f70a5c8e1b4d7f2093a4c6e8f10b3d5f709e2a4c6d8f0b1c3d5'
+                signature: '8ba1f109551bd432803012645ac136ddd64dba72a0c9e0b1f5b1a2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00112233445566771b'
+                verified_live: true
+        '404':
+          description: Código inválido, adulterado o desconocido (anti-enumeración).
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: this verification link does not correspond to any signature proof issued by this platform
+        '429':
+          description: Demasiados intentos desde esta IP.
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many verification attempts; wait a moment and retry
   /pay/{token}:
     get:
       security: []
@@ -11701,6 +11762,552 @@ paths:
                 message: identity verification is required before using this service
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/segregated-wallets/{walletID}/signatures:
+    post:
+      tags:
+      - Pruebas de firma
+      operationId: signSegregatedWalletMessage
+      summary: Firmar un mensaje con una wallet segregada
+      description: "Crea una prueba de firma: la wallet segregada (`custody=cbpay`) firma\n
+        un sobre estructurado **CBPay Signature Proof** (anti-phishing) con el estándar\n
+        nativo de la red — EIP-191 para ETH/EVM, TIP-191 para TRON. La prueba queda\n
+        persistida y es verificable públicamente en `verify_url` (sin auth).\n\n
+        **Requiere OTP** (código de un solo uso) cuando la acción `sign_message` está\n
+        protegida en la política de la cuenta. La wallet debe estar `custody=cbpay`:\n
+        una wallet exportada (`custody=client`) ya no puede firmar (`custody_transferred`).\n\n
+        El sobre vive 10 minutos; una prueba firmada sigue siendo verificable después\n
+        de expirar. Emite el webhook `wallet_signature_created` y un email de seguridad\n
+        al titular de la cuenta.\n\n
+        Errores específicos: `invalid_purpose`, `invalid_statement`,\n
+        `custody_transferred`, `proof_not_signable`, `sign_rejected`,\n
+        `nonce_failed`, `core_unavailable`."
+      parameters:
+      - name: walletID
+        in: path
+        required: true
+        description: ID de la wallet segregada.
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [purpose]
+              properties:
+                purpose:
+                  type: string
+                  enum: [wallet_ownership, treasury_attestation]
+                  description: Propósito de la prueba (default `wallet_ownership`). `wallet_link` no se acepta aquí — usa `POST /v1/wallet-links/challenges` para vincular una wallet externa.
+                statement:
+                  type: string
+                  description: Declaración opcional que la wallet atestigua (máx. 140 runas).
+            example:
+              purpose: wallet_ownership
+              statement: I control this wallet
+      responses:
+        '201':
+          description: Prueba de firma creada y firmada.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proof:
+                    $ref: '#/components/schemas/SignatureProof'
+              example:
+                proof:
+                  proof_id: c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90
+                  account_id: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d
+                  wallet_id: b7e39c14-2d56-4e78-8a01-3c5d7e9f1b24
+                  chain: eth
+                  address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+                  purpose: wallet_ownership
+                  statement: I control this wallet
+                  envelope: "CBPay Signature Proof\nDomain: https://api.qbank.cl/platform\nPurpose: wallet_ownership\nWallet: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\nNonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7\nIssued: 2026-08-21T14:03:11Z\nExpires: 2026-08-21T14:13:11Z\nStatement: \"I control this wallet\""
+                  nonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7
+                  proof_code: Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+                  status: signed
+                  issued_at: '2026-08-21T14:03:11Z'
+                  expires_at: '2026-08-21T14:13:11Z'
+                  signed_at: '2026-08-21T14:03:11Z'
+                  created_at: '2026-08-21T14:03:11Z'
+                  signature: '8ba1f109551bd432803012645ac136ddd64dba72a0c9e0b1f5b1a2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00112233445566771b'
+                  message_hash: '3f8a1c4e9b2d6f70a5c8e1b4d7f2093a4c6e8f10b3d5f709e2a4c6d8f0b1c3d5'
+                  verify_url: https://api.qbank.cl/platform/v1/public/signature-proofs/Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+        '400':
+          description: Payload inválido (`invalid_json`, `invalid_purpose`, `invalid_statement`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_purpose
+                message: purpose must be one of wallet_ownership, treasury_attestation; to link an external wallet use POST /v1/wallet-links/challenges
+        '403':
+          description: 'La cuenta o sesión no pasó el gate: `human_session_required` (las API keys no pueden firmar), `verification_required` (KYC no aprobado), `account_blocked`, `service_disabled`, o falta/OTP inválido (`otp_required`, `otp_invalid`).'
+        '404':
+          description: La wallet no existe o no pertenece a la cuenta.
+        '409':
+          description: La wallet fue exportada (`custody_transferred`).
+        '422':
+          description: La wallet no puede firmar (`proof_not_signable`) o la firma fue rechazada (`sign_rejected`).
+        '502':
+          description: El servicio de firma no respondió (`core_unavailable`).
+        '503':
+          description: La organización no tiene credencial del core configurada (`org_credential_missing`) o el servicio OTP no está disponible (`otp_unavailable`).
+    get:
+      tags:
+      - Pruebas de firma
+      operationId: listSegregatedWalletSignatures
+      summary: Listar pruebas de firma de una wallet segregada
+      description: Lista paginada de las pruebas de firma emitidas con una wallet segregada
+        de la cuenta.
+      parameters:
+      - name: walletID
+        in: path
+        required: true
+        description: ID de la wallet segregada.
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+      responses:
+        '200':
+          description: Lista paginada de pruebas de firma.
+          content:
+            application/json:
+              example:
+                proofs:
+                - proof_id: c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90
+                  account_id: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d
+                  wallet_id: b7e39c14-2d56-4e78-8a01-3c5d7e9f1b24
+                  chain: eth
+                  address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+                  purpose: wallet_ownership
+                  statement: I control this wallet
+                  envelope: "CBPay Signature Proof\nDomain: https://api.qbank.cl/platform\nPurpose: wallet_ownership\nWallet: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\nNonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7\nIssued: 2026-08-21T14:03:11Z\nExpires: 2026-08-21T14:13:11Z\nStatement: \"I control this wallet\""
+                  nonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7
+                  proof_code: Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+                  status: signed
+                  issued_at: '2026-08-21T14:03:11Z'
+                  expires_at: '2026-08-21T14:13:11Z'
+                  signed_at: '2026-08-21T14:03:11Z'
+                  created_at: '2026-08-21T14:03:11Z'
+                  verify_url: https://api.qbank.cl/platform/v1/public/signature-proofs/Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+                page: 1
+                page_size: 50
+        '400':
+          description: Rango de fechas inválido (`invalid_range`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_range
+                message: invalid date range
+        '404':
+          description: La wallet no existe o no pertenece a la cuenta.
+  /v1/signature-proofs:
+    get:
+      tags:
+      - Pruebas de firma
+      operationId: listSignatureProofs
+      summary: Listar pruebas de firma de la cuenta
+      description: "Lista paginada de todas las pruebas de firma de la cuenta\n
+        (wallets segregadas y vínculos de wallets externas), con filtros de fecha\n
+        (`from`/`to`, `YYYY-MM-DD` UTC) y filtro opcional por `purpose`."
+      parameters:
+      - name: from
+        in: query
+        description: Fecha inicial (`YYYY-MM-DD`, UTC, inclusiva).
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        description: Fecha final (`YYYY-MM-DD`, UTC, inclusiva).
+        schema:
+          type: string
+          format: date
+      - name: purpose
+        in: query
+        description: Filtra por propósito de la prueba.
+        schema:
+          type: string
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+      responses:
+        '200':
+          description: Lista paginada de pruebas de firma.
+          content:
+            application/json:
+              example:
+                proofs:
+                - proof_id: c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90
+                  account_id: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d
+                  wallet_id: b7e39c14-2d56-4e78-8a01-3c5d7e9f1b24
+                  chain: eth
+                  address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+                  purpose: wallet_ownership
+                  statement: I control this wallet
+                  envelope: "CBPay Signature Proof\nDomain: https://api.qbank.cl/platform\nPurpose: wallet_ownership\nWallet: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\nNonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7\nIssued: 2026-08-21T14:03:11Z\nExpires: 2026-08-21T14:13:11Z\nStatement: \"I control this wallet\""
+                  nonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7
+                  proof_code: Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+                  status: signed
+                  issued_at: '2026-08-21T14:03:11Z'
+                  expires_at: '2026-08-21T14:13:11Z'
+                  signed_at: '2026-08-21T14:03:11Z'
+                  created_at: '2026-08-21T14:03:11Z'
+                  verify_url: https://api.qbank.cl/platform/v1/public/signature-proofs/Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+                page: 1
+                page_size: 50
+        '400':
+          description: Rango de fechas inválido (`invalid_range`).
+  /v1/signature-proofs/{proofID}:
+    get:
+      tags:
+      - Pruebas de firma
+      operationId: getSignatureProof
+      summary: Detalle de una prueba de firma
+      description: Devuelve el detalle completo de una prueba de firma de la cuenta,
+        incluyendo la firma, el hash del mensaje y el link público de verificación.
+      parameters:
+      - name: proofID
+        in: path
+        required: true
+        description: ID de la prueba de firma.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Detalle de la prueba de firma.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proof:
+                    $ref: '#/components/schemas/SignatureProof'
+              example:
+                proof:
+                  proof_id: c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90
+                  account_id: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d
+                  wallet_id: b7e39c14-2d56-4e78-8a01-3c5d7e9f1b24
+                  chain: eth
+                  address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+                  purpose: wallet_ownership
+                  statement: I control this wallet
+                  envelope: "CBPay Signature Proof\nDomain: https://api.qbank.cl/platform\nPurpose: wallet_ownership\nWallet: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\nNonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7\nIssued: 2026-08-21T14:03:11Z\nExpires: 2026-08-21T14:13:11Z\nStatement: \"I control this wallet\""
+                  nonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7
+                  proof_code: Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+                  status: signed
+                  issued_at: '2026-08-21T14:03:11Z'
+                  expires_at: '2026-08-21T14:13:11Z'
+                  signed_at: '2026-08-21T14:03:12Z'
+                  created_at: '2026-08-21T14:03:11Z'
+                  signature: '8ba1f109551bd432803012645ac136ddd64dba72a0c9e0b1f5b1a2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00112233445566771b'
+                  message_hash: '3f8a1c4e9b2d6f70a5c8e1b4d7f2093a4c6e8f10b3d5f709e2a4c6d8f0b1c3d5'
+                  verify_url: https://api.qbank.cl/platform/v1/public/signature-proofs/Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+        '404':
+          description: La prueba no existe o no pertenece a la cuenta.
+  /v1/signature-proofs/{proofID}/revoke:
+    post:
+      tags:
+      - Pruebas de firma
+      operationId: revokeSignatureProof
+      summary: Revocar una prueba de firma
+      description: "Revoca una prueba de firma: la verificación pública deja de\n
+        reportarla como válida. La prueba queda en el historial (append-only).\n
+        Idempotente: revocar una prueba ya revocada devuelve el mismo estado."
+      parameters:
+      - name: proofID
+        in: path
+        required: true
+        description: ID de la prueba de firma.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Prueba revocada.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proof:
+                    $ref: '#/components/schemas/SignatureProof'
+              example:
+                proof:
+                  proof_id: c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90
+                  account_id: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d
+                  wallet_id: b7e39c14-2d56-4e78-8a01-3c5d7e9f1b24
+                  chain: eth
+                  address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+                  purpose: wallet_ownership
+                  statement: I control this wallet
+                  envelope: "CBPay Signature Proof\nDomain: https://api.qbank.cl/platform\nPurpose: wallet_ownership\nWallet: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\nNonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7\nIssued: 2026-08-21T14:03:11Z\nExpires: 2026-08-21T14:13:11Z\nStatement: \"I control this wallet\""
+                  nonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7
+                  proof_code: Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+                  status: revoked
+                  issued_at: '2026-08-21T14:03:11Z'
+                  expires_at: '2026-08-21T14:13:11Z'
+                  signed_at: '2026-08-21T14:03:12Z'
+                  revoked_at: '2026-08-21T16:40:02Z'
+                  created_at: '2026-08-21T14:03:11Z'
+                  verify_url: https://api.qbank.cl/platform/v1/public/signature-proofs/Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+        '404':
+          description: La prueba no existe o no pertenece a la cuenta.
+        '409':
+          description: La prueba no está en un estado revocable (`invalid_state`).
+  /v1/wallet-links/challenges:
+    post:
+      tags:
+      - Vínculos de wallets
+      operationId: createWalletLinkChallenge
+      summary: Crear un desafío nonce para vincular una wallet externa
+      description: "Crea un desafío nonce para vincular una wallet EXTERNA\n
+        (`custody=client`) a la cuenta. El cliente firma el `envelope` con su wallet\n
+        (EIP-191 para ETH/EVM, TIP-191 para TRON) y lo envía a `POST\n
+        /v1/wallet-links/verify`. El desafío expira en 10 minutos y es de un solo uso.\n\n
+        Errores específicos: `unsupported_chain`, `invalid_address`, `nonce_failed`."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [chain, address]
+              properties:
+                chain:
+                  type: string
+                  enum: [eth, tron]
+                address:
+                  type: string
+                  description: Dirección de la wallet externa (formato de la red).
+            example:
+              chain: eth
+              address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+      responses:
+        '201':
+          description: Desafío creado.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  challenge:
+                    type: object
+                    properties:
+                      link_id:
+                        type: string
+                      chain:
+                        type: string
+                      address:
+                        type: string
+                      nonce:
+                        type: string
+                      envelope:
+                        type: string
+                        description: Texto exacto que la wallet debe firmar.
+                      expires_at:
+                        type: string
+              example:
+                challenge:
+                  link_id: d52e7b91-4c68-4f89-1b23-5d7e9f0a2c46
+                  chain: eth
+                  address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+                  nonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7
+                  envelope: "CBPay Signature Proof\nDomain: https://api.qbank.cl/platform\nPurpose: wallet_link\nWallet: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\nAccount: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d\nNonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7\nIssued: 2026-08-21T14:03:11Z\nExpires: 2026-08-21T14:13:11Z"
+                  expires_at: '2026-08-21T14:13:11Z'
+        '400':
+          description: Payload inválido (`invalid_address`, `unsupported_chain`).
+        '500':
+          description: No se pudo generar el nonce (`nonce_failed`).
+  /v1/wallet-links/verify:
+    post:
+      tags:
+      - Vínculos de wallets
+      operationId: verifyWalletLink
+      summary: Verificar la firma del desafío y vincular la wallet
+      description: "Verifica la firma del desafío nonce y vincula la wallet externa a\n
+        la cuenta. La wallet queda `custody=client`: el cliente conserva la llave y\n
+        puede gastar por fuera; el vínculo solo prueba la titularidad de la dirección.\n\n
+        Errores específicos: `invalid_payload`, `invalid_signature`,\n
+        `signature_mismatch`, `verification_failed`, `challenge_consumed`,\n
+        `challenge_expired`, `proof_not_signable`."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nonce, signature]
+              properties:
+                nonce:
+                  type: string
+                  description: Nonce del desafío (de `POST /v1/wallet-links/challenges`).
+                signature:
+                  type: string
+                  description: Firma del envelope (EIP-191 / TIP-191).
+            example:
+              nonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7
+              signature: '8ba1f109551bd432803012645ac136ddd64dba72a0c9e0b1f5b1a2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00112233445566771b'
+      responses:
+        '200':
+          description: Wallet vinculada.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  link:
+                    $ref: '#/components/schemas/WalletLink'
+                  proof:
+                    $ref: '#/components/schemas/SignatureProof'
+              example:
+                link:
+                  link_id: d52e7b91-4c68-4f89-1b23-5d7e9f0a2c46
+                  account_id: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d
+                  chain: eth
+                  address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+                  status: linked
+                  expires_at: '2026-08-21T14:13:11Z'
+                  created_at: '2026-08-21T14:03:11Z'
+                  proof_id: c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90
+                  verified_at: '2026-08-21T14:05:41Z'
+                proof:
+                  proof_id: c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90
+                  account_id: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d
+                  chain: eth
+                  address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+                  purpose: wallet_link
+                  envelope: "CBPay Signature Proof\nDomain: https://api.qbank.cl/platform\nPurpose: wallet_link\nWallet: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\nAccount: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d\nNonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7\nIssued: 2026-08-21T14:03:11Z\nExpires: 2026-08-21T14:13:11Z"
+                  nonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7
+                  signature: '8ba1f109551bd432803012645ac136ddd64dba72a0c9e0b1f5b1a2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00112233445566771b'
+                  message_hash: 5c35a1c2e9f84d1b7a06e3f2d49871c5b6a0e4d38f71c2b5963a84d0e1f2c3b4
+                  proof_code: Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+                  status: signed
+                  issued_at: '2026-08-21T14:03:11Z'
+                  expires_at: '2026-08-21T14:13:11Z'
+                  signed_at: '2026-08-21T14:05:41Z'
+                  created_at: '2026-08-21T14:03:11Z'
+                  verify_url: 'https://api.qbank.cl/platform/v1/public/signature-proofs/Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a'
+        '400':
+          description: Payload inválido (`invalid_payload`, `invalid_signature`, `verification_failed`).
+        '404':
+          description: Nonce de desafío desconocido o ajeno (`not_found`).
+        '409':
+          description: El desafío ya fue consumido o la prueba no pudo persistirse (`challenge_consumed`, `proof_not_signable`).
+        '410':
+          description: El desafío expiró (`challenge_expired`).
+        '422':
+          description: La firma no corresponde a la dirección del desafío (`signature_mismatch`).
+  /v1/wallet-links:
+    get:
+      tags:
+      - Vínculos de wallets
+      operationId: listWalletLinks
+      summary: Listar wallets vinculadas
+      description: Lista paginada de las wallets externas (`custody=client`) vinculadas
+        a la cuenta.
+      parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+      responses:
+        '200':
+          description: Lista paginada de vínculos.
+          content:
+            application/json:
+              example:
+                links:
+                - link_id: d52e7b91-4c68-4f89-1b23-5d7e9f0a2c46
+                  account_id: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d
+                  chain: eth
+                  address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+                  status: linked
+                  expires_at: '2026-08-21T14:13:11Z'
+                  created_at: '2026-08-21T14:03:11Z'
+                  proof_id: c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90
+                  verified_at: '2026-08-21T14:05:41Z'
+                page: 1
+                page_size: 50
+                total: 1
+  /v1/wallet-links/{linkID}:
+    delete:
+      tags:
+      - Vínculos de wallets
+      operationId: revokeWalletLink
+      summary: Revocar un vínculo de wallet
+      description: "Revoca el vínculo de una wallet externa. El vínculo queda en el\n
+        historial (append-only) con estado `revoked`. Idempotente: revocar un vínculo\n
+        ya revocado devuelve el mismo estado."
+      parameters:
+      - name: linkID
+        in: path
+        required: true
+        description: ID del vínculo.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Vínculo revocado.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  link:
+                    $ref: '#/components/schemas/WalletLink'
+              example:
+                link:
+                  link_id: d52e7b91-4c68-4f89-1b23-5d7e9f0a2c46
+                  account_id: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d
+                  chain: eth
+                  address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+                  status: revoked
+                  expires_at: '2026-08-21T14:13:11Z'
+                  created_at: '2026-08-21T14:03:11Z'
+                  proof_id: c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90
+                  verified_at: '2026-08-21T14:05:41Z'
+                  revoked_at: '2026-08-21T18:12:03Z'
+        '404':
+          description: El vínculo no existe o no pertenece a la cuenta.
+        '409':
+          description: El vínculo no está en un estado revocable (`invalid_state`).
   /v1/payouts/qr/scan:
     post:
       tags:
@@ -21451,6 +22058,128 @@ components:
         updated_at:
           type: string
           format: date-time
+    SignatureProof:
+      type: object
+      description: Prueba criptográfica de que una wallet firmó un mensaje estructurado
+        CBPay (EIP-191 ETH/EVM, TIP-191 TRON). Verificable públicamente vía verify_url.
+        El envelope es el mensaje anti-phishing exacto que firmó la wallet (líneas Domain /
+        Purpose / Wallet / Nonce / Issued / Expires / Statement; la línea Account
+        solo aparece para proofs `wallet_link`). Los proofs viven 10 minutos
+        (`expires_at`); un proof firmado sigue siendo verificable públicamente tras expirar.
+      properties:
+        proof_id:
+          type: string
+          format: uuid
+        wallet_id:
+          type: string
+          format: uuid
+          description: Presente para proofs custodiales (server-side); omitido para proofs wallet-link.
+        account_id:
+          type: string
+          format: uuid
+        chain:
+          type: string
+          enum:
+          - eth
+          - tron
+        address:
+          type: string
+          description: Dirección on-chain que produjo la firma.
+        purpose:
+          type: string
+          enum:
+          - wallet_ownership
+          - treasury_attestation
+          - wallet_link
+        statement:
+          type: string
+          description: Declaración de texto libre (máx 140 runas). Omitida cuando está vacía.
+        envelope:
+          type: string
+          description: El mensaje estructurado exacto que firmó la wallet.
+          example: "CBPay Signature Proof\nDomain: https://api.qbank.cl/platform\nPurpose: wallet_ownership\nWallet: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\nNonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7\nIssued: 2026-08-21T14:03:11Z\nExpires: 2026-08-21T14:13:11Z\nStatement: \"I control this wallet\""
+        nonce:
+          type: string
+          description: Nonce anti-replay de 32 caracteres hex.
+        proof_code:
+          type: string
+          description: Código de capacidad de verificación pública (53 caracteres, empieza con G).
+          example: Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+        status:
+          type: string
+          enum:
+          - issued
+          - signed
+          - expired
+          - revoked
+        signature:
+          type: string
+          description: Presente una vez que status es signed.
+        message_hash:
+          type: string
+          description: Presente una vez que status es signed.
+        issued_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+          description: issued_at + 10 minutos.
+        signed_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        verify_url:
+          type: string
+          example: https://api.qbank.cl/platform/v1/public/signature-proofs/Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+    WalletLink:
+      type: object
+      description: Wallet externa (custody=client) vinculada a la cuenta firmando un
+        desafío nonce. El desafío expira 10 minutos después de emitirse; una vez
+        vinculada, el vínculo permanece activo hasta ser revocado.
+      properties:
+        link_id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        chain:
+          type: string
+          enum:
+          - eth
+          - tron
+        address:
+          type: string
+        status:
+          type: string
+          enum:
+          - pending
+          - linked
+          - revoked
+          - expired
+        expires_at:
+          type: string
+          format: date-time
+          description: Expiración del desafío (10 minutos tras su creación).
+        proof_id:
+          type: string
+          format: uuid
+          description: Prueba de firma creada al verificar (presente una vez vinculada).
+        verified_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
     DepositInstrument:
       type: object
       properties:
@@ -22783,6 +23512,95 @@ webhooks:
               status: revoked
               previous_status: pending
               revoked_at: '2026-08-10T10:02:11Z'
+      responses:
+        '200':
+          description: Devuelve cualquier 2xx para confirmar la entrega.
+  wallet_signature_created:
+    post:
+      summary: Prueba de firma de wallet creada
+      description: 'Se creo una prueba de firma con una wallet segregada (`POST
+        /v1/segregated-wallets/{walletID}/signatures`). La wallet firmo un mensaje
+        con el estandar nativo de la red (EIP-191 para ETH/EVM, TIP-191 para TRON)
+        dentro del sobre anti-phishing CBPay Signature Proof. La prueba se verifica
+        publicamente en `verify_url` (sin auth).
+
+
+        Cada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
+        y `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`. Responde 2xx; hasta
+        5 intentos con backoff incremental.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                proof_id:
+                  type: string
+                account_id:
+                  type: string
+                wallet_id:
+                  type: string
+                chain:
+                  type: string
+                  enum: [eth, tron]
+                address:
+                  type: string
+                purpose:
+                  type: string
+                proof_code:
+                  type: string
+                  description: Codigo publico de la prueba (empieza con `G`).
+                verify_url:
+                  type: string
+                  description: URL publica de verificacion (sin auth).
+            example:
+              proof_id: c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90
+              account_id: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d
+              wallet_id: b7e39c14-2d56-4e78-8a01-3c5d7e9f1b24
+              chain: eth
+              address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+              purpose: wallet_ownership
+              proof_code: Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+              verify_url: https://api.qbank.cl/platform/v1/public/signature-proofs/Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+      responses:
+        '200':
+          description: Devuelve cualquier 2xx para confirmar la entrega.
+  wallet_linked:
+    post:
+      summary: Wallet externa vinculada
+      description: 'Se vinculo una wallet externa (`custody=client`) a la cuenta
+        resolviendo un desafio nonce (`POST /v1/wallet-links/challenges` + `POST
+        /v1/wallet-links/verify`). La wallet sigue bajo custodia del cliente; el
+        vinculo solo prueba la titularidad de la direccion.
+
+
+        Cada entrega incluye `X-Webhook-Event`, `X-Webhook-Event-ID`, `X-Webhook-Delivery-ID`, `X-Webhook-Timestamp`
+        y `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`. Responde 2xx; hasta
+        5 intentos con backoff incremental.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                link_id:
+                  type: string
+                account_id:
+                  type: string
+                chain:
+                  type: string
+                  enum: [eth, tron]
+                address:
+                  type: string
+                proof_id:
+                  type: string
+                  description: Prueba de firma que respalda el vinculo.
+            example:
+              link_id: d52e7b91-4c68-4f89-1b23-5d7e9f0a2c46
+              account_id: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d
+              chain: eth
+              address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+              proof_id: c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90
       responses:
         '200':
           description: Devuelve cualquier 2xx para confirmar la entrega.

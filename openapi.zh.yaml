@@ -57,6 +57,10 @@ tags:
   description: 链上充值与提现(TRON、Ethereum 和 Bitcoin)。
 - name: 隔离钱包
   description: 拥有自身余额的链上钱包(企业不限数量;个人每个网络+资产组合 1 个)——创建、导入、发送、导出私钥与自动转发。余额存在于链上,从不进入账本。
+- name: 签名证明
+  description: 使用钱包进行加密消息签名(EIP-191 ETH/EVM、TIP-191 TRON)——创建、列出、查询和吊销具有公开验证功能的签名证明。
+- name: 钱包链接
+  description: 通过签名 nonce 挑战将外部钱包(custody=client)链接到你的账户——创建挑战、验证签名、列出和吊销链接。
 - name: QR Crypto POS
   description: "面向拥有实体 POS 终端的处理商（企业账户）的定额加密货币二维码收款：已验证商户、每笔收款专属地址 + 二维码、支付早期检测、按商户对账，以及经加密货币提现通道的退款。"
 - name: KYC / KYB
@@ -714,6 +718,59 @@ paths:
               example:
                 error: too_many_attempts
                 message: too many requests; wait a moment and retry
+  /v1/public/signature-proofs/{code}:
+    get:
+      security: []
+      tags:
+      - 签名证明
+      operationId: verifySignatureProofPublic
+      summary: 签名证明的公开验证(无需身份验证)
+      description: "通过其能力代码 `proof_code`(以 `G` 开头)公开验证钱包签名证明。\n
+        无需身份验证:持有链接的任何人都可以验证该证明。如果客户端请求 HTML\n
+        (`Accept: text/html`),则返回品牌化页面;否则返回 JSON。签名和消息哈希\n
+        会被公开,因为它们是公开证明的材料。\n\n
+        反枚举:无效、被篡改或不存在的代码返回相同的通用 404。按 IP 限速。"
+      parameters:
+      - name: code
+        in: path
+        required: true
+        description: 证明的公共能力代码(HMAC 能力代码,以 `G` 开头)。
+        schema:
+          type: string
+        example: Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+      responses:
+        '200':
+          description: 证明的可验证详情(JSON)或品牌化页面(HTML)。
+          content:
+            application/json:
+              example:
+                proof_code: Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+                status: signed
+                valid: true
+                chain: eth
+                address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+                purpose: wallet_ownership
+                statement: I control this wallet
+                issued_at: '2026-08-21T14:03:11Z'
+                expires_at: '2026-08-21T14:13:11Z'
+                signed_at: '2026-08-21T14:03:11Z'
+                message_hash: '3f8a1c4e9b2d6f70a5c8e1b4d7f2093a4c6e8f10b3d5f709e2a4c6d8f0b1c3d5'
+                signature: '8ba1f109551bd432803012645ac136ddd64dba72a0c9e0b1f5b1a2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00112233445566771b'
+                verified_live: true
+        '404':
+          description: 代码无效、被篡改或未知(反枚举)。
+          content:
+            application/json:
+              example:
+                error: not_found
+                message: this verification link does not correspond to any signature proof issued by this platform
+        '429':
+          description: 来自此 IP 的尝试过多。
+          content:
+            application/json:
+              example:
+                error: too_many_attempts
+                message: too many verification attempts; wait a moment and retry
   /pay/{token}:
     get:
       security: []
@@ -11297,6 +11354,560 @@ paths:
                 message: identity verification is required before using this service
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/segregated-wallets/{walletID}/signatures:
+    post:
+      tags:
+      - 签名证明
+      operationId: signSegregatedWalletMessage
+      summary: 使用隔离钱包签名消息
+      description: "使用隔离钱包(`custody=cbpay`)按照链原生标准(ETH/EVM 为 EIP-191,\n
+        TRON 为 TIP-191)在防钓鱼 **CBPay Signature Proof** 封装内对消息进行签名。\n
+        证明将被持久化,并可在 `verify_url` 公开验证(无需身份验证)。\n\n
+        当账户策略保护 `sign_message` 操作时,**需要 OTP**(一次性验证码)。\n
+        钱包必须为 `custody=cbpay`:已导出的钱包(`custody=client`)无法再签名\n
+        (`custody_transferred`)。\n\n
+        封装有效期为 10 分钟。每次签名都会触发 `wallet_signature_created`\n
+        webhook 事件和一封安全邮件。\n\n
+        特定错误:`invalid_purpose`、`invalid_statement`、\n
+        `custody_transferred`、`proof_not_signable`、`sign_rejected`、\n
+        `nonce_failed`、`core_unavailable`。"
+      parameters:
+      - name: walletID
+        in: path
+        required: true
+        description: 隔离钱包 ID。
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [purpose]
+              properties:
+                purpose:
+                  type: string
+                  enum: [wallet_ownership, treasury_attestation]
+                  maxLength: 60
+                  description: 证明的用途。将在封装内签名。
+                statement:
+                  type: string
+                  maxLength: 140
+                  description: 可选的自定义声明(最多 140 个字符),将在封装内签名。
+            example:
+              purpose: wallet_ownership
+              statement: I control this wallet
+      responses:
+        '201':
+          description: 签名证明已创建并签名。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proof:
+                    $ref: '#/components/schemas/SignatureProof'
+              example:
+                proof:
+                  proof_id: c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90
+                  account_id: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d
+                  wallet_id: b7e39c14-2d56-4e78-8a01-3c5d7e9f1b24
+                  chain: eth
+                  address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+                  purpose: wallet_ownership
+                  statement: I control this wallet
+                  envelope: "CBPay Signature Proof\nDomain: https://api.qbank.cl/platform\nPurpose: wallet_ownership\nWallet: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\nNonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7\nIssued: 2026-08-21T14:03:11Z\nExpires: 2026-08-21T14:13:11Z\nStatement: \"I control this wallet\""
+                  nonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7
+                  proof_code: Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+                  status: signed
+                  issued_at: '2026-08-21T14:03:11Z'
+                  expires_at: '2026-08-21T14:13:11Z'
+                  signed_at: '2026-08-21T14:03:11Z'
+                  created_at: '2026-08-21T14:03:11Z'
+                  signature: '8ba1f109551bd432803012645ac136ddd64dba72a0c9e0b1f5b1a2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00112233445566771b'
+                  message_hash: '3f8a1c4e9b2d6f70a5c8e1b4d7f2093a4c6e8f10b3d5f709e2a4c6d8f0b1c3d5'
+                  verify_url: https://api.qbank.cl/platform/v1/public/signature-proofs/Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+        '400':
+          description: 无效负载(`invalid_purpose`、`invalid_statement`)。
+        '403':
+          description: 账户未完成验证(`verification_required`)、未启用该服务(`service_disabled`)、缺少有效签名(`invalid_signature`)或需要 OTP 挑战(`otp_required`)。
+        '404':
+          description: 钱包不存在或不属于该账户。
+        '409':
+          description: 钱包已导出(`custody_transferred`)。
+        '422':
+          description: 钱包无法签名(`proof_not_signable`)或签名被拒绝(`sign_rejected`)。
+        '502':
+          description: 签名服务未响应(`core_unavailable`)。
+        '503':
+          description: 组织未配置核心签名凭证(`org_credential_missing`)或 OTP 服务不可用(`otp_unavailable`)。
+    get:
+      tags:
+      - 签名证明
+      operationId: listSegregatedWalletSignatures
+      summary: 列出隔离钱包的签名证明
+      description: 分页列出账户某个隔离钱包所签发的签名证明。
+      parameters:
+      - name: walletID
+        in: path
+        required: true
+        description: 隔离钱包 ID。
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+      responses:
+        '200':
+          description: 分页的签名证明列表。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proofs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SignatureProof'
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+              example:
+                proofs:
+                - proof_id: c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90
+                  account_id: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d
+                  wallet_id: b7e39c14-2d56-4e78-8a01-3c5d7e9f1b24
+                  chain: eth
+                  address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+                  purpose: wallet_ownership
+                  statement: I control this wallet
+                  envelope: "CBPay Signature Proof\nDomain: https://api.qbank.cl/platform\nPurpose: wallet_ownership\nWallet: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\nNonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7\nIssued: 2026-08-21T14:03:11Z\nExpires: 2026-08-21T14:13:11Z\nStatement: \"I control this wallet\""
+                  nonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7
+                  proof_code: Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+                  status: signed
+                  issued_at: '2026-08-21T14:03:11Z'
+                  expires_at: '2026-08-21T14:13:11Z'
+                  signed_at: '2026-08-21T14:03:11Z'
+                  created_at: '2026-08-21T14:03:11Z'
+                  verify_url: https://api.qbank.cl/platform/v1/public/signature-proofs/Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+                page: 1
+                page_size: 50
+        '400':
+          description: 日期范围无效(`invalid_range`)。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_range
+                message: invalid date range
+        '404':
+          description: 钱包不存在或不属于该账户。
+  /v1/signature-proofs:
+    get:
+      tags:
+      - 签名证明
+      operationId: listSignatureProofs
+      summary: 列出账户的签名证明
+      description: "分页列出账户的所有签名证明(隔离钱包和外部钱包链接),\n
+        支持日期过滤(`from`/`to`,`YYYY-MM-DD` UTC)和可选的 `purpose` 过滤。"
+      parameters:
+      - name: from
+        in: query
+        description: 起始日期(`YYYY-MM-DD`,UTC,含当日)。
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        description: 结束日期(`YYYY-MM-DD`,UTC,含当日)。
+        schema:
+          type: string
+          format: date
+      - name: purpose
+        in: query
+        description: 按证明用途过滤。
+        schema:
+          type: string
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+      responses:
+        '200':
+          description: 分页的签名证明列表。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proofs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SignatureProof'
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+              example:
+                proofs:
+                - proof_id: c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90
+                  account_id: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d
+                  wallet_id: b7e39c14-2d56-4e78-8a01-3c5d7e9f1b24
+                  chain: eth
+                  address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+                  purpose: wallet_ownership
+                  statement: I control this wallet
+                  envelope: "CBPay Signature Proof\nDomain: https://api.qbank.cl/platform\nPurpose: wallet_ownership\nWallet: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\nNonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7\nIssued: 2026-08-21T14:03:11Z\nExpires: 2026-08-21T14:13:11Z\nStatement: \"I control this wallet\""
+                  nonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7
+                  proof_code: Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+                  status: signed
+                  issued_at: '2026-08-21T14:03:11Z'
+                  expires_at: '2026-08-21T14:13:11Z'
+                  signed_at: '2026-08-21T14:03:11Z'
+                  created_at: '2026-08-21T14:03:11Z'
+                  verify_url: https://api.qbank.cl/platform/v1/public/signature-proofs/Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+                page: 1
+                page_size: 50
+        '400':
+          description: 日期范围无效(`invalid_range`)。
+  /v1/signature-proofs/{proofID}:
+    get:
+      tags:
+      - 签名证明
+      operationId: getSignatureProof
+      summary: 签名证明详情
+      description: 返回账户某个签名证明的完整详情,包括签名、消息哈希和公开验证链接。
+      parameters:
+      - name: proofID
+        in: path
+        required: true
+        description: 签名证明 ID。
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: 签名证明详情。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proof:
+                    $ref: '#/components/schemas/SignatureProof'
+              example:
+                proof:
+                  proof_id: c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90
+                  account_id: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d
+                  wallet_id: b7e39c14-2d56-4e78-8a01-3c5d7e9f1b24
+                  chain: eth
+                  address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+                  purpose: wallet_ownership
+                  statement: I control this wallet
+                  envelope: "CBPay Signature Proof\nDomain: https://api.qbank.cl/platform\nPurpose: wallet_ownership\nWallet: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\nNonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7\nIssued: 2026-08-21T14:03:11Z\nExpires: 2026-08-21T14:13:11Z\nStatement: \"I control this wallet\""
+                  nonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7
+                  proof_code: Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+                  status: signed
+                  issued_at: '2026-08-21T14:03:11Z'
+                  expires_at: '2026-08-21T14:13:11Z'
+                  signed_at: '2026-08-21T14:03:11Z'
+                  created_at: '2026-08-21T14:03:11Z'
+                  signature: 1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f01
+                  message_hash: 8f3e1a2b4c5d6e7f8091a2b3c4d5e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f7
+                  verify_url: https://api.qbank.cl/platform/v1/public/signature-proofs/Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+        '404':
+          description: 证明不存在或不属于该账户。
+  /v1/signature-proofs/{proofID}/revoke:
+    post:
+      tags:
+      - 签名证明
+      operationId: revokeSignatureProof
+      summary: 吊销签名证明
+      description: "吊销签名证明:公开验证不再将其报告为有效。证明保留在历史记录中\n
+        (仅追加)。幂等:吊销已吊销的证明返回相同状态。"
+      parameters:
+      - name: proofID
+        in: path
+        required: true
+        description: 签名证明 ID。
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: 证明已吊销。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proof:
+                    $ref: '#/components/schemas/SignatureProof'
+              example:
+                proof:
+                  proof_id: c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90
+                  account_id: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d
+                  wallet_id: b7e39c14-2d56-4e78-8a01-3c5d7e9f1b24
+                  chain: eth
+                  address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+                  purpose: wallet_ownership
+                  statement: I control this wallet
+                  envelope: "CBPay Signature Proof\nDomain: https://api.qbank.cl/platform\nPurpose: wallet_ownership\nWallet: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\nNonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7\nIssued: 2026-08-21T14:03:11Z\nExpires: 2026-08-21T14:13:11Z\nStatement: \"I control this wallet\""
+                  nonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7
+                  proof_code: Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+                  status: revoked
+                  issued_at: '2026-08-21T14:03:11Z'
+                  expires_at: '2026-08-21T14:13:11Z'
+                  signed_at: '2026-08-21T14:03:12Z'
+                  revoked_at: '2026-08-21T16:40:02Z'
+                  created_at: '2026-08-21T14:03:11Z'
+                  verify_url: https://api.qbank.cl/platform/v1/public/signature-proofs/Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+        '404':
+          description: 证明不存在或不属于该账户。
+        '409':
+          description: 证明不处于可吊销状态(`invalid_state`)。
+  /v1/wallet-links/challenges:
+    post:
+      tags:
+      - 钱包链接
+      operationId: createWalletLinkChallenge
+      summary: 创建用于链接外部钱包的 nonce 挑战
+      description: "创建一个 nonce 挑战,用于将外部钱包(`custody=client`)链接到账户。\n
+        客户使用其钱包对 `envelope` 进行签名(ETH/EVM 为 EIP-191,TRON 为 TIP-191),\n
+        并将其发送到 `POST /v1/wallet-links/verify`。挑战在 10 分钟后过期,且只能使用一次。\n\n
+        特定错误:`unsupported_chain`、`invalid_address`、`nonce_failed`。"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [chain, address]
+              properties:
+                chain:
+                  type: string
+                  enum: [eth, tron]
+                address:
+                  type: string
+                  description: 外部钱包地址(网络格式)。
+            example:
+              chain: eth
+              address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+      responses:
+        '201':
+          description: 挑战已创建。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  challenge:
+                    type: object
+                    properties:
+                      link_id:
+                        type: string
+                        format: uuid
+                      chain:
+                        type: string
+                      address:
+                        type: string
+                      nonce:
+                        type: string
+                      envelope:
+                        type: string
+                      expires_at:
+                        type: string
+                        format: date-time
+              example:
+                challenge:
+                  link_id: d52e7b91-4c68-4f89-1b23-5d7e9f0a2c46
+                  chain: eth
+                  address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+                  nonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7
+                  envelope: "CBPay Signature Proof\nDomain: https://api.qbank.cl/platform\nPurpose: wallet_link\nWallet: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\nAccount: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d\nNonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7\nIssued: 2026-08-21T14:03:11Z\nExpires: 2026-08-21T14:13:11Z"
+                  expires_at: '2026-08-21T14:13:11Z'
+        '400':
+          description: 无效负载(`invalid_address`、`unsupported_chain`)。
+        '500':
+          description: 无法生成挑战(`nonce_failed`)。
+  /v1/wallet-links/verify:
+    post:
+      tags:
+      - 钱包链接
+      operationId: verifyWalletLink
+      summary: 验证挑战签名并链接钱包
+      description: "验证 nonce 挑战的签名并将外部钱包链接到账户。钱包保持\n
+        `custody=client`:客户保留密钥,可在外部消费;链接仅证明地址的所有权。\n\n
+        特定错误:`invalid_payload`、`invalid_signature`、\n
+        `signature_mismatch`、`verification_failed`、`challenge_consumed`、\n
+        `challenge_expired`、`proof_not_signable`。"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nonce, signature]
+              properties:
+                nonce:
+                  type: string
+                  description: 挑战的 nonce(来自 `POST /v1/wallet-links/challenges`)。
+                signature:
+                  type: string
+                  description: 封装的签名(EIP-191 / TIP-191)。
+            example:
+              nonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7
+              signature: '8ba1f109551bd432803012645ac136ddd64dba72a0c9e0b1f5b1a2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00112233445566771b'
+      responses:
+        '200':
+          description: 钱包已链接。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  link:
+                    $ref: '#/components/schemas/WalletLink'
+                  proof:
+                    $ref: '#/components/schemas/SignatureProof'
+              example:
+                link:
+                  link_id: d52e7b91-4c68-4f89-1b23-5d7e9f0a2c46
+                  account_id: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d
+                  chain: eth
+                  address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+                  status: linked
+                  expires_at: '2026-08-21T14:13:11Z'
+                  created_at: '2026-08-21T14:03:11Z'
+                  proof_id: c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90
+                  verified_at: '2026-08-21T14:05:41Z'
+                proof:
+                  proof_id: c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90
+                  account_id: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d
+                  chain: eth
+                  address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+                  purpose: wallet_link
+                  envelope: "CBPay Signature Proof\nDomain: https://api.qbank.cl/platform\nPurpose: wallet_link\nWallet: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F\nAccount: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d\nNonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7\nIssued: 2026-08-21T14:03:11Z\nExpires: 2026-08-21T14:13:11Z"
+                  nonce: 9f2c41d2a887f3e4b219c6d2e8f1a5b7
+                  signature: '8ba1f109551bd432803012645ac136ddd64dba72a0c9e0b1f5b1a2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00112233445566771b'
+                  message_hash: 5c35a1c2e9f84d1b7a06e3f2d49871c5b6a0e4d38f71c2b5963a84d0e1f2c3b4
+                  proof_code: Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+                  status: signed
+                  issued_at: '2026-08-21T14:03:11Z'
+                  expires_at: '2026-08-21T14:13:11Z'
+                  signed_at: '2026-08-21T14:05:41Z'
+                  created_at: '2026-08-21T14:03:11Z'
+                  verify_url: 'https://api.qbank.cl/platform/v1/public/signature-proofs/Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a'
+        '400':
+          description: 无效负载(`invalid_payload`、`invalid_signature`、`verification_failed`)。
+        '404':
+          description: 挑战 nonce 未知或不属于该账户(`not_found`)。
+        '409':
+          description: 挑战已被使用或证明无法持久化(`challenge_consumed`、`proof_not_signable`)。
+        '410':
+          description: 挑战已过期(`challenge_expired`)。
+        '422':
+          description: 签名与挑战地址不匹配(`signature_mismatch`)。
+  /v1/wallet-links:
+    get:
+      tags:
+      - 钱包链接
+      operationId: listWalletLinks
+      summary: 列出已链接的钱包
+      description: 分页列出链接到账户的外部钱包(`custody=client`)。
+      parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 200
+      responses:
+        '200':
+          description: 分页的链接列表。
+          content:
+            application/json:
+              example:
+                links:
+                - link_id: d52e7b91-4c68-4f89-1b23-5d7e9f0a2c46
+                  account_id: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d
+                  chain: eth
+                  address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+                  status: linked
+                  expires_at: '2026-08-21T14:13:11Z'
+                  created_at: '2026-08-21T14:03:11Z'
+                  proof_id: c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90
+                  verified_at: '2026-08-21T14:05:41Z'
+                page: 1
+                page_size: 50
+                total: 1
+  /v1/wallet-links/{linkID}:
+    delete:
+      tags:
+      - 钱包链接
+      operationId: revokeWalletLink
+      summary: 吊销钱包链接
+      description: "吊销外部钱包的链接。链接保留在历史记录中(仅追加),状态为\n
+        `revoked`。幂等:吊销已吊销的链接返回相同状态。"
+      parameters:
+      - name: linkID
+        in: path
+        required: true
+        description: 链接 ID。
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: 链接已吊销。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  link:
+                    $ref: '#/components/schemas/WalletLink'
+              example:
+                link:
+                  link_id: d52e7b91-4c68-4f89-1b23-5d7e9f0a2c46
+                  account_id: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d
+                  chain: eth
+                  address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+                  status: revoked
+                  expires_at: '2026-08-21T14:13:11Z'
+                  created_at: '2026-08-21T14:03:11Z'
+                  proof_id: c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90
+                  verified_at: '2026-08-21T14:05:41Z'
+                  revoked_at: '2026-08-21T18:12:03Z'
+        '404':
+          description: 链接不存在或不属于该账户。
+        '409':
+          description: 链接不处于可吊销状态(`invalid_state`)。
   /v1/payouts/qr/scan:
     post:
       tags:
@@ -20813,6 +21424,113 @@ components:
         updated_at:
           type: string
           format: date-time
+    SignatureProof:
+      type: object
+      description: 钱包对结构化 CBPay 消息(EIP-191 ETH/EVM、TIP-191 TRON)签名的加密证明。可通过 verify_url 公开验证。
+      properties:
+        proof_id:
+          type: string
+          format: uuid
+        wallet_id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        chain:
+          type: string
+          enum:
+          - eth
+          - tron
+        address:
+          type: string
+          description: 产生签名的链上地址。
+        purpose:
+          type: string
+          enum:
+          - ownership
+          - statement
+          - attestation
+        envelope:
+          type: string
+          example: CBPay Signature Proof
+        nonce:
+          type: string
+        proof_code:
+          type: string
+          description: 简短的公开验证码(以 G 开头)。
+          example: G7F3A9C1E2B4
+        status:
+          type: string
+          enum:
+          - pending
+          - signed
+          - rejected
+          - expired
+          - revoked
+        signature:
+          type: string
+        message_hash:
+          type: string
+        issued_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        signed_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        verify_url:
+          type: string
+          example: https://api.qbank.cl/platform/v1/public/signature-proofs/Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+    WalletLink:
+      type: object
+      description: 通过签署 nonce 挑战关联到账户的外部钱包（custody=client）。挑战在签发后 10 分钟过期；一旦钱包完成关联，链接将保持有效，直到被撤销。
+      properties:
+        link_id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        chain:
+          type: string
+          enum:
+          - eth
+          - tron
+        address:
+          type: string
+        status:
+          type: string
+          enum:
+          - pending
+          - linked
+          - revoked
+          - expired
+        expires_at:
+          type: string
+          format: date-time
+          description: 挑战过期时间（创建后 10 分钟）。
+        proof_id:
+          type: string
+          format: uuid
+          description: 验证时创建的签名证明（关联后存在）。
+        verified_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
     DepositInstrument:
       type: object
       properties:
@@ -21995,6 +22713,92 @@ webhooks:
               status: revoked
               previous_status: pending
               revoked_at: '2026-08-10T10:02:11Z'
+      responses:
+        '200':
+          description: 返回任意 2xx 确认投递。
+  wallet_signature_created:
+    post:
+      summary: 钱包签名证明已创建
+      description: '已使用隔离钱包创建签名证明(`POST
+        /v1/segregated-wallets/{walletID}/signatures`)。该钱包使用链原生标准(ETH/EVM 为 EIP-191,TRON 为 TIP-191)
+        在防钓鱼 CBPay Signature Proof 封装内对消息进行了签名。该证明可在 `verify_url` 公开验证(无需身份验证)。
+
+
+        每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp`
+        和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。请返回 2xx;最多
+        5 次尝试,递增量退避。'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                proof_id:
+                  type: string
+                account_id:
+                  type: string
+                wallet_id:
+                  type: string
+                chain:
+                  type: string
+                  enum: [eth, tron]
+                address:
+                  type: string
+                purpose:
+                  type: string
+                proof_code:
+                  type: string
+                  description: 证明的公共能力代码(以 `G` 开头)。
+                verify_url:
+                  type: string
+                  description: 公共验证 URL(无需身份验证)。
+            example:
+              proof_id: c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90
+              account_id: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d
+              wallet_id: b7e39c14-2d56-4e78-8a01-3c5d7e9f1b24
+              chain: eth
+              address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+              purpose: wallet_ownership
+              proof_code: Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+              verify_url: https://api.qbank.cl/platform/v1/public/signature-proofs/Gc41d2a887f3e4b219c6d2e8f1a5b7d90a1b2c3d4e5f60718293a
+      responses:
+        '200':
+          description: 返回任意 2xx 确认投递。
+  wallet_linked:
+    post:
+      summary: 外部钱包已链接
+      description: '通过解决 nonce 挑战(`POST /v1/wallet-links/challenges` + `POST
+        /v1/wallet-links/verify`)将外部钱包(`custody=client`)链接到账户。钱包仍由客户保管;
+        链接仅证明地址的所有权。
+
+
+        每次投递均包含 `X-Webhook-Event`、`X-Webhook-Event-ID`、`X-Webhook-Delivery-ID`、`X-Webhook-Timestamp`
+        和 `X-Webhook-Signature = hex(HMAC-SHA256(secret, timestamp + "." + body))`。请返回 2xx;最多
+        5 次尝试,递增量退避。'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                link_id:
+                  type: string
+                account_id:
+                  type: string
+                chain:
+                  type: string
+                  enum: [eth, tron]
+                address:
+                  type: string
+                proof_id:
+                  type: string
+                  description: 支持链接的签名证明。
+            example:
+              link_id: d52e7b91-4c68-4f89-1b23-5d7e9f0a2c46
+              account_id: ae8c1f02-3b45-4c67-9d12-8f0e5a6b7c8d
+              chain: eth
+              address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+              proof_id: c41d2a88-7f3e-4b21-9c6d-2e8f1a5b7d90
       responses:
         '200':
           description: 返回任意 2xx 确认投递。

@@ -136,6 +136,8 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
 | `wallet_key_exported` | 独立钱包的私钥被导出（安全警报） |
 | `wallet_external_movement` | 独立钱包发生了未经平台的链上资金变动（`client` 托管模式下属正常情况） |
 | `wallet_key_compromise_suspected` | **严重警报**：`cbpay` 托管钱包出现外部转出——私钥可能已泄露 |
+| `wallet_signature_created` | 使用独立钱包创建了签名证明(EIP-191 / TIP-191 消息签名) |
+| `wallet_linked` | 通过签名的 nonce 挑战将外部钱包(`custody=client`)链接到账户 |
 | `txn_review_status_changed` | 被[交易防火墙](https://docs.cbpayapp.com/zh/guides/transaction-reviews)挂起的操作审核状态发生变化（`in_review` / `info_requested` / `released` / `rejected`）——负载保持中性，绝不携带内部原因；拒绝也可能来自按期限自动拒绝的定时扫描（auto-rejection） |
 | `corridor_status_changed` | 某条支付通道的可用性发生变化（`operational` / `degraded` / `down`）——广播事件，见[服务状态指南](https://docs.cbpayapp.com/zh/service-status) |
 | `balance_adjusted` | 管理员对某个余额执行了手动入账或扣款 |
@@ -496,6 +498,29 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
   "tx_id": "9a3c1e5f…",
   "amount_raw": "25000000",
   "custody": "cbpay"
+}
+```
+
+```json wallet_signature_created
+{
+  "proof_id": "c41d…",
+  "account_id": "ae8c…",
+  "wallet_id": "b7e3…",
+  "chain": "eth",
+  "address": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F",
+  "purpose": "wallet_ownership",
+  "proof_code": "G9f2c…",
+  "verify_url": "https://api.qbank.cl/platform/v1/public/signature-proofs/G9f2c…"
+}
+```
+
+```json wallet_linked
+{
+  "link_id": "d52e…",
+  "account_id": "ae8c…",
+  "chain": "eth",
+  "address": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F",
+  "proof_id": "c41d…"
 }
 ```
 
