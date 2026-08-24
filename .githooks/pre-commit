@@ -1,0 +1,19 @@
+#!/bin/sh
+# Abort commits on main, on ops/local-never-push, and from the primary clone
+# (where .git is a directory). Worktrees have a .git FILE and are allowed.
+set -e
+
+root=$(git rev-parse --show-toplevel)
+branch=$(git rev-parse --abbrev-ref HEAD)
+
+if [ "$branch" = "main" ] || [ "$branch" = "ops/local-never-push" ]; then
+	echo "error: commit forbidden on branch $branch — use a cycle worktree" >&2
+	exit 1
+fi
+
+if [ -d "$root/.git" ]; then
+	echo "error: commit from the primary clone is forbidden; File → Open Folder on a worktree" >&2
+	exit 1
+fi
+
+exit 0
