@@ -1,0 +1,34 @@
+#!/bin/sh
+# Abort push of main and ops/local-never-push (current branch + refs on stdin).
+# Abort push from the primary clone (.git is a directory).
+set -e
+
+root=$(git rev-parse --show-toplevel)
+branch=$(git rev-parse --abbrev-ref HEAD)
+
+if [ -d "$root/.git" ]; then
+	echo "error: push from the primary clone is forbidden; use a cycle worktree" >&2
+	exit 1
+fi
+
+if [ "$branch" = "main" ] || [ "$branch" = "ops/local-never-push" ]; then
+	echo "error: push of branch $branch is forbidden" >&2
+	exit 1
+fi
+
+while read -r local_ref _ remote_ref _; do
+	case "$remote_ref" in
+	refs/heads/main | refs/heads/ops/local-never-push)
+		echo "error: push of $remote_ref is forbidden" >&2
+		exit 1
+		;;
+	esac
+	case "$local_ref" in
+	refs/heads/main | refs/heads/ops/local-never-push)
+		echo "error: push of $local_ref is forbidden" >&2
+		exit 1
+		;;
+	esac
+done
+
+exit 0

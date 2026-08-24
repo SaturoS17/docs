@@ -1,0 +1,20 @@
+# Normalize line endings to LF. Docs QA and Mintlify expect LF; CRLF
+# contaminates diffs and can break YAML/MDX parsers.
+* text=auto eol=lf
+
+*.md text eol=lf
+*.mdx text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.ps1 text eol=lf
+*.sh text eol=lf
+.githooks/** text eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.pdf binary
+*.svg binary
