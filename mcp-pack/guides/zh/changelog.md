@@ -8,6 +8,14 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+## v2.65 - 2026年9月2日
+
+### v2.65
+
+**已修复**
+
+- **委内瑞拉 payout：即使 payout 在创建时已同步变为 `failed`，通道的失败原因（`ERR-XXX`）现在也会到达 `GET`**。当 VE 的 `pago_movil` / `bank_transfer` payout 在创建时被同步标记为 `failed`，而通道随后通过 webhook 报告原因时，平台会将其持久化：payout 的 `GET` 在 `status_code` / `status_message` 中显示通道真实的 `ERR-XXX` 代码（此前由于 payout 已为 `failed`，webhook 会被丢弃）。这是仅元数据的补充：不会二次退款，也不会改变状态。
+
 ## v2.64 - 2026年8月21日
 
 ### v2.64

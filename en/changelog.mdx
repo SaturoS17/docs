@@ -7,6 +7,23 @@ description: "History of API and documentation changes"
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+<Update label="September 2, 2026" description="v2.65">
+
+### v2.65
+
+**Fixed**
+
+- **Venezuela payouts: the rail's failure reason (`ERR-XXX`) now reaches the
+  `GET` even when the payout was already born `failed`**. When a VE
+  `pago_movil` / `bank_transfer` payout is marked `failed` synchronously at
+  creation and the rail later reports the reason via webhook, the platform
+  persists it: the payout `GET` shows `status_code` / `status_message` with
+  the rail's real `ERR-XXX` code (previously the webhook was dropped because
+  the payout was already `failed`). This is a metadata-only enrichment: no
+  second refund and no status change.
+
+</Update>
+
 <Update label="August 21, 2026" description="v2.64">
 
 ### v2.64
