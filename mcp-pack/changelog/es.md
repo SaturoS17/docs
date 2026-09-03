@@ -9,6 +9,19 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+## v2.66 - 3 de septiembre de 2026
+
+### v2.66
+
+**Cambiado**
+
+- **Los payouts de Venezuela `pago_movil` ahora exigen `beneficiary.name`**.
+  El rail exige el nombre + primer apellido del beneficiario (tal como en la
+  cédula) — un solo token es rechazado. La [guía de payouts](https://docs.cbpayapp.com/es/guias/payouts)
+  y los ejemplos de la referencia API ahora listan `name` primero entre los
+  campos requeridos. Venezuela `bank_transfer` ya documentaba `name`; sin
+  cambios ahí.
+
 ## v2.65 - 2 de septiembre de 2026
 
 ### v2.65

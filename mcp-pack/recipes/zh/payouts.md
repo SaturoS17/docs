@@ -286,7 +286,7 @@ curl "https://api.qbank.cl/platform/v1/payouts?from=2026-07-01&to=2026-07-08&sta
 | PE | `bank_transfer` | `name`、`account_number`（20 位 CCI） |
 | PE | `yape` | `name`、`phone`（`51XXXXXXXXX`） |
 | MX | `bank_transfer` | `name`、`account_type`（`clabe`/`debit_card`）、`account_number`（银行卡还需 `bank_code`） |
-| VE | `pago_movil` | `phone`、`bank_code`（SUDEBAN）、`document_value` |
+| VE | `pago_movil` | `name`（名 + 第一姓氏，与证件一致）、`phone`、`bank_code`（SUDEBAN）、`document_value` |
 | VE | `bank_transfer` | `name`、`account_number`（20 位）、`document_value` |
 | BO | `bank_transfer` | `name`、`tax_id`、`bank_code`、`account_number` |
 | BR | `pix` | `name`、`tax_id` +（`pix_key` 和 `pix_key_type`）或（`bank_code` ISPB、`branch_code`、`account_number`） |
@@ -460,7 +460,7 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
 
 #### 委内瑞拉
 
-两种方式：**Pago Móvil**（手机号 + 银行 + 证件）和银行转账
+两种方式：**Pago Móvil**（姓名 + 手机号 + 银行 + 证件）和银行转账
 （20 位账户）：
 
 ```bash pago_movil
@@ -473,6 +473,7 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
     "method": "pago_movil",
     "amount": "2000.00",
     "beneficiary": {
+      "name": "Carmen Delgado",
       "phone": "04141234567",
       "bank_code": "0102",
       "document_value": "V12345678"

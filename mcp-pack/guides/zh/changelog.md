@@ -8,6 +8,14 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+## v2.66 - 2026年9月3日
+
+### v2.66
+
+**已变更**
+
+- **委内瑞拉 `pago_movil` payout 现在要求 `beneficiary.name`**。通道要求受益人的名 + 第一姓氏（与证件一致）—— 单个词会被拒绝。[payout 指南](https://docs.cbpayapp.com/zh/guides/payouts)和 API 参考示例现在将 `name` 列为必填字段的第一项。委内瑞拉 `bank_transfer` 此前已记录 `name`；此处无变更。
+
 ## v2.65 - 2026年9月2日
 
 ### v2.65
