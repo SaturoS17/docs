@@ -8,6 +8,18 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+## v2.66 - September 3, 2026
+
+### v2.66
+
+**Changed**
+
+- **Venezuela `pago_movil` payouts now require `beneficiary.name`**. The rail
+  requires the beneficiary's given name + first family name (as on the ID) —
+  a single token is rejected. The [payouts guide](https://docs.cbpayapp.com/en/guides/payouts) and the
+  API reference examples now list `name` first among the required fields.
+  Venezuela `bank_transfer` already documented `name`; no change there.
+
 ## v2.65 - September 2, 2026
 
 ### v2.65

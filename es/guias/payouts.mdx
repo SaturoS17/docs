@@ -305,7 +305,7 @@ las de tu cuenta en `GET /v1/rates`; el débito es `usdt_amount + fee`
 | PE | `bank_transfer` | `name`, `account_number` (CCI de 20 dígitos) |
 | PE | `yape` | `name`, `phone` (`51XXXXXXXXX`) |
 | MX | `bank_transfer` | `name`, `account_type` (`clabe`/`debit_card`), `account_number` (+ `bank_code` si es tarjeta) |
-| VE | `pago_movil` | `phone`, `bank_code` (SUDEBAN), `document_value` |
+| VE | `pago_movil` | `name` (nombre + primer apellido, tal como en la cédula), `phone`, `bank_code` (SUDEBAN), `document_value` |
 | VE | `bank_transfer` | `name`, `account_number` (20 dígitos), `document_value` |
 | BO | `bank_transfer` | `name`, `tax_id`, `bank_code`, `account_number` |
 | BR | `pix` | `name`, `tax_id` + (`pix_key` y `pix_key_type`) o (`bank_code` ISPB, `branch_code`, `account_number`) |
@@ -493,7 +493,7 @@ es obligatorio `bank_code`.
 </Tab>
 <Tab title="Venezuela">
 
-Dos métodos: **Pago Móvil** (teléfono + banco + cédula) y transferencia
+Dos métodos: **Pago Móvil** (nombre + teléfono + banco + cédula) y transferencia
 bancaria (cuenta de 20 dígitos):
 
 <CodeGroup>
@@ -508,6 +508,7 @@ curl -X POST https://api.qbank.cl/platform/v1/payouts \
     "method": "pago_movil",
     "amount": "2000.00",
     "beneficiary": {
+      "name": "Carmen Delgado",
       "phone": "04141234567",
       "bank_code": "0102",
       "document_value": "V12345678"
