@@ -19,7 +19,6 @@ flowchart LR
     hosted["托管支付页面<br/>（CL：fintoc）"] --> pay
     card["3-D Secure 银行卡支付<br/>（BO：card）"] --> pay
     announced["预告转账<br/>（CL、PE、MX、PY、US）"] --> pay
-    pull["主动拉取收款<br/>（VE：c2p、即时扣款）"] --> pay
     clabe["专属 CLABE / CVU 账户<br/>（MX、AR）"] --> pay
     pay --> conv["按您的 payin_rate 进行<br/>外汇折算 − 固定费用"]
     conv --> credit(("USDT 入账<br/>到您的余额"))
@@ -39,7 +38,7 @@ curl https://api.qbank.cl/platform/v1/payins/methods \
 {
   "items": [
     { "country": "BO", "currency": "BOB", "method": "qr", "delivery": "push" },
-    { "country": "VE", "currency": "VES", "method": "c2p", "delivery": "push+polling" },
+    { "country": "CL", "currency": "CLP", "method": "fintoc", "delivery": "push" },
     { "country": "MX", "currency": "MXN", "method": "bank_transfer", "delivery": "push" }
   ],
   "meta": { "retrieved": 3 }
@@ -56,13 +55,16 @@ curl https://api.qbank.cl/platform/v1/payins/methods \
 | 智利 | CLP | 托管支付页面（`fintoc`）、预告银行转账 |
 | 秘鲁 | PEN | 预告银行转账 |
 | 墨西哥 | MXN | 专属 CLABE 账户、预告银行转账 |
-| 委内瑞拉 | VES | 主动收款 `c2p` 和 `debito_inmediato`（拉取式） |
 | 玻利维亚 | BOB / USD | 收款二维码、银行卡支付页面（`card`） |
 | 巴拉圭 | PYG | 预告银行转账 |
 | 巴西 | BRL | 动态 PIX 二维码 |
 | 阿根廷 | ARS | 专属 CVU 账户 |
 | 美国 | USD | 国际银行卡支付页面（`card`）、预告银行转账（两条轨道：境内电汇 + 国际 SWIFT） |
 
+> **注**
+**委内瑞拉（VES）**：拉取式收款（`c2p` / `debito_inmediato`）**已不再提供** ——
+创建时会返回该通道不受支持。向委内瑞拉的对外付款（`pago_movil`、
+`bank_transfer`）不受影响：参见 [payouts](https://docs.cbpayapp.com/zh/guides/payouts)。
 可用性可能变化；目录（`GET /v1/payins/methods`）始终是唯一可信来源。
 在所有情况下入账方式相同：按您当前的 `payin_rate` 折算为 USDT，并在
 扣除固定入金费用后净额入账。如果您希望将收款保留在其他余额（USDC、BTC
@@ -205,118 +207,6 @@ curl -X POST https://api.qbank.cl/platform/v1/payins/deposit-accounts \
 
 您也可以使用一次性的**预告银行转账**
 （`POST /v1/payins`，`method: "bank_transfer"`、`country: "MX"`）。
-
-#### 委内瑞拉
-
-**主动收款（拉取式）**：在获得付款人授权后直接向其发起扣款。结果为
-**同步**返回 —— 扣款获批后，入账在同一次调用中完成。
-
-对于 `debito_inmediato`，请先请求 OTP（免费）：
-
-```bash
-curl -X POST https://api.qbank.cl/platform/v1/payins/collect/otp \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "method": "debito_inmediato",
-    "amount": "1200.00",
-    "payer_document": "V12345678",
-    "payer_phone": "04141234567",
-    "payer_bank": "0102",
-    "payer_account": "01020123456789012345"
-  }'
-```
-
-```json
-{
-  "method": "debito_inmediato",
-  "result": { "status": "sent", "otp_reference": "OTP-5521" }
-}
-```
-
-然后执行收款：
-
-```bash c2p (phone + ID + payer's OTP)
-curl -X POST https://api.qbank.cl/platform/v1/payins/collect \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "method": "c2p",
-    "amount": "1200.00",
-    "description": "Order 5512",
-    "payer_document": "V12345678",
-    "payer_phone": "04141234567",
-    "payer_bank": "0102",
-    "otp": "12345678",
-    "idempotency_key": "order-5512"
-  }'
-```
-
-```bash debito_inmediato (account + previously requested OTP)
-curl -X POST https://api.qbank.cl/platform/v1/payins/collect \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "method": "debito_inmediato",
-    "amount": "1200.00",
-    "description": "Order 5512",
-    "payer_document": "V12345678",
-    "payer_account": "01020123456789012345",
-    "payer_bank": "0102",
-    "payer_account_type": "CNTA",
-    "otp": "87654321",
-    "otp_reference": "OTP-5521",
-    "idempotency_key": "order-5512"
-  }'
-```
-
-> **注**
-主动收款会对付款人执行真实扣款，因此 `idempotency_key` 为**必填**
-（请求体或 `Idempotency-Key` 请求头）：使用相同的键重试会返回带
-`idempotency_hit` 的原始结果，绝不会重复扣款。
-响应 `200`（扣款获批并已入账）：
-
-```json
-{
-  "payin_id": "7b3c…",
-  "kind": "collect",
-  "method": "c2p",
-  "status": "credited",
-  "local_amount": "1200.00",
-  "fx_rate": "36.50",
-  "usdt_gross": "32.876712",
-  "fee": "0.300000",
-  "usdt_credited": "32.576712",
-  "paid": true,
-  "provider_reference": "…"
-}
-```
-
-如果付款人拒绝或授权失败，`paid` 为 `false`，该入金被标记为
-`failed`，且不会产生任何扣款。确切的拒绝原因会持久化在该 payin 上，
-并通过 `failure` 对象暴露（在同步响应、`GET /v1/payins/{payin_id}`
-以及幂等重放中均可见）：
-
-```json
-{
-  "payin_id": "7b3c…",
-  "kind": "collect",
-  "method": "c2p",
-  "status": "failed",
-  "paid": false,
-  "failure": {
-    "source": "provider",
-    "code": "provider_rejected",
-    "message": "Documento de identidad del receptor errado"
-  }
-}
-```
-
-- `source` 表示拒绝的来源（`provider` = 付款人的银行拒绝；`core` =
-  扣款前的校验）。
-- `code` 和 `message` 携带具体原因（OTP 无效或已过期、证件号错误、
-  付款人余额不足等），便于告知付款人需要修正什么，然后使用新的幂等键
-  重试。
 
 #### 玻利维亚
 
@@ -1051,9 +941,6 @@ USDT，随后立即按真实价格转换；`conversion_status` 报告 `done` 或
 返回原始预告并带 `idempotency_hit: true`。即使未带键值，与某笔存活预告完全相同
 的 POST（同一账户、货币、金额与付款人）也会复用它 —— 复制会因歧义而让真实存款
 落到 `unassigned`。只有确实要收两笔款时，才为每笔传入不同的键值。
-#### 为什么我的 collect（pull）收款失败了？
-响应和 `GET /v1/payins/{id}` 会持久化 `failure` 块，包含通道的代码和消息
-（例如证件与付款人银行登记不符）。修正输入后用新的 key 重试。
 #### 我的美国客户如何付款 —— 境内电汇还是国际 SWIFT？
 走廊会同时发布**两条轨道**，付款人可任选其一：境内轨道
 （`deposit_instructions`）使用 `routing_number`（ABA），适用于在美国境内

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.67"
+  version: "2.68"
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -927,16 +927,6 @@ paths:
                     currency: BOB
                   - method: qr
                     currency: USD
-                - country: VE
-                  currency: VES
-                  methods: []
-                  options:
-                  - method: c2p
-                    currency: VES
-                    collect: true
-                  - method: debito_inmediato
-                    currency: VES
-                    collect: true
                 - country: CL
                   currency: CLP
                   methods:
@@ -1028,11 +1018,9 @@ paths:
         `&currency=YYY`；每种币种是独立的支付选项。墨西哥的银行转账会为该链接签发一个专属 CLABE
         （`destination` 中 `dedicated: true`）：付款人只需转账精确金额，无需填写参考码 —
         入账自动路由到该链接。若无法签发专属账户，payload 会降级为传统方式（商户账户 +
-        转账附言中必填 `reference`）。拉取式方式（报价中 `collect: true`，例如委内瑞拉的 `c2p` 和
-        `debito_inmediato`）冻结报价并返回付款人需填写的表单定义（`banks[]` 目录、
-        `requires_otp_request`）；实际扣款通过 `POST /pay/{token}/collect` 执行。对同一
+        转账附言中必填 `reference`）。对同一
         国家+币种+方式重复 POST 返回相同的结果；在无人支付前，选择某个方式不会锁定其他方式。
-        无需凭证；按 IP 限流。
+        无需凭证；按 IP 限流。拉取式收款（`collect: true`）目前没有任何通道提供。
       parameters:
       - name: token
         in: path
@@ -1045,8 +1033,8 @@ paths:
         required: true
         schema:
           type: string
-        description: 要生成的方式 — 多国目录中的法币方式（`qr`、`card`、`fintoc`、`bank_transfer`、
-          `c2p`、`debito_inmediato`，必须传 `?country=XX`）或加密货币选项（`crypto:tron:usdt`、
+        description: 要生成的方式 — 多国目录中的法币方式（`qr`、`card`、`fintoc`、`bank_transfer`，
+          必须传 `?country=XX`）或加密货币选项（`crypto:tron:usdt`、
           `crypto:eth:usdt`、`crypto:eth:usdc`、`crypto:btc:btc`，不带国家）。
       - name: country
         in: query
@@ -1109,23 +1097,6 @@ paths:
                         dedicated: true
                       note: transfer the exact amount to this dedicated account; no reference
                         is needed — the payment is detected automatically
-                collect:
-                  summary: 拉取式方式（委内瑞拉 C2P）— 冻结报价 + 付款人表单定义
-                  value:
-                    method: c2p
-                    country: VE
-                    currency: VES
-                    local_amount: '4266.77'
-                    payload:
-                      collect: true
-                      currency: VES
-                      amount: '4266.77'
-                      requires_otp_request: false
-                      banks:
-                      - code: '0102'
-                        name: Banco de Venezuela
-                      - code: '0134'
-                        name: Banesco
                 card:
                   summary: 银行卡 — 所选币种的托管支付页面
                   value:
@@ -1209,11 +1180,14 @@ paths:
       - 收银台(Checkout)
       operationId: checkoutCollectOTP
       summary: 请求拉取式收款的 OTP（公开）
+      deprecated: true
       description: >-
         用于通道按需向付款人发送一次性密码的拉取式方式（生成的支付选项中
-        `requires_otp_request: true`，例如委内瑞拉的即时扣款）。触发向付款人发送 OTP，并返回
+        `requires_otp_request: true`）。触发向付款人发送 OTP，并返回
         必须随最终 `POST /pay/{token}/collect` 一起提交的 `otp_reference`。必须先生成该拉取式
         支付选项；金额始终是那时冻结的金额。按 IP 严格限流（每次调用都是发给付款人的真实短信/推送）。
+        **目前没有任何可用的拉取式收款通道**（委内瑞拉 `c2p` / `debito_inmediato`
+        已下线）：调用会返回该通道不受支持。
       parameters:
       - name: token
         in: path
@@ -1290,13 +1264,15 @@ paths:
       - 收银台(Checkout)
       operationId: checkoutCollect
       summary: 用付款人数据执行拉取式收款（公开）
+      deprecated: true
       description: >-
-        使用付款人在结账页面填写的数据执行已生成的拉取式选项（`c2p` /
-        `debito_inmediato`）的扣款 — 银行、证件号、电话或账户，以及 OTP（C2P 由付款人在其银行
-        App 中生成；即时扣款通过 `POST /pay/{token}/collect/otp` 请求并回传其 `otp_reference`）。
+        使用付款人在结账页面填写的数据执行已生成的拉取式选项的扣款 — 银行、证件号、电话或账户，以及 OTP（由付款人在其银行
+        App 中生成，或通过 `POST /pay/{token}/collect/otp` 请求并回传其 `otp_reference`）。
         金额始终是生成支付选项时冻结的金额 — 付款人从不发送金额。若通道同步确认，链接在同一次调用
         中完成结算（`paid: true`）；被拒绝不会终结链接 — 付款人可以修正数据或改用其他方式。用相同
-        数据重试绝不会重复扣款。按 IP 严格限流。
+        数据重试绝不会重复扣款。按 IP 严格限流。**目前没有任何可用的拉取式收款通道**
+        （委内瑞拉 `c2p` / `debito_inmediato` 已下线）：报价中不再列出 `collect: true`
+        选项，调用会返回该通道不受支持。
       parameters:
       - name: token
         in: path
@@ -1309,8 +1285,8 @@ paths:
         content:
           application/json:
             examples:
-              c2p:
-                summary: C2P — 付款人在其银行 App 中生成 OTP
+              pull_collection:
+                summary: 历史形态 — 目前没有任何可用的拉取式通道
                 value:
                   country: VE
                   currency: VES
@@ -1319,17 +1295,6 @@ paths:
                   payer_phone: '04141234567'
                   payer_bank: '0102'
                   otp: '123456'
-              immediate_debit:
-                summary: 即时扣款 — 通过 /collect/otp 请求的 OTP
-                value:
-                  country: VE
-                  currency: VES
-                  method: debito_inmediato
-                  payer_document: V12345678
-                  payer_bank: '0102'
-                  payer_account: '01020123456789012345'
-                  otp: '654321'
-                  otp_reference: '783412'
       responses:
         '200':
           description: 收款尝试的结果。
@@ -5011,13 +4976,8 @@ paths:
                   method: bank_transfer
                   delivery: polling
                   availability: operational
-                - country: VE
-                  currency: VES
-                  method: c2p
-                  delivery: push+polling
-                  availability: operational
                 meta:
-                  retrieved: 6
+                  retrieved: 5
         '403':
           $ref: '#/components/responses/Forbidden'
         '401':
@@ -13101,7 +13061,8 @@ paths:
       - 收款(Payins)
       operationId: payinCollect
       summary: 主动收款(pull)
-      description: 在支持 pull 收款的通道(例如委内瑞拉 `c2p` / `debito_inmediato`)直接向付款人扣款。同步执行:若扣款获批,存款按你当前的 `payin_rate`
+      deprecated: true
+      description: 在支持 pull 收款的通道直接向付款人扣款。**目前没有任何可用的拉取式收款通道**(委内瑞拉 `c2p` / `debito_inmediato` 已下线):调用会返回该通道不受支持。同步执行:若扣款获批,存款按你当前的 `payin_rate`
         转换并在同一调用中入账,已扣除 payin 费用。若付款人拒绝,`paid` 为 false,payin 标记为 failed 且不产生任何扣款。
       requestBody:
         required: true
@@ -13116,13 +13077,11 @@ paths:
               properties:
                 country:
                   type: string
-                  default: VE
                 currency:
                   type: string
-                  default: VES
                 method:
                   type: string
-                  description: 收款方式(例如 c2p、debito_inmediato)。
+                  description: 拉取式通道的收款方式(目前没有任何可用通道)。
                 amount:
                   type: string
                   description: 本地金额,正数十进制字符串。
@@ -13234,7 +13193,7 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 error: invalid_request
-                message: method is required (e.g. c2p, debito_inmediato)
+                message: method is required
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -13261,7 +13220,8 @@ paths:
       - 收款(Payins)
       operationId: payinCollectOtp
       summary: 请求收款 OTP
-      description: 请求部分 pull 方式在扣款前所需的一次性密码(例如即时借记)。免费。
+      deprecated: true
+      description: 请求部分 pull 方式在扣款前所需的一次性密码。免费。**目前没有任何可用的拉取式收款通道**(委内瑞拉 `c2p` / `debito_inmediato` 已下线)。
       requestBody:
         required: true
         content:
@@ -13274,10 +13234,8 @@ paths:
               properties:
                 country:
                   type: string
-                  default: VE
                 currency:
                   type: string
-                  default: VES
                 method:
                   type: string
                 amount:

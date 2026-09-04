@@ -9,6 +9,21 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
+## v2.68 - 4 de septiembre de 2026
+
+### v2.68
+
+**Breaking**
+
+- **El cobro pull de Venezuela (`c2p` / `debito_inmediato`) ya no está
+  disponible**. Crear un cobro pull en el corredor VE/VES ahora responde
+  que el corredor no está soportado, y la cotización del checkout ya no
+  lista ninguna opción `collect: true`. Los endpoints de collect se
+  mantienen en la API marcados como deprecated. Los pagos salientes a
+  Venezuela (`pago_movil`, `bank_transfer`) no cambian — y `pago_movil`
+  sigue exigiendo `beneficiary.name` (sin cambios desde v2.66). Ver
+  [payins](https://docs.cbpayapp.com/es/guias/payins) y [checkout](https://docs.cbpayapp.com/es/guias/checkout).
+
 ## v2.67 · 2 versiones - 3 de septiembre de 2026
 
 ### v2.67

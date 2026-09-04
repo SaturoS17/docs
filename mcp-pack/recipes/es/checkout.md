@@ -116,14 +116,6 @@ y redirige a tu `success_url` si la configuraste.
   cuenta identifica al link. Si la cuenta dedicada no puede emitirse en
   ese momento, la página degrada al camino clásico (cuenta general del
   comercio + referencia obligatoria en la glosa).
-- **Cobros pull (Venezuela)**: `c2p` y `debito_inmediato` cobran directo
-  en la cuenta del pagador. La página le pide banco, documento, teléfono
-  (C2P) o cuenta (débito inmediato) y la clave OTP — generada en su app
-  bancaria para C2P, o enviada a demanda para débito inmediato (botón
-  "Solicitar clave"). El monto SIEMPRE es el congelado en la cotización;
-  si el rail confirma síncrono, el link queda pagado al instante. Un
-  rechazo no mata el link: el pagador corrige los datos o elige otro
-  método.
 - **Tarjeta (multi-moneda)**: la pestaña lista cada moneda de cargo
   disponible con su monto cotizado; al elegir una se abre la página de
   pago hosted en esa moneda. Cada moneda es una materialización
@@ -172,7 +164,7 @@ motor de conversiones de tu cuenta (mismos spreads y límites que
   `conversion_status`.
 - `GET {checkout_url}/quote` — cotizaciones ANTES de elegir: `countries`
   (catálogo por país; cada país lista sus corredores en `options[]` —
-  una fila por método+moneda, con `collect: true` en los métodos pull),
+  una fila por método+moneda),
   `cards` (opciones de tarjeta por país y moneda con su `local_amount`),
   `crypto` (due indicativo por par) y `cbpay` (alias + dues por asset).
   Con `?country=XX` agrega `country_quote` con el monto local por opción
@@ -181,18 +173,13 @@ motor de conversiones de tu cuenta (mismos spreads y límites que
   Métodos fiat exigen `?country=XX`; si el país ofrece el método en más
   de una moneda (tarjetas, QR BOB/USD en Bolivia) exige además
   `&currency=YYY`; crypto usa `crypto:<chain>:<asset>` (ej.
-  `crypto:tron:usdt`) sin país. Los métodos pull devuelven el formulario
-  del pagador (`banks[]`, `requires_otp_request`) con la cotización
-  congelada. Re-POST de la misma combinación devuelve la MISMA
-  materialización.
-- `POST {checkout_url}/collect/otp` — solicita la clave OTP de un cobro
-  pull cuando el rail la envía a demanda (`requires_otp_request: true`,
-  ej. débito inmediato VE). Devuelve el `otp_reference` que acompaña al
-  cobro final. Rate limit estricto (cada llamada es un SMS/push real).
-- `POST {checkout_url}/collect` — ejecuta el cobro pull con los datos del
-  pagador (banco, documento, teléfono o cuenta, OTP). El monto siempre es
-  el congelado; si el rail confirma síncrono responde `paid: true` y el
-  link queda liquidado en la misma llamada.
+  `crypto:tron:usdt`) sin país. Re-POST de la misma combinación devuelve
+  la MISMA materialización.
+- `POST {checkout_url}/collect/otp` / `POST {checkout_url}/collect` —
+  los endpoints de cobro pull. **Actualmente no hay ningún corredor pull
+  disponible** (se retiró Venezuela `c2p` / `debito_inmediato`): la
+  cotización no lista ninguna opción `collect: true` y estas llamadas
+  responden que el corredor no está soportado.
 
 Útil si prefieres renderizar tu propia página de pago sobre el mismo
 link.

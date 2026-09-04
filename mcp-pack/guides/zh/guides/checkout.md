@@ -103,12 +103,6 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
   收款）**：付款人只需转账准确金额，**无需填写任何参考号** —— 账户本身
   即可识别链接，存款自动检测并结算。若当时无法签发专属账户，页面会降级
   为经典方式（商户通用账户 + 转账附言中必须填写参考号）。
-- **拉取式收款（委内瑞拉）**：`c2p` 和 `debito_inmediato` 直接从付款人
-  账户扣款。页面要求填写银行、证件号、电话（C2P）或账户（即时扣款）
-  以及 OTP —— C2P 由付款人在其银行 App 中生成；即时扣款则按需发送
-  （"请求密码"按钮）。金额始终是报价时冻结的金额；若通道同步确认，
-  链接即刻支付完成。被拒绝不会终结链接：付款人可修正数据或改用其他
-  方式。
 - **银行卡（多币种）**：标签页按扣款币种列出每个可用选项及其报价金额；
   选择后打开该币种的托管支付页面。每种币种是独立的物化（同一链接可
   同时以 BOB 和 USD 报价；最先完成支付的生效）。在支付页面上，付款人
@@ -149,24 +143,19 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
   （`fiat_methods`）、加密进度（`crypto`，含 `due`/`received`）及
   `conversion_status`。
 - `GET {checkout_url}/quote`——选择前的报价：`countries`（按国家的
-  目录；每个国家在 `options[]` 中列出其通道——每个方式+币种一行，
-  拉取式方式带 `collect: true`）、`cards`（按国家与币种的银行卡选项，
-  含 `local_amount`）、`crypto`（各币对的参考应付额）和 `cbpay`
-  （别名 + 各资产应付额）。带 `?country=XX` 时额外返回该国每个选项
-  当地金额的 `country_quote`。
+  目录；每个国家在 `options[]` 中列出其通道——每个方式+币种一行）、
+  `cards`（按国家与币种的银行卡选项，含 `local_amount`）、`crypto`
+  （各币对的参考应付额）和 `cbpay`（别名 + 各资产应付额）。带
+  `?country=XX` 时额外返回该国每个选项当地金额的 `country_quote`。
 - `POST {checkout_url}/methods/{method}`——物化所选支付选项。法币方式
   要求 `?country=XX`；当国家以多种币种提供该方式时（银行卡、玻利维亚
   的 QR BOB/USD）还须传 `&currency=YYY`；加密货币使用
-  `crypto:<chain>:<asset>`（如 `crypto:tron:usdt`），不带国家。拉取式
-  方式返回付款人表单定义（`banks[]`、`requires_otp_request`）和冻结的
-  报价。对同一组合重复 POST 返回**同一个**物化结果。
-- `POST {checkout_url}/collect/otp`——当通道按需发送密码时
-  （`requires_otp_request: true`，如委内瑞拉即时扣款），请求拉取式
-  收款的 OTP。返回随最终扣款一起提交的 `otp_reference`。严格限流
-  （每次调用都是真实的短信/推送）。
-- `POST {checkout_url}/collect`——用付款人数据（银行、证件号、电话或
-  账户、OTP）执行拉取式扣款。金额始终是冻结的金额；若通道同步确认，
-  返回 `paid: true`，链接在同一次调用中完成结算。
+  `crypto:<chain>:<asset>`（如 `crypto:tron:usdt`），不带国家。对同一
+  组合重复 POST 返回**同一个**物化结果。
+- `POST {checkout_url}/collect/otp` / `POST {checkout_url}/collect`——
+  拉取式收款端点。**当前没有任何可用的拉取式通道**（委内瑞拉 `c2p` /
+  `debito_inmediato` 已下线）：报价中不再列出 `collect: true` 选项，
+  调用这些端点会返回该通道不受支持。
 
 如果你想在同一链接上渲染自己的支付页面，这些端点会很有用。
 

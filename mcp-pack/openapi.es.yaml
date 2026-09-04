@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.67"
+  version: "2.68"
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -1011,16 +1011,6 @@ paths:
                     currency: BOB
                   - method: qr
                     currency: USD
-                - country: VE
-                  currency: VES
-                  methods: []
-                  options:
-                  - method: c2p
-                    currency: VES
-                    collect: true
-                  - method: debito_inmediato
-                    currency: VES
-                    collect: true
                 - country: CL
                   currency: CLP
                   methods:
@@ -1118,12 +1108,10 @@ paths:
         (`destination` con `dedicated: true`): el pagador transfiere el monto exacto SIN
         referencia — el abono se rutea al link automáticamente. Si la cuenta dedicada no puede
         emitirse, el payload degrada al camino clásico (cuenta del comercio + `reference`
-        obligatoria en la glosa). Los métodos pull
-        (`collect: true` en el quote, ej. `c2p` y `debito_inmediato` en Venezuela) congelan la
-        cotización y devuelven el formulario que el pagador debe llenar (catálogo `banks[]`,
-        `requires_otp_request`); el cargo corre por `POST /pay/{token}/collect`. Re-POST del
+        obligatoria en la glosa). Re-POST del
         mismo país+moneda+método devuelve la MISMA materialización; elegir un método nunca
         bloquea los demás mientras nadie pague. Sin credenciales; rate limit por IP.
+        El cobro pull (`collect: true`) no lo ofrece ningún corredor actualmente.
       parameters:
       - name: token
         in: path
@@ -1137,7 +1125,7 @@ paths:
         schema:
           type: string
         description: Método a materializar — un método fiat del catálogo multi-país (`qr`,
-          `card`, `fintoc`, `bank_transfer`, `c2p`, `debito_inmediato`; exige `?country=XX`)
+          `card`, `fintoc`, `bank_transfer`; exige `?country=XX`)
           o una opción crypto (`crypto:tron:usdt`, `crypto:eth:usdt`, `crypto:eth:usdc`,
           `crypto:btc:btc`; sin país).
       - name: country
@@ -1202,23 +1190,6 @@ paths:
                         dedicated: true
                       note: transfer the exact amount to this dedicated account; no reference
                         is needed — the payment is detected automatically
-                collect:
-                  summary: Método pull (C2P VE) — cotización congelada + formulario del pagador
-                  value:
-                    method: c2p
-                    country: VE
-                    currency: VES
-                    local_amount: '4266.77'
-                    payload:
-                      collect: true
-                      currency: VES
-                      amount: '4266.77'
-                      requires_otp_request: false
-                      banks:
-                      - code: '0102'
-                        name: Banco de Venezuela
-                      - code: '0134'
-                        name: Banesco
                 card:
                   summary: Tarjeta — página de pago hosted en la moneda elegida
                   value:
@@ -1302,13 +1273,17 @@ paths:
       - Checkout
       operationId: checkoutCollectOTP
       summary: Solicitar la clave OTP de un cobro pull (público)
+      deprecated: true
       description: >-
         Para métodos pull cuyo rail envía al pagador una clave de un solo uso a
-        demanda (`requires_otp_request: true` en la materialización, ej. débito
-        inmediato de Venezuela). Dispara el envío del OTP al pagador y devuelve el
+        demanda (`requires_otp_request: true` en la materialización). Dispara el envío
+        del OTP al pagador y devuelve el
         `otp_reference` que debe acompañar el `POST /pay/{token}/collect` final. La
         opción pull debe materializarse primero; el monto SIEMPRE es el congelado ahí.
         Rate limit estricto por IP (cada llamada es un SMS/push real al pagador).
+        **Actualmente no hay ningún corredor de cobro pull disponible** (se retiró
+        Venezuela `c2p` / `debito_inmediato`): las llamadas responden que el corredor
+        no está soportado.
       parameters:
       - name: token
         in: path
@@ -1385,17 +1360,21 @@ paths:
       - Checkout
       operationId: checkoutCollect
       summary: Ejecutar un cobro pull con los datos del pagador (público)
+      deprecated: true
       description: >-
-        Ejecuta el cargo pull de una opción collect materializada (`c2p` /
-        `debito_inmediato`) con los datos que el pagador escribió en la página del
+        Ejecuta el cargo pull de una opción collect materializada con los datos que
+        el pagador escribió en la página del
         checkout — banco, documento, teléfono o cuenta, y el OTP (generado en la app
-        bancaria del pagador para C2P, o solicitado vía `POST /pay/{token}/collect/otp`
-        para débito inmediato, devolviendo su `otp_reference`). El monto SIEMPRE es el
+        bancaria del pagador, o solicitado vía `POST /pay/{token}/collect/otp`
+        devolviendo su `otp_reference`). El monto SIEMPRE es el
         congelado en la materialización — el pagador nunca lo envía. Si el rail
         confirma síncrono, el link se liquida en la misma llamada (`paid: true`); un
         rechazo NO mata el link — el pagador puede corregir los datos o elegir otro
         método. Reintentar con los mismos datos jamás cobra dos veces. Rate limit
-        estricto por IP.
+        estricto por IP. **Actualmente no hay ningún corredor de cobro pull
+        disponible** (se retiró Venezuela `c2p` / `debito_inmediato`): la cotización
+        no lista ninguna opción `collect: true` y las llamadas responden que el
+        corredor no está soportado.
       parameters:
       - name: token
         in: path
@@ -1408,8 +1387,8 @@ paths:
         content:
           application/json:
             examples:
-              c2p:
-                summary: C2P — OTP generado por el pagador en su app bancaria
+              pull_collection:
+                summary: Forma histórica — actualmente no hay ningún corredor pull disponible
                 value:
                   country: VE
                   currency: VES
@@ -1418,17 +1397,6 @@ paths:
                   payer_phone: '04141234567'
                   payer_bank: '0102'
                   otp: '123456'
-              immediate_debit:
-                summary: Débito inmediato — OTP solicitado vía /collect/otp
-                value:
-                  country: VE
-                  currency: VES
-                  method: debito_inmediato
-                  payer_document: V12345678
-                  payer_bank: '0102'
-                  payer_account: '01020123456789012345'
-                  otp: '654321'
-                  otp_reference: '783412'
       responses:
         '200':
           description: Resultado del intento de cobro.
@@ -5281,13 +5249,8 @@ paths:
                   method: bank_transfer
                   delivery: polling
                   availability: operational
-                - country: VE
-                  currency: VES
-                  method: c2p
-                  delivery: push+polling
-                  availability: operational
                 meta:
-                  retrieved: 6
+                  retrieved: 5
         '403':
           $ref: '#/components/responses/Forbidden'
         '401':
@@ -13511,8 +13474,11 @@ paths:
       - Payins
       operationId: payinCollect
       summary: Cobro activo (pull)
-      description: 'Cobra al pagador directamente en los corredores que soportan cobros pull (ej. Venezuela
-        `c2p` / `debito_inmediato`). Síncrono: si el cobro se aprueba, el depósito se convierte a tu `payin_rate`
+      deprecated: true
+      description: 'Cobra al pagador directamente en los corredores que soportan cobros pull.
+        **Actualmente no hay ningún corredor de cobro pull disponible** (se retiró Venezuela
+        `c2p` / `debito_inmediato`): las llamadas responden que el corredor no está soportado.
+        Síncrono: si el cobro se aprueba, el depósito se convierte a tu `payin_rate`
         vigente y se acredita en la misma llamada, neto de la comisión de payin. Si el pagador rechaza,
         `paid` es false, el payin queda marcado como failed y no se cobra nada.'
       requestBody:
@@ -13528,13 +13494,12 @@ paths:
               properties:
                 country:
                   type: string
-                  default: VE
                 currency:
                   type: string
-                  default: VES
                 method:
                   type: string
-                  description: Método de cobro (ej. c2p, debito_inmediato).
+                  description: Método de cobro del corredor pull (actualmente ninguno
+                    disponible).
                 amount:
                   type: string
                   description: Monto local como string decimal positivo.
@@ -13647,7 +13612,7 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 error: invalid_request
-                message: method is required (e.g. c2p, debito_inmediato)
+                message: method is required
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -13674,8 +13639,10 @@ paths:
       - Payins
       operationId: payinCollectOtp
       summary: Solicitar un OTP de cobro
+      deprecated: true
       description: Solicita la contraseña de un solo uso que algunos métodos pull necesitan antes del
-        cobro (ej. débito inmediato). Sin costo.
+        cobro. Sin costo. **Actualmente no hay ningún corredor de cobro pull
+        disponible** (se retiró Venezuela `c2p` / `debito_inmediato`).
       requestBody:
         required: true
         content:
@@ -13688,10 +13655,8 @@ paths:
               properties:
                 country:
                   type: string
-                  default: VE
                 currency:
                   type: string
-                  default: VES
                 method:
                   type: string
                 amount:

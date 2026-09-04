@@ -22,7 +22,6 @@ flowchart LR
     hosted["Hosted payment page<br/>(CL: fintoc)"] --> pay
     card["3-D Secure card payment<br/>(BO: card)"] --> pay
     announced["Announced transfer<br/>(CL, PE, MX, PY, US)"] --> pay
-    pull["Active pull collection<br/>(VE: c2p, debit)"] --> pay
     clabe["Dedicated CLABE / CVU account<br/>(MX, AR)"] --> pay
     pay --> conv["FX conversion at your<br/>payin_rate − fixed fee"]
     conv --> credit(("USDT credit<br/>to your balance"))
@@ -43,7 +42,7 @@ curl https://api.qbank.cl/platform/v1/payins/methods \
 {
   "items": [
     { "country": "BO", "currency": "BOB", "method": "qr", "delivery": "push" },
-    { "country": "VE", "currency": "VES", "method": "c2p", "delivery": "push+polling" },
+    { "country": "CL", "currency": "CLP", "method": "fintoc", "delivery": "push" },
     { "country": "MX", "currency": "MXN", "method": "bank_transfer", "delivery": "push" }
   ],
   "meta": { "retrieved": 3 }
@@ -61,12 +60,18 @@ Collection corridors and modes:
 | Chile | CLP | Hosted payment page (`fintoc`), announced bank transfer |
 | Peru | PEN | Announced bank transfer |
 | Mexico | MXN | Dedicated CLABE account, announced bank transfer |
-| Venezuela | VES | Active collection `c2p` and `debito_inmediato` (pull) |
 | Bolivia | BOB / USD | Collection QR, card payment page (`card`) |
 | Paraguay | PYG | Announced bank transfer |
 | Brazil | BRL | Dynamic PIX QR |
 | Argentina | ARS | Dedicated CVU account |
 | United States | USD | International card payment page (`card`), announced bank transfer (two rails: domestic wire + international SWIFT) |
+
+<Note>
+**Venezuela (VES)**: pull collection (`c2p` / `debito_inmediato`) is **no
+longer available** — creating one responds that the corridor is not
+supported. Outgoing payments to Venezuela (`pago_movil`, `bank_transfer`)
+are unchanged: see [payouts](/en/guides/payouts).
+</Note>
 
 Availability may vary; the catalog (`GET /v1/payins/methods`) is always the
 source of truth. In every case the credit works the same way: converted to
@@ -220,128 +225,6 @@ each deposit pays the regular payin fee. List your accounts with
 
 You can also use a one-off **announced bank transfer**
 (`POST /v1/payins` with `method: "bank_transfer"`, `country: "MX"`).
-
-</Tab>
-<Tab title="Venezuela">
-
-**Active collection (pull)**: you charge the payer directly with their
-authorization. The result is **synchronous** — if the charge is approved,
-the credit lands in the same call.
-
-For `debito_inmediato`, request the OTP first (free):
-
-```bash
-curl -X POST https://api.qbank.cl/platform/v1/payins/collect/otp \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "method": "debito_inmediato",
-    "amount": "1200.00",
-    "payer_document": "V12345678",
-    "payer_phone": "04141234567",
-    "payer_bank": "0102",
-    "payer_account": "01020123456789012345"
-  }'
-```
-
-```json
-{
-  "method": "debito_inmediato",
-  "result": { "status": "sent", "otp_reference": "OTP-5521" }
-}
-```
-
-Then execute the collection:
-
-<CodeGroup>
-
-```bash c2p (phone + ID + payer's OTP)
-curl -X POST https://api.qbank.cl/platform/v1/payins/collect \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "method": "c2p",
-    "amount": "1200.00",
-    "description": "Order 5512",
-    "payer_document": "V12345678",
-    "payer_phone": "04141234567",
-    "payer_bank": "0102",
-    "otp": "12345678",
-    "idempotency_key": "order-5512"
-  }'
-```
-
-```bash debito_inmediato (account + previously requested OTP)
-curl -X POST https://api.qbank.cl/platform/v1/payins/collect \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "method": "debito_inmediato",
-    "amount": "1200.00",
-    "description": "Order 5512",
-    "payer_document": "V12345678",
-    "payer_account": "01020123456789012345",
-    "payer_bank": "0102",
-    "payer_account_type": "CNTA",
-    "otp": "87654321",
-    "otp_reference": "OTP-5521",
-    "idempotency_key": "order-5512"
-  }'
-```
-
-<Note>
-An active collection executes a real charge against the payer, so
-`idempotency_key` is **required** (body or `Idempotency-Key` header): a
-retry with the same key returns the original result with `idempotency_hit`
-and never re-charges.
-</Note>
-
-</CodeGroup>
-
-Response `200` (charge approved and credited):
-
-```json
-{
-  "payin_id": "7b3c…",
-  "kind": "collect",
-  "method": "c2p",
-  "status": "credited",
-  "local_amount": "1200.00",
-  "fx_rate": "36.50",
-  "usdt_gross": "32.876712",
-  "fee": "0.300000",
-  "usdt_credited": "32.576712",
-  "paid": true,
-  "provider_reference": "…"
-}
-```
-
-If the payer declines or the authorization fails, `paid` is `false`, the
-payin is marked `failed`, and nothing is charged. The exact rejection
-reason is persisted on the payin and exposed in the `failure` object (in
-the synchronous response, in `GET /v1/payins/{payin_id}`, and on the
-idempotent replay):
-
-```json
-{
-  "payin_id": "7b3c…",
-  "kind": "collect",
-  "method": "c2p",
-  "status": "failed",
-  "paid": false,
-  "failure": {
-    "source": "provider",
-    "code": "provider_rejected",
-    "message": "Documento de identidad del receptor errado"
-  }
-}
-```
-
-- `source` tells you where the rejection originated (`provider` = the
-  payer's bank declined; `core` = the pre-charge validation).
-- `code` and `message` carry the concrete reason (invalid or expired OTP,
-  wrong document, insufficient payer funds, etc.) so you can tell the
-  payer what to fix before retrying with a new idempotency key.
 
 </Tab>
 <Tab title="Bolivia">
@@ -1223,10 +1106,5 @@ multi-line text (bank, account, holder, amount, reference), and pastes it
 into their own bank's transfer form — they still confirm the transfer
 themselves. Don't build a scan-and-pay flow around it; show it next to the
 plain-text fields so the payer can always type them manually.
-</Accordion>
-<Accordion title="Why did my collect (pull) charge fail?">
-The response and `GET /v1/payins/{id}` persist a `failure` block with the
-rail's code and message (for example, a document that does not match the
-payer's bank registration). Fix the input and retry with a new key.
 </Accordion>
 </AccordionGroup>

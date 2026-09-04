@@ -117,14 +117,6 @@ and redirects to your `success_url` if you set one.
   be issued at that moment, the page degrades to the classic path (the
   merchant's general account plus a mandatory reference in the transfer
   description).
-- **Pull collections (Venezuela)**: `c2p` and `debito_inmediato` charge
-  the payer's account directly. The page asks for bank, document, phone
-  (C2P) or account (immediate debit) and the OTP — generated in their
-  banking app for C2P, or sent on demand for immediate debit ("Request
-  key" button). The amount is ALWAYS the one frozen at quote time; if
-  the rail confirms synchronously the link is paid instantly. A
-  rejection does not kill the link: the payer fixes the data or picks
-  another method.
 - **Card (multi-currency)**: the tab lists every available charge
   currency with its quoted amount; picking one opens the hosted payment
   page in that currency. Each currency is an independent materialization
@@ -173,7 +165,7 @@ as `POST /v1/swaps`). The aggregate state travels in `conversion_status`:
   `conversion_status`.
 - `GET {checkout_url}/quote` — quotes BEFORE choosing: `countries`
   (catalog per country; each country lists its corridors in `options[]`
-  — one row per method+currency, with `collect: true` on pull methods),
+  — one row per method+currency),
   `cards` (card options per country and currency with their
   `local_amount`), `crypto` (indicative due per pair) and `cbpay`
   (alias + dues per asset). With `?country=XX` it adds `country_quote`
@@ -183,18 +175,12 @@ as `POST /v1/swaps`). The aggregate state travels in `conversion_status`:
   the method in more than one currency (cards, QR BOB/USD in Bolivia)
   it also requires `&currency=YYY`; crypto uses
   `crypto:<chain>:<asset>` (e.g. `crypto:tron:usdt`) without a country.
-  Pull methods return the payer form (`banks[]`,
-  `requires_otp_request`) with the frozen quote. Re-POSTing the same
-  combination returns the SAME materialization.
-- `POST {checkout_url}/collect/otp` — requests the OTP of a pull
-  collection when the rail sends it on demand
-  (`requires_otp_request: true`, e.g. VE immediate debit). Returns the
-  `otp_reference` that accompanies the final charge. Strictly rate
-  limited (each call is a real SMS/push).
-- `POST {checkout_url}/collect` — runs the pull charge with the payer's
-  data (bank, document, phone or account, OTP). The amount is always
-  the frozen one; if the rail confirms synchronously it responds
-  `paid: true` and the link is settled in the same call.
+  Re-POSTing the same combination returns the SAME materialization.
+- `POST {checkout_url}/collect/otp` / `POST {checkout_url}/collect` —
+  the pull-collection endpoints. **No pull corridor is currently
+  available** (Venezuela `c2p` / `debito_inmediato` was retired): the
+  quote lists no `collect: true` option and these calls answer that the
+  corridor is not supported.
 
 Useful if you prefer to render your own payment page on top of the same
 link.
