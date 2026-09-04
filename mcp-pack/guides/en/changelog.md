@@ -8,6 +8,21 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+## v2.68 - September 4, 2026
+
+### v2.68
+
+**Breaking**
+
+- **Venezuela pull collection (`c2p` / `debito_inmediato`) is no longer
+  available**. Creating a pull collection on the VE/VES corridor now
+  responds that the corridor is not supported, and the checkout quote no
+  longer lists any `collect: true` option. The collect endpoints stay in
+  the API marked as deprecated. Outgoing payments to Venezuela
+  (`pago_movil`, `bank_transfer`) are unchanged — and `pago_movil` still
+  requires `beneficiary.name` (unchanged since v2.66). See
+  [payins](https://docs.cbpayapp.com/en/guides/payins) and [checkout](https://docs.cbpayapp.com/en/guides/checkout).
+
 ## v2.67 · 2 releases - September 3, 2026
 
 ### v2.67

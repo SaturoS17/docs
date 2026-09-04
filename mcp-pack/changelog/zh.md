@@ -8,6 +8,20 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+## v2.68 - 2026年9月4日
+
+### v2.68
+
+**Breaking**
+
+- **委内瑞拉的拉取式收款（`c2p` / `debito_inmediato`）已不再提供**。
+  在 VE/VES 通道上创建拉取式收款现在会返回该通道不受支持，且结账报价
+  不再列出任何 `collect: true` 选项。collect 端点仍保留在 API 中，标记为
+  已弃用（deprecated）。向委内瑞拉的对外付款（`pago_movil`、
+  `bank_transfer`）不受影响 —— 且 `pago_movil` 仍要求 `beneficiary.name`
+  （自 v2.66 起不变）。参见 [payins](https://docs.cbpayapp.com/zh/guides/payins) 与
+  [checkout](https://docs.cbpayapp.com/zh/guides/checkout)。
+
 ## v2.67 · 2 个版本 - 2026年9月3日
 
 ### v2.67

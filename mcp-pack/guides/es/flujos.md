@@ -73,7 +73,6 @@ Elige la modalidad según el país y la experiencia que quieras dar:
 | QR | BO, BR (PIX) | Escanea con su app bancaria | Automática |
 | Transferencia anunciada | CL, PE, MX, BR | Transfiere incluyendo la referencia | Automática por referencia (o monto) |
 | CLABE / CVU dedicada | MX, AR | Transfiere a una cuenta fija tuya | Automática, sin referencias |
-| Cobro pull (c2p / débito) | VE | Autoriza con OTP y tú ejecutas el cobro | **Síncrona** en la misma llamada |
 | Pago con tarjeta | BO (BOB/USD) | Ingresa su tarjeta en una página hosted segura (3DS) | Automática |
 | Link de cobro universal | Todos los países activos + crypto + tarjetas | Abre un link y elige cómo pagar | Automática |
 

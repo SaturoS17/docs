@@ -21,7 +21,6 @@ flowchart LR
     hosted["Página de pago hosted<br/>(CL: fintoc)"] --> pago
     card["Pago con tarjeta 3-D Secure<br/>(BO: card)"] --> pago
     anunciada["Transferencia anunciada<br/>(CL, PE, MX, PY, US)"] --> pago
-    pull["Cobro activo pull<br/>(VE: c2p, débito)"] --> pago
     clabe["Cuenta dedicada CLABE / CVU<br/>(MX, AR)"] --> pago
     pago --> conv["Conversión FX a tu<br/>payin_rate − fee fijo"]
     conv --> credito(("Abono USDT<br/>a tu saldo"))
@@ -42,7 +41,7 @@ curl https://api.qbank.cl/platform/v1/payins/methods \
 {
   "items": [
     { "country": "BO", "currency": "BOB", "method": "qr", "delivery": "push" },
-    { "country": "VE", "currency": "VES", "method": "c2p", "delivery": "push+polling" },
+    { "country": "CL", "currency": "CLP", "method": "fintoc", "delivery": "push" },
     { "country": "MX", "currency": "MXN", "method": "bank_transfer", "delivery": "push" }
   ],
   "meta": { "retrieved": 3 }
@@ -60,13 +59,17 @@ Corredores y modalidades de cobro:
 | Chile | CLP | Página de pago hosted (`fintoc`), transferencia anunciada |
 | Perú | PEN | Transferencia anunciada |
 | México | MXN | Cuenta CLABE dedicada, transferencia anunciada |
-| Venezuela | VES | Cobro activo `c2p` y `debito_inmediato` (pull) |
 | Bolivia | BOB / USD | QR de cobro, página de pago con tarjeta (`card`) |
 | Paraguay | PYG | Transferencia anunciada |
 | Brasil | BRL | QR PIX dinámico |
 | Argentina | ARS | Cuenta CVU dedicada |
 | Estados Unidos | USD | Página de pago con tarjeta internacional (`card`), transferencia anunciada (dos rieles: wire doméstico + SWIFT internacional) |
 
+> **Nota**
+**Venezuela (VES)**: el cobro pull (`c2p` / `debito_inmediato`) **ya no está
+disponible** — crearlo responde que el corredor no está soportado. Los pagos
+salientes a Venezuela (`pago_movil`, `bank_transfer`) no cambian: ver
+[payouts](https://docs.cbpayapp.com/es/guias/payouts).
 La disponibilidad puede variar; el catálogo (`GET /v1/payins/methods`) es
 siempre la fuente de verdad. En todos los casos el abono llega igual: se
 convierte a USDT a tu `payin_rate` del momento y se acredita neto de la
@@ -218,121 +221,6 @@ con `GET /v1/payins/deposit-accounts`.
 
 También puedes usar la **transferencia anunciada** puntual
 (`POST /v1/payins` con `method: "bank_transfer"`, `country: "MX"`).
-
-#### Venezuela
-
-**Cobro activo (pull)**: cobras directamente al pagador con su
-autorización. El resultado es **síncrono** — si el cobro se aprueba, el
-abono se acredita en la misma llamada.
-
-Para `debito_inmediato`, primero solicita el OTP (gratis):
-
-```bash
-curl -X POST https://api.qbank.cl/platform/v1/payins/collect/otp \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "method": "debito_inmediato",
-    "amount": "1200.00",
-    "payer_document": "V12345678",
-    "payer_phone": "04141234567",
-    "payer_bank": "0102",
-    "payer_account": "01020123456789012345"
-  }'
-```
-
-```json
-{
-  "method": "debito_inmediato",
-  "result": { "status": "sent", "otp_reference": "OTP-5521" }
-}
-```
-
-Luego ejecuta el cobro:
-
-```bash c2p (teléfono + cédula + OTP del pagador)
-curl -X POST https://api.qbank.cl/platform/v1/payins/collect \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "method": "c2p",
-    "amount": "1200.00",
-    "description": "Cobro pedido 5512",
-    "payer_document": "V12345678",
-    "payer_phone": "04141234567",
-    "payer_bank": "0102",
-    "otp": "12345678",
-    "idempotency_key": "cobro-5512"
-  }'
-```
-
-```bash debito_inmediato (cuenta + OTP solicitado antes)
-curl -X POST https://api.qbank.cl/platform/v1/payins/collect \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "method": "debito_inmediato",
-    "amount": "1200.00",
-    "description": "Cobro pedido 5512",
-    "payer_document": "V12345678",
-    "payer_account": "01020123456789012345",
-    "payer_bank": "0102",
-    "payer_account_type": "CNTA",
-    "otp": "87654321",
-    "otp_reference": "OTP-5521",
-    "idempotency_key": "cobro-5512"
-  }'
-```
-
-> **Nota**
-El cobro activo ejecuta un débito real contra el pagador, así que
-`idempotency_key` es **obligatoria** (body o header `Idempotency-Key`): un
-reintento con la misma clave devuelve el resultado original con
-`idempotency_hit` y nunca vuelve a cobrar.
-Respuesta `200` (cobro aprobado y acreditado):
-
-```json
-{
-  "payin_id": "7b3c…",
-  "kind": "collect",
-  "method": "c2p",
-  "status": "credited",
-  "local_amount": "1200.00",
-  "fx_rate": "36.50",
-  "usdt_gross": "32.876712",
-  "fee": "0.300000",
-  "usdt_credited": "32.576712",
-  "paid": true,
-  "provider_reference": "…"
-}
-```
-
-Si el pagador rechaza o falla la autorización, `paid` es `false`, el payin
-queda `failed` y no se cobra nada. La causa exacta del rechazo queda
-persistida en el payin y se expone en el objeto `failure` (en la respuesta
-síncrona, en `GET /v1/payins/{payin_id}` y en el replay idempotente):
-
-```json
-{
-  "payin_id": "7b3c…",
-  "kind": "collect",
-  "method": "c2p",
-  "status": "failed",
-  "paid": false,
-  "failure": {
-    "source": "provider",
-    "code": "provider_rejected",
-    "message": "Documento de identidad del receptor errado"
-  }
-}
-```
-
-- `source` indica dónde se originó el rechazo (`provider` = el banco del
-  pagador rechazó; `core` = la validación previa al cobro).
-- `code` y `message` traen el motivo concreto (OTP inválida o expirada,
-  documento errado, fondos insuficientes del pagador, etc.), útil para
-  mostrarle al pagador qué corregir antes de reintentar con una clave
-  de idempotencia nueva.
 
 #### Bolivia
 
@@ -1133,11 +1021,6 @@ un POST idéntico a un anuncio vivo (misma cuenta, moneda, monto y pagador)
 lo reutiliza — duplicarlo dejaría el depósito real `unassigned` por
 ambigüedad. Manda claves distintas solo cuando de verdad quieras cobrar dos
 veces.
-#### ¿Por qué falló mi cobro collect (pull)?
-La respuesta y `GET /v1/payins/{id}` persisten un bloque `failure` con el
-código y mensaje del riel (por ejemplo, un documento que no calza con el
-registro bancario del pagador). Corrige el dato y reintenta con clave
-nueva.
 #### ¿Cómo paga mi cliente de EE. UU. — wire doméstico o SWIFT internacional?
 El corredor publica dos cuentas de destino a propósito, y tu pagador elige
 el riel que su banco soporta: quienes bancan **dentro de EE. UU.** usan el
