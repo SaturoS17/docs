@@ -89,6 +89,14 @@ que espera es el **saldo**: cae en tu ledger cuando corre el settlement —
 al llegar `settle_at` (un worker liquida los payins vencidos cada minuto)
 o antes si un org-admin lo libera manualmente desde el panel.
 
+La demora rige **todo cobro pagado con tarjeta**: un payin directo
+`method: "card"`, un [link de checkout](/es/guias/checkout) pagado con
+tarjeta y un [cobro POS](/es/guias/qr-pos) pagado con tarjeta comparten la
+misma regla de `settle_at` (incluidas las cuentas cuyo override de fee
+deja `settlement_hours` en `0` — sus checkouts con tarjeta también se
+acreditan al instante). Un checkout o POS pagado por cualquier otro riel
+(QR, crypto, app CBPay, fintoc) se acredita de inmediato, como siempre.
+
 Mientras el saldo está pendiente, la respuesta del payin (creación,
 consulta y listado) lleva `settle_at` (RFC 3339) y
 `settlement_pending: true`; cuando el saldo cae, lleva `settled_at` en su

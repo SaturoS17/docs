@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.66"
+  version: "2.67"
   description: 'CBPay es una plataforma de pagos multimoneda: payouts y cobros fiat
 
     en toda América Latina, transferencias internas, fondeo y retiros
@@ -21465,7 +21465,10 @@ components:
             configurable en horas. `0` (default) liquida el saldo apenas se confirma el cobro
             con tarjeta; un valor positivo confirma el payin como `credited` de inmediato
             (webhook y cierre del checkout incluidos) pero deja el SALDO programado con un
-            `settle_at` hasta que vence la demora, y luego lo liquida automáticamente. En otro
+            `settle_at` hasta que vence la demora, y luego lo liquida automáticamente. La
+            demora cubre todo cobro pagado con tarjeta: payins directos con tarjeta y
+            cobros checkout/POS pagados con tarjeta (un checkout pagado por
+            QR/crypto/fintoc sigue acreditándose de inmediato). En otro
             servicio o negativo se rechaza con `invalid_settlement_hours`.
           example: 24
         status:
@@ -21663,21 +21666,24 @@ components:
           type: string
           format: date-time
           description: >-
-            Solo payins con tarjeta que tienen una demora de settlement configurada —
-            cuándo queda disponible el SALDO de este payin (`created_at` más las
-            `settlement_hours` de la comisión `payin_card`). El payin queda confirmado
-            de inmediato: el estado es `credited` y el webhook `payin_credited` se emite
-            al momento del pago; lo que espera al `settle_at` es solo el crédito del
-            saldo (y la auto-conversión, cuando está configurada). Un payin cuya demora
-            ya venció al aprobarse o asignarse se liquida de inmediato. Ausente cuando
-            el saldo se liquida al confirmarse.
+            Solo cobros pagados con tarjeta que tienen una demora de settlement
+            configurada — payins directos con tarjeta y cobros checkout/POS pagados
+            con tarjeta — cuándo queda disponible el SALDO de este payin (`created_at`
+            más las `settlement_hours` de la comisión `payin_card`). El payin queda
+            confirmado de inmediato: el estado es `credited` y el webhook
+            `payin_credited` se emite al momento del pago; lo que espera al `settle_at`
+            es solo el crédito del saldo (y la auto-conversión, cuando está
+            configurada). Un payin cuya demora ya venció al aprobarse o asignarse se
+            liquida de inmediato. Ausente cuando el saldo se liquida al confirmarse.
         settlement_pending:
           type: boolean
           description: >-
-            Presente (true) mientras el saldo de un payin con tarjeta `credited` sigue
-            programado para su `settle_at`. Mientras esté presente, el payin no se puede
-            devolver (`422 settlement_pending`) — la plata aún no está en tu saldo.
-            Ausente una vez que el saldo cae en el ledger.
+            Presente (true) mientras el saldo de un payin `credited` pagado con
+            tarjeta sigue programado para su `settle_at` — cubre payins directos con
+            tarjeta y cobros checkout/POS pagados con tarjeta. Mientras esté
+            presente, el payin no se puede devolver (`422 settlement_pending`) — la
+            plata aún no está en tu saldo. Ausente una vez que el saldo cae en el
+            ledger.
         settled_at:
           type: string
           format: date-time
@@ -22482,7 +22488,8 @@ webhooks:
   payin_settlement_scheduled:
     post:
       summary: Acreditación de cobro programada
-      description: 'Un cobro con tarjeta quedó pagado y su SALDO se programó para un
+      description: 'Un cobro pagado con tarjeta — un payin directo con tarjeta o un
+        cobro checkout/POS pagado con tarjeta — quedó pagado y su SALDO se programó para un
         `settle_at` futuro porque tu organización configuró una demora de settlement
         (`settlement_hours`) en el servicio `payin_card`. Se emite exactamente una vez al
         confirmarse el pago (idempotente — un retry de la misma confirmación no lo re-emite).

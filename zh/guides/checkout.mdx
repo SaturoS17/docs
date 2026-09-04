@@ -187,6 +187,15 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
 `asset_amount`；加密支付额外附带 `crypto_amount`，CBPay 应用支付额外
 附带 `transfer_id`、`asset` 和 `amount`。
 
+<Note>
+以**银行卡**支付的收款遵循您组织的银行卡结算延迟（`payin_card` 费用的
+`settlement_hours`）：收款立即确认为 `credited`，链接随即关闭为已支付，
+但**余额**要到 `settle_at` 才到账 —— 在此之前收款携带
+`settlement_pending: true`。通过任何其他方式（QR、加密货币、CBPay 应用、
+fintoc）支付的收款仍立即入账，与以往相同。详见
+[费用——银行卡收款结算延迟](/zh/concepts/fees#银行卡收款结算延迟)。
+</Note>
+
 在 `GET /v1/payins` 和 `GET /v1/payins/{payin_id}` 中，checkout 收款在
 所有状态（待支付、已过期、已入账）都会返回其计价 —
 `settlement_asset` + `asset_amount`；在使用本地支付方式之前

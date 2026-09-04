@@ -216,6 +216,17 @@ Cuando el cobro se paga recibes el `payin_credited` con `settled_via`
 `asset_amount`; los pagos crypto agregan `crypto_amount` y los pagos con
 la app CBPay agregan `transfer_id`, `asset` y `amount`.
 
+<Note>
+Un cobro pagado **con tarjeta** sigue la demora de settlement de tarjeta
+de tu organización (el `settlement_hours` del fee `payin_card`): el payin
+se confirma `credited` y el link cierra como pagado al instante, pero el
+**saldo** cae al llegar `settle_at` — el payin lleva
+`settlement_pending: true` hasta entonces. Los cobros pagados por
+cualquier otro método (QR, crypto, app CBPay, fintoc) se acreditan de
+inmediato, como siempre. Detalle en
+[comisiones — settlement de payins con tarjeta](/es/conceptos/comisiones#settlement-de-payins-con-tarjeta).
+</Note>
+
 En `GET /v1/payins` y `GET /v1/payins/{payin_id}` los payins de checkout
 llevan siempre su denominación — `settlement_asset` + `asset_amount` — en
 todo estado (pendiente, vencido y abonado); `currency`/`local_amount`

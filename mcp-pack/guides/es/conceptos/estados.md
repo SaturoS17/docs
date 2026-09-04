@@ -61,7 +61,8 @@ El reembolso ya ocurrió en todos los casos: verifícalo en
 - `pending` — el cargo existe y espera el pago. Los QR y páginas de pago
   tienen vencimiento (`expired` si nadie paga).
 - `credited` — pago recibido, convertido a tu `payin_rate` y abonado. Con
-  una ventana de settlement configurada para tarjeta, el cobro llega a
+  una ventana de settlement configurada para tarjeta — que también rige los
+  links de checkout y los cobros POS pagados con tarjeta — el cobro llega a
   `credited` al confirmarse el pago pero el **saldo** cae después: mientras
   `settle_at` está en el futuro la respuesta trae `settlement_pending: true`
   y `settled_at: null` (ver

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.66"
+  version: "2.67"
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -20860,6 +20860,8 @@ components:
             仅适用于银行卡收款(`payin_card`)—— 可配置的结算延迟(小时)。`0`(默认)在
             银行卡扣款确认后立即入账余额;大于 0 时收款会立即确认为 `credited`(包括
             webhook 和收银台关闭),但余额会按 `settle_at` 排期,延迟到期后自动结算。
+            该延迟覆盖所有以银行卡支付的收款:直接银行卡收款以及以卡支付的收银台/POS
+            收款(通过 QR/加密货币/fintoc 支付的收银台收款仍立即入账)。
             用于其他服务或为负数将被拒绝并返回 `invalid_settlement_hours`。
           example: 24
         status:
@@ -21045,7 +21047,8 @@ components:
           type: string
           format: date-time
           description: >-
-            仅适用于配置了结算延迟的银行卡收款 —— 该收款的余额何时可用(`created_at`
+            仅适用于配置了结算延迟的银行卡支付收款——直接银行卡收款以及以卡支付的
+            收银台/POS 收款——该收款的余额何时可用(`created_at`
             加上 `payin_card` 费用配置的 `settlement_hours`)。收款本身立即确认:状态为
             `credited`,`payin_credited` webhook 在付款时发出;等待到 `settle_at` 的只是
             余额入账(以及自动换汇,如已配置)。在批准或分配时延迟已到期的收款会立即结算。
@@ -21053,7 +21056,8 @@ components:
         settlement_pending:
           type: boolean
           description: >-
-            当一笔 `credited` 状态的银行卡收款的余额仍在等待 `settle_at` 结算时存在
+            当一笔 `credited` 状态的银行卡支付收款(直接银行卡收款或以卡支付的
+            收银台/POS 收款)的余额仍在等待 `settle_at` 结算时存在
             (为 true)。在此期间该收款无法退款(`422 settlement_pending`)——资金尚未
             进入您的余额。余额到账后此字段消失。
         settled_at:
@@ -21737,7 +21741,8 @@ webhooks:
   payin_settlement_scheduled:
     post:
       summary: 收款结算已计划
-      description: '一笔银行卡收款已支付,且因贵组织在 `payin_card` 服务上配置了结算延迟
+      description: '一笔以银行卡支付的收款——直接银行卡收款或以卡支付的收银台/POS
+        收款——已支付,且因贵组织在 `payin_card` 服务上配置了结算延迟
         (`settlement_hours`),其余额被安排到未来的 `settle_at`。该事件在支付确认时恰好发出一次
         (幂等——同一确认的重试不会重复发送)。`status` 从一开始就是 `credited`:收款已确认,
         `payin_credited` 会立即发出——等待到 `settle_at` 的只是余额。`usdt_net` 是到期将入账的金额(总额 − 手续费);

@@ -196,6 +196,13 @@ acredita igual a tu cuenta (la dirección sigue viva) y el webhook se emite —
 `received` del cobro expirado lo refleja para que concilies, jamás se pierde
 un pago real. **Sobrepagos** (propinas): también se acreditan.
 
+> **Nota**
+Un cobro POS pagado **con tarjeta** sigue la demora de settlement de tarjeta
+de tu organización (el `settlement_hours` del fee `payin_card`): el cobro se
+confirma al instante, pero el **saldo** cae al llegar `settle_at` — el payin
+lleva `settlement_pending: true` hasta entonces. Los pagos crypto con QR se
+acreditan de inmediato, como siempre. Detalle en
+[comisiones — settlement de payins con tarjeta](https://docs.cbpayapp.com/es/conceptos/comisiones#settlement-de-payins-con-tarjeta).
 ## 4. Concilia y reparte por merchant
 
 `GET /v1/pos/charges?from=…&to=…&merchant_id=…` lista los cobros de cada

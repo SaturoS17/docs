@@ -85,6 +85,13 @@ payin:   usdt_gross    = local_amount / payin_rate
 账本 —— 到达 `settle_at` 时（后台任务每分钟结算一次到期收款），或
 机构管理员在面板中手动提前释放时。
 
+该延迟适用于**所有以银行卡支付的收款**：直接 `method: "card"` 收款、
+以卡支付的[收银台链接](/zh/guides/checkout)以及以卡支付的
+[POS 收款](/zh/guides/qr-pos)都遵循相同的 `settle_at` 规则（包括自身
+费用覆盖将 `settlement_hours` 设为 `0` 的账户——其银行卡收银台收款
+也会立即入账）。通过任何其他通道（QR、加密货币、CBPay 应用、fintoc）
+支付的收银台或 POS 收款仍立即入账，与以往相同。
+
 余额待结算期间，收款响应（创建、查询和列表）携带 `settle_at`
 （RFC 3339）和 `settlement_pending: true`；余额到账后则携带
 `settled_at`。在付款确认时还会仅发出一次 `payin_settlement_scheduled`

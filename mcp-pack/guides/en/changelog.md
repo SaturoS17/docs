@@ -8,7 +8,22 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.66 - September 3, 2026
+## v2.67 · 2 releases - September 3, 2026
+
+### v2.67
+
+**Fixed**
+
+- **Checkout and POS charges paid by card now follow the card settlement
+  delay**. When your `payin_card` fee configures `settlement_hours` above
+  zero, a hosted checkout link or POS charge paid **by card** now behaves
+  exactly like a direct card payin: it confirms as `credited` and closes as
+  paid right away, but the **balance** lands at `settle_at`
+  (`settlement_pending: true` until then, releasable early by your org
+  admin). Previously those charges were billed the card fee but credited
+  immediately. Charges paid over QR, crypto, the CBPay app or fintoc still
+  credit immediately. No API or webhook shape changed. See
+  [fees — card payin settlement delay](https://docs.cbpayapp.com/en/concepts/fees#card-payin-settlement-delay).
 
 ### v2.66
 

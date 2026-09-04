@@ -185,6 +185,12 @@ POS 大批量场景推荐 **TRON/USDT** 作为主通道：约 1 分钟确认，�
 webhook — 过期收款的 `received` 会反映出来供你对账，真实支付绝不丢失。
 **超额支付**（小费）同样入账。
 
+> **注**
+以**银行卡**支付的 POS 收款遵循您组织的银行卡结算延迟（`payin_card`
+费用的 `settlement_hours`）：收款立即确认，但**余额**要到 `settle_at`
+才到账 —— 在此之前收款携带 `settlement_pending: true`。加密货币 QR
+支付仍立即入账，与以往相同。详见
+[费用——银行卡收款结算延迟](https://docs.cbpayapp.com/zh/concepts/fees#银行卡收款结算延迟)。
 ## 4. 按商户对账与分账
 
 `GET /v1/pos/charges?from=…&to=…&merchant_id=…` 列出每个商户的收款
