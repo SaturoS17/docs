@@ -475,7 +475,9 @@ so the payment can be captured.
   `settlement_pending: true`), or earlier if your org admin releases it
   manually; once released, the payin carries `settled_at`. The
   `payin_settlement_scheduled` webhook fires exactly once at confirmation
-  with `status: "credited"` and the scheduled amounts. Details in
+  with `status: "credited"` and the scheduled amounts. The same delay
+  applies when a [checkout link](/en/guides/checkout) or a
+  [POS charge](/en/guides/qr-pos) is paid by card. Details in
   [fees — card payin settlement delay](/en/concepts/fees#card-payin-settlement-delay).
 
 </Tab>

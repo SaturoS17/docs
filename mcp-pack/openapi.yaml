@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.66"
+  version: "2.67"
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -21622,7 +21622,10 @@ components:
             `0` (default) settles the balance as soon as the card charge confirms; a
             positive value confirms the payin as `credited` right away (webhook and
             checkout closure included) but holds the BALANCE scheduled at `settle_at`
-            until the delay elapses, then settles it automatically. Rejected with
+            until the delay elapses, then settles it automatically. The delay covers
+            every card-paid collection: direct card payins and checkout/POS charges
+            paid by card (a checkout paid over QR/crypto/fintoc still credits
+            immediately). Rejected with
             `invalid_settlement_hours` on any other service or when negative.
           example: 24
         status:
@@ -21819,8 +21822,9 @@ components:
           type: string
           format: date-time
           description: >-
-            Card payins with a configured settlement delay only — when this
-            payin's balance becomes available (`created_at` plus the
+            Card-paid collections with a configured settlement delay only —
+            direct card payins and checkout/POS charges paid by card — when
+            this payin's balance becomes available (`created_at` plus the
             `payin_card` fee config's `settlement_hours`). The payin itself is
             confirmed right away: the status is `credited` and the
             `payin_credited` webhook fires at payment time; what waits until
@@ -21831,10 +21835,11 @@ components:
         settlement_pending:
           type: boolean
           description: >-
-            Present (true) while a `credited` card payin's balance is still
-            scheduled for `settle_at`. While set, the payin cannot be refunded
-            (`422 settlement_pending`) — the funds are not in your balance yet.
-            Absent once the balance lands.
+            Present (true) while a `credited` card-paid payin's balance is
+            still scheduled for `settle_at` — covers direct card payins and
+            checkout/POS charges paid by card. While set, the payin cannot be
+            refunded (`422 settlement_pending`) — the funds are not in your
+            balance yet. Absent once the balance lands.
         settled_at:
           type: string
           format: date-time
@@ -22637,7 +22642,8 @@ webhooks:
   payin_settlement_scheduled:
     post:
       summary: Payin settlement scheduled
-      description: 'A card payin was paid and its balance was scheduled for a future `settle_at`
+      description: 'A card-paid payin — a direct card payin or a checkout/POS charge
+        paid by card — was paid and its balance was scheduled for a future `settle_at`
         because your organization configured a settlement delay (`settlement_hours`) on the
         `payin_card` service. Emitted exactly once when the payment is confirmed (idempotent —
         a retry of the same confirmation does not re-emit it). `status` is `credited` from the

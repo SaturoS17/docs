@@ -8,7 +8,23 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-<Update label="3 de septiembre de 2026" description="v2.66">
+<Update label="3 de septiembre de 2026" description="v2.67 · 2 versiones">
+
+### v2.67
+
+**Corregido**
+
+- **Los cobros de checkout y POS pagados con tarjeta ahora siguen la demora
+  de settlement de tarjeta**. Cuando tu fee `payin_card` configura
+  `settlement_hours` sobre cero, un link de checkout hosted o un cobro POS
+  pagado **con tarjeta** se comporta igual que un payin directo con tarjeta:
+  se confirma `credited` y cierra como pagado al instante, pero el **saldo**
+  cae al llegar `settle_at` (`settlement_pending: true` hasta entonces, con
+  liberación anticipada por un org-admin). Antes esos cobros pagaban el fee
+  de tarjeta pero se acreditaban de inmediato. Los cobros por QR, crypto,
+  app CBPay o fintoc siguen acreditándose al instante. No cambió ningún
+  shape de API ni de webhook. Detalle en
+  [comisiones — settlement de payins con tarjeta](/es/conceptos/comisiones#settlement-de-payins-con-tarjeta).
 
 ### v2.66
 

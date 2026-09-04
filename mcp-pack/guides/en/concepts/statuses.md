@@ -61,7 +61,8 @@ The refund already happened in every case: verify it in
 - `pending` — the charge exists and awaits payment. QRs and payment pages
   expire (`expired` if nobody pays).
 - `credited` — payment received, converted at your `payin_rate` and
-  credited. With a card settlement delay configured, the payin reaches
+  credited. With a card settlement delay configured — it also governs
+  checkout links and POS charges paid by card — the payin reaches
   `credited` at payment confirmation but the **balance** lands later:
   while `settle_at` is in the future the response carries
   `settlement_pending: true` and `settled_at: null` (see

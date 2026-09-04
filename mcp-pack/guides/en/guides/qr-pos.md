@@ -196,6 +196,13 @@ credited to your account (the address stays alive) and the webhook fires —
 the expired charge's `received` reflects it for reconciliation; a real
 payment is never lost. **Overpayments** (tips) are credited too.
 
+> **Note**
+A POS charge paid **by card** follows your organization's card settlement
+delay (the `settlement_hours` of the `payin_card` fee): the charge confirms
+right away, but the **balance** lands at `settle_at` — the payin carries
+`settlement_pending: true` until then. Crypto QR payments credit
+immediately, as always. See
+[fees — card payin settlement delay](https://docs.cbpayapp.com/en/concepts/fees#card-payin-settlement-delay).
 ## 4. Reconcile and distribute per merchant
 
 `GET /v1/pos/charges?from=…&to=…&merchant_id=…` lists each merchant's

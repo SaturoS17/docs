@@ -7,7 +7,20 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-<Update label="2026年9月3日" description="v2.66">
+<Update label="2026年9月3日" description="v2.67 · 2 个版本">
+
+### v2.67
+
+**已修复**
+
+- **以卡支付的收银台和 POS 收款现在遵循银行卡结算延迟**。当您的
+  `payin_card` 费用配置了大于零的 `settlement_hours` 时，以**银行卡**
+  支付的托管收银台链接或 POS 收款与直接银行卡收款行为完全一致：立即
+  确认为 `credited` 并关闭为已支付，但**余额**到 `settle_at` 才到账
+  （在此之前携带 `settlement_pending: true`，可由机构管理员提前释放）。
+  此前这些收款计收银行卡费用但却立即入账。通过 QR、加密货币、CBPay
+  应用或 fintoc 支付的收款仍立即入账。API 和 webhook 的结构均未变化。
+  详见[费用——银行卡收款结算延迟](/zh/concepts/fees#银行卡收款结算延迟)。
 
 ### v2.66
 

@@ -89,6 +89,14 @@ is the **balance**: it lands in your ledger when the settlement runs — at
 `settle_at` (a worker settles due payins every minute) or earlier if your
 org admin releases it manually from the panel.
 
+The delay governs **every card-paid collection**: a direct
+`method: "card"` payin, a [checkout link](/en/guides/checkout) paid by card
+and a [POS charge](/en/guides/qr-pos) paid by card all share the same
+`settle_at` rule (including accounts whose own fee override sets
+`settlement_hours` to `0` — their card checkouts also credit immediately).
+A checkout or POS charge paid over any other rail (QR, crypto, CBPay app,
+fintoc) credits immediately, as always.
+
 While the balance is pending, the payin response (create, get and list)
 carries `settle_at` (RFC 3339) and `settlement_pending: true`; once the
 balance lands it carries `settled_at` instead. At confirmation the

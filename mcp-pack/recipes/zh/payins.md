@@ -435,9 +435,10 @@ curl -X POST https://api.qbank.cl/platform/v1/payins \
   webhook 随即发出，收银台链接关闭为已支付 —— 但**余额**要到
   `settle_at`（RFC 3339，create/GET/列表响应中均携带，同时带有
   `settlement_pending: true`）才可用，或由机构管理员在面板中手动提前
-  释放；释放后收款携带 `settled_at`。`payin_settlement_scheduled`
+  释放；  释放后收款携带 `settled_at`。`payin_settlement_scheduled`
   webhook 在付款确认时仅发出一次，携带 `status: "credited"` 和计划的
-  入账金额。详见
+  入账金额。以卡支付[收银台链接](https://docs.cbpayapp.com/zh/guides/checkout)或
+  [POS 收款](https://docs.cbpayapp.com/zh/guides/qr-pos)时适用相同的延迟。详见
   [费用——银行卡收款结算延迟](https://docs.cbpayapp.com/zh/concepts/fees#银行卡收款结算延迟)。
 
 #### 巴拉圭

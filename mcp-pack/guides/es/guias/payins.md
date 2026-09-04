@@ -465,7 +465,9 @@ cuando el país tiene subdivisiones — para que el pago pueda capturarse.
   antes si un org-admin lo libera manualmente; una vez liberado, el payin
   lleva `settled_at`. El webhook `payin_settlement_scheduled` se emite
   exactamente una vez al confirmarse el pago, con `status: "credited"` y
-  los montos programados. Detalle en
+  los montos programados. La misma demora aplica cuando un
+  [link de checkout](https://docs.cbpayapp.com/es/guias/checkout) o un
+  [cobro POS](https://docs.cbpayapp.com/es/guias/qr-pos) se paga con tarjeta. Detalle en
   [comisiones — settlement de payins con tarjeta](https://docs.cbpayapp.com/es/conceptos/comisiones#settlement-de-payins-con-tarjeta).
 
 #### Paraguay

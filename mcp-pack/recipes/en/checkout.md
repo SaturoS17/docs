@@ -218,6 +218,14 @@ When the charge is paid you receive the `payin_credited` with
 `crypto_amount` and CBPay app payments add `transfer_id`, `asset` and
 `amount`.
 
+> **Note**
+A charge paid **by card** follows your organization's card settlement
+delay (the `settlement_hours` of the `payin_card` fee): the payin confirms
+as `credited` and the link closes as paid right away, but the **balance**
+lands at `settle_at` — the payin carries `settlement_pending: true` until
+then. Charges paid through any other method (QR, crypto, CBPay app,
+fintoc) credit immediately, as always. See
+[fees — card payin settlement delay](https://docs.cbpayapp.com/en/concepts/fees#card-payin-settlement-delay).
 In `GET /v1/payins` and `GET /v1/payins/{payin_id}` checkout payins
 always carry their denomination — `settlement_asset` + `asset_amount` —
 in every status (pending, expired and credited); `currency`/`local_amount`
