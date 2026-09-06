@@ -20512,6 +20512,232 @@ paths:
               example:
                 error: rate_limited
                 message: too many requests
+  /v1/qscore/fraud/reports:
+    post:
+      tags: [Qscore]
+      summary: Crea y consulta un informe de fraude e identidad.
+      operationId: createQscoreFraudReport
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: Use this header when the body field is omitted.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [country, doc_id, purpose]
+              properties:
+                country: {type: string, example: CL}
+                doc_id: {type: string, example: '76.123.456-0'}
+                subject_type: {type: string, enum: [person, company]}
+                purpose:
+                  type: string
+                  enum: [fraud_prevention, identity_verification, onboarding, other]
+                lang: {type: string, enum: [en, es, zh], default: en}
+                idempotency_key: {type: string}
+            examples:
+              company:
+                value: {country: CL, doc_id: '76.123.456-0', subject_type: company, purpose: identity_verification, lang: en, idempotency_key: fraud-check-2026-09-06-001}
+      responses:
+        '200':
+          description: Report ready or an idempotent replay.
+          content:
+            application/json:
+              examples:
+                ready:
+                  value: {"report_id":"9f1c2d3e-4a5b-4c6d-8e7f-0a1b2c3d4e5f","kind":"qscore_fraud","subject_id":"3fa85f64-5717-4562-b3fc-2c963f66afa6","country":"CL","doc_id":"76123456-0","subject_type":"company","purpose":"identity_verification","status":"ready","model_version":"qscore-fraud-v1","lang":"en","score":280,"band":"B","reason_codes":[{"code":"NEW_SUBJECT","direction":"negative","weight":"high"}],"verify_code":"F9f1c2d3e4a5b6c7d8e9f00112233445566778899aabbccddeeff0011223344","verify_url":"https://business.cbpayapp.com/verify/qscore-fraud/F9f1c2d3e4a5b6c7d8e9f00112233445566778899aabbccddeeff0011223344","pdf_url":"/v1/qscore/fraud/reports/9f1c2d3e-4a5b-4c6d-8e7f-0a1b2c3d4e5f/pdf","created_at":"2026-09-06T15:04:12Z"}
+        '400':
+          description: Invalid document, purpose, subject type or missing idempotency key.
+          content:
+            application/json:
+              examples:
+                invalid:
+                  value: {"error":"invalid_purpose","message":"purpose must be one of fraud_prevention, identity_verification, onboarding or other"}
+        '403':
+          description: The account is not verified or the risk service is disabled.
+          content:
+            application/json:
+              examples:
+                forbidden:
+                  value: {"error":"service_disabled","message":"the fraud and identity service is not enabled for your account"}
+        '502':
+          description: Generation failed after the charge path; the fee is refunded.
+          content:
+            application/json:
+              examples:
+                failed:
+                  value: {"error":"generation_failed","message":"the fraud report could not be generated"}
+    get:
+      tags: [Qscore]
+      summary: Lista informes de fraude e identidad dentro del scope de lectura.
+      operationId: listQscoreFraudReports
+      security:
+        - bearerAuth: []
+      parameters:
+        - {name: from, in: query, required: true, schema: {type: string, format: date}}
+        - {name: to, in: query, required: true, schema: {type: string, format: date}}
+        - {name: status, in: query, required: false, schema: {type: string, enum: [pending, ready, failed]}}
+        - {name: page, in: query, required: false, schema: {type: integer, default: 1}}
+        - {name: page_size, in: query, required: false, schema: {type: integer, default: 50, maximum: 200}}
+      responses:
+        '200':
+          description: Paginated reports.
+          content:
+            application/json:
+              examples:
+                items:
+                  value: {"items":[{"report_id":"9f1c2d3e-4a5b-4c6d-8e7f-0a1b2c3d4e5f","kind":"qscore_fraud","country":"CL","doc_id":"76123456-0","subject_type":"company","purpose":"identity_verification","status":"ready","score":280,"band":"B","created_at":"2026-09-06T15:04:12Z"}],"meta":{"page":1,"page_size":50,"total":1}}
+        '400':
+          description: Invalid date range.
+          content:
+            application/json:
+              examples:
+                invalid_range:
+                  value: {"error":"invalid_range","message":"from and to must be valid dates"}
+  /v1/qscore/fraud/reports/{id}:
+    get:
+      tags: [Qscore]
+      summary: Lee un informe de fraude e identidad.
+      operationId: getQscoreFraudReport
+      security:
+        - bearerAuth: []
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200':
+          description: Report detail.
+          content:
+            application/json:
+              examples:
+                ready:
+                  value: {"report_id":"9f1c2d3e-4a5b-4c6d-8e7f-0a1b2c3d4e5f","kind":"qscore_fraud","subject_id":"3fa85f64-5717-4562-b3fc-2c963f66afa6","country":"CL","doc_id":"76123456-0","subject_type":"company","purpose":"identity_verification","status":"ready","model_version":"qscore-fraud-v1","lang":"en","score":280,"band":"B","reason_codes":[{"code":"NEW_SUBJECT","direction":"negative","weight":"high"}],"verify_code":"F9f1c2d3e4a5b6c7d8e9f00112233445566778899aabbccddeeff0011223344","verify_url":"https://business.cbpayapp.com/verify/qscore-fraud/F9f1c2d3e4a5b6c7d8e9f00112233445566778899aabbccddeeff0011223344","pdf_url":"/v1/qscore/fraud/reports/9f1c2d3e-4a5b-4c6d-8e7f-0a1b2c3d4e5f/pdf","created_at":"2026-09-06T15:04:12Z"}
+        '404':
+          description: The report is unknown or outside the caller's scope.
+          content:
+            application/json:
+              examples:
+                not_found:
+                  value: {"error":"not_found","message":"report not found"}
+  /v1/qscore/fraud/reports/{id}/pdf:
+    get:
+      tags: [Qscore]
+      summary: Descarga el PDF privado de fraude e identidad.
+      operationId: getQscoreFraudReportPDF
+      security:
+        - bearerAuth: []
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200':
+          description: Branded PDF attachment.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: The report is not ready or has no PDF.
+          content:
+            application/json:
+              examples:
+                not_found:
+                  value: {"error":"not_found","message":"report pdf not found"}
+  /v1/qscore/index:
+    get:
+      tags: [Qscore]
+      summary: Lee el Qscore Index trimestral público y anónimo.
+      operationId: getQscoreIndex
+      security: []
+      parameters:
+        - {name: period, in: query, required: false, schema: {type: string, example: "2026-Q2"}}
+        - {name: country, in: query, required: false, schema: {type: string, pattern: '^[A-Za-z]{2}$'}}
+        - {name: industry_code, in: query, required: false, schema: {type: string}}
+      responses:
+        '200':
+          description: Anonymous quarterly snapshot.
+          content:
+            application/json:
+              examples:
+                snapshot:
+                  value: {"period":"2026-Q2","country":"CL","industry_code":"6499","items":[{"period":"2026-Q2","country":"CL","industry_code":"6499","band":"B","subject_count":12,"avg_score":742,"created_at":"2026-07-01T00:00:00Z"}],"methodology":"quarterly anonymous buckets; each bucket requires at least five subjects"}
+        '400':
+          description: period debe usar YYYY-Q1, YYYY-Q2, YYYY-Q3 o YYYY-Q4
+          content:
+            application/json:
+              examples:
+                invalid_period:
+                  value: {"error":"invalid_period","message":"period must use YYYY-Q1, YYYY-Q2, YYYY-Q3 or YYYY-Q4"}
+  /v1/qscore/index/account:
+    get:
+      tags: [Qscore]
+      summary: Lee Qscore Index con scope autenticado de cuenta o lectura.
+      operationId: getQscoreIndexAccount
+      security:
+        - bearerAuth: []
+      parameters:
+        - {name: period, in: query, required: false, schema: {type: string, example: "2026-Q2"}}
+        - {name: country, in: query, required: false, schema: {type: string, pattern: '^[A-Za-z]{2}$'}}
+        - {name: industry_code, in: query, required: false, schema: {type: string}}
+      responses:
+        '200':
+          description: Anonymous quarterly snapshot.
+          content:
+            application/json:
+              examples:
+                snapshot:
+                  value: {"period":"2026-Q2","country":"CL","industry_code":"6499","items":[{"period":"2026-Q2","country":"CL","industry_code":"6499","band":"B","subject_count":12,"avg_score":742,"created_at":"2026-07-01T00:00:00Z"}],"methodology":"quarterly anonymous buckets; each bucket requires at least five subjects"}
+        '400':
+          description: period debe usar YYYY-Q1, YYYY-Q2, YYYY-Q3 o YYYY-Q4
+          content:
+            application/json:
+              examples:
+                invalid_period:
+                  value: {"error":"invalid_period","message":"period must use YYYY-Q1, YYYY-Q2, YYYY-Q3 or YYYY-Q4"}
+        '403':
+          description: The account does not have the risk service enabled.
+          content:
+            application/json:
+              examples:
+                forbidden:
+                  value: {"error":"service_disabled","message":"the fraud and identity service is not enabled for your account"}
+  /verify/qscore-fraud/{code}:
+    get:
+      tags: [Qscore]
+      summary: Verifica un código de fraude sin autenticación. No devuelve PII ni score.
+      operationId: verifyQscoreFraudReport
+      security: []
+      parameters:
+        - {name: code, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Valid report code.
+          content:
+            application/json:
+              examples:
+                valid:
+                  value: {"valid":true,"type":"qscore_fraud","status":"ready","date":"2026-09-06","issued_by":"CBPay"}
+        '404':
+          description: Invalid or tampered report code.
+          content:
+            application/json:
+              examples:
+                invalid:
+                  value: {"valid":false,"message":"this fraud report code is not valid"}
+        '429':
+          description: Per-IP verification throttle.
+          content:
+            application/json:
+              examples:
+                throttled:
+                  value: {"error":"too_many_attempts","message":"too many verification attempts; wait a moment and retry"}
+
 components:
   securitySchemes:
     bearerAuth:
@@ -23145,6 +23371,48 @@ webhooks:
       responses:
         '200':
           description: 'Recibido.'
+  risk_fraud_score_ready:
+    post:
+      summary: Informe de fraude e identidad listo
+      description: 'Un informe de fraude e identidad Qscore terminó de generarse para la cuenta. El evento está acotado a la cuenta, va firmado como los demás webhooks y nunca incluye el PDF ni las señales detalladas. Responde 2xx para confirmar.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                report_id:
+                  type: string
+                kind:
+                  type: string
+                  enum: [qscore_fraud]
+                subject_id:
+                  type: string
+                doc_id:
+                  type: string
+                  description: Documento del sujeto enmascarado.
+                country:
+                  type: string
+                score:
+                  type: integer
+                band:
+                  type: string
+                  enum: [A, B, C, D, E]
+                status:
+                  type: string
+                  enum: [ready]
+            example:
+              report_id: 9f1c2d3e-4a5b-4c6d-8e7f-0a1b2c3d4e5f
+              kind: qscore_fraud
+              subject_id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              doc_id: '76••••••-0'
+              country: CL
+              score: 280
+              band: B
+              status: ready
+      responses:
+        '200':
+          description: Responde cualquier 2xx para confirmar la entrega.
   risk_report_ready:
     post:
       summary: Informe crediticio Qscore listo

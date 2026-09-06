@@ -228,6 +228,8 @@ Errores de los endpoints del buró de crédito ([guía](/es/guias/qscore)).
 | 404 | `pdf_not_ready` | El PDF del informe aún no está disponible — consulta el detalle hasta `status=ready` (el webhook `risk_report_ready` te avisa) |
 | 409 | `no_tax_id` | La cuenta verificada no tiene `tax_id` registrado, así que el informe self no puede resolver su sujeto — completa primero tus datos verificados |
 | 409 | `identity_mismatch` | El `tax_id` de la cuenta no calza con el documento de identidad verificado (informe self) — contacta a soporte; tus datos verificados deben ser consistentes |
+| 422 | `unsupported_country` | Este flujo de fraude/identidad de Qscore no está disponible para el país seleccionado — usa un país compatible o contacta a soporte |
+| 503 | `recovery_pending` | El informe de fraude todavía se está finalizando — consulta el informe con las mismas credenciales y reintenta el PDF cuando llegue a `ready` |
 | 400 | `no_valid_items` | Todas las filas del lote fueron rechazadas (`invalid_doc_id` / `duplicate_in_batch`) y no se creó ningún lote — valida el archivo localmente (cada `doc_id` debe pasar el dígito verificador del país y ser único) y reenvía con una clave de idempotencia **nueva** |
 | 400 | `too_many_items` | Un lote acepta a lo más 5.000 sujetos — parte la cartera en varios lotes, cada uno con su propia clave de idempotencia |
 | 409 | `already_decided` | El link de consentimiento ya fue decidido (`granted`, `revoked` o `expired`) y no puede transicionar de nuevo — crea un link nuevo si necesitas otra autorización |
@@ -306,3 +308,11 @@ Códigos de la firma de mensajes con wallets (EIP-191 en EVM, TIP-191 en TRON): 
   la operación nunca se creó).
 - **5xx / timeouts**: reintenta con **la misma** clave de idempotencia; la
   operación nunca se duplicará.
+
+## Qscore fraude e Index
+
+| HTTP | `code` | Significado y solución |
+|---:|---|---|
+| 400 | `invalid_period` | El período del Index no es `YYYY-Q1` a `YYYY-Q4` — usa un trimestre cerrado |
+| 429 | `too_many_attempts` | La verificación pública de fraude está rate-limited — espera y reintenta |
+| 502 | `generation_failed` | Falló la generación después del cargo — el fee se reembolsa; usa una nueva idempotency key |

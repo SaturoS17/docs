@@ -3,8 +3,8 @@
     "name": "CBPay API",
     "description": "CBPay is a multi-currency payment platform: fiat payouts and collections\nacross Latin America, internal transfers, on-chain funding and\nwithdrawals, and KYC screening. Every account holds four independent\nvirtual balances — USDT (the operating currency), USDC, BTC and GOLD\n(grams of fine gold) — convertible on demand with swaps.\nPayouts and service fees can be paid from any of the four balances\n(`PUT /v1/settlement` or per-payout `settlement_asset`), and payins\ncan auto-convert to the asset of your choice (`default_payin_asset`).\n\nAll amounts are decimal strings in each currency's precision (6 decimals\nfor USDT/USDC/GOLD, 8 for BTC). Errors always return\n`{\"error\": \"<code>\", \"message\": \"<detail>\"}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_generated_at": "2026-09-06 04:17 UTC",
-    "_content_sha256": "7b6bfd9b111a96998711fbe03ce7d31d002bc1908deb2b0f92f4a69df4fda716"
+    "_generated_at": "2026-09-06 14:04 UTC",
+    "_content_sha256": "3d17536760558347c07158f1cedccc6191220cdbfc9f9fd0f6943ed492d05fbb"
   },
   "auth": {
     "type": "bearer",
@@ -4884,6 +4884,525 @@
                 }
               ],
               "body": "{\n  \"consent_id\": \"c1a2b3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d\",\n  \"subject_id\": \"7e8f9a0b-1c2d-4e3f-8a9b-0c1d2e3f4a5b\",\n  \"channel\": \"link\",\n  \"status\": \"revoked\",\n  \"purpose\": \"credit_evaluation\",\n  \"consent_url\": \"https://business.cbpayapp.com/consent/cns_4f9a2b7c1d8e4a0f9b3c6d5e8a7f1c2d\",\n  \"email\": \"maria@example.com\",\n  \"created_at\": \"2026-08-09T15:00:00Z\",\n  \"updated_at\": \"2026-08-10T10:02:11Z\",\n  \"expires_at\": \"2026-08-16T15:00:00Z\",\n  \"revoked_at\": \"2026-08-10T10:02:11Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List fraud and identity reports in the caller's read scope.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/qscore/fraud/reports",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "qscore",
+                "fraud",
+                "reports"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "page_size",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 Paginated reports.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/qscore/fraud/reports",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "qscore",
+                    "fraud",
+                    "reports"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": false,
+                      "description": ""
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": false,
+                      "description": ""
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "page",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Paginated reports.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"items\": [\n    {\n      \"report_id\": \"9f1c2d3e-4a5b-4c6d-8e7f-0a1b2c3d4e5f\",\n      \"kind\": \"qscore_fraud\",\n      \"country\": \"CL\",\n      \"doc_id\": \"76123456-0\",\n      \"subject_type\": \"company\",\n      \"purpose\": \"identity_verification\",\n      \"status\": \"ready\",\n      \"score\": 280,\n      \"band\": \"B\",\n      \"created_at\": \"2026-09-06T15:04:12Z\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"page_size\": 50,\n    \"total\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create and read a fraud and identity report.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/qscore/fraud/reports",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "qscore",
+                "fraud",
+                "reports"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country\": \"CL\",\n  \"doc_id\": \"76.123.456-0\",\n  \"subject_type\": \"company\",\n  \"purpose\": \"identity_verification\",\n  \"lang\": \"en\",\n  \"idempotency_key\": \"fraud-check-2026-09-06-001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Report ready or an idempotent replay.",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/qscore/fraud/reports",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "qscore",
+                    "fraud",
+                    "reports"
+                  ]
+                }
+              },
+              "status": "Report ready or an idempotent replay.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"report_id\": \"9f1c2d3e-4a5b-4c6d-8e7f-0a1b2c3d4e5f\",\n  \"kind\": \"qscore_fraud\",\n  \"subject_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"country\": \"CL\",\n  \"doc_id\": \"76123456-0\",\n  \"subject_type\": \"company\",\n  \"purpose\": \"identity_verification\",\n  \"status\": \"ready\",\n  \"model_version\": \"qscore-fraud-v1\",\n  \"lang\": \"en\",\n  \"score\": 280,\n  \"band\": \"B\",\n  \"reason_codes\": [\n    {\n      \"code\": \"NEW_SUBJECT\",\n      \"direction\": \"negative\",\n      \"weight\": \"high\"\n    }\n  ],\n  \"verify_code\": \"F9f1c2d3e4a5b6c7d8e9f00112233445566778899aabbccddeeff0011223344\",\n  \"verify_url\": \"https://business.cbpayapp.com/verify/qscore-fraud/F9f1c2d3e4a5b6c7d8e9f00112233445566778899aabbccddeeff0011223344\",\n  \"pdf_url\": \"/v1/qscore/fraud/reports/9f1c2d3e-4a5b-4c6d-8e7f-0a1b2c3d4e5f/pdf\",\n  \"created_at\": \"2026-09-06T15:04:12Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Read one fraud and identity report.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/qscore/fraud/reports/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "qscore",
+                "fraud",
+                "reports",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 Report detail.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/qscore/fraud/reports/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "qscore",
+                    "fraud",
+                    "reports",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Report detail.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"report_id\": \"9f1c2d3e-4a5b-4c6d-8e7f-0a1b2c3d4e5f\",\n  \"kind\": \"qscore_fraud\",\n  \"subject_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"country\": \"CL\",\n  \"doc_id\": \"76123456-0\",\n  \"subject_type\": \"company\",\n  \"purpose\": \"identity_verification\",\n  \"status\": \"ready\",\n  \"model_version\": \"qscore-fraud-v1\",\n  \"lang\": \"en\",\n  \"score\": 280,\n  \"band\": \"B\",\n  \"reason_codes\": [\n    {\n      \"code\": \"NEW_SUBJECT\",\n      \"direction\": \"negative\",\n      \"weight\": \"high\"\n    }\n  ],\n  \"verify_code\": \"F9f1c2d3e4a5b6c7d8e9f00112233445566778899aabbccddeeff0011223344\",\n  \"verify_url\": \"https://business.cbpayapp.com/verify/qscore-fraud/F9f1c2d3e4a5b6c7d8e9f00112233445566778899aabbccddeeff0011223344\",\n  \"pdf_url\": \"/v1/qscore/fraud/reports/9f1c2d3e-4a5b-4c6d-8e7f-0a1b2c3d4e5f/pdf\",\n  \"created_at\": \"2026-09-06T15:04:12Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Download the private fraud and identity PDF.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/qscore/fraud/reports/:id/pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "qscore",
+                "fraud",
+                "reports",
+                ":id",
+                "pdf"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Read the public anonymous quarterly Qscore Index.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/qscore/index",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "qscore",
+                "index"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "country",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "industry_code",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 Anonymous quarterly snapshot.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/qscore/index",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "qscore",
+                    "index"
+                  ],
+                  "query": [
+                    {
+                      "key": "period",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "country",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "industry_code",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Anonymous quarterly snapshot.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"period\": \"2026-Q2\",\n  \"country\": \"CL\",\n  \"industry_code\": \"6499\",\n  \"items\": [\n    {\n      \"period\": \"2026-Q2\",\n      \"country\": \"CL\",\n      \"industry_code\": \"6499\",\n      \"band\": \"B\",\n      \"subject_count\": 12,\n      \"avg_score\": 742,\n      \"created_at\": \"2026-07-01T00:00:00Z\"\n    }\n  ],\n  \"methodology\": \"quarterly anonymous buckets; each bucket requires at least five subjects\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Read the Qscore Index with an authenticated account/read scope.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/qscore/index/account",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "qscore",
+                "index",
+                "account"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "country",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "industry_code",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 Anonymous quarterly snapshot.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/qscore/index/account",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "qscore",
+                    "index",
+                    "account"
+                  ],
+                  "query": [
+                    {
+                      "key": "period",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "country",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "industry_code",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Anonymous quarterly snapshot.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"period\": \"2026-Q2\",\n  \"country\": \"CL\",\n  \"industry_code\": \"6499\",\n  \"items\": [\n    {\n      \"period\": \"2026-Q2\",\n      \"country\": \"CL\",\n      \"industry_code\": \"6499\",\n      \"band\": \"B\",\n      \"subject_count\": 12,\n      \"avg_score\": 742,\n      \"created_at\": \"2026-07-01T00:00:00Z\"\n    }\n  ],\n  \"methodology\": \"quarterly anonymous buckets; each bucket requires at least five subjects\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Verify a fraud report code without authentication. No PII or score is returned.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/verify/qscore-fraud/:code",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "verify",
+                "qscore-fraud",
+                ":code"
+              ],
+              "variable": [
+                {
+                  "key": "code",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 Valid report code.",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/verify/qscore-fraud/:code",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "verify",
+                    "qscore-fraud",
+                    ":code"
+                  ],
+                  "variable": [
+                    {
+                      "key": "code",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "Valid report code.",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"valid\": true,\n  \"type\": \"qscore_fraud\",\n  \"status\": \"ready\",\n  \"date\": \"2026-09-06\",\n  \"issued_by\": \"CBPay\"\n}"
             }
           ]
         }

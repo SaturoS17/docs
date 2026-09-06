@@ -15,7 +15,7 @@ Qscore 是平台的 API 优先征信局。一次调用即可返回个人或企�
 
 > **注**
 Qscore 是付费产品，由您账户的 `risk` 服务标志门控，按报告计费（独立费用 `risk_report_person` / `risk_report_company`）。如果收费后生成失败，费用将**自动退还**，报告以 `failed` 结束并带有 `error_code`。例外：**您自己的报告（自助）是免费的**——见下文"您自己的报告（自助）"。
-## 工作原理
+> **注**Qscore 还提供独立的[欺诈与身份报告](https://docs.cbpayapp.com/zh/guides/qscore-fraud)和公开的[Qscore Index](https://docs.cbpayapp.com/zh/guides/qscore-index)。## 工作原理
 
 ```mermaid
 sequenceDiagram

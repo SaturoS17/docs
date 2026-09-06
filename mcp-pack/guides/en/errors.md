@@ -227,6 +227,8 @@ Errors from the credit bureau endpoints ([guide](https://docs.cbpayapp.com/en/gu
 | 404 | `pdf_not_ready` | The report PDF is not available yet — poll the detail until `status=ready` (the `risk_report_ready` webhook tells you) |
 | 409 | `no_tax_id` | The verified account has no `tax_id` on file, so the self report cannot resolve its subject — complete your verified data first |
 | 409 | `identity_mismatch` | The account `tax_id` does not match the verified identity document (self report) — contact support; your verified data must be consistent |
+| 422 | `unsupported_country` | This Qscore fraud/identity flow is not available for the selected country — use a supported country or contact support |
+| 503 | `recovery_pending` | The fraud report is still being finalized — poll the report with the same credentials and retry the PDF after it reaches `ready` |
 | 400 | `no_valid_items` | Every row of the batch was rejected (`invalid_doc_id` / `duplicate_in_batch`) and no batch was created — validate the file locally (each `doc_id` must pass the country check digit and be unique) and resubmit with a **new** idempotency key |
 | 400 | `too_many_items` | A batch accepts at most 5,000 subjects — split the portfolio into multiple batches, each with its own idempotency key |
 | 409 | `already_decided` | The consent link was already decided (`granted`, `revoked` or `expired`) and cannot transition again — create a new link if you need a fresh authorization |
@@ -305,3 +307,11 @@ Codes from message signing with wallets (EIP-191 on EVM, TIP-191 on TRON): serve
   operation was never created).
 - **5xx / timeouts**: retry with **the same** idempotency key; the operation
   will never duplicate.
+
+## Qscore fraud and Index
+
+| HTTP | `code` | Meaning and solution |
+|---:|---|---|
+| 400 | `invalid_period` | The Index period is not `YYYY-Q1` through `YYYY-Q4` — use a closed-quarter value |
+| 429 | `too_many_attempts` | Public fraud verification is rate-limited — retry after a short delay |
+| 502 | `generation_failed` | Fraud report generation failed after the charge path — the fee is refunded; retry with a new idempotency key |
