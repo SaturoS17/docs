@@ -1,5 +1,5 @@
 {
-  "count": 208,
+  "count": 212,
   "errors": [
     {
       "category": {
@@ -2343,6 +2343,34 @@
       "category": {
         "en": "Qscore",
         "es": "Qscore",
+        "zh": "服务端（5xx）"
+      },
+      "code": "unsupported_country",
+      "http": 422,
+      "meaning": {
+        "en": "This Qscore fraud/identity flow is not available for the selected country — use a supported country or contact support",
+        "es": "Este flujo de fraude/identidad de Qscore no está disponible para el país seleccionado — usa un país compatible o contacta a soporte",
+        "zh": "所选国家暂不支持 Qscore 欺诈/身份流程；请选择支持的国家或联系支持"
+      }
+    },
+    {
+      "category": {
+        "en": "Qscore",
+        "es": "Qscore",
+        "zh": "服务端（5xx）"
+      },
+      "code": "recovery_pending",
+      "http": 503,
+      "meaning": {
+        "en": "The fraud report is still being finalized — poll the report with the same credentials and retry the PDF after it reaches `ready`",
+        "es": "El informe de fraude todavía se está finalizando — consulta el informe con las mismas credenciales y reintenta el PDF cuando llegue a `ready`",
+        "zh": "欺诈报告仍在完成中；使用相同凭证轮询报告，状态变为 `ready` 后再重试 PDF"
+      }
+    },
+    {
+      "category": {
+        "en": "Qscore",
+        "es": "Qscore",
         "zh": "Qscore"
       },
       "code": "no_valid_items",
@@ -2911,6 +2939,34 @@
         "en": "Segregated wallet private key export is not enabled on this environment",
         "es": "El export de llaves privadas de wallets segregadas no está habilitado en este entorno",
         "zh": "当前环境未启用独立钱包私钥导出"
+      }
+    },
+    {
+      "category": {
+        "en": "Service (5xx)",
+        "es": "Servicio (5xx)",
+        "zh": "服务端（5xx）"
+      },
+      "code": "invalid_period",
+      "http": 400,
+      "meaning": {
+        "en": "The Index period is not `YYYY-Q1` through `YYYY-Q4` — use a closed-quarter value",
+        "es": "El período del Index no es `YYYY-Q1` a `YYYY-Q4` — usa un trimestre cerrado",
+        "zh": "Index 时期不是 `YYYY-Q1` 到 `YYYY-Q4`；请使用已关闭季度"
+      }
+    },
+    {
+      "category": {
+        "en": "Service (5xx)",
+        "es": "Servicio (5xx)",
+        "zh": "服务端（5xx）"
+      },
+      "code": "generation_failed",
+      "http": 502,
+      "meaning": {
+        "en": "Fraud report generation failed after the charge path — the fee is refunded; retry with a new idempotency key",
+        "es": "Falló la generación después del cargo — el fee se reembolsa; usa una nueva idempotency key",
+        "zh": "费用路径之后生成失败；费用已退回，使用新的幂等键重试"
       }
     }
   ]

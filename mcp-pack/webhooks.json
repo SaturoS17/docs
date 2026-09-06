@@ -1,5 +1,5 @@
 {
-  "count": 43,
+  "count": 44,
   "events": [
     {
       "description": {
@@ -675,6 +675,29 @@
         "en": "Qscore consent revoked",
         "es": "Consent Qscore revocado",
         "zh": "Qscore 授权已撤销"
+      }
+    },
+    {
+      "description": {
+        "en": "A Qscore fraud and identity report finished generating for the account. The event is account-scoped, signed like every other webhook and never includes the PDF or detailed fraud signals. Respond 2xx to acknowledge the delivery.",
+        "es": "Un informe de fraude e identidad Qscore terminó de generarse para la cuenta. El evento está acotado a la cuenta, va firmado como los demás webhooks y nunca incluye el PDF ni las señales detalladas. Responde 2xx para confirmar.",
+        "zh": "账户的 Qscore 欺诈与身份报告已完成。事件仅发送给该账户，和其他 webhook 一样签名，绝不包含 PDF 或详细欺诈信号。返回 2xx 确认接收。"
+      },
+      "event": "risk_fraud_score_ready",
+      "payload_example": {
+        "band": "B",
+        "country": "CL",
+        "doc_id": "76••••••-0",
+        "kind": "qscore_fraud",
+        "report_id": "9f1c2d3e-4a5b-4c6d-8e7f-0a1b2c3d4e5f",
+        "score": 280,
+        "status": "ready",
+        "subject_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+      },
+      "summary": {
+        "en": "Fraud and identity report ready",
+        "es": "Informe de fraude e identidad listo",
+        "zh": "欺诈与身份报告已就绪"
       }
     },
     {

@@ -229,3 +229,7 @@ usdt_credited = 99.70 USDT
 
 El pagador paga el monto local exacto que indicaste; a ti se te abona el
 equivalente a tu `payin_rate` menos el fijo.
+
+## Score de fraude e identidad
+
+| `risk_fraud_score` | Fee fijo por cada informe de fraude e identidad; se reembolsa si falla la generación |

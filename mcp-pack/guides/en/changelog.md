@@ -8,7 +8,14 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.69 - September 6, 2026
+## v2.70 · 2 versions - September 6, 2026
+
+### v2.70
+
+**Added**
+
+- **Fraud and identity reports**: `POST/GET /v1/qscore/fraud/reports`, authenticated detail and PDF downloads, the four closed purposes, idempotent charging with automatic refund on generation failure, signed `risk_fraud_score_ready` webhook, best-effort email and public authenticity verification at `/verify/qscore-fraud/{code}`.
+- **Qscore Index**: public and authenticated quarterly snapshots at `/v1/qscore/index` and `/v1/qscore/index/account`, with country/industry filters and anonymous buckets of at least five subjects.
 
 ### v2.69
 

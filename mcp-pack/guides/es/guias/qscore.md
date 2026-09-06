@@ -15,7 +15,7 @@ Qscore es el buró de crédito API-first de la plataforma. Una sola llamada devu
 
 > **Nota**
 Qscore es un producto pagado, gated por el service flag `risk` de tu cuenta y facturado por informe (fees standalone `risk_report_person` / `risk_report_company`). Si la generación falla después del cobro, el fee se **reembolsa automáticamente** y el informe queda `failed` con su `error_code`. Excepción: **tu propio informe (self)** es gratis — ver "Tu propio informe (self)" más abajo.
-## Cómo funciona
+> **Nota**Qscore también incluye el [informe de fraude e identidad](https://docs.cbpayapp.com/es/guias/qscore-fraud) y el [Qscore Index público](https://docs.cbpayapp.com/es/guias/qscore-index).## Cómo funciona
 
 ```mermaid
 sequenceDiagram

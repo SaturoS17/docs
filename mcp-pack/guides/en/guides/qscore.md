@@ -15,7 +15,7 @@ Qscore is the API-first credit bureau of the platform. One call returns a **comp
 
 > **Note**
 Qscore is a paid product gated by the `risk` service flag of your account and billed per report (`risk_report_person` / `risk_report_company` standalone fees). If the generation fails after the charge, the fee is **refunded automatically** and the report ends `failed` with its `error_code`. The exception is **your own report**: a verified account holder generates their self report for free — see "Your own report (self)" below.
-## How it works
+> **Note**Qscore also includes the separate [fraud and identity report](https://docs.cbpayapp.com/en/guides/qscore-fraud) and the public [Qscore Index](https://docs.cbpayapp.com/en/guides/qscore-index).## How it works
 
 ```mermaid
 sequenceDiagram
