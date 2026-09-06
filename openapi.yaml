@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.68"
+  version: "2.69"
   description: 'CBPay is a multi-currency payment platform: fiat payouts and collections
 
     across Latin America, internal transfers, on-chain funding and
@@ -4833,6 +4833,7 @@ paths:
                   usdt_credited: '466.652227'
                   settle_at: '2026-08-12T14:08:33Z'
                   settlement_pending: true
+                  idempotency_key: order-10042
         '403':
           $ref: '#/components/responses/Forbidden'
         '401':
@@ -21775,6 +21776,12 @@ components:
           - failed
         reference:
           type: string
+        idempotency_key:
+          type: string
+          description: >-
+            Your idempotency key from the create request, echoed back.
+            Absent when the payin was created without one (or by the
+            platform itself — internal keys are never exposed).
         created_at:
           type: string
           format: date-time
@@ -22454,6 +22461,7 @@ webhooks:
                 fee: *id017
                 settlement_asset: *id017
                 conversion_status: *id017
+                idempotency_key: *id017
             example:
               payin_id: 4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -22465,6 +22473,7 @@ webhooks:
               fee: '1.000000'
               settlement_asset: USDC
               conversion_status: done
+              idempotency_key: order-10042
       responses:
         '200':
           description: Return any 2xx to acknowledge the delivery.
@@ -22554,6 +22563,8 @@ webhooks:
                   type: string
                 reference:
                   type: string
+                idempotency_key:
+                  type: string
             example:
               payin_id: 567d0d1a-49bc-437e-92e3-77e921112e49
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -22562,6 +22573,7 @@ webhooks:
               currency: BOB
               local_amount: '60.99'
               reference: CBK7Q2M4XZ9P
+              idempotency_key: order-10042
       responses:
         '200':
           description: Return any 2xx to acknowledge the delivery.
@@ -22636,6 +22648,7 @@ webhooks:
               usdt_net: '466.652227'
               status: credited
               settle_at: '2026-08-12T14:08:33Z'
+              idempotency_key: order-10042
               receipt_url: https://api.qbank.cl/platform/v1/payins/8b3e1c2d-4f5a-6b7c-8d9e-0f1a2b3c4d5e/receipt
       responses:
         '200':
@@ -22665,6 +22678,7 @@ webhooks:
                 status: *id017
                 status_code: *id017
                 bank_reference: *id017
+                idempotency_key: *id017
             example:
               payout_id: 7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -22676,6 +22690,7 @@ webhooks:
               status: completed
               status_code: ''
               bank_reference: '00761123456'
+              idempotency_key: payroll-2026-07-001
       responses:
         '200':
           description: Return any 2xx to acknowledge the delivery.
@@ -22844,6 +22859,7 @@ webhooks:
                 tx_id: *id017
                 status: *id017
                 amount: *id017
+                idempotency_key: *id017
             example:
               withdrawal_id: 6c5d4e3f-2a1b-0c9d-8e7f-6a5b4c3d2e1f
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -22852,6 +22868,7 @@ webhooks:
               tx_id: b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b
               status: completed
               amount: '100.000000'
+              idempotency_key: wd-2026-09-0042
       responses:
         '200':
           description: Return any 2xx to acknowledge the delivery.
@@ -23126,6 +23143,7 @@ webhooks:
               tx_id: b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b
               status: completed
               amount_raw: '25500000'
+              idempotency_key: send-0042
       responses:
         '200':
           description: Return any 2xx to acknowledge the delivery.

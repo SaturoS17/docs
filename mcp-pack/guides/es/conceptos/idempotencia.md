@@ -78,3 +78,16 @@ flowchart LR
   timeout con garantía de no duplicar.
 - Ante un error de red o `5xx`, **reintenta con la misma clave**. Ante un
   `4xx` de validación, corrige el request y usa una clave nueva.
+
+## La clave vuelve a ti
+
+Los webhooks de la operación traen tu clave de vuelta como
+`idempotency_key` (`payout_status_changed`, `payin_credited`,
+`payin_settlement_scheduled`, `payin_expired`, `payin_refunded`,
+`crypto_withdrawal_status_changed`, `wallet_send_status_changed`), y el
+recurso payin la devuelve en `GET /v1/payins/{id}` — concilia las
+notificaciones contra tu propia referencia sin una consulta extra. El
+campo se omite cuando la operación se creó sin clave (o la creó la propia
+plataforma — las claves internas jamás se exponen). `transfer_received`
+no la lleva. Ver
+[Webhooks](https://docs.cbpayapp.com/es/webhooks#tu-idempotency-key-vuelve-en-el-payload).

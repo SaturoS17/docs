@@ -156,7 +156,8 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
   "local_amount": "700.00",
   "fx_rate": "6.91",
   "usdt_credited": "100.302460",
-  "fee": "1.000000"
+  "fee": "1.000000",
+  "idempotency_key": "order-10042"
 }
 ```
 
@@ -168,7 +169,8 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
   "country": "BO",
   "currency": "BOB",
   "local_amount": "60.99",
-  "reference": "CBK7Q2M4XZ9P"
+  "reference": "CBK7Q2M4XZ9P",
+  "idempotency_key": "order-10042"
 }
 ```
 
@@ -182,6 +184,7 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
   "currency": "USD",
   "local_amount": "40.00",
   "usdt_debited": "40.000000",
+  "idempotency_key": "refund-order-8842",
   "receipt_url": "https://api.qbank.cl/platform/v1/payin-refunds/3a7d…/receipt"
 }
 ```
@@ -199,6 +202,7 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
   "usdt_net": "466.652227",
   "status": "credited",
   "settle_at": "2026-08-12T14:08:33Z",
+  "idempotency_key": "order-10042",
   "receipt_url": "https://api.qbank.cl/platform/v1/payins/8b3e…/receipt"
 }
 ```
@@ -226,7 +230,8 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
   "total_debit": "86.014286",
   "status": "completed",
   "status_code": "",
-  "bank_reference": "00761123456"
+  "bank_reference": "00761123456",
+  "idempotency_key": "payroll-2026-07-001"
 }
 ```
 
@@ -297,7 +302,8 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
   "asset": "USDT",
   "tx_id": "7d3f01aa…",
   "status": "completed",
-  "amount": "100.000000"
+  "amount": "100.000000",
+  "idempotency_key": "wd-2026-09-0042"
 }
 ```
 
@@ -464,7 +470,8 @@ curl -X PATCH https://api.qbank.cl/platform/v1/webhooks/subscriptions/5f3a… \
   "asset": "USDT",
   "tx_id": "b1946ac9…",
   "status": "completed",
-  "amount_raw": "25500000"
+  "amount_raw": "25500000",
+  "idempotency_key": "send-0042"
 }
 ```
 
@@ -729,6 +736,14 @@ HMAC 必须基于**原始请求体**（收到的字节原样）计算，而不�
 
 - 使用 `X-Webhook-Event-ID` 去重：同一事件可能送达多次（至少一次投递语义）。
 - 如果 5 次尝试全部失败，该事件不会再次发送——请通过资源的 `GET` 接口恢复状态（这也是任何流程都不应只依赖 webhook 的原因）。
+
+### 您的幂等键会随负载返回
+
+当事件来自您使用 `idempotency_key` 创建的操作（payout、银行卡 payin、加密提现、隔离钱包发送、退款……）时，负载会以 `idempotency_key` 字段将其带回——无需额外 GET 即可将通知与您自己的参考号对账。
+
+- 该字段为**可选**：仅当原始请求携带非空键时才出现，否则省略。由平台自身创建的操作永远不会暴露内部键。
+- 覆盖事件：`payout_status_changed`、`payin_credited`、`payin_settlement_scheduled`、`payin_expired`、`payin_refunded`、`crypto_withdrawal_status_changed` 和 `wallet_send_status_changed`。`transfer_received` 不携带该字段。
+- payin 资源在 `GET /v1/payins/{id}` 中也会返回该字段。
 
 ## 最佳实践
 

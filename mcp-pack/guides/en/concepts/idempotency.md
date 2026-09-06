@@ -78,3 +78,15 @@ flowchart LR
   timeout with a no-duplication guarantee.
 - On network errors or `5xx`, **retry with the same key**. On validation
   `4xx`, fix the request and use a new key.
+
+## The key comes back to you
+
+The operation's webhooks carry your key back as `idempotency_key`
+(`payout_status_changed`, `payin_credited`, `payin_settlement_scheduled`,
+`payin_expired`, `payin_refunded`, `crypto_withdrawal_status_changed`,
+`wallet_send_status_changed`), and the payin resource returns it on
+`GET /v1/payins/{id}` — reconcile notifications against your own reference
+without an extra lookup. The field is omitted when the operation was
+created without a key (or by the platform itself — internal keys are never
+exposed). `transfer_received` does not carry it. See
+[Webhooks](https://docs.cbpayapp.com/en/webhooks#your-idempotency-key-comes-back-in-the-payload).

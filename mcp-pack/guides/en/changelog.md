@@ -8,6 +8,26 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
+## v2.69 - September 6, 2026
+
+### v2.69
+
+**Added**
+
+- **Your `idempotency_key` comes back in the webhooks**. The account
+  webhooks of money operations you created with an idempotency key now
+  carry it back as `idempotency_key` in the payload — reconcile the
+  notification against your own reference without an extra GET. Covered
+  events: `payout_status_changed`, `payin_credited`,
+  `payin_settlement_scheduled`, `payin_expired`, `payin_refunded`,
+  `crypto_withdrawal_status_changed` and `wallet_send_status_changed`. The
+  field is optional: it is omitted when the operation was created without
+  a key, and platform-internal keys are never exposed.
+  `transfer_received` does not carry it. The payin resource also returns
+  it on `GET /v1/payins/{id}`. See
+  [webhooks](https://docs.cbpayapp.com/en/webhooks#your-idempotency-key-comes-back-in-the-payload)
+  and [idempotency](https://docs.cbpayapp.com/en/concepts/idempotency).
+
 ## v2.68 - September 4, 2026
 
 ### v2.68

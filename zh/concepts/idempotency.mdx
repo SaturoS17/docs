@@ -80,3 +80,13 @@ flowchart LR
   产生重复。
 - 遇到网络错误或 `5xx` 时，**用相同的键重试**。遇到校验类 `4xx` 时，
   修正请求并使用新的键。
+
+## 幂等键会返回给您
+
+操作的 webhook 会以 `idempotency_key` 字段带回您的键
+（`payout_status_changed`、`payin_credited`、`payin_settlement_scheduled`、
+`payin_expired`、`payin_refunded`、`crypto_withdrawal_status_changed`、
+`wallet_send_status_changed`），payin 资源在 `GET /v1/payins/{id}`
+中也会返回该字段——无需额外查询即可将通知与您自己的参考号对账。
+当操作未携带键创建（或由平台自身创建——内部键永远不会暴露）时省略。
+`transfer_received` 不携带该字段。参见 [Webhooks](/zh/webhooks)。
