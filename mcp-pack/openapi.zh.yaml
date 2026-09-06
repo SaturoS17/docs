@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CBPay API
-  version: "2.68"
+  version: "2.69"
   description: 'CBPay 是一个多币种支付平台:覆盖拉美的法币付款(payout)与收款(payin)、内部转账、链上充值与提现,以及 KYC 筛查。每个账户持有四个相互独立的虚拟余额——USDT(运营货币)、USDC、BTC
     和 GOLD(纯金克数)——可通过兑换(swap)按需转换。
 
@@ -4554,6 +4554,7 @@ paths:
                   usdt_credited: '466.652227'
                   settle_at: '2026-08-12T14:08:33Z'
                   settlement_pending: true
+                  idempotency_key: order-10042
         '403':
           $ref: '#/components/responses/Forbidden'
         '401':
@@ -20995,6 +20996,11 @@ components:
           - failed
         reference:
           type: string
+        idempotency_key:
+          type: string
+          description: >-
+            创建请求中您提供的幂等键，原样返回。当 payin 未携带该键创建
+            （或由平台自身创建）时省略——内部键永远不会暴露。
         created_at:
           type: string
           format: date-time
@@ -21552,6 +21558,7 @@ webhooks:
                 fee: *id017
                 settlement_asset: *id017
                 conversion_status: *id017
+                idempotency_key: *id017
             example:
               payin_id: 4f8a1b2c-3d4e-5f60-7a8b-9c0d1e2f3a4b
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -21563,6 +21570,7 @@ webhooks:
               fee: '1.000000'
               settlement_asset: USDC
               conversion_status: done
+              idempotency_key: order-10042
       responses:
         '200':
           description: 返回任意 2xx 以确认投递。
@@ -21650,6 +21658,8 @@ webhooks:
                   type: string
                 reference:
                   type: string
+                idempotency_key:
+                  type: string
             example:
               payin_id: 567d0d1a-49bc-437e-92e3-77e921112e49
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -21658,6 +21668,7 @@ webhooks:
               currency: BOB
               local_amount: '60.99'
               reference: CBK7Q2M4XZ9P
+              idempotency_key: order-10042
       responses:
         '200':
           description: 返回任意 2xx 以确认投递。
@@ -21727,6 +21738,7 @@ webhooks:
               usdt_net: '466.652227'
               status: credited
               settle_at: '2026-08-12T14:08:33Z'
+              idempotency_key: order-10042
               receipt_url: https://api.qbank.cl/platform/v1/payins/8b3e1c2d-4f5a-6b7c-8d9e-0f1a2b3c4d5e/receipt
       responses:
         '200':
@@ -21755,6 +21767,7 @@ webhooks:
                 status: *id017
                 status_code: *id017
                 bank_reference: *id017
+                idempotency_key: *id017
             example:
               payout_id: 7d5c2f0a-1e9b-4a6d-8f3c-0b2a1d9e8c7f
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -21766,6 +21779,7 @@ webhooks:
               status: completed
               status_code: ''
               bank_reference: '00761123456'
+              idempotency_key: payroll-2026-07-001
       responses:
         '200':
           description: 返回任意 2xx 以确认投递。
@@ -21922,6 +21936,7 @@ webhooks:
                 tx_id: *id017
                 status: *id017
                 amount: *id017
+                idempotency_key: *id017
             example:
               withdrawal_id: 6c5d4e3f-2a1b-0c9d-8e7f-6a5b4c3d2e1f
               account_id: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
@@ -21930,6 +21945,7 @@ webhooks:
               tx_id: b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b
               status: completed
               amount: '100.000000'
+              idempotency_key: wd-2026-09-0042
       responses:
         '200':
           description: 返回任意 2xx 以确认投递。
@@ -22196,6 +22212,7 @@ webhooks:
               tx_id: b1946ac92492d2347c6235b4d2611184e0f0f8c9d3a1e2b3c4d5e6f708192a3b
               status: completed
               amount_raw: '25500000'
+              idempotency_key: send-0042
       responses:
         '200':
           description: 返回任意 2xx 以确认投递。

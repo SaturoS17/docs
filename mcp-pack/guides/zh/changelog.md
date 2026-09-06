@@ -8,6 +8,22 @@ source_url: https://docs.cbpayapp.com/zh/changelog
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
+## v2.69 - 2026年9月6日
+
+### v2.69
+
+**新增**
+
+- **您的 `idempotency_key` 会随 webhook 返回**。您使用幂等键创建的资金操作，
+  其账户 webhook 现在会在负载中以 `idempotency_key` 字段将其带回——无需额外
+  GET 即可将通知与您自己的参考号对账。覆盖事件：`payout_status_changed`、
+  `payin_credited`、`payin_settlement_scheduled`、`payin_expired`、
+  `payin_refunded`、`crypto_withdrawal_status_changed` 和
+  `wallet_send_status_changed`。该字段为可选：当操作未携带键创建时省略，
+  平台内部键永远不会暴露。`transfer_received` 不携带该字段。payin 资源在
+  `GET /v1/payins/{id}` 中也会返回该字段。参见
+  [webhooks](https://docs.cbpayapp.com/zh/webhooks) 和 [幂等性](https://docs.cbpayapp.com/zh/concepts/idempotency)。
+
 ## v2.68 - 2026年9月4日
 
 ### v2.68

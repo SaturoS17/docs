@@ -162,7 +162,8 @@ Para reactivarla, el mismo llamado con `{ "status": "active" }`.
   "local_amount": "700.00",
   "fx_rate": "6.91",
   "usdt_credited": "100.302460",
-  "fee": "1.000000"
+  "fee": "1.000000",
+  "idempotency_key": "order-10042"
 }
 ```
 
@@ -174,7 +175,8 @@ Para reactivarla, el mismo llamado con `{ "status": "active" }`.
   "country": "BO",
   "currency": "BOB",
   "local_amount": "60.99",
-  "reference": "CBK7Q2M4XZ9P"
+  "reference": "CBK7Q2M4XZ9P",
+  "idempotency_key": "order-10042"
 }
 ```
 
@@ -188,6 +190,7 @@ Para reactivarla, el mismo llamado con `{ "status": "active" }`.
   "currency": "USD",
   "local_amount": "40.00",
   "usdt_debited": "40.000000",
+  "idempotency_key": "refund-order-8842",
   "receipt_url": "https://api.qbank.cl/platform/v1/payin-refunds/3a7d…/receipt"
 }
 ```
@@ -205,6 +208,7 @@ Para reactivarla, el mismo llamado con `{ "status": "active" }`.
   "usdt_net": "466.652227",
   "status": "credited",
   "settle_at": "2026-08-12T14:08:33Z",
+  "idempotency_key": "order-10042",
   "receipt_url": "https://api.qbank.cl/platform/v1/payins/8b3e…/receipt"
 }
 ```
@@ -235,7 +239,8 @@ Al llegar el `settle_at`, el worker de settlement acredita el saldo y emite
   "total_debit": "86.014286",
   "status": "completed",
   "status_code": "",
-  "bank_reference": "00761123456"
+  "bank_reference": "00761123456",
+  "idempotency_key": "payroll-2026-07-001"
 }
 ```
 
@@ -306,7 +311,8 @@ Al llegar el `settle_at`, el worker de settlement acredita el saldo y emite
   "asset": "USDT",
   "tx_id": "7d3f01aa…",
   "status": "completed",
-  "amount": "100.000000"
+  "amount": "100.000000",
+  "idempotency_key": "wd-2026-09-0042"
 }
 ```
 
@@ -478,7 +484,8 @@ antiguas sin datos del motor.
   "asset": "USDT",
   "tx_id": "b1946ac9…",
   "status": "completed",
-  "amount_raw": "25500000"
+  "amount_raw": "25500000",
+  "idempotency_key": "send-0042"
 }
 ```
 
@@ -751,6 +758,23 @@ prevenir replay.
 - Si los 5 intentos fallan, el evento no se reenvía — recupera el estado
   con el `GET` del recurso (por eso ningún flujo debe depender SOLO del
   webhook).
+
+### Tu idempotency key vuelve en el payload
+
+Cuando el evento viene de una operación que creaste con una
+`idempotency_key` (un payout, un payin con tarjeta, un retiro crypto, un
+envío desde wallet segregada, un refund…), el payload la trae de vuelta
+como `idempotency_key` — concilia la notificación contra tu propia
+referencia sin un GET extra.
+
+- Es **opcional**: presente solo cuando el request original traía una key
+  no vacía, y omitida en caso contrario. Las operaciones creadas por la
+  propia plataforma jamás exponen una key interna.
+- Eventos cubiertos: `payout_status_changed`, `payin_credited`,
+  `payin_settlement_scheduled`, `payin_expired`, `payin_refunded`,
+  `crypto_withdrawal_status_changed` y `wallet_send_status_changed`.
+  `transfer_received` no la lleva.
+- El recurso payin también la devuelve en `GET /v1/payins/{id}`.
 
 ## Buenas prácticas
 
