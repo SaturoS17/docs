@@ -1,5 +1,5 @@
 {
-  "count": 212,
+  "count": 213,
   "errors": [
     {
       "category": {
@@ -2925,6 +2925,20 @@
         "en": "The payout channel is temporarily unavailable; retry later with the **same** idempotency key",
         "es": "El canal de payout está temporalmente no disponible; reintenta más tarde con la **misma** clave de idempotencia",
         "zh": "出金通道暂时不可用；请稍后使用**相同的**幂等键重试"
+      }
+    },
+    {
+      "category": {
+        "en": "Service (5xx)",
+        "es": "Servicio (5xx)",
+        "zh": "服务端（5xx）"
+      },
+      "code": "webhook_processing_pending",
+      "http": 503,
+      "meaning": {
+        "en": "An inbound webhook event is already being processed; retry the same delivery after a short backoff and do not create a new operation",
+        "es": "Un evento webhook entrante ya está siendo procesado; reintenta la misma entrega después de un backoff corto y no crees una operación nueva",
+        "zh": "入站 webhook 事件正在处理中；短暂退避后重试同一条投递，不要创建新的操作"
       }
     },
     {
