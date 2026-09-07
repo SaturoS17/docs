@@ -19945,7 +19945,12 @@ paths:
         - {name: id, in: path, required: true, schema: {type: string, format: uuid}}
       responses:
         '200':
-          description: Branded PDF attachment.
+          description: >-
+            品牌化 PDF 附件。欺诈 PDF 包含功能性征信来源表、记录数量和新鲜度
+            （`live` 或 `unavailable`）。没有征信证据时会声明 `THIN_FILE`；
+            核心明确返回 `bureau_unavailable` 时，仍可能结合平台内部信号生成
+            ready 报告。传输、认证、存储、契约无效或非空 `sources_failed` 都会
+            通过现有 recovery/退款路径 fail-closed。
           content:
             application/pdf:
               schema:

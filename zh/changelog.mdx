@@ -7,7 +7,16 @@ description: "API 与文档变更历史"
 CBPay API 及本文档的每一次变更，最新的排在最前。
 破坏性变更会提前公告，并标注为 **Breaking**。
 
-<Update label="2026年9月6日" description="v2.70 · 2 个版本">
+<Update label="2026年9月6日" description="v2.71 · 3 个版本">
+
+### v2.71
+
+**变更**
+
+- **欺诈与身份报告明确声明征信覆盖**：没有征信证据时，报告仍可能以
+  `THIN_FILE` 就绪，包括明确的无数据源情况。PDF 现在声明来源新鲜度
+  （`live` 或 `unavailable`）和记录数量。传输、认证、存储、契约无效以及
+  非空 `sources_failed` 仍通过现有 recovery/退款路径 fail-closed。
 
 ### v2.70
 

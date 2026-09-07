@@ -27,12 +27,54 @@ sequenceDiagram
     C->>P: POST /v1/qscore/fraud/reports
     P->>P: Valida purpose, idempotencia y ownership
     P->>Q: Lee registros normalizados
-    Q-->>P: Registros disponibles
+    alt Fuente personal disponible
+        Q-->>P: Registros frescos (o cero registros)
+        P->>P: Marca fuente live; agrega THIN_FILE si no hay registros
+    else No hay fuente personal configurada
+        Q-->>P: 503 bureau_unavailable
+        P->>P: Continúa con THIN_FILE y señales internas
+    else Falla de fetch o contrato
+        Q-->>P: sources_failed / transporte / contrato inválido
+        P->>P: Falla cerrado; recovery/reembolso
+    end
     P->>P: Calcula qscore-fraud-v1 y genera PDF
     P-->>C: 200 informe (ready o failed)
     P-->>C: Webhook risk_fraud_score_ready
     C->>P: GET /pdf autenticado
 ```
+
+## Cobertura del buró y `THIN_FILE`
+
+El informe puede quedar `ready` con `THIN_FILE` cuando no tiene evidencia
+utilizable del buró para esa evaluación. Esto puede ocurrir después de un
+fetch exitoso que devuelve cero registros, incluido un HTTP `200` con
+`sources_queried: 0`. Esto significa que no hubo una fuente personal
+consultable: la respuesta solo contenía fuentes bulk o no compatibles. Se
+trata como `unavailable` y puede producir `THIN_FILE`. Lo mismo ocurre cuando
+el core responde explícitamente `503 bureau_unavailable` porque no hay una
+fuente personal de buró configurada. En ese caso, el PDF declara la fuente
+personal como `unavailable` con cero registros; las señales de la plataforma
+todavía pueden contribuir al score de fraude.
+
+Cuando `sources_queried > 0`, la fuente personal respondió la consulta pero no
+devolvió evidencia para el sujeto; sigue siendo un fetch válido y también puede
+producir `THIN_FILE`.
+
+`THIN_FILE` describe cobertura de evidencia; no significa limpio, aprobado ni
+bajo riesgo. La tabla `sources` del PDF declara cada fuente funcional, su
+cantidad de registros y `freshness` (`live` o `unavailable`). Los registros
+persistidos del buró nunca se presentan como evidencia de identidad fresca
+cuando el fetch on-demand no estuvo disponible.
+
+Excepción legacy: los registros `Source: open_finance` derivados de consent
+links pueden no traer `ingest_run_id`. No cuentan como evidencia personal fresca
+del buró, no deben marcar `FetchedThisRun` y no representan una fuente personal
+de fraude.
+
+Las fallas son fail-closed: un `sources_failed` no vacío, una falla de
+transporte o autenticación, una falla de storage o un contrato inválido no
+producen un éxito de archivo delgado. El recovery/reembolso existente resuelve
+el informe cobrado.
 
 ## Crear un informe
 

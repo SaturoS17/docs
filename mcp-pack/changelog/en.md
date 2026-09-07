@@ -8,7 +8,18 @@ source_url: https://docs.cbpayapp.com/en/changelog
 Every change to the CBPay API and this documentation, most recent first.
 Breaking changes are announced in advance and flagged as **Breaking**.
 
-## v2.70 · 2 versions - September 6, 2026
+## v2.71 · 3 versions - September 6, 2026
+
+### v2.71
+
+**Changed**
+
+- **Fraud and identity bureau coverage is explicit**: a report can be ready
+  with `THIN_FILE` when no bureau evidence is available, including the
+  explicit no-source case. The PDF now declares source freshness (`live` or
+  `unavailable`) and record counts. Transport, authentication, storage,
+  invalid-contract and non-empty `sources_failed` failures remain fail-closed
+  and follow the existing recovery/refund path.
 
 ### v2.70
 
