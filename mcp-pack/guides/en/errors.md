@@ -298,6 +298,7 @@ Codes from message signing with wallets (EIP-191 on EVM, TIP-191 on TRON): serve
 | 503 | `withdrawals_unavailable` | On-chain withdrawals not enabled for the corridor |
 | 503 | `pricing_unavailable` | BTC/GOLD execution price unavailable or stale; retry later or settle in USDT/USDC |
 | 503 | `channel_unavailable` | The payout channel is temporarily unavailable; retry later with the **same** idempotency key |
+| 503 | `webhook_processing_pending` | An inbound webhook event is already being processed; retry the same delivery after a short backoff and do not create a new operation |
 | 503 | `export_unavailable` | Segregated wallet private key export is not enabled on this environment |
 
 ## How to handle them

@@ -296,6 +296,7 @@ source_url: https://docs.cbpayapp.com/zh/errors
 | 503 | `withdrawals_unavailable` | 该通道未启用链上提现 |
 | 503 | `pricing_unavailable` | BTC/GOLD 执行价格不可用或已过时；请稍后重试或以 USDT/USDC 结算 |
 | 503 | `channel_unavailable` | 出金通道暂时不可用；请稍后使用**相同的**幂等键重试 |
+| 503 | `webhook_processing_pending` | 入站 webhook 事件正在处理中；短暂退避后重试同一条投递，不要创建新的操作 |
 | 503 | `export_unavailable` | 当前环境未启用独立钱包私钥导出 |
 
 ## 如何处理
