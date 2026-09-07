@@ -31,12 +31,55 @@ sequenceDiagram
     C->>P: POST /v1/qscore/fraud/reports
     P->>P: Validate purpose, idempotency and ownership
     P->>Q: Read normalized subject records
-    Q-->>P: Available records
+    alt Personal source available
+        Q-->>P: Fresh records (or zero records)
+        P->>P: Mark source live; add THIN_FILE if zero records
+    else No personal source configured
+        Q-->>P: 503 bureau_unavailable
+        P->>P: Continue with THIN_FILE and internal signals
+    else Fetch or contract failure
+        Q-->>P: sources_failed / transport / contract error
+        P->>P: Fail closed; recovery/refund path
+    end
     P->>P: Compute qscore-fraud-v1 and render PDF
     P-->>C: 200 report (ready or failed)
     P-->>C: risk_fraud_score_ready webhook
     C->>P: Authenticated GET /pdf
 ```
+
+## Bureau coverage and `THIN_FILE`
+
+The report can be `ready` with `THIN_FILE` when it has no personal bureau
+evidence for that assessment. This can happen after a successful fetch that
+returns zero records, including an HTTP `200` with `sources_queried: 0`.
+That response means that no consultable personal source was available (the
+response contained only bulk or unsupported sources), so it is treated as
+`unavailable` and may produce `THIN_FILE`. The same applies when the core
+explicitly returns `503 bureau_unavailable` because no personal bureau source
+is configured. In that case, the PDF declares the personal bureau source as
+`unavailable` with zero records; platform signals may still contribute to the
+fraud score.
+
+When `sources_queried > 0`, the personal source answered the query but returned
+no evidence for the subject. This is still a valid fetch and may produce
+`THIN_FILE`.
+
+`THIN_FILE` is an evidence-coverage signal, not a clean, approved or
+low-risk decision. It describes the absence of personal bureau evidence, not
+the absence of internal platform history: internal signals may exist and
+still contribute to the score. The PDF's `sources` table declares each
+functional source, its record count and `freshness` (`live` or `unavailable`).
+Persisted bureau records are never presented as fresh identity evidence when
+the on-demand fetch was unavailable.
+
+Legacy `Source: open_finance` records derived from consent links may not carry
+an `ingest_run_id`. They are not fresh personal bureau evidence, must not mark
+`FetchedThisRun`, and do not represent a personal fraud source.
+
+Failures are fail-closed: a non-empty `sources_failed`, transport or
+authentication failure, storage failure or invalid response contract does not
+produce a thin-file success. The existing generation recovery/refund path
+handles the charged report.
 
 ## Create a report
 
@@ -159,8 +202,9 @@ fraud-risk bands:
 
 The implemented reason codes are `NEW_SUBJECT`, `VELOCITY`,
 `CONTACT_MISMATCH`, `SHARED_DEVICE_IP` and `THIN_FILE`. A missing internal
-age signal does not itself create `NEW_SUBJECT`; a thin file is reported when
-there is neither usable internal history nor bureau coverage.
+age signal does not itself create `NEW_SUBJECT`; `THIN_FILE` is reported when
+personal bureau evidence is unavailable, even when internal platform signals
+are present.
 
 | Status | Meaning | What to do |
 |---|---|---|

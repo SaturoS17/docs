@@ -20785,7 +20785,15 @@ paths:
         - {name: id, in: path, required: true, schema: {type: string, format: uuid}}
       responses:
         '200':
-          description: Branded PDF attachment.
+          description: >-
+            Branded PDF attachment. The fraud PDF includes a functional bureau
+            source table with record counts and freshness (`live` or
+            `unavailable`). When no bureau evidence is available, it declares
+            the `THIN_FILE` signal; an explicit `bureau_unavailable` may still
+            produce a ready report using internal platform signals. Transport,
+            authentication, storage, invalid-contract and non-empty
+            `sources_failed` conditions fail closed through the existing
+            recovery/refund path.
           content:
             application/pdf:
               schema:

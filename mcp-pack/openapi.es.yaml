@@ -20636,7 +20636,15 @@ paths:
         - {name: id, in: path, required: true, schema: {type: string, format: uuid}}
       responses:
         '200':
-          description: Branded PDF attachment.
+          description: >-
+            Adjunto PDF brandeado. El PDF de fraude incluye una tabla de fuentes
+            funcionales del buró con cantidades de registros y frescura (`live`
+            o `unavailable`). Cuando no hay evidencia del buró, declara la
+            señal `THIN_FILE`; un `bureau_unavailable` explícito todavía puede
+            producir un informe listo usando señales internas de la plataforma.
+            Las fallas de transporte, autenticación, storage, contrato inválido
+            o `sources_failed` no vacío fallan cerrado mediante el recovery/
+            reembolso existente.
           content:
             application/pdf:
               schema:

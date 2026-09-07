@@ -9,7 +9,18 @@ Todos los cambios de la API de CBPay y de esta documentación, del más
 reciente al más antiguo. Los cambios que rompen compatibilidad se anuncian
 con anticipación y quedan marcados como **Breaking**.
 
-## v2.70 · 2 versiones - 6 de septiembre de 2026
+## v2.71 · 3 versiones - 6 de septiembre de 2026
+
+### v2.71
+
+**Cambiado**
+
+- **La cobertura del buró en fraude e identidad ahora es explícita**: un
+  informe puede quedar listo con `THIN_FILE` cuando no hay evidencia del buró,
+  incluido el caso explícito sin fuente. El PDF declara la frescura de la
+  fuente (`live` o `unavailable`) y la cantidad de registros. Las fallas de
+  transporte, autenticación, storage, contrato inválido y `sources_failed` no
+  vacío siguen fallando cerrado por el recovery/reembolso existente.
 
 ### v2.70
 

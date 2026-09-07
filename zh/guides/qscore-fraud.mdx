@@ -27,12 +27,47 @@ sequenceDiagram
     C->>P: POST /v1/qscore/fraud/reports
     P->>P: 校验 purpose、幂等键和权限
     P->>Q: 读取标准化主体记录
-    Q-->>P: 可用记录
+    alt 已配置个人数据源
+        Q-->>P: 新鲜记录（或零条记录）
+        P->>P: 标记来源为 live；零记录时加入 THIN_FILE
+    else 未配置个人数据源
+        Q-->>P: 503 bureau_unavailable
+        P->>P: 使用 THIN_FILE 和平台内部信号继续
+    else fetch 或契约失败
+        Q-->>P: sources_failed / 传输 / 契约错误
+        P->>P: fail-closed；进入 recovery/退款路径
+    end
     P->>P: 计算 qscore-fraud-v1 并生成 PDF
     P-->>C: 200 报告（ready 或 failed）
     P-->>C: risk_fraud_score_ready webhook
     C->>P: 认证的 PDF GET
 ```
+
+## 征信覆盖与 `THIN_FILE`
+
+当本次评估没有可用的征信证据时，报告仍可能为 `ready` 并带有
+`THIN_FILE`。这可能发生在 fetch 成功但主体没有记录时，包括 HTTP `200`
+且 `sources_queried: 0` 的情况。这表示没有可查询的个人来源（响应中只有
+bulk 或不支持的来源），因此按 `unavailable` 处理，并可能产生
+`THIN_FILE`。当核心明确返回 `503 bureau_unavailable`，表示没有配置个人
+征信数据源时，也采用同样的处理方式。后一种情况下，PDF 会将个人征信
+来源标记为 `unavailable`、记录数为零；平台内部信号仍可以参与欺诈评分。
+
+当 `sources_queried > 0` 时，个人来源已响应查询，但没有返回该主体的证据；
+这仍是有效 fetch，也可能产生 `THIN_FILE`。
+
+`THIN_FILE` 表示证据覆盖不足，不表示主体干净、已批准或低风险。PDF 的
+`sources` 表会声明每个功能性来源、记录数量以及 `freshness`
+（`live` 或 `unavailable`）。当 on-demand fetch 不可用时，已持久化的征信
+记录不会被当作新鲜身份证据展示。
+
+Legacy 例外：由 consent links 派生的 `Source: open_finance` 记录可能没有
+`ingest_run_id`。它们不算新鲜的个人征信证据，不应标记 `FetchedThisRun`，
+也不代表个人欺诈来源。
+
+所有失败都采用 fail-closed：非空的 `sources_failed`、传输或认证失败、
+存储失败、响应契约无效，都不会生成薄文件成功。现有的 recovery/退款流程
+会处理已扣费的报告。
 
 ## 创建报告
 
